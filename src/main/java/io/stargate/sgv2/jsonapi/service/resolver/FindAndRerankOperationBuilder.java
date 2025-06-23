@@ -194,7 +194,7 @@ class FindAndRerankOperationBuilder {
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
-            .create(
+            .getConfiguration(
                 commandContext.requestContext().getTenantId(),
                 commandContext.requestContext().getCassandraToken(),
                 providerConfig.provider(),

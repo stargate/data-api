@@ -15,7 +15,6 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: SOME DOCUMENTATION FOR WHAT THIS IS MEANT TO DO!!!
 public class EmbeddingProvidersConfigProducer {
 
   private static final Logger LOG = LoggerFactory.getLogger(EmbeddingProvidersConfigProducer.class);
@@ -34,17 +33,14 @@ public class EmbeddingProvidersConfigProducer {
       OperationsConfig operationsConfig,
       EmbeddingProvidersConfig.CustomConfig customConfig,
       @GrpcClient("embedding") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingService) {
-
     EmbeddingProvidersConfig defaultConfig =
         new EmbeddingProvidersConfigImpl(defaultEmbeddingProviderConfig.providers(), customConfig);
-
     // defaultEmbeddingProviderConfig is what we mapped from embedding-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
       LOG.info("embedding gateway disabled, use default embedding config");
       return defaultConfig;
     }
-
     LOG.info("embedding gateway enabled, fetch supported providers from embedding gateway");
     final EmbeddingGateway.GetSupportedProvidersRequest getSupportedProvidersRequest =
         EmbeddingGateway.GetSupportedProvidersRequest.newBuilder().build();
@@ -65,7 +61,6 @@ public class EmbeddingProvidersConfigProducer {
   private EmbeddingProvidersConfig grpcResponseToConfig(
       EmbeddingGateway.GetSupportedProvidersResponse getSupportedProvidersResponse,
       EmbeddingProvidersConfig.CustomConfig customConfig) {
-
     Map<String, EmbeddingProvidersConfig.EmbeddingProviderConfig> providerMap = new HashMap<>();
 
     // traverse EmbeddingProvidersConfig in Grpc GetSupportedProvidersResponse
@@ -118,10 +113,8 @@ public class EmbeddingProvidersConfigProducer {
       // 3. construct modelConfig list for the provider
       List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig> providerModelList =
           new ArrayList<>();
-
       final List<EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.ModelConfig>
           grpcProviderConfigModelsList = grpcProviderConfig.getModelsList();
-
       for (EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.ModelConfig
           grpcModelConfig : grpcProviderConfigModelsList) {
         // construct parameterConfig List for the model

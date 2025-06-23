@@ -10,8 +10,6 @@ import java.util.Map;
  */
 @ConfigMapping(prefix = "stargate.jsonapi.embedding")
 public interface DefaultEmbeddingProviderConfig {
-
-  // TODO: WHAT DOES THIS ACTUALLY RETURN ?
   @Nullable
   Map<String, EmbeddingProvidersConfig.EmbeddingProviderConfig> providers();
 }

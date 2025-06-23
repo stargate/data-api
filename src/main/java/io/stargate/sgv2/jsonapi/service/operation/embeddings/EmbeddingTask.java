@@ -77,7 +77,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
                 commandContext
                     .requestContext()
                     .getEmbeddingCredentialsSupplier()
-                    .create(commandContext.requestContext(), embeddingProvider.providerConfig()),
+                    .create(commandContext.requestContext(), embeddingProvider.getProviderConfig()),
                 requestType),
         embeddingActions,
         vectorizeTexts);
@@ -111,14 +111,14 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
 
     protected final EmbeddingTask<?> embeddingTask;
     protected final CommandContext<?> commandContext;
-    protected final BaseTask.UniSupplier<EmbeddingProvider.BatchedEmbeddingResponse> supplier;
+    protected final BaseTask.UniSupplier<EmbeddingProvider.Response> supplier;
     protected final List<EmbeddingDeferredAction> actions;
     private final List<String> vectorizeTexts;
 
     EmbeddingResultSupplier(
         EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
-        BaseTask.UniSupplier<EmbeddingProvider.BatchedEmbeddingResponse> supplier,
+        BaseTask.UniSupplier<EmbeddingProvider.Response> supplier,
         List<EmbeddingDeferredAction> actions,
         List<String> vectorizeTexts) {
       this.embeddingTask = embeddingTask;
@@ -181,7 +181,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
     static EmbeddingTaskResult create(
         EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
-        EmbeddingProvider.BatchedEmbeddingResponse providerResponse,
+        EmbeddingProvider.Response providerResponse,
         List<EmbeddingDeferredAction> actions) {
 
       commandContext

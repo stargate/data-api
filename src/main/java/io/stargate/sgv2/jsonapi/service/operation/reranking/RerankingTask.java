@@ -275,8 +275,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                 RerankingTaskResult.create(
                     requestTracing,
                     rerankingProvider,
-                    new RerankingProvider.RerankingResponse(
-                        List.of(), rerankingProvider.createEmptyModelUsage(credentials)),
+                    new RerankingProvider.RerankingResponse(List.of()),
                     unrankedDocs,
                     limit));
       }

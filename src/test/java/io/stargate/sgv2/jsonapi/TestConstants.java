@@ -1,16 +1,13 @@
 package io.stargate.sgv2.jsonapi;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -113,17 +110,9 @@ public class TestConstants {
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
 
-    var embeddingCredentials = mock(EmbeddingCredentials.class);
-    when(embeddingCredentials.tenantId()).thenReturn("test-tenant");
-    when(embeddingCredentials.apiKey()).thenReturn(Optional.of("test-apiKey"));
-    when(embeddingCredentials.accessId()).thenReturn(Optional.of("test-accessId"));
-    when(embeddingCredentials.secretId()).thenReturn(Optional.of("test-secretId"));
-
-    var embeddingCredentialsSupplier = mock(EmbeddingCredentialsSupplier.class);
-    when(embeddingCredentialsSupplier.create(any(), any())).thenReturn(embeddingCredentials);
-
     var requestContext = mock(RequestContext.class);
-    when(requestContext.getEmbeddingCredentialsSupplier()).thenReturn(embeddingCredentialsSupplier);
+    when(requestContext.getEmbeddingCredentialsSupplier())
+        .thenReturn(mock(EmbeddingCredentialsSupplier.class));
     when(requestContext.getTenantId()).thenReturn(Optional.of("test-tenant"));
 
     return CommandContext.builderSupplier()
@@ -146,14 +135,6 @@ public class TestConstants {
         TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
   }
 
-  public RequestContext requestContext() {
-    return new RequestContext(
-        Optional.of("test-tenant"),
-        Optional.empty(),
-        new RerankingCredentials("test-tenant", Optional.empty()),
-        "test-user-agent");
-  }
-
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(
       String commandName,
       KeyspaceSchemaObject schema,
@@ -169,7 +150,7 @@ public class TestConstants {
         .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(schema)
         .withCommandName(commandName)
-        .withRequestContext(requestContext())
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
         .build();
   }
 
@@ -183,7 +164,7 @@ public class TestConstants {
         .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
         .withCommandName(TEST_COMMAND_NAME)
-        .withRequestContext(requestContext())
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
         .build();
   }
 }

@@ -255,7 +255,7 @@ public class CollectionResource {
 
                 if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
                   embeddingProvider =
-                      embeddingProviderFactory.create(
+                      embeddingProviderFactory.getConfiguration(
                           requestContext.getTenantId(),
                           requestContext.getCassandraToken(),
                           vectorColDef.vectorizeDefinition().provider(),

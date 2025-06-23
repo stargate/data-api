@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.Mockito.mock;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.fixtures.*;
@@ -32,6 +32,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -42,8 +43,6 @@ import org.slf4j.LoggerFactory;
 public class WriteableTableRowBuilderTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WriteableTableRowBuilderTest.class);
-
-  private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
   private static void logFixture(String testName, JsonContainerFixture fixture) {
     // 24-Jan-2025, tatu: This produces thousands of lines noise in logs, so let's
@@ -69,7 +68,7 @@ public class WriteableTableRowBuilderTest {
             .getBuilder(fixture.cqlFixture().tableSchemaObject())
             .withEmbeddingProvider(mock(EmbeddingProvider.class))
             .withCommandName("testCommand")
-            .withRequestContext(TEST_CONSTANTS.requestContext())
+            .withRequestContext(new RequestContext(Optional.of("test-tenant")))
             .withApiFeatures(ApiFeatures.empty())
             .build();
 

@@ -1,21 +1,22 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
-import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
-import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.core.*;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -24,132 +25,98 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
-
-  private final HuggingFaceEmbeddingProviderClient huggingFaceClient;
+  private static final String providerId = ProviderConstants.HUGGINGFACE;
+  private final HuggingFaceEmbeddingProviderClient huggingFaceEmbeddingProviderClient;
 
   public HuggingFaceEmbeddingProvider(
-      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
-      ServiceConfigStore.ServiceConfig serviceConfig,
+      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      String baseUrl,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
-    super(
-        ModelProvider.HUGGINGFACE,
-        providerConfig,
-        modelConfig,
-        serviceConfig,
-        dimension,
-        vectorizeServiceParameters);
+      Map<String, Object> vectorizeServiceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
 
-    huggingFaceClient =
+    String actualUrl = replaceParameters(baseUrl, Map.of("modelId", model.name()));
+
+    huggingFaceEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(serviceConfig.getBaseUrl(modelName())))
-            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .baseUri(URI.create(actualUrl))
+            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(HuggingFaceEmbeddingProviderClient.class);
   }
 
-  /**
-   * The example response body is:
-   *
-   * <pre>
-   * {
-   *   "error": "Authorization header is correct, but the token seems invalid"
-   * }
-   * </pre>
-   */
-  @Override
-  protected String errorMessageJsonPtr() {
-    return "/error";
+  @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  public interface HuggingFaceEmbeddingProviderClient {
+    @POST
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
+    Uni<List<float[]>> embed(
+        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
+
+    @ClientExceptionMapper
+    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
+      String errorMessage = getErrorMessage(response);
+      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
+    }
+
+    /**
+     * Extracts the error message from the response body. The example response body is:
+     *
+     * <pre>
+     * {
+     *   "error": "Authorization header is correct, but the token seems invalid"
+     * }
+     * </pre>
+     *
+     * @param response The response body as a String.
+     * @return The error message extracted from the response body, or null if the message is not
+     *     found.
+     */
+    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // Get the whole response body
+      JsonNode rootNode = response.readEntity(JsonNode.class);
+      // Log the response body
+      logger.error(
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
+      // Extract the "error" node
+      JsonNode errorNode = rootNode.path("error");
+      // Return the text of the "message" node, or the whole response body if it is missing
+      return errorNode.isMissingNode() ? rootNode.toString() : errorNode.toString();
+    }
+  }
+
+  private record EmbeddingRequest(List<String> inputs, Options options) {
+    public record Options(boolean waitForModel) {}
   }
 
   @Override
-  public Uni<BatchedEmbeddingResponse> vectorize(
+  public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-
+    // Check if using an EOF model
     checkEOLModelUsage();
-    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
-    var huggingFaceRequest =
-        new HuggingFaceEmbeddingRequest(texts, new HuggingFaceEmbeddingRequest.Options(true));
+    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
+    EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
 
-    // TODO: V2 error
-    // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
-
-    long callStartNano = System.nanoTime();
-    return retryHTTPCall(huggingFaceClient.embed(accessToken, modelName(), huggingFaceRequest))
+    return applyRetry(
+            huggingFaceEmbeddingProviderClient.embed(
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                request))
         .onItem()
         .transform(
-            jakartaResponse -> {
-
-              // NOTE: Boxing happening here, as the response is a JSON array of arrays of floats.
-              // should return zero legnth list if entity is null or empty.
-              // TODO: how to deserialise without boxing ?
-              List<Float[]> vectorsBoxed = jakartaResponse.readEntity(new GenericType<>() {});
-              long callDurationNano = System.nanoTime() - callStartNano;
-
-              List<float[]> vectorsUnboxed =
-                  vectorsBoxed.stream()
-                      .map(
-                          vector -> {
-                            if (vector == null) {
-                              return new float[0]; // Handle null vectors
-                            }
-                            float[] unboxed = new float[vector.length];
-                            for (int i = 0; i < vector.length; i++) {
-                              unboxed[i] = vector[i];
-                            }
-                            return unboxed;
-                          })
-                      .toList();
-
-              // The hugging face API we are calling does not return usage information, there may be
-              // a
-              // newer version of the API that does, but for now we will not return usage
-              // information.
-              // https://huggingface.co/blog/getting-started-with-embeddings
-              var modelUsage =
-                  createModelUsage(
-                      embeddingCredentials.tenantId(),
-                      ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
-                      0,
-                      0,
-                      jakartaResponse,
-                      callDurationNano);
-              return new BatchedEmbeddingResponse(batchId, vectorsUnboxed, modelUsage);
+            resp -> {
+              if (resp == null) {
+                return Response.of(batchId, Collections.emptyList());
+              }
+              return Response.of(batchId, resp);
             });
   }
 
-  /**
-   * REST client interface for the HuggingFace Embedding Service.
-   *
-   * <p>.. NOTE: the response is just a JSON array of arrays of floats, e.g.:
-   *
-   * <pre>
-   *   [[-0.123, 0.456, ...], [-0.789, 0.012, ...], ...]
-   * </pre>
-   */
-  @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  @RegisterProvider(ProviderHttpInterceptor.class)
-  public interface HuggingFaceEmbeddingProviderClient {
-    @POST
-    @Path("/{modelId}")
-    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
-    Uni<Response> embed(
-        @HeaderParam("Authorization") String accessToken,
-        @PathParam("modelId") String modelId,
-        HuggingFaceEmbeddingRequest request);
-  }
-
-  /**
-   * Request structure of the HuggingFace REST service.
-   *
-   * <p>..
-   */
-  public record HuggingFaceEmbeddingRequest(List<String> inputs, Options options) {
-    public record Options(boolean waitForModel) {}
+  @Override
+  public int maxBatchSize() {
+    return requestProperties.maxBatchSize();
   }
 }

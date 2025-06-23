@@ -8,11 +8,10 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
-import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
@@ -21,20 +20,16 @@ import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * NOTE: this test relies on the {@link EmbeddingClientTestResource} to mock the server responses
- */
 @QuarkusTest
 @WithTestResource(EmbeddingClientTestResource.class)
 public class OpenAiEmbeddingClientTest {
 
-  @Inject EmbeddingProvidersConfig embeddingProvidersConfig;
+  @Inject EmbeddingProvidersConfig config;
 
   private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(
-          "test-tenant", Optional.of("test"), Optional.empty(), Optional.empty());
+      new EmbeddingCredentials(Optional.of("test"), Optional.empty(), Optional.empty());
 
-  private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
+  private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig testModel =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
           "test-model",
           new ApiModelSupport.ApiModelSupportImpl(
@@ -44,79 +39,30 @@ public class OpenAiEmbeddingClientTest {
           Map.of(),
           Optional.empty());
 
-  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl
-      REQUEST_PROPERTIES =
-          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
-              3, 10, 100, 100, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
-
-  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
-      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
-          ModelProvider.OPENAI.apiName(),
-          true,
-          Optional.of(EmbeddingClientTestResource.OPENAI_URL),
-          false,
-          Map.of(),
-          List.of(),
-          REQUEST_PROPERTIES,
-          List.of());
-
-  private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
-      new ServiceConfigStore.ServiceConfig(
-          ModelProvider.OPENAI,
-          EmbeddingClientTestResource
-              .OPENAI_URL, // path important see EmbeddingProviderErrorMessageTest
-          Optional.empty(),
-          new ServiceConfigStore.ServiceRequestProperties(
-              REQUEST_PROPERTIES.atMostRetries(),
-              REQUEST_PROPERTIES.initialBackOffMillis(),
-              REQUEST_PROPERTIES.readTimeoutMillis(),
-              REQUEST_PROPERTIES.maxBackOffMillis(),
-              REQUEST_PROPERTIES.jitter(),
-              REQUEST_PROPERTIES.taskTypeRead(),
-              REQUEST_PROPERTIES.taskTypeStore(),
-              REQUEST_PROPERTIES.maxBatchSize()),
-          Map.of());
-
-  private OpenAIEmbeddingProvider createProvider(Map<String, Object> vectorizeServiceParameters) {
-    return new OpenAIEmbeddingProvider(
-        PROVIDER_CONFIG, MODEL_CONFIG, SERVICE_CONFIG, 3, vectorizeServiceParameters);
-  }
-
-  private EmbeddingProvider.BatchedEmbeddingResponse runVectorize(
-      EmbeddingProvider embeddingProvider, List<String> texts) {
-
-    return embeddingProvider
-        .vectorize(1, texts, embeddingCredentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
-        .subscribe()
-        .withSubscriber(UniAssertSubscriber.create())
-        .awaitItem()
-        .getItem();
-  }
-
-  private Throwable vectorizeWithError(EmbeddingProvider embeddingProvider, String text) {
-
-    return embeddingProvider
-        .vectorize(
-            1, List.of(text), embeddingCredentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
-        .subscribe()
-        .withSubscriber(UniAssertSubscriber.create())
-        .awaitFailure()
-        .getFailure();
-  }
-
   @Nested
   class OpenAiEmbeddingTest {
-
     @Test
     public void happyPath() throws Exception {
-
-      var response =
-          runVectorize(
-              createProvider(Map.of("organizationId", "org-id", "projectId", "project-id")),
-              List.of("some data"));
-
+      final EmbeddingProvider.Response response =
+          new OpenAIEmbeddingProvider(
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
+                  config.providers().get("openai").url().get(),
+                  testModel,
+                  3,
+                  Map.of("organizationId", "org-id", "projectId", "project-id"),
+                  null)
+              .vectorize(
+                  1,
+                  List.of("some data"),
+                  embeddingCredentials,
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
       assertThat(response)
-          .isInstanceOf(EmbeddingProvider.BatchedEmbeddingResponse.class)
+          .isInstanceOf(EmbeddingProvider.Response.class)
           .satisfies(
               r -> {
                 assertThat(r.embeddings()).isNotNull();
@@ -127,11 +73,26 @@ public class OpenAiEmbeddingClientTest {
 
     @Test
     public void onlyToken() throws Exception {
-
-      var response = runVectorize(createProvider(Map.of()), List.of(MediaType.APPLICATION_JSON));
-
+      final EmbeddingProvider.Response response =
+          new OpenAIEmbeddingProvider(
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
+                  config.providers().get("openai").url().get(),
+                  testModel,
+                  3,
+                  Map.of(),
+                  null)
+              .vectorize(
+                  1,
+                  List.of(MediaType.APPLICATION_JSON),
+                  embeddingCredentials,
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
       assertThat(response)
-          .isInstanceOf(EmbeddingProvider.BatchedEmbeddingResponse.class)
+          .isInstanceOf(EmbeddingProvider.Response.class)
           .satisfies(
               r -> {
                 assertThat(r.embeddings()).isNotNull();
@@ -142,12 +103,24 @@ public class OpenAiEmbeddingClientTest {
 
     @Test
     public void invalidOrg() throws Exception {
-
-      var exception =
-          vectorizeWithError(
-              createProvider(Map.of("organizationId", "invalid org", "projectId", "project-id")),
-              "some data");
-
+      Throwable exception =
+          new OpenAIEmbeddingProvider(
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
+                  config.providers().get("openai").url().get(),
+                  testModel,
+                  3,
+                  Map.of("organizationId", "invalid org", "projectId", "project-id"),
+                  null)
+              .vectorize(
+                  1,
+                  List.of("some data"),
+                  embeddingCredentials,
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
@@ -158,12 +131,24 @@ public class OpenAiEmbeddingClientTest {
 
     @Test
     public void invalidProject() throws Exception {
-
-      var exception =
-          vectorizeWithError(
-              createProvider(Map.of("organizationId", "org-id", "projectId", "invalid proj")),
-              "some data");
-
+      Throwable exception =
+          new OpenAIEmbeddingProvider(
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
+                  config.providers().get("openai").url().get(),
+                  testModel,
+                  3,
+                  Map.of("organizationId", "org-id", "projectId", "invalid proj"),
+                  null)
+              .vectorize(
+                  1,
+                  List.of("some data"),
+                  embeddingCredentials,
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)

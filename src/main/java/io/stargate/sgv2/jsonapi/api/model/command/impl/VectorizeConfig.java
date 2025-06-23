@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.HuggingFaceDedicatedEmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.*;
@@ -49,30 +48,24 @@ public record VectorizeConfig(
       String modelName,
       Map<String, String> authentication,
       Map<String, Object> parameters) {
-
     if (provider == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'provider' in required property for 'vector.service' Object value");
     }
-
     this.provider = provider;
-
     // HuggingfaceDedicated does not need user to specify model explicitly
     // If user specifies modelName other than endpoint-defined-model, will error out
     // By default, huggingfaceDedicated provider use endpoint-defined-model as placeholder
-    if (ModelProvider.HUGGINGFACE_DEDICATED.apiName().equals(provider)) {
+    if (ProviderConstants.HUGGINGFACE_DEDICATED.equals(provider)) {
       if (modelName == null) {
-        modelName =
-            HuggingFaceDedicatedEmbeddingProvider.HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL;
-      } else if (!modelName.equals(
-          HuggingFaceDedicatedEmbeddingProvider.HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL)) {
+        modelName = ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL;
+      } else if (!modelName.equals(ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL)) {
         throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "'modelName' is not needed for embedding provider %s explicitly, only '%s' is accepted",
-            ModelProvider.HUGGINGFACE_DEDICATED,
-            HuggingFaceDedicatedEmbeddingProvider.HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL);
+            ProviderConstants.HUGGINGFACE_DEDICATED,
+            ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL);
       }
     }
-
     this.modelName = modelName;
     if (authentication != null && !authentication.isEmpty()) {
       Map<String, String> updatedAuth = new HashMap<>();

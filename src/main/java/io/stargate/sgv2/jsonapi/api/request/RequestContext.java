@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.request;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
-import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
@@ -36,25 +35,20 @@ public class RequestContext {
 
   private final String userAgent;
 
-  /** FOR TESTING ONLY - so we can bypass pulling things the headers, still messy, getting better */
-  @VisibleForTesting
-  public RequestContext(
-      Optional<String> tenantId,
-      Optional<String> cassandraToken,
-      RerankingCredentials rerankingCredentials,
-      String userAgent) {
+  /**
+   * Constructor that will be useful in the offline library mode, where only the tenant will be set
+   * and accessed.
+   *
+   * @param tenantId Tenant Id
+   */
+  public RequestContext(Optional<String> tenantId) {
     this.tenantId = tenantId;
-    this.cassandraToken = cassandraToken;
-    embeddingCredentialsSupplier =
-        new EmbeddingCredentialsSupplier(
-            HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-            HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-            HttpConstants.EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
-            HttpConstants.EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME);
-    this.rerankingCredentials = rerankingCredentials;
-    this.userAgent = userAgent;
-    this.httpHeaders = new HttpHeaderAccess(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+    cassandraToken = Optional.empty();
+    embeddingCredentialsSupplier = null;
+    rerankingCredentials = null;
+    httpHeaders = null;
     requestId = generateRequestId();
+    userAgent = null;
   }
 
   @Inject
@@ -83,14 +77,11 @@ public class RequestContext {
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
     rerankingCredentials =
         rerankingApiKeyFromHeader
-            .map(apiKey -> new RerankingCredentials(this.tenantId.orElse(""), Optional.of(apiKey)))
+            .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
             .orElse(
                 this.cassandraToken
-                    .map(
-                        cassandraToken ->
-                            new RerankingCredentials(
-                                this.tenantId.orElse(""), Optional.of(cassandraToken)))
-                    .orElse(new RerankingCredentials(this.tenantId.orElse(""), Optional.empty())));
+                    .map(cassandraToken -> new RerankingCredentials(Optional.of(cassandraToken)))
+                    .orElse(new RerankingCredentials(Optional.empty())));
   }
 
   private static String generateRequestId() {
