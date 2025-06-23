@@ -102,39 +102,6 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     return new SortClause(sortExpressions);
   }
 
-  /**
-   * Helper method to build a "non-special" sort expression for given definition; validates
-   * expression value and builds the {@link SortExpression} object.
-   *
-   * @param path Path to the field to sort by, already validated
-   * @param innerValue JSON value of the sort expression to use
-   * @return {@link SortExpression} for the regular sort
-   */
-  private SortExpression buildRegularSortExpression(String path, JsonNode innerValue) {
-    if (!innerValue.isInt()) {
-      // Special checking for String and ArrayNode to give less confusing error messages
-      if (innerValue.isArray()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-            "Sort ordering value can be Array only for Vector search");
-      }
-      if (innerValue.isTextual()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-            "Sort ordering value can be String only for Lexical or Vectorize search");
-      }
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-          "Sort ordering value should be integer `1` or `-1`; or Array (Vector); or String (Lexical or Vectorize), was: %s",
-          JsonUtil.nodeTypeAsString(innerValue));
-    }
-    if (!(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-          "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
-          innerValue);
-    }
-
-    boolean ascending = innerValue.intValue() == 1;
-    return SortExpression.sort(path, ascending);
-  }
-
   private void validateSortExpressionPaths(ObjectNode sortNode) {
     Iterator<String> it = sortNode.fieldNames();
     while (it.hasNext()) {

@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.VectorDimension5TableScenario;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
@@ -37,8 +37,11 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
   }
 
   private static Stream<Arguments> findCommandNames() {
-    return Arrays.asList(Arguments.of(CommandName.FIND), Arguments.of(CommandName.FIND_ONE))
-        .stream();
+
+    var commands = new ArrayList<Arguments>();
+    commands.add(Arguments.of(CommandName.FIND));
+    commands.add(Arguments.of(CommandName.FIND_ONE));
+    return commands.stream();
   }
 
   @ParameterizedTest
@@ -77,10 +80,9 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS,
+            SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS,
             SortException.class,
-            "The command used a sort clause with a special (lexical/vector/vectorize) sort",
-            "command attempted to use vector/vectorize sort on columns: %s, %s"
+            "The command attempted to vector sort on the columns: %s, %s."
                 .formatted(
                     SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
                     SCENARIO.fieldName(VectorDimension5TableScenario.UNINDEXED_VECTOR_COL)));
@@ -122,7 +124,7 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
         .hasSingleApiError(
             SortException.Code.CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS,
             SortException.class,
-            "The command attempted to sort the non-vector columns: %s."
+            "The command attempted to sort the non vector columns: %s."
                 .formatted(SCENARIO.fieldName(VectorDimension5TableScenario.CONTENT_COL)));
   }
 
@@ -141,13 +143,12 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS,
+            SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS,
             SortException.class,
-            "The command used a sort clause with a special (lexical/vector/vectorize) sort combined",
-            "The command attempted to use vector/vectorize sort on columns: %s"
-                .formatted(SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL)),
-            "The command attempted to use regular sort on columns: %s"
-                .formatted(SCENARIO.fieldName(VectorDimension5TableScenario.CONTENT_COL)));
+            "The command attempted to sort the vector columns: %s.\nThe command attempted to sort the non-vector columns: %s."
+                .formatted(
+                    SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+                    SCENARIO.fieldName(VectorDimension5TableScenario.CONTENT_COL)));
   }
 
   @ParameterizedTest

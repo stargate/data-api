@@ -156,7 +156,12 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT),
-            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS),
+            SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORIZE),
+        Arguments.of(
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),
+                SAMPLE_VECTORIZE_CONTENT),
+            SortException.Code.CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN),
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
@@ -164,7 +169,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 SAMPLE_VECTORIZE_CONTENT,
                 VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),
                 1),
-            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS),
+            SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS),
         Arguments.of(
             ImmutableMap.of("no_column_exist", SAMPLE_VECTORIZE_CONTENT),
             SortException.Code.CANNOT_SORT_UNKNOWN_COLUMNS));
