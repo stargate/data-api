@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.servererrors.AlreadyExistsException;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -24,9 +23,9 @@ public class CreateTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   @Override
   public RuntimeException handle(InvalidQueryException exception) {
-    if(exception.getMessage().contains("already exists")) {
+    if (exception.getMessage().contains("already exists")) {
       return SchemaException.Code.CANNOT_ADD_EXISTING_TYPE.get(
-              Map.of("existingType", errFmt(udtName)));
+          Map.of("existingType", errFmt(udtName)));
     }
     return super.handle(exception);
   }
