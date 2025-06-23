@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
@@ -41,10 +40,15 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
 
   @Override
   public ColumnDesc deserialize(
-      JsonParser jsonParser, DeserializationContext deserializationContext)
-      throws IOException, JacksonException {
+      JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
     JsonNode descNode = deserializationContext.readTree(jsonParser);
+
+    // Check if we are deserializing UDT fields and if so, check for unsupported UDT fields.
+    if (deserializeUDTFields) {
+      return deserializeForUdtField(descNode, jsonParser);
+    }
+
     if (descNode.isTextual()) {
       // must be a primitive type, that is all that is allowed to only have a type
       return PrimitiveColumnDesc.FROM_JSON_FACTORY
@@ -55,11 +59,6 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
                       Map.of(
                           "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
                           "unsupportedType", descNode.asText())));
-    }
-
-    // Check if we are deserializing UDT fields and if so, check for unsupported UDT fields.
-    if (deserializeUDTFields) {
-      unsupportedUDTFieldCheck(descNode);
     }
 
     // Check we are using long form
@@ -134,13 +133,61 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
   /**
    * Rules for current supported UDT field definition from API user request. As of June 16th 2025,
    * UDT as field, map/set/list as field are not supported.
+   *
+   * <p>Note: You will see there is code redundancy in this method compared to {@link
+   * ColumnDescDeserializer::deserialize(JsonParser, DeserializationContext)}. This is to keep the
+   * deserialization logic for UDT fields separate from the general table column.
    */
-  private void unsupportedUDTFieldCheck(JsonNode descNode) {
+  private ColumnDesc deserializeForUdtField(JsonNode descNode, JsonParser jsonParser)
+      throws JsonMappingException {
+
+    if (descNode.isTextual()) {
+      // short-form must be a primitive type, that is all that is allowed to only have a type
+      return PrimitiveColumnDesc.FROM_JSON_FACTORY
+          .create(descNode.asText())
+          .orElseThrow(
+              () ->
+                  SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.get(
+                      Map.of(
+                          "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
+                          "unsupportedType", descNode.asText())));
+    }
+
+    // Check we are using long form
+    if (!descNode.isObject()) {
+      throw new JsonMappingException(jsonParser, ERR_OBJECT_WITH_TYPE + " (node is not object)");
+    }
+    var typeNode = descNode.path(TableDescConstants.ColumnDesc.TYPE);
+    if (typeNode.isMissingNode()) {
+      throw new JsonMappingException(
+          jsonParser,
+          ERR_OBJECT_WITH_TYPE
+              + " (`%s` field is missing)".formatted(TableDescConstants.ColumnDesc.TYPE));
+    }
+    if (!typeNode.isTextual()) {
+      throw new JsonMappingException(
+          jsonParser,
+          ERR_OBJECT_WITH_TYPE
+              + " (`%s` field is not String)".formatted(TableDescConstants.ColumnDesc.TYPE));
+    }
+
+    // long-form to get the type
+    var typeName =
+        ApiTypeName.fromApiName(typeNode.asText())
+            .orElseThrow(
+                () ->
+                    SchemaException.Code.UNKNOWN_DATA_TYPE.get(
+                        Map.of(
+                            "supportedTypes", errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName),
+                            "unsupportedType", typeNode.asText())));
+
+    // even long-form, only primitive types are supported for UDT fields.
+    var longFormPrimitive = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(typeName.apiName());
+    if (longFormPrimitive.isPresent()) {
+      return longFormPrimitive.get();
+    }
 
     // UDT as field or map/set/list as field both requires long form of definition.
-    // And they are not supported.
-    if (!descNode.isTextual()) {
-      throw SchemaException.Code.UNSUPPORTED_TYPE_FIELD.get();
-    }
+    throw SchemaException.Code.UNSUPPORTED_TYPE_FIELD.get();
   }
 }

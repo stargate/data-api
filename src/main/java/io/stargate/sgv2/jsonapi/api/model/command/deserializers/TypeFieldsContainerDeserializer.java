@@ -25,6 +25,7 @@ public class TypeFieldsContainerDeserializer extends JsonDeserializer<ColumnsDes
 
     JsonNode node = deserializationContext.readTree(jsonParser);
     ColumnsDescContainer container = new ColumnsDescContainer();
+    ColumnDescDeserializer deserializer = new ColumnDescDeserializer(true);
 
     for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
       Map.Entry<String, JsonNode> entry = it.next();
@@ -32,7 +33,6 @@ public class TypeFieldsContainerDeserializer extends JsonDeserializer<ColumnsDes
       JsonNode fieldNode = entry.getValue();
 
       // Deserialize each ColumnDesc
-      ColumnDescDeserializer deserializer = new ColumnDescDeserializer(true);
       ColumnDesc columnDesc =
           deserializer.deserialize(fieldNode.traverse(), deserializationContext);
       //      ColumnDesc columnDesc = deserializationContext.readTreeAsValue(fieldNode,
