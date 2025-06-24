@@ -308,7 +308,7 @@ public class VectorizeConfigValidator {
     if (typeMismatch) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "The provided parameter '%s' type is incorrect. Expected: '%s'",
-          expectedParamConfig.name(), expectedParamType);
+          expectedParamConfig.name(), expectedParamType.getApiName());
     }
   }
 
