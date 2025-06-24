@@ -138,6 +138,7 @@ public final class ModelUsage implements Recordable {
         .setCallDurationNanos(durationNanos)
         .build();
   }
+
   /**
    * Creates a new model usage that merges this and the other usage, to combine after batching.
    *

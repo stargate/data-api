@@ -90,9 +90,8 @@ public abstract class RerankingProvider extends ProviderBase {
   /**
    * Subclasses must implement to do the reranking, after the batching is done.
    *
-   * <p>...
-   * <b>NOTE:</b> This is public because the embedding Gateway currently needs to call it, use the
-   * {@link #rerank(String, List, RerankingCredentials)} method instead.
+   * <p>... <b>NOTE:</b> This is public because the embedding Gateway currently needs to call it,
+   * use the {@link #rerank(String, List, RerankingCredentials)} method instead.
    */
   public abstract Uni<BatchedRerankingResponse> rerank(
       int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials);

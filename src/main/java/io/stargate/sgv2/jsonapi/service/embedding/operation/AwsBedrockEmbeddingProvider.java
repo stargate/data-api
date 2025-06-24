@@ -93,73 +93,72 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
         AwsBasicCredentials.create(
             embeddingCredentials.accessId().get(), embeddingCredentials.secretId().get());
 
-    try (var bedrockClient =
+    // NOTE: cannot put this client in a resource block for auto close because it will close
+    // te connection pool before we pull the async result.
+    var bedrockClient =
         BedrockRuntimeAsyncClient.builder()
             .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
             .region(Region.of(vectorizeServiceParameters.get("region").toString()))
-            .build()) {
+            .build();
 
-      long callStartNano = System.nanoTime();
+    long callStartNano = System.nanoTime();
 
-      // NOTE: need to use the AWS client for the request, not a Rest Easy, so we cannot use
-      // all the features from the superclasses such as error mapping and building the model usage
-      var bytesUsageTracker = new ByteUsageTracker();
-      var bedrockFuture =
-          bedrockClient
-              .invokeModel(
-                  requestBuilder -> {
-                    try {
-                      var inputData =
-                          OBJECT_WRITER.writeValueAsBytes(
-                              new AwsBedrockEmbeddingRequest(texts.getFirst(), dimension));
-                      bytesUsageTracker.requestBytes = inputData.length;
-                      requestBuilder.body(SdkBytes.fromByteArray(inputData)).modelId(modelName());
-                    } catch (JsonProcessingException e) {
-                      throw ErrorCodeV1.EMBEDDING_REQUEST_ENCODING_ERROR.toApiException();
+    // NOTE: need to use the AWS client for the request, not a Rest Easy, so we cannot use
+    // all the features from the superclasses such as error mapping and building the model usage
+    var bytesUsageTracker = new ByteUsageTracker();
+    var bedrockFuture =
+        bedrockClient
+            .invokeModel(
+                requestBuilder -> {
+                  try {
+                    var inputData =
+                        OBJECT_WRITER.writeValueAsBytes(
+                            new AwsBedrockEmbeddingRequest(texts.getFirst(), dimension));
+                    bytesUsageTracker.requestBytes = inputData.length;
+                    requestBuilder.body(SdkBytes.fromByteArray(inputData)).modelId(modelName());
+                  } catch (JsonProcessingException e) {
+                    throw ErrorCodeV1.EMBEDDING_REQUEST_ENCODING_ERROR.toApiException();
+                  }
+                })
+            .thenApply(
+                rawResponse -> {
+                  try {
+                    // aws docs say do not need to close the stream
+                    var inputStream = rawResponse.body().asInputStream();
+                    var bedrockResponse =
+                        OBJECT_READER.readValue(inputStream, AwsBedrockEmbeddingResponse.class);
+                    long callDurationNano = System.nanoTime() - callStartNano;
+
+                    try (var countingOut =
+                        new CountingOutputStream(OutputStream.nullOutputStream())) {
+                      inputStream.transferTo(countingOut);
+                      long responseSize = countingOut.getCount();
+                      bytesUsageTracker.responseBytes =
+                          responseSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) responseSize;
                     }
-                  })
-              .thenApply(
-                  rawResponse -> {
-                    try {
-                      // aws docs say do not need to close the stream
-                      var inputStream = rawResponse.body().asInputStream();
-                      var bedrockResponse =
-                          OBJECT_READER.readValue(inputStream, AwsBedrockEmbeddingResponse.class);
-                      long callDurationNano = System.nanoTime() - callStartNano;
 
-                      try (var countingOut =
-                          new CountingOutputStream(OutputStream.nullOutputStream())) {
-                        inputStream.transferTo(countingOut);
-                        long responseSize = countingOut.getCount();
-                        bytesUsageTracker.responseBytes =
-                            responseSize > Integer.MAX_VALUE
-                                ? Integer.MAX_VALUE
-                                : (int) responseSize;
-                      }
+                    var modelUsage =
+                        createModelUsage(
+                            embeddingCredentials.tenantId(),
+                            ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+                            bedrockResponse.inputTextTokenCount(),
+                            bedrockResponse.inputTextTokenCount(),
+                            bytesUsageTracker.requestBytes,
+                            bytesUsageTracker.responseBytes,
+                            callDurationNano);
 
-                      var modelUsage =
-                          createModelUsage(
-                              embeddingCredentials.tenantId(),
-                              ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
-                              bedrockResponse.inputTextTokenCount(),
-                              bedrockResponse.inputTextTokenCount(),
-                              bytesUsageTracker.requestBytes,
-                              bytesUsageTracker.responseBytes,
-                              callDurationNano);
+                    return new BatchedEmbeddingResponse(
+                        batchId, List.of(bedrockResponse.embedding), modelUsage);
 
-                      return new BatchedEmbeddingResponse(
-                          batchId, List.of(bedrockResponse.embedding), modelUsage);
+                  } catch (IOException e) {
+                    throw ErrorCodeV1.EMBEDDING_RESPONSE_DECODING_ERROR.toApiException();
+                  }
+                });
 
-                    } catch (IOException e) {
-                      throw ErrorCodeV1.EMBEDDING_RESPONSE_DECODING_ERROR.toApiException();
-                    }
-                  });
-
-      return Uni.createFrom()
-          .completionStage(bedrockFuture)
-          .onFailure(BedrockRuntimeException.class)
-          .transform(throwable -> mapBedrockException((BedrockRuntimeException) throwable));
-    }
+    return Uni.createFrom()
+        .completionStage(bedrockFuture)
+        .onFailure(BedrockRuntimeException.class)
+        .transform(throwable -> mapBedrockException((BedrockRuntimeException) throwable));
   }
 
   private Throwable mapBedrockException(BedrockRuntimeException bedrockException) {
