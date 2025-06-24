@@ -44,14 +44,32 @@ public class ProviderHttpInterceptor implements ClientResponseFilter {
     long receivedBytes = 0;
     long sentBytes = 0;
 
+    // we may still get called even if the request failed, and we do not get a valid HTTP response,
+    // for sanity check that we have the things we need to for processing.
+    boolean isValid =
+        responseContext != null
+            && responseContext.getStatus() > 0
+            && responseContext.getHeaders() != null;
+
+    if (!isValid) {
+      if (LOGGER.isWarnEnabled()) {
+        LOGGER.warn(
+            "filter() - Invalid responseContext, skipping sent/received bytes tracking. responseContext is null: {}, getStatus: {}, getHeaders: {}",
+            responseContext == null,
+            responseContext != null ? responseContext.getStatus() : "response null",
+            responseContext != null ? responseContext.getHeaders() : "response null");
+      }
+      return;
+    }
+
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
-          "ProviderHttpInterceptor.filter() - requestContext.getUri(): {}, requestContext.getHeaders(): {}",
+          "filter() - requestContext.getUri(): {}, requestContext.getHeaders(): {}",
           requestContext.getUri(),
           requestContext.getStringHeaders());
 
       LOGGER.trace(
-          "ProviderHttpInterceptor.filter() - responseContext.getStatus(): {}, responseContext.getHeaders(): {}",
+          "filter() - responseContext.getStatus(): {}, responseContext.getHeaders(): {}",
           responseContext.getStatus(),
           responseContext.getHeaders());
     }
@@ -97,6 +115,16 @@ public class ProviderHttpInterceptor implements ClientResponseFilter {
   }
 
   private static int getHeaderInt(Response jakartaResponse, String headerName) {
+
+    if (jakartaResponse == null || jakartaResponse.getHeaders() == null) {
+      // log at trace, because this should be detected in filter() method
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "getHeaderInt() - jakartaResponse or headers is null, returning 0 for headerName: {}",
+            headerName);
+      }
+      return 0;
+    }
 
     var headerString = jakartaResponse.getHeaderString(headerName);
     if (headerString != null && !headerString.isBlank()) {

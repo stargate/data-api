@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,14 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ProviderBase {
   protected static final Logger LOGGER = LoggerFactory.getLogger(ProviderBase.class);
+
+  // There is not a MediaType for text/json in Jakarta
+  private static final MediaType MEDIATYPE_TEXT_JSON = new MediaType("text", "json");
+
+  protected static final Predicate<MediaType> IS_JSON_MEDIA_TYPE =
+      mediaType ->
+          MediaType.APPLICATION_JSON_TYPE.isCompatible(mediaType)
+              || MEDIATYPE_TEXT_JSON.isCompatible(mediaType);
 
   private final ModelProvider modelProvider;
   private final ModelType modelType;
@@ -203,12 +212,15 @@ public abstract class ProviderBase {
     MediaType contentType = jakartaResponse.getMediaType();
     String raw = jakartaResponse.readEntity(String.class);
 
-    if (contentType == null || !MediaType.APPLICATION_JSON_TYPE.isCompatible(contentType)) {
-      LOGGER.error(
-          "Non-JSON error response from model provider, modelProvider:{}, modelName: {}, raw:{}",
-          modelProvider(),
-          modelName(),
-          raw);
+    if (contentType == null || !IS_JSON_MEDIA_TYPE.test(contentType)) {
+      // we have an error, only need a debug
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "Non-JSON error response from model provider, modelProvider:{}, modelName: {}, raw:{}",
+            modelProvider(),
+            modelName(),
+            raw);
+      }
       return raw;
     }
 

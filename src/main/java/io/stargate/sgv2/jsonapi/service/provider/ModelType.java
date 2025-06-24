@@ -23,4 +23,12 @@ public enum ModelType {
       default -> Optional.empty();
     };
   }
+
+  public EmbeddingGateway.ModelUsage.ModelType toEmbeddingGateway() {
+    return switch (this) {
+      case MODEL_TYPE_UNSPECIFIED -> EmbeddingGateway.ModelUsage.ModelType.MODEL_TYPE_UNSPECIFIED;
+      case EMBEDDING -> EmbeddingGateway.ModelUsage.ModelType.EMBEDDING;
+      case RERANKING -> EmbeddingGateway.ModelUsage.ModelType.RERANKING;
+    };
+  }
 }

@@ -36,4 +36,12 @@ public enum ModelInputType {
       default -> Optional.empty();
     };
   }
+
+  public EmbeddingGateway.ModelUsage.InputType toEmbeddingGateway() {
+    return switch (this) {
+      case INPUT_TYPE_UNSPECIFIED -> EmbeddingGateway.ModelUsage.InputType.INPUT_TYPE_UNSPECIFIED;
+      case INDEX -> EmbeddingGateway.ModelUsage.InputType.INDEX;
+      case SEARCH -> EmbeddingGateway.ModelUsage.InputType.SEARCH;
+    };
+  }
 }

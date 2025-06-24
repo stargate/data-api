@@ -89,7 +89,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   }
 
   @Override
-  protected Uni<BatchedRerankingResponse> rerank(
+  public Uni<BatchedRerankingResponse> rerank(
       int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials) {
 
     // TODO: Move error to v2

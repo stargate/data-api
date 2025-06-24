@@ -40,7 +40,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
-        ModelProvider.VERTEXAI,
+        ModelProvider.VOYAGE_AI,
         providerConfig,
         modelConfig,
         serviceConfig,

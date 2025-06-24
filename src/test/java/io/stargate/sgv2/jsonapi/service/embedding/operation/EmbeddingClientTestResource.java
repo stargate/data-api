@@ -122,14 +122,15 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
                     .withHeader(HttpHeaders.CONTENT_TYPE, "application/xml")
                     .withBody("<object>list</object>")));
 
+    // The EmbeddingProviderResponseValidation only validates 2XX status responses,
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("text/plain;charset=UTF-8")))
             .willReturn(
                 aResponse()
                     .withHeader(HttpHeaders.CONTENT_TYPE, "text/plain;charset=UTF-8")
-                    .withBody("Not Found")
-                    .withStatus(500)));
+                    .withBody("vectors as plain text")
+                    .withStatus(200)));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
