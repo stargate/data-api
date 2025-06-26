@@ -94,7 +94,7 @@ snippets:
       Currently API Tables has limited support for: 
       
       - Cassandra `timeuuid`, `counter` types.
-      - Cassandra User Defined Types (UDT) and Tuple types.
+      - Tuple types.
       - Filtering and indexing on Cassandra collection types `list`, `map`, `set`.
       - Defining `maps`, `list`, or `set` columns using any key type other than `text` or `ascii`.
       
@@ -856,6 +856,18 @@ request-errors:
       The command attempted to drop the primary key columns: ${droppedColumns}. 
       
       Resend the command without dropping the primary key columns.
+      
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_TYPE_USED_BY_TABLE
+    title: Type cannot be dropped if it is used by tables
+    body: |-
+      The command attempted to drop a type that is used by tables.
+      
+      The command attempted to drop the type: ${usedType}.
+      ${driverMessage}
+      
+      Resend the command using a type that is not used by any tables.
 
   - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_COLUMNS
@@ -978,6 +990,16 @@ request-errors:
       Resend the command using a known data types.
 
   - scope: SCHEMA
+    code: UNKNOWN_USER_DEFINED_TYPE
+    title: User defined type is unknown
+    body: |-
+      The column uses a user defined type that is not known.
+      
+      ${driverMessage}
+      
+      Resend the command using a known user defined type.
+
+  - scope: SCHEMA
     code: UNKNOWN_PRIMITIVE_DATA_TYPE
     title: Primitive data type is unknown
     body: |-
@@ -1005,8 +1027,8 @@ request-errors:
     body: |-
       The command attempted to create a map column that used unsupported types for either the key or value.
       
-      Maps can only use primitive type for the key and value with following exceptions:
-      1. The key can't be duration, counter, timeuuid.
+      Maps can use primitive type and userDefined type for the key and value with following exceptions:
+      1. The key can't be duration, counter, timeuuid, userDefined.
       2. The value can't be counter, timeuuid.
       
       The primitive data types are: ${supportedTypes}.
@@ -1021,7 +1043,8 @@ request-errors:
     body: |-
       The command attempted to create a list column that used an unsupported type for the value.
       
-      Lists can only use primitive type for the value, except for counter and timeuuid.
+      Lists can use primitive type for the value, except for counter and timeuuid.
+      Sets can use userDefined type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
@@ -1046,7 +1069,8 @@ request-errors:
     body: |-
       The command attempted to create a set column that used an unsupported type for the value.
       
-      Sets can only use primitive type for the value, except for counter and timeuuid.
+      Sets can use primitive type for the value, except for counter and timeuuid.
+      Sets can use userDefined type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
@@ -1365,6 +1389,16 @@ request-errors:
         - Index on map values: {"column": {"mapColumn" : "$values"}}
       
       Resend the command using a valid format for index creation column.
+
+  - scope: SCHEMA
+    code: INVALID_USER_DEFINED_TYPE_NAME
+    title: User defined type name is not valid.
+    body: |-
+        User defined type name is not valid: ${typeName}.
+        
+        The user defined type name must not be empty.
+        
+        Resend the command using a valid user defined type name.
 
   - scope: SCHEMA
     code: INVALID_VECTORIZE_CONFIGURATION

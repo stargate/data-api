@@ -131,6 +131,8 @@ public interface JsonNodeDecoder extends Function<JsonNode, JsonLiteral<?>> {
          *   <li>"textKeyMapColumn": [["1","value1"],["2","value2"]]
          * </ul>
          *
+         * TODO: This is a ticking bomb, we should decode with the knowledge of table column type.
+         *
          * @param arrayNode array jsonNode for which we want to check if it looks like tuple map
          *     entries, then shred to object format JsonLiteral.
          */

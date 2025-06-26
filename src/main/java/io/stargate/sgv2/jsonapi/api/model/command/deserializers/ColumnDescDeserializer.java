@@ -20,7 +20,7 @@ import java.util.Map;
 public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
 
   private static final String ERR_PREFIX = "The Long Form type definition";
-  private static final String ERR_OBJECT_WITH_TYPE =
+  public static final String ERR_OBJECT_WITH_TYPE =
       ERR_PREFIX
           + " must be a JSON Object with at least a `%s` field that is a String"
               .formatted(TableDescConstants.ColumnDesc.TYPE);
@@ -100,14 +100,14 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
     // but to get a decent error message get the dimension as a string
     // arguable that a non integer is a JSON mapping error, but we will handle it as an unsupported
     // dimension value
-    var keyTypeName = descNode.path(TableDescConstants.ColumnDesc.KEY_TYPE).asText();
-    var valueTypeName = descNode.path(TableDescConstants.ColumnDesc.VALUE_TYPE).asText();
+    var keyTypeName = descNode.path(TableDescConstants.ColumnDesc.KEY_TYPE);
+    var valueTypeName = descNode.path(TableDescConstants.ColumnDesc.VALUE_TYPE);
     var dimensionString = descNode.path(TableDescConstants.ColumnDesc.DIMENSION).asText();
 
     return switch (typeName) {
-      case LIST -> ListColumnDesc.FROM_JSON_FACTORY.create(valueTypeName);
-      case SET -> SetColumnDesc.FROM_JSON_FACTORY.create(valueTypeName);
-      case MAP -> MapColumnDesc.FROM_JSON_FACTORY.create(keyTypeName, valueTypeName);
+      case LIST -> ListColumnDesc.FROM_JSON_FACTORY.create(jsonParser, valueTypeName);
+      case SET -> SetColumnDesc.FROM_JSON_FACTORY.create(jsonParser, valueTypeName);
+      case MAP -> MapColumnDesc.FROM_JSON_FACTORY.create(jsonParser, keyTypeName, valueTypeName);
       case VECTOR -> {
         // call to readTreeAsValue will throw JacksonException, this should be if the databinding is
         // not correct, e.g. if there is a missing field, or the field is not the correct type
@@ -118,6 +118,11 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
                 ? null
                 : deserializationContext.readTreeAsValue(serviceNode, VectorizeConfig.class);
         yield VectorColumnDesc.FROM_JSON_FACTORY.create(dimensionString, vectorConfig);
+      }
+      case UDT -> {
+        var udtName = descNode.path(TableDescConstants.ColumnDesc.UDT_NAME).asText();
+        // As of June 26th 2025, API only supports non-frozen UDT column to create.
+        yield UDTColumnDesc.FROM_JSON_FACTORY.create(udtName, false);
       }
         // should not get here, because we checked the API type name above
       default ->

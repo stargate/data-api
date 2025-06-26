@@ -2,6 +2,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiMapType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
@@ -55,13 +58,15 @@ public class MapColumnDesc extends ComplexColumnDesc {
   public static class FromJsonFactory extends DescFromJsonFactory {
     FromJsonFactory() {}
 
-    public MapColumnDesc create(String keyTypeName, String valueTypeName) {
+    /** Create a {@link MapColumnDesc} from key and value type jsonNodes. */
+    public MapColumnDesc create(JsonParser jsonParser, JsonNode keyTypeName, JsonNode valueTypeName)
+        throws JsonMappingException {
 
       // step 1 - make sure the key and value names are types we support
       // it would be better if we called all the way back to the top of the parsing the json
       // but we know they have to be primitive types
-      var maybeKeyDesc = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(keyTypeName);
-      var maybeValueDesc = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(valueTypeName);
+      var maybeKeyDesc = elementTypeForMapSetListColumn(jsonParser, keyTypeName, false);
+      var maybeValueDesc = elementTypeForMapSetListColumn(jsonParser, valueTypeName, true);
 
       // step 2 - create the map desc, and then to be sure get the ApiDataType to check it
       // cannot make the map desc if we cannot map the primary types

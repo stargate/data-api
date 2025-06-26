@@ -40,7 +40,10 @@ public enum ApiTypeName {
   LIST("list"),
   MAP("map"),
   SET("set"),
-  VECTOR("vector");
+  VECTOR("vector"),
+
+  // UDT Types
+  UDT("userDefined");
 
   private final String apiName;
 

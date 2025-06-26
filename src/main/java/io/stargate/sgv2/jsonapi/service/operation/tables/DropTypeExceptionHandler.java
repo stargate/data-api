@@ -27,6 +27,10 @@ public class DropTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
       return SchemaException.Code.CANNOT_DROP_UNKNOWN_TYPE.get(
           Map.of("unknownType", errFmt(typeName)));
     }
+    if (exception.getMessage().contains("it is still used")) {
+      return SchemaException.Code.CANNOT_DROP_TYPE_USED_BY_TABLE.get(
+          Map.of("usedType", errFmt(typeName), "driverMessage", exception.getMessage()));
+    }
     return super.handle(exception);
   }
 }

@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.List;
 import java.util.Map;
+import net.javacrumbs.jsonunit.core.Option;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
@@ -374,7 +375,9 @@ public class DataApiResponseValidator {
   }
 
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
-    return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
+    return body(
+        "data.documents[%s]".formatted(position),
+        jsonEquals(documentJSON).when(Option.IGNORING_ARRAY_ORDER));
   }
 
   public DataApiResponseValidator hasDocumentUnknowingPosition(String documentJSON) {

@@ -54,6 +54,12 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
         return ApiVectorType.FROM_CQL_FACTORY.create(vt, vectorizeDefn);
       }
 
+      // Do not cache the UDT type because the UDT schema are unique per keyspace and per tenant.
+      // Data API should not infer the UDT schema from a simple type cache.
+      if (cqlType instanceof UserDefinedType udt) {
+        return ApiUdtType.FROM_CQL_FACTORY.create(udt, vectorizeDefn);
+      }
+
       // See CollectionCacheKey for why we need it
       // if we cannot get a cache key we do not support the type
       // if we can, it should be something covered in computeIfAbsent()

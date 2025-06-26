@@ -21,8 +21,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
   public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
 
-  private ApiListType(
-      PrimitiveApiDataTypeDef valueType, ApiSupportDef apiSupport, boolean isFrozen) {
+  private ApiListType(ApiDataType valueType, ApiSupportDef apiSupport, boolean isFrozen) {
     super(ApiTypeName.LIST, valueType, DataTypes.listOf(valueType.cqlType(), isFrozen), apiSupport);
   }
 
@@ -44,8 +43,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
   static ApiListType from(ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(valueType, "valueType must not be null");
     if (isValueTypeSupported(valueType)) {
-      return new ApiListType(
-          (PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen), isFrozen);
+      return new ApiListType(valueType, defaultApiSupport(isFrozen), isFrozen);
     }
     throw new IllegalArgumentException(
         "valueType is not supported, valueType%s".formatted(valueType));

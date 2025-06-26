@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -80,6 +81,10 @@ public interface ApiSupportDef {
   record Collection(boolean asListValue, boolean asSetValue, boolean asMapKey, boolean asMapValue) {
     public static final Collection FULL = new Collection(true, true, true, true);
     public static final Collection NONE = new Collection(false, false, false, false);
+    // API does not allow UDT(frozen/non-frozen) to be map key.
+    public static final Collection FROZEN_UDT = new Collection(true, true, false, true);
+    // API does not allow non-frozen UDT to be any map/set/list component.
+    public static final Collection NON_FROZEN_UDT = new Collection(false, false, false, false);
   }
 
   /**
@@ -94,6 +99,10 @@ public interface ApiSupportDef {
     public static final Update PRIMITIVE = new Update(true, true, false, false);
     public static final Update FULL = new Update(true, true, true, true);
     public static final Update NONE = new Update(false, false, false, false);
+
+    // TODO UDT_TODO, we don't have the finegrained control for partial/full update on an UDT
+    // column.
+    public static final Update UDT = new Update(true, true, false, false);
 
     public boolean supports(UpdateOperator updateOperator) {
       return switch (updateOperator) {
