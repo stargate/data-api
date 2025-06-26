@@ -58,6 +58,10 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
       if (columnDesc instanceof VectorColumnDesc vt) {
         return ApiVectorType.FROM_COLUMN_DESC_FACTORY.create(vt, validateVectorize);
       }
+      // Do not cache the UDT type because it can has same name but different definition.
+      if (columnDesc instanceof UDTColumnDesc udt) {
+        return ApiUdtType.FROM_COLUMN_DESC_FACTORY.create(udt, validateVectorize);
+      }
 
       try {
         return COLLECTION_TYPE_CACHE.computeIfAbsent(

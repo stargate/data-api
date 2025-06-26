@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.AlreadyExistsException;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import java.util.Map;
@@ -26,5 +27,22 @@ public class CreateTableExceptionHandler extends KeyspaceDriverExceptionHandler 
   public RuntimeException handle(AlreadyExistsException exception) {
     return SchemaException.Code.CANNOT_ADD_EXISTING_TABLE.get(
         Map.of("existingTable", errFmt(tableName)));
+  }
+
+  /**
+   * Handles {@link InvalidQueryException}
+   *
+   * <ul>
+   *   <li>If the message contains "Unknown type", it indicates an error for trying to create a
+   *       table with unknown user defined type (UDT).
+   * </ul>
+   */
+  @Override
+  public RuntimeException handle(InvalidQueryException exception) {
+    if (exception.getMessage().contains("Unknown type")) {
+      return SchemaException.Code.UNKNOWN_USER_DEFINED_TYPE.get(
+          Map.of("driverMessage", exception.getMessage()));
+    }
+    return exception;
   }
 }

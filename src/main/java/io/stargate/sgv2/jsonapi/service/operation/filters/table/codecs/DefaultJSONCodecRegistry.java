@@ -2,12 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.api.core.type.ListType;
-import com.datastax.oss.driver.api.core.type.MapType;
-import com.datastax.oss.driver.api.core.type.SetType;
-import com.datastax.oss.driver.api.core.type.VectorType;
+import com.datastax.oss.driver.api.core.type.*;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
@@ -58,24 +53,7 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     }
   }
 
-  /**
-   * Returns a codec that can convert a Java object into the object expected by the CQL driver for a
-   * specific CQL data type.
-   *
-   * <p>
-   *
-   * @param table {@link TableMetadata} to find the column definition in
-   * @param column {@link CqlIdentifier} for the column we want to get the codec for.
-   * @param value The value to be written to the column
-   * @param <JavaT> Type of the Java object we want to convert.
-   * @param <CqlT> Type fo the Java object the CQL driver expects.
-   * @return The {@link JSONCodec} that can convert the value to the expected type for the column,
-   *     or an exception if the codec cannot be found.
-   * @throws UnknownColumnException If the column is not found in the table.
-   * @throws MissingJSONCodecException If no codec is found for the column and type of the value.
-   * @throws ToCQLCodecException If there is a codec for CQL type, but not one for converting from
-   *     the Java value type
-   */
+  /** {@inheritDoc} */
   @Override
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
       TableMetadata table, CqlIdentifier column, Object value)
@@ -87,14 +65,19 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     var columnMetadata =
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
 
+    final DataType columnType = columnMetadata.getType();
+    return codecToCQL(columnType, value);
+  }
+
+  /** {@inheritDoc} */
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(DataType toCQLType, Object value)
+      throws MissingJSONCodecException, ToCQLCodecException {
+
     // Next, simplify later code by handling nulls directly here (but after column lookup)
     if (value == null) {
       return (JSONCodec<JavaT, CqlT>) TO_CQL_NULL_CODEC;
     }
-
-    // First find candidates for CQL target type in question (if any)
-    final DataType columnType = columnMetadata.getType();
-    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(columnType);
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(toCQLType);
 
     if (candidates != null) {
       // this is a scalar type, so we can just use the first codec
@@ -108,33 +91,35 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       if (match == null) {
         // Different exception for this case: CQL type supported but not from given Java type
         // (f.ex, CQL Boolean from Java/JSON number)
-        throw new ToCQLCodecException(value, columnType, "no codec matching value type");
+        throw new ToCQLCodecException(value, toCQLType, "no codec matching value type");
       }
       return match;
     }
 
-    // A CQL collection type
+    // CQL collection type and CQL UDT
     // these can return Null if they had no candidates, wil throw an exception if they had a
-    // candidate
-    // but there was a type error
-    JSONCodec<JavaT, CqlT> collectionCodec =
-        switch (columnType) {
+    // candidate but there was a type error
+    JSONCodec<JavaT, CqlT> complexCodec =
+        switch (toCQLType) {
           case ListType lt -> codecToCQL(lt, value);
           case SetType st -> codecToCQL(st, value);
           case MapType mt -> codecToCQL(mt, value);
           case VectorType vt -> codecToCQL(vt, value);
+          case UserDefinedType udt -> codecToCQL(udt, value);
           default -> null;
         };
 
-    if (collectionCodec != null) {
-      return collectionCodec;
+    if (complexCodec != null) {
+      return complexCodec;
     }
-    throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
+
+    throw new MissingJSONCodecException(toCQLType, value.getClass(), value);
   }
 
+  /** Method to find a codec for the specified CQL List DataType. */
   protected <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(ListType listType, Object value)
       throws ToCQLCodecException {
-
+    // Find codec candidates for the list value as simple primitive type
     List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(listType.getElementType());
     if (valueCodecCandidates != null) {
       // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
@@ -144,12 +129,20 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       return (JSONCodec<JavaT, CqlT>)
           CollectionCodecs.buildToCqlListCodec(valueCodecCandidates, listType.getElementType());
     }
+    // Find codec for the list element as UDT
+    if (listType.getElementType() instanceof UserDefinedType userDefinedType) {
+      return (JSONCodec<JavaT, CqlT>)
+          CollectionCodecs.buildToCqlListCodec(
+              List.of(codecToCQL(userDefinedType, value)), listType.getElementType());
+    }
     return null;
   }
 
+  /** Method to find a codec for the specified CQL Set DataType. */
   protected <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(SetType setType, Object value)
       throws ToCQLCodecException {
 
+    // Find codec candidates for the set value as simple primitive type
     List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(setType.getElementType());
     if (valueCodecCandidates != null) {
       // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
@@ -159,14 +152,27 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       return (JSONCodec<JavaT, CqlT>)
           CollectionCodecs.buildToCqlSetCodec(valueCodecCandidates, setType.getElementType());
     }
+    // Find codec for the set element as UDT
+    if (setType.getElementType() instanceof UserDefinedType userDefinedType) {
+      return (JSONCodec<JavaT, CqlT>)
+          CollectionCodecs.buildToCqlSetCodec(
+              List.of(codecToCQL(userDefinedType, value)), setType.getElementType());
+    }
     return null;
   }
 
+  /** Method to find a codec for the specified CQL Map DataType. */
   protected <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(MapType mapType, Object value)
       throws ToCQLCodecException {
 
     List<JSONCodec<?, ?>> keyCodecCandidates = codecsByCQLType.get(mapType.getKeyType());
     List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mapType.getValueType());
+    // Find codec for the map value as UDT
+    if (valueCodecCandidates == null) {
+      if (mapType.getValueType() instanceof UserDefinedType userDefinedType) {
+        valueCodecCandidates = List.of(codecToCQL(userDefinedType, value));
+      }
+    }
     if (keyCodecCandidates != null && valueCodecCandidates != null) {
       // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
       if (!(value instanceof Map<?, ?>)) {
@@ -182,6 +188,36 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     return null;
   }
 
+  /** Method to find a codec for the specified CQL UDT. */
+  protected <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
+      UserDefinedType userDefinedType, Object value) throws ToCQLCodecException {
+
+    Map<CqlIdentifier, List<JSONCodec<?, ?>>> fieldsCodecCandidates = new HashMap<>();
+    Map<CqlIdentifier, DataType> fieldTypes = new HashMap<>();
+    // There is no map setup in driver to represent the UDT fields name and types.
+    // So have to iterate by using indexes for two lists below.
+    for (int i = 0; i < userDefinedType.getFieldNames().size(); i++) {
+      var fieldIdentifier = userDefinedType.getFieldNames().get(i);
+      var fieldCqlType = userDefinedType.getFieldTypes().get(i);
+      // TODO UDT_TODO, as of June 24th, 2025, only support UDTs with primitive types as fields
+      List<JSONCodec<?, ?>> fieldCodecCandidates = codecsByCQLType.get(fieldCqlType);
+      if (fieldCodecCandidates == null) {
+        throw new ToCQLCodecException(
+            value,
+            userDefinedType,
+            "no codec matching field %s, %s"
+                .formatted(fieldIdentifier.asInternal(), fieldCqlType.toString()));
+      }
+      fieldsCodecCandidates.put(fieldIdentifier, fieldCodecCandidates);
+      fieldTypes.put(fieldIdentifier, fieldCqlType);
+    }
+    // TODO UDT_TODO, value validation
+
+    return (JSONCodec<JavaT, CqlT>)
+        UDTCodecs.buildToCqlUdtCodec(fieldsCodecCandidates, fieldTypes, userDefinedType);
+  }
+
+  /** Method to find a codec for the specified CQL Vector DataType. */
   protected <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(VectorType vectorType, Object value)
       throws ToCQLCodecException {
 
@@ -202,55 +238,86 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
   }
 
   /**
-   * Method to find a codec for the specified CQL Type, converting from Java to JSON
+   * Method to find a codec for the specified CQL Type, converting from Java to JSON. Notice this
+   * method has recursive calls to itself, so it can handle subTypes.
+   *
+   * <ul>
+   *   <li>if the `fromCQLType` is a Set of TEXT, it will call itself to get the codec for the
+   *       TEXT...
+   *   <li>if the `fromCQLType` is a List of UDT, it will call itself to get the codec for the
+   *       UDT...
+   * </ul>
    *
    * @param fromCQLType
    * @return Codec to use for conversion, or `null` if none found.
    */
   @Override
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType fromCQLType) {
+
+    // check if fromCQLType a primitive type
     List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(fromCQLType);
-    if (candidates
-        != null) { // Scalar type codecs found: use first one (all have same to-json handling)
-      return JSONCodec.unchecked(candidates.get(0));
-    }
-    // No? Maybe structured type?
-    if (fromCQLType instanceof ListType lt) {
-      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
+    if (candidates != null) {
+      // Scalar type codecs found: use first one (all have same to-json handling)
       // Can choose any one of codecs (since to-JSON is same for all); but must get one
-      if (valueCodecCandidates == null) {
-        return null; // so caller reports problem
-      }
-      return (JSONCodec<JavaT, CqlT>)
-          CollectionCodecs.buildToJsonListCodec(valueCodecCandidates.get(0));
-    }
-    if (fromCQLType instanceof SetType st) {
-      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
-      // Can choose any one of codecs (since to-JSON is same for all); but must get one
-      if ((valueCodecCandidates == null)) {
-        return null; // so caller reports problem
-      }
-      return (JSONCodec<JavaT, CqlT>)
-          CollectionCodecs.buildToJsonSetCodec(valueCodecCandidates.get(0));
-    }
-    if (fromCQLType instanceof MapType mt) {
-      final DataType keyType = mt.getKeyType();
-      List<JSONCodec<?, ?>> keyCodecCandidates = codecsByCQLType.get(mt.getKeyType());
-      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
-      if (keyCodecCandidates == null || valueCodecCandidates == null) {
-        return null; // so caller reports problem
-      }
-      return (JSONCodec<JavaT, CqlT>)
-          MapCodecs.buildToJsonMapCodec(
-              keyType, keyCodecCandidates.get(0), valueCodecCandidates.get(0));
+      return JSONCodec.unchecked(candidates.getFirst());
     }
 
+    // listType
+    if (fromCQLType instanceof ListType lt) {
+      DataType elementType = lt.getElementType();
+      JSONCodec<?, ?> elementCodec = codecToJSON(elementType);
+      if (elementCodec != null) {
+        return (JSONCodec<JavaT, CqlT>) CollectionCodecs.buildToJsonListCodec(elementCodec);
+      }
+      return null; // caller handles missing codec
+    }
+
+    // setType
+    if (fromCQLType instanceof SetType st) {
+      DataType elementType = st.getElementType();
+      JSONCodec<?, ?> elementCodec = codecToJSON(elementType);
+      if (elementCodec != null) {
+        return (JSONCodec<JavaT, CqlT>) CollectionCodecs.buildToJsonSetCodec(elementCodec);
+      }
+      return null; // caller handles missing codec
+    }
+
+    // mapType
+    if (fromCQLType instanceof MapType mt) {
+      final DataType keyType = mt.getKeyType();
+      JSONCodec<?, ?> keyCodec = codecToJSON(keyType);
+      JSONCodec<?, ?> valueCodec = codecToJSON(mt.getValueType());
+      if (keyCodec == null || valueCodec == null) {
+        return null; // so caller reports problem
+      }
+      return (JSONCodec<JavaT, CqlT>) MapCodecs.buildToJsonMapCodec(keyType, keyCodec, valueCodec);
+    }
+
+    // vectorType
     if (fromCQLType instanceof VectorType vt) {
       // Only Float<Vector> supported for now
       if (vt.getElementType().equals(DataTypes.FLOAT)) {
         return VectorCodecs.toJSONFloatVectorCodec(vt);
       }
       // fall through
+    }
+
+    // userDefinedType
+    if (fromCQLType instanceof UserDefinedType userDefinedType) {
+      Map<CqlIdentifier, JSONCodec<?, ?>> fieldCodecs = new HashMap<>();
+      // There is no map setup in driver to represent the UDT fields name and types.
+      // So have to iterate by using indexes for two lists below.
+      for (int i = 0; i < userDefinedType.getFieldNames().size(); i++) {
+        var fieldIdentifier = userDefinedType.getFieldNames().get(i);
+        var fieldCqlType = userDefinedType.getFieldTypes().get(i);
+        JSONCodec<?, ?> fieldCodec = codecToJSON(fieldCqlType);
+        // if no codec candidates found for ANY field, return null
+        if (fieldCodec == null) {
+          return null;
+        }
+        fieldCodecs.put(fieldIdentifier, fieldCodec);
+      }
+      return (JSONCodec<JavaT, CqlT>) UDTCodecs.buildToJsonUdtCodec(fieldCodecs, userDefinedType);
     }
 
     return null;

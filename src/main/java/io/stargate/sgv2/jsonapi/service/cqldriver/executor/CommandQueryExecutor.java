@@ -150,7 +150,6 @@ public class CommandQueryExecutor {
 
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
     Objects.requireNonNull(statement, "statement must not be null");
-
     statement = withExecutionProfile(statement, QueryType.CREATE_SCHEMA);
     return executeAndWrap(statement);
   }

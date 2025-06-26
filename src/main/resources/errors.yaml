@@ -94,7 +94,7 @@ snippets:
       Currently API Tables has limited support for: 
       
       - Cassandra `timeuuid`, `counter` types.
-      - Cassandra User Defined Types (UDT) and Tuple types.
+      - Tuple types.
       - Filtering and indexing on Cassandra collection types `list`, `map`, `set`.
       - Defining `maps`, `list`, or `set` columns using any key type other than `text` or `ascii`.
       
@@ -808,6 +808,14 @@ request-errors:
         Resend the command using a dimension for the vector columns.
 
   - scope: SCHEMA
+    code: MISSING_FIELDS_FOR_TYPE_CREATION
+    title: At least one field is required for type creation
+    body: |-
+      The type definition must have at least one field.
+      
+      Resend the command providing at least one field. 
+
+  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
     title: Columns with the same name are defined in the table schema
     body: |-
@@ -817,6 +825,14 @@ request-errors:
       The request included the following duplicate columns: ${duplicateColumns}.
       
       Resend the command using only new columns.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_FIELD
+    title: Field with the same name are defined in the type schema
+    body: |-
+      Field name must be unique in the type ${typeName}.
+      ${driverMessage}
+      Resend the command using unique field.
 
   - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
@@ -840,6 +856,18 @@ request-errors:
       The command attempted to drop the primary key columns: ${droppedColumns}. 
       
       Resend the command without dropping the primary key columns.
+      
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_TYPE_USED_BY_TABLE
+    title: Type cannot be dropped if it is used by tables
+    body: |-
+      The command attempted to drop a type that is used by tables.
+      
+      The command attempted to drop the type: ${usedType}.
+      ${driverMessage}
+      
+      Resend the command using a type that is not used by any tables.
 
   - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_COLUMNS
@@ -922,6 +950,14 @@ request-errors:
       Resend the command using only columns defined in the table schema.
 
   - scope: SCHEMA
+    code: CANNOT_RENAME_UNKNOWN_TYPE_FIELD
+    title: Field cannot be renamed if it is not defined in the type
+    body: |-
+      The command attempted to rename a field that is not defined in the type ${typeName}.
+      ${driverMessage}
+      Resend the command using only fields defined in the type.
+
+  - scope: SCHEMA
     code: CANNOT_DROP_VECTORIZE_FROM_NON_VECTOR_COLUMNS
     title: Vectorize configuration cannot be dropped from columns if they are not `vector` type
     body: |-
@@ -954,6 +990,16 @@ request-errors:
       Resend the command using a known data types.
 
   - scope: SCHEMA
+    code: UNKNOWN_USER_DEFINED_TYPE
+    title: User defined type is unknown
+    body: |-
+      The column uses a user defined type that is not known.
+      
+      ${driverMessage}
+      
+      Resend the command using a known user defined type.
+
+  - scope: SCHEMA
     code: UNKNOWN_PRIMITIVE_DATA_TYPE
     title: Primitive data type is unknown
     body: |-
@@ -981,8 +1027,8 @@ request-errors:
     body: |-
       The command attempted to create a map column that used unsupported types for either the key or value.
       
-      Maps can only use primitive type for the key and value with following exceptions:
-      1. The key can't be duration, counter, timeuuid.
+      Maps can use primitive type and userDefined type for the key and value with following exceptions:
+      1. The key can't be duration, counter, timeuuid, userDefined.
       2. The value can't be counter, timeuuid.
       
       The primitive data types are: ${supportedTypes}.
@@ -997,7 +1043,8 @@ request-errors:
     body: |-
       The command attempted to create a list column that used an unsupported type for the value.
       
-      Lists can only use primitive type for the value, except for counter and timeuuid.
+      Lists can use primitive type for the value, except for counter and timeuuid.
+      Sets can use userDefined type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
@@ -1022,12 +1069,23 @@ request-errors:
     body: |-
       The command attempted to create a set column that used an unsupported type for the value.
       
-      Sets can only use primitive type for the value, except for counter and timeuuid.
+      Sets can use primitive type for the value, except for counter and timeuuid.
+      Sets can use userDefined type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
       
       Resend the command using a supported value type.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_TYPE_FIELD
+    title: Type definition contains unsupported  field.
+    body: |-
+      The command contains a type definition that used unsupported field.
+      
+      Type as field, map/set/list as field are not supported.
+      
+      Resend the command using a supported type field.
 
   - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_DIMENSION
@@ -1209,6 +1267,16 @@ request-errors:
       Resend the command using a table that exists in the keyspace.
 
   - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_TYPE
+    title: Dropped type is not defined in the keyspace schema
+    body: |-
+      The command attempted to drop a type that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown type: ${unknownType}.
+      
+      Resend the command using a type that exists in the keyspace.
+
+  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_TABLE
     title: Table with the same name exists in the keyspace schema
     body: |-
@@ -1217,6 +1285,17 @@ request-errors:
       The command attempted to add the existing table: ${existingTable}.
       
       Resend the command using a table name that does not exist in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_TYPE
+    title: Type with the same name exists in the keyspace schema
+    body: |-
+      The command attempted to add a type that already exists in the keyspace schema.
+      
+      The command attempted to add the existing type: ${existingType}.
+      
+      Resend the command using a type name that does not exist in the keyspace.
+
 
   - scope: SCHEMA
     code: CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS
@@ -1310,6 +1389,16 @@ request-errors:
         - Index on map values: {"column": {"mapColumn" : "$values"}}
       
       Resend the command using a valid format for index creation column.
+
+  - scope: SCHEMA
+    code: INVALID_USER_DEFINED_TYPE_NAME
+    title: User defined type name is not valid.
+    body: |-
+        User defined type name is not valid: ${typeName}.
+        
+        The user defined type name must not be empty.
+        
+        Resend the command using a valid user defined type name.
 
   - scope: SCHEMA
     code: INVALID_VECTORIZE_CONFIGURATION

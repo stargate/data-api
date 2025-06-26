@@ -22,24 +22,16 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
     jsonGenerator.writeStringField(TableDescConstants.ColumnDesc.TYPE, columnDesc.getApiName());
 
     switch (columnDesc) {
-      case MapColumnDesc mt -> {
-        jsonGenerator.writeStringField(
-            TableDescConstants.ColumnDesc.KEY_TYPE, mt.keyType().getApiName());
-        jsonGenerator.writeStringField(
-            TableDescConstants.ColumnDesc.VALUE_TYPE, mt.valueType().getApiName());
-      }
-      case ListColumnDesc lt ->
-          jsonGenerator.writeStringField(
-              TableDescConstants.ColumnDesc.VALUE_TYPE, lt.valueType().getApiName());
-      case SetColumnDesc st ->
-          jsonGenerator.writeStringField(
-              TableDescConstants.ColumnDesc.VALUE_TYPE, st.valueType().getApiName());
+      case MapColumnDesc mt -> writeMapSetListDesc(jsonGenerator, mt);
+      case ListColumnDesc lt -> writeMapSetListDesc(jsonGenerator, lt);
+      case SetColumnDesc st -> writeMapSetListDesc(jsonGenerator, st);
       case VectorColumnDesc vt -> {
         jsonGenerator.writeNumberField(TableDescConstants.ColumnDesc.DIMENSION, vt.getDimension());
         if (vt.getVectorizeConfig() != null)
           jsonGenerator.writeObjectField(
               TableDescConstants.ColumnDesc.SERVICE, vt.getVectorizeConfig());
       }
+      case UDTColumnDesc udt -> writeFullUdtDesc(jsonGenerator, udt);
       default -> {
         // nothing extra to do , an unsupported type will be picked up below checking aipSupport()
       }
@@ -50,6 +42,70 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
           TableDescConstants.ColumnDesc.API_SUPPORT, columnDesc.apiSupport());
     }
 
+    jsonGenerator.writeEndObject();
+  }
+
+  /**
+   * Write the map/set/list column description to the JSON generator.
+   *
+   * <p>Note, if the key/value type is a UDT, it will write the full UDT description. Otherwise, it
+   * will just write the type name.
+   */
+  private void writeMapSetListDesc(JsonGenerator jsonGenerator, ColumnDesc mapSetListColumnDesc)
+      throws IOException {
+
+    switch (mapSetListColumnDesc) {
+      case MapColumnDesc mapColumnDesc -> {
+        if (mapColumnDesc.keyType() instanceof UDTColumnDesc udtKey) {
+          jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.KEY_TYPE);
+          writeFullUdtDesc(jsonGenerator, udtKey);
+          jsonGenerator.writeEndObject();
+        } else {
+          jsonGenerator.writeStringField(
+              TableDescConstants.ColumnDesc.KEY_TYPE, mapColumnDesc.keyType().getApiName());
+        }
+        if (mapColumnDesc.valueType() instanceof UDTColumnDesc udtValue) {
+          jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.VALUE_TYPE);
+          writeFullUdtDesc(jsonGenerator, udtValue);
+          jsonGenerator.writeEndObject();
+        } else {
+          jsonGenerator.writeStringField(
+              TableDescConstants.ColumnDesc.VALUE_TYPE, mapColumnDesc.valueType().getApiName());
+        }
+      }
+      case SetColumnDesc setColumnDesc -> {
+        if (setColumnDesc.valueType() instanceof UDTColumnDesc udtValue) {
+          jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.VALUE_TYPE);
+          writeFullUdtDesc(jsonGenerator, udtValue);
+          jsonGenerator.writeEndObject();
+        } else {
+          jsonGenerator.writeStringField(
+              TableDescConstants.ColumnDesc.VALUE_TYPE, setColumnDesc.valueType().getApiName());
+        }
+      }
+      case ListColumnDesc listColumnDesc -> {
+        if (listColumnDesc.valueType() instanceof UDTColumnDesc udtValue) {
+          jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.VALUE_TYPE);
+          writeFullUdtDesc(jsonGenerator, udtValue);
+          jsonGenerator.writeEndObject();
+        } else {
+          jsonGenerator.writeStringField(
+              TableDescConstants.ColumnDesc.VALUE_TYPE, listColumnDesc.valueType().getApiName());
+        }
+      }
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported column type for map/set/list: " + mapSetListColumnDesc.getApiName());
+    }
+  }
+
+  private void writeFullUdtDesc(JsonGenerator jsonGenerator, UDTColumnDesc udtColumnDesc)
+      throws IOException {
+    jsonGenerator.writeStringField(
+        TableDescConstants.ColumnDesc.UDT_NAME, udtColumnDesc.udtName().asInternal());
+    jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.DEFINITION);
+    jsonGenerator.writeObjectField(
+        TableDescConstants.ColumnDesc.FIELDS, udtColumnDesc.fieldsDesc());
     jsonGenerator.writeEndObject();
   }
 }
