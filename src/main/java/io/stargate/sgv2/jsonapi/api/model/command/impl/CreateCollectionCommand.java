@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
+import io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
@@ -276,20 +276,20 @@ public record CreateCollectionCommand(
                 description = "Registered reranking service provider",
                 type = SchemaType.STRING,
                 implementation = String.class)
-            @JsonProperty(RerankingConstants.RerankingService.PROVIDER)
+            @JsonProperty(ServiceDescConstants.PROVIDER)
             String provider,
         @Schema(
                 description = "Registered reranking service model",
                 type = SchemaType.STRING,
                 implementation = String.class)
-            @JsonProperty(RerankingConstants.RerankingService.MODEL_NAME)
+            @JsonProperty(ServiceDescConstants.MODEL_NAME)
             String modelName,
         @Valid
             @Nullable
             @Schema(
                 description = "Authentication config for chosen reranking service",
                 type = SchemaType.OBJECT)
-            @JsonProperty(RerankingConstants.RerankingService.AUTHENTICATION)
+            @JsonProperty(ServiceDescConstants.AUTHENTICATION)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             Map<String, String> authentication,
         @Nullable
@@ -297,7 +297,7 @@ public record CreateCollectionCommand(
                 description =
                     "Optional parameters that match the messageTemplate provided for the reranking provider",
                 type = SchemaType.OBJECT)
-            @JsonProperty(RerankingConstants.RerankingService.PARAMETERS)
+            @JsonProperty(ServiceDescConstants.PARAMETERS)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             Map<String, Object> parameters) {
 

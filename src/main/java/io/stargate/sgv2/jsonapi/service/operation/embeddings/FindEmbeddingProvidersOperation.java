@@ -189,7 +189,7 @@ public record FindEmbeddingProvidersOperation(
 
       return new ParameterConfigResponse(
           sourceParameterConfig.name(),
-          sourceParameterConfig.type().name(),
+          sourceParameterConfig.type().getApiName(),
           sourceParameterConfig.required(),
           sourceParameterConfig.defaultValue(),
           validationMap,
