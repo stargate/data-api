@@ -124,7 +124,7 @@ public class FilterMatcher<T extends Command & Filterable> {
     private JsonType type;
     // boolean value to indicate if the match is for a map, set or list.
     // This can be captured by a table filter against map/set/list column.
-    private boolean captureOfMapSetListComponent;
+    private boolean targetIsMapSetList;
 
     protected Capture(Object marker) {
       this.marker = marker;
@@ -135,7 +135,7 @@ public class FilterMatcher<T extends Command & Filterable> {
      * FilterOperation that satisfy the match, If not it will return an empty list.
      */
     public List<FilterOperation<?>> match(ComparisonExpression t) {
-      return t.match(matchPath, operators, type, captureOfMapSetListComponent);
+      return t.match(matchPath, operators, type, targetIsMapSetList);
     }
 
     /**
@@ -147,7 +147,7 @@ public class FilterMatcher<T extends Command & Filterable> {
       this.matchPath = path;
       this.operators = operators;
       this.type = type;
-      this.captureOfMapSetListComponent = false;
+      this.targetIsMapSetList = false;
       return FilterMatcher.this;
     }
 
@@ -161,7 +161,7 @@ public class FilterMatcher<T extends Command & Filterable> {
       this.matchPath = path;
       this.operators = operators;
       this.type = type;
-      this.captureOfMapSetListComponent = true;
+      this.targetIsMapSetList = true;
       return FilterMatcher.this;
     }
   }

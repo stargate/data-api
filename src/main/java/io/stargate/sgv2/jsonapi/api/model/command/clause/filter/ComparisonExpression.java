@@ -1,13 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * This object represents conditions based for a json path (node) that need to be tested Spec says
@@ -26,33 +22,28 @@ public class ComparisonExpression implements Invertible {
   /**
    * The nullable enum representing the map/set/list component aims to filter on.
    *
-   * <p>For Collection feature, mapSetListComponent will be null. For Table feature,
-   * mapSetListComponent will be null for scalar column path, will be set for map/set/list column
-   * path.
+   * <p>For a Collection, mapSetListComponent will be null. For a Table, mapSetListComponent will be
+   * null for scalar column path, will be set for map/set/list column path.
    */
-  private final MapSetListComponent mapSetListComponent;
+  private final MapSetListFilterComponent mapSetListComponent;
 
-  @Valid @NotEmpty private List<FilterOperation<?>> filterOperations;
+  private List<FilterOperation<?>> filterOperations;
 
   private List<DBFilterBase> dbFilters;
 
   public ComparisonExpression(
-      @NotBlank(message = "json node path can not be null in filter") String path,
-      List<FilterOperation<?>> filterOperations,
-      List<DBFilterBase> dbFilters) {
-    this.path = path;
-    this.mapSetListComponent = null;
-    this.filterOperations = filterOperations;
-    this.dbFilters = dbFilters;
+      String path, List<FilterOperation<?>> filterOperations, List<DBFilterBase> dbFilters) {
+    this(path, filterOperations, dbFilters, null);
   }
 
   public ComparisonExpression(
-      @NotBlank(message = "json node path can not be null in filter") String path,
-      MapSetListComponent mapSetListComponent,
+      String path,
       List<FilterOperation<?>> filterOperations,
-      List<DBFilterBase> dbFilters) {
+      List<DBFilterBase> dbFilters,
+      MapSetListFilterComponent mapSetListComponent) {
     this.path = path;
     this.mapSetListComponent = mapSetListComponent;
+    // the list is mutable via the add() method, make defensive copy when exposing it
     this.filterOperations = filterOperations;
     this.dbFilters = dbFilters;
   }
@@ -94,26 +85,32 @@ public class ComparisonExpression implements Invertible {
    * @param matchPath The path to match.
    * @param operator The operator to match.
    * @param type The type of the value.
+   * @param appliesToTableMapSetList if true, the expression must be for a flagged as applying to
+   *     table map/set/list column. We need an explicit flag because the operations to filter on
+   *     map/set/list columns look the same as for a JSON array in a collection document. See XXXX
    * @return List of FilterOperation that match the criteria.
    */
   public List<FilterOperation<?>> match(
       String matchPath,
       Set<? extends FilterOperator> operator,
       JsonType type,
-      boolean toMatchMapSetListComponent) {
+      boolean appliesToTableMapSetList) {
 
     // Two sanity checks, Capture should align with the ComparisonExpression to start the match.
-    if (toMatchMapSetListComponent && this.mapSetListComponent == null) {
+    if (appliesToTableMapSetList && this.mapSetListComponent == null) {
+      // this expression is not for a table map/set/list column, but the caller wants it to be.
       return List.of();
     }
-    if (!toMatchMapSetListComponent && this.mapSetListComponent != null) {
+    if (!appliesToTableMapSetList && this.mapSetListComponent != null) {
+      // this expression is for a table map/set/list column, but the caller does not want it to be.
       return List.of();
     }
 
+    // this is comparing JSON paths, so we need a case-sensitive match.
     if ("*".equals(matchPath) || matchPath.equals(path)) {
       return filterOperations.stream()
-          .filter(a -> a.match(operator, type, toMatchMapSetListComponent))
-          .collect(Collectors.toList());
+          .filter(a -> a.match(operator, type, appliesToTableMapSetList))
+          .toList();
     } else {
       return List.of();
     }
@@ -168,7 +165,7 @@ public class ComparisonExpression implements Invertible {
   }
 
   public List<FilterOperation<?>> getFilterOperations() {
-    return filterOperations;
+    return List.copyOf(filterOperations);
   }
 
   @Override

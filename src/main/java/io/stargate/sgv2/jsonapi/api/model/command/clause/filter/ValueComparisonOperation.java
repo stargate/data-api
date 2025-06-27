@@ -1,13 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import jakarta.validation.constraints.NotNull;
-import java.math.BigDecimal;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import java.util.*;
-import javax.annotation.Nullable;
-import org.bson.types.ObjectId;
 
 /**
  * This object represents the operator and rhs operand of a filter clause
@@ -16,9 +10,7 @@ import org.bson.types.ObjectId;
  * @param operand Filter clause operand
  */
 public record ValueComparisonOperation<T>(
-    @NotNull(message = "operator cannot be null") FilterOperator operator,
-    @NotNull(message = "operand cannot be null") JsonLiteral<T> operand,
-    @Nullable MapSetListComponent mapSetListComponent)
+    FilterOperator operator, JsonLiteral<T> operand, MapSetListFilterComponent mapSetListComponent)
     implements FilterOperation<T> {
 
   /**
@@ -26,10 +18,8 @@ public record ValueComparisonOperation<T>(
    * request filter json. It is not against a table map/set/list column, so mapSetListComponent is
    * null.
    */
-  public static ValueComparisonOperation<?> build(
-      @NotNull(message = "operator cannot be null") FilterOperator operator,
-      @NotNull(message = "operand cannot be null") Object operandValue) {
-    return new ValueComparisonOperation<>(operator, getLiteral(operandValue), null);
+  public static ValueComparisonOperation<?> build(FilterOperator operator, Object operandValue) {
+    return new ValueComparisonOperation<>(operator, JsonLiteral.wrap(operandValue), null);
   }
 
   /**
@@ -37,66 +27,26 @@ public record ValueComparisonOperation<T>(
    * specific map/set/list component.
    */
   public static ValueComparisonOperation<?> build(
-      @NotNull(message = "operator cannot be null") FilterOperator operator,
-      @NotNull(message = "operand cannot be null") Object operandValue,
-      @NotNull(message = "mapSetListComponent cannot be null")
-          MapSetListComponent mapSetListComponent) {
-    return new ValueComparisonOperation<>(operator, getLiteral(operandValue), mapSetListComponent);
+      FilterOperator operator, Object operandValue, MapSetListFilterComponent mapSetListComponent) {
+    return new ValueComparisonOperation<>(
+        operator, JsonLiteral.wrap(operandValue), mapSetListComponent);
   }
 
   /** {@inheritDoc} */
   @Override
   public boolean match(
-      Set<? extends FilterOperator> operators, JsonType type, boolean toMatchMapSetListComponent) {
+      Set<? extends FilterOperator> operators, JsonType type, boolean appliesToTableMapSetList) {
+
     // No need to check specific mapSetListComponent for table filtering feature.
     // Only checks if current FilterOperation has mapSetListComponent or not.
-    if (toMatchMapSetListComponent && mapSetListComponent == null) {
+    if (appliesToTableMapSetList && mapSetListComponent == null) {
+      // this expression is not for a table map/set/list column, but the caller wants it to be.
       return false;
     }
-    if (!toMatchMapSetListComponent && mapSetListComponent != null) {
+    if (!appliesToTableMapSetList && mapSetListComponent != null) {
+      // this expression is for a table map/set/list column, but the caller does not want it to be.
       return false;
     }
     return operators.contains(operator) && type.equals(operand.type());
-  }
-
-  /**
-   * Create Typed JsonLiteral object for the plain object from request filter json body.
-   *
-   * @param value object came in the request.
-   * @return {@link JsonLiteral}.
-   */
-  private static JsonLiteral<?> getLiteral(Object value) {
-    if (value == null) {
-      return new JsonLiteral<>(null, JsonType.NULL);
-    }
-    if (value instanceof DocumentId) {
-      return new JsonLiteral<>((DocumentId) value, JsonType.DOCUMENT_ID);
-    }
-    if (value instanceof BigDecimal) {
-      return new JsonLiteral<>((BigDecimal) value, JsonType.NUMBER);
-    }
-    if (value instanceof Boolean) {
-      return new JsonLiteral<>((Boolean) value, JsonType.BOOLEAN);
-    }
-    if (value instanceof Date) {
-      return new JsonLiteral<>((Date) value, JsonType.DATE);
-    }
-    if (value instanceof String) {
-      return new JsonLiteral<>((String) value, JsonType.STRING);
-    }
-    if (value instanceof List) {
-      return new JsonLiteral<>((List<Object>) value, JsonType.ARRAY);
-    }
-    if (value instanceof Map map) {
-      return new JsonLiteral<>(map, JsonType.SUB_DOC);
-    }
-    if (value instanceof UUID || value instanceof ObjectId) {
-      return new JsonLiteral<>(value.toString(), JsonType.STRING);
-    }
-    if (value instanceof byte[] bytes) {
-      return new JsonLiteral<>(bytes, JsonType.EJSON_WRAPPER);
-    }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unsupported filter value type `%s`", value.getClass().getName());
   }
 }

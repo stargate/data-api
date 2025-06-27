@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
@@ -409,8 +410,7 @@ public class WhereCQLClauseAnalyzer {
         mapSetListFilters.stream()
             .filter(
                 entry ->
-                    !isIndexOnMapSetList(
-                        entry.getKey(), entry.getValue().getMapSetListFilterComponent()))
+                    !isIndexOnMapSetList(entry.getKey(), entry.getValue().getFilterComponent()))
             .map(Map.Entry::getKey)
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
@@ -664,7 +664,7 @@ public class WhereCQLClauseAnalyzer {
 
   /** Check if the map/set/list column has an index on correct component that aims to filter on. */
   private boolean isIndexOnMapSetList(
-      CqlIdentifier column, MapSetListTableFilter.MapSetListFilterComponent targetFilterComponent) {
+      CqlIdentifier column, MapSetListFilterComponent targetFilterComponent) {
 
     // map the filterComponent into indexFunction first.
     var toCheckIndexFunction =
@@ -673,13 +673,10 @@ public class WhereCQLClauseAnalyzer {
           case MAP_VALUE, LIST_VALUE, SET_VALUE -> ApiIndexFunction.VALUES;
           case MAP_ENTRY -> ApiIndexFunction.ENTRIES;
         };
-    // check if the target index exists on the tableDefinition
-    return apiTableDef
-        .indexes()
-        .firstIndexFor(column)
-        .filter(index -> index.targetColumn().equals(column))
-        .filter(index -> index.indexFunction() == toCheckIndexFunction)
-        .isPresent();
+
+    // there can be multiple indexes on a map column, so we need to check all of them
+    return apiTableDef.indexes().allIndexesFor(column).stream()
+        .anyMatch(index -> index.indexFunction() == toCheckIndexFunction);
   }
 
   private List<ColumnMetadata> outOfOrderClusteringKeys(

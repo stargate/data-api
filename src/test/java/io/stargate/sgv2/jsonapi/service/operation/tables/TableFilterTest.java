@@ -6,6 +6,7 @@ import com.datastax.oss.driver.internal.core.type.DefaultSetType;
 import io.stargate.sgv2.jsonapi.api.model.command.builders.TableFilterClauseBuilderTest;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
@@ -220,9 +221,7 @@ class TableFilterTest {
           addFilters(
               implicitAnd,
               expBuilder.filterOnMapSetList(
-                  names().CQL_LIST_COLUMN,
-                  operator,
-                  MapSetListTableFilter.MapSetListFilterComponent.LIST_VALUE));
+                  names().CQL_LIST_COLUMN, operator, MapSetListFilterComponent.LIST_VALUE));
 
       var listType =
           (DefaultListType)
@@ -246,9 +245,7 @@ class TableFilterTest {
           addFilters(
               implicitAnd,
               expBuilder.filterOnMapSetList(
-                  names().CQL_SET_COLUMN,
-                  operator,
-                  MapSetListTableFilter.MapSetListFilterComponent.SET_VALUE));
+                  names().CQL_SET_COLUMN, operator, MapSetListFilterComponent.SET_VALUE));
 
       var setType =
           (DefaultSetType) fixture.tableMetadata.getColumn(names().CQL_SET_COLUMN).get().getType();
@@ -266,35 +263,35 @@ class TableFilterTest {
           Arguments.of(
               MapSetListTableFilter.Operator.IN,
               "WHERE ((%s CONTAINS KEY ? OR %s CONTAINS KEY ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.NIN,
               "WHERE ((%s NOT CONTAINS KEY ? AND %s NOT CONTAINS KEY ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.ALL,
               "WHERE ((%s CONTAINS KEY ? AND %s CONTAINS KEY ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.NOT_ANY,
               "WHERE ((%s NOT CONTAINS KEY ? OR %s NOT CONTAINS KEY ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.IN,
               "WHERE ((%s CONTAINS ? OR %s CONTAINS ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_VALUE),
+              MapSetListFilterComponent.MAP_VALUE),
           Arguments.of(
               MapSetListTableFilter.Operator.NIN,
               "WHERE ((%s NOT CONTAINS ? AND %s NOT CONTAINS ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_VALUE),
+              MapSetListFilterComponent.MAP_VALUE),
           Arguments.of(
               MapSetListTableFilter.Operator.ALL,
               "WHERE ((%s CONTAINS ? AND %s CONTAINS ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_VALUE),
+              MapSetListFilterComponent.MAP_VALUE),
           Arguments.of(
               MapSetListTableFilter.Operator.NOT_ANY,
               "WHERE ((%s NOT CONTAINS ? OR %s NOT CONTAINS ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_VALUE));
+              MapSetListFilterComponent.MAP_VALUE));
     }
 
     @ParameterizedTest
@@ -302,7 +299,7 @@ class TableFilterTest {
     public void mapKeyOrValueFilter(
         MapSetListTableFilter.Operator operator,
         String whereClause,
-        MapSetListTableFilter.MapSetListFilterComponent keyOrValue) {
+        MapSetListFilterComponent keyOrValue) {
       var fixture =
           TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("Map Key/Value Filter Test");
       var expBuilder = fixture.expressionBuilder;
@@ -315,9 +312,7 @@ class TableFilterTest {
       var map =
           (DefaultMapType) fixture.tableMetadata.getColumn(names().CQL_MAP_COLUMN).get().getType();
       var targetElementType =
-          keyOrValue == MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY
-              ? map.getKeyType()
-              : map.getValueType();
+          keyOrValue == MapSetListFilterComponent.MAP_KEY ? map.getKeyType() : map.getValueType();
       fixture
           .expressionBuilder()
           .replaceRootDBLogicalExpression(dbLogicalExpression)
@@ -331,19 +326,19 @@ class TableFilterTest {
           Arguments.of(
               MapSetListTableFilter.Operator.IN,
               "WHERE ((%s[?] = ? OR %s[?] = ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.NIN,
               "WHERE ((%s[?] != ? AND %s[?] != ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.ALL,
               "WHERE ((%s[?] = ? AND %s[?] = ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.NOT_ANY,
               "WHERE ((%s[?] != ? OR %s[?] != ?))",
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY));
+              MapSetListFilterComponent.MAP_KEY));
     }
 
     @ParameterizedTest
@@ -356,9 +351,7 @@ class TableFilterTest {
           addFilters(
               implicitAnd,
               expBuilder.filterOnMapSetList(
-                  names().CQL_MAP_COLUMN,
-                  operator,
-                  MapSetListTableFilter.MapSetListFilterComponent.MAP_ENTRY));
+                  names().CQL_MAP_COLUMN, operator, MapSetListFilterComponent.MAP_ENTRY));
 
       var map =
           (DefaultMapType) fixture.tableMetadata.getColumn(names().CQL_MAP_COLUMN).get().getType();

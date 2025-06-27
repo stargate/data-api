@@ -11,8 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
-import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -917,7 +916,7 @@ public class FilterInversionTest {
                       to,
                       List.of("element1", "element2"),
                       MapSetListComponent.fromMapComponent(
-                          ApiMapComponent.fromApiName(keysOrMaps).get()))),
+                          MapComponentDesc.fromApiName(keysOrMaps).get()))),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(0);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);

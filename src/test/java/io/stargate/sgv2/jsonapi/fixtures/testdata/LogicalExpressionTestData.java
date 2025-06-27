@@ -86,7 +86,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
     public FixtureT mapListSetTableFilter(
         CqlIdentifier column,
         MapSetListTableFilter.Operator operator,
-        MapSetListTableFilter.MapSetListFilterComponent component) {
+        MapSetListFilterComponent component) {
       rootImplicitAnd.addFilter(filterOnMapSetList(column, operator, component));
       return fixture;
     }
@@ -240,7 +240,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
     public TableFilter filterOnMapSetList(
         CqlIdentifier columnCqlIdentifier,
         MapSetListTableFilter.Operator operator,
-        MapSetListTableFilter.MapSetListFilterComponent mapSetListComponent) {
+        MapSetListFilterComponent mapSetListComponent) {
       var columnMetadata = tableMetadata.getColumn(columnCqlIdentifier).get();
       return switch (mapSetListComponent) {
         case LIST_VALUE:
@@ -250,7 +250,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
                 operator,
                 columnMetadata.getName().asInternal(),
                 List.of(value(listType.getElementType()), value(listType.getElementType())),
-                MapSetListTableFilter.MapSetListFilterComponent.LIST_VALUE);
+                MapSetListFilterComponent.LIST_VALUE);
           }
         case SET_VALUE:
           {
@@ -259,7 +259,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
                 operator,
                 columnMetadata.getName().asInternal(),
                 List.of(value(setType.getElementType()), value(setType.getElementType())),
-                MapSetListTableFilter.MapSetListFilterComponent.SET_VALUE);
+                MapSetListFilterComponent.SET_VALUE);
           }
         case MAP_KEY:
           {
@@ -268,7 +268,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
                 operator,
                 columnMetadata.getName().asInternal(),
                 List.of(value(mapType.getKeyType()), value(mapType.getKeyType())),
-                MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY);
+                MapSetListFilterComponent.MAP_KEY);
           }
         case MAP_VALUE:
           {
@@ -277,7 +277,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
                 operator,
                 columnMetadata.getName().asInternal(),
                 List.of(value(mapType.getValueType()), value(mapType.getValueType())),
-                MapSetListTableFilter.MapSetListFilterComponent.MAP_VALUE);
+                MapSetListFilterComponent.MAP_VALUE);
           }
         case MAP_ENTRY:
           {
@@ -288,7 +288,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
                 List.of(
                     List.of(value(mapType.getKeyType()), value(mapType.getValueType())),
                     List.of(value(mapType.getKeyType()), value(mapType.getValueType()))),
-                MapSetListTableFilter.MapSetListFilterComponent.MAP_ENTRY);
+                MapSetListFilterComponent.MAP_ENTRY);
           }
       };
     }

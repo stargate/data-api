@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;

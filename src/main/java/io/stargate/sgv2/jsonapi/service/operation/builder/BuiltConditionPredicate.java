@@ -1,5 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.builder;
 
+/**
+ * aaron 25 june 2025 - this is from before the original move of the Data APi to use CQL driver, it
+ * is part of the old custom-made query builder that we want to remove but it is still used in for
+ * collections. It was updated with CONTAINS and some others to support filters on collection
+ * columns that are not supported by the CQL driver.
+ */
 public enum BuiltConditionPredicate {
   CONTAINS("CONTAINS"),
   CONTAINS_KEY("CONTAINS KEY"),
@@ -14,8 +20,6 @@ public enum BuiltConditionPredicate {
   NOT_CONTAINS_KEY("NOT CONTAINS KEY"),
   TEXT_SEARCH(":");
 
-  private final String cql;
-
   /**
    * Stores the CQL string representation of the predicate, wrapped with spaces on both sides. While
    * simple operators like "=" or "<" can work without surrounding spaces in CQL statements,
@@ -25,7 +29,7 @@ public enum BuiltConditionPredicate {
   private final String spaceWrappedCql;
 
   BuiltConditionPredicate(String cql) {
-    this.cql = cql;
+
     this.spaceWrappedCql = " " + cql + " ";
   }
 
@@ -33,16 +37,13 @@ public enum BuiltConditionPredicate {
    * Returns the CQL representation of the predicate, with surrounding spaces. Use this public
    * method for building CQL statements.
    */
-  public String getSpaceWrappedCql() {
+  public String getCql() {
     return spaceWrappedCql;
   }
 
-  /**
-   * Returns the CQL representation of the predicate without surrounding spaces, this is useful for
-   * logs. To build the CQL statement, use {@link #getSpaceWrappedCql() instead.
-   */
+  /** Returns {@link #getCql()} */
   @Override
   public String toString() {
-    return spaceWrappedCql;
+    return getCql();
   }
 }

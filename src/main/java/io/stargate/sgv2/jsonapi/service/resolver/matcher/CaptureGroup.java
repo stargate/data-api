@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -78,5 +78,5 @@ public class CaptureGroup<DataType> {
       String path,
       FilterOperator operator,
       DataType value,
-      MapSetListComponent mapSetListComponent) {}
+      MapSetListFilterComponent filterComponent) {}
 }

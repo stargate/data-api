@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import java.util.Set;
 
 /**
@@ -14,18 +14,21 @@ public interface FilterOperation<T> {
    *
    * @param operators The set of operators to match against.
    * @param type The JsonType to match against.
-   * @param toMatchMapSetListComponent Check mapSetListComponent is set or not.
+   * @param appliesToTableMapSetList if true, the expression must be for a flagged as applying to
+   *     table map/set/list column. We need an explicit flag because the operations to filter on
+   *     map/set/list columns look the same as for a JSON array in a collection document. See XXXX
    */
   boolean match(
-      Set<? extends FilterOperator> operators, JsonType type, boolean toMatchMapSetListComponent);
+      Set<? extends FilterOperator> operators, JsonType type, boolean appliesToTableMapSetList);
 
   FilterOperator operator();
 
   JsonLiteral<T> operand();
 
   /**
-   * This method is used to get the mapSetListComponent of the filter operation. Return null if the
-   * FilterOperation is not against a table map/set/list column.
+   * This method is used to get the mapSetListComponent of the filter operation.
+   *
+   * @return null if the FilterOperation is not against a table map/set/list column.
    */
-  MapSetListComponent mapSetListComponent();
+  MapSetListFilterComponent mapSetListComponent();
 }

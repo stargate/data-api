@@ -254,8 +254,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   MapSetListTableFilter.Operator.from(expression.operator()),
                                   expression.path(),
                                   (List<Object>) expression.value(),
-                                  MapSetListTableFilter.MapSetListFilterComponent.from(
-                                      expression.mapSetListComponent())));
+                                  expression.filterComponent()));
                         });
                   });
         };

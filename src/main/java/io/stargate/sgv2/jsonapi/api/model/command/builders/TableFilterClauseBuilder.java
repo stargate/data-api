@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
-import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
@@ -23,7 +23,11 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
    * Could create another implementation for {@link FilterOperator}, but the actual meaning of
    * different implementation has been abused and is confusing already.
    */
-  public static Set<String> ALLOWED_MAP_SET_LIST_FILTER_OPERATORS = Set.of("$in", "$nin", "$all");
+  private static Set<String> SUPPORTED_MAP_SET_LIST_OPERATORS =
+      Set.of(
+          ValueComparisonOperator.IN.getOperator(),
+          ValueComparisonOperator.NIN.getOperator(),
+          ArrayComparisonOperator.ALL.getOperator());
 
   public TableFilterClauseBuilder(TableSchemaObject schema) {
     super(schema);
@@ -62,8 +66,8 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
     // if path entry is filtering against the map/set/list column
     String path = entry.getKey();
     var filterOnCollectionColumn = filterMapSetListColumn(path, entry.getValue());
-    if (filterOnCollectionColumn.isPresent()) {
-      return filterOnCollectionColumn.get();
+    if (!filterOnCollectionColumn.isEmpty()) {
+      return filterOnCollectionColumn;
     }
 
     // the shared logic for both Collection and Table.
@@ -74,20 +78,18 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
    * Check if the path is against a map/set/list column in the tableSchema. If so, we need to build
    * filter operation for it.
    */
-  private Optional<List<ComparisonExpression>> filterMapSetListColumn(
-      String path, JsonNode pathValue) {
+  private List<ComparisonExpression> filterMapSetListColumn(String path, JsonNode pathValue) {
 
     // Find the map/set/list column first.
     var mapSetListColumn =
         schema.apiTableDef().allColumns().get(CqlIdentifierUtil.cqlIdentifierFromUserInput(path));
     if (mapSetListColumn == null || !mapSetListColumn.type().isContainer()) {
-      return Optional.empty();
+      return List.of();
     }
     return switch (mapSetListColumn.type().typeName()) {
-      case MAP -> Optional.of(filterMapColumn(path, pathValue));
-      case LIST, SET ->
-          Optional.of(filterSetListColumn(path, pathValue, mapSetListColumn.type().typeName()));
-      default -> Optional.empty();
+      case MAP -> filterMapColumn(path, pathValue);
+      case LIST, SET -> filterSetListColumn(path, pathValue, mapSetListColumn.type().typeName());
+      default -> List.of();
     };
   }
 
@@ -123,11 +125,11 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
               }));
     }
 
-    final List<ComparisonExpression> comparisonExpressions = new ArrayList<>();
-    final Iterator<Map.Entry<String, JsonNode>> fields = pathValue.fields();
+    List<ComparisonExpression> comparisonExpressions = new ArrayList<>();
+    var fieldsIter = pathValue.fields();
     // iterate through the filter fields.
-    while (fields.hasNext()) {
-      Map.Entry<String, JsonNode> jsonNodeEntry = fields.next();
+    while (fieldsIter.hasNext()) {
+      Map.Entry<String, JsonNode> jsonNodeEntry = fieldsIter.next();
       // nodeEntryKey can be mapComponent $keys/$values OR operator like $in/$nin/$all
       // so jsonNodeEntry like {$keys": {"$nin" : ["key1", "key2"]}}
       // or jsonNodeEntry like {"$in": [["key1", "value1"], ["key2", "value2"]]}
@@ -135,29 +137,28 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
       final String nodeEntryKey = jsonNodeEntry.getKey();
       JsonNode nodeEntryValue = jsonNodeEntry.getValue();
 
-      MapSetListComponent mapComponent = null;
-      FilterOperation<?> filterOperation = null;
-
       // check if the nodeEntryKey is mapComponent, $keys/$values
-      Optional<ApiMapComponent> explicitMapComponent = ApiMapComponent.fromApiName(nodeEntryKey);
+      Optional<MapComponentDesc> explicitMapComponent = MapComponentDesc.fromApiName(nodeEntryKey);
       if (explicitMapComponent.isPresent()) {
         // filter on map keys/values
         // i.e. {"$keys": {"$nin" : ["key1", "key2"], "$in": ["key3", "key4"]}}
         comparisonExpressions.addAll(
             filterMapColumnKeysOrValues(
                 columnName,
-                MapSetListComponent.fromMapComponent(explicitMapComponent.get()),
+                MapSetListFilterComponent.fromMapComponentDesc(explicitMapComponent.get()),
                 nodeEntryValue));
       } else {
         // otherwise, filter on map entries
         // i.e. {"$in": [["key1", "value1"], ["key2", "value2"]]}
-        mapComponent = MapSetListComponent.MAP_ENTRY;
+
         // now we want to build a new JsonNode to represent single operationNode.
-        JsonNode operationNode = OBJECT_MAPPER.createObjectNode().set(nodeEntryKey, nodeEntryValue);
-        filterOperation =
-            singleFilterOperationForMapSetListColumn(operationNode, mapComponent, columnName);
+        var operationNode = OBJECT_MAPPER.createObjectNode().set(nodeEntryKey, nodeEntryValue);
+        var filterOperation =
+            singleFilterOperationForMapSetListColumn(
+                operationNode, MapSetListFilterComponent.MAP_ENTRY, columnName);
         comparisonExpressions.add(
-            new ComparisonExpression(columnName, mapComponent, List.of(filterOperation), null));
+            new ComparisonExpression(
+                columnName, List.of(filterOperation), null, MapSetListFilterComponent.MAP_ENTRY));
       }
     }
     return comparisonExpressions;
@@ -170,7 +171,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
    * JsonNode E.G. {"$nin": ["key1", "key2"], "$in": ["key3", "key4"]}
    */
   private List<ComparisonExpression> filterMapColumnKeysOrValues(
-      String columnName, MapSetListComponent keysOrValues, JsonNode filterValue) {
+      String columnName, MapSetListFilterComponent keysOrValues, JsonNode filterValue) {
 
     List<ComparisonExpression> result = new ArrayList<>();
     // $keys and $values must follow with a JsonNode object
@@ -201,7 +202,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
                   singleFilterOperationForMapSetListColumn(operationNode, keysOrValues, columnName);
               result.add(
                   new ComparisonExpression(
-                      columnName, keysOrValues, List.of(filterOperation), null));
+                      columnName, List.of(filterOperation), null, keysOrValues));
             });
     return result;
   }
@@ -215,27 +216,34 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
    * </code>
    */
   private void checkMapTupleFormat(JsonNode tupleFormatEntryArray, String columnName) {
-    var error =
-        FilterException.Code.INVALID_MAP_SET_LIST_FILTER.get(
-            errVars(
-                schema,
-                map -> {
-                  map.put(
-                      "detailedReason",
-                      "Invalid usage for map entry filter in tuple format for map column '%s', ensure the node is an array of arrays, where each inner array has exactly two element to represent the key and value"
-                          .formatted(columnName));
-                }));
+
     // Ensure nodeEntryValue is a JSON array
-    if (!tupleFormatEntryArray.isArray()) {
-      throw error;
+    if (tupleFormatEntryArray.isArray()) {
+      // all good
+      return;
     }
+
     // Tuple map entries are represented as an array of arrays where each inner array has two
     // elements.
+    boolean validTuple = true;
     for (JsonNode entry : tupleFormatEntryArray) {
       if (entry.getNodeType() != JsonNodeType.ARRAY || entry.size() != 2) {
-        throw error;
+        validTuple = false;
       }
     }
+    if (validTuple) {
+      return;
+    }
+
+    throw FilterException.Code.INVALID_MAP_SET_LIST_FILTER.get(
+        errVars(
+            schema,
+            map -> {
+              map.put(
+                  "detailedReason",
+                  "Invalid usage for map entry filter in tuple format for map column '%s', ensure the node is an array of arrays, where each inner array has exactly two element to represent the key and value"
+                      .formatted(columnName));
+            }));
   }
 
   /**
@@ -257,23 +265,23 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
     final Iterator<Map.Entry<String, JsonNode>> fields = pathValue.fields();
     // iterate through the filter fields.
     while (fields.hasNext()) {
-      Map.Entry<String, JsonNode> updateField = fields.next();
+      Map.Entry<String, JsonNode> expressionField = fields.next();
 
-      final String operator = updateField.getKey();
-      JsonNode operatorValue = updateField.getValue();
+      var operator = expressionField.getKey();
+      var operatorValue = expressionField.getValue();
 
       // build a new JsonNode to represent single operationNode.
       // i.e. build entry {$nin": ["value3", "value4"]} to a JsonNode
       JsonNode operationNode = OBJECT_MAPPER.createObjectNode().set(operator, operatorValue);
-      var setOrListComponent =
+      var filterComponent =
           setOrList == ApiTypeName.LIST
-              ? MapSetListComponent.LIST_VALUE
-              : MapSetListComponent.SET_VALUE;
+              ? MapSetListFilterComponent.LIST_VALUE
+              : MapSetListFilterComponent.SET_VALUE;
       FilterOperation<?> filterOperation =
-          singleFilterOperationForMapSetListColumn(operationNode, setOrListComponent, columnName);
+          singleFilterOperationForMapSetListColumn(operationNode, filterComponent, columnName);
 
       result.add(
-          new ComparisonExpression(columnName, setOrListComponent, List.of(filterOperation), null));
+          new ComparisonExpression(columnName, List.of(filterOperation), null, filterComponent));
     }
     return result;
   }
@@ -293,42 +301,52 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
    * </ul>
    */
   private FilterOperation<?> singleFilterOperationForMapSetListColumn(
-      JsonNode operationNode, MapSetListComponent mapSetListComponent, String columnName) {
+      JsonNode operationNode, MapSetListFilterComponent mapSetListComponent, String columnName) {
 
     Map.Entry<String, JsonNode> singleEntry = operationNode.fields().next();
     // resolve the operator
-    String operatorString = singleEntry.getKey();
-    if (!ALLOWED_MAP_SET_LIST_FILTER_OPERATORS.contains(operatorString)) {
+    String operatorName = singleEntry.getKey();
+    if (!SUPPORTED_MAP_SET_LIST_OPERATORS.contains(operatorName)) {
       throw FilterException.Code.INVALID_MAP_SET_LIST_FILTER.get(
           errVars(
               schema,
               map -> {
                 map.put(
                     "detailedReason",
-                    "Invalid filter operator '%s' for column '%s', allowed operators are '$in', '$nin', '$all'"
-                        .formatted(operatorString, columnName));
+                    "Invalid filter operator '%s' for column '%s', allowed operators are %s"
+                        .formatted(
+                            operatorName,
+                            columnName,
+                            String.join(",", SUPPORTED_MAP_SET_LIST_OPERATORS)));
               }));
     }
-    FilterOperator convertedOperator = FilterOperators.findComparisonOperator(operatorString);
+    FilterOperator convertedOperator = FilterOperators.findComparisonOperator(operatorName);
+    // the check above for SUPPORTED_MAP_SET_LIST_OPERATORS ensures that we know the operator is
+    // so this is just a sanity check things are in sync
+    Objects.requireNonNull(
+        convertedOperator,
+        "FilterOperators.findComparisonOperator() returned null for a supported filter operation, operatorName:%s, columnName:%s"
+            .formatted(operatorName, columnName));
 
     // resolve the operation value
     JsonNode operationValueNode = singleEntry.getValue();
 
     // check tuple format if map component is MAP_ENTRY
-    if (mapSetListComponent == MapSetListComponent.MAP_ENTRY) {
+    if (mapSetListComponent == MapSetListFilterComponent.MAP_ENTRY) {
       checkMapTupleFormat(operationValueNode, columnName);
-    }
-
-    if (!operationValueNode.isArray()) {
-      throw FilterException.Code.INVALID_MAP_SET_LIST_FILTER.get(
-          errVars(
-              schema,
-              map -> {
-                map.put(
-                    "detailedReason",
-                    "Filter operator '%s' for column '%s' must be followed by an array of values, see the examples for the correct format"
-                        .formatted(operatorString, columnName));
-              }));
+    } else {
+      // we are looking at a set, list, or the keyor values of a map so want an array
+      if (!operationValueNode.isArray()) {
+        throw FilterException.Code.INVALID_MAP_SET_LIST_FILTER.get(
+            errVars(
+                schema,
+                map -> {
+                  map.put(
+                      "detailedReason",
+                      "Filter operator '%s' for column '%s' must be followed by an array of values, see the examples for the correct format"
+                          .formatted(operatorName, columnName));
+                }));
+      }
     }
 
     Object operationValue = jsonNodeValue(singleEntry.getValue());

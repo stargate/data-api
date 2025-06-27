@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.LogicalExpressionTestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import java.util.Set;
@@ -837,23 +838,23 @@ public class SelectWhereAnalyzerTest {
           Arguments.of(
               names().CQL_MAP_COLUMN,
               MapSetListTableFilter.Operator.IN,
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               names().CQL_MAP_COLUMN,
               MapSetListTableFilter.Operator.ALL,
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_VALUE),
+              MapSetListFilterComponent.MAP_VALUE),
           Arguments.of(
               names().CQL_MAP_COLUMN,
               MapSetListTableFilter.Operator.NIN,
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_ENTRY),
+              MapSetListFilterComponent.MAP_ENTRY),
           Arguments.of(
               names().CQL_LIST_COLUMN,
               MapSetListTableFilter.Operator.NOT_ANY,
-              MapSetListTableFilter.MapSetListFilterComponent.LIST_VALUE),
+              MapSetListFilterComponent.LIST_VALUE),
           Arguments.of(
               names().CQL_SET_COLUMN,
               MapSetListTableFilter.Operator.IN,
-              MapSetListTableFilter.MapSetListFilterComponent.SET_VALUE));
+              MapSetListFilterComponent.SET_VALUE));
     }
 
     /** This test is to check the warning for map/set/list filtering without index at all. */
@@ -862,7 +863,7 @@ public class SelectWhereAnalyzerTest {
     public void mapSetListWithoutIndex(
         CqlIdentifier cqlDatatypeColumn,
         MapSetListTableFilter.Operator operator,
-        MapSetListTableFilter.MapSetListFilterComponent component) {
+        MapSetListFilterComponent component) {
       var fixture =
           TEST_DATA
               .whereAnalyzer()
@@ -883,11 +884,11 @@ public class SelectWhereAnalyzerTest {
           Arguments.of(
               names().CQL_MAP_COLUMN,
               MapSetListTableFilter.Operator.IN,
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_KEY),
+              MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               names().CQL_MAP_COLUMN,
               MapSetListTableFilter.Operator.ALL,
-              MapSetListTableFilter.MapSetListFilterComponent.MAP_VALUE));
+              MapSetListFilterComponent.MAP_VALUE));
       // In the test table schema, only map entries are indexed.
       // so, filter on map entries will succeed.
     }
@@ -901,7 +902,7 @@ public class SelectWhereAnalyzerTest {
     public void mapSetListWithoutCorrectIndex(
         CqlIdentifier cqlDatatypeColumn,
         MapSetListTableFilter.Operator operator,
-        MapSetListTableFilter.MapSetListFilterComponent component) {
+        MapSetListFilterComponent component) {
       var fixture =
           TEST_DATA
               .whereAnalyzer()
