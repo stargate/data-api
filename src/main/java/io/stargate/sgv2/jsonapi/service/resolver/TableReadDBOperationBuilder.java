@@ -107,8 +107,7 @@ class TableReadDBOperationBuilder<
 
     // the columns the user wants
     // NOTE: the TableProjection is doing double duty as the select and the operation projection
-    var projection =
-        TableProjection.fromDefinition(OBJECT_MAPPER, command, commandContext.schemaObject());
+    var projection = TableProjection.fromDefinition(commandContext, OBJECT_MAPPER, command);
 
     taskBuilder.withSelect(WithWarnings.of(projection));
     taskBuilder.withProjection(projection);

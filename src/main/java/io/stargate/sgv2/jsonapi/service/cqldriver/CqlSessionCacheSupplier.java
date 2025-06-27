@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -50,7 +51,7 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             dbConfig.localDatacenter(),
             dbConfig.cassandraEndPoints(),
             dbConfig.cassandraPort(),
-            List.of(schemaCache.getSchemaChangeListener()));
+            schemaCache::getSchemaChangeListener);
 
     singleton =
         new CQLSessionCache(
@@ -62,7 +63,9 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             credentialsFactory,
             sessionFactory,
             meterRegistry,
-            List.of(schemaCache.getDeactivatedTenantConsumer()));
+            List.of(
+                schemaCache.getDeactivatedTenantConsumer(),
+                new MetricsTenantDeactivationConsumer(meterRegistry)));
   }
 
   /** Gets the singleton instance of the {@link CQLSessionCache}. */

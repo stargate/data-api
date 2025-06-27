@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -43,6 +44,8 @@ import org.junit.jupiter.api.TestInstance;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
+  // Property to disable lexical search tests when lexical/BM25 functionality not available
+  public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
@@ -244,7 +247,15 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 line ->
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-    assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
+    if (!sessionLevelDriverMetricTenantId.isPresent()) {
+      List<String> lines = metrics.lines().toList();
+      long buckets =
+          lines.stream().filter(line -> line.startsWith("session_cql_requests_seconds")).count();
+      fail(
+          String.format(
+              "No tenant id found in any of 'session_cql_requests_seconds' entries (%d buckets; %d log lines)",
+              buckets, lines.size()));
+    }
   }
 
   public static void checkVectorMetrics(String commandName, String sortType) {
@@ -338,8 +349,13 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeaders() {
+    return given().headers(getHeaders()).contentType(ContentType.JSON);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
   protected RequestSpecification givenHeadersAndJson(String json) {
-    return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
+    return givenHeaders().body(json);
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */

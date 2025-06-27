@@ -2,103 +2,74 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME;
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_API_KEY_MISSING;
+import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
+import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
- * of chosen model.
- */
-public abstract class EmbeddingProvider {
-  protected static final Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
-  protected final EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  protected final String baseUrl;
-  protected final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model;
+/** A provider for Embedding models , using {@link ModelType#EMBEDDING} */
+public abstract class EmbeddingProvider extends ProviderBase {
+
+  protected static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingProvider.class);
+
+  // IMPORTANT: all of these config objects have some form of a request properties config,
+  // use the one from the serviceConfig, as it should be the most specific for this
+  // schema object. We should be able to remove ServiceConfig later - aaron 16 jue 2025
+  // use {@link #requestProperties()} to access the request properties
+  protected final EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig;
+  protected final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig;
+  protected final ServiceConfigStore.ServiceConfig serviceConfig;
+
   protected final int dimension;
   protected final Map<String, Object> vectorizeServiceParameters;
 
-  /** Default constructor */
-  protected EmbeddingProvider() {
-    this(null, null, null, 0, null);
-  }
+  protected final Duration initialBackOffDuration;
+  protected final Duration maxBackOffDuration;
 
-  /** Constructs an EmbeddingProvider with the specified configuration. */
   protected EmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
-      String baseUrl,
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
+      ModelProvider modelProvider,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.baseUrl = baseUrl;
-    this.model = model;
+    super(modelProvider, ModelType.EMBEDDING);
+
+    this.providerConfig = providerConfig;
+    this.modelConfig = modelConfig;
+    this.serviceConfig = serviceConfig;
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
+
+    this.initialBackOffDuration = Duration.ofMillis(requestProperties().initialBackOffMillis());
+    this.maxBackOffDuration = Duration.ofMillis(requestProperties().maxBackOffMillis());
   }
 
-  /**
-   * Applies a retry mechanism with backoff and jitter to the Uni returned by the embed() method,
-   * which makes an HTTP request to a third-party service.
-   *
-   * @param <T> The type of the item emitted by the Uni.
-   * @param uni The Uni to which the retry mechanism should be applied.
-   * @return A Uni that will retry on the specified failures with the configured backoff and jitter.
-   */
-  protected <T> Uni<T> applyRetry(Uni<T> uni) {
-    return uni.onFailure(
-            throwable ->
-                (throwable.getCause() != null
-                        && throwable.getCause() instanceof JsonApiException jae
-                        && jae.getErrorCode() == ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT)
-                    || throwable instanceof TimeoutException)
-        .retry()
-        .withBackOff(
-            Duration.ofMillis(requestProperties.initialBackOffMillis()),
-            Duration.ofMillis(requestProperties.maxBackOffMillis()))
-        .withJitter(requestProperties.jitter())
-        .atMost(requestProperties.atMostRetries());
+  @Override
+  public String modelName() {
+    return modelConfig.name();
   }
 
-  /**
-   * Checks if the vectorization will use an END_OF_LIFE model and throws an exception if it is.
-   *
-   * <p>As part of embedding model deprecation ability, any read and write with vectorization in an
-   * END_OF_LIFE model will throw an exception.
-   *
-   * <p>Note, SUPPORTED and DEPRECATED models are still allowed to be used in read and write.
-   *
-   * <p>This method should be called before any vectorization operation.
-   */
-  protected void checkEOLModelUsage() {
-    // Validate if the model is END_OF_LIFE
-    if (model.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
-          Map.of(
-              "model",
-              model.name(),
-              "modelStatus",
-              model.apiModelSupport().status().name(),
-              "message",
-              model
-                  .apiModelSupport()
-                  .message()
-                  .orElse("The model is no longer supported (reached its end-of-life).")));
-    }
+  @Override
+  public ApiModelSupport modelSupport() {
+    return modelConfig.apiModelSupport();
+  }
+
+  public EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig() {
+    return providerConfig;
   }
 
   /**
@@ -109,7 +80,7 @@ public abstract class EmbeddingProvider {
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return VectorResponse
    */
-  public abstract Uni<Response> vectorize(
+  public abstract Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
@@ -120,7 +91,17 @@ public abstract class EmbeddingProvider {
    *
    * @return
    */
-  public abstract int maxBatchSize();
+  public int maxBatchSize() {
+    return requestProperties().maxBatchSize();
+  }
+
+  /**
+   * Use this to get the properties for the request, including the URL , see comment at the top of
+   * class
+   */
+  protected ServiceConfigStore.ServiceRequestProperties requestProperties() {
+    return serviceConfig.requestProperties();
+  }
 
   /**
    * Helper method that has logic wrt whether OpenAI (azure or regular) accepts {@code "dimensions"}
@@ -158,9 +139,9 @@ public abstract class EmbeddingProvider {
   }
 
   /**
-   * Helper method to replace parameters in a messageTemplate string with values from a map:
-   * placeholders are of form {@code {parameterName}} and matching value to look for in the map is
-   * String {@code "parameterName"}.
+   * Replace parameters in a messageTemplate string with values from a map: placeholders are of form
+   * {@code {parameterName}} and matching value to look for in the map is String {@code
+   * "parameterName"}.
    *
    * @param template Template with placeholders to replace
    * @param parameters Parameters to replace in the messageTemplate
@@ -191,13 +172,91 @@ public abstract class EmbeddingProvider {
     return baseUrl.toString();
   }
 
-  /** Helper method to check if the API key is present in the header */
-  protected void checkEmbeddingApiKeyHeader(String providerId, Optional<String> apiKey) {
+  /** Check if the API key is present in the header */
+  protected void checkEmbeddingApiKeyHeader(Optional<String> apiKey) {
+
     if (apiKey.isEmpty()) {
       throw EMBEDDING_PROVIDER_API_KEY_MISSING.toApiException(
           "header value `%s` is missing for embedding provider: %s",
-          EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, providerId);
+          EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, modelProvider().apiName());
     }
+  }
+
+  @Override
+  protected Duration initialBackOffDuration() {
+    return initialBackOffDuration;
+  }
+
+  @Override
+  protected Duration maxBackOffDuration() {
+    return maxBackOffDuration;
+  }
+
+  @Override
+  protected double jitter() {
+    return requestProperties().jitter();
+  }
+
+  @Override
+  protected int atMostRetries() {
+    return requestProperties().atMostRetries();
+  }
+
+  @Override
+  protected boolean decideRetry(Throwable throwable) {
+
+    var retry =
+        (throwable.getCause() instanceof JsonApiException jae
+            && jae.getErrorCode() == ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT);
+
+    return retry || super.decideRetry(throwable);
+  }
+
+  /** Maps an HTTP response to a V1 JsonApiException */
+  @Override
+  protected RuntimeException mapHTTPError(Response jakartaResponse, String errorMessage) {
+
+    if (jakartaResponse.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
+        || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
+      return ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(
+          "Provider: %s; HTTP Status: %s; Error Message: %s",
+          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+    }
+
+    // Status code == 429
+    if (jakartaResponse.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
+      return ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
+          "Provider: %s; HTTP Status: %s; Error Message: %s",
+          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+    }
+
+    // Status code in 4XX other than 429
+    if (jakartaResponse.getStatusInfo().getFamily() == CLIENT_ERROR) {
+      return ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
+          "Provider: %s; HTTP Status: %s; Error Message: %s",
+          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+    }
+
+    // Status code in 5XX
+    if (jakartaResponse.getStatusInfo().getFamily() == Response.Status.Family.SERVER_ERROR) {
+      return ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
+          "Provider: %s; HTTP Status: %s; Error Message: %s",
+          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+    }
+
+    // All other errors, Should never happen as all errors are covered above
+    return ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+        "Provider: %s; HTTP Status: %s; Error Message: %s",
+        modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+  }
+
+  /** Call this from the subclass when the response from the provider is empty */
+  protected void throwEmptyData(Response jakartaResponse) {
+    throw ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+        "Provider: %s; HTTP Status: %s; Error Message: %s",
+        modelProvider().apiName(),
+        jakartaResponse.getStatus(),
+        "ModelProvider returned empty data for model %s".formatted(modelName()));
   }
 
   /**
@@ -206,15 +265,15 @@ public abstract class EmbeddingProvider {
    * @param batchId - Sequence number for the batch to order the vectors.
    * @param embeddings - Embedding vectors for the given text inputs.
    */
-  public record Response(int batchId, List<float[]> embeddings) implements Recordable {
-
-    public static Response of(int batchId, List<float[]> embeddings) {
-      return new Response(batchId, embeddings);
-    }
+  public record BatchedEmbeddingResponse(
+      int batchId, List<float[]> embeddings, ModelUsage modelUsage) implements Recordable {
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
-      return dataRecorder.append("batchId", batchId).append("embeddings", embeddings);
+      return dataRecorder
+          .append("batchId", batchId)
+          .append("embeddings", embeddings)
+          .append("modelUsage", modelUsage);
     }
   }
 

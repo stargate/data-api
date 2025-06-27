@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 public interface Recordable {
 
   /**
-   * Called for the implementer to record it's data to the {@link DataRecorder}, values should be
+   * Called for the implementer to record its data to the {@link DataRecorder}, values should be
    * appended using {@link DataRecorder#append(String, Object)}. Values that implement {@link
    * Recordable} will be added as a sub object.
    *
@@ -54,7 +54,7 @@ public interface Recordable {
    *     .maybeTrace("Parsed JSON Documents", Recordable.copyOf(parsedDocuments));
    * </pre>
    *
-   * @param recordables The collection of Recordable objects to wrap.
+   * @param values The collection of Recordable objects to wrap.
    * @return A Recordable object that will record the collection as an array of objects.
    */
   static Recordable copyOf(Collection<?> values) {

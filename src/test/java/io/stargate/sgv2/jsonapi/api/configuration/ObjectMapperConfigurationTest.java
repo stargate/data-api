@@ -15,7 +15,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
@@ -239,7 +241,7 @@ class ObjectMapperConfigurationTest {
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class,
-              findOne -> Assertions.assertThat(findOne.filterSpec()).isNull());
+              findOne -> Assertions.assertThat(findOne.filterDefinition()).isNull());
     }
 
     // Only "empty" Options allowed, nothing else
@@ -934,7 +936,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterSpec filterSpec = findOneAndUpdateCommand.filterSpec();
+                FilterDefinition filterSpec = findOneAndUpdateCommand.filterDefinition();
                 assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
@@ -963,7 +965,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterSpec filterSpec = findOneAndUpdateCommand.filterSpec();
+                FilterDefinition filterSpec = findOneAndUpdateCommand.filterDefinition();
                 assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
@@ -1038,7 +1040,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               CountDocumentsCommand.class,
               countCommand -> {
-                FilterSpec filterSpec = countCommand.filterSpec();
+                FilterDefinition filterSpec = countCommand.filterDefinition();
                 assertThat(filterSpec).isNotNull();
               });
     }

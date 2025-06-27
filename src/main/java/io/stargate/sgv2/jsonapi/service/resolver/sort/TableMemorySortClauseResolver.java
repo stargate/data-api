@@ -119,7 +119,7 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
                     + sortExpression.pathAsCqlIdentifier());
           }
           sortByList.add(
-              new InMemorySortComparator.SortByTerm(apiColumnDef, sortExpression.ascending()));
+              new InMemorySortComparator.SortByTerm(apiColumnDef, sortExpression.isAscending()));
         });
 
     var sorter =

@@ -2,8 +2,19 @@ package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
@@ -58,8 +69,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
         }
         case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD -> {
           if (!schema.lexicalConfig().enabled()) {
-            throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-                "Lexical search is not enabled for collection '%s'", schema.name());
+            throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
           }
           return path;
         }

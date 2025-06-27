@@ -47,12 +47,12 @@ class UpdateOneCommandTest {
           .isInstanceOfSatisfying(
               UpdateOneCommand.class,
               updateOneCommand -> {
-                assertThat(updateOneCommand.filterSpec()).isNotNull();
+                assertThat(updateOneCommand.filterDefinition()).isNotNull();
                 final UpdateClause updateClause = updateOneCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
-                assertThat(updateOneCommand.sortSpec()).isNotNull();
-                assertThat(updateOneCommand.sortSpec().json())
+                assertThat(updateOneCommand.sortDefinition()).isNotNull();
+                assertThat(updateOneCommand.sortDefinition().json())
                     .isEqualTo(readTree("{\"username\" : 1}"));
                 assertThat(updateOneCommand.options()).isNotNull();
               });

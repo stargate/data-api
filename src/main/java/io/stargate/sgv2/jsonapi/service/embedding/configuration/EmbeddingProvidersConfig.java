@@ -13,7 +13,10 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.microprofile.config.spi.Converter;
 
+// TODO: SOME DOCUMENTATION FOR WHAT THIS IS MEANT TO DO!!!
 public interface EmbeddingProvidersConfig {
+
+  // TODO: WHAT IS THE KEY FOR THIS MAP ?????
   Map<String, EmbeddingProviderConfig> providers();
 
   @Nullable
@@ -30,6 +33,11 @@ public interface EmbeddingProvidersConfig {
     @Nullable
     @JsonProperty
     Optional<String> url();
+
+    /** a boolean to flag if the Astra token should be passed through to the provider. */
+    @JsonProperty
+    @WithDefault("false")
+    boolean authTokenPassThroughForNoneAuth();
 
     /**
      * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
@@ -274,15 +282,14 @@ public interface EmbeddingProvidersConfig {
       NUMBER("number"),
       BOOLEAN("boolean");
 
-      private final String type;
+      private final String apiName;
 
-      ParameterType(final String type) {
-        this.type = type;
+      ParameterType(final String apiName) {
+        this.apiName = apiName;
       }
 
-      @Override
-      public String toString() {
-        return type;
+      public String getApiName() {
+        return apiName;
       }
     }
   }

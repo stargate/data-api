@@ -31,7 +31,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   private final DatabaseType databaseType;
   private final String localDatacenter;
   private final Collection<InetSocketAddress> contactPoints;
-  private final List<SchemaChangeListener> schemaChangeListeners;
+  private final Supplier<SchemaChangeListener> schemaChangeListenerSupplier;
   private final Supplier<CqlSessionBuilder> sessionBuilderSupplier;
 
   /**
@@ -43,8 +43,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * @param cassandraEndPoints the Cassandra endpoints, only used when the database type is
    *     CASSANDRA
    * @param cassandraPort the Cassandra port, only used when the database type is CASSANDRA
-   * @param schemaChangeListeners the schema change listeners, these are added to the session to
-   *     listen for schema changes from it.
+   * @param schemaChangeListenerSupplier an optional supplier called to get a schema change listener
+   *     for each new session created
    */
   CqlSessionFactory(
       String applicationName,
@@ -52,15 +52,15 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
       String localDatacenter,
       List<String> cassandraEndPoints,
       Integer cassandraPort,
-      List<SchemaChangeListener> schemaChangeListeners) {
+      Supplier<SchemaChangeListener> schemaChangeListenerSupplier) {
     this(
         applicationName,
         databaseType,
         localDatacenter,
         cassandraEndPoints,
         cassandraPort,
-        schemaChangeListeners,
-        CqlSessionBuilder::new);
+        schemaChangeListenerSupplier,
+        TenantAwareCqlSessionBuilder::new);
   }
 
   /**
@@ -73,8 +73,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * @param cassandraEndPoints the Cassandra endpoints, only used when the database type is
    *     CASSANDRA
    * @param cassandraPort the Cassandra port, only used when the database type is CASSANDRA
-   * @param schemaChangeListeners the schema change listeners, these are added to the session to
-   *     listen for schema changes from it.
+   * @param schemaChangeListenerSupplier an optional supplier called to get a schema change listener
+   *     for each new session created
    * @param sessionBuilderSupplier a supplier for creating CqlSessionBuilder instances, so that
    *     testing can mock the builder for session creation. In prod code use the ctor without this.
    */
@@ -85,7 +85,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
       String localDatacenter,
       List<String> cassandraEndPoints,
       Integer cassandraPort,
-      List<SchemaChangeListener> schemaChangeListeners,
+      Supplier<SchemaChangeListener> schemaChangeListenerSupplier,
       Supplier<CqlSessionBuilder> sessionBuilderSupplier) {
 
     this.applicationName =
@@ -97,8 +97,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     this.localDatacenter =
         Objects.requireNonNull(localDatacenter, "localDatacenter must not be null");
 
-    this.schemaChangeListeners =
-        schemaChangeListeners == null ? List.of() : List.copyOf(schemaChangeListeners);
+    this.schemaChangeListenerSupplier = schemaChangeListenerSupplier;
     this.sessionBuilderSupplier =
         Objects.requireNonNull(sessionBuilderSupplier, "sessionBuilderSupplier must not be null");
 
@@ -144,9 +143,19 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
             .withConfigLoader(configLoader)
             .withApplicationName(applicationName);
 
-    for (var listener : schemaChangeListeners) {
+    if (builder instanceof TenantAwareCqlSessionBuilder tenantAwareBuilder) {
+      tenantAwareBuilder.withTenantId(tenantId);
+    }
+
+    if (null != schemaChangeListenerSupplier) {
+      SchemaChangeListener listener = schemaChangeListenerSupplier.get();
+      if (null == listener) {
+        throw new IllegalStateException(
+            "The schema change listener supplier returned a null listener.");
+      }
       builder = builder.addSchemaChangeListener(listener);
     }
+
     builder = credentials.addToSessionBuilder(builder);
 
     // for astra it will default to 127.0.0.1 which is routed to the astra proxy

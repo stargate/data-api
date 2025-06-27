@@ -27,7 +27,8 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
 
     @Test
     public void tokenMissing() {
-      given()
+
+      given() // No headers added on purpose
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
@@ -43,10 +44,7 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
 
     @Test
     public void malformedBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{wrong}")
+      givenHeadersAndJson("{wrong}")
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -58,18 +56,13 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
 
     @Test
     public void unknownCommand() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "unknownCommand": {
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -84,9 +77,7 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
 
     @Test
     public void emptyBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
+      givenHeaders()
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()

@@ -43,7 +43,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterDefinition()).isNotNull();
               });
     }
 
@@ -65,7 +65,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterDefinition()).isNotNull();
                 final SortClause sortClause =
                     findOneAndDeleteCommand.sortClause(testConstants.collectionContext());
                 assertThat(sortClause).isNotNull();
@@ -73,7 +73,7 @@ public class FindOneAndDeleteCommandTest {
                     .satisfies(
                         sort -> {
                           assertThat(sort.sortExpressions()).hasSize(1);
-                          assertThat(sort.sortExpressions().get(0).path()).isEqualTo("location");
+                          assertThat(sort.sortExpressions().get(0).getPath()).isEqualTo("location");
                         });
               });
     }
@@ -96,7 +96,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterDefinition()).isNotNull();
                 final SortClause sortClause =
                     findOneAndDeleteCommand.sortClause(testConstants.collectionContext());
                 assertThat(sortClause).isNotNull();
@@ -104,7 +104,7 @@ public class FindOneAndDeleteCommandTest {
                     .satisfies(
                         sort -> {
                           assertThat(sort.sortExpressions()).hasSize(1);
-                          assertThat(sort.sortExpressions().get(0).path()).isEqualTo("location");
+                          assertThat(sort.sortExpressions().get(0).getPath()).isEqualTo("location");
                         });
                 final JsonNode projector = findOneAndDeleteCommand.projectionDefinition();
                 assertThat(projector).isNotNull();

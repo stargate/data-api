@@ -76,11 +76,17 @@ snippets:
     body: |-
       Resend the command using only defined columns.
 
+  - name: REGULAR_SORT_EXPLANATION
+    body: |-
+      A regular sort expression in the sort clause identifies the column by name and then provides either:  
+      - `1` for ascending
+      - `-1` for descending
+
   - name: VECTOR_SORT_EXPLANATION
     body: |-
       A vector sort in the sort clause identifies the vector column by name and then provides either:  
       - The vector as an array of decimal numbers.
-      - The vector as a base64 encoded `{"$binary": "base64-encoded-vector"}` object.
+      - The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
       - A string to be vectorized if enabled for the column.
 
   - name: CURRENTLY_UNSUPPORTED
@@ -388,7 +394,7 @@ request-errors:
     body: |-
       The command requires a filter on the primary key that specifies all of the partitioning keys, and the partition sort keys in order.
       
-      If a partititon sort key is excluded, then all following partition sort keys must be excluded. 
+      If a partition sort key is excluded, then all following partition sort keys must be excluded. 
       
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
       
@@ -946,6 +952,13 @@ request-errors:
       Resend the command using only columns that use the `vector` type.
 
   - scope: SCHEMA
+    code: LEXICAL_NOT_ENABLED_FOR_COLLECTION
+    title: Lexical search is not enabled for the collection
+    body: |-
+      Lexical content can only be added and filtering and sort only be used on Collections for which Lexical feature is enabled.
+      The Collection ${keyspace}.${table} does not have Lexical feature enabled.
+
+  - scope: SCHEMA
     code: UNKNOWN_DATA_TYPE
     title: Data type is unknown
     body: |-
@@ -1111,6 +1124,17 @@ request-errors:
       Resend the command using a supported index type.    
 
   - scope: SCHEMA
+    code: UNSUPPORTED_JSON_TYPE_FOR_TEXT_INDEX
+    title: JSON value type is not supported for creating text index
+    body: |-
+      The command attempted to create a text index using an unsupported JSON value type.
+      
+      The supported JSON value types are: String, Object.
+      The command used the unsupported JSON value type: ${unsupportedType}.
+      
+      Resend the command using a supported JSON value type.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
     title: Analysed text index not supported by data types
     body: |-
@@ -1128,10 +1152,24 @@ request-errors:
       Resend the command using columns that support text analysis.
 
   - scope: SCHEMA
+    code: UNSUPPORTED_TEXT_INDEX_FOR_DATA_TYPES
+    title: Text index not supported by data types
+    body: |-
+      The command attempted to create a text index on a column that is not a `text` or `ascii` type.
+      
+      Text indexes can only be created on columns of type `text` or `ascii`.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to text index the unsupported columns: ${unsupportedColumns}.
+      
+      Resend the command using columns of `text` type.
+  
+
+  - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES
     title: Vector index not supported by data types
     body: |-
-      The command attempted to create an vector index on a column that is not a `vector` type.
+      The command attempted to create a vector index on a column that is not a `vector` type.
       
       Vector indexes can only be created on columns of type `vector`, regular indexes can only be created on primitive data types such as `text` and `int` using the createIndex command.
       
@@ -1334,6 +1372,19 @@ request-errors:
       Resend the command with only one vectorize sort.
 
   - scope: SORT
+    code: CANNOT_SORT_ON_SPECIAL_WITH_OTHERS
+    title: Special sort combined with other sort expressions
+    body: |-
+      The command used a sort clause with a special (lexical/vector/vectorize) sort combined with one or more other sort expressions:
+      Special sorts can only be used on their own, and cannot be combined with other sort expressions.
+      
+      The command attempted to use lexical sort on columns: ${lexicalSorts}.
+      The command attempted to use vector/vectorize sort on columns: ${vectorSorts}.
+      The command attempted to use regular sort on columns: ${regularSorts}.
+      
+      Resend the command with only one special sort expression.
+
+  - scope: SORT
     code: CANNOT_SORT_UNKNOWN_COLUMNS
     title: Sorted columns are not defined in the table schema
     body: |-
@@ -1358,12 +1409,12 @@ request-errors:
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort columns are not `vector` type
     body: |-
-      The command attempted to vectorize sort on a column that is not of `vector` type.
+      The command attempted to vector sort on a column that is not of `vector` type.
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
       Resend the command using only `vector` columns.
 
@@ -1375,10 +1426,10 @@ request-errors:
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
-      Resend the command using only `vector` columns wth vectorize enabled.
+      Resend the command using only `vector` columns with vectorize enabled.
 
   - scope: SORT
     code: CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION
@@ -1445,6 +1496,26 @@ request-errors:
       The command attempted to sort the non-vector columns: ${sortNonVectorColumns}.
       
       Resend the command using either vector or non-vector sorting.
+
+  - scope: SORT
+    code: INVALID_REGULAR_SORT_EXPRESSION
+    title: Sort expression is not valid for regular sort
+    body: |-
+      The command attempted to use unsupported JSON expression `${jsonExpr}` (type ${jsonType}) for sort clause.
+      
+      ${SNIPPET.REGULAR_SORT_EXPLANATION}
+      
+      Resend the command with only valid sort expressions.
+
+  - scope: SORT
+    code: INVALID_VECTOR_SORT_EXPRESSION
+    title: Sort expression is not valid for vector/vectorize sort
+    body: |-
+      The command attempted to use unsupported JSON type (${jsonType}) for vector or vectorize sort.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      Resend the command with valid vector/vectorize sort expression.
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND
