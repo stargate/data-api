@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapC
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -827,7 +828,7 @@ public class FilterInversionTest {
               TEST_DATA.names.CQL_LIST_COLUMN.asInternal(),
               List.of(
                   ValueComparisonOperation.build(
-                      to, List.of("value1", "value2"), MapSetListComponent.LIST_VALUE)),
+                      to, List.of("value1", "value2"), MapSetListFilterComponent.LIST_VALUE)),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(0);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
@@ -862,7 +863,7 @@ public class FilterInversionTest {
               TEST_DATA.names.CQL_SET_COLUMN.asInternal(),
               List.of(
                   ValueComparisonOperation.build(
-                      to, List.of("value1", "value2"), MapSetListComponent.SET_VALUE)),
+                      to, List.of("value1", "value2"), MapSetListFilterComponent.SET_VALUE)),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(0);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
@@ -915,7 +916,7 @@ public class FilterInversionTest {
                   ValueComparisonOperation.build(
                       to,
                       List.of("element1", "element2"),
-                      MapSetListComponent.fromMapComponent(
+                      MapSetListFilterComponent.fromMapComponentDesc(
                           MapComponentDesc.fromApiName(keysOrMaps).get()))),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(0);
@@ -962,7 +963,7 @@ public class FilterInversionTest {
                   ValueComparisonOperation.build(
                       to,
                       List.of(List.of("key1", "value1"), List.of("key2", "value2")),
-                      MapSetListComponent.MAP_ENTRY)),
+                      MapSetListFilterComponent.MAP_ENTRY)),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(0);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);

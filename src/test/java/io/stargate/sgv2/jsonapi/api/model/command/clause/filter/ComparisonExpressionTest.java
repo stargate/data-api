@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
@@ -132,13 +133,13 @@ public class ComparisonExpressionTest {
       final ComparisonExpression comparisonExpression =
           new ComparisonExpression(
               "mapSetListColumn",
-              MapSetListComponent.LIST_VALUE,
               List.of(
                   ValueComparisonOperation.build(
                       ValueComparisonOperator.IN,
                       List.of("value1", "value2"),
-                      MapSetListComponent.LIST_VALUE)),
-              null);
+                      MapSetListFilterComponent.LIST_VALUE)),
+              null,
+              MapSetListFilterComponent.LIST_VALUE);
 
       List<FilterOperation<?>> match =
           comparisonExpression.match(

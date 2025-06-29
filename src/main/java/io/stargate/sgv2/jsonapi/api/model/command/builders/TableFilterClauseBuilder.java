@@ -29,6 +29,14 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
           ValueComparisonOperator.NIN.getOperator(),
           ArrayComparisonOperator.ALL.getOperator());
 
+  private static String ERR_MESSAGE_SUPPORTED_MAP_SET_LIST_OPERATORS =
+      String.join(
+          ", ",
+          SUPPORTED_MAP_SET_LIST_OPERATORS.stream()
+              .sorted(Comparator.naturalOrder())
+              .map(x -> "'" + x + "'")
+              .toList());
+
   public TableFilterClauseBuilder(TableSchemaObject schema) {
     super(schema);
   }
@@ -217,18 +225,20 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
    */
   private void checkMapTupleFormat(JsonNode tupleFormatEntryArray, String columnName) {
 
+    boolean validTuple = true;
     // Ensure nodeEntryValue is a JSON array
-    if (tupleFormatEntryArray.isArray()) {
+    if (!tupleFormatEntryArray.isArray()) {
       // all good
-      return;
+      validTuple = false;
     }
 
     // Tuple map entries are represented as an array of arrays where each inner array has two
     // elements.
-    boolean validTuple = true;
-    for (JsonNode entry : tupleFormatEntryArray) {
-      if (entry.getNodeType() != JsonNodeType.ARRAY || entry.size() != 2) {
-        validTuple = false;
+    if (validTuple) {
+      for (JsonNode entry : tupleFormatEntryArray) {
+        if (entry.getNodeType() != JsonNodeType.ARRAY || entry.size() != 2) {
+          validTuple = false;
+        }
       }
     }
     if (validTuple) {
@@ -317,7 +327,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
                         .formatted(
                             operatorName,
                             columnName,
-                            String.join(",", SUPPORTED_MAP_SET_LIST_OPERATORS)));
+                            ERR_MESSAGE_SUPPORTED_MAP_SET_LIST_OPERATORS));
               }));
     }
     FilterOperator convertedOperator = FilterOperators.findComparisonOperator(operatorName);

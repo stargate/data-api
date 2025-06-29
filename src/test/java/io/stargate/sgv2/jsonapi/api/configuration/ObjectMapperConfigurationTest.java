@@ -16,8 +16,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;

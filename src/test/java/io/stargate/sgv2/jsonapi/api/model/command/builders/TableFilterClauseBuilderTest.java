@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.io.IOException;
@@ -193,7 +194,7 @@ public class TableFilterClauseBuilderTest {
           .satisfies(
               e ->
                   assertThat((e).getMessage())
-                      .contains("allowed operators are '$in', '$nin', '$all'"));
+                      .contains("allowed operators are '$all', '$in', '$nin'"));
     }
 
     private Stream<Object> mapColumnTest() {
@@ -320,12 +321,12 @@ public class TableFilterClauseBuilderTest {
         ValueComparisonOperator.IN,
         ValueComparisonOperator.NIN
       };
-      MapSetListComponent[] expectedComponent = {
-        MapSetListComponent.LIST_VALUE,
-        MapSetListComponent.LIST_VALUE,
-        MapSetListComponent.SET_VALUE,
-        MapSetListComponent.MAP_KEY,
-        MapSetListComponent.MAP_KEY
+      MapSetListFilterComponent[] expectedComponent = {
+        MapSetListFilterComponent.LIST_VALUE,
+        MapSetListFilterComponent.LIST_VALUE,
+        MapSetListFilterComponent.SET_VALUE,
+        MapSetListFilterComponent.MAP_KEY,
+        MapSetListFilterComponent.MAP_KEY
       };
       for (int i = 0; i < 5; i++) {
         var comparisonExpression = filterClause.logicalExpression().comparisonExpressions.get(i);

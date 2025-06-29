@@ -1,9 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
-
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
