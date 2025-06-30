@@ -15,25 +15,19 @@ public class LogicalExpressionTest {
       final ComparisonExpression comparisonExpression1 =
           new ComparisonExpression(
               "username",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testname", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testname")),
               null);
 
       final ComparisonExpression comparisonExpression2 =
           new ComparisonExpression(
               "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testage", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testage")),
               null);
 
       final ComparisonExpression comparisonExpression3 =
           new ComparisonExpression(
               "_id",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testId", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testId")),
               null);
 
       LogicalExpression and = LogicalExpression.and();

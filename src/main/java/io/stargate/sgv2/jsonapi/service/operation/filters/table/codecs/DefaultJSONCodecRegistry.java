@@ -64,14 +64,18 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
 
     var columnMetadata =
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
-
-    final DataType columnType = columnMetadata.getType();
-    return codecToCQL(columnType, value);
+    return codecToCQL(table, column, columnMetadata.getType(), value);
   }
 
   /** {@inheritDoc} */
-  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(DataType toCQLType, Object value)
+  @Override
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
+      TableMetadata table, CqlIdentifier column, DataType toCQLType, Object value)
       throws MissingJSONCodecException, ToCQLCodecException {
+
+    Objects.requireNonNull(table, "table must not be null");
+    Objects.requireNonNull(column, "column must not be null");
+    Objects.requireNonNull(toCQLType, "toCQLType must not be null");
 
     // Next, simplify later code by handling nulls directly here (but after column lookup)
     if (value == null) {
@@ -97,8 +101,8 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     }
 
     // CQL collection type and CQL UDT
-    // these can return Null if they had no candidates, wil throw an exception if they had a
-    // candidate but there was a type error
+    // these can return Null if they had no candidates, will throw an exception
+    // if they had a candidate but with a type error
     JSONCodec<JavaT, CqlT> complexCodec =
         switch (toCQLType) {
           case ListType lt -> codecToCQL(lt, value);
@@ -112,8 +116,7 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     if (complexCodec != null) {
       return complexCodec;
     }
-
-    throw new MissingJSONCodecException(toCQLType, value.getClass(), value);
+    throw new MissingJSONCodecException(table, column, toCQLType, value.getClass(), value);
   }
 
   /** Method to find a codec for the specified CQL List DataType. */

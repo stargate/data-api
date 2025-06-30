@@ -380,6 +380,10 @@ public class DataApiResponseValidator {
         jsonEquals(documentJSON).when(Option.IGNORING_ARRAY_ORDER));
   }
 
+  public DataApiResponseValidator hasDocumentsMatchedByIds(List<Object> ids) {
+    return body("data.documents.id", containsInAnyOrder(ids.toArray()));
+  }
+
   public DataApiResponseValidator hasDocumentUnknowingPosition(String documentJSON) {
     return body("data.documents", hasItem(jsonEquals(documentJSON)));
   }

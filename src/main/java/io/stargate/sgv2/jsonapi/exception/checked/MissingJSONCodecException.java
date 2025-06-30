@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception.checked;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 
 /**
@@ -11,20 +13,26 @@ import com.datastax.oss.driver.api.core.type.DataType;
  */
 public class MissingJSONCodecException extends CheckedApiException {
 
-  public final DataType dataType;
+  // TODO: both javaType and value may be null when going toJSON
+  public final TableMetadata table;
+  public final CqlIdentifier columnName;
+  public final DataType cqlType;
   public final Class<?> javaType;
   public final Object value;
 
-  /**
-   * Similar to {@link ToCQLCodecException}, no need to know the table, since this is exception is
-   * not returned for the API and will be caught and handled into appropriate API error.
-   */
-  public MissingJSONCodecException(DataType dataType, Class<?> javaType, Object value) {
+  public MissingJSONCodecException(
+      TableMetadata table,
+      CqlIdentifier columnName,
+      DataType cqlType,
+      Class<?> javaType,
+      Object value) {
     super(
         String.format(
-            "No JSONCodec found for cql dataType %s with java type %s and value %s",
-            dataType, javaType, value));
-    this.dataType = dataType;
+            "No JSONCodec found for table '%s' column '%s' column type %s with java type %s and value %s",
+            table.getName(), columnName.toString(), cqlType, javaType, value));
+    this.table = table;
+    this.columnName = columnName;
+    this.cqlType = cqlType;
     this.javaType = javaType;
     this.value = value;
   }
