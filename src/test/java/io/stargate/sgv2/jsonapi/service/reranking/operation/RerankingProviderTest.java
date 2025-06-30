@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.reranking;
+package io.stargate.sgv2.jsonapi.service.reranking.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -6,7 +6,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
-import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
 import java.util.Optional;
@@ -18,7 +17,7 @@ import org.junit.jupiter.api.Test;
 public class RerankingProviderTest {
 
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials(Optional.of("mocked reranking api key"));
+      new RerankingCredentials("test-tenant", Optional.of("mocked reranking api key"));
 
   @Test
   @SuppressWarnings("unchecked")

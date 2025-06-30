@@ -17,15 +17,11 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.LoggerFactory;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase {
-
-  private static final org.slf4j.Logger LOGGER =
-      LoggerFactory.getLogger(TableFilterIntegrationTest.class);
+public class ScalarFilterTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   static final String TABLE_WITH_COLUMN_TYPES_INDEXED = "table_indexed";
   static final String TABLE_WITH_COLUMN_TYPES_NOT_INDEXED = "table_not_indexed";
@@ -531,9 +527,6 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
         Map<String, String> docIdPerComparisonOperator) {
 
       for (Map.Entry<String, String> comparisonDocEntry : docIdPerComparisonOperator.entrySet()) {
-        LOGGER.debug(
-            "Testing comparison filter %s against column datatype %s"
-                .formatted(comparisonDocEntry.getKey(), columnType));
 
         var expectedDocId =
             comparisonDocEntry.getValue().equals(NO_DOC_FOUND)

@@ -85,6 +85,23 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    */
   protected abstract boolean isDocId(String path);
 
+  /**
+   * Method to build the list of ComparisonExpression from a single path entry. Collection and Table
+   * will have different implementations of this method.
+   *
+   * <p>E.G.
+   *
+   * <ul>
+   *   <li><code>{"name": {"$eq" : "Tim"}}</code>
+   *   <li><code>{"name": {"$gt" : 10, "$lt" : 50}}</code>
+   *   <li><code>
+   *       {"listColumn": {"$in": ["listValue1", "listValue2"], "$nin": ["listValue3", "listValue4"]}}
+   *       </code> ...
+   * </ul>
+   */
+  protected abstract List<ComparisonExpression> buildFromPathEntry(
+      Map.Entry<String, JsonNode> entry);
+
   // // // Construction of LogicalExpression from JSON
 
   private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {
@@ -123,7 +140,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         populateExpression(innerLogicalExpression, entry.getValue());
         logicalExpression.addLogicalExpression(innerLogicalExpression);
       } else {
-        logicalExpression.addComparisonExpressions(createComparisonExpressionList(entry));
+        logicalExpression.addComparisonExpressions(buildFromPathEntry(entry));
       }
       // inside of this entry, only implicit and, no explicit $and/$or
     } else if (entry.getValue().isArray()) {
@@ -165,18 +182,17 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   }
 
   /**
-   * The filter clause is entry will have field path as key and object type as value. The value can
-   * have multiple operator and condition values.
+   * The common path shared by both {@link CollectionFilterClauseBuilder} and {@link
+   * TableFilterClauseBuilder}. It takes a single path entry and creates a list of {@link
+   * ComparisonExpression} from it. E.G.
    *
-   * <p>Eg 1: {"field" : {"$eq" : "value"}}
-   *
-   * <p>Eg 2: {"field" : {"$gt" : 10, "$lt" : 50}}
-   *
-   * @param entry
-   * @return
+   * <ul>
+   *   <li><code>{"name" : {"$eq" : "value"}}</code>
+   *   <li><code>{"name" : {"$gt" : 10, "$lt" : 50}}</code>
+   * </ul>
    */
-  private List<ComparisonExpression> createComparisonExpressionList(
-      Map.Entry<String, JsonNode> entry) {
+  protected List<ComparisonExpression> buildFromPathEntryCommon(Map.Entry<String, JsonNode> entry) {
+
     final List<ComparisonExpression> comparisonExpressionList = new ArrayList<>();
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
@@ -276,7 +292,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    * @param node - JsonNode which has the operand value of a filter clause
    * @return
    */
-  private Object jsonNodeValue(String path, JsonNode node) {
+  protected Object jsonNodeValue(String path, JsonNode node) {
     // If the path is _id, then the value is resolved as DocumentId and Array type handled for `$in`
     // operator in filter
     if (isDocId(path)) {
@@ -297,7 +313,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    * Method to parse each filter clause and return node value. Called recursively in case of array
    * and object json types.
    */
-  private Object jsonNodeValue(JsonNode node) {
+  protected Object jsonNodeValue(JsonNode node) {
     switch (node.getNodeType()) {
       case BOOLEAN:
         return node.booleanValue();

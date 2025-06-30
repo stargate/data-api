@@ -38,6 +38,31 @@ public interface JSONCodecRegistry {
       TableMetadata table, CqlIdentifier column, Object value)
       throws UnknownColumnException, MissingJSONCodecException, ToCQLCodecException;
 
+  /**
+   * Returns a codec that can convert a Java object into the object expected by the CQL driver for a
+   * specific CQL data type.
+   *
+   * <p>Use this overload when you want to control how the type of the column is found, such as when
+   * doing this for a CQL map type where you may want to get the codec for the value or the key.
+   *
+   * @param table {@link TableMetadata} the column is in, only used for error messages by this
+   *     overload.
+   * @param column {@link CqlIdentifier} for the column we want to get the codec for, only used for
+   *     error messages by this overload.
+   * @param toCQLType The expected CQL type.
+   * @param value The value to be written to the column.
+   * @param <JavaT> Type of the Java object we want to convert.
+   * @param <CqlT> Type fo the Java object the CQL driver expects.
+   * @return The {@link JSONCodec} that can convert the value to the expected CQL type, or an
+   *     exception if the codec cannot be found.
+   * @throws MissingJSONCodecException If no codec is found for the column and type of the value.
+   * @throws ToCQLCodecException If there is a codec for CQL type, but not one for converting from
+   *     the Java value type
+   */
+  <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
+      TableMetadata table, CqlIdentifier column, DataType toCQLType, Object value)
+      throws MissingJSONCodecException, ToCQLCodecException;
+
   default <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
       TableMetadata table, ColumnMetadata column) throws MissingJSONCodecException {
     // compiler telling me we need to use the unchecked assignment again like the codecFor does
