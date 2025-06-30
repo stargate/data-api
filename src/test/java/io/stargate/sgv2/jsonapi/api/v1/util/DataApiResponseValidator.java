@@ -32,11 +32,14 @@ public class DataApiResponseValidator {
         switch (commandName) {
           case DROP_TABLE,
                   DROP_INDEX,
+                  DROP_TYPE,
                   CREATE_INDEX,
                   CREATE_TEXT_INDEX,
                   CREATE_VECTOR_INDEX,
                   CREATE_TABLE,
+                  CREATE_TYPE,
                   ALTER_TABLE,
+                  ALTER_TYPE,
                   FIND_ONE,
                   FIND ->
               responseIsErrorWithOptionalStatus();
@@ -49,7 +52,10 @@ public class DataApiResponseValidator {
               responseIsWriteSuccess();
           case ALTER_TABLE,
                   CREATE_TABLE,
+                  CREATE_TYPE,
                   DROP_TABLE,
+                  DROP_TYPE,
+                  ALTER_TYPE,
                   CREATE_INDEX,
                   CREATE_TEXT_INDEX,
                   CREATE_VECTOR_INDEX,
@@ -116,7 +122,10 @@ public class DataApiResponseValidator {
       }
       case ALTER_TABLE,
           CREATE_TABLE,
+          CREATE_TYPE,
           DROP_TABLE,
+          DROP_TYPE,
+          ALTER_TYPE,
           CREATE_INDEX,
           CREATE_TEXT_INDEX,
           CREATE_VECTOR_INDEX,

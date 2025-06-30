@@ -81,7 +81,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                                },
                                                                "list_type": {
                                                                   "type": "list",
-                                                                  "valueType": "text"
+                                                                    "valueType": "text"
                                                                },
                                                                "set_type": {
                                                                   "type": "set",
