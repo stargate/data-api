@@ -48,9 +48,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "username",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "aaron")),
               null);
       assertThat(filterClause).isNotNull();
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -133,9 +131,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "username",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "aaron")),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -157,9 +153,8 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "numberType",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ,
-                      new JsonLiteral(BigDecimal.valueOf(40), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.EQ, BigDecimal.valueOf(40))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -180,9 +175,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "boolType",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, true)),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -204,9 +197,8 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "dateType",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ,
-                      new JsonLiteral(new Date(1672531200000L), JsonType.DATE))),
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.EQ, new Date(1672531200000L))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -228,9 +220,8 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "dateType",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ,
-                      new JsonLiteral(new Date(1672531200000L), JsonType.DATE))),
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.EQ, new Date(1672531200000L))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
@@ -301,9 +292,7 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "allPath",
               List.of(
-                  new ValueComparisonOperation(
-                      ArrayComparisonOperator.ALL,
-                      new JsonLiteral(List.of("a", "b"), JsonType.ARRAY))),
+                  ValueComparisonOperation.build(ArrayComparisonOperator.ALL, List.of("a", "b"))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -332,16 +321,12 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "allPath",
               List.of(
-                  new ValueComparisonOperation(
-                      ArrayComparisonOperator.ALL,
-                      new JsonLiteral(List.of("a", "b"), JsonType.ARRAY))),
+                  ValueComparisonOperation.build(ArrayComparisonOperator.ALL, List.of("a", "b"))),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testAge")),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
@@ -424,9 +409,7 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "sizePath",
               List.of(
-                  new ValueComparisonOperation(
-                      ArrayComparisonOperator.SIZE,
-                      new JsonLiteral(new BigDecimal(2), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ArrayComparisonOperator.SIZE, new BigDecimal(2))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -448,9 +431,7 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "sizePath",
               List.of(
-                  new ValueComparisonOperation(
-                      ArrayComparisonOperator.SIZE,
-                      new JsonLiteral(new BigDecimal(0), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ArrayComparisonOperator.SIZE, new BigDecimal(0))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -469,9 +450,7 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "sizePath",
               List.of(
-                  new ValueComparisonOperation(
-                      ArrayComparisonOperator.SIZE,
-                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ArrayComparisonOperator.SIZE, new BigDecimal(5))),
               null);
       FilterClause filterClause1 = readCollectionFilterClause(json);
       assertThat(filterClause1.logicalExpression().logicalExpressions).hasSize(0);
@@ -552,9 +531,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "sub_doc",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(value, JsonType.SUB_DOC))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, value)),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -576,9 +553,7 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "col",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE,
-                      new JsonLiteral(List.of("1", "2"), JsonType.ARRAY))),
+                  ValueComparisonOperation.build(ValueComparisonOperator.NE, List.of("1", "2"))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -600,9 +575,7 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "col",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ,
-                      new JsonLiteral(List.of("3", "4"), JsonType.ARRAY))),
+                  ValueComparisonOperation.build(ValueComparisonOperator.EQ, List.of("3", "4"))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -625,9 +598,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "sub_doc",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral(value, JsonType.SUB_DOC))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, value)),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -653,17 +624,13 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("Tim", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "Tim")),
               null);
 
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ElementComparisonOperator.EXISTS, new JsonLiteral(true, JsonType.BOOLEAN))),
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, true)),
               null);
 
       FilterClause filterClause = readCollectionFilterClause(json);
@@ -696,11 +663,9 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "_id",
               List.of(
-                  new ValueComparisonOperation(
+                  ValueComparisonOperation.build(
                       ValueComparisonOperator.IN,
-                      new JsonLiteral(
-                          List.of(DocumentId.fromString("2"), DocumentId.fromString("3")),
-                          JsonType.ARRAY))),
+                      List.of(DocumentId.fromString("2"), DocumentId.fromString("3")))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -722,9 +687,8 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "name",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.IN,
-                      new JsonLiteral(List.of("name1", "name2"), JsonType.ARRAY))),
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.IN, List.of("name1", "name2"))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -753,16 +717,13 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "name",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.IN,
-                      new JsonLiteral(List.of("name1", "name2"), JsonType.ARRAY))),
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.IN, List.of("name1", "name2"))),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testAge")),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
@@ -820,16 +781,12 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testName")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testAge")),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
@@ -870,16 +827,12 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testName")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testAge")),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
@@ -934,30 +887,22 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testName")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testAge")),
               null);
       final ComparisonExpression expectedResult3 =
           new ComparisonExpression(
               "address",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testAddress", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testAddress")),
               null);
       final ComparisonExpression expectedResult4 =
           new ComparisonExpression(
               "height",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testHeight", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testHeight")),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
@@ -1025,9 +970,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "_id",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.IN, new JsonLiteral(List.of(), JsonType.ARRAY))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.IN, List.of())),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -1048,9 +991,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "_id",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NIN, new JsonLiteral(List.of(), JsonType.ARRAY))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NIN, List.of())),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -1272,7 +1213,8 @@ public class FilterClauseBuilderTest {
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.MATCH,
-                      new JsonLiteral("search text", JsonType.STRING))),
+                      new JsonLiteral("search text", JsonType.STRING),
+                      null)),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -1380,13 +1322,11 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "_id",
               List.of(
-                  new ValueComparisonOperation(
+                  ValueComparisonOperation.build(
                       ValueComparisonOperator.EQ,
-                      new JsonLiteral(
-                          DocumentId.fromExtensionType(
-                              JsonExtensionType.OBJECT_ID,
-                              objectMapper.getNodeFactory().textNode(OBJECT_ID)),
-                          JsonType.DOCUMENT_ID))),
+                      DocumentId.fromExtensionType(
+                          JsonExtensionType.OBJECT_ID,
+                          objectMapper.getNodeFactory().textNode(OBJECT_ID)))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -1409,9 +1349,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "nested.path",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(OBJECT_ID, JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, OBJECT_ID)),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -1435,12 +1373,10 @@ public class FilterClauseBuilderTest {
           new ComparisonExpression(
               "_id",
               List.of(
-                  new ValueComparisonOperation(
+                  ValueComparisonOperation.build(
                       ValueComparisonOperator.EQ,
-                      new JsonLiteral(
-                          DocumentId.fromExtensionType(
-                              JsonExtensionType.UUID, objectMapper.getNodeFactory().textNode(UUID)),
-                          JsonType.DOCUMENT_ID))),
+                      DocumentId.fromExtensionType(
+                          JsonExtensionType.UUID, objectMapper.getNodeFactory().textNode(UUID)))),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -1463,9 +1399,7 @@ public class FilterClauseBuilderTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "value",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(UUID, JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, UUID)),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
