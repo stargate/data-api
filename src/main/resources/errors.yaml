@@ -1073,11 +1073,14 @@ request-errors:
 
   - scope: SCHEMA
     code: UNSUPPORTED_TYPE_FIELD
-    title: Type definition contains unsupported  field.
+    title: Type definition contains unsupported field.
     body: |-
       The command contains a type definition that used unsupported field.
       
       Type as field, map/set/list as field are not supported.
+      
+      The supported field data types are: ${supportedTypes}.
+      The command used the unsupported data type: ${unsupportedType}.
       
       Resend the command using a supported type field.
 

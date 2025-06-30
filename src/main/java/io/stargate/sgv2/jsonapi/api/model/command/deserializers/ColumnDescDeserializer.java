@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Custom deserializer to decode the column type from the JSON payload This is required because
@@ -171,23 +172,19 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
               + " (`%s` field is not String)".formatted(TableDescConstants.ColumnDesc.TYPE));
     }
 
-    // long-form to get the type
-    var typeName =
-        ApiTypeName.fromApiName(typeNode.asText())
-            .orElseThrow(
-                () ->
-                    SchemaException.Code.UNKNOWN_DATA_TYPE.get(
-                        Map.of(
-                            "supportedTypes", errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName),
-                            "unsupportedType", typeNode.asText())));
-
-    // even long-form, only primitive types are supported for UDT fields.
-    var longFormPrimitive = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(typeName.apiName());
-    if (longFormPrimitive.isPresent()) {
-      return longFormPrimitive.get();
+    // long-form to get the apiTypeName
+    final Optional<ApiTypeName> apiTypeName = ApiTypeName.fromApiName(typeNode.asText());
+    if (apiTypeName.isPresent()) {
+      var longFormPrimitive =
+          PrimitiveColumnDesc.FROM_JSON_FACTORY.create(apiTypeName.get().apiName());
+      if (longFormPrimitive.isPresent()) {
+        return longFormPrimitive.get();
+      }
     }
 
     // UDT as field or map/set/list as field both requires long form of definition.
-    throw SchemaException.Code.UNSUPPORTED_TYPE_FIELD.get();
+    throw SchemaException.Code.UNSUPPORTED_TYPE_FIELD.get(
+        "unsupportedType", typeNode.asText(),
+        "supportedTypes", errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName));
   }
 }
