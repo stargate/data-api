@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Custom deserializer for container of UDT fields. See {@link TypeDefinitionDesc} for usage.
@@ -27,18 +24,17 @@ public class TypeFieldsContainerDeserializer extends JsonDeserializer<ColumnsDes
     ColumnsDescContainer container = new ColumnsDescContainer();
     ColumnDescDeserializer deserializer = new ColumnDescDeserializer(true);
 
-    for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
-      Map.Entry<String, JsonNode> entry = it.next();
-      String fieldName = entry.getKey();
-      JsonNode fieldNode = entry.getValue();
+    node.fields()
+        .forEachRemaining(
+            entry -> {
+              var fieldName = entry.getKey();
+              var fieldNode = entry.getValue();
 
-      // Deserialize each ColumnDesc
-      ColumnDesc columnDesc =
-          deserializer.deserialize(fieldNode.traverse(), deserializationContext);
-      //      ColumnDesc columnDesc = deserializationContext.readTreeAsValue(fieldNode,
-      // ColumnDesc.class);
-      container.put(fieldName, columnDesc);
-    }
+              // Deserialize each ColumnDesc
+              var columnDesc =
+                  deserializer.deserialize(fieldNode.traverse(), deserializationContext);
+              container.put(fieldName, columnDesc);
+            });
 
     return container;
   }

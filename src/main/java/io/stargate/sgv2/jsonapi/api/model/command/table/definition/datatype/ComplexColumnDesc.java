@@ -1,15 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
-import static io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer.ERR_OBJECT_WITH_TYPE;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -36,18 +33,14 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
   }
 
   /**
-   * Method to determine the element type for a Map, Set, or List column based on the provided
-   * jsonNode. Param elementTypeNode can be either:
+   * Method to determine the element(key or value) type for a Map, Set, or List column based on the
+   * provided jsonNode. Note, If no valid columnDesc can be mapped, method will return empty
+   * optional and let the caller handle the error.
    *
-   * <ul>
-   *   <li>short-form text node: primitive type
-   *   <li>long-form object node: primitive type or UDT type
-   * </ul>
-   *
-   * Note, we do not support map key as UDT. If no valid columnDesc can be mapped, method will
-   * return empty optional and let the caller handle the error.
-   *
+   * @param jsonParser the JsonParser to use for error reporting
    * @param isValueTypeNode false if it is for map key, true if it is for map/set/list value
+   * @param elementTypeNode the JsonNode representing the element type, can be either short-form
+   *     text node(primitive type) or long-form object node(primitive/UDT type)
    */
   public static Optional<ColumnDesc> elementTypeForMapSetListColumn(
       JsonParser jsonParser, JsonNode elementTypeNode, boolean isValueTypeNode)
@@ -63,34 +56,14 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
 
     // if it's an object, it can be a primitive type or UDT type
     if (elementTypeNode.isObject()) {
-      var type = elementTypeNode.get(TableDescConstants.ColumnDesc.TYPE);
-      if (type == null || type.isMissingNode()) {
-        throw new JsonMappingException(
-            jsonParser,
-            ERR_OBJECT_WITH_TYPE
-                + " (`%s` field is missing)".formatted(TableDescConstants.ColumnDesc.TYPE));
-      }
-      if (!type.isTextual()) {
-        throw new JsonMappingException(
-            jsonParser,
-            ERR_OBJECT_WITH_TYPE
-                + " (`%s` field is not String)".formatted(TableDescConstants.ColumnDesc.TYPE));
-      }
-      var typeName =
-          ApiTypeName.fromApiName(type.asText())
-              .orElseThrow(
-                  () ->
-                      SchemaException.Code.UNKNOWN_DATA_TYPE.get(
-                          Map.of(
-                              "supportedTypes", errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName),
-                              "unsupportedType", type.asText())));
+      var apiTypeName = ColumnDescDeserializer.typeInLongForm(jsonParser, elementTypeNode);
 
-      var longFormPrimitive = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(typeName.apiName());
+      var longFormPrimitive = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(apiTypeName.apiName());
       if (longFormPrimitive.isPresent()) {
         elementTypeDesc = longFormPrimitive;
       } else {
         // We don't support UDT for map key type
-        if (typeName.equals(ApiTypeName.UDT) && isValueTypeNode) {
+        if (apiTypeName.equals(ApiTypeName.UDT) && isValueTypeNode) {
           // long-form UDT type, we need to get the UDT name
           var udtName = elementTypeNode.path(TableDescConstants.ColumnDesc.UDT_NAME).asText();
           // As of June 23th 2025, API only supports frozen UDT as map/set/list component to create.

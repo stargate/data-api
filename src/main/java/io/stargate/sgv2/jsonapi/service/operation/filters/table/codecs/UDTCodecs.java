@@ -19,15 +19,20 @@ import java.util.Map;
 
 public class UDTCodecs {
 
+  /** API UDT value representation is Map. */
   private static final GenericType<Map<Object, Object>> GENERIC_UDT =
       GenericType.mapOf(Object.class, Object.class);
 
   /**
-   * Factory method to build a codec for a CQL UDT type: codec will be given set of possible codecs
-   * (since we have one per input JSON type) and will dynamically select the right one based on the
-   * actual UDT field values.
+   * Factory method to build a codec for converting a UDT type to CQL: codec will be given set of
+   * possible codecs (since we have one per input JSON type) and will dynamically select the right
+   * one based on the actual UDT field values.
+   *
+   * @param fieldsCodecCandidates Map of field names to a list of possible codecs for that field.
+   * @param fieldTypes Map of field names to their expected CQL data types.
+   * @param userDefinedType The CQL user-defined type (UDT) that this codec will convert to.
    */
-  public static JSONCodec<?, ?> buildToCqlUdtCodec(
+  public static JSONCodec<?, UdtValue> buildToCqlUdtCodec(
       Map<CqlIdentifier, List<JSONCodec<?, ?>>> fieldsCodecCandidates,
       Map<CqlIdentifier, DataType> fieldTypes,
       UserDefinedType userDefinedType) {
@@ -36,16 +41,19 @@ public class UDTCodecs {
         GENERIC_UDT,
         userDefinedType,
         (cqlType, value) -> toCqlUdt(fieldsCodecCandidates, fieldTypes, userDefinedType, value),
-        // This code only for to-cql case, not to-json, so we don't need this
+        // This code only for to-cql case, not to-json, so set to null.
         null);
   }
 
   /**
-   * Factory method to build a codec for a JSON UDT type: codec will be given set of possible codecs
-   * (since we have one per input JSON type) and will dynamically select the right one based on the
-   * actual UDT field values.
+   * Factory method to build a codec for converting a UDT to Json: codec will be given set of
+   * possible codecs (since we have one per input JSON type) and will dynamically select the right
+   * one based on the actual UDT field values.
+   *
+   * @param fieldCodecs Map of field names to their expected JSON codecs.
+   * @param userDefinedType The CQL user-defined type (UDT) type.
    */
-  public static JSONCodec<?, ?> buildToJsonUdtCodec(
+  public static JSONCodec<?, UdtValue> buildToJsonUdtCodec(
       Map<CqlIdentifier, JSONCodec<?, ?>> fieldCodecs, UserDefinedType userDefinedType) {
     return new JSONCodec<>(
         GENERIC_UDT,
@@ -128,6 +136,9 @@ public class UDTCodecs {
         newUdtValue =
             newUdtValue.set(
                 fieldIdentifier, cqlFieldValue, (Class<Object>) cqlFieldValue.getClass());
+      } else {
+        // if the value is null, we set it to null in the UdtValue
+        newUdtValue = newUdtValue.setToNull(fieldIdentifier);
       }
     }
     return newUdtValue;
@@ -145,7 +156,7 @@ public class UDTCodecs {
       CqlIdentifier fieldIdentifier = fieldToCodecEntry.getKey();
       JSONCodec fieldCodec = fieldToCodecEntry.getValue();
 
-      final Object cqlFieldValue = udtValue.getObject(fieldIdentifier);
+      Object cqlFieldValue = udtValue.getObject(fieldIdentifier);
 
       switch (cqlFieldValue) {
         case null -> {

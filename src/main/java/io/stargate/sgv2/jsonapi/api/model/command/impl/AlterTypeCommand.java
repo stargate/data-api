@@ -14,12 +14,12 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * not support options like IF NOT EXISTS or IF EXISTS, as these are not available in Astra, even
  * though they are supported in Cassandra 5.
  */
-@Schema(description = "Command that alters a type.")
+@Schema(description = "Command that alters a user defined type.")
 @JsonTypeName(CommandName.Names.ALTER_TYPE)
 public record AlterTypeCommand(
     @NotEmpty @Schema(description = "Required name of the type") String name,
-    @Nullable @Schema(description = "Definition of rename fields") RenameTypeFieldsDesc rename,
-    @Nullable @Schema(description = "Definition of new adding fields") TypeDefinitionDesc add)
+    @Nullable @Schema(description = "Operation to rename fields") RenameTypeFieldsDesc rename,
+    @Nullable @Schema(description = "Operation to add fields") TypeDefinitionDesc add)
     implements TableOnlyCommand {
 
   /** {@inheritDoc} */

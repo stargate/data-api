@@ -12,7 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that creates a type.")
+@Schema(description = "Command that creates a user defined type.")
 @JsonTypeName(CommandName.Names.CREATE_TYPE)
 public record CreateTypeCommand(
     @NotEmpty @Schema(description = "Required name of the new type") String name,

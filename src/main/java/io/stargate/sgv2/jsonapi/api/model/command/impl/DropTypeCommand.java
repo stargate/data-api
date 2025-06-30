@@ -14,7 +14,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  *
  * @param name Name of the table
  */
-@Schema(description = "Command that drops a type if one exists.")
+@Schema(description = "Command that drops a user defined type if one exists.")
 @JsonTypeName(CommandName.Names.DROP_TYPE)
 public record DropTypeCommand(
     @NotEmpty // prevent null or empty String from breaking CQL statement, validate early

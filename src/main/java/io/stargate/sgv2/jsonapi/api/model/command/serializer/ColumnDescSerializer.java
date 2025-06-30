@@ -45,53 +45,25 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
     jsonGenerator.writeEndObject();
   }
 
-  /**
-   * Write the map/set/list column description to the JSON generator.
-   *
-   * <p>Note, if the key/value type is a UDT, it will write the full UDT description. Otherwise, it
-   * will just write the type name.
-   */
+  /** Write the map/set/list column description to the JSON generator. */
   private void writeMapSetListDesc(JsonGenerator jsonGenerator, ColumnDesc mapSetListColumnDesc)
       throws IOException {
 
     switch (mapSetListColumnDesc) {
       case MapColumnDesc mapColumnDesc -> {
-        if (mapColumnDesc.keyType() instanceof UDTColumnDesc udtKey) {
-          jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.KEY_TYPE);
-          writeFullUdtDesc(jsonGenerator, udtKey);
-          jsonGenerator.writeEndObject();
-        } else {
-          jsonGenerator.writeStringField(
-              TableDescConstants.ColumnDesc.KEY_TYPE, mapColumnDesc.keyType().getApiName());
-        }
-        if (mapColumnDesc.valueType() instanceof UDTColumnDesc udtValue) {
-          jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.VALUE_TYPE);
-          writeFullUdtDesc(jsonGenerator, udtValue);
-          jsonGenerator.writeEndObject();
-        } else {
-          jsonGenerator.writeStringField(
-              TableDescConstants.ColumnDesc.VALUE_TYPE, mapColumnDesc.valueType().getApiName());
-        }
+        // write key and value description
+        writeKeyOrValueTypeDesc(
+            jsonGenerator, TableDescConstants.ColumnDesc.KEY_TYPE, mapColumnDesc.keyType());
+        writeKeyOrValueTypeDesc(
+            jsonGenerator, TableDescConstants.ColumnDesc.VALUE_TYPE, mapColumnDesc.valueType());
       }
       case SetColumnDesc setColumnDesc -> {
-        if (setColumnDesc.valueType() instanceof UDTColumnDesc udtValue) {
-          jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.VALUE_TYPE);
-          writeFullUdtDesc(jsonGenerator, udtValue);
-          jsonGenerator.writeEndObject();
-        } else {
-          jsonGenerator.writeStringField(
-              TableDescConstants.ColumnDesc.VALUE_TYPE, setColumnDesc.valueType().getApiName());
-        }
+        writeKeyOrValueTypeDesc(
+            jsonGenerator, TableDescConstants.ColumnDesc.VALUE_TYPE, setColumnDesc.valueType());
       }
       case ListColumnDesc listColumnDesc -> {
-        if (listColumnDesc.valueType() instanceof UDTColumnDesc udtValue) {
-          jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.VALUE_TYPE);
-          writeFullUdtDesc(jsonGenerator, udtValue);
-          jsonGenerator.writeEndObject();
-        } else {
-          jsonGenerator.writeStringField(
-              TableDescConstants.ColumnDesc.VALUE_TYPE, listColumnDesc.valueType().getApiName());
-        }
+        writeKeyOrValueTypeDesc(
+            jsonGenerator, TableDescConstants.ColumnDesc.VALUE_TYPE, listColumnDesc.valueType());
       }
       default ->
           throw new IllegalArgumentException(
@@ -99,6 +71,24 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
     }
   }
 
+  /**
+   * Write the key or value type description to the JSON generator.
+   *
+   * <p>If the columnDesc is a UDT, it will write the full UDT description. Otherwise, it will just
+   * write the type name.
+   */
+  private void writeKeyOrValueTypeDesc(
+      JsonGenerator jsonGenerator, String fieldName, ColumnDesc columnDesc) throws IOException {
+    if (columnDesc instanceof UDTColumnDesc udtColumnDesc) {
+      jsonGenerator.writeObjectFieldStart(fieldName);
+      writeFullUdtDesc(jsonGenerator, udtColumnDesc);
+      jsonGenerator.writeEndObject();
+    } else {
+      jsonGenerator.writeStringField(fieldName, columnDesc.getApiName());
+    }
+  }
+
+  /** Write the full UDT description to the JSON generator. */
   private void writeFullUdtDesc(JsonGenerator jsonGenerator, UDTColumnDesc udtColumnDesc)
       throws IOException {
     jsonGenerator.writeStringField(

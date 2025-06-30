@@ -156,6 +156,7 @@ public class ApiUdtType implements ApiDataType {
       return new ApiUdtType(columnDesc.udtName, columnDesc.isFrozen(), apiSupport);
     }
 
+    /** */
     @Override
     public boolean isSupported(
         UDTColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {

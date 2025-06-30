@@ -9,9 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Represents a User Defined Type (UDT) column in a table definition.
- *
- * <p>This class is used to describe a UDT column, including its name, fields, and whether it is
+ * This class is used to describe a UDT column, including its name, fields, and whether it is
  * frozen.
  */
 public class UDTColumnDesc extends ComplexColumnDesc {

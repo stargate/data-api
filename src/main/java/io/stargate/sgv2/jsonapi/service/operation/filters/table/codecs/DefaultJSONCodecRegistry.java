@@ -202,7 +202,7 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     for (int i = 0; i < userDefinedType.getFieldNames().size(); i++) {
       var fieldIdentifier = userDefinedType.getFieldNames().get(i);
       var fieldCqlType = userDefinedType.getFieldTypes().get(i);
-      // TODO UDT_TODO, as of June 24th, 2025, only support UDTs with primitive types as fields
+
       List<JSONCodec<?, ?>> fieldCodecCandidates = codecsByCQLType.get(fieldCqlType);
       if (fieldCodecCandidates == null) {
         throw new ToCQLCodecException(
@@ -214,7 +214,6 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       fieldsCodecCandidates.put(fieldIdentifier, fieldCodecCandidates);
       fieldTypes.put(fieldIdentifier, fieldCqlType);
     }
-    // TODO UDT_TODO, value validation
 
     return (JSONCodec<JavaT, CqlT>)
         UDTCodecs.buildToCqlUdtCodec(fieldsCodecCandidates, fieldTypes, userDefinedType);
@@ -245,10 +244,10 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
    * method has recursive calls to itself, so it can handle subTypes.
    *
    * <ul>
-   *   <li>if the `fromCQLType` is a Set of TEXT, it will call itself to get the codec for the
-   *       TEXT...
-   *   <li>if the `fromCQLType` is a List of UDT, it will call itself to get the codec for the
-   *       UDT...
+   *   <li>if the `fromCQLType` is a Set of TEXT, it will call itself to get the codec for the TEXT.
+   *   <li>if the `fromCQLType` is a List of UDT, it will call itself to get the codec for the UDT.
+   *   <li>if the `fromCQLType` is a Map of TEXT to UDT, it will call itself to get the codec for
+   *       TEXT and UDT.
    * </ul>
    *
    * @param fromCQLType
@@ -265,7 +264,6 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       return JSONCodec.unchecked(candidates.getFirst());
     }
 
-    // listType
     if (fromCQLType instanceof ListType lt) {
       DataType elementType = lt.getElementType();
       JSONCodec<?, ?> elementCodec = codecToJSON(elementType);
@@ -275,7 +273,6 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       return null; // caller handles missing codec
     }
 
-    // setType
     if (fromCQLType instanceof SetType st) {
       DataType elementType = st.getElementType();
       JSONCodec<?, ?> elementCodec = codecToJSON(elementType);
@@ -285,7 +282,6 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       return null; // caller handles missing codec
     }
 
-    // mapType
     if (fromCQLType instanceof MapType mt) {
       final DataType keyType = mt.getKeyType();
       JSONCodec<?, ?> keyCodec = codecToJSON(keyType);
@@ -296,16 +292,14 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       return (JSONCodec<JavaT, CqlT>) MapCodecs.buildToJsonMapCodec(keyType, keyCodec, valueCodec);
     }
 
-    // vectorType
     if (fromCQLType instanceof VectorType vt) {
       // Only Float<Vector> supported for now
       if (vt.getElementType().equals(DataTypes.FLOAT)) {
         return VectorCodecs.toJSONFloatVectorCodec(vt);
       }
-      // fall through
+      return null;
     }
 
-    // userDefinedType
     if (fromCQLType instanceof UserDefinedType userDefinedType) {
       Map<CqlIdentifier, JSONCodec<?, ?>> fieldCodecs = new HashMap<>();
       // There is no map setup in driver to represent the UDT fields name and types.
