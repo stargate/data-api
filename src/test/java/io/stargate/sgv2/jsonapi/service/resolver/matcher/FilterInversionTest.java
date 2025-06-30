@@ -11,15 +11,23 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -45,25 +53,23 @@ public class FilterInversionTest {
 
       String json =
           """
-                    {
-                       "find": {
-                           "filter": {
-                               "$not": {
-                                   "name": "testName"
+                                {
+                                   "find": {
+                                       "filter": {
+                                           "$not": {
+                                               "name": "testName"
+                                           }
+                                       }
+                                   }
                                }
-                           }
-                       }
-                   }
-          """;
+                      """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       final FilterClause filterClause = invertedFilterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "testName")),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(0);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
@@ -76,118 +82,98 @@ public class FilterInversionTest {
 
       String json =
           """
-                            {
-                               "find": {
-                                   "filter": {
-                                        "$not": {
-                                            "$and" : [
-                                              {"f1" : {"$eq" : "testName"}},
-                                              {"f2" : {"$ne" : "testName"}},
-                                              {"f3" : {"$in" : ["testName1","testName2"]}},
-                                              {"f4" : {"$nin" : ["testName1","testName2"]}},
-                                              {"f5" : {"$lt" : 5}},
-                                              {"f6" : {"$lte" : 5}},
-                                              {"f7" : {"$gt" : 5}},
-                                              {"f8" : {"$gte" : 5}},
-                                              {"f9" : {"$exists" : true}},
-                                              {"f10" : {"$exists" : false}},
-                                              {"f11" : {"$size" : 1}}
-                                           ]
-                                        }
+                                {
+                                   "find": {
+                                       "filter": {
+                                            "$not": {
+                                                "$and" : [
+                                                  {"f1" : {"$eq" : "testName"}},
+                                                  {"f2" : {"$ne" : "testName"}},
+                                                  {"f3" : {"$in" : ["testName1","testName2"]}},
+                                                  {"f4" : {"$nin" : ["testName1","testName2"]}},
+                                                  {"f5" : {"$lt" : 5}},
+                                                  {"f6" : {"$lte" : 5}},
+                                                  {"f7" : {"$gt" : 5}},
+                                                  {"f8" : {"$gte" : 5}},
+                                                  {"f9" : {"$exists" : true}},
+                                                  {"f10" : {"$exists" : false}},
+                                                  {"f11" : {"$size" : 1}}
+                                               ]
+                                            }
+                                       }
                                    }
                                }
-                           }
-                  """;
+                      """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       final FilterClause filterClause = invertedFilterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       final ComparisonExpression eq =
           new ComparisonExpression(
               "f1",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "testName")),
               null);
       final ComparisonExpression ne =
           new ComparisonExpression(
               "f2",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testName")),
               null);
       final ComparisonExpression in =
           new ComparisonExpression(
               "f3",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NIN,
-                      new JsonLiteral(List.of("testName1", "testName2"), JsonType.ARRAY))),
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.NIN, List.of("testName1", "testName2"))),
               null);
 
       final ComparisonExpression nin =
           new ComparisonExpression(
               "f4",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.IN,
-                      new JsonLiteral(List.of("testName1", "testName2"), JsonType.ARRAY))),
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.IN, List.of("testName1", "testName2"))),
               null);
       final ComparisonExpression lt =
           new ComparisonExpression(
               "f5",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.GTE,
-                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ValueComparisonOperator.GTE, new BigDecimal(5))),
               null);
 
       final ComparisonExpression lte =
           new ComparisonExpression(
               "f6",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.GT,
-                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ValueComparisonOperator.GT, new BigDecimal(5))),
               null);
 
       final ComparisonExpression gt =
           new ComparisonExpression(
               "f7",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.LTE,
-                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ValueComparisonOperator.LTE, new BigDecimal(5))),
               null);
       final ComparisonExpression gte =
           new ComparisonExpression(
               "f8",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.LT,
-                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ValueComparisonOperator.LT, new BigDecimal(5))),
               null);
 
       final ComparisonExpression existsTrue =
           new ComparisonExpression(
               "f9",
-              List.of(
-                  new ValueComparisonOperation(
-                      ElementComparisonOperator.EXISTS, new JsonLiteral(false, JsonType.BOOLEAN))),
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, false)),
               null);
       final ComparisonExpression existsFalse =
           new ComparisonExpression(
               "f10",
-              List.of(
-                  new ValueComparisonOperation(
-                      ElementComparisonOperator.EXISTS, new JsonLiteral(true, JsonType.BOOLEAN))),
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, true)),
               null);
       final ComparisonExpression size =
           new ComparisonExpression(
               "f11",
               List.of(
-                  new ValueComparisonOperation(
-                      ArrayComparisonOperator.SIZE,
-                      new JsonLiteral(new BigDecimal(-1), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ArrayComparisonOperator.SIZE, new BigDecimal(-1))),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(1);
       assertThat(logicalExpression.logicalExpressions.get(0).getLogicalRelation())
@@ -289,14 +275,14 @@ public class FilterInversionTest {
 
       String json =
           """
-                            {
-                               "find": {
-                                   "filter": {
-                                          "$not":{ "$not" : {"name" : "testName"} }
+                                {
+                                   "find": {
+                                       "filter": {
+                                              "$not":{ "$not" : {"name" : "testName"} }
+                                       }
                                    }
                                }
-                           }
-                  """;
+                      """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       final FilterClause filterClause = invertedFilterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
@@ -304,9 +290,7 @@ public class FilterInversionTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testName")),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(0);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
@@ -319,35 +303,35 @@ public class FilterInversionTest {
 
       String json =
           """
-                  {
-                                   "find": {
-                                       "filter": {
-                                           "$and": [
-                                               {
-                                                   "name": "testName"
-                                               },
-                                               {
-                                                   "age": "testAge"
-                                               },
-                                               {
-                                                   "$not": {
-                                                       "$or": [
-                                                           {
-                                                               "address": "testAddress"
-                                                           },
-                                                           {
-                                                               "tags": {
-                                                                   "$size": 1
+                      {
+                                       "find": {
+                                           "filter": {
+                                               "$and": [
+                                                   {
+                                                       "name": "testName"
+                                                   },
+                                                   {
+                                                       "age": "testAge"
+                                                   },
+                                                   {
+                                                       "$not": {
+                                                           "$or": [
+                                                               {
+                                                                   "address": "testAddress"
+                                                               },
+                                                               {
+                                                                   "tags": {
+                                                                       "$size": 1
+                                                                   }
                                                                }
-                                                           }
-                                                       ]
+                                                           ]
+                                                       }
                                                    }
-                                               }
-                                           ]
+                                               ]
+                                           }
                                        }
                                    }
-                               }
-                  """;
+                      """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       final FilterClause filterClause = invertedFilterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
@@ -355,31 +339,23 @@ public class FilterInversionTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testName")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "age",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "testAge")),
               null);
       final ComparisonExpression expectedResult3 =
           new ComparisonExpression(
               "address",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("testAddress", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "testAddress")),
               null);
       final ComparisonExpression expectedResult4 =
           new ComparisonExpression(
               "tags",
               List.of(
-                  new ValueComparisonOperation(
-                      ArrayComparisonOperator.SIZE,
-                      new JsonLiteral(new BigDecimal(-1), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ArrayComparisonOperator.SIZE, new BigDecimal(-1))),
               null);
       assertThat(logicalExpression.logicalExpressions.get(0).getLogicalRelation())
           .isEqualTo(LogicalExpression.LogicalOperator.AND);
@@ -445,14 +421,14 @@ public class FilterInversionTest {
 
       String json =
           """
-                            {
-                               "find": {
-                                   "filter": {
-                                        "$not": { "$not" : { "$not" : {"name" : "testName"} } }
-                                      }
+                                {
+                                   "find": {
+                                       "filter": {
+                                            "$not": { "$not" : { "$not" : {"name" : "testName"} } }
+                                          }
+                                   }
                                }
-                           }
-                  """;
+                      """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       final FilterClause filterClause = invertedFilterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
@@ -460,9 +436,7 @@ public class FilterInversionTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("testName", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "testName")),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(0);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
@@ -499,16 +473,12 @@ public class FilterInversionTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("Shanghai", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "Shanghai")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "gender",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("male", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "male")),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(1);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(0);
@@ -562,16 +532,12 @@ public class FilterInversionTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("Shanghai", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "Shanghai")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "gender",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("male", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "male")),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(1);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(0);
@@ -633,31 +599,23 @@ public class FilterInversionTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("Shanghai", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "Shanghai")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "gender",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("male", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "male")),
               null);
       final ComparisonExpression expectedResult3 =
           new ComparisonExpression(
               "color",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("yellow", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "yellow")),
               null);
       final ComparisonExpression expectedResult4 =
           new ComparisonExpression(
               "height",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE,
-                      new JsonLiteral(new BigDecimal(175), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ValueComparisonOperator.NE, new BigDecimal(175))),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(2);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(0);
@@ -731,23 +689,17 @@ public class FilterInversionTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("Shanghai", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "Shanghai")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "gender",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("male", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "male")),
               null);
       final ComparisonExpression expectedResult3 =
           new ComparisonExpression(
               "color",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("yellow", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "yellow")),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(1);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(0);
@@ -791,24 +743,18 @@ public class FilterInversionTest {
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("Shanghai", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "Shanghai")),
               null);
       final ComparisonExpression expectedResult2 =
           new ComparisonExpression(
               "gender",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.NE, new JsonLiteral("male", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.NE, "male")),
               null);
       final ComparisonExpression expectedResult3 =
           new ComparisonExpression(
               "height",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ,
-                      new JsonLiteral(new BigDecimal(25), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(ValueComparisonOperator.EQ, new BigDecimal(25))),
               null);
       assertThat(logicalExpression.logicalExpressions).hasSize(1);
       assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
@@ -840,7 +786,191 @@ public class FilterInversionTest {
   }
 
   @Nested
-  public class TableTest {}
+  public class TableTest {
+
+    public static final TestData TEST_DATA = new TestData();
+    public static final TableSchemaObject TABLE_SCHEMA_OBJECT =
+        TEST_DATA.schemaObject().tableWithMapSetList();
+    public static final CommandContext<?> TABLE_COMMAND_CONTEXT =
+        TEST_DATA.commandContext().tableSchemaObjectCommandContext(TABLE_SCHEMA_OBJECT);
+
+    private static Stream<Arguments> invertedOperators() {
+      return Stream.of(
+          Arguments.of(ValueComparisonOperator.NIN, ValueComparisonOperator.IN),
+          Arguments.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN),
+          Arguments.of(ArrayComparisonOperator.ALL, ArrayComparisonOperator.NOTANY));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invertedOperators")
+    public void invertFilterOperatorsForList(FilterOperator from, FilterOperator to)
+        throws Exception {
+      String json =
+              """
+                                {
+                                   "find": {
+                                       "filter": {
+                                          "$not": {
+                                            "%s" : {
+                                                   "%s": ["value1","value2"]
+                                             }
+                                         }
+                                      }
+                                   }
+                               }
+                      """
+              .formatted(TEST_DATA.names.CQL_LIST_COLUMN.asInternal(), from.getOperator());
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final FilterClause filterClause = invertedFilterClause(TABLE_COMMAND_CONTEXT, findCommand);
+      final LogicalExpression logicalExpression = filterClause.logicalExpression();
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              TEST_DATA.names.CQL_LIST_COLUMN.asInternal(),
+              List.of(
+                  ValueComparisonOperation.build(
+                      to, List.of("value1", "value2"), MapSetListFilterComponent.LIST_VALUE)),
+              null);
+      assertThat(logicalExpression.logicalExpressions).hasSize(0);
+      assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
+      assertThat(logicalExpression.comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+    }
+
+    @ParameterizedTest
+    @MethodSource("invertedOperators")
+    public void invertFilterOperatorsForSet(FilterOperator from, FilterOperator to)
+        throws Exception {
+      String json =
+              """
+                                {
+                                   "find": {
+                                       "filter": {
+                                          "$not": {
+                                            "%s" : {
+                                                   "%s": ["value1","value2"]
+                                             }
+                                         }
+                                      }
+                                   }
+                               }
+                      """
+              .formatted(TEST_DATA.names.CQL_SET_COLUMN.asInternal(), from.getOperator());
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final FilterClause filterClause = invertedFilterClause(TABLE_COMMAND_CONTEXT, findCommand);
+      final LogicalExpression logicalExpression = filterClause.logicalExpression();
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              TEST_DATA.names.CQL_SET_COLUMN.asInternal(),
+              List.of(
+                  ValueComparisonOperation.build(
+                      to, List.of("value1", "value2"), MapSetListFilterComponent.SET_VALUE)),
+              null);
+      assertThat(logicalExpression.logicalExpressions).hasSize(0);
+      assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
+      assertThat(logicalExpression.comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+    }
+
+    private static Stream<Arguments> invertedOperatorsMapKeyValues() {
+      return Stream.of(
+          Arguments.of(ValueComparisonOperator.NIN, ValueComparisonOperator.IN, "$keys"),
+          Arguments.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN, "$keys"),
+          Arguments.of(ArrayComparisonOperator.ALL, ArrayComparisonOperator.NOTANY, "$keys"),
+          Arguments.of(ValueComparisonOperator.NIN, ValueComparisonOperator.IN, "$values"),
+          Arguments.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN, "$values"),
+          Arguments.of(ArrayComparisonOperator.ALL, ArrayComparisonOperator.NOTANY, "$values"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invertedOperatorsMapKeyValues")
+    public void invertFilterOperatorsForMapKeysOrValues(
+        FilterOperator from, FilterOperator to, String keysOrMaps) throws Exception {
+      String json =
+              """
+                            {
+                                "find": {
+                                    "filter": {
+                                        "$not": {
+                                            "%s": {
+                                                "%s": {
+                                                    "%s": [
+                                                        "element1",
+                                                        "element2"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                      """
+              .formatted(
+                  TEST_DATA.names.CQL_MAP_COLUMN.asInternal(), keysOrMaps, from.getOperator());
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final FilterClause filterClause = invertedFilterClause(TABLE_COMMAND_CONTEXT, findCommand);
+      final LogicalExpression logicalExpression = filterClause.logicalExpression();
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              TEST_DATA.names.CQL_MAP_COLUMN.asInternal(),
+              List.of(
+                  ValueComparisonOperation.build(
+                      to,
+                      List.of("element1", "element2"),
+                      MapSetListFilterComponent.fromMapComponentDesc(
+                          MapComponentDesc.fromApiName(keysOrMaps).get()))),
+              null);
+      assertThat(logicalExpression.logicalExpressions).hasSize(0);
+      assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
+      assertThat(logicalExpression.comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+    }
+
+    @ParameterizedTest
+    @MethodSource("invertedOperators")
+    public void invertFilterOperatorsForMapEntries(FilterOperator from, FilterOperator to)
+        throws Exception {
+      String json =
+              """
+                            {
+                                "find": {
+                                    "filter": {
+                                        "$not": {
+                                            "%s": {
+                                                "%s": [
+                                                    [
+                                                        "key1",
+                                                        "value1"
+                                                    ],
+                                                    [
+                                                        "key2",
+                                                        "value2"
+                                                    ]
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                      """
+              .formatted(TEST_DATA.names.CQL_MAP_COLUMN.asInternal(), from.getOperator());
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      final FilterClause filterClause = invertedFilterClause(TABLE_COMMAND_CONTEXT, findCommand);
+      final LogicalExpression logicalExpression = filterClause.logicalExpression();
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              TEST_DATA.names.CQL_MAP_COLUMN.asInternal(),
+              List.of(
+                  ValueComparisonOperation.build(
+                      to,
+                      List.of(List.of("key1", "value1"), List.of("key2", "value2")),
+                      MapSetListFilterComponent.MAP_ENTRY)),
+              null);
+      assertThat(logicalExpression.logicalExpressions).hasSize(0);
+      assertThat(logicalExpression.comparisonExpressions.size()).isEqualTo(1);
+      assertThat(logicalExpression.comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult1.getFilterOperations());
+    }
+  }
 
   private <CMD extends Command & Filterable> FilterClause invertedFilterClause(
       CommandContext<?> ctx, CMD cmd) {

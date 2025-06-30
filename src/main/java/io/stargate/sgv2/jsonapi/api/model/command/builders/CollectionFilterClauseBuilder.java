@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
@@ -16,12 +18,28 @@ import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
+import java.util.*;
 import java.util.List;
 import java.util.Map;
 
 public class CollectionFilterClauseBuilder extends FilterClauseBuilder<CollectionSchemaObject> {
   public CollectionFilterClauseBuilder(CollectionSchemaObject schema) {
     super(schema);
+  }
+
+  /**
+   * Create the list of ComparisonExpression from a single path entry. A single path entry has key
+   * as the path String, and the value as a JsonNode. E.G.
+   *
+   * <ul>
+   *   <li><code>{"name" : {"$eq" : "value"}}</code>
+   *   <li><code>{"name" : {"$gt" : 10, "$lt" : 50}}</code>
+   * </ul>
+   */
+  @Override
+  protected List<ComparisonExpression> buildFromPathEntry(Map.Entry<String, JsonNode> entry) {
+    // the shared logic for both Collection and Table.
+    return buildFromPathEntryCommon(entry);
   }
 
   // Collections have fixed "_id" as THE document id

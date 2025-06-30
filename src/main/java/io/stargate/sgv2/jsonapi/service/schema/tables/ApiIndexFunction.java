@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,8 +41,8 @@ public enum ApiIndexFunction {
     return FUNCTION_MAP.get(cqlFunction.toLowerCase());
   }
 
-  public static ApiIndexFunction fromApiMapComponent(ApiMapComponent apiMapComponent) {
-    return switch (apiMapComponent) {
+  public static ApiIndexFunction fromMapComponentDesc(MapComponentDesc mapComponentDesc) {
+    return switch (mapComponentDesc) {
       case KEYS -> ApiIndexFunction.KEYS;
       case VALUES -> ApiIndexFunction.VALUES;
         // There is no $entries for map, null will be default to entries
@@ -50,10 +50,10 @@ public enum ApiIndexFunction {
     };
   }
 
-  public ApiMapComponent toApiMapComponent() {
+  public MapComponentDesc toApiMapComponent() {
     return switch (this) {
-      case KEYS -> ApiMapComponent.KEYS;
-      case VALUES -> ApiMapComponent.VALUES;
+      case KEYS -> MapComponentDesc.KEYS;
+      case VALUES -> MapComponentDesc.VALUES;
         // There is no $entries for map, null will be default to entries
       case ENTRIES -> null;
     };

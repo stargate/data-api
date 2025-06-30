@@ -24,7 +24,8 @@ import java.util.List;
  * defined in the CQL specification.
  *
  * <pre>
- *   <native-type> ::= ascii
+ *   native-types:
+ *                 | ascii
  *                 | bigint
  *                 | blob
  *                 | boolean
@@ -145,7 +146,8 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
               }));
     }
 
-    return Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker());
+    return Relation.column(getPathAsCqlIdentifier())
+        .build(operator.predicate.getCql(), bindMarker());
   }
 
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
