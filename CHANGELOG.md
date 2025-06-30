@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.0.27](https://github.com/stargate/data-api/tree/v1.0.27) (2025-06-24)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.26...v1.0.27)
+
+**Merged pull requests:**
+
+- Updates for EGW to use ModelUsage and bug fixes [\#2140](https://github.com/stargate/data-api/pull/2140) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2138](https://github.com/stargate/data-api/pull/2138) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.26](https://github.com/stargate/data-api/tree/v1.0.26) (2025-06-18)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.25...v1.0.26)
