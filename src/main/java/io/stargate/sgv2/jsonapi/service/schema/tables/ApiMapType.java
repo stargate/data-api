@@ -10,11 +10,8 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ApiMapType extends CollectionApiDataType<MapType> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ApiMapType.class);
 
   public static final TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
@@ -28,7 +25,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
 
   private ApiMapType(
       PrimitiveApiDataTypeDef keyType,
-      PrimitiveApiDataTypeDef valueType,
+      ApiDataType valueType,
       ApiSupportDef apiSupport,
       boolean isFrozen) {
     super(
@@ -62,6 +59,8 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
    * Creates a new {@link ApiMapType} from the given ApiDataType key and ApiDataType types.
    *
    * <p>ApiSupport for keyType and valueType should be already validated.
+   *
+   * <p>As of June 26th, 2025, API only support primitive key types, so UDT can not be used as keys.
    */
   static ApiMapType from(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(keyType, "keyType must not be null");
@@ -69,10 +68,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
 
     if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
       return new ApiMapType(
-          (PrimitiveApiDataTypeDef) keyType,
-          (PrimitiveApiDataTypeDef) valueType,
-          defaultApiSupport(isFrozen),
-          isFrozen);
+          (PrimitiveApiDataTypeDef) keyType, valueType, defaultApiSupport(isFrozen), isFrozen);
     }
     throw new IllegalArgumentException(
         "keyType or valueType is not supported, keyType: %s valueType: %s"

@@ -26,7 +26,7 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   }
 
   protected final ApiTypeName typeName;
-  protected final PrimitiveApiDataTypeDef valueType;
+  protected final ApiDataType valueType;
   protected final T cqlType;
 
   /**
@@ -36,10 +36,7 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   protected final ApiSupportDef apiSupport;
 
   protected CollectionApiDataType(
-      ApiTypeName typeName,
-      PrimitiveApiDataTypeDef valueType,
-      T cqlType,
-      ApiSupportDef apiSupport) {
+      ApiTypeName typeName, ApiDataType valueType, T cqlType, ApiSupportDef apiSupport) {
     // no null checks here, so subclasses can pass null and then override to create on demand if
     // they want to.
     this.typeName = typeName;
@@ -73,7 +70,7 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
     return cqlType;
   }
 
-  public PrimitiveApiDataTypeDef getValueType() {
+  public ApiDataType getValueType() {
     return valueType;
   }
 
