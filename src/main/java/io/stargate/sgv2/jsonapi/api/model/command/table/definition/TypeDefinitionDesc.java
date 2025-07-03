@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  */
 public record TypeDefinitionDesc(
     @Valid
-        @Schema(description = "fields definitions of a user-defined type", type = SchemaType.OBJECT)
+        @Schema(description = "Field definitions for a user-defined type", type = SchemaType.OBJECT)
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonDeserialize(using = TypeFieldsContainerDeserializer.class)
         // UDT field and Table column are both represented as ColumnDesc.

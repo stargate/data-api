@@ -13,9 +13,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class UDTCodecs {
 
@@ -61,6 +59,21 @@ public class UDTCodecs {
         // This code only for to-json case, not to-cql, so we don't need this
         null,
         (objectMapper, cqlType, value) -> cqlUdtToJsonNode(fieldCodecs, objectMapper, value));
+  }
+
+  public record RawUdtField(CqlIdentifier identifier, DataType cqlType) {}
+
+  public static List<RawUdtField> udtRawFields(UserDefinedType userDefinedType) {
+
+    Objects.requireNonNull(userDefinedType, "userDefinedType must not be null");
+
+    var rawFields = new ArrayList<RawUdtField>(userDefinedType.getFieldNames().size());
+    for (int i = 0; i < userDefinedType.getFieldNames().size(); i++) {
+      rawFields.add(
+          new RawUdtField(
+              userDefinedType.getFieldNames().get(i), userDefinedType.getFieldTypes().get(i)));
+    }
+    return rawFields;
   }
 
   /**

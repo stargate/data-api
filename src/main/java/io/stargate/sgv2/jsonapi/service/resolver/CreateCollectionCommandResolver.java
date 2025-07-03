@@ -61,7 +61,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     final boolean lexicalAvailableForDB = ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
 
-    final var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
+    var collectionName = NamingRules.COLLECTION.checkRule(command.name());
     final CreateCollectionCommand.Options options = command.options();
     boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
 
@@ -78,9 +78,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           dbLimitsConfig,
           objectMapper,
           ctx.cqlSessionCache(),
-          name,
+          collectionName,
           generateComment(
-              objectMapper, false, false, name, null, null, null, lexicalConfig, rerankDef),
+              objectMapper, false, false, collectionName, null, null, null, lexicalConfig, rerankDef),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false,
@@ -118,7 +118,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             objectMapper,
             hasIndexing,
             hasVectorSearch,
-            name,
+            collectionName,
             options.indexing(),
             vector,
             options.idConfig(),
@@ -131,7 +131,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           dbLimitsConfig,
           objectMapper,
           ctx.cqlSessionCache(),
-          name,
+          collectionName,
           vector.dimension(),
           vector.metric(),
           vector.sourceModel(),
@@ -147,7 +147,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           dbLimitsConfig,
           objectMapper,
           ctx.cqlSessionCache(),
-          name,
+          collectionName,
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),

@@ -1,21 +1,59 @@
 package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Custom deserializer to decode the column type from the JSON payload This is required because
- * composite and custom column types may need additional properties to be deserialized
+ * Custom deserializer to decode the {@link ColumnDesc} from the JSON payload
+ *
+ * <p><b>NOTE:</b> This class exposes static functions so the deserialize code can be reused from
+ * other places when needed.
+ *
+ * <p>The Column Desc can be either a short-form primitive type, which is a text node, or a
+ * long-form which is a JSON object with at least a `type` field that is a String.
+ *
+ * <p>Examples below, each of JSON values on the RHS of the column name is the ColumnDesc that this
+ * deserializer can handle.
+ *
+ * <pre>
+ *   {
+ *     "columns": {
+ *         "short_form_desc": "text",
+ *         "long_form_desc": {
+ *             "type": "text"
+ *         },
+ *         "collections_only_long_form": {
+ *             "type": "map",
+ *             "keyType": "text",
+ *             "valueType": "text"
+ *         },
+ *         "udt_scalar": {
+ *             "type": "userDefined",
+ *             "udtName": "my_udt"
+ *         },
+ *         "udt_set": {
+ *             "type": "set",
+ *             "valueType": {
+ *                 "type": "userDefined",
+ *                 "udtName": "test_udt"
+ *             }
+ *         }
+ *     }
+ * }
+ * </pre>
  */
 public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
 
@@ -25,74 +63,97 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
           + " must be a JSON Object with at least a `%s` field that is a String"
               .formatted(TableDescConstants.ColumnDesc.TYPE);
 
-  /**
-   * Flag to indicate whether we are deserializing UDT fields. By default, it is set to false,
-   * meaning we are serializing column definitions for commands like CreateTable, AlterTable. If set
-   * to true, it indicates that we are deserializing UDT fields for commands like CreateType,
-   * AlterType.
-   */
-  private final boolean deserializeUDTFields;
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  private static final ColumnDescBindingPointRules BINDING_POINT_RULES =
+      new ColumnDescBindingPointRules();
+
+  private final TypeBindingPoint bindingPoint;
 
   /**
-   * Default constructor for deserializing column definitions for commands like CreateTable,
-   * AlterTable. This constructor does not deserialize UDT fields.
+   * Default constructor for deserializing column definitions for tables, uses {@link
+   * io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint#TABLE_COLUMN} .
+   *
+   * <p>Needed because used as {@link JsonDeserialize} annotation.
    */
   public ColumnDescDeserializer() {
-    this(false);
+    this(TypeBindingPoint.TABLE_COLUMN);
   }
 
   /**
    * Constructor for deserializing UDT fields. This constructor is used when deserializing UDT
    * fields for commands like CreateType, AlterType.
+   *
+   * @param bindingPoint Where the column desc is being used, used to get the correct rules from
+   *     {@link ColumnDescBindingPointRules}.
    */
-  public ColumnDescDeserializer(boolean deserializeUDTFields) {
-    this.deserializeUDTFields = deserializeUDTFields;
+  public ColumnDescDeserializer(TypeBindingPoint bindingPoint) {
+    this.bindingPoint = Objects.requireNonNull(bindingPoint, "bindingPoint must not be null");
   }
 
+  /** See {@link #deserialize(JsonNode, JsonParser, TypeBindingPoint)} */
   @Override
   public ColumnDesc deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
-    JsonNode descNode = deserializationContext.readTree(jsonParser);
+    return deserialize(deserializationContext.readTree(jsonParser), jsonParser, bindingPoint);
+  }
 
-    // Check if we are deserializing UDT fields and if so, check for unsupported UDT fields.
-    if (deserializeUDTFields) {
-      return deserializeForUdtField(descNode, jsonParser);
+  /** See {@link #deserialize(JsonNode, JsonParser, ColumnDescRules)} */
+  public static ColumnDesc deserialize(JsonNode descNode, TypeBindingPoint bindingPoint)
+      throws JsonProcessingException {
+    return deserialize(descNode, null, bindingPoint);
+  }
+
+  /**
+   * Re-usable method to deserialize a {@link ColumnDesc} from a {@link JsonNode}
+   *
+   * @param descNode The JSON node representing the column description, see class comments.
+   * @param jsonParser Nullable {@link JsonParser} used to deserialize the node, is used when
+   *     creating {@link JsonMappingException}.
+   * @param bindingPoint {@link TypeBindingPoint} for where the column desc is being used.
+   * @return The deserialized {@link ColumnDesc} object.
+   * @throws JsonProcessingException If there is an error during deserialization, such as a missing
+   *     or invalid type.
+   * @throws SchemaException if the type name is unknown or not supported by the rule.
+   */
+  public static ColumnDesc deserialize(
+      JsonNode descNode, JsonParser jsonParser, TypeBindingPoint bindingPoint)
+      throws JsonProcessingException {
+
+    var bindingRules = BINDING_POINT_RULES.forBindingPoint(bindingPoint);
+
+    // throws if type is not defined correctly or not a known type
+    var typeNameDesc = getTypeName(descNode, jsonParser);
+
+    // check if this is primitive type, no matter if it is short or long form
+    var maybePrimitiveType = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(typeNameDesc.typeName);
+
+    if (maybePrimitiveType.isPresent()) {
+      // does not matter if it is short or long form, we can return the primitive type
+      return maybePrimitiveType.get();
+
+    } else if (typeNameDesc.shortFormDesc) {
+      // it was not a primitive type, and it was described in short form,
+      // short form can only be used to describe primitive types so we can throw an error
+      // e.g. this not allowed  {"userName": "map"}
+      throw SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.get(
+          Map.of(
+              "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
+              "unsupportedType", typeNameDesc.typeName.apiName()));
     }
 
-    if (descNode.isTextual()) {
-      // must be a primitive type, that is all that is allowed to only have a type
-      return PrimitiveColumnDesc.FROM_JSON_FACTORY
-          .create(descNode.asText())
-          .orElseThrow(
-              () ->
-                  SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.get(
-                      Map.of(
-                          "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
-                          "unsupportedType", descNode.asText())));
-    }
-
-    // Check we are using long form
-    if (!descNode.isObject()) {
-      throw new JsonMappingException(jsonParser, ERR_OBJECT_WITH_TYPE + " (node is not object)");
-    }
-    var typeName = typeInLongForm(jsonParser, descNode);
-    // ok, this could still be a primitive type, so let's check that first
-    var longFormPrimitive = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(typeName.apiName());
-    if (longFormPrimitive.isPresent()) {
-      return longFormPrimitive.get();
-    }
+    // so we know this is a long form desc of a non-primitive type, e.g. map, set, list, vector, udt
 
     // if the nodes are missing, the jackson MissingNode will be returned and has "" and 0 for
-    // defaults.
-    // but to get a decent error message get the dimension as a string
+    // defaults. but to get a decent error message get the dimension as a string
     // arguable that a non integer is a JSON mapping error, but we will handle it as an unsupported
     // dimension value
     var keyTypeNode = descNode.path(TableDescConstants.ColumnDesc.KEY_TYPE);
     var valueTypeNode = descNode.path(TableDescConstants.ColumnDesc.VALUE_TYPE);
     var dimensionString = descNode.path(TableDescConstants.ColumnDesc.DIMENSION).asText();
 
-    return switch (typeName) {
+    return switch (typeNameDesc.typeName) {
       case LIST -> ListColumnDesc.FROM_JSON_FACTORY.create(jsonParser, valueTypeNode);
       case SET -> SetColumnDesc.FROM_JSON_FACTORY.create(jsonParser, valueTypeNode);
       case MAP -> MapColumnDesc.FROM_JSON_FACTORY.create(jsonParser, keyTypeNode, valueTypeNode);
@@ -104,17 +165,16 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
         VectorizeConfig vectorConfig =
             serviceNode.isMissingNode()
                 ? null
-                : deserializationContext.readTreeAsValue(serviceNode, VectorizeConfig.class);
+                : OBJECT_MAPPER.treeToValue(serviceNode, VectorizeConfig.class);
         yield VectorColumnDesc.FROM_JSON_FACTORY.create(dimensionString, vectorConfig);
       }
-      case UDT -> {
-        var udtName = descNode.path(TableDescConstants.ColumnDesc.UDT_NAME).asText();
-        // As of June 26th 2025, API only supports non-frozen UDT column to create.
-        yield UDTColumnDesc.FROM_JSON_FACTORY.create(udtName, false);
-      }
-        // should not get here, because we checked the API type name above
+      case UDT -> // The rule tells us if the UDT is frozen or not, see the enum
+          UdtRefColumnDesc.FROM_JSON_FACTORY.create(descNode, bindingRules.useFrozenUdt());
       default ->
-          throw new IllegalStateException("No match for known typeName: " + typeName.apiName());
+          // sanity check, we should have covered all the API types above
+          throw new IllegalStateException(
+              "ColumnDescDeserializer - unsupported known APiTypeName: "
+                  + typeNameDesc.typeName.apiName());
     };
   }
 
@@ -124,73 +184,70 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
   }
 
   /**
-   * Rules for current supported UDT field definition from API user request. As of June 16th 2025,
-   * UDT as field, map/set/list as field are not supported.
+   * Gets the api type name from the ColumnDesc node, from either the long form or the short form.
+   *
+   * @param descNode The desc node as defined in class comments.
+   * @param jsonParser Nullable {@link JsonParser} used to deserialize the node, is used with the
+   *     {@link JsonMappingException} to provide context.
+   * @return the {@link ApiTypeName} of the column description.
+   * @throws JsonMappingException the node is not a text node or an object with the type field.
+   * @throws {@link SchemaException.Code#UNKNOWN_DATA_TYPE} if the type name is present, but not a
+   *     know {@link ApiTypeName}
    */
-  private ColumnDesc deserializeForUdtField(JsonNode descNode, JsonParser jsonParser)
+  public static TypeNameDesc getTypeName(JsonNode descNode, JsonParser jsonParser)
       throws JsonMappingException {
 
-    // short form primitive type field for UDT
+    String rawTypeName;
+    boolean shortFormDesc = true;
     if (descNode.isTextual()) {
-      // short-form must be a primitive type, that is all that is allowed to only have a type
-      return PrimitiveColumnDesc.FROM_JSON_FACTORY
-          .create(descNode.asText())
-          .orElseThrow(
-              () ->
-                  SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.get(
-                      Map.of(
-                          "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
-                          "unsupportedType", descNode.asText())));
+      // in sort form, e.g. {"userName": "text"}
+      rawTypeName = descNode.asText();
+
+    } else {
+      shortFormDesc = false;
+      // in long form, e.g.  {"userName": {"type": "text"}}
+
+      // Must be an object with type field
+      if (!descNode.isObject()) {
+        throw new JsonMappingException(jsonParser, ERR_OBJECT_WITH_TYPE + " (node is not object)");
+      }
+
+      var typeNode = descNode.path(TableDescConstants.ColumnDesc.TYPE);
+      if (typeNode.isMissingNode()) {
+        throw new JsonMappingException(
+            jsonParser,
+            ERR_OBJECT_WITH_TYPE
+                + " (`%s` field is missing)".formatted(TableDescConstants.ColumnDesc.TYPE));
+      }
+      if (!typeNode.isTextual()) {
+        throw new JsonMappingException(
+            jsonParser,
+            ERR_OBJECT_WITH_TYPE
+                + " (`%s` field is not text)".formatted(TableDescConstants.ColumnDesc.TYPE));
+      }
+      rawTypeName = typeNode.asText();
     }
 
-    // long form primitive type field for UDT
-    if (!descNode.isObject()) {
-      throw new JsonMappingException(jsonParser, ERR_OBJECT_WITH_TYPE + " (node is not object)");
-    }
-    var typeNode = descNode.path(TableDescConstants.ColumnDesc.TYPE);
-    var typeName = typeInLongForm(jsonParser, descNode);
-
-    // currently, API only supports primitive types for UDT field.
-    var longFormPrimitive = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(typeName.apiName());
-    if (longFormPrimitive.isPresent()) {
-      return longFormPrimitive.get();
-    }
-
-    // UDT as field or map/set/list as field both requires long form of definition.
-    throw SchemaException.Code.UNSUPPORTED_TYPE_FIELD.get(
-        "unsupportedType", typeNode.asText(),
-        "supportedTypes", errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName));
-  }
-
-  /** Helper method to extract the type name from the long form JSON node. */
-  public static ApiTypeName typeInLongForm(JsonParser jsonParser, JsonNode descNode)
-      throws JsonMappingException {
-
-    var typeNode = descNode.path(TableDescConstants.ColumnDesc.TYPE);
-    if (typeNode.isMissingNode()) {
-      throw new JsonMappingException(
-          jsonParser,
-          ERR_OBJECT_WITH_TYPE
-              + " (`%s` field is missing)".formatted(TableDescConstants.ColumnDesc.TYPE));
-    }
-    if (!typeNode.isTextual()) {
-      throw new JsonMappingException(
-          jsonParser,
-          ERR_OBJECT_WITH_TYPE
-              + " (`%s` field is not String)".formatted(TableDescConstants.ColumnDesc.TYPE));
-    }
-
-    // Using long form, things are different. The type could be any type, not just a primitive
     var typeName =
-        ApiTypeName.fromApiName(typeNode.asText())
+        ApiTypeName.fromApiName(rawTypeName)
             .orElseThrow(
                 () ->
                     SchemaException.Code.UNKNOWN_DATA_TYPE.get(
                         Map.of(
-                            "supportedTypes", errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName),
-                            "unsupportedType", typeNode.asText())));
-
-    // long-form to get the apiTypeName
-    return typeName;
+                            "supportedTypes",
+                            errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName),
+                            "unsupportedType",
+                            rawTypeName)));
+    return new TypeNameDesc(typeName, shortFormDesc);
   }
+
+  /**
+   * How the {@link ApiTypeName} was represented in the JSON payload.
+   *
+   * @param typeName the {@link ApiTypeName} from the column description.
+   * @param shortFormDesc True if the type name was represented as a short form text node, False for
+   *     long form
+   */
+  public record TypeNameDesc(ApiTypeName typeName, boolean shortFormDesc) {}
+  ;
 }

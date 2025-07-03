@@ -3,7 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
+import java.util.Objects;
 
 /** Builds a {@link CreateTypeDBTask}. */
 public class CreateTypeDBTaskBuilder
@@ -11,7 +12,7 @@ public class CreateTypeDBTaskBuilder
 
   private SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy;
   private boolean ifNotExists;
-  private ApiUdtDef udtDef;
+  private ApiUdtType apiUdtType;
 
   protected CreateTypeDBTaskBuilder(KeyspaceSchemaObject schemaObject) {
     super(schemaObject);
@@ -23,8 +24,8 @@ public class CreateTypeDBTaskBuilder
     return this;
   }
 
-  public CreateTypeDBTaskBuilder udtDef(ApiUdtDef udtDef) {
-    this.udtDef = udtDef;
+  public CreateTypeDBTaskBuilder withApiUdtType(ApiUdtType apiUdtType) {
+    this.apiUdtType = apiUdtType;
     return this;
   }
 
@@ -34,12 +35,15 @@ public class CreateTypeDBTaskBuilder
   }
 
   public CreateTypeDBTask build() {
+
+    Objects.requireNonNull(apiUdtType, "apiUdtType must not be null");
+
     return new CreateTypeDBTask(
         nextPosition(),
         schemaObject,
         schemaRetryPolicy,
         getExceptionHandlerFactory(),
-        udtDef,
+        apiUdtType,
         ifNotExists);
   }
 }

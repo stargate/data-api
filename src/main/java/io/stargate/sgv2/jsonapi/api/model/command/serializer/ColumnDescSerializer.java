@@ -1,15 +1,56 @@
 package io.stargate.sgv2.jsonapi.api.model.command.serializer;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import java.io.IOException;
 
 /**
- * Custom serializer to encode the column type to the JSON payload This is required because
- * composite and custom column types may need additional properties to be serialized
+ * Custom serializer to encode the {@link ColumnDesc} to JSON payload.
+ *
+ * <p>See comments on {@link ColumnDescDeserializer} for the format this will create.
+ *
+ * <p>This will always write the long form of the column description as below:
+ *
+ * <pre>
+ *   {
+ *      "userName": {
+ *        "type": "text"
+ *      },
+ *      "addresses": {
+ *        "type": "map",
+ *        "keyType": {
+ *          "type": "text"
+ *        }
+ *      }
+ *      "valueType": {
+ *        "type": "userDefined",
+ *        "udtName": "address"
+ *      },
+ *      "favColours" : {
+ *        "type": "list",
+ *        "valueType": {
+ *          "type": "text"
+ *        }
+ *      }
+ *      // NOTE: for read response inline schema we include the full UDT definition from UdtColumnDesc
+ *      "address": {
+ *        "type": "userDefined",
+ *        "udtName": "address",
+ *        "definition": {
+ * 			    "fields": {
+ *            "country": "text",
+ *        	  "city": "text"
+ *          }
+ *        }
+ *      }
+ *   }
+ * </pre>
  */
 public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
 
@@ -19,83 +60,84 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
       throws IOException {
 
     jsonGenerator.writeStartObject();
-    jsonGenerator.writeStringField(TableDescConstants.ColumnDesc.TYPE, columnDesc.getApiName());
+    writeDesc(jsonGenerator, columnDesc);
+    jsonGenerator.writeEndObject();
+  }
+
+  /**
+   * Write for a generic {@link ColumnDesc} to the JSON generator.
+   *
+   * <p>The JSON object we are writing to should be started
+   */
+  private void writeDesc(JsonGenerator json, ColumnDesc columnDesc) throws IOException {
+
+    // they always have a type field
+    json.writeStringField(TableDescConstants.ColumnDesc.TYPE, columnDesc.getApiName());
 
     switch (columnDesc) {
-      case MapColumnDesc mt -> writeMapSetListDesc(jsonGenerator, mt);
-      case ListColumnDesc lt -> writeMapSetListDesc(jsonGenerator, lt);
-      case SetColumnDesc st -> writeMapSetListDesc(jsonGenerator, st);
-      case VectorColumnDesc vt -> {
-        jsonGenerator.writeNumberField(TableDescConstants.ColumnDesc.DIMENSION, vt.getDimension());
-        if (vt.getVectorizeConfig() != null)
-          jsonGenerator.writeObjectField(
-              TableDescConstants.ColumnDesc.SERVICE, vt.getVectorizeConfig());
+      case MapColumnDesc mt -> {
+        newColumnDescObject(json, TableDescConstants.ColumnDesc.KEY_TYPE, mt.keyType());
+        newColumnDescObject(json, TableDescConstants.ColumnDesc.VALUE_TYPE, mt.valueType());
       }
-      case UDTColumnDesc udt -> writeFullUdtDesc(jsonGenerator, udt);
+      case ListColumnDesc lt -> {
+        newColumnDescObject(json, TableDescConstants.ColumnDesc.VALUE_TYPE, lt.valueType());
+      }
+      case SetColumnDesc st -> {
+        newColumnDescObject(json, TableDescConstants.ColumnDesc.VALUE_TYPE, st.valueType());
+      }
+      case VectorColumnDesc vt -> {
+        json.writeNumberField(TableDescConstants.ColumnDesc.DIMENSION, vt.getDimension());
+        if (vt.getVectorizeConfig() != null)
+          json.writeObjectField(TableDescConstants.ColumnDesc.SERVICE, vt.getVectorizeConfig());
+      }
+
+      case UdtColumnDesc udtCol -> {
+        // Full UDT definition, not just the name, must go before UdtRefColumnDesc superclass
+
+        json.writeStringField(
+            TableDescConstants.ColumnDesc.UDT_NAME, cqlIdentifierToJsonKey(udtCol.udtName()));
+
+        // begin "definition" object
+        json.writeObjectFieldStart(TableDescConstants.ColumnDesc.DEFINITION);
+
+        // begin "definition -> fields" object
+        json.writeObjectFieldStart(TableDescConstants.ColumnDesc.FIELDS);
+
+        for (var entry : udtCol.allFields().entrySet()) {
+          // begin "definition -> fields -> <field_name>" object
+          json.writeObjectFieldStart(entry.getKey());
+
+          writeDesc(json, entry.getValue());
+
+          // end "definition -> fields -> <field_name>" object
+          json.writeEndObject();
+        }
+        // end "definition -> fields" object
+        json.writeEndObject();
+
+        // end "definition" object
+        json.writeEndObject();
+      }
+
+      case UdtRefColumnDesc udt -> {
+        json.writeStringField(
+            TableDescConstants.ColumnDesc.UDT_NAME, cqlIdentifierToJsonKey(udt.udtName()));
+      }
       default -> {
         // nothing extra to do , an unsupported type will be picked up below checking aipSupport()
       }
     }
 
     if (columnDesc.apiSupport().isAnyUnsupported()) {
-      jsonGenerator.writeObjectField(
-          TableDescConstants.ColumnDesc.API_SUPPORT, columnDesc.apiSupport());
+      json.writeObjectField(TableDescConstants.ColumnDesc.API_SUPPORT, columnDesc.apiSupport());
     }
-
-    jsonGenerator.writeEndObject();
   }
 
-  /** Write the map/set/list column description to the JSON generator. */
-  private void writeMapSetListDesc(JsonGenerator jsonGenerator, ColumnDesc mapSetListColumnDesc)
+  private void newColumnDescObject(JsonGenerator json, String fieldName, ColumnDesc columnDesc)
       throws IOException {
 
-    switch (mapSetListColumnDesc) {
-      case MapColumnDesc mapColumnDesc -> {
-        // write key and value description
-        writeKeyOrValueTypeDesc(
-            jsonGenerator, TableDescConstants.ColumnDesc.KEY_TYPE, mapColumnDesc.keyType());
-        writeKeyOrValueTypeDesc(
-            jsonGenerator, TableDescConstants.ColumnDesc.VALUE_TYPE, mapColumnDesc.valueType());
-      }
-      case SetColumnDesc setColumnDesc -> {
-        writeKeyOrValueTypeDesc(
-            jsonGenerator, TableDescConstants.ColumnDesc.VALUE_TYPE, setColumnDesc.valueType());
-      }
-      case ListColumnDesc listColumnDesc -> {
-        writeKeyOrValueTypeDesc(
-            jsonGenerator, TableDescConstants.ColumnDesc.VALUE_TYPE, listColumnDesc.valueType());
-      }
-      default ->
-          throw new IllegalArgumentException(
-              "Unsupported column type for map/set/list: " + mapSetListColumnDesc.getApiName());
-    }
-  }
-
-  /**
-   * Write the key or value type description to the JSON generator.
-   *
-   * <p>If the columnDesc is a UDT, it will write the full UDT description. Otherwise, it will just
-   * write the type name.
-   */
-  private void writeKeyOrValueTypeDesc(
-      JsonGenerator jsonGenerator, String fieldName, ColumnDesc columnDesc) throws IOException {
-    if (columnDesc instanceof UDTColumnDesc udtColumnDesc) {
-      jsonGenerator.writeObjectFieldStart(fieldName);
-      writeFullUdtDesc(jsonGenerator, udtColumnDesc);
-      jsonGenerator.writeEndObject();
-    } else {
-      jsonGenerator.writeStringField(fieldName, columnDesc.getApiName());
-    }
-  }
-
-  /** Write the full UDT description to the JSON generator. */
-  private void writeFullUdtDesc(JsonGenerator jsonGenerator, UDTColumnDesc udtColumnDesc)
-      throws IOException {
-    jsonGenerator.writeStringField(
-        TableDescConstants.ColumnDesc.UDT_NAME, udtColumnDesc.udtName().asInternal());
-    jsonGenerator.writeObjectFieldStart(TableDescConstants.ColumnDesc.DEFINITION);
-    jsonGenerator.writeObjectField(
-        TableDescConstants.ColumnDesc.FIELDS, udtColumnDesc.fieldsDesc());
-    jsonGenerator.writeEndObject();
+    json.writeObjectFieldStart(fieldName);
+    writeDesc(json, columnDesc);
+    json.writeEndObject();
   }
 }

@@ -72,7 +72,7 @@ public enum ApiIndexType {
    * @return The ApiIndexType for the index, if it cannot be determined it will throw an exception.
    * @throws UnsupportedCqlIndexException Unable to determine or unsupported index type.
    */
-  static ApiIndexType fromCql(
+  public static ApiIndexType fromCql(
       ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
       throws UnsupportedCqlIndexException {
 

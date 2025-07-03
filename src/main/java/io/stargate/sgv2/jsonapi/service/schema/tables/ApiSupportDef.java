@@ -78,6 +78,7 @@ public interface ApiSupportDef {
    * @param asMapKey If the type can be created as map key.
    * @param asMapValue If the type can be created as map value.
    */
+  // TODO: XXX REMOVE
   record Collection(boolean asListValue, boolean asSetValue, boolean asMapKey, boolean asMapValue) {
     public static final Collection FULL = new Collection(true, true, true, true);
     public static final Collection NONE = new Collection(false, false, false, false);

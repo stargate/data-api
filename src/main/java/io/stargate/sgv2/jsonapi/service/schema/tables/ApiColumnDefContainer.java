@@ -151,18 +151,35 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return dataRecorder.append("columns", this.values());
   }
 
+  /**
+   * Factory for creating {@link ApiColumnDefContainer} from the driver / cql metadata.
+   *
+   * <p>...
+   */
   public static class CqlColumnFactory {
 
     CqlColumnFactory() {}
 
     public ApiColumnDefContainer create(
-        Collection<ColumnMetadata> columns, VectorConfig vectorConfig) {
+        TypeBindingPoint bindingPoint,
+        Collection<ColumnMetadata> columns,
+        VectorConfig vectorConfig) {
+
       Objects.requireNonNull(columns, "columns cannot be null");
+
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          || bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw new IllegalArgumentException(
+            "CqlColumnFactory only supports binding point %s or %s, bindingPoint: %s"
+                .formatted(
+                    TypeBindingPoint.TABLE_COLUMN, TypeBindingPoint.UDT_FIELD, bindingPoint));
+      }
 
       var container = new ApiColumnDefContainer(columns.size());
       for (ColumnMetadata columnMetadata : columns) {
         try {
-          container.put(ApiColumnDef.FROM_CQL_FACTORY.create(columnMetadata, vectorConfig));
+          container.put(
+              ApiColumnDef.FROM_CQL_FACTORY.create(bindingPoint, columnMetadata, vectorConfig));
         } catch (UnsupportedCqlColumn e) {
           container.put(ApiColumnDef.FROM_CQL_FACTORY.createUnsupported(columnMetadata));
         }
@@ -171,20 +188,36 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     }
   }
 
+  /**
+   * Factory for creating {@link ApiColumnDefContainer} from the user provided descriptions in the
+   * API.
+   *
+   * <p>..
+   */
   public static class ColumnDescFactory {
 
     ColumnDescFactory() {}
 
     public ApiColumnDefContainer create(
-        ColumnsDescContainer columnDescContainer, VectorizeConfigValidator validateVectorize) {
+        TypeBindingPoint bindingPoint,
+        ColumnsDescContainer columnDescContainer,
+        VectorizeConfigValidator validateVectorize) {
       Objects.requireNonNull(columnDescContainer, "columnDescContainer cannot be null");
+
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          || bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw new IllegalArgumentException(
+            "ColumnDescFactory only supports binding point %s or %s, bindingPoint: %s"
+                .formatted(
+                    TypeBindingPoint.TABLE_COLUMN, TypeBindingPoint.UDT_FIELD, bindingPoint));
+      }
 
       var container = new ApiColumnDefContainer(columnDescContainer.size());
       for (Map.Entry<String, ColumnDesc> entry : columnDescContainer.entrySet()) {
         try {
           container.put(
               ApiColumnDef.FROM_COLUMN_DESC_FACTORY.create(
-                  entry.getKey(), entry.getValue(), validateVectorize));
+                  bindingPoint, entry.getKey(), entry.getValue(), validateVectorize));
         } catch (UnsupportedUserColumn e) {
           container.put(
               ApiColumnDef.FROM_COLUMN_DESC_FACTORY.createUnsupported(
@@ -195,6 +228,11 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     }
   }
 
+  /**
+   * An unmodifiable version of {@link ApiColumnDefContainer}
+   *
+   * <p>...
+   */
   public static class UnmodifiableApiColumnDefContainer extends ApiColumnDefContainer {
 
     UnmodifiableApiColumnDefContainer(ApiColumnDefContainer container) {

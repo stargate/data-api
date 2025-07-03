@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -14,9 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
-import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtDef;
-import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -35,7 +33,12 @@ public class CreateTypeCommandResolver implements CommandResolver<CreateTypeComm
   public Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> commandContext, CreateTypeCommand command) {
 
-    // get the task builder
+    // create the ApiUdtDef from the command definition
+    // will validate name etc
+    var apiUdtType =
+        ApiUdtType.FROM_TYPE_DESC_FACTORY.create(
+            command.name(), command.definition(), validateVectorize);
+
     var taskBuilder =
         CreateTypeDBTask.builder(commandContext.schemaObject())
             .withSchemaRetryPolicy(
@@ -50,30 +53,16 @@ public class CreateTypeCommandResolver implements CommandResolver<CreateTypeComm
                             .config()
                             .get(OperationsConfig.class)
                             .databaseConfig()
-                            .ddlRetryDelayMillis())));
+                            .ddlRetryDelayMillis())))
+            .ifNotExists(
+                getOrDefault(command.options(), CreateTypeCommand.Options::ifNotExists, false))
+            .withExceptionHandlerFactory(
+                DefaultDriverExceptionHandler.Factory.withIdentifier(
+                    CreateTypeExceptionHandler::new, apiUdtType.udtName()))
+            .withApiUdtType(apiUdtType);
 
-    // validate the UDT name
-    var udtName = validateSchemaName(command.name(), NamingRules.UDT);
-
-    // set the ifNotExists option if provided
-    taskBuilder.ifNotExists(
-        ApiOptionUtils.getOrDefault(
-            command.options(), CreateTypeCommand.Options::ifNotExists, false));
-
-    // create the ApiUdtDef from the command definition
-    var apiUdtDef =
-        ApiUdtDef.FROM_TYPE_DESC_FACTORY.create(udtName, command.definition(), validateVectorize);
-
-    // append the task with the UDT definition and exception handler.
-    taskBuilder
-        .udtDef(apiUdtDef)
-        .withExceptionHandlerFactory(
-            DefaultDriverExceptionHandler.Factory.withIdentifier(
-                CreateTypeExceptionHandler::new, cqlIdentifierFromUserInput(udtName)));
-
-    var taskGroup = new TaskGroup<>(taskBuilder.build());
     return new TaskOperation<>(
-        taskGroup, SchemaDBTaskPage.accumulator(CreateTypeDBTask.class, commandContext));
+        new TaskGroup<>(taskBuilder.build()), SchemaDBTaskPage.accumulator(CreateTypeDBTask.class, commandContext));
   }
 
   @Override

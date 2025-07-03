@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.schema.tables;
+package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
@@ -7,6 +7,9 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.ApiIndexSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.UnsupportedIndexDefinitionDesc;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import java.util.Map;
 import java.util.Objects;
 

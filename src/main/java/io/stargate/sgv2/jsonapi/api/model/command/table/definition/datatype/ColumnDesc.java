@@ -4,11 +4,18 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.serializer.ColumnDescSerializer;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import java.util.Objects;
 
 /**
  * Describes a column in a table definition, from the user perspective.
+ *
+ * <p>This does not include the name of the column, it only describes the type of the column so that
+ * we can re-use the same description for multiple columns. See {@link PrimitiveColumnDesc} for
+ * example where we can reuse the description of a text column for multiple places.
+ *
+ * <p>The column description and it's name come together in the {@link ColumnsDescContainer}
  *
  * <p>All descriptions of schema etc the user gives use are called `Desc` classes.
  */

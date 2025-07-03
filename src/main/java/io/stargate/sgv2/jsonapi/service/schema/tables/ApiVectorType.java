@@ -12,12 +12,17 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.CqlTypeKey;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactoryFromColumnDesc;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactoryFromCql;
 import java.util.Objects;
+import java.util.Optional;
 
 public class ApiVectorType extends CollectionApiDataType<VectorType> {
 
   public static final TypeFactoryFromColumnDesc<ApiVectorType, VectorColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
+
   public static final TypeFactoryFromCql<ApiVectorType, VectorType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
@@ -27,6 +32,13 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
   public static final ApiSupportDef API_SUPPORT =
       new ApiSupportDef.Support(
           true, ApiSupportDef.Collection.NONE, true, true, false, ApiSupportDef.Update.PRIMITIVE);
+
+  private static final CollectionBindingRules BINDING_POINT_RULES =
+      new CollectionBindingRules(
+          new CollectionBindingRule(TypeBindingPoint.COLLECTION_VALUE, false),
+          new CollectionBindingRule(TypeBindingPoint.MAP_KEY, false),
+          new CollectionBindingRule(TypeBindingPoint.TABLE_COLUMN, true),
+          new CollectionBindingRule(TypeBindingPoint.UDT_FIELD, false));
 
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;
@@ -96,36 +108,53 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
     return builder;
   }
 
+  /**
+   * Factory to create {@link ApiVectorType} from {@link VectorColumnDesc} obtained from user
+   *
+   * <p>...
+   */
   private static class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiVectorType, VectorColumnDesc> {
 
+    private ColumnDescFactory() {
+      super(ApiTypeName.VECTOR, VectorColumnDesc.class);
+    }
+
     @Override
     public ApiVectorType create(
-        VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+        TypeBindingPoint bindingPoint,
+        VectorColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      // this will catch the dimension aetc
-      if (!isSupported(columnDesc, validateVectorize)) {
-        throw new UnsupportedUserType(columnDesc);
+      if (!isSupported(bindingPoint, columnDesc, validateVectorize)) {
+        // TODO: XXX: AARON: NEED A general schema error ?
+        throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException)null);
       }
 
       Integer dimension;
 
-      // if the vectorize config is specified, we validate the dimension or auto populate the
+      // if the vectorize config is specified, we validate the dimension or auto-populate the
       // default dimension
-      // the same logic as the collection
       if (columnDesc.getVectorizeConfig() != null) {
         dimension =
             validateVectorize.validateService(
                 columnDesc.getVectorizeConfig(), columnDesc.getDimension());
       } else {
         // if the vectorize config is not specified, the dimension must be specified
-        // the same logic as the collection
         if (columnDesc.getDimension() == null) {
           throw SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.get();
         }
         dimension = columnDesc.getDimension();
+      }
+
+      if (!ApiVectorType.isDimensionSupported(columnDesc.getDimension())) {
+        throw new UnsupportedUserType(
+            bindingPoint,
+            columnDesc,
+            SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.get(
+                "unsupportedValue", columnDesc.getDimension().toString()));
       }
 
       var vectorDefn = VectorizeDefinition.from(columnDesc, dimension, validateVectorize);
@@ -135,33 +164,83 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
 
     @Override
     public boolean isSupported(
-        VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
-      Objects.requireNonNull(columnDesc, "columnDesc must not be null");
+        TypeBindingPoint bindingPoint,
+        VectorColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize) {
 
-      return columnDesc.valueType().equals(PrimitiveColumnDesc.FLOAT);
+      // Currently no way for the user to specify a vector value type, just being safe
+      if (!columnDesc.valueType().equals(PrimitiveColumnDesc.FLOAT)) {
+        return false;
+      }
+
+      if (!isDimensionSupported(columnDesc.getDimension())) {
+        return false;
+      }
+
+      // can we use a vector of any type in this binding point?
+      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+        return false;
+      }
+      return true;
     }
   }
 
+  /**
+   * Type factory to create {@link ApiVectorType} from {@link VectorType} obtained from driver /
+   * cql.
+   *
+   * <p>...
+   */
   private static class CqlTypeFactory extends TypeFactoryFromCql<ApiVectorType, VectorType> {
 
+    public CqlTypeFactory() {
+      super(ApiTypeName.VECTOR, VectorType.class);
+    }
+
     @Override
-    public ApiVectorType create(VectorType cqlType, VectorizeDefinition vectorizeDefn)
+    public ApiVectorType create(
+        TypeBindingPoint bindingPoint, VectorType cqlType, VectorizeDefinition vectorizeDefn)
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      if (!isSupported(cqlType)) {
-        throw new UnsupportedCqlType(cqlType);
+      if (!isSupported(bindingPoint, cqlType)) {
+        throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
+
       // we can ignore the element type, it is always float, checked in isSupported
       return ApiVectorType.from(cqlType.getDimensions(), vectorizeDefn);
     }
 
     @Override
-    public boolean isSupported(VectorType cqlType) {
+    public boolean isSupported(TypeBindingPoint bindingPoint, VectorType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      // Must be a float
-      return cqlType.getElementType() == DataTypes.FLOAT;
+      // Must be a float, in reality they all are but checking
+      if (cqlType.getElementType() != DataTypes.FLOAT) {
+        return false;
+      }
+
+      if (!isDimensionSupported(cqlType.getDimensions())) {
+        throw new IllegalArgumentException(
+            "dimensions is not supported, dimensions=%s".formatted(cqlType.getDimensions()));
+      }
+
+      // can we use a vector of any type in this binding point?
+      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+        return false;
+      }
+
+      // NOTE: not checking if the float / element type can be used as a collection value
+      // because all vector types are always float
+      return true;
+    }
+
+    @Override
+    public Optional<CqlTypeKey> maybeCreateCacheKey(
+        TypeBindingPoint bindingPoint, VectorType cqlType) {
+
+      // We cannot cache any vector type as it has user defined dimension and vectorize config
+      return Optional.empty();
     }
   }
 }

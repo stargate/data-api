@@ -9,11 +9,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
 
 public class CreateTypeDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
 
-  private final ApiUdtDef udtDef;
+  private final ApiUdtType apiUdtType;
   private final boolean ifNotExists;
 
   protected CreateTypeDBTask(
@@ -21,11 +21,18 @@ public class CreateTypeDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
       KeyspaceSchemaObject schemaObject,
       TaskRetryPolicy retryPolicy,
       DefaultDriverExceptionHandler.Factory<KeyspaceSchemaObject> exceptionHandlerFactory,
-      ApiUdtDef udtDef,
+      ApiUdtType apiUdtType,
       boolean ifNotExists) {
     super(position, schemaObject, retryPolicy, exceptionHandlerFactory);
-    this.udtDef = udtDef;
+
+    this.apiUdtType = apiUdtType;
     this.ifNotExists = ifNotExists;
+
+    // sanity check
+    if (apiUdtType.allFields().isEmpty()) {
+      throw new IllegalArgumentException(
+          "CreateTypeDBTask() - apiUdtType.allFields() is empty, must have at least one field");
+    }
 
     setStatus(TaskStatus.READY);
   }
@@ -38,7 +45,7 @@ public class CreateTypeDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
   protected SimpleStatement buildStatement() {
     var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
 
-    CreateTypeStart createTypeStart = createType(keyspaceIdentifier, udtDef.name());
+    CreateTypeStart createTypeStart = createType(keyspaceIdentifier, apiUdtType.udtName());
 
     // Add if not exists flag based on request
     if (ifNotExists) {
@@ -46,14 +53,14 @@ public class CreateTypeDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
     }
 
     CreateType createType = null;
-    // Add all fields
-    for (var columnDef : udtDef.allFields().values()) {
+    for (var apiColumnDef : apiUdtType.allFields().values()) {
       createType =
           createType == null
-              ? createTypeStart.withField(columnDef.name(), columnDef.type().cqlType())
-              : createType.withField(columnDef.name(), columnDef.type().cqlType());
+              ? createTypeStart.withField(apiColumnDef.name(), apiColumnDef.type().cqlType())
+              : createType.withField(apiColumnDef.name(), apiColumnDef.type().cqlType());
     }
-    // note, validation of empty fields has been done.
+
+    assert createType != null;
     return createType.build();
   }
 }

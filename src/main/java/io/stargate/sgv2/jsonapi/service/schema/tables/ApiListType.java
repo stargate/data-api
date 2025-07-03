@@ -1,25 +1,42 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
+
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.ListType;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ListColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.*;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public class ApiListType extends CollectionApiDataType<ListType> {
 
   public static final TypeFactoryFromColumnDesc<ApiListType, ListColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
+
   public static final TypeFactoryFromCql<ApiListType, ListType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
   public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
+
+  private static final CollectionBindingRules BINDING_POINT_RULES =
+      new CollectionBindingRules(
+          new CollectionBindingRule(TypeBindingPoint.COLLECTION_VALUE, false),
+          new CollectionBindingRule(TypeBindingPoint.MAP_KEY, false),
+          new CollectionBindingRule(TypeBindingPoint.TABLE_COLUMN, true),
+          new CollectionBindingRule(TypeBindingPoint.UDT_FIELD, false));
 
   private ApiListType(ApiDataType valueType, ApiSupportDef apiSupport, boolean isFrozen) {
     super(ApiTypeName.LIST, valueType, DataTypes.listOf(valueType.cqlType(), isFrozen), apiSupport);
@@ -54,75 +71,136 @@ public class ApiListType extends CollectionApiDataType<ListType> {
     return valueType.apiSupport().collection().asListValue();
   }
 
+  /**
+   * Factory to create {@link ApiListType} from {@link ListColumnDesc} obtained from user
+   *
+   * <p>...
+   */
   private static class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiListType, ListColumnDesc> {
 
+    public ColumnDescFactory() {
+      super(ApiTypeName.LIST, ListColumnDesc.class);
+    }
+
     @Override
-    public ApiListType create(ListColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiListType create(
+        TypeBindingPoint bindingPoint,
+        ListColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      ApiDataType valueType;
+      if (!isSupported(bindingPoint, columnDesc, validateVectorize)) {
+        throw new UnsupportedUserType(
+            bindingPoint,
+            columnDesc,
+            SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.get(
+                Map.of(
+                    "supportedTypes",
+                    errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
+                    "unsupportedValueType",
+                    errFmt(columnDesc.valueType()))));
+      }
+
       try {
-        valueType =
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize);
-      } catch (UnsupportedUserType e) {
-        throw new UnsupportedUserType(columnDesc, e);
-      }
-      // Not calling isSupported to avoid double decoding of the valueType
-      if (isValueTypeSupported(valueType)) {
-        // can never be frozen from the API
+        var valueType =
+            DefaultTypeFactoryFromColumnDesc.INSTANCE.create(
+                TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize);
+        // can never be frozen when created from ColumnDesc / API
         return ApiListType.from(valueType, false);
+
+      } catch (UnsupportedUserType e) {
+        // make sure we have the list type, not just the key or value type
+        throw new UnsupportedUserType(bindingPoint, columnDesc, e);
       }
-      throw new UnsupportedUserType(columnDesc);
     }
 
     @Override
     public boolean isSupported(
-        ListColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
-      Objects.requireNonNull(columnDesc, "columnDesc must not be null");
+        TypeBindingPoint bindingPoint,
+        ListColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize) {
 
-      try {
-        return isValueTypeSupported(
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize));
-      } catch (UnsupportedUserType e) {
+      //  we accept frozen, but change the support.
+
+      // can we use a list of any type in this binding point?
+      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
         return false;
       }
+
+      // can the value type be used as list value?
+      if (!DefaultTypeFactoryFromColumnDesc.INSTANCE.isSupportedUntyped(
+          TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
+        return false;
+      }
+      return true;
     }
   }
 
+  /**
+   * Type factory to create {@link ApiListType} from {@link ListType} obtained from driver / cql.
+   *
+   * <p>...
+   */
   private static class CqlTypeFactory extends TypeFactoryFromCql<ApiListType, ListType> {
 
+    public CqlTypeFactory() {
+      super(ApiTypeName.LIST, ListType.class);
+    }
+
     @Override
-    public ApiListType create(ListType cqlType, VectorizeDefinition vectorizeDefn)
+    public ApiListType create(
+        TypeBindingPoint bindingPoint, ListType cqlType, VectorizeDefinition vectorizeDefn)
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
+      if (!isSupported(bindingPoint, cqlType)) {
+        throw new UnsupportedCqlType(bindingPoint, cqlType);
+      }
+
       try {
-        ApiDataType valueType =
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn);
-        if (!isValueTypeSupported(valueType)) {
-          throw new UnsupportedCqlType(cqlType);
-        }
-        return ApiListType.from(
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn),
-            cqlType.isFrozen());
+        var valueType =
+            DefaultTypeFactoryFromCql.INSTANCE.create(
+                TypeBindingPoint.COLLECTION_VALUE, cqlType.getElementType(), vectorizeDefn);
+        return ApiListType.from(valueType, cqlType.isFrozen());
+
       } catch (UnsupportedCqlType e) {
         // make sure we have the list type, not just the key or value type
-        throw new UnsupportedCqlType(cqlType, e);
+        throw new UnsupportedCqlType(bindingPoint, cqlType, e);
       }
     }
 
     @Override
-    public boolean isSupported(ListType cqlType) {
+    public boolean isSupported(TypeBindingPoint bindingPoint, ListType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
+
       //  we accept frozen, but change the support.
-      try {
-        var valueType = TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), null);
-        return isValueTypeSupported(valueType);
-      } catch (UnsupportedCqlType e) {
+
+      // can we use a list of any type in this binding point?
+      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
         return false;
       }
+
+      // can the value type be used as list value?
+      if (!DefaultTypeFactoryFromCql.INSTANCE.isSupportedUntyped(
+          TypeBindingPoint.COLLECTION_VALUE, cqlType.getElementType())) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public Optional<CqlTypeKey> maybeCreateCacheKey(
+        TypeBindingPoint bindingPoint, ListType cqlType) {
+
+      // we can cache the list type if the value type is not a UDT, because the UDT types are tenant
+      // specific.
+      if (cqlType.getElementType() instanceof UserDefinedType) {
+        return Optional.empty();
+      }
+      return Optional.of(
+          CqlTypeKey.create(cqlType, cqlType.getElementType(), null, cqlType.isFrozen()));
     }
   }
 }

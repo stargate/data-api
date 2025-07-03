@@ -55,7 +55,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                             .databaseConfig()
                             .ddlRetryDelayMillis())));
 
-    var tableName = validateSchemaName(command.name(), NamingRules.TABLE);
+    // TODO: XXX: AARON: Validation should happen in the factory for the table
+    var tableName = NamingRules.TABLE.checkRule(command.name());
 
     taskBuilder.ifNotExists(
         ApiOptionUtils.getOrDefault(

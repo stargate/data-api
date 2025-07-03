@@ -38,16 +38,6 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
   }
 
   @Override
-  public boolean isPrimitive() {
-    return true;
-  }
-
-  @Override
-  public boolean isContainer() {
-    return false;
-  }
-
-  @Override
   public ApiSupportDef apiSupport() {
     return apiSupport;
   }

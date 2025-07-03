@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.schema.tables;
+package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 

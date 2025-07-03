@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.UnsupportedApiDataType;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 
 /** TODO WORDS */
@@ -26,11 +27,15 @@ public interface ApiDataType extends Recordable {
 
   DataType cqlType();
 
-  boolean isPrimitive();
-
-  boolean isContainer();
-
   ApiSupportDef apiSupport();
+
+  default boolean isPrimitive() {
+    return typeName().isPrimitive();
+  }
+
+  default boolean isContainer() {
+    return typeName().isContainer();
+  }
 
   /**
    * Called to get the user API description of the type.

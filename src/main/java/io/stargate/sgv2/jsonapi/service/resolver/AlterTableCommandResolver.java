@@ -105,7 +105,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     List<AlterTableDBTask> attempts = new ArrayList<>();
     var addedColumns =
         ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
-            addColumnsOperation.columns(), validateVectorize);
+            TypeBindingPoint.TABLE_COLUMN, addColumnsOperation.columns(), validateVectorize);
 
     // alter table can not add columns with unsupported API data type
     var unsupportedColumns = addedColumns.filterBySupportToList(x -> !x.createTable());

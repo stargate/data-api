@@ -29,7 +29,7 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
   public static final FromJsonFactory FROM_JSON_FACTORY = new FromJsonFactory();
 
   private static final Map<ApiDataType, PrimitiveColumnDesc> BY_API_TYPE = new HashMap<>();
-  private static final Map<String, PrimitiveColumnDesc> BY_API_TYPE_NAME = new HashMap<>();
+  private static final Map<ApiTypeName, PrimitiveColumnDesc> BY_API_TYPE_NAME = new HashMap<>();
 
   private static final List<PrimitiveColumnDesc> allPrimitives;
   private static final List<ColumnDesc> allColumnDescs;
@@ -39,7 +39,7 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
     allColumnDescs = new ArrayList<>(allPrimitives);
     for (PrimitiveColumnDesc type : PrimitiveColumnDesc.values()) {
       BY_API_TYPE.put(type.apiDataType, type);
-      BY_API_TYPE_NAME.put(type.apiDataType.typeName().apiName(), type);
+      BY_API_TYPE_NAME.put(type.apiDataType.typeName(), type);
     }
   }
 
@@ -81,7 +81,8 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
   }
 
   public static class FromJsonFactory {
-    public Optional<ColumnDesc> create(String apiTypeName) {
+
+    public Optional<ColumnDesc> create(ApiTypeName apiTypeName) {
       return Optional.ofNullable(BY_API_TYPE_NAME.get(apiTypeName));
     }
   }

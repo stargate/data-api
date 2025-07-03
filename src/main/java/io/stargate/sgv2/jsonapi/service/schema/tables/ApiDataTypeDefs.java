@@ -102,9 +102,10 @@ public abstract class ApiDataTypeDefs {
   public static final PrimitiveApiDataTypeDef UUID =
       new PrimitiveApiDataTypeDef(ApiTypeName.UUID, DataTypes.UUID, ApiSupportDef.Support.FULL);
 
-  // Collections use to help lookups, all external access should be through the from() functions
+  // Collections use to help lookups, all external access should be through the
+  // filterBySupportToList() functions
   // below.
-  static final List<PrimitiveApiDataTypeDef> PRIMITIVE_TYPES =
+  public static final List<PrimitiveApiDataTypeDef> PRIMITIVE_TYPES =
       List.of(
           ASCII, BIGINT, BOOLEAN, BINARY, COUNTER, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT,
           SMALLINT, TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);

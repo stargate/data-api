@@ -11,14 +11,15 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import java.util.Map;
+import java.util.Objects;
 
 public class AlterTypeDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
 
   private final AlterTypeDBTaskType alterTypeDBTaskType;
-  private final Map.Entry<CqlIdentifier, CqlIdentifier> renamingFieldEntry;
-  private final ApiColumnDef addingField;
   private final CqlIdentifier udtName;
+  private final ApiColumnDef fieldToAdd;
+  private final CqlIdentifier fromFieldName;
+  private final CqlIdentifier toFieldName;
 
   protected AlterTypeDBTask(
       int position,
@@ -26,14 +27,31 @@ public class AlterTypeDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
       TaskRetryPolicy retryPolicy,
       DefaultDriverExceptionHandler.Factory<KeyspaceSchemaObject> exceptionHandlerFactory,
       AlterTypeDBTaskType alterTypeDBTaskType,
-      Map.Entry<CqlIdentifier, CqlIdentifier> renamingFieldEntry,
-      ApiColumnDef addingField,
-      CqlIdentifier udtName) {
+      CqlIdentifier udtName,
+      ApiColumnDef fieldToAdd,
+      CqlIdentifier fromFieldName,
+      CqlIdentifier toFieldName) {
     super(position, schemaObject, retryPolicy, exceptionHandlerFactory);
+
     this.alterTypeDBTaskType = alterTypeDBTaskType;
-    this.renamingFieldEntry = renamingFieldEntry;
-    this.addingField = addingField;
     this.udtName = udtName;
+    this.fieldToAdd = fieldToAdd;
+    this.fromFieldName = fromFieldName;
+    this.toFieldName = toFieldName;
+
+    // sanity checks
+    switch (alterTypeDBTaskType) {
+      case ADD_FIELD -> {
+        Objects.requireNonNull(
+            fieldToAdd, "fieldToAdd must not be null for task type " + alterTypeDBTaskType);
+      }
+      case RENAME_FIELD -> {
+        Objects.requireNonNull(
+            fromFieldName, "fromFieldName must not be null for task type " + alterTypeDBTaskType);
+        Objects.requireNonNull(
+            toFieldName, "toFieldName must not be null for task type " + alterTypeDBTaskType);
+      }
+    }
     setStatus(TaskStatus.READY);
   }
 
@@ -48,11 +66,8 @@ public class AlterTypeDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
     AlterTypeStart alterTypeStart = alterType(keyspaceIdentifier, udtName);
     return switch (alterTypeDBTaskType) {
       case ADD_FIELD ->
-          alterTypeStart.addField(addingField.name(), addingField.type().cqlType()).build();
-      case RENAME_FIELD ->
-          alterTypeStart
-              .renameField(renamingFieldEntry.getKey(), renamingFieldEntry.getValue())
-              .build();
+          alterTypeStart.addField(fieldToAdd.name(), fieldToAdd.type().cqlType()).build();
+      case RENAME_FIELD -> alterTypeStart.renameField(fromFieldName, toFieldName).build();
     };
   }
 

@@ -36,7 +36,8 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, CreateVectorIndexCommand command) {
 
-    final var indexName = validateSchemaName(command.name(), NamingRules.INDEX);
+    // TODO: XXX: AARON: Validation should happen in the factory for the index
+    var indexName = NamingRules.INDEX.checkRule(command.name());
 
     var indexType =
         command.indexType() == null

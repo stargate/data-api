@@ -51,16 +51,6 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   }
 
   @Override
-  public boolean isPrimitive() {
-    return false;
-  }
-
-  @Override
-  public boolean isContainer() {
-    return true;
-  }
-
-  @Override
   public ApiSupportDef apiSupport() {
     return apiSupport;
   }
@@ -81,4 +71,14 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   }
 
   public abstract boolean isFrozen();
+
+  protected static class CollectionBindingRules extends BindingPointRules<CollectionBindingRule> {
+
+    public CollectionBindingRules(CollectionBindingRule... rules) {
+      super(rules);
+    }
+  }
+
+  protected record CollectionBindingRule(TypeBindingPoint bindingPoint, boolean isSupported)
+      implements BindingPointRules.BindingPointRule {}
 }

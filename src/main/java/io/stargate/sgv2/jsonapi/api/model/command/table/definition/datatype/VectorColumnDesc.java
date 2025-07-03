@@ -1,10 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
-import java.util.Map;
 import java.util.Objects;
 
 /** Column type for {@link ApiVectorType} */
@@ -62,13 +60,18 @@ public class VectorColumnDesc extends ComplexColumnDesc {
     return Objects.hash(valueType, dimension, vectorizeConfig);
   }
 
+  /**
+   * Factory to create a {@link VectorColumnDesc} from JSON representing the type
+   *
+   * <p>...
+   */
   public static class FromJsonFactory {
     FromJsonFactory() {}
 
     public VectorColumnDesc create(String dimensionString, VectorizeConfig vectorConfig) {
       // if the string is null/empty/blank, we think the user doesn't provide the dimension
       // we will check later if the null dimension is allowed
-      // same logic as the collection
+      // when we create the ApiVectorType
       if (dimensionString == null || dimensionString.isBlank()) {
         return new VectorColumnDesc(null, vectorConfig);
       }
@@ -80,10 +83,7 @@ public class VectorColumnDesc extends ComplexColumnDesc {
       } catch (NumberFormatException e) {
         // handle below
       }
-      if (dimension == null || !ApiVectorType.isDimensionSupported(dimension)) {
-        throw SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.get(
-            Map.of("unsupportedValue", dimensionString));
-      }
+
       // aaron- not calling ApiVectorType isSupported because the value type is locked to float
       return new VectorColumnDesc(dimension, vectorConfig);
     }

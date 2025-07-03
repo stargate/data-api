@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefiniti
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.FactoryFromDesc;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
@@ -192,6 +193,7 @@ public class ApiTableDef implements Recordable {
 
       var allColumnDefs =
           ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
+              TypeBindingPoint.TABLE_COLUMN,
               tableDesc.columns(), validateVectorize);
       var partitionIdentifiers =
           Arrays.stream(tableDesc.primaryKey().keys())
@@ -298,6 +300,7 @@ public class ApiTableDef implements Recordable {
 
       var allColumns =
           ApiColumnDefContainer.FROM_CQL_FACTORY.create(
+              TypeBindingPoint.TABLE_COLUMN,
               tableMetadata.getColumns().values(), vectorConfig);
 
       // TODO: add validation that the columns are found in all columns

@@ -6,7 +6,10 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
+
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Custom deserializer for container of UDT fields. See {@link TypeDefinitionDesc} for usage.
@@ -20,22 +23,18 @@ public class TypeFieldsContainerDeserializer extends JsonDeserializer<ColumnsDes
   public ColumnsDescContainer deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
-    JsonNode node = deserializationContext.readTree(jsonParser);
-    ColumnsDescContainer container = new ColumnsDescContainer();
-    ColumnDescDeserializer deserializer = new ColumnDescDeserializer(true);
+    var container = new ColumnsDescContainer();
+    var fieldsIter = deserializationContext.readTree(jsonParser).fields();
 
-    node.fields()
-        .forEachRemaining(
-            entry -> {
-              var fieldName = entry.getKey();
-              var fieldNode = entry.getValue();
+    // cannot use forEach because want IOException to propagate
+    while (fieldsIter.hasNext()) {
 
-              // Deserialize each ColumnDesc
-              var columnDesc =
-                  deserializer.deserialize(fieldNode.traverse(), deserializationContext);
-              container.put(fieldName, columnDesc);
-            });
-
+      Map.Entry<String, JsonNode> entry = fieldsIter.next();
+      container.put(
+          entry.getKey(),
+          ColumnDescDeserializer.deserialize(
+              entry.getValue(), jsonParser, TypeBindingPoint.UDT_FIELD));
+    }
     return container;
   }
 }
