@@ -2,6 +2,9 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
@@ -18,7 +21,7 @@ import java.util.stream.Collectors;
 
 /** A {@link ApiColumnDefContainer} that maintains the order of the columns as they were added. */
 public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef>
-    implements Recordable {
+    implements SchemaDescribable<ColumnsDescContainer>, Recordable {
   private static final ApiColumnDefContainer IMMUTABLE_EMPTY =
       new ApiColumnDefContainer(0).toUnmodifiable();
 
@@ -139,9 +142,12 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
                 columnDef -> ((ApiVectorType) columnDef.type()).getVectorizeDefinition()));
   }
 
-  public ColumnsDescContainer toColumnsDesc() {
+
+  @Override
+  public ColumnsDescContainer getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
-    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.columnDesc()));
+    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.getSchemaDescription(bindingPoint)));
     return columnsDesc;
   }
 

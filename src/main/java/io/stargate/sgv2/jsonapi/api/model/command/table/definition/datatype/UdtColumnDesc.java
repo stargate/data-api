@@ -10,7 +10,9 @@ import java.util.Objects;
  * the UDT. This is created by the {@link ApiUdtType#columnDesc()} when we want to return the full
  * UDT definition as part of an inline schema definition in the read schema response.
  *
- * <p>See also {@link UdtRefColumnDesc}
+ * <p>See also {@link UdtRefColumnDesc}. We extend the column desc because we want to use this type
+ * to describe the UDT in both response for full listUdt and inline schema for read commands
+ * because they include all the fields.
  *
  * <p>Does not have a factory to create from JSON because it is only created from the ApiUdtType
  */

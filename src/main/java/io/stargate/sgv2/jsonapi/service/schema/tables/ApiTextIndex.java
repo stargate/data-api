@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.TextIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
@@ -45,10 +46,11 @@ public class ApiTextIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<TextIndexDefinitionDesc> indexDesc() {
+  public IndexDesc<TextIndexDefinitionDesc> getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+    // Index is always has same representation
 
-    final var definitionOptions = new TextIndexDefinitionDesc.TextIndexDescOptions(analyzer);
-    final var definition =
+    var definitionOptions = new TextIndexDefinitionDesc.TextIndexDescOptions(analyzer);
+    var definition =
         new TextIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
 
     return new IndexDesc<>() {

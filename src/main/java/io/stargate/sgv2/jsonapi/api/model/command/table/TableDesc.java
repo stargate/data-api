@@ -17,9 +17,10 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
  */
 @JsonPropertyOrder({TableDescConstants.TableDesc.NAME, TableDescConstants.TableDesc.DEFINITION})
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record TableDesc(
+public record TableDesc (
     @JsonProperty(TableDescConstants.TableDesc.NAME) String name,
-    @JsonProperty(TableDescConstants.TableDesc.DEFINITION) TableDefinitionDesc definition) {
+    @JsonProperty(TableDescConstants.TableDesc.DEFINITION) TableDefinitionDesc definition)
+    implements SchemaDescription {
 
   public static TableDesc from(CqlIdentifier name, TableDefinitionDesc definition) {
     return new TableDesc(cqlIdentifierToJsonKey(name), definition);

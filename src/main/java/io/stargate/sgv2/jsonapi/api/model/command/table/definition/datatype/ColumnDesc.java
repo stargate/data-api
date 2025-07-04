@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.serializer.ColumnDescSerializer;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescription;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import java.util.Objects;
@@ -21,7 +22,7 @@ import java.util.Objects;
  */
 @JsonDeserialize(using = ColumnDescDeserializer.class)
 @JsonSerialize(using = ColumnDescSerializer.class)
-public interface ColumnDesc {
+public interface ColumnDesc extends SchemaDescription {
 
   /**
    * Gets the type name of the column.

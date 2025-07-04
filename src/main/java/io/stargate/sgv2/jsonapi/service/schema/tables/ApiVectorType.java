@@ -2,10 +2,8 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.VectorType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -59,7 +57,8 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
   }
 
   @Override
-  public ColumnDesc columnDesc() {
+  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+    // no different representation of the vector
     return new VectorColumnDesc(
         dimension,
         vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig(),

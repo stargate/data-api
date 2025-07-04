@@ -6,6 +6,8 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.internal.core.metadata.schema.ShallowUserDefinedType;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.UdtRefColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -69,13 +71,14 @@ public class ApiUdtShallowType implements ApiDataType {
   }
 
   /**
-   * Throws {@link NotImplementedException} because we should only be using this type on the
+   * Throws {@link UnsupportedOperationException} because we should only be using this type on the
    * incoming side of a createTable. Once the table or type is created, we should have the full
    * {@link ApiUdtType}
    */
   @Override
-  public ColumnDesc columnDesc() {
-    throw new NotImplementedException("ApiUdtShallowType.columnDesc()");
+  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+    throw new UnsupportedOperationException(
+        "ApiUdtShallowType.getSchemaDescription() is not implemented, use ApiUdtType instead");
   }
 
   @Override

@@ -5,6 +5,9 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
@@ -22,7 +25,7 @@ import java.util.*;
  *
  * <p>Created by the factories {@link #FROM_TABLE_DESC_FACTORY} and {@link #FROM_CQL_FACTORY}.
  */
-public class ApiTableDef implements Recordable {
+public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
 
   public static final FromTableDescFactory FROM_TABLE_DESC_FACTORY = new FromTableDescFactory();
   public static final FromCqlFactory FROM_CQL_FACTORY = new FromCqlFactory();
@@ -80,8 +83,17 @@ public class ApiTableDef implements Recordable {
    *
    * @return the {@link TableDesc} for the table.
    */
-  public TableDesc toTableDesc() {
+  @Override
+  public TableDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
 
+    // only describe for a DDL command, for the DML commands it only considers the fields that
+    // were read, handled in the {@link TableProjection}
+    if (bindingPoint != SchemaDescBindingPoint.DDL_SCHEMA_OBJECT) {
+      throw bindingPoint.unsupportedException("ApiTableDef.getSchemaDescription()");
+    }
+
+    // primary key parts are only names, not the full column definition, so no need to
+    // cascade the command type to them.
     var partitionKeys = partitionkeys.values().stream().map(ApiColumnDef::name).toList();
     var orderingKeys =
         clusteringDefs.stream()
@@ -92,13 +104,8 @@ public class ApiTableDef implements Recordable {
             .toList();
     var primaryKey = PrimaryKeyDesc.from(partitionKeys, orderingKeys);
 
-    var columnsDesc = new ColumnsDescContainer();
-    allColumns
-        .values()
-        .forEach(columnDef -> columnsDesc.put(columnDef.name(), columnDef.columnDesc()));
-
     return io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc.from(
-        name, new TableDefinitionDesc(columnsDesc, primaryKey));
+        name, new TableDefinitionDesc(allColumns.getSchemaDescription(SchemaDescBindingPoint.DDL_USAGE), primaryKey));
   }
 
   /** Get the name for this table. */

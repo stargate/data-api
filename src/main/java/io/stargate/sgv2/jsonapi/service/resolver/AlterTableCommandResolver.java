@@ -123,7 +123,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               "unsupportedTypes",
               errFmtJoin(
                   unsupportedColumns.stream()
-                      .map(e -> e.type().columnDesc().getApiName())
+                      .map(e -> e.type().apiName())
                       .sorted(String::compareTo)
                       .toList())));
     }

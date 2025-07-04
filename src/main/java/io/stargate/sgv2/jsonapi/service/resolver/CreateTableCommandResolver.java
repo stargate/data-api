@@ -82,7 +82,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
               "unsupportedTypes",
                   errFmtJoin(
                       unsupportedColumnsCreateTable.stream()
-                          .map(e -> e.type().columnDesc().getApiName())
+                          .map(e -> e.type().apiName())
                           .sorted(String::compareTo)
                           .toList())));
     }

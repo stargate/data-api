@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDes
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
@@ -60,10 +61,15 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
   }
 
   @Override
-  public ColumnDesc columnDesc() {
+  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+    // no different representation of the map itself, but pass through the binding point
+    // because the key or value type may be different, e.g. UDT is the value type
     return new MapColumnDesc(
-        keyType.columnDesc(), valueType.columnDesc(), ApiSupportDesc.from(this));
+        keyType.getSchemaDescription(bindingPoint),
+        valueType.getSchemaDescription(bindingPoint),
+        ApiSupportDesc.from(this));
   }
+
 
   /**
    * Creates a new {@link ApiMapType} from the given ApiDataType key and ApiDataType types.

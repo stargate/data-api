@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.*;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import java.util.Objects;
@@ -43,7 +44,9 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
   }
 
   @Override
-  public ColumnDesc columnDesc() {
+  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+    // Always has same representation
+
     // Not easy to cache in the ctor because of the circular dependency
     // is only a cache lookup so not a big deal
     return PrimitiveColumnDesc.fromApiDataType(this);

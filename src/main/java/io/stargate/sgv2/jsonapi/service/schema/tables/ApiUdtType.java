@@ -8,6 +8,8 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.driver.internal.core.type.UserDefinedTypeBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -61,7 +63,7 @@ public class ApiUdtType extends ApiUdtShallowType {
   /**
    * For use when we are creating the UDT form user input in a DDL command.
    *
-   * <p><b>NOTE:</</b> This sets the <code>fullCqlType</code> to <b>null</b> and it will throw and
+   * <p><b>NOTE:</b> This sets the <code>fullCqlType</code> to <b>null</b> and it will throw and
    * exception if {@link #cqlType()} is called. This is because the {@link UserDefinedTypeBuilder}
    * has some strong warnings about getting the order of the fields in the UDT to match when the DB
    * has. So to be very safe, we will not make a cql type. This object will not be cached, because
@@ -74,11 +76,20 @@ public class ApiUdtType extends ApiUdtShallowType {
     this.allFields = allFields.toUnmodifiable();
   }
 
-  /** Creates a full description of a UDT from the {@link ColumnMetadata} */
+
   @Override
-  public ColumnDesc columnDesc() {
-    return new UdtColumnDesc(udtName(), isFrozen(), allFields.toColumnsDesc());
+  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+
+    return switch (bindingPoint){
+      case DDL_USAGE -> // just a reference to the UDT
+          new UdtRefColumnDesc(udtName(), isFrozen());
+      case DML_USAGE -> // full inline schema desc
+          new UdtColumnDesc(udtName(), isFrozen(), allFields.getSchemaDescription(bindingPoint));
+      default ->
+        throw bindingPoint.unsupportedException("ApiUdtType.getSchemaDescription()");
+    };
   }
+
 
   @Override
   public DataType cqlType() {

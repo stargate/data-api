@@ -6,10 +6,8 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDes
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.SetColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -48,8 +46,12 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
   }
 
   @Override
-  public ColumnDesc columnDesc() {
-    return new SetColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
+  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+    // no different representation of the set itself, but pass through the binding point
+    // because the key or value type may be different, e.g. UDT is the value type
+    return new SetColumnDesc(
+        valueType.getSchemaDescription(bindingPoint),
+        ApiSupportDesc.from(this));
   }
 
   /**

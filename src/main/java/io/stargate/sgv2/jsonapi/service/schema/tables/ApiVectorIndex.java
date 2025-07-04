@@ -7,6 +7,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
@@ -48,7 +49,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<VectorIndexDefinitionDesc> indexDesc() {
+  public IndexDesc<VectorIndexDefinitionDesc> getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+    // Index is always has same representation
 
     var definitionOptions =
         new VectorIndexDefinitionDesc.VectorIndexDescOptions(
