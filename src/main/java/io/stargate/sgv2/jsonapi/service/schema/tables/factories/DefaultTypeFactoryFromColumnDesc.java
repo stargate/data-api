@@ -6,6 +6,9 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
 
 /** ... */
 public class DefaultTypeFactoryFromColumnDesc
@@ -28,9 +31,12 @@ public class DefaultTypeFactoryFromColumnDesc
     addFactory(factories, ApiListType.FROM_COLUMN_DESC_FACTORY);
     addFactory(factories, ApiSetType.FROM_COLUMN_DESC_FACTORY);
 
-    PrimitiveTypeFactoryFromColumnDesc.ALL_FACTORIES
-        .values()
-        .forEach(factory -> addFactory(factories, factory));
+    PRIMITIVE_TYPES
+        .forEach(
+            primitiveType ->
+                addFactory(
+                    factories,
+                    new PrimitiveTypeFactoryFromColumnDesc(primitiveType)));
     ALL_FACTORIES = Collections.unmodifiableMap(factories);
   }
 

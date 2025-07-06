@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDes
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
@@ -29,17 +30,18 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
   public static final TypeFactoryFromCql<ApiMapType, MapType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
-  private static final CollectionBindingRules BINDING_POINT_RULES =
-      new CollectionBindingRules(
-          new CollectionBindingRule(TypeBindingPoint.COLLECTION_VALUE, false),
-          new CollectionBindingRule(TypeBindingPoint.MAP_KEY, false),
-          new CollectionBindingRule(TypeBindingPoint.TABLE_COLUMN, true),
-          new CollectionBindingRule(TypeBindingPoint.UDT_FIELD, false));
-
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
   public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
 
   private final PrimitiveApiDataTypeDef keyType;
+
+  /**
+   * NO VALIDATION - Testing Only
+   */
+  @VisibleForTesting
+  ApiMapType (ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
+    this((PrimitiveApiDataTypeDef) keyType, valueType, defaultApiSupport(isFrozen), isFrozen);
+  }
 
   private ApiMapType(
       PrimitiveApiDataTypeDef keyType,
@@ -69,32 +71,6 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         valueType.getSchemaDescription(bindingPoint),
         ApiSupportDesc.from(this));
   }
-
-
-  /**
-   * Creates a new {@link ApiMapType} from the given ApiDataType key and ApiDataType types.
-   *
-   * <p>ApiSupport for keyType and valueType should be already validated.
-   *
-   * <p>As of June 26th, 2025, API only support primitive key types, so UDT can not be used as keys.
-   */
-  static ApiMapType from(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
-    Objects.requireNonNull(keyType, "keyType must not be null");
-    Objects.requireNonNull(valueType, "valueType must not be null");
-
-    return new ApiMapType(
-        (PrimitiveApiDataTypeDef) keyType, valueType, defaultApiSupport(isFrozen), isFrozen);
-  }
-
-  //  public static boolean isKeyTypeSupported(ApiDataType keyType) {
-  //    Objects.requireNonNull(keyType, "keyType must not be null");
-  //    return keyType.apiSupport().collection().asMapKey();
-  //  }
-  //
-  //  public static boolean isValueTypeSupported(ApiDataType valueType) {
-  //    Objects.requireNonNull(valueType, "valueType must not be null");
-  //    return valueType.apiSupport().collection().asMapValue();
-  //  }
 
   public PrimitiveApiDataTypeDef getKeyType() {
     return keyType;
@@ -146,7 +122,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
                 TypeBindingPoint.MAP_KEY, columnDesc.keyType(), validateVectorize);
 
         // can never be frozen when created from ColumnDesc / API
-        return ApiMapType.from(keyType, valueType, false);
+        return new ApiMapType(keyType, valueType, false);
 
       } catch (UnsupportedUserType e) {
         // make sure we have the list type, not just the key or value type
@@ -163,7 +139,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       //  we accept frozen, but change the support.
 
       // can we use a map of any type in this binding point?
-      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromUser()) {
         return false;
       }
 
@@ -208,7 +184,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         var valueType =
             DefaultTypeFactoryFromCql.INSTANCE.create(
                 TypeBindingPoint.COLLECTION_VALUE, cqlType.getValueType(), vectorizeDefn);
-        return ApiMapType.from(keyType, valueType, cqlType.isFrozen());
+        return new ApiMapType(keyType, valueType, cqlType.isFrozen());
 
       } catch (UnsupportedCqlType e) {
         // make sure we have the map type, not just the key or value type
@@ -223,7 +199,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       // we accept frozen and then change the support
 
       // can we use a map of any type in this binding point?
-      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
         return false;
       }
       // now check if the key and value types are supported for binding into a map

@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDes
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -29,12 +30,13 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
   public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
 
-  private static final CollectionBindingRules BINDING_POINT_RULES =
-      new CollectionBindingRules(
-          new CollectionBindingRule(TypeBindingPoint.COLLECTION_VALUE, false),
-          new CollectionBindingRule(TypeBindingPoint.MAP_KEY, false),
-          new CollectionBindingRule(TypeBindingPoint.TABLE_COLUMN, true),
-          new CollectionBindingRule(TypeBindingPoint.UDT_FIELD, false));
+  /**
+   * NO VALIDATION - Testing Only
+   */
+  @VisibleForTesting
+  ApiSetType (ApiDataType valueType, boolean isFrozen){
+    this(valueType, API_SUPPORT, isFrozen);
+  }
 
   private ApiSetType(ApiDataType valueType, ApiSupportDef apiSupport, boolean isFrozen) {
     super(ApiTypeName.SET, valueType, DataTypes.setOf(valueType.cqlType(), isFrozen), apiSupport);
@@ -52,25 +54,6 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
     return new SetColumnDesc(
         valueType.getSchemaDescription(bindingPoint),
         ApiSupportDesc.from(this));
-  }
-
-  /**
-   * Creates a new {@link ApiSetType} from the given ApiDataType value.
-   *
-   * <p>ApiSupport for valueType should be already validated.
-   */
-  static ApiSetType from(ApiDataType valueType, boolean isFrozen) {
-    Objects.requireNonNull(valueType, "valueType must not be null");
-    if (isValueTypeSupported(valueType)) {
-      return new ApiSetType(valueType, defaultApiSupport(isFrozen), isFrozen);
-    }
-    throw new IllegalArgumentException(
-        "valueType is not supported, valueType%s".formatted(valueType));
-  }
-
-  public static boolean isValueTypeSupported(ApiDataType valueType) {
-    Objects.requireNonNull(valueType, "valueType must not be null");
-    return valueType.apiSupport().collection().asSetValue();
   }
 
   /**
@@ -110,7 +93,7 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
             DefaultTypeFactoryFromColumnDesc.INSTANCE.create(
                 TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize);
         // can never be frozen when created from ColumnDesc / API
-        return ApiSetType.from(valueType, false);
+        return new ApiSetType(valueType, false);
 
       } catch (UnsupportedUserType e) {
         // make sure we have the list type, not just the key or value type
@@ -127,7 +110,7 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
       //  we accept frozen, but change the support.
 
       // can we use a set of any type in this binding point?
-      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromUser()) {
         return false;
       }
 
@@ -165,7 +148,7 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
         var valueType =
             DefaultTypeFactoryFromCql.INSTANCE.create(
                 TypeBindingPoint.COLLECTION_VALUE, cqlType.getElementType(), vectorizeDefn);
-        return ApiSetType.from(valueType, cqlType.isFrozen());
+        return new ApiSetType(valueType, cqlType.isFrozen());
 
       } catch (UnsupportedCqlType e) {
         // make sure we have the list type, not just the key or value type
@@ -180,7 +163,7 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
       //  we accept frozen, but change the support.
 
       // can we use a set of any type in this binding point?
-      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
         return false;
       }
 

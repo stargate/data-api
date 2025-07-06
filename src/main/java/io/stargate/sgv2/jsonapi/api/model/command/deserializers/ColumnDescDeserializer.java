@@ -65,8 +65,8 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private static final ColumnDescBindingPointRules BINDING_POINT_RULES =
-      new ColumnDescBindingPointRules();
+  private static final FrozenUdtBindingRules FROZEN_UDT_BINDING_RULES =
+      new FrozenUdtBindingRules();
 
   private final TypeBindingPoint bindingPoint;
 
@@ -85,7 +85,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
    * fields for commands like CreateType, AlterType.
    *
    * @param bindingPoint Where the column desc is being used, used to get the correct rules from
-   *     {@link ColumnDescBindingPointRules}.
+   *     {@link FrozenUdtBindingRules}.
    */
   public ColumnDescDeserializer(TypeBindingPoint bindingPoint) {
     this.bindingPoint = Objects.requireNonNull(bindingPoint, "bindingPoint must not be null");
@@ -120,8 +120,6 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
   public static ColumnDesc deserialize(
       JsonNode descNode, JsonParser jsonParser, TypeBindingPoint bindingPoint)
       throws JsonProcessingException {
-
-    var bindingRules = BINDING_POINT_RULES.forBindingPoint(bindingPoint);
 
     // throws if type is not defined correctly or not a known type
     var typeNameDesc = getTypeName(descNode, jsonParser);
@@ -169,7 +167,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
         yield VectorColumnDesc.FROM_JSON_FACTORY.create(dimensionString, vectorConfig);
       }
       case UDT -> // The rule tells us if the UDT is frozen or not, see the enum
-          UdtRefColumnDesc.FROM_JSON_FACTORY.create(descNode, bindingRules.useFrozenUdt());
+          UdtRefColumnDesc.FROM_JSON_FACTORY.create(descNode, FROZEN_UDT_BINDING_RULES.rule(bindingPoint).useFrozenUdt());
       default ->
           // sanity check, we should have covered all the API types above
           throw new IllegalStateException(

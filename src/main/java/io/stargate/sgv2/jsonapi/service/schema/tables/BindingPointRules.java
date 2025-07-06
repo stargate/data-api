@@ -10,25 +10,35 @@ import java.util.Objects;
  * <p>The different places where types can be bound are defined in the {@link TypeBindingPoint}
  * enum. Implement the {@link BindingPointRules} to create instances of your own rules for each of
  * the enum values.
+ * </p>
+ *  Use {@link SupportBindingRules} if all you need is a simple set of rules for "isSupported"
  */
 public abstract class BindingPointRules<T extends BindingPointRules.BindingPointRule> {
 
-  private final Map<TypeBindingPoint, T> rules = new HashMap<>();
+  private final Map<TypeBindingPoint, T> rules;
 
   @SafeVarargs
   protected BindingPointRules(T... rules) {
-    for (T rule : rules) {
-      register(rule);
-    }
-  }
 
-  private void register(T rule) {
-    Objects.requireNonNull(rule, "rule must not be null");
-    if (rules.containsKey(rule.bindingPoint())) {
-      throw new IllegalArgumentException(
-          "rule for binding point " + rule.bindingPoint() + " already registered.");
+    Map<TypeBindingPoint, T> working = new HashMap<>();
+
+    for (T rule : rules) {
+      Objects.requireNonNull(rule, "rule must not be null");
+
+      if (working.containsKey(rule.bindingPoint())) {
+        throw new IllegalArgumentException(
+            "rule for binding point " + rule.bindingPoint() + " already registered.");
+      }
+      working.put(rule.bindingPoint(), rule);
     }
-    rules.put(rule.bindingPoint(), rule);
+
+    for (TypeBindingPoint bindingPoint : TypeBindingPoint.values()) {
+      if (!working.containsKey(bindingPoint)) {
+        throw new IllegalArgumentException(
+            "BindingPointRules() - No rule defined for binding point: " + bindingPoint);
+      }
+    }
+    this.rules = Map.copyOf(working);
   }
 
   /**
@@ -37,15 +47,12 @@ public abstract class BindingPointRules<T extends BindingPointRules.BindingPoint
    * @param bindingPoint the binding point for which to get the rules
    * @return Implementations should return a {@link BindingPointRule} subclass with the rules for
    *     this binding point.
-   * @throws IllegalArgumentException if the binding point is not supported by this implementation.
    */
-  public T forBindingPoint(TypeBindingPoint bindingPoint) {
+  public T rule(TypeBindingPoint bindingPoint) {
     Objects.requireNonNull(bindingPoint, "bindingPoint must not be null");
-    T rule = rules.get(bindingPoint);
-    if (rule == null) {
-      throw new IllegalArgumentException("No rules defined for binding point: " + bindingPoint);
-    }
-    return rule;
+    // null check is done in the constructor, so this should never happen
+    return rules.get(bindingPoint);
+
   }
 
   /**

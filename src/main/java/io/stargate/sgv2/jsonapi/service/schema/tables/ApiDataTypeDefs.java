@@ -44,16 +44,22 @@ public abstract class ApiDataTypeDefs {
 
   public static final PrimitiveApiDataTypeDef DURATION =
       new PrimitiveApiDataTypeDef(
-          // Does not support duration as map key. But, duration can be map/list/set value
           ApiTypeName.DURATION,
           DataTypes.DURATION,
           new ApiSupportDef.Support(
               true,
-              new ApiSupportDef.Collection(true, true, false, true),
               true,
               true,
               true,
-              ApiSupportDef.Update.PRIMITIVE));
+              ApiSupportDef.Update.PRIMITIVE),
+          // we do not let the user bind a duration as a map key, but if the DB says it is ok.
+          // otherwise supported
+          new SupportBindingRules(
+              SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, true),
+              SupportBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
+              SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, true, true)
+      ));
 
   public static final PrimitiveApiDataTypeDef TIME =
       new PrimitiveApiDataTypeDef(ApiTypeName.TIME, DataTypes.TIME, ApiSupportDef.Support.FULL);
@@ -74,14 +80,19 @@ public abstract class ApiDataTypeDefs {
       new PrimitiveApiDataTypeDef(
           ApiTypeName.COUNTER,
           DataTypes.COUNTER,
-          // Does not support counter as primitive column, list/set value or map key/value.
           new ApiSupportDef.Support(
               false,
-              ApiSupportDef.Collection.NONE,
               false,
               true,
               true,
-              ApiSupportDef.Update.PRIMITIVE));
+              ApiSupportDef.Update.PRIMITIVE),
+          // we do not support the user creating anything with a counter type, but we accept if the DB says
+          new SupportBindingRules(
+              SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),
+              SupportBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, false),
+              SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, true, false)
+          ));
 
   public static final PrimitiveApiDataTypeDef INET =
       new PrimitiveApiDataTypeDef(ApiTypeName.INET, DataTypes.INET, ApiSupportDef.Support.FULL);
@@ -93,11 +104,17 @@ public abstract class ApiDataTypeDefs {
           // Does not support counter as primitive column, list/set value or map key/value.
           new ApiSupportDef.Support(
               false,
-              ApiSupportDef.Collection.NONE,
               true,
               true,
               true,
-              ApiSupportDef.Update.PRIMITIVE));
+              ApiSupportDef.Update.PRIMITIVE),
+          // we do not support the user creating anything with a timeuuid type, but we accept if the DB says
+          new SupportBindingRules(
+              SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),
+              SupportBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, false),
+              SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, true, false)
+          ));
 
   public static final PrimitiveApiDataTypeDef UUID =
       new PrimitiveApiDataTypeDef(ApiTypeName.UUID, DataTypes.UUID, ApiSupportDef.Support.FULL);

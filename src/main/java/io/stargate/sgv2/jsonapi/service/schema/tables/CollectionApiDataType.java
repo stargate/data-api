@@ -13,25 +13,31 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   // Default collection support
   private static final ApiSupportDef DEFAULT_API_SUPPORT =
       new ApiSupportDef.Support(
-          true, ApiSupportDef.Collection.NONE, true, true, true, ApiSupportDef.Update.FULL);
+          true, true, true, true, ApiSupportDef.Update.FULL);
 
   // Default collection support when the type is frozen, they cannot be used for create, but we can
   // insert them
   private static final ApiSupportDef DEFAULT_API_SUPPORT_FROZEN =
       new ApiSupportDef.Support(
-          false, ApiSupportDef.Collection.NONE, true, true, true, ApiSupportDef.Update.NONE);
+          false, true, true, true, ApiSupportDef.Update.NONE);
 
   protected static ApiSupportDef defaultApiSupport(boolean isFrozen) {
     return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;
   }
+
+  protected static final SupportBindingRules SUPPORT_BINDING_RULES =
+      new SupportBindingRules(
+          SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, false, false),
+          SupportBindingRules.create(TypeBindingPoint.MAP_KEY, false, false),
+          SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
+          SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, false, false));
 
   protected final ApiTypeName typeName;
   protected final ApiDataType valueType;
   protected final T cqlType;
 
   /**
-   * We don't support nested collection datatypes, so {@link ApiSupportDef.Collection} will be
-   * NONE(all false)
+   * We don't support nested collection datatypes
    */
   protected final ApiSupportDef apiSupport;
 
@@ -72,13 +78,4 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
 
   public abstract boolean isFrozen();
 
-  protected static class CollectionBindingRules extends BindingPointRules<CollectionBindingRule> {
-
-    public CollectionBindingRules(CollectionBindingRule... rules) {
-      super(rules);
-    }
-  }
-
-  protected record CollectionBindingRule(TypeBindingPoint bindingPoint, boolean isSupported)
-      implements BindingPointRules.BindingPointRule {}
 }

@@ -8,7 +8,6 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.driver.internal.core.type.UserDefinedTypeBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
@@ -104,6 +103,12 @@ public class ApiUdtType extends ApiUdtShallowType {
 
   public ApiColumnDefContainer allFields() {
     return allFields;
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder)
+        .append("allFields", allFields);
   }
 
   /**
@@ -215,7 +220,7 @@ public class ApiUdtType extends ApiUdtShallowType {
       //  we accept frozen, but change the support.
 
       // can we use a UDT of any type in this binding point?
-      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+      if (!UDT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
         return false;
       }
 

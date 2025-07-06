@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.VectorType;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -29,19 +30,16 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
   // Update operators $set and $unset can be used for vector columns, but $push and $pullAll cannot.
   public static final ApiSupportDef API_SUPPORT =
       new ApiSupportDef.Support(
-          true, ApiSupportDef.Collection.NONE, true, true, false, ApiSupportDef.Update.PRIMITIVE);
-
-  private static final CollectionBindingRules BINDING_POINT_RULES =
-      new CollectionBindingRules(
-          new CollectionBindingRule(TypeBindingPoint.COLLECTION_VALUE, false),
-          new CollectionBindingRule(TypeBindingPoint.MAP_KEY, false),
-          new CollectionBindingRule(TypeBindingPoint.TABLE_COLUMN, true),
-          new CollectionBindingRule(TypeBindingPoint.UDT_FIELD, false));
+          true, true, true, false, ApiSupportDef.Update.PRIMITIVE);
 
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;
 
-  private ApiVectorType(int dimension, VectorizeDefinition vectorizeDefinition) {
+  /**
+   * NO VALIDATION - Testing Only
+   */
+  @VisibleForTesting
+  public ApiVectorType(int dimension, VectorizeDefinition vectorizeDefinition) {
     super(
         ApiTypeName.VECTOR,
         ApiDataTypeDefs.FLOAT,
@@ -78,25 +76,6 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
    */
   public VectorizeDefinition getVectorizeDefinition() {
     return vectorizeDefinition;
-  }
-
-  public static ApiVectorType from(int dimension) {
-    return from(dimension, null);
-  }
-
-  public static ApiVectorType from(int dimension, VectorizeDefinition vectorizeDefinition) {
-
-    // Sanity check
-    if (!isDimensionSupported(dimension)) {
-      throw new IllegalArgumentException(
-          "dimensions is not supported, dimensions=%s".formatted(dimension));
-    }
-    return new ApiVectorType(dimension, vectorizeDefinition);
-  }
-
-  private static boolean isValueTypeSupported(ApiDataType valueType) {
-    Objects.requireNonNull(valueType, "valueType must not be null");
-    return valueType == ApiDataTypeDefs.FLOAT;
   }
 
   @Override
@@ -148,7 +127,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
         dimension = columnDesc.getDimension();
       }
 
-      if (!ApiVectorType.isDimensionSupported(columnDesc.getDimension())) {
+      if (!isDimensionSupported(columnDesc.getDimension())) {
         throw new UnsupportedUserType(
             bindingPoint,
             columnDesc,
@@ -158,7 +137,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
 
       var vectorDefn = VectorizeDefinition.from(columnDesc, dimension, validateVectorize);
 
-      return ApiVectorType.from(dimension, vectorDefn);
+      return new ApiVectorType(dimension, vectorDefn);
     }
 
     @Override
@@ -177,7 +156,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
       }
 
       // can we use a vector of any type in this binding point?
-      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromUser()) {
         return false;
       }
       return true;
@@ -207,7 +186,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
       }
 
       // we can ignore the element type, it is always float, checked in isSupported
-      return ApiVectorType.from(cqlType.getDimensions(), vectorizeDefn);
+      return new ApiVectorType(cqlType.getDimensions(), vectorizeDefn);
     }
 
     @Override
@@ -225,7 +204,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
       }
 
       // can we use a vector of any type in this binding point?
-      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
         return false;
       }
 

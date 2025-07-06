@@ -31,7 +31,8 @@ public interface ApiSupportDef {
    *
    * <p>E.G. list values, set values, map keys, map values.
    */
-  Collection collection();
+// TODO: XXX: DELETE
+//  Collection collection();
 
   /**
    * The type can be used in an insert command
@@ -70,23 +71,24 @@ public interface ApiSupportDef {
     return !insert() || !read() || !filter();
   }
 
-  /**
-   * Record to represent if a dataType is supported as component for map/set/list.
-   *
-   * @param asListValue If the type can be created as value on a List.
-   * @param asSetValue If the type can be created as value on a Set.
-   * @param asMapKey If the type can be created as map key.
-   * @param asMapValue If the type can be created as map value.
-   */
-  // TODO: XXX REMOVE
-  record Collection(boolean asListValue, boolean asSetValue, boolean asMapKey, boolean asMapValue) {
-    public static final Collection FULL = new Collection(true, true, true, true);
-    public static final Collection NONE = new Collection(false, false, false, false);
-    // API does not allow UDT(frozen/non-frozen) to be map key.
-    public static final Collection FROZEN_UDT = new Collection(true, true, false, true);
-    // API does not allow non-frozen UDT to be any map/set/list component.
-    public static final Collection NON_FROZEN_UDT = new Collection(false, false, false, false);
-  }
+  // TODO: XXX: DELETE
+//  /**
+//   * Record to represent if a dataType is supported as component for map/set/list.
+//   *
+//   * @param asListValue If the type can be created as value on a List.
+//   * @param asSetValue If the type can be created as value on a Set.
+//   * @param asMapKey If the type can be created as map key.
+//   * @param asMapValue If the type can be created as map value.
+//   */
+//  // TODO: XXX REMOVE
+//  record Collection(boolean asListValue, boolean asSetValue, boolean asMapKey, boolean asMapValue) {
+//    public static final Collection FULL = new Collection(true, true, true, true);
+//    public static final Collection NONE = new Collection(false, false, false, false);
+//    // API does not allow UDT(frozen/non-frozen) to be map key.
+//    public static final Collection FROZEN_UDT = new Collection(true, true, false, true);
+//    // API does not allow non-frozen UDT to be any map/set/list component.
+//    public static final Collection NON_FROZEN_UDT = new Collection(false, false, false, false);
+//  }
 
   /**
    * Record to represent if a dataType is supported for update operations.
@@ -121,7 +123,8 @@ public interface ApiSupportDef {
    */
   record Support(
       boolean createTable,
-      Collection collection,
+// TODO: XXX: DELETE
+//      Collection collection,
       boolean insert,
       boolean read,
       boolean filter,
@@ -129,9 +132,9 @@ public interface ApiSupportDef {
       implements ApiSupportDef {
 
     public static final Support FULL =
-        new Support(true, Collection.FULL, true, true, true, Update.PRIMITIVE);
+        new Support(true, true, true, true, Update.PRIMITIVE);
     public static final Support NONE =
-        new Support(false, Collection.NONE, false, false, false, Update.NONE);
+        new Support(false, false, false, false, Update.NONE);
   }
 
   /** Predicate to match for full support. */
@@ -198,11 +201,6 @@ public interface ApiSupportDef {
     public boolean test(ApiSupportDef apiSupportDef) {
       Objects.requireNonNull(apiSupportDef, "apiSupportDef must not be null");
       return (createTable == null || createTable == apiSupportDef.createTable())
-          && (collectionSupport == null
-              || (collectionSupport.asListValue == apiSupportDef.collection().asListValue
-                  && collectionSupport.asSetValue == apiSupportDef.collection().asSetValue
-                  && collectionSupport.asMapKey == apiSupportDef.collection().asMapKey
-                  && collectionSupport.asMapValue == apiSupportDef.collection().asMapValue))
           && (insert == null || insert == apiSupportDef.insert())
           && (read == null || read == apiSupportDef.read())
           && (filter == null || filter == apiSupportDef.filter());

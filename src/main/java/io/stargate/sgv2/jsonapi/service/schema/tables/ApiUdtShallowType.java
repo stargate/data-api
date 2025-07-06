@@ -6,7 +6,6 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.internal.core.metadata.schema.ShallowUserDefinedType;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.UdtRefColumnDesc;
@@ -15,7 +14,6 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactoryFromColumnDesc;
 import java.util.Objects;
-import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A shallow representation of a User Defined Type, it is shallow because it does not include the
@@ -34,22 +32,22 @@ public class ApiUdtShallowType implements ApiDataType {
   public static final TypeFactoryFromColumnDesc<ApiUdtShallowType, UdtRefColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ApiUdtShallowType.ColumnDescFactory();
 
-  protected static final CollectionApiDataType.CollectionBindingRules BINDING_POINT_RULES =
-      new CollectionApiDataType.CollectionBindingRules(
-          new CollectionApiDataType.CollectionBindingRule(TypeBindingPoint.COLLECTION_VALUE, false),
-          new CollectionApiDataType.CollectionBindingRule(TypeBindingPoint.MAP_KEY, false),
-          new CollectionApiDataType.CollectionBindingRule(TypeBindingPoint.TABLE_COLUMN, true),
-          new CollectionApiDataType.CollectionBindingRule(TypeBindingPoint.UDT_FIELD, false));
+  protected static final SupportBindingRules UDT_BINDING_RULES =
+      new SupportBindingRules(
+          SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, true),
+          SupportBindingRules.create(TypeBindingPoint.MAP_KEY, false, false),
+          SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
+          SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, false, false));
 
   /** Frozen UDTs are used in collection values, and may be created by CQL users. */
   public static final ApiSupportDef API_SUPPORT_FROZEN_UDT =
       new ApiSupportDef.Support(
-          false, ApiSupportDef.Collection.FROZEN_UDT, true, true, false, ApiSupportDef.Update.UDT);
+          false,  true, true, false, ApiSupportDef.Update.UDT);
 
   /** Normal UDT usage in a column is non-frozen */
   public static final ApiSupportDef API_SUPPORT_NON_FROZEN_UDT =
       new ApiSupportDef.Support(
-          true, ApiSupportDef.Collection.FROZEN_UDT, true, true, false, ApiSupportDef.Update.UDT);
+          true, true, true, false, ApiSupportDef.Update.UDT);
 
   private final CqlIdentifier udtName;
   private final boolean isFrozen;
@@ -94,6 +92,13 @@ public class ApiUdtShallowType implements ApiDataType {
   @Override
   public ApiSupportDef apiSupport() {
     return apiSupport;
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return ApiDataType.super.recordTo(dataRecorder)
+        .append("udtName", udtName)
+        .append("isFrozen", isFrozen);
   }
 
   public CqlIdentifier udtName() {
@@ -149,7 +154,7 @@ public class ApiUdtShallowType implements ApiDataType {
         VectorizeConfigValidator validateVectorize) {
 
       // can we use a udt of any type in this binding point?
-      if (!BINDING_POINT_RULES.forBindingPoint(bindingPoint).isSupported()) {
+      if (!UDT_BINDING_RULES.rule(bindingPoint).supportedFromUser()) {
         return false;
       }
 

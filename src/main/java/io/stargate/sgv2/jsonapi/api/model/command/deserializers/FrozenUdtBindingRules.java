@@ -1,19 +1,20 @@
 package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-
 import io.stargate.sgv2.jsonapi.service.schema.tables.BindingPointRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
 
-public class ColumnDescBindingPointRules
-    extends BindingPointRules<ColumnDescBindingPointRules.ColumnDescBindingPointRule> {
+/**
+ * These rules are only used to know if we should create a frozen UDT when binding the type
+ */
+public class FrozenUdtBindingRules
+    extends BindingPointRules<FrozenUdtBindingRules.FrozenUdtBindingRule> {
 
-  ColumnDescBindingPointRules() {
+  FrozenUdtBindingRules() {
     super(
-        new ColumnDescBindingPointRule(TypeBindingPoint.COLLECTION_VALUE, true),
-        new ColumnDescBindingPointRule(TypeBindingPoint.MAP_KEY, false),
-        new ColumnDescBindingPointRule(TypeBindingPoint.TABLE_COLUMN, false),
-        new ColumnDescBindingPointRule(TypeBindingPoint.UDT_FIELD, false));
+        new FrozenUdtBindingRule(TypeBindingPoint.COLLECTION_VALUE, true),
+        new FrozenUdtBindingRule(TypeBindingPoint.MAP_KEY, false),
+        new FrozenUdtBindingRule(TypeBindingPoint.TABLE_COLUMN, false),
+        new FrozenUdtBindingRule(TypeBindingPoint.UDT_FIELD, false));
   }
 
   //  ColumnDescBindingPointRules() {
@@ -50,7 +51,7 @@ public class ColumnDescBindingPointRules
   //            errFmtJoin(PrimitiveColumnDesc.allColumnDescs(), PrimitiveColumnDesc::apiName)));
   //  }
 
-  public record ColumnDescBindingPointRule(
+  public record FrozenUdtBindingRule(
       TypeBindingPoint bindingPoint,
       /** True the UDT should be frozen at this binding point */
       boolean useFrozenUdt)

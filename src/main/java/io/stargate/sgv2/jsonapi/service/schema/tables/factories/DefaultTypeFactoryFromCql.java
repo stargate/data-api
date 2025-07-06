@@ -7,8 +7,12 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
 
 /**
  * Default Factory that can be called to create any {@link ApiDataType}, use via the {@link
@@ -34,9 +38,10 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
     addFactory(factories, ApiListType.FROM_CQL_FACTORY);
     addFactory(factories, ApiSetType.FROM_CQL_FACTORY);
 
-    PrimitiveTypeFactoryFromCql.ALL_FACTORIES
-        .values()
-        .forEach(factory -> addFactory(factories, factory));
+    PRIMITIVE_TYPES.forEach(
+        primitiveType ->
+            addFactory(
+                factories, new PrimitiveTypeFactoryFromCql(primitiveType)));
 
     ALL_FACTORIES = Collections.unmodifiableMap(factories);
   }
