@@ -116,7 +116,7 @@ public class ApiUdtType extends ApiUdtShallowType {
    * Factory to create {@link ApiUdtType} from the description provided by the user.
    *
    * <p>NOTE: This is not implementing the {@link TypeFactoryFromColumnDesc} because that is for the
-   * {@link ColumnDesc} which is used when describing a column in a table or UDT. THis factory is to
+   * {@link ColumnDesc} which is used when describing a column in a table or UDT. This factory is to
    * create the full {@link ApiUdtType} during a create type command.
    */
   public static class TypeDefinitionDescFactory {

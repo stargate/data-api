@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
 
 import com.datastax.oss.driver.api.core.type.*;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
@@ -39,6 +40,12 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
     PRIMITIVE_TYPES.forEach(
         primitiveType -> addFactory(factories, new PrimitiveTypeFactoryFromCql(primitiveType)));
 
+    // types that we know about, but do not support in any configuration , we need a factory for
+    // every
+    // type the DB can return so we can verify that the mapping to find factories is valid.
+    factories.put(
+        ProtocolConstants.DataType.TUPLE,
+        new UnsupportedTypeFactoryFromCql<>(ProtocolConstants.DataType.TUPLE, TupleType.class));
     ALL_FACTORIES = Collections.unmodifiableMap(factories);
   }
 
@@ -63,11 +70,10 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
       return factory;
     }
 
-    // this really should not happen, we should catch this in testing, it means we do now know about
-    // the type
-    // so throw an error that will cause the API to return a 500 error, rather than a
-    // UnsupportedCqlType which would
-    // mean we know about the type but do not support it.
+    // this really should not happen, we should catch this in testing, it means we do not know about
+    // the type so throw an error that will cause the API to return a 500 error, rather than a
+    // UnsupportedCqlType which can also be thrown by the factory if the configuration of the type
+    // is not supported.
     throw new IllegalStateException(
         "DefaultTypeFactoryFromCql.factoryFor() - no factory for cqlType.asCql: %s, cqlType.getProtocolCode: %s"
             .formatted(cqlType.asCql(true, true), cqlType.getProtocolCode()));
