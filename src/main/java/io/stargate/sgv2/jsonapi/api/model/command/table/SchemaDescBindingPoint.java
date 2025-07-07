@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table;
 
-
 /** Describes where the schema description will be used when building a response to a user. */
 public enum SchemaDescBindingPoint {
 
