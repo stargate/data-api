@@ -73,9 +73,9 @@ public class CqlTypeKey {
   }
 
   private static int validateValueKeyType(int value, String fieldName) {
-    if (value < 1 || value >= 255) {
+    if (value < 1 || value > 255) {
       throw new IllegalArgumentException(
-          "Key or value type " + fieldName + " must be between 1 and 254, but was: " + value);
+          "Key or value type " + fieldName + " must be between 1 and 255, but was: " + value);
     }
     return value;
   }

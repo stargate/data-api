@@ -21,7 +21,12 @@ public class UdtColumnDesc extends UdtRefColumnDesc {
   private final ColumnsDescContainer allFields;
 
   public UdtColumnDesc(CqlIdentifier udtName, boolean isFrozen, ColumnsDescContainer allFields) {
-    super(udtName, isFrozen);
+    this  (udtName, isFrozen, allFields, isFrozen ? API_SUPPORT_DESC_FROZEN_UDT
+         : API_SUPPORT_DESC_NON_FROZEN_UDT);
+  }
+
+  public UdtColumnDesc(CqlIdentifier udtName, boolean isFrozen, ColumnsDescContainer allFields, ApiSupportDesc apiSupportDesc) {
+    super(udtName, isFrozen, apiSupportDesc);
 
     this.allFields = Objects.requireNonNull(allFields, "allFields must not be null");
     // sanity check, UDT must have fields

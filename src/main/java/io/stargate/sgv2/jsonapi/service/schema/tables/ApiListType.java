@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDes
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.ListType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
@@ -133,7 +134,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
   private static class CqlTypeFactory extends TypeFactoryFromCql<ApiListType, ListType> {
 
     public CqlTypeFactory() {
-      super(ApiTypeName.LIST, ListType.class);
+      super(ProtocolConstants.DataType.LIST, ListType.class);
     }
 
     @Override

@@ -25,11 +25,11 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
 
   public static final DefaultTypeFactoryFromCql INSTANCE = new DefaultTypeFactoryFromCql();
 
-  private static final Map<Class<?>, TypeFactoryFromCql<? extends ApiDataType, ? extends DataType>>
+  private static final Map<Integer, TypeFactoryFromCql<? extends ApiDataType, ? extends DataType>>
       ALL_FACTORIES;
 
   static {
-    Map<Class<?>, TypeFactoryFromCql<? extends ApiDataType, ? extends DataType>> factories =
+    Map<Integer, TypeFactoryFromCql<? extends ApiDataType, ? extends DataType>> factories =
         new HashMap<>();
 
     addFactory(factories, ApiVectorType.FROM_CQL_FACTORY);
@@ -54,25 +54,35 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
       new ConcurrentHashMap<>();
 
   public DefaultTypeFactoryFromCql() {
-    super(null, DataType.class);
+    // protocol code will be ignored, this is not indexed by protocol code
+    super(-1, DataType.class);
   }
 
   public static <CqlT extends DataType>
       TypeFactoryFromCql<? extends ApiDataType, ? extends DataType> factoryFor(
           TypeBindingPoint bindingPoint, CqlT cqlType) throws UnsupportedCqlType {
 
-    var factory = ALL_FACTORIES.get(cqlType.getClass());
+    var factory = ALL_FACTORIES.get(cqlType.getProtocolCode());
     if (factory != null) {
       return factory;
     }
 
-    throw new UnsupportedCqlType(bindingPoint, cqlType);
+    // this really should not happen, we should catch this in testing, it means we do now know about the type
+    // so throw an error that will cause the API to return a 500 error, rather than a UnsupportedCqlType which would
+    // mean we know about the type but do not support it.
+    throw new IllegalStateException(
+        "DefaultTypeFactoryFromCql.factoryFor() - no factory for cqlType.asCql: %s, cqlType.getProtocolCode: %s".formatted(cqlType.asCql(true, true), cqlType.getProtocolCode()));
   }
 
   private static void addFactory(
-      Map<Class<?>, TypeFactoryFromCql<? extends ApiDataType, ? extends DataType>> map,
+      Map<Integer, TypeFactoryFromCql<? extends ApiDataType, ? extends DataType>> map,
       TypeFactoryFromCql<? extends ApiDataType, ? extends DataType> factory) {
-    map.put(factory.cqlTypeClass(), factory);
+
+    var existing = map.put(factory.cqlProtocolCode(), factory);
+    if (existing != null) {
+      throw new IllegalStateException(
+          "DefaultTypeFactoryFromCql.addFactory() - existing factory factory.cqlProtocolCode: %s".formatted(factory.cqlProtocolCode()));
+    }
   }
 
   @Override
@@ -193,12 +203,6 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
       // if we could not find a factory for the cqlType, then it is not supported
       return false;
     }
-  }
-
-  @Override
-  public ApiTypeName apiTypeName() {
-    throw new UnsupportedOperationException(
-        "DefaultTypeFactoryFromCql.apiTypeName() is not implemented");
   }
 
   @Override

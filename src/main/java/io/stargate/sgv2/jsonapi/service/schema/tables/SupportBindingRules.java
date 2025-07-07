@@ -10,20 +10,18 @@ public class SupportBindingRules extends BindingPointRules<SupportBindingRules.S
    */
   public static final SupportBindingRules ALL_SUPPORTED =
       new SupportBindingRules(
-          create(TypeBindingPoint.COLLECTION_VALUE, true, true),
-          create(TypeBindingPoint.KEYSPACE, true, true),
-          create(TypeBindingPoint.MAP_KEY, true, true),
-          create(TypeBindingPoint.TABLE_COLUMN, true, true),
-          create(TypeBindingPoint.UDT_FIELD, true, true)
+          createAll(TypeBindingPoint.COLLECTION_VALUE),
+          createAll(TypeBindingPoint.MAP_KEY),
+          createAll(TypeBindingPoint.TABLE_COLUMN),
+          createAll(TypeBindingPoint.UDT_FIELD)
       );
 
   public static final SupportBindingRules NONE_SUPPORTED =
       new SupportBindingRules(
-          create(TypeBindingPoint.COLLECTION_VALUE, false, false),
-          create(TypeBindingPoint.KEYSPACE, false, false),
-          create(TypeBindingPoint.MAP_KEY, false, false),
-          create(TypeBindingPoint.TABLE_COLUMN, false, false),
-          create(TypeBindingPoint.UDT_FIELD, false, false)
+          createNone(TypeBindingPoint.COLLECTION_VALUE),
+          createNone(TypeBindingPoint.MAP_KEY),
+          createNone(TypeBindingPoint.TABLE_COLUMN),
+          createNone(TypeBindingPoint.UDT_FIELD)
       );
 
   public SupportBindingRules(SupportBindingRule... rules) {
@@ -33,6 +31,15 @@ public class SupportBindingRules extends BindingPointRules<SupportBindingRules.S
   public static SupportBindingRule create(
       TypeBindingPoint bindingPoint, boolean supportedFromDb, boolean supportedFromUser) {
     return new SupportBindingRule(bindingPoint, supportedFromDb, supportedFromUser);
+  }
+
+
+  public static SupportBindingRule createAll(TypeBindingPoint bindingPoint) {
+    return new SupportBindingRule(bindingPoint, true, true);
+  }
+
+  public static SupportBindingRule createNone(TypeBindingPoint bindingPoint) {
+    return new SupportBindingRule(bindingPoint, false, false);
   }
 
   public record SupportBindingRule(TypeBindingPoint bindingPoint, boolean supportedFromDb, boolean supportedFromUser)

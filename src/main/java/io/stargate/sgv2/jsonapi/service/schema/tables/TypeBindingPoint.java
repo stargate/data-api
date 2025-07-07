@@ -8,8 +8,6 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 public enum TypeBindingPoint {
   /** Type is used to define the value of a list, map, or set. */
   COLLECTION_VALUE,
-  /** Type is used to define a type in the keyspace, in reality only used for UDTs. */
-  KEYSPACE,
   /** Type is used to define the key of a map. */
   MAP_KEY,
   /** Type is used to define a column in a table. */

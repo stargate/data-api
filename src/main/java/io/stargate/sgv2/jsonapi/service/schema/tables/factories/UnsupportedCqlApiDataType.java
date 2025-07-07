@@ -23,7 +23,7 @@ public class UnsupportedCqlApiDataType extends UnsupportedApiDataType {
   @Override
   public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
     // Always has same representation
-    
+
     return new UnsupportedColumnDesc.UnsupportedCqlColumnDesc(apiSupport(), cqlType);
   }
 }

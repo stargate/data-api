@@ -116,7 +116,7 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
       Objects.requireNonNull(columnDesc, "columnDesc is must not be null");
 
       if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
-          || bindingPoint != TypeBindingPoint.UDT_FIELD) {
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
         throw new IllegalArgumentException(
             "ColumnDescFactory only supports binding point %s or %s, bindingPoint: %s"
                 .formatted(
@@ -161,7 +161,7 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
   }
 
   @Override
-  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
     return dataRecorder
         .append("name", name.asCql(true))
         .append("isStatic", isStatic)
@@ -184,13 +184,31 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
         throws UnsupportedCqlColumn {
       Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
 
-      // TODO: XXX: AARON: fix this weid refactor
-      return create(
-          bindingPoint,
-          columnMetadata.getName(),
-          columnMetadata.isStatic(),
-          columnMetadata.getType(),
-          vectorConfig.getVectorizeDefinition(columnMetadata.getName()).orElse(null));
+      VectorizeDefinition vectorizeDefinition;
+      if (bindingPoint == TypeBindingPoint.TABLE_COLUMN){
+        Objects.requireNonNull(
+            vectorConfig, "vectorConfig is must not be null for table columns");
+        vectorizeDefinition = vectorConfig.getVectorizeDefinition(columnMetadata.getName()).orElse(null);
+      } else {
+        // cannot have vectorize in a UDT field yet.
+        vectorizeDefinition = null;
+      }
+
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw new IllegalArgumentException(
+            "CqlColumnFactory only supports binding point %s or %s, bindingPoint: %s"
+                .formatted(
+                    TypeBindingPoint.TABLE_COLUMN, TypeBindingPoint.UDT_FIELD, bindingPoint));
+      }
+      try {
+        return new ApiColumnDef(
+            columnMetadata.getName(),
+            columnMetadata.isStatic(),
+            DefaultTypeFactoryFromCql.INSTANCE.create(bindingPoint, columnMetadata.getType(), vectorizeDefinition));
+      } catch (UnsupportedCqlType e) {
+        throw new UnsupportedCqlColumn(columnMetadata.getName(), columnMetadata.getType(), e);
+      }
     }
 
     @Override
@@ -201,32 +219,5 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
           DefaultTypeFactoryFromCql.INSTANCE.createUnsupported(columnMetadata.getType()));
     }
 
-    private static ApiColumnDef create(
-        TypeBindingPoint bindingPoint,
-        CqlIdentifier column,
-        boolean isStatic,
-        DataType dataType,
-        VectorizeDefinition vectorizeDef)
-        throws UnsupportedCqlColumn {
-
-      Objects.requireNonNull(column, "column is must not be null");
-      Objects.requireNonNull(dataType, "dataType is must not be null");
-
-      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
-          || bindingPoint != TypeBindingPoint.UDT_FIELD) {
-        throw new IllegalArgumentException(
-            "CqlColumnFactory only supports binding point %s or %s, bindingPoint: %s"
-                .formatted(
-                    TypeBindingPoint.TABLE_COLUMN, TypeBindingPoint.UDT_FIELD, bindingPoint));
-      }
-      try {
-        return new ApiColumnDef(
-            column,
-            isStatic,
-            DefaultTypeFactoryFromCql.INSTANCE.create(bindingPoint, dataType, vectorizeDef));
-      } catch (UnsupportedCqlType e) {
-        throw new UnsupportedCqlColumn(column, dataType, e);
-      }
-    }
   }
 }

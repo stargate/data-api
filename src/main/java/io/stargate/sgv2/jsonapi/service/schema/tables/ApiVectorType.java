@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.VectorType;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
@@ -172,7 +173,8 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
   private static class CqlTypeFactory extends TypeFactoryFromCql<ApiVectorType, VectorType> {
 
     public CqlTypeFactory() {
-      super(ApiTypeName.VECTOR, VectorType.class);
+      // see VectorType - this is a custom type for now.
+      super(ProtocolConstants.DataType.CUSTOM, VectorType.class);
     }
 
     @Override

@@ -42,7 +42,7 @@ public class ApiUdtShallowType implements ApiDataType {
   /** Frozen UDTs are used in collection values, and may be created by CQL users. */
   public static final ApiSupportDef API_SUPPORT_FROZEN_UDT =
       new ApiSupportDef.Support(
-          false,  true, true, false, ApiSupportDef.Update.UDT);
+          false,  true, true, true, ApiSupportDef.Update.UDT);
 
   /** Normal UDT usage in a column is non-frozen */
   public static final ApiSupportDef API_SUPPORT_NON_FROZEN_UDT =

@@ -28,18 +28,22 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
 
   public static final FromJsonFactory FROM_JSON_FACTORY = new FromJsonFactory();
 
-  private static final ApiSupportDesc API_SUPPORT_DESC_FROZEN_UDT =
+  protected static final ApiSupportDesc API_SUPPORT_DESC_FROZEN_UDT =
       ApiSupportDesc.withoutCqlDefinition(ApiUdtType.API_SUPPORT_FROZEN_UDT);
 
-  private static final ApiSupportDesc API_SUPPORT_DESC_NON_FROZEN_UDT =
+  protected static final ApiSupportDesc API_SUPPORT_DESC_NON_FROZEN_UDT =
       ApiSupportDesc.withoutCqlDefinition(ApiUdtType.API_SUPPORT_NON_FROZEN_UDT);
 
   private final CqlIdentifier udtName;
   private final boolean isFrozen;
 
   public UdtRefColumnDesc(CqlIdentifier udtName, boolean isFrozen) {
+    this(udtName, isFrozen, isFrozen ? API_SUPPORT_DESC_FROZEN_UDT : API_SUPPORT_DESC_NON_FROZEN_UDT);
+  }
+
+  public UdtRefColumnDesc(CqlIdentifier udtName, boolean isFrozen, ApiSupportDesc apiSupportDesc) {
     super(
-        ApiTypeName.UDT, isFrozen ? API_SUPPORT_DESC_FROZEN_UDT : API_SUPPORT_DESC_NON_FROZEN_UDT);
+        ApiTypeName.UDT, apiSupportDesc);
 
     this.udtName = Objects.requireNonNull(udtName, "udtName must not be null");
     this.isFrozen = isFrozen;

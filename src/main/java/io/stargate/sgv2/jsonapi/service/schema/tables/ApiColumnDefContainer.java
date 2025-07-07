@@ -13,6 +13,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -22,6 +25,8 @@ import java.util.stream.Collectors;
 /** A {@link ApiColumnDefContainer} that maintains the order of the columns as they were added. */
 public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef>
     implements SchemaDescribable<ColumnsDescContainer>, Recordable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiColumnDefContainer.class);
+
   private static final ApiColumnDefContainer IMMUTABLE_EMPTY =
       new ApiColumnDefContainer(0).toUnmodifiable();
 
@@ -174,7 +179,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
       Objects.requireNonNull(columns, "columns cannot be null");
 
       if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
-          || bindingPoint != TypeBindingPoint.UDT_FIELD) {
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
         throw new IllegalArgumentException(
             "CqlColumnFactory only supports binding point %s or %s, bindingPoint: %s"
                 .formatted(
@@ -211,7 +216,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
       Objects.requireNonNull(columnDescContainer, "columnDescContainer cannot be null");
 
       if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
-          || bindingPoint != TypeBindingPoint.UDT_FIELD) {
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
         throw new IllegalArgumentException(
             "ColumnDescFactory only supports binding point %s or %s, bindingPoint: %s"
                 .formatted(

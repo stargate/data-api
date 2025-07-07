@@ -4,6 +4,8 @@ import com.datastax.oss.driver.api.core.type.*;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
+
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,35 +15,36 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeFactoryFromCql.class);
 
-  private final Class<CqlT> cqlTypeClass;
-  private final ApiTypeName apiTypeName;
-
-  protected TypeFactoryFromCql(ApiTypeName apiTypeName, Class<CqlT> cqlTypeClass) {
-    this.cqlTypeClass = cqlTypeClass;
-    this.apiTypeName = apiTypeName;
-  }
+  private final int cqlProtocolCode;
+  private final Class<CqlT> cqlGenericsClass;
 
   /**
-   * Called to get the name of the API type that this factory creates, so that decisions can be made
-   * based on the type the factory creates.
+   *
+   * @param cqlProtocolCode {@link DataType#getProtocolCode()} protocol code of the CQL type to match
+   *                                                          this factory to. We need to use protocol code because
+   *                                                          all CQL primitive types have the same class.
+   * @param cqlGenericsClass Class of the generic type, used to check casting by the functions like
+   *                         {@link #createUntyped(TypeBindingPoint, DataType, VectorizeDefinition)}
    */
-  public ApiTypeName apiTypeName() {
-    return apiTypeName;
+  protected TypeFactoryFromCql(int cqlProtocolCode,  Class<CqlT> cqlGenericsClass) {
+    this.cqlProtocolCode = cqlProtocolCode;
+    this.cqlGenericsClass = Objects.requireNonNull(cqlGenericsClass, "cqlGenericsClass must not be null");
   }
 
-  public Class<CqlT> cqlTypeClass() {
-    return cqlTypeClass;
+
+  protected int cqlProtocolCode() {
+    return cqlProtocolCode;
   }
 
   public ApiT createUntyped(
       TypeBindingPoint bindingPoint, DataType cqlType, VectorizeDefinition vectorizeDefn)
       throws UnsupportedCqlType {
-    if (!cqlTypeClass.isInstance(cqlType)) {
+    if (!cqlGenericsClass.isInstance(cqlType)) {
       throw new IllegalArgumentException(
           "TypeFactoryFromCql.createUntyped() - cqlType is not an instance of "
-              + cqlTypeClass.getName());
+              + cqlGenericsClass.getName());
     }
-    return create(bindingPoint, cqlTypeClass.cast(cqlType), vectorizeDefn);
+    return create(bindingPoint, cqlGenericsClass.cast(cqlType), vectorizeDefn);
   }
 
   public abstract ApiT create(
@@ -49,12 +52,12 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
       throws UnsupportedCqlType;
 
   public boolean isSupportedUntyped(TypeBindingPoint bindingPoint, DataType cqlType) {
-    if (!cqlTypeClass.isInstance(cqlType)) {
+    if (!cqlGenericsClass.isInstance(cqlType)) {
       throw new IllegalArgumentException(
           "TypeFactoryFromCql.isSupportedUntyped() - cqlType is not an instance of "
-              + cqlTypeClass.getName());
+              + cqlGenericsClass.getName());
     }
-    return isSupported(bindingPoint, cqlTypeClass.cast(cqlType));
+    return isSupported(bindingPoint, cqlGenericsClass.cast(cqlType));
   }
 
   /**
@@ -73,12 +76,12 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
 
   public Optional<CqlTypeKey> maybeCreateCacheKeyUntyped(
       TypeBindingPoint bindingPoint, DataType cqlType) {
-    if (!cqlTypeClass.isInstance(cqlType)) {
+    if (!cqlGenericsClass.isInstance(cqlType)) {
       throw new IllegalArgumentException(
           "TypeFactoryFromCql.maybeCreateCacheKeyUntyped() - cqlType is not an instance of "
-              + cqlTypeClass.getName());
+              + cqlGenericsClass.getName());
     }
-    return maybeCreateCacheKey(bindingPoint, cqlTypeClass.cast(cqlType));
+    return maybeCreateCacheKey(bindingPoint, cqlGenericsClass.cast(cqlType));
   }
 
   public abstract Optional<CqlTypeKey> maybeCreateCacheKey(

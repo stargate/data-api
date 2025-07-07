@@ -21,14 +21,9 @@ public class PrimitiveTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType,
   private final PrimitiveApiDataTypeDef primitiveTypeInstance;
 
   public PrimitiveTypeFactoryFromCql(PrimitiveApiDataTypeDef primitiveType) {
-    super(primitiveType.typeName(), DataType.class);
+    super(primitiveType.cqlType().getProtocolCode(), DataType.class);
     this.primitiveTypeInstance = primitiveType;
     this.cacheKey = Optional.of(CqlTypeKey.create(primitiveType.cqlType(), null, null, false));
-  }
-
-  @Override
-  public ApiTypeName apiTypeName() {
-    return primitiveTypeInstance.typeName();
   }
 
   @Override
@@ -44,7 +39,7 @@ public class PrimitiveTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType,
 
   @Override
   public boolean isSupported(TypeBindingPoint bindingPoint, DataType cqlType) {
-    return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).supportedFromUser();
+    return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).supportedFromDb();
 
   }
 

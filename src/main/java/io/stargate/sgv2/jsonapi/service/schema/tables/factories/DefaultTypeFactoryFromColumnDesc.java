@@ -5,6 +5,9 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -13,6 +16,8 @@ import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRI
 /** ... */
 public class DefaultTypeFactoryFromColumnDesc
     extends TypeFactoryFromColumnDesc<ApiDataType, ColumnDesc> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultTypeFactoryFromColumnDesc.class);
+
 
   public static final DefaultTypeFactoryFromColumnDesc INSTANCE =
       new DefaultTypeFactoryFromColumnDesc();
@@ -51,6 +56,9 @@ public class DefaultTypeFactoryFromColumnDesc
     if (factory != null) {
       return factory;
     }
+
+    // Unlike DefaultTypeFactoryFromCql this *may* happen, it could be the user fat-fingered the type name
+
     // TODO: XXX: AARON: need a schema exception here
     throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
   }
@@ -59,6 +67,12 @@ public class DefaultTypeFactoryFromColumnDesc
       Map<ApiTypeName, TypeFactoryFromColumnDesc<? extends ApiDataType, ? extends ColumnDesc>> map,
       TypeFactoryFromColumnDesc<? extends ApiDataType, ? extends ColumnDesc> factory) {
     map.put(factory.apiTypeName(), factory);
+  }
+
+  @Override
+  public ApiTypeName apiTypeName() {
+    throw new UnsupportedOperationException(
+        "DefaultTypeFactoryFromColumnDesc does not have a specific API type name");
   }
 
   /**

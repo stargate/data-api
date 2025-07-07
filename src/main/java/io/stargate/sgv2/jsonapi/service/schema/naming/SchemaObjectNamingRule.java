@@ -69,7 +69,7 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
    */
   public String checkRule(String name) {
 
-    if (apply(name)) {
+    if (!apply(name)) {
       throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
           Map.of(
               "schemaType",

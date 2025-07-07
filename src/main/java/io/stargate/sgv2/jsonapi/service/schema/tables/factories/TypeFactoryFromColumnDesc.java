@@ -25,8 +25,8 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
   private final Class<DescT> descClass;
 
   protected TypeFactoryFromColumnDesc(ApiTypeName apiTypeName, Class<DescT> descClass) {
-    this.apiTypeName = apiTypeName;
-    this.descClass = descClass;
+    this.apiTypeName = apiTypeName; // allow null for the default factory
+    this.descClass = Objects.requireNonNull(descClass, "descClass must not be null");
   }
 
   /**

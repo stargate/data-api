@@ -55,10 +55,10 @@ public abstract class ApiDataTypeDefs {
           // we do not let the user bind a duration as a map key, but if the DB says it is ok.
           // otherwise supported
           new SupportBindingRules(
-              SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, true),
+              SupportBindingRules.createAll(TypeBindingPoint.COLLECTION_VALUE),
               SupportBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
-              SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
-              SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, true, true)
+              SupportBindingRules.createAll(TypeBindingPoint.TABLE_COLUMN),
+              SupportBindingRules.createAll(TypeBindingPoint.UDT_FIELD)
       ));
 
   public static final PrimitiveApiDataTypeDef TIME =
@@ -85,7 +85,7 @@ public abstract class ApiDataTypeDefs {
               false,
               true,
               true,
-              ApiSupportDef.Update.PRIMITIVE),
+              ApiSupportDef.Update.NONE),
           // we do not support the user creating anything with a counter type, but we accept if the DB says
           new SupportBindingRules(
               SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),

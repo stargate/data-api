@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.driver.internal.core.type.UserDefinedTypeBuilder;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
@@ -81,9 +82,9 @@ public class ApiUdtType extends ApiUdtShallowType {
 
     return switch (bindingPoint){
       case DDL_USAGE -> // just a reference to the UDT
-          new UdtRefColumnDesc(udtName(), isFrozen());
+          new UdtRefColumnDesc(udtName(), isFrozen(), ApiSupportDesc.from(this));
       case DML_USAGE -> // full inline schema desc
-          new UdtColumnDesc(udtName(), isFrozen(), allFields.getSchemaDescription(bindingPoint));
+          new UdtColumnDesc(udtName(), isFrozen(), allFields.getSchemaDescription(bindingPoint), ApiSupportDesc.from(this));
       default ->
         throw bindingPoint.unsupportedException("ApiUdtType.getSchemaDescription()");
     };
@@ -150,7 +151,7 @@ public class ApiUdtType extends ApiUdtShallowType {
       extends TypeFactoryFromCql<ApiUdtType, UserDefinedType> {
 
     private CqlTypeFactory() {
-      super(ApiTypeName.UDT, UserDefinedType.class);
+      super(ProtocolConstants.DataType.UDT, UserDefinedType.class);
     }
 
     @Override

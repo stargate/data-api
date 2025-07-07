@@ -2,8 +2,13 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.*;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Objects;
 
 /**
@@ -17,6 +22,7 @@ import java.util.Objects;
  * <p>aaron - 9 sept 2024 - avoiding a record for now as assume will use subclasses for collections
  */
 public class PrimitiveApiDataTypeDef implements ApiDataType {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PrimitiveApiDataTypeDef.class);
 
   private final ApiTypeName typeName;
   private final DataType cqlType;
