@@ -129,15 +129,13 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
     if (maybePrimitiveType.isPresent()) {
       // does not matter if it is short or long form, we can return the primitive type
       return maybePrimitiveType.get();
+    }
 
-    } else if (typeNameDesc.shortFormDesc) {
-      // it was not a primitive type, and it was described in short form,
-      // short form can only be used to describe primitive types so we can throw an error
-      // e.g. this not allowed  {"userName": "map"}
-      throw SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.get(
-          Map.of(
-              "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
-              "unsupportedType", typeNameDesc.typeName.apiName()));
+    // sanity check, if it was not primitive type, then it must be described in long form.
+    if (typeNameDesc.shortFormDesc) {
+      throw new IllegalStateException(
+          "ColumnDescDeserializer.deserialize() - long form description used for a non primitive type, typeNameDesc: "
+              + typeNameDesc);
     }
 
     // so we know this is a long form desc of a non-primitive type, e.g. map, set, list, vector, udt
@@ -226,17 +224,29 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
       rawTypeName = typeNode.asText();
     }
 
-    var typeName =
-        ApiTypeName.fromApiName(rawTypeName)
-            .orElseThrow(
-                () ->
-                    SchemaException.Code.UNKNOWN_DATA_TYPE.get(
-                        Map.of(
-                            "supportedTypes",
-                            errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName),
-                            "unsupportedType",
-                            rawTypeName)));
-    return new TypeNameDesc(typeName, shortFormDesc);
+    var maybeTypeName = ApiTypeName.fromApiName(rawTypeName);
+    if (maybeTypeName.isEmpty()) {
+      if (shortFormDesc) {
+        // short form can only be used to describe primitive types so we can throw an error
+        // e.g. this not allowed  {"userName": "map"}
+        throw SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.get(
+            Map.of(
+                "supportedTypes",
+                errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
+                "unsupportedType",
+                rawTypeName));
+      } else {
+        // using long form it could be a primitive or a non-primitive type
+        throw SchemaException.Code.UNKNOWN_DATA_TYPE.get(
+            Map.of(
+                "supportedTypes",
+                errFmtJoin(ApiTypeName.all(), ApiTypeName::apiName),
+                "unsupportedType",
+                rawTypeName));
+      }
+    }
+
+    return new TypeNameDesc(maybeTypeName.get(), shortFormDesc);
   }
 
   /**

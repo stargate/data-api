@@ -30,15 +30,15 @@ public class PrimitiveTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType,
       TypeBindingPoint bindingPoint, DataType cqlType, VectorizeDefinition vectorizeDefn)
       throws UnsupportedCqlType {
 
-    if (!isSupported(bindingPoint, cqlType)) {
+    if (!isTypeBindable(bindingPoint, cqlType)) {
       throw new UnsupportedCqlType(bindingPoint, cqlType);
     }
     return primitiveTypeInstance;
   }
 
   @Override
-  public boolean isSupported(TypeBindingPoint bindingPoint, DataType cqlType) {
-    return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).supportedFromDb();
+  public boolean isTypeBindable(TypeBindingPoint bindingPoint, DataType cqlType) {
+    return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).bindableFromDb();
   }
 
   @Override

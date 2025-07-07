@@ -14,4 +14,15 @@ public enum TypeBindingPoint {
   TABLE_COLUMN,
   /** Type is used to define a field in a user defined type */
   UDT_FIELD;
+
+  /**
+   * Helper to create a new {@link UnsupportedOperationException} with a message for when
+   * TypeBindingPoint is not supported in a given context.
+   *
+   * @param context e.g. "ApiColumnDef.ColumnDescFactory.create()"
+   * @return a new UnsupportedOperationException with a message, throw it yourself :)
+   */
+  public UnsupportedOperationException unsupportedException(String context) {
+    return new UnsupportedOperationException(context + " - unsupported TypeBindingPoint: " + this);
+  }
 }

@@ -63,7 +63,7 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
 
   public static <CqlT extends DataType>
       TypeFactoryFromCql<? extends ApiDataType, ? extends DataType> factoryFor(
-          TypeBindingPoint bindingPoint, CqlT cqlType) throws UnsupportedCqlType {
+          TypeBindingPoint bindingPoint, CqlT cqlType) {
 
     var factory = ALL_FACTORIES.get(cqlType.getProtocolCode());
     if (factory != null) {
@@ -200,15 +200,10 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
   }
 
   @Override
-  public boolean isSupported(TypeBindingPoint bindingPoint, DataType cqlType) {
+  public boolean isTypeBindable(TypeBindingPoint bindingPoint, DataType cqlType) {
 
     // throws if we cannot find a factory for the cqlType
-    try {
-      return factoryFor(bindingPoint, cqlType).isSupportedUntyped(bindingPoint, cqlType);
-    } catch (UnsupportedCqlType e) {
-      // if we could not find a factory for the cqlType, then it is not supported
-      return false;
-    }
+    return factoryFor(bindingPoint, cqlType).isTypeBindableUntyped(bindingPoint, cqlType);
   }
 
   @Override

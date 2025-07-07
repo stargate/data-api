@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
@@ -133,6 +134,19 @@ public class ApiUdtType extends ApiUdtShallowType {
         throw SchemaException.Code.MISSING_FIELDS_FOR_TYPE_CREATION.get();
       }
 
+      var unbindableFields =
+          ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.unbindableColumnDesc(
+              TypeBindingPoint.UDT_FIELD, typeDefinitionDesc.fields(), validateVectorize);
+      if (!unbindableFields.isEmpty()) {
+
+        // HACK: THIS IS PROBABLE WRONG , just getting the list of primitives ignored the type
+        // binding rules
+        throw SchemaException.Code.UNSUPPORTED_TYPE_FIELDS.get(
+            Map.of(
+                "supportedTypes", errFmtApiDataType(ApiDataTypeDefs.PRIMITIVE_TYPES),
+                "unsupportedFields", errFmtColumnDesc(unbindableFields)));
+      }
+
       var allFields =
           ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
               TypeBindingPoint.UDT_FIELD, typeDefinitionDesc.fields(), validateVectorize);
@@ -160,7 +174,7 @@ public class ApiUdtType extends ApiUdtShallowType {
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      if (!isSupported(bindingPoint, cqlType)) {
+      if (!isTypeBindable(bindingPoint, cqlType)) {
         throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
 
@@ -215,19 +229,19 @@ public class ApiUdtType extends ApiUdtShallowType {
     }
 
     @Override
-    public boolean isSupported(TypeBindingPoint bindingPoint, UserDefinedType cqlType) {
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint, UserDefinedType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
       //  we accept frozen, but change the support.
 
       // can we use a UDT of any type in this binding point?
-      if (!UDT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
+      if (!UDT_BINDING_RULES.rule(bindingPoint).bindableFromDb()) {
         return false;
       }
 
       // can all the types in the UDT be used in a UDT ?
       for (var rawField : UDTCodecs.udtRawFields(cqlType)) {
-        if (!DefaultTypeFactoryFromCql.INSTANCE.isSupportedUntyped(
+        if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
             TypeBindingPoint.UDT_FIELD, rawField.cqlType())) {
           return false;
         }

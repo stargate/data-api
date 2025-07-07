@@ -77,21 +77,23 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
     private static Stream<Arguments> unsupportedUDTFields() {
       return Stream.of(
           // list/set/map as field are not supported
-          Arguments.of(Map.of("listField", Map.of("type", "list", "valueType", "text"))),
+          Arguments.of(
+              Map.of("listField", Map.of("type", "list", "valueType", "text")),
+              "The command has contained the unsupported types: list."),
           // nested UDT as field is not supported
-          Arguments.of(Map.of("address", Map.of("type", "userDefined", "udtName", "address"))));
+          Arguments.of(
+              Map.of("address", Map.of("type", "userDefined", "udtName", "address")),
+              "The command has contained the unsupported types: userDefined."));
     }
 
     @ParameterizedTest
     @MethodSource("unsupportedUDTFields")
-    public void unsupportedUDTField(Map<String, Object> fields) {
+    public void unsupportedUDTField(Map<String, Object> fields, String errorMessage) {
       assertNamespaceCommand(keyspaceName)
           .templated()
           .createType("type_with_supported_filed", fields)
           .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_TYPE_FIELD,
-              SchemaException.class,
-              "Type as field, map/set/list as field are not supported");
+              SchemaException.Code.UNSUPPORTED_TYPE_FIELDS, SchemaException.class, errorMessage);
     }
   }
 

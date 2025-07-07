@@ -57,6 +57,10 @@ public abstract class ErrorFormatters {
     return errFmtJoin(identifiers, ErrorFormatters::errFmt);
   }
 
+  public static String errFmtApiDataType(Collection<? extends ApiDataType> apiDataTypes) {
+    return errFmtJoin(apiDataTypes, ErrorFormatters::errFmt);
+  }
+
   public static String errFmtApiColumnDef(ApiColumnDefContainer apiColumnDefs) {
     return errFmtApiColumnDef(apiColumnDefs.values());
   }

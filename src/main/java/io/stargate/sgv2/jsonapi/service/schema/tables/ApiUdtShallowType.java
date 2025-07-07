@@ -30,14 +30,14 @@ public class ApiUdtShallowType implements ApiDataType {
 
   /** Factory to create {@link ApiUdtShallowType} from {@link UdtRefColumnDesc}. */
   public static final TypeFactoryFromColumnDesc<ApiUdtShallowType, UdtRefColumnDesc>
-      FROM_COLUMN_DESC_FACTORY = new ApiUdtShallowType.ColumnDescFactory();
+      FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
 
-  protected static final SupportBindingRules UDT_BINDING_RULES =
-      new SupportBindingRules(
-          SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, true),
-          SupportBindingRules.create(TypeBindingPoint.MAP_KEY, false, false),
-          SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
-          SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, false, false));
+  protected static final DefaultTypeBindingRules UDT_BINDING_RULES =
+      new DefaultTypeBindingRules(
+          DefaultTypeBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, true),
+          DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, false, false),
+          DefaultTypeBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
+          DefaultTypeBindingRules.create(TypeBindingPoint.UDT_FIELD, false, false));
 
   /** Frozen UDTs are used in collection values, and may be created by CQL users. */
   public static final ApiSupportDef API_SUPPORT_FROZEN_UDT =
@@ -129,7 +129,7 @@ public class ApiUdtShallowType implements ApiDataType {
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      if (!isSupported(bindingPoint, columnDesc, validateVectorize)) {
+      if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
         // TODO: XXX: AARON need a general schema exception ?
         throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
       }
@@ -147,13 +147,13 @@ public class ApiUdtShallowType implements ApiDataType {
 
     /** */
     @Override
-    public boolean isSupported(
+    public boolean isTypeBindable(
         TypeBindingPoint bindingPoint,
         UdtRefColumnDesc columnDesc,
         VectorizeConfigValidator validateVectorize) {
 
       // can we use a udt of any type in this binding point?
-      if (!UDT_BINDING_RULES.rule(bindingPoint).supportedFromUser()) {
+      if (!UDT_BINDING_RULES.rule(bindingPoint).bindableFromUser()) {
         return false;
       }
 

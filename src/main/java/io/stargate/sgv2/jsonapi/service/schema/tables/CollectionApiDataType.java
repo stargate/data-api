@@ -23,12 +23,12 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
     return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;
   }
 
-  protected static final SupportBindingRules SUPPORT_BINDING_RULES =
-      new SupportBindingRules(
-          SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, false, false),
-          SupportBindingRules.create(TypeBindingPoint.MAP_KEY, false, false),
-          SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
-          SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, false, false));
+  protected static final DefaultTypeBindingRules SUPPORT_BINDING_RULES =
+      new DefaultTypeBindingRules(
+          DefaultTypeBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, false, false),
+          DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, false, false),
+          DefaultTypeBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
+          DefaultTypeBindingRules.create(TypeBindingPoint.UDT_FIELD, false, false));
 
   protected final ApiTypeName typeName;
   protected final ApiDataType valueType;

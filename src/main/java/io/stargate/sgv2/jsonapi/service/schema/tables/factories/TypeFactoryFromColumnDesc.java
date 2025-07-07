@@ -60,7 +60,7 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
       TypeBindingPoint bindingPoint, DescT columnDesc, VectorizeConfigValidator validateVectorize)
       throws UnsupportedUserType;
 
-  public boolean isSupportedUntyped(
+  public boolean isTypeBindableUntyped(
       TypeBindingPoint bindingPoint,
       ColumnDesc columnDesc,
       VectorizeConfigValidator validateVectorize) {
@@ -70,10 +70,10 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
           "TypeFactoryFromColumnDesc.isSupportedUntyped() - columnDesc is not an instance of "
               + descClass.getName());
     }
-    return isSupported(bindingPoint, descClass.cast(columnDesc), validateVectorize);
+    return isTypeBindable(bindingPoint, descClass.cast(columnDesc), validateVectorize);
   }
 
-  public abstract boolean isSupported(
+  public abstract boolean isTypeBindable(
       TypeBindingPoint bindingPoint, DescT columnDesc, VectorizeConfigValidator validateVectorize);
 
   public UnsupportedApiDataType createUnsupported(DescT columnDesc) {

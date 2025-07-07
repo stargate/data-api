@@ -49,11 +49,11 @@ public abstract class ApiDataTypeDefs {
           new ApiSupportDef.Support(true, true, true, true, ApiSupportDef.Update.PRIMITIVE),
           // we do not let the user bind a duration as a map key, but if the DB says it is ok.
           // otherwise supported
-          new SupportBindingRules(
-              SupportBindingRules.createAll(TypeBindingPoint.COLLECTION_VALUE),
-              SupportBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
-              SupportBindingRules.createAll(TypeBindingPoint.TABLE_COLUMN),
-              SupportBindingRules.createAll(TypeBindingPoint.UDT_FIELD)));
+          new DefaultTypeBindingRules(
+              DefaultTypeBindingRules.createAll(TypeBindingPoint.COLLECTION_VALUE),
+              DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              DefaultTypeBindingRules.createAll(TypeBindingPoint.TABLE_COLUMN),
+              DefaultTypeBindingRules.createAll(TypeBindingPoint.UDT_FIELD)));
 
   public static final PrimitiveApiDataTypeDef TIME =
       new PrimitiveApiDataTypeDef(ApiTypeName.TIME, DataTypes.TIME, ApiSupportDef.Support.FULL);
@@ -77,11 +77,11 @@ public abstract class ApiDataTypeDefs {
           new ApiSupportDef.Support(false, false, true, true, ApiSupportDef.Update.NONE),
           // we do not support the user creating anything with a counter type, but we accept if the
           // DB says
-          new SupportBindingRules(
-              SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),
-              SupportBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
-              SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, false),
-              SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, true, false)));
+          new DefaultTypeBindingRules(
+              DefaultTypeBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.UDT_FIELD, true, false)));
 
   public static final PrimitiveApiDataTypeDef INET =
       new PrimitiveApiDataTypeDef(ApiTypeName.INET, DataTypes.INET, ApiSupportDef.Support.FULL);
@@ -94,11 +94,11 @@ public abstract class ApiDataTypeDefs {
           new ApiSupportDef.Support(false, true, true, true, ApiSupportDef.Update.PRIMITIVE),
           // we do not support the user creating anything with a timeuuid type, but we accept if the
           // DB says
-          new SupportBindingRules(
-              SupportBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),
-              SupportBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
-              SupportBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, false),
-              SupportBindingRules.create(TypeBindingPoint.UDT_FIELD, true, false)));
+          new DefaultTypeBindingRules(
+              DefaultTypeBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.UDT_FIELD, true, false)));
 
   public static final PrimitiveApiDataTypeDef UUID =
       new PrimitiveApiDataTypeDef(ApiTypeName.UUID, DataTypes.UUID, ApiSupportDef.Support.FULL);

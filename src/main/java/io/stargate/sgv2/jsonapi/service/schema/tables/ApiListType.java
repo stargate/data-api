@@ -78,7 +78,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      if (!isSupported(bindingPoint, columnDesc, validateVectorize)) {
+      if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
         throw new UnsupportedUserType(
             bindingPoint,
             columnDesc,
@@ -104,7 +104,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
     }
 
     @Override
-    public boolean isSupported(
+    public boolean isTypeBindable(
         TypeBindingPoint bindingPoint,
         ListColumnDesc columnDesc,
         VectorizeConfigValidator validateVectorize) {
@@ -112,12 +112,12 @@ public class ApiListType extends CollectionApiDataType<ListType> {
       //  we accept frozen, but change the support.
 
       // can we use a list of any type in this binding point?
-      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromUser()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser()) {
         return false;
       }
 
       // can the value type be used as list value?
-      if (!DefaultTypeFactoryFromColumnDesc.INSTANCE.isSupportedUntyped(
+      if (!DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
           TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
         return false;
       }
@@ -142,7 +142,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      if (!isSupported(bindingPoint, cqlType)) {
+      if (!isTypeBindable(bindingPoint, cqlType)) {
         throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
 
@@ -159,18 +159,18 @@ public class ApiListType extends CollectionApiDataType<ListType> {
     }
 
     @Override
-    public boolean isSupported(TypeBindingPoint bindingPoint, ListType cqlType) {
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint, ListType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
       //  we accept frozen, but change the support.
 
       // can we use a list of any type in this binding point?
-      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromDb()) {
         return false;
       }
 
       // can the value type be used as list value?
-      if (!DefaultTypeFactoryFromCql.INSTANCE.isSupportedUntyped(
+      if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
           TypeBindingPoint.COLLECTION_VALUE, cqlType.getElementType())) {
         return false;
       }

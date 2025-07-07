@@ -103,7 +103,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      if (!isSupported(bindingPoint, columnDesc, validateVectorize)) {
+      if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
         // TODO: XXX: AARON: the suported types is prob wrong, it wont include udt as value ?
         throw new UnsupportedUserType(
             bindingPoint,
@@ -133,28 +133,40 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
     }
 
     @Override
-    public boolean isSupported(
+    public boolean isTypeBindable(
         TypeBindingPoint bindingPoint,
         MapColumnDesc columnDesc,
         VectorizeConfigValidator validateVectorize) {
 
       //  we accept frozen, but change the support.
+      var supported = true;
 
       // can we use a map of any type in this binding point?
-      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromUser()) {
-        return false;
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser()) {
+        supported = false;
       }
 
       // can the value and key types be used with a map?
-      if (!DefaultTypeFactoryFromColumnDesc.INSTANCE.isSupportedUntyped(
-          TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
-        return false;
+      if (supported
+          && !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
+              TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
+        supported = false;
       }
-      if (!DefaultTypeFactoryFromColumnDesc.INSTANCE.isSupportedUntyped(
-          TypeBindingPoint.MAP_KEY, columnDesc.keyType(), validateVectorize)) {
-        return false;
+      if (supported
+          && !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
+              TypeBindingPoint.MAP_KEY, columnDesc.keyType(), validateVectorize)) {
+        supported = false;
       }
-      return true;
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "ApiMapType.isSupported - supported: {}, bindingPoint: {}, keyType: {}, valueType: {}",
+            supported,
+            bindingPoint,
+            columnDesc.keyType(),
+            columnDesc.valueType());
+      }
+      return supported;
     }
   }
 
@@ -175,7 +187,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      if (!isSupported(bindingPoint, cqlType)) {
+      if (!isTypeBindable(bindingPoint, cqlType)) {
         LOGGER.warn("XXX - ApiMapType.create - after is Support {}", cqlType.asCql(true, true));
         throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
@@ -197,24 +209,24 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
     }
 
     @Override
-    public boolean isSupported(TypeBindingPoint bindingPoint, MapType cqlType) {
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint, MapType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
       // we accept frozen and then change the support
 
       // can we use a map of any type in this binding point?
-      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromDb()) {
         LOGGER.warn("XXX - ApiMapType.isSupported - unsupported MAP {}", cqlType.asCql(true, true));
         return false;
       }
       // now check if the key and value types are supported for binding into a map
-      if (!DefaultTypeFactoryFromCql.INSTANCE.isSupportedUntyped(
+      if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
           TypeBindingPoint.MAP_KEY, cqlType.getKeyType())) {
         LOGGER.warn(
             "XXX - ApiMapType.isSupported - unsupported key type: {}", cqlType.asCql(true, true));
         return false;
       }
-      if (!DefaultTypeFactoryFromCql.INSTANCE.isSupportedUntyped(
+      if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
           TypeBindingPoint.COLLECTION_VALUE, cqlType.getValueType())) {
         LOGGER.warn(
             "XXX - ApiMapType.isSupported - unsupported value type: {}", cqlType.asCql(true, true));

@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
 
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
@@ -37,6 +36,14 @@ public class DefaultTypeFactoryFromColumnDesc
     PRIMITIVE_TYPES.forEach(
         primitiveType ->
             addFactory(factories, new PrimitiveTypeFactoryFromColumnDesc(primitiveType)));
+
+    // check we have a factory for every enum value
+    for (ApiTypeName typeName : ApiTypeName.values()) {
+      if (!factories.containsKey(typeName)) {
+        throw new IllegalStateException(
+            "DefaultTypeFactoryFromColumnDesc - missing TypeFactoryFromColumnDesc for " + typeName);
+      }
+    }
     ALL_FACTORIES = Collections.unmodifiableMap(factories);
   }
 
@@ -45,18 +52,17 @@ public class DefaultTypeFactoryFromColumnDesc
   }
 
   public static TypeFactoryFromColumnDesc<? extends ApiDataType, ? extends ColumnDesc> factoryFor(
-      TypeBindingPoint bindingPoint, ColumnDesc columnDesc) throws UnsupportedUserType {
+      TypeBindingPoint bindingPoint, ColumnDesc columnDesc) {
 
     var factory = ALL_FACTORIES.get(columnDesc.typeName());
     if (factory != null) {
       return factory;
     }
 
-    // Unlike DefaultTypeFactoryFromCql this *may* happen, it could be the user fat-fingered the
-    // type name
-
-    // TODO: XXX: AARON: need a schema exception here
-    throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
+    // we should never get here because we check this when we make the ALL_FACTORIES map
+    throw new IllegalStateException(
+        "DefaultTypeFactoryFromColumnDesc.factoryFor() - missing TypeFactoryFromColumnDesc for "
+            + columnDesc.typeName());
   }
 
   private static void addFactory(
@@ -100,7 +106,15 @@ public class DefaultTypeFactoryFromColumnDesc
 
     // throws if it cannot create, meaning this config of the type is not supported.
     // caller needs to check if the type usage is supported, such as create table, etc.
-    return typeFactory.createUntyped(bindingPoint, columnDesc, validateVectorize);
+    try {
+      return typeFactory.createUntyped(bindingPoint, columnDesc, validateVectorize);
+    } catch (UnsupportedUserType uut) {
+      // this can be used to pass out a schema exception we want to pass to the user.
+      if (uut.schemaException != null) {
+        throw uut.schemaException;
+      }
+      throw uut;
+    }
 
     //      var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.typeName());
     //      if (primitiveType != null) {
@@ -149,18 +163,12 @@ public class DefaultTypeFactoryFromColumnDesc
   }
 
   @Override
-  public boolean isSupported(
+  public boolean isTypeBindable(
       TypeBindingPoint bindingPoint,
       ColumnDesc columnDesc,
       VectorizeConfigValidator validateVectorize) {
 
-    // throws if we cannot find a factory for the columnDesc
-    try {
-      return factoryFor(bindingPoint, columnDesc)
-          .isSupportedUntyped(bindingPoint, columnDesc, validateVectorize);
-    } catch (UnsupportedUserType e) {
-      // if we could not find a factory for the cqlType, then it is not supported
-      return false;
-    }
+    return factoryFor(bindingPoint, columnDesc)
+        .isTypeBindableUntyped(bindingPoint, columnDesc, validateVectorize);
   }
 }

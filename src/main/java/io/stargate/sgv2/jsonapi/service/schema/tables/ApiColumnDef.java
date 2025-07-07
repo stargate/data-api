@@ -112,13 +112,10 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
         VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserColumn {
       Objects.requireNonNull(columnDesc, "columnDesc is must not be null");
+      checkBindingPoint(bindingPoint, "create()");
 
-      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
-          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
-        throw new IllegalArgumentException(
-            "ColumnDescFactory only supports binding point %s or %s, bindingPoint: %s"
-                .formatted(
-                    TypeBindingPoint.TABLE_COLUMN, TypeBindingPoint.UDT_FIELD, bindingPoint));
+      if (!isTypeBindable(bindingPoint, fieldName, columnDesc, validateVectorize)) {
+        throw new UnsupportedUserColumn(fieldName, columnDesc);
       }
 
       try {
@@ -132,12 +129,31 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
     }
 
     @Override
+    public boolean isTypeBindable(
+        TypeBindingPoint bindingPoint,
+        String fieldName,
+        ColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize) {
+      checkBindingPoint(bindingPoint, "isSupported()");
+
+      return DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindable(
+          bindingPoint, columnDesc, validateVectorize);
+    }
+
+    @Override
     public ApiColumnDef createUnsupported(String fieldName, ColumnDesc columnDesc) {
       Objects.requireNonNull(columnDesc, "columnDesc is must not be null");
 
       return new ApiColumnDef(
           userNameToIdentifier(fieldName, "fieldName"),
           DefaultTypeFactoryFromColumnDesc.INSTANCE.createUnsupported(columnDesc));
+    }
+
+    private static void checkBindingPoint(TypeBindingPoint bindingPoint, String methodName) {
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw bindingPoint.unsupportedException("ApiColumnDef.ColumnDescFactory." + methodName);
+      }
     }
   }
 

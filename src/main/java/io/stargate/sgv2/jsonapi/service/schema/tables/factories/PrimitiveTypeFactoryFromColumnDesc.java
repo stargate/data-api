@@ -31,7 +31,7 @@ public class PrimitiveTypeFactoryFromColumnDesc
       VectorizeConfigValidator validateVectorize)
       throws UnsupportedUserType {
 
-    if (!isSupported(bindingPoint, columnDesc, validateVectorize)) {
+    if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
       // TODO: XXX: AARON need a general schema exception ?
       throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
     }
@@ -39,11 +39,11 @@ public class PrimitiveTypeFactoryFromColumnDesc
   }
 
   @Override
-  public boolean isSupported(
+  public boolean isTypeBindable(
       TypeBindingPoint bindingPoint,
       ColumnDesc columnDesc,
       VectorizeConfigValidator validateVectorize) {
 
-    return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).supportedFromUser();
+    return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).bindableFromUser();
   }
 }

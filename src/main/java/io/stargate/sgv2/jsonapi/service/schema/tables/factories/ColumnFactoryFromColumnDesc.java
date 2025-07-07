@@ -15,5 +15,11 @@ public interface ColumnFactoryFromColumnDesc {
       VectorizeConfigValidator validateVectorize)
       throws UnsupportedUserColumn;
 
+  boolean isTypeBindable(
+      TypeBindingPoint bindingPoint,
+      String fieldName,
+      ColumnDesc columnDesc,
+      VectorizeConfigValidator validateVectorize);
+
   ApiColumnDef createUnsupported(String fieldName, ColumnDesc columnDesc);
 }

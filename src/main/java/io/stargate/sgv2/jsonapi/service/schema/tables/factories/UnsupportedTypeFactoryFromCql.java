@@ -31,7 +31,7 @@ class UnsupportedTypeFactoryFromCql<T extends DataType>
   }
 
   @Override
-  public boolean isSupported(TypeBindingPoint bindingPoint, T cqlType) {
+  public boolean isTypeBindable(TypeBindingPoint bindingPoint, T cqlType) {
     // never supported :)
     return false;
   }

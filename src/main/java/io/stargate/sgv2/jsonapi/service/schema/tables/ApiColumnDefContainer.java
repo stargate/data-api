@@ -211,15 +211,9 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
         TypeBindingPoint bindingPoint,
         ColumnsDescContainer columnDescContainer,
         VectorizeConfigValidator validateVectorize) {
-      Objects.requireNonNull(columnDescContainer, "columnDescContainer cannot be null");
 
-      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
-          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
-        throw new IllegalArgumentException(
-            "ColumnDescFactory only supports binding point %s or %s, bindingPoint: %s"
-                .formatted(
-                    TypeBindingPoint.TABLE_COLUMN, TypeBindingPoint.UDT_FIELD, bindingPoint));
-      }
+      Objects.requireNonNull(columnDescContainer, "columnDescContainer cannot be null");
+      checkBindingPoint(bindingPoint, "create");
 
       var container = new ApiColumnDefContainer(columnDescContainer.size());
       for (Map.Entry<String, ColumnDesc> entry : columnDescContainer.entrySet()) {
@@ -234,6 +228,29 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
         }
       }
       return container.toUnmodifiable();
+    }
+
+    public List<ColumnDesc> unbindableColumnDesc(
+        TypeBindingPoint bindingPoint,
+        ColumnsDescContainer columnDescContainer,
+        VectorizeConfigValidator validateVectorize) {
+
+      List<ColumnDesc> unbindable = new ArrayList<>();
+
+      for (Map.Entry<String, ColumnDesc> entry : columnDescContainer.entrySet()) {
+        if (!ApiColumnDef.FROM_COLUMN_DESC_FACTORY.isTypeBindable(
+            bindingPoint, entry.getKey(), entry.getValue(), validateVectorize)) {
+          unbindable.add(entry.getValue());
+        }
+      }
+      return unbindable;
+    }
+
+    private static void checkBindingPoint(TypeBindingPoint bindingPoint, String methodName) {
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw bindingPoint.unsupportedException("ApiColumnDef.ColumnDescFactory." + methodName);
+      }
     }
   }
 

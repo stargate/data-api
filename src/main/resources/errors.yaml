@@ -1096,17 +1096,15 @@ request-errors:
       Resend the command using a supported value type.
 
   - scope: SCHEMA
-    code: UNSUPPORTED_TYPE_FIELD
-    title: Type definition contains unsupported field.
+    code: UNSUPPORTED_TYPE_FIELDS
+    title: Type definition contains unsupported fields.
     body: |-
-      The command contains a type definition that used unsupported field.
-      
-      Type as field, map/set/list as field are not supported.
+      The command contains field definitions that use types which are not supported by user-defined types.
       
       The supported field data types are: ${supportedTypes}.
-      The command used the unsupported data type: ${unsupportedType}.
+      The command has contained the unsupported types: ${unsupportedFields}.
       
-      Resend the command using a supported type field.
+      Resend the command using only supported field data types.
 
   - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_DIMENSION

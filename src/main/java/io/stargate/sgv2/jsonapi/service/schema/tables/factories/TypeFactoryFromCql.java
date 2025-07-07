@@ -49,13 +49,13 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
       TypeBindingPoint bindingPoint, CqlT cqlType, VectorizeDefinition vectorizeDefn)
       throws UnsupportedCqlType;
 
-  public boolean isSupportedUntyped(TypeBindingPoint bindingPoint, DataType cqlType) {
+  public boolean isTypeBindableUntyped(TypeBindingPoint bindingPoint, DataType cqlType) {
     if (!cqlGenericsClass.isInstance(cqlType)) {
       throw new IllegalArgumentException(
           "TypeFactoryFromCql.isSupportedUntyped() - cqlType is not an instance of "
               + cqlGenericsClass.getName());
     }
-    return isSupported(bindingPoint, cqlGenericsClass.cast(cqlType));
+    return isTypeBindable(bindingPoint, cqlGenericsClass.cast(cqlType));
   }
 
   /**
@@ -66,7 +66,7 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
    * @param cqlType The CQL type to check.
    * @return true if the type is supported, false otherwise.
    */
-  public abstract boolean isSupported(TypeBindingPoint bindingPoint, CqlT cqlType);
+  public abstract boolean isTypeBindable(TypeBindingPoint bindingPoint, CqlT cqlType);
 
   public UnsupportedApiDataType createUnsupported(CqlT cqlType) {
     return new UnsupportedCqlApiDataType(cqlType);

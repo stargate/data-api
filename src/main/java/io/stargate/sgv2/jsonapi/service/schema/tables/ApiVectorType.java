@@ -104,7 +104,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      if (!isSupported(bindingPoint, columnDesc, validateVectorize)) {
+      if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
         // TODO: XXX: AARON: NEED A general schema error ?
         throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
       }
@@ -139,7 +139,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
     }
 
     @Override
-    public boolean isSupported(
+    public boolean isTypeBindable(
         TypeBindingPoint bindingPoint,
         VectorColumnDesc columnDesc,
         VectorizeConfigValidator validateVectorize) {
@@ -154,7 +154,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
       }
 
       // can we use a vector of any type in this binding point?
-      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromUser()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser()) {
         return false;
       }
       return true;
@@ -180,7 +180,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      if (!isSupported(bindingPoint, cqlType)) {
+      if (!isTypeBindable(bindingPoint, cqlType)) {
         throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
 
@@ -189,7 +189,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
     }
 
     @Override
-    public boolean isSupported(TypeBindingPoint bindingPoint, VectorType cqlType) {
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint, VectorType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
       // Must be a float, in reality they all are but checking
@@ -203,7 +203,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
       }
 
       // can we use a vector of any type in this binding point?
-      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromDb()) {
         return false;
       }
 

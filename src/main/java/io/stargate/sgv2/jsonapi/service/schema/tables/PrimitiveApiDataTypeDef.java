@@ -24,17 +24,17 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
   private final ApiTypeName typeName;
   private final DataType cqlType;
   private final ApiSupportDef apiSupport;
-  private final SupportBindingRules supportBindingRules;
+  private final DefaultTypeBindingRules supportBindingRules;
 
   public PrimitiveApiDataTypeDef(ApiTypeName typeName, DataType cqlType, ApiSupportDef apiSupport) {
-    this(typeName, cqlType, apiSupport, SupportBindingRules.ALL_SUPPORTED);
+    this(typeName, cqlType, apiSupport, DefaultTypeBindingRules.ALL_SUPPORTED);
   }
 
   public PrimitiveApiDataTypeDef(
       ApiTypeName typeName,
       DataType cqlType,
       ApiSupportDef apiSupport,
-      SupportBindingRules supportBindingRules) {
+      DefaultTypeBindingRules supportBindingRules) {
     this.typeName = typeName;
     this.cqlType = cqlType;
     this.apiSupport = Objects.requireNonNull(apiSupport, "apiSupport must not be null");
@@ -42,7 +42,7 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
         Objects.requireNonNull(supportBindingRules, "bindingRules must not be null");
   }
 
-  public SupportBindingRules supportBindingRules() {
+  public DefaultTypeBindingRules supportBindingRules() {
     return supportBindingRules;
   }
 
