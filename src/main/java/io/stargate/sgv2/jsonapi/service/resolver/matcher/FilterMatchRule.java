@@ -21,11 +21,6 @@ public record FilterMatchRule<T extends Command & Filterable>(
     FilterMatcher<T> matcher,
     BiFunction<DBLogicalExpression, CaptureGroups<T>, DBLogicalExpression> resolveFunction)
     implements BiFunction<CommandContext, T, Optional<DBLogicalExpression>> {
-  //  @Override
-  //  public Optional<DBLogicalExpression> apply(CommandContext commandContext, T command) {
-  //    return matcher.apply(command).map(captures -> resolveFunction.apply(new
-  // DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND), captures));
-  //  }
 
   @Override
   public Optional<DBLogicalExpression> apply(CommandContext commandContext, T command) {

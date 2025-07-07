@@ -12,8 +12,6 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.*;
 import java.net.URI;
 import java.util.List;
@@ -41,9 +39,13 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
         dimension,
         vectorizeServiceParameters);
 
+    var baseUrl = serviceConfig.getBaseUrl(modelName());
+    // replace was added in https://github.com/stargate/data-api/pull/2108/files
+    var actualUrl = replaceParameters(baseUrl, Map.of("modelId", modelName()));
+
     huggingFaceClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(serviceConfig.getBaseUrl(modelName())))
+            .baseUri(URI.create(actualUrl))
             .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(HuggingFaceEmbeddingProviderClient.class);
   }
@@ -79,7 +81,7 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
 
     long callStartNano = System.nanoTime();
-    return retryHTTPCall(huggingFaceClient.embed(accessToken, modelName(), huggingFaceRequest))
+    return retryHTTPCall(huggingFaceClient.embed(accessToken, huggingFaceRequest))
         .onItem()
         .transform(
             jakartaResponse -> {
@@ -136,12 +138,9 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
   @RegisterProvider(ProviderHttpInterceptor.class)
   public interface HuggingFaceEmbeddingProviderClient {
     @POST
-    @Path("/{modelId}")
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<Response> embed(
-        @HeaderParam("Authorization") String accessToken,
-        @PathParam("modelId") String modelId,
-        HuggingFaceEmbeddingRequest request);
+        @HeaderParam("Authorization") String accessToken, HuggingFaceEmbeddingRequest request);
   }
 
   /**

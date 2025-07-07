@@ -76,6 +76,18 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
     return "/message";
   }
 
+  /**
+   * Mistral for 401 Unauthorized returns a response with no content type and just the text
+   * "Unauthorized".
+   */
+  @Override
+  protected String responseErrorMessage(Response jakartaResponse) {
+    if (jakartaResponse.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
+      return Response.Status.UNAUTHORIZED.getReasonPhrase();
+    }
+    return super.responseErrorMessage(jakartaResponse);
+  }
+
   @Override
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,

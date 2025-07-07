@@ -124,6 +124,21 @@ public final class ModelUsage implements Recordable {
         grpcModelUsage.getCallDurationNanos());
   }
 
+  public EmbeddingGateway.ModelUsage toEmbeddingGateway() {
+    return EmbeddingGateway.ModelUsage.newBuilder()
+        .setModelProvider(modelProvider.apiName())
+        .setModelType(modelType.toEmbeddingGateway())
+        .setModelName(modelName)
+        .setTenantId(tenantId)
+        .setInputType(inputType.toEmbeddingGateway())
+        .setPromptTokens(promptTokens)
+        .setTotalTokens(totalTokens)
+        .setRequestBytes(requestBytes)
+        .setResponseBytes(responseBytes)
+        .setCallDurationNanos(durationNanos)
+        .build();
+  }
+
   /**
    * Creates a new model usage that merges this and the other usage, to combine after batching.
    *
