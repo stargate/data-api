@@ -31,11 +31,9 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
   public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
 
-  /**
-   * NO VALIDATION - Testing Only
-   */
+  /** NO VALIDATION - Testing Only */
   @VisibleForTesting
-  ApiSetType (ApiDataType valueType, boolean isFrozen){
+  ApiSetType(ApiDataType valueType, boolean isFrozen) {
     this(valueType, API_SUPPORT, isFrozen);
   }
 
@@ -53,8 +51,7 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
     // no different representation of the set itself, but pass through the binding point
     // because the key or value type may be different, e.g. UDT is the value type
     return new SetColumnDesc(
-        valueType.getSchemaDescription(bindingPoint),
-        ApiSupportDesc.from(this));
+        valueType.getSchemaDescription(bindingPoint), ApiSupportDesc.from(this));
   }
 
   /**

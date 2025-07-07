@@ -49,7 +49,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<VectorIndexDefinitionDesc> getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public IndexDesc<VectorIndexDefinitionDesc> getSchemaDescription(
+      SchemaDescBindingPoint bindingPoint) {
     // Index is always has same representation
 
     var definitionOptions =

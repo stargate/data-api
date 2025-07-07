@@ -56,7 +56,8 @@ public class UnsupportedIndex implements ApiIndexDef {
   }
 
   @Override
-  public IndexDesc<UnsupportedIndexDefinitionDesc> getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public IndexDesc<UnsupportedIndexDefinitionDesc> getSchemaDescription(
+      SchemaDescBindingPoint bindingPoint) {
     // Index is always has same representation
 
     var definition =

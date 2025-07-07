@@ -46,7 +46,8 @@ public class ApiTextIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<TextIndexDefinitionDesc> getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public IndexDesc<TextIndexDefinitionDesc> getSchemaDescription(
+      SchemaDescBindingPoint bindingPoint) {
     // Index is always has same representation
 
     var definitionOptions = new TextIndexDefinitionDesc.TextIndexDescOptions(analyzer);

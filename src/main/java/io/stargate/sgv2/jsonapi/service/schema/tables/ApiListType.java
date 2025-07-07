@@ -37,7 +37,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
    * <p>NO VALIDATION - Testing Only
    */
   @VisibleForTesting
-  ApiListType (ApiDataType valueType, boolean isFrozen) {
+  ApiListType(ApiDataType valueType, boolean isFrozen) {
     this(valueType, API_SUPPORT, isFrozen);
   }
 
@@ -54,9 +54,8 @@ public class ApiListType extends CollectionApiDataType<ListType> {
   public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
     // no different representation of the list itself, but pass through the binding point
     // because the key or value type may be different, e.g. UDT is the value type
-    return new  ListColumnDesc(
-        valueType.getSchemaDescription(bindingPoint),
-        ApiSupportDesc.from(this));
+    return new ListColumnDesc(
+        valueType.getSchemaDescription(bindingPoint), ApiSupportDesc.from(this));
   }
 
   /**

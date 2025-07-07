@@ -3,9 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 import io.stargate.sgv2.jsonapi.service.schema.tables.BindingPointRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
 
-/**
- * These rules are only used to know if we should create a frozen UDT when binding the type
- */
+/** These rules are only used to know if we should create a frozen UDT when binding the type */
 public class FrozenUdtBindingRules
     extends BindingPointRules<FrozenUdtBindingRules.FrozenUdtBindingRule> {
 

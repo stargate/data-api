@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.core.type.*;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
-
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -19,18 +18,17 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
   private final Class<CqlT> cqlGenericsClass;
 
   /**
-   *
-   * @param cqlProtocolCode {@link DataType#getProtocolCode()} protocol code of the CQL type to match
-   *                                                          this factory to. We need to use protocol code because
-   *                                                          all CQL primitive types have the same class.
+   * @param cqlProtocolCode {@link DataType#getProtocolCode()} protocol code of the CQL type to
+   *     match this factory to. We need to use protocol code because all CQL primitive types have
+   *     the same class.
    * @param cqlGenericsClass Class of the generic type, used to check casting by the functions like
-   *                         {@link #createUntyped(TypeBindingPoint, DataType, VectorizeDefinition)}
+   *     {@link #createUntyped(TypeBindingPoint, DataType, VectorizeDefinition)}
    */
-  protected TypeFactoryFromCql(int cqlProtocolCode,  Class<CqlT> cqlGenericsClass) {
+  protected TypeFactoryFromCql(int cqlProtocolCode, Class<CqlT> cqlGenericsClass) {
     this.cqlProtocolCode = cqlProtocolCode;
-    this.cqlGenericsClass = Objects.requireNonNull(cqlGenericsClass, "cqlGenericsClass must not be null");
+    this.cqlGenericsClass =
+        Objects.requireNonNull(cqlGenericsClass, "cqlGenericsClass must not be null");
   }
-
 
   protected int cqlProtocolCode() {
     return cqlProtocolCode;

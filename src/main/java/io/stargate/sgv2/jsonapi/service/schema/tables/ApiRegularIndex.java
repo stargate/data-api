@@ -46,7 +46,8 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<RegularIndexDefinitionDesc> getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public IndexDesc<RegularIndexDefinitionDesc> getSchemaDescription(
+      SchemaDescBindingPoint bindingPoint) {
     // Index is always has same representation
 
     // Only the text indexes has the properties, we rely on the factories to create the options

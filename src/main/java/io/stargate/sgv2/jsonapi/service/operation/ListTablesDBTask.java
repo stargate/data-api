@@ -62,7 +62,11 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
         .stream()
         .filter(TABLE_MATCHER)
         .map(tableMetadata -> TableSchemaObject.from(tableMetadata, OBJECT_MAPPER))
-        .map(tableSchemaObject -> tableSchemaObject.apiTableDef().getSchemaDescription(SchemaDescBindingPoint.DDL_SCHEMA_OBJECT))
+        .map(
+            tableSchemaObject ->
+                tableSchemaObject
+                    .apiTableDef()
+                    .getSchemaDescription(SchemaDescBindingPoint.DDL_SCHEMA_OBJECT))
         .toList();
   }
 }

@@ -12,14 +12,12 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
 
   // Default collection support
   private static final ApiSupportDef DEFAULT_API_SUPPORT =
-      new ApiSupportDef.Support(
-          true, true, true, true, ApiSupportDef.Update.FULL);
+      new ApiSupportDef.Support(true, true, true, true, ApiSupportDef.Update.FULL);
 
   // Default collection support when the type is frozen, they cannot be used for create, but we can
   // insert them
   private static final ApiSupportDef DEFAULT_API_SUPPORT_FROZEN =
-      new ApiSupportDef.Support(
-          false, true, true, true, ApiSupportDef.Update.NONE);
+      new ApiSupportDef.Support(false, true, true, true, ApiSupportDef.Update.NONE);
 
   protected static ApiSupportDef defaultApiSupport(boolean isFrozen) {
     return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;
@@ -36,9 +34,7 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   protected final ApiDataType valueType;
   protected final T cqlType;
 
-  /**
-   * We don't support nested collection datatypes
-   */
+  /** We don't support nested collection datatypes */
   protected final ApiSupportDef apiSupport;
 
   protected CollectionApiDataType(
@@ -77,5 +73,4 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   }
 
   public abstract boolean isFrozen();
-
 }

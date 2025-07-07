@@ -62,7 +62,8 @@ public class CreateTypeCommandResolver implements CommandResolver<CreateTypeComm
             .withApiUdtType(apiUdtType);
 
     return new TaskOperation<>(
-        new TaskGroup<>(taskBuilder.build()), SchemaDBTaskPage.accumulator(CreateTypeDBTask.class, commandContext));
+        new TaskGroup<>(taskBuilder.build()),
+        SchemaDBTaskPage.accumulator(CreateTypeDBTask.class, commandContext));
   }
 
   @Override

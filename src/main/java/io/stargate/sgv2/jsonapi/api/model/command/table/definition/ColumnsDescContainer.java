@@ -8,7 +8,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.Colu
 import java.util.LinkedHashMap;
 
 /** Ordered map of columns in a table definition. */
-public class ColumnsDescContainer extends LinkedHashMap<String, ColumnDesc> implements SchemaDescription {
+public class ColumnsDescContainer extends LinkedHashMap<String, ColumnDesc>
+    implements SchemaDescription {
 
   public ColumnsDescContainer() {
     super();

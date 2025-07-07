@@ -5,11 +5,9 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -105,7 +103,9 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
     var primaryKey = PrimaryKeyDesc.from(partitionKeys, orderingKeys);
 
     return io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc.from(
-        name, new TableDefinitionDesc(allColumns.getSchemaDescription(SchemaDescBindingPoint.DDL_USAGE), primaryKey));
+        name,
+        new TableDefinitionDesc(
+            allColumns.getSchemaDescription(SchemaDescBindingPoint.DDL_USAGE), primaryKey));
   }
 
   /** Get the name for this table. */
@@ -200,8 +200,7 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
 
       var allColumnDefs =
           ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
-              TypeBindingPoint.TABLE_COLUMN,
-              tableDesc.columns(), validateVectorize);
+              TypeBindingPoint.TABLE_COLUMN, tableDesc.columns(), validateVectorize);
       var partitionIdentifiers =
           Arrays.stream(tableDesc.primaryKey().keys())
               .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
@@ -307,8 +306,7 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
 
       var allColumns =
           ApiColumnDefContainer.FROM_CQL_FACTORY.create(
-              TypeBindingPoint.TABLE_COLUMN,
-              tableMetadata.getColumns().values(), vectorConfig);
+              TypeBindingPoint.TABLE_COLUMN, tableMetadata.getColumns().values(), vectorConfig);
 
       // TODO: add validation that the columns are found in all columns
       var primaryKeys = new ApiColumnDefContainer(tableMetadata.getPrimaryKey().size());

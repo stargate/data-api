@@ -70,7 +70,10 @@ public class KeyspaceTemplates extends TemplateRunner {
               }
           }
           """
-            .formatted(tableName, asJSON(columns.getSchemaDescription(SchemaDescBindingPoint.DDL_USAGE)), asJSON(primaryKey));
+            .formatted(
+                tableName,
+                asJSON(columns.getSchemaDescription(SchemaDescBindingPoint.DDL_USAGE)),
+                asJSON(primaryKey));
     return sender.postCreateTable(json);
   }
 

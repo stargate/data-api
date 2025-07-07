@@ -38,7 +38,8 @@ public class VectorizeTableScenario extends TestDataScenario {
           CqlIdentifier.fromCql("indexed_vectorize_def_2"),
           new ApiVectorType(5, vectorizeDefinition));
   public static final ApiColumnDef INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1 =
-      new ApiColumnDef(CqlIdentifier.fromCql("indexed_no_vectorize_def_1"), new ApiVectorType(5, null));
+      new ApiColumnDef(
+          CqlIdentifier.fromCql("indexed_no_vectorize_def_1"), new ApiVectorType(5, null));
   public static final ApiColumnDef UNINDEXED_VECTOR_COL_1 =
       new ApiColumnDef(CqlIdentifier.fromCql("unindexed_vector_1"), new ApiVectorType(5, null));
 

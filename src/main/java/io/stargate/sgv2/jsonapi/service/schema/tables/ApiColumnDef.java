@@ -5,11 +5,8 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.type.DataType;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescription;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
@@ -86,9 +83,9 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
   /**
    * Gets the user API description of the type for this column.
    *
-   * <p><b>NOTE:</b> Unlike calling {@link ApiDataType#getSchemaDescription(SchemaDescBindingPoint)} directly
-   * calling on the column will know if the column is static, and is the preferred way when getting the
-   * desc to return to the user.
+   * <p><b>NOTE:</b> Unlike calling {@link ApiDataType#getSchemaDescription(SchemaDescBindingPoint)}
+   * directly calling on the column will know if the column is static, and is the preferred way when
+   * getting the desc to return to the user.
    *
    * @return the user API description of the type for this column, including if the column is
    *     static.
@@ -101,7 +98,8 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
 
   /**
    * Creates a new {@link ApiColumnDef} from user provided {@link ColumnDesc}
-   * <p> ... </p>
+   *
+   * <p>...
    */
   private static class ColumnDescFactory extends FactoryFromDesc
       implements ColumnFactoryFromColumnDesc {
@@ -185,10 +183,10 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
       Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
 
       VectorizeDefinition vectorizeDefinition;
-      if (bindingPoint == TypeBindingPoint.TABLE_COLUMN){
-        Objects.requireNonNull(
-            vectorConfig, "vectorConfig is must not be null for table columns");
-        vectorizeDefinition = vectorConfig.getVectorizeDefinition(columnMetadata.getName()).orElse(null);
+      if (bindingPoint == TypeBindingPoint.TABLE_COLUMN) {
+        Objects.requireNonNull(vectorConfig, "vectorConfig is must not be null for table columns");
+        vectorizeDefinition =
+            vectorConfig.getVectorizeDefinition(columnMetadata.getName()).orElse(null);
       } else {
         // cannot have vectorize in a UDT field yet.
         vectorizeDefinition = null;
@@ -205,7 +203,8 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
         return new ApiColumnDef(
             columnMetadata.getName(),
             columnMetadata.isStatic(),
-            DefaultTypeFactoryFromCql.INSTANCE.create(bindingPoint, columnMetadata.getType(), vectorizeDefinition));
+            DefaultTypeFactoryFromCql.INSTANCE.create(
+                bindingPoint, columnMetadata.getType(), vectorizeDefinition));
       } catch (UnsupportedCqlType e) {
         throw new UnsupportedCqlColumn(columnMetadata.getName(), columnMetadata.getType(), e);
       }
@@ -218,6 +217,5 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
           columnMetadata.getName(),
           DefaultTypeFactoryFromCql.INSTANCE.createUnsupported(columnMetadata.getType()));
     }
-
   }
 }

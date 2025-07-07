@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
-
 import java.io.IOException;
 import java.util.Map;
 

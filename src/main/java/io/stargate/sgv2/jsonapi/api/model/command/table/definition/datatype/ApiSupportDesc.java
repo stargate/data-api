@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +19,6 @@ import org.slf4j.LoggerFactory;
 public record ApiSupportDesc(
     boolean createTable, boolean insert, boolean read, boolean filter, String cqlDefinition) {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiSupportDesc.class);
-
 
   @JsonIgnore
   public boolean isAnyUnsupported() {

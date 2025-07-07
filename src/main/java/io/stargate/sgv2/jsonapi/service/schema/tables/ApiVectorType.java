@@ -30,15 +30,12 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
   // NOTE: the vector type cannot be frozen so we do not need different support for frozen
   // Update operators $set and $unset can be used for vector columns, but $push and $pullAll cannot.
   public static final ApiSupportDef API_SUPPORT =
-      new ApiSupportDef.Support(
-          true, true, true, false, ApiSupportDef.Update.PRIMITIVE);
+      new ApiSupportDef.Support(true, true, true, false, ApiSupportDef.Update.PRIMITIVE);
 
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;
 
-  /**
-   * NO VALIDATION - Testing Only
-   */
+  /** NO VALIDATION - Testing Only */
   @VisibleForTesting
   public ApiVectorType(int dimension, VectorizeDefinition vectorizeDefinition) {
     super(
@@ -109,7 +106,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
 
       if (!isSupported(bindingPoint, columnDesc, validateVectorize)) {
         // TODO: XXX: AARON: NEED A general schema error ?
-        throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException)null);
+        throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
       }
 
       Integer dimension;

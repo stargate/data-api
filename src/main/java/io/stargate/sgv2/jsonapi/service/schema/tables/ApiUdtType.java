@@ -76,20 +76,21 @@ public class ApiUdtType extends ApiUdtShallowType {
     this.allFields = allFields.toUnmodifiable();
   }
 
-
   @Override
   public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
 
-    return switch (bindingPoint){
+    return switch (bindingPoint) {
       case DDL_USAGE -> // just a reference to the UDT
           new UdtRefColumnDesc(udtName(), isFrozen(), ApiSupportDesc.from(this));
       case DML_USAGE -> // full inline schema desc
-          new UdtColumnDesc(udtName(), isFrozen(), allFields.getSchemaDescription(bindingPoint), ApiSupportDesc.from(this));
-      default ->
-        throw bindingPoint.unsupportedException("ApiUdtType.getSchemaDescription()");
+          new UdtColumnDesc(
+              udtName(),
+              isFrozen(),
+              allFields.getSchemaDescription(bindingPoint),
+              ApiSupportDesc.from(this));
+      default -> throw bindingPoint.unsupportedException("ApiUdtType.getSchemaDescription()");
     };
   }
-
 
   @Override
   public DataType cqlType() {
@@ -108,8 +109,7 @@ public class ApiUdtType extends ApiUdtShallowType {
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
-    return super.recordTo(dataRecorder)
-        .append("allFields", allFields);
+    return super.recordTo(dataRecorder).append("allFields", allFields);
   }
 
   /**

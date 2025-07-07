@@ -41,13 +41,11 @@ public class ApiUdtShallowType implements ApiDataType {
 
   /** Frozen UDTs are used in collection values, and may be created by CQL users. */
   public static final ApiSupportDef API_SUPPORT_FROZEN_UDT =
-      new ApiSupportDef.Support(
-          false,  true, true, true, ApiSupportDef.Update.UDT);
+      new ApiSupportDef.Support(false, true, true, true, ApiSupportDef.Update.UDT);
 
   /** Normal UDT usage in a column is non-frozen */
   public static final ApiSupportDef API_SUPPORT_NON_FROZEN_UDT =
-      new ApiSupportDef.Support(
-          true, true, true, false, ApiSupportDef.Update.UDT);
+      new ApiSupportDef.Support(true, true, true, false, ApiSupportDef.Update.UDT);
 
   private final CqlIdentifier udtName;
   private final boolean isFrozen;
@@ -96,7 +94,8 @@ public class ApiUdtShallowType implements ApiDataType {
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
-    return ApiDataType.super.recordTo(dataRecorder)
+    return ApiDataType.super
+        .recordTo(dataRecorder)
         .append("udtName", udtName)
         .append("isFrozen", isFrozen);
   }

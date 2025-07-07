@@ -2,14 +2,11 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.*;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
-import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Objects;
 
 /**
  * The definition of a type the API supports for a table column.
@@ -33,11 +30,16 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
     this(typeName, cqlType, apiSupport, SupportBindingRules.ALL_SUPPORTED);
   }
 
-  public PrimitiveApiDataTypeDef(ApiTypeName typeName, DataType cqlType, ApiSupportDef apiSupport, SupportBindingRules supportBindingRules) {
+  public PrimitiveApiDataTypeDef(
+      ApiTypeName typeName,
+      DataType cqlType,
+      ApiSupportDef apiSupport,
+      SupportBindingRules supportBindingRules) {
     this.typeName = typeName;
     this.cqlType = cqlType;
     this.apiSupport = Objects.requireNonNull(apiSupport, "apiSupport must not be null");
-    this.supportBindingRules = Objects.requireNonNull(supportBindingRules, "bindingRules must not be null");
+    this.supportBindingRules =
+        Objects.requireNonNull(supportBindingRules, "bindingRules must not be null");
   }
 
   public SupportBindingRules supportBindingRules() {

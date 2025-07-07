@@ -32,7 +32,7 @@ public class VectorDimension5TableScenario extends TestDataScenario {
   public static final ApiColumnDef INDEXED_VECTOR_COL =
       new ApiColumnDef(CqlIdentifier.fromCql("indexed_vector"), new ApiVectorType(5, null));
   public static final ApiColumnDef UNINDEXED_VECTOR_COL =
-      new ApiColumnDef(CqlIdentifier.fromCql("unindexed_vector"), new ApiVectorType( 5, null));
+      new ApiColumnDef(CqlIdentifier.fromCql("unindexed_vector"), new ApiVectorType(5, null));
 
   public static final ArrayNode KNOWN_VECTOR = JsonNodeFactory.instance.arrayNode(5);
   public static final float[] KNOWN_VECTOR_ARRAY = new float[5];

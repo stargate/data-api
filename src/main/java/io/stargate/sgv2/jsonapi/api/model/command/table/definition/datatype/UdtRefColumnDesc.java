@@ -38,12 +38,14 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
   private final boolean isFrozen;
 
   public UdtRefColumnDesc(CqlIdentifier udtName, boolean isFrozen) {
-    this(udtName, isFrozen, isFrozen ? API_SUPPORT_DESC_FROZEN_UDT : API_SUPPORT_DESC_NON_FROZEN_UDT);
+    this(
+        udtName,
+        isFrozen,
+        isFrozen ? API_SUPPORT_DESC_FROZEN_UDT : API_SUPPORT_DESC_NON_FROZEN_UDT);
   }
 
   public UdtRefColumnDesc(CqlIdentifier udtName, boolean isFrozen, ApiSupportDesc apiSupportDesc) {
-    super(
-        ApiTypeName.UDT, apiSupportDesc);
+    super(ApiTypeName.UDT, apiSupportDesc);
 
     this.udtName = Objects.requireNonNull(udtName, "udtName must not be null");
     this.isFrozen = isFrozen;

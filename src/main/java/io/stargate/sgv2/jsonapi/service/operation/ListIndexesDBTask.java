@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDefContainer;
 import java.util.List;
 import java.util.Optional;
@@ -78,7 +77,14 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
   @Override
   protected Object getSchema() {
     return indexesForTable()
-        .map(indexes -> indexes.allIndexes().stream().map(apiIndexDef -> apiIndexDef.getSchemaDescription(SchemaDescBindingPoint.DDL_SCHEMA_OBJECT)).toList())
+        .map(
+            indexes ->
+                indexes.allIndexes().stream()
+                    .map(
+                        apiIndexDef ->
+                            apiIndexDef.getSchemaDescription(
+                                SchemaDescBindingPoint.DDL_SCHEMA_OBJECT))
+                    .toList())
         .orElse(List.of());
   }
 }

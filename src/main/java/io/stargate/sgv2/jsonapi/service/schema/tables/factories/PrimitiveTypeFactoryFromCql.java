@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
-
 import java.util.Optional;
 
 /**
@@ -40,7 +39,6 @@ public class PrimitiveTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType,
   @Override
   public boolean isSupported(TypeBindingPoint bindingPoint, DataType cqlType) {
     return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).supportedFromDb();
-
   }
 
   @Override

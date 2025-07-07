@@ -11,8 +11,8 @@ import java.util.Objects;
  * UDT definition as part of an inline schema definition in the read schema response.
  *
  * <p>See also {@link UdtRefColumnDesc}. We extend the column desc because we want to use this type
- * to describe the UDT in both response for full listUdt and inline schema for read commands
- * because they include all the fields.
+ * to describe the UDT in both response for full listUdt and inline schema for read commands because
+ * they include all the fields.
  *
  * <p>Does not have a factory to create from JSON because it is only created from the ApiUdtType
  */
@@ -21,11 +21,18 @@ public class UdtColumnDesc extends UdtRefColumnDesc {
   private final ColumnsDescContainer allFields;
 
   public UdtColumnDesc(CqlIdentifier udtName, boolean isFrozen, ColumnsDescContainer allFields) {
-    this  (udtName, isFrozen, allFields, isFrozen ? API_SUPPORT_DESC_FROZEN_UDT
-         : API_SUPPORT_DESC_NON_FROZEN_UDT);
+    this(
+        udtName,
+        isFrozen,
+        allFields,
+        isFrozen ? API_SUPPORT_DESC_FROZEN_UDT : API_SUPPORT_DESC_NON_FROZEN_UDT);
   }
 
-  public UdtColumnDesc(CqlIdentifier udtName, boolean isFrozen, ColumnsDescContainer allFields, ApiSupportDesc apiSupportDesc) {
+  public UdtColumnDesc(
+      CqlIdentifier udtName,
+      boolean isFrozen,
+      ColumnsDescContainer allFields,
+      ApiSupportDesc apiSupportDesc) {
     super(udtName, isFrozen, apiSupportDesc);
 
     this.allFields = Objects.requireNonNull(allFields, "allFields must not be null");

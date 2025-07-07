@@ -10,10 +10,10 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 
 /**
  * TODO: WORDS
- * <p>
- * <b>NOTE:</b> Even though this class is {@link SchemaDescribable}, the static flag is on the column not the type,
- * you should normally call {@link ApiColumnDef#getSchemaDescription(CommandType)} because it will handle static columns.
- * </p>
+ *
+ * <p><b>NOTE:</b> Even though this class is {@link SchemaDescribable}, the static flag is on the
+ * column not the type, you should normally call {@link
+ * ApiColumnDef#getSchemaDescription(CommandType)} because it will handle static columns.
  */
 @JsonSerialize(using = ApiDataTypeDefSerializer.class)
 public interface ApiDataType extends SchemaDescribable<ColumnDesc>, Recordable {

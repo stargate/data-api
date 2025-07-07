@@ -65,8 +65,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private static final FrozenUdtBindingRules FROZEN_UDT_BINDING_RULES =
-      new FrozenUdtBindingRules();
+  private static final FrozenUdtBindingRules FROZEN_UDT_BINDING_RULES = new FrozenUdtBindingRules();
 
   private final TypeBindingPoint bindingPoint;
 
@@ -167,7 +166,8 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
         yield VectorColumnDesc.FROM_JSON_FACTORY.create(dimensionString, vectorConfig);
       }
       case UDT -> // The rule tells us if the UDT is frozen or not, see the enum
-          UdtRefColumnDesc.FROM_JSON_FACTORY.create(descNode, FROZEN_UDT_BINDING_RULES.rule(bindingPoint).useFrozenUdt());
+          UdtRefColumnDesc.FROM_JSON_FACTORY.create(
+              descNode, FROZEN_UDT_BINDING_RULES.rule(bindingPoint).useFrozenUdt());
       default ->
           // sanity check, we should have covered all the API types above
           throw new IllegalStateException(

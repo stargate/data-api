@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
@@ -13,14 +12,13 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** A {@link ApiColumnDefContainer} that maintains the order of the columns as they were added. */
 public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef>
@@ -147,12 +145,12 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
                 columnDef -> ((ApiVectorType) columnDef.type()).getVectorizeDefinition()));
   }
 
-
   @Override
   public ColumnsDescContainer getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
 
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
-    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.getSchemaDescription(bindingPoint)));
+    forEach(
+        (name, columnDef) -> columnsDesc.put(name, columnDef.getSchemaDescription(bindingPoint)));
     return columnsDesc;
   }
 

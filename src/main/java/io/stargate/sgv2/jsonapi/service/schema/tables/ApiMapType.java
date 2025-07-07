@@ -19,12 +19,11 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ApiMapType extends CollectionApiDataType<MapType> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiMapType.class);
@@ -40,11 +39,9 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
 
   private final PrimitiveApiDataTypeDef keyType;
 
-  /**
-   * NO VALIDATION - Testing Only
-   */
+  /** NO VALIDATION - Testing Only */
   @VisibleForTesting
-  ApiMapType (ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
+  ApiMapType(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
     this((PrimitiveApiDataTypeDef) keyType, valueType, defaultApiSupport(isFrozen), isFrozen);
   }
 
@@ -179,8 +176,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
       if (!isSupported(bindingPoint, cqlType)) {
-        LOGGER.warn("XXX - ApiMapType.create - after is Support {}",
-            cqlType.asCql(true, true));
+        LOGGER.warn("XXX - ApiMapType.create - after is Support {}", cqlType.asCql(true, true));
         throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
 
@@ -194,8 +190,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         return new ApiMapType(keyType, valueType, cqlType.isFrozen());
 
       } catch (UnsupportedCqlType e) {
-        LOGGER.warn("XXX - ApiMapType.create - caught from child {}",
-            cqlType.asCql(true, true));
+        LOGGER.warn("XXX - ApiMapType.create - caught from child {}", cqlType.asCql(true, true));
         // make sure we have the map type, not just the key or value type
         throw new UnsupportedCqlType(bindingPoint, cqlType, e);
       }
@@ -209,21 +204,20 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
 
       // can we use a map of any type in this binding point?
       if (!SUPPORT_BINDING_RULES.rule(bindingPoint).supportedFromDb()) {
-        LOGGER.warn("XXX - ApiMapType.isSupported - unsupported MAP {}",
-            cqlType.asCql(true, true));
+        LOGGER.warn("XXX - ApiMapType.isSupported - unsupported MAP {}", cqlType.asCql(true, true));
         return false;
       }
       // now check if the key and value types are supported for binding into a map
       if (!DefaultTypeFactoryFromCql.INSTANCE.isSupportedUntyped(
           TypeBindingPoint.MAP_KEY, cqlType.getKeyType())) {
-        LOGGER.warn("XXX - ApiMapType.isSupported - unsupported key type: {}",
-            cqlType.asCql(true, true));
+        LOGGER.warn(
+            "XXX - ApiMapType.isSupported - unsupported key type: {}", cqlType.asCql(true, true));
         return false;
       }
       if (!DefaultTypeFactoryFromCql.INSTANCE.isSupportedUntyped(
           TypeBindingPoint.COLLECTION_VALUE, cqlType.getValueType())) {
-        LOGGER.warn("XXX - ApiMapType.isSupported - unsupported value type: {}",
-            cqlType.asCql(true, true));
+        LOGGER.warn(
+            "XXX - ApiMapType.isSupported - unsupported value type: {}", cqlType.asCql(true, true));
         return false;
       }
       return true;

@@ -27,7 +27,6 @@ public class CreateNamespaceCommandResolver
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
 
-
     var keyspaceName = NamingRules.KEYSPACE.checkRule(command.name());
 
     String strategy =

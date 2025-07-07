@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
+import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
+
 import com.datastax.oss.driver.api.core.type.*;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -7,12 +9,8 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
 
 /**
  * Default Factory that can be called to create any {@link ApiDataType}, use via the {@link
@@ -39,9 +37,7 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
     addFactory(factories, ApiSetType.FROM_CQL_FACTORY);
 
     PRIMITIVE_TYPES.forEach(
-        primitiveType ->
-            addFactory(
-                factories, new PrimitiveTypeFactoryFromCql(primitiveType)));
+        primitiveType -> addFactory(factories, new PrimitiveTypeFactoryFromCql(primitiveType)));
 
     ALL_FACTORIES = Collections.unmodifiableMap(factories);
   }
@@ -67,11 +63,14 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
       return factory;
     }
 
-    // this really should not happen, we should catch this in testing, it means we do now know about the type
-    // so throw an error that will cause the API to return a 500 error, rather than a UnsupportedCqlType which would
+    // this really should not happen, we should catch this in testing, it means we do now know about
+    // the type
+    // so throw an error that will cause the API to return a 500 error, rather than a
+    // UnsupportedCqlType which would
     // mean we know about the type but do not support it.
     throw new IllegalStateException(
-        "DefaultTypeFactoryFromCql.factoryFor() - no factory for cqlType.asCql: %s, cqlType.getProtocolCode: %s".formatted(cqlType.asCql(true, true), cqlType.getProtocolCode()));
+        "DefaultTypeFactoryFromCql.factoryFor() - no factory for cqlType.asCql: %s, cqlType.getProtocolCode: %s"
+            .formatted(cqlType.asCql(true, true), cqlType.getProtocolCode()));
   }
 
   private static void addFactory(
@@ -81,7 +80,8 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
     var existing = map.put(factory.cqlProtocolCode(), factory);
     if (existing != null) {
       throw new IllegalStateException(
-          "DefaultTypeFactoryFromCql.addFactory() - existing factory factory.cqlProtocolCode: %s".formatted(factory.cqlProtocolCode()));
+          "DefaultTypeFactoryFromCql.addFactory() - existing factory factory.cqlProtocolCode: %s"
+              .formatted(factory.cqlProtocolCode()));
     }
   }
 
