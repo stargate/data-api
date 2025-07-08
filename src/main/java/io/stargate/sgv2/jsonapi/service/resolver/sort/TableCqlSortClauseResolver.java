@@ -26,6 +26,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
@@ -72,26 +73,27 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     // All sorting can only be on columns in the table definition
     // NOTE: existence of the columns is checked in the SortClauseBuilder, no need to re-check
 
-    // First: Lexical sort? Must be alone, if it exists (already validated)
-    var lexicalSortExpr = sortClause.lexicalSortExpression();
-    if (lexicalSortExpr != null) {
-      throw new IllegalArgumentException("Lexical Sort not yet supported with Tables");
-    }
-
-    var vectorAndVectorizeSorts = sortClause.tableVectorSorts();
     var whereCQLClause =
         TableWhereCQLClause.forSelect(
             commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
 
-    return vectorAndVectorizeSorts.isEmpty()
-        ? resolveNonVectorSort(
-            commandContext,
-            whereCQLClause.target(),
-            sortClause,
-            sortClause.sortColumnIdentifiers(),
-            command.skip())
-        : resolveVectorSort(
-            commandContext, sortClause, vectorAndVectorizeSorts, command.skip(), command.limit());
+    // First: Lexical sort? Must be alone, if it exists (already validated)
+    var lexicalSortExpr = sortClause.lexicalSortExpression();
+    if (lexicalSortExpr != null) {
+      return resolveLexicalSort(commandContext, lexicalSortExpr, command.skip(), command.limit());
+    }
+
+    var vectorAndVectorizeSorts = sortClause.tableVectorSorts();
+    if (vectorAndVectorizeSorts.isEmpty()) {
+      return resolveNonVectorSort(
+          commandContext,
+          whereCQLClause.target(),
+          sortClause,
+          sortClause.sortColumnIdentifiers(),
+          command.skip());
+    }
+    return resolveVectorSort(
+        commandContext, sortClause, vectorAndVectorizeSorts, command.skip(), command.limit());
   }
 
   /**
@@ -197,6 +199,79 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     return WithWarnings.of(cqlOrderBy);
   }
 
+  private WithWarnings<OrderByCqlClause> resolveLexicalSort(
+      CommandContext<TableSchemaObject> commandContext,
+      SortExpression lexicalSortExpr,
+      Optional<Integer> skip,
+      Optional<Integer> limit) {
+    // TODO: should we check max limit to use?
+    if (limit.isPresent()) {
+      // No checks yet
+    }
+    if (skip.isPresent()) {
+      throw SortException.Code.CANNOT_LEXICAL_SORT_WITH_SKIP_OPTION.get();
+    }
+
+    final ApiTableDef apiTableDef = commandContext.schemaObject().apiTableDef();
+    final CqlIdentifier lexicalSortIdentifier = lexicalSortExpr.pathAsCqlIdentifier();
+    final ApiColumnDef lexicalSortColumn = apiTableDef.allColumns().get(lexicalSortIdentifier);
+
+    // Column type already validated, no need to check again
+    // But we do want to check it has lexical index.
+
+    // see if Table has vector index on the target sort vector column
+    var maybeIndex = apiTableDef.indexes().firstIndexFor(lexicalSortIdentifier);
+    if (maybeIndex.isEmpty()) {
+      throw SortException.Code.CANNOT_LEXICAL_SORT_NON_INDEXED_COLUMNS.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
+                map.put(
+                    "indexedColumns", errFmtJoin(indexedColumns(commandContext.schemaObject())));
+                map.put("sortColumn", errFmt(lexicalSortIdentifier));
+              }));
+    }
+
+    // HACK - Tatu, 08-Jul-2025 - copied from Aaron's hack for Vector search
+    // (the better solution would be to parse the sort JSON node through the JsonNamedValueFactory
+    // with a
+    // decoder that understands sorting, but the sort clause is terrible and needs to be refactored)
+
+    var jsonNamedValue =
+        new JsonNamedValue(JsonPath.from(lexicalSortExpr.getPath()), JsonNodeDecoder.DEFAULT);
+    if (jsonNamedValue.bind(commandContext.schemaObject())) {
+      // ok, this is a terrible hack, but it needs a JSON node
+      jsonNamedValue.prepare(JsonNodeFactory.instance.textNode(lexicalSortExpr.getLexicalQuery()));
+    } else {
+      throw new IllegalStateException(
+          "jsonNamedValue failed to bind for the sorting on column " + lexicalSortColumn.name());
+    }
+
+    if (true) {
+      throw new IllegalArgumentException("Lexical Sort not yet implemented for CQL Tables");
+    }
+
+    // will throw is there is an error
+    // There will be a single value, and we know it is a vector, so use the overload to
+    // create a CqlVectorNamedValue, see class docs for why
+    var lexicalNamedValue =
+        new CqlNamedValueContainerFactory(
+                CqlVectorNamedValue::new,
+                commandContext.schemaObject(),
+                JSONCodecRegistries.DEFAULT_REGISTRY,
+                SORTING_NAMED_VALUE_ERROR_STRATEGY)
+            .create(new JsonNamedValueContainer(List.of(jsonNamedValue))).values().stream()
+                .findFirst()
+                .map(namedValue -> (CqlVectorNamedValue) namedValue)
+                .get();
+
+    return WithWarnings.of(
+        new TableOrderByANNCqlClause(
+            lexicalNamedValue,
+            commandContext.config().get(OperationsConfig.class).maxVectorSearchLimit()),
+        List.of(WarningException.Code.ZERO_FILTER_OPERATIONS));
+  }
+
   /**
    * We have at least one vector sort in the sort clause.
    *
@@ -238,12 +313,11 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
               }));
     }
 
-    var apiTableDef = commandContext.schemaObject().apiTableDef();
-
     if (skip.isPresent()) {
       throw SortException.Code.CANNOT_VECTOR_SORT_WITH_SKIP_OPTION.get();
     }
 
+    var apiTableDef = commandContext.schemaObject().apiTableDef();
     if (vectorAndVectorizeSorts.size() > 1) {
       var errorCode =
           isVectorize
@@ -380,6 +454,14 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     return schemaObject.tableMetadata().getIndexes().values().stream()
         .filter(index -> index.getTarget().equals(targetColumn.name().asInternal()))
         .findFirst();
+  }
+
+  private List<String> indexedColumns(TableSchemaObject schemaObject) {
+    var columns = schemaObject.apiTableDef().allColumns();
+    return schemaObject.tableMetadata().getIndexes().values().stream()
+        .map(IndexMetadata::getTarget)
+        .filter(target -> columns.containsKey(CqlIdentifier.fromInternal(target)))
+        .toList();
   }
 
   private List<String> indexedVectorColumns(TableSchemaObject schemaObject) {
