@@ -1,5 +1,6 @@
 # Stargate Data API
 
+
 This project implements the stand-alone Data API microservice for Stargate.
 Data API is an HTTP service that gives access to data stored in a Cassandra cluster using a JSON Document based interface.
 
@@ -87,7 +88,9 @@ If you wish to debug from the start of the application, start with `-Ddebug=clie
 
 See [Debugging](https://quarkus.io/guides/maven-tooling#debugging) for more information.
 
+
 ### Running integration tests
+
 
 Integration tests are using the [Testcontainers](https://www.testcontainers.org/) library in order to set up all needed dependencies, a Stargate coordinator and a Cassandra data store.
 They are separated from the unit tests and are running as part of the `integration-test` and `verify` Maven phases:
@@ -143,6 +146,7 @@ If your Integration Test run fails with some generic, non-descriptive error like
 ```
 
 here are some things you should try:
+
 
 * Make sure your Docker Engine has enough resources. For example following have been observed:
     * Docker Desktop defaults of 2 gigabytes of memory on Mac are not enough: try at least 4
