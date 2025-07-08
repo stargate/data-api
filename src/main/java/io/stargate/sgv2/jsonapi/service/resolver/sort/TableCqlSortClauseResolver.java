@@ -70,8 +70,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     }
 
     // All sorting can only be on columns in the table definition
-    var sortColumns = sortClause.sortColumnIdentifiers();
-    checkUnknownSortColumns(commandContext.schemaObject(), sortColumns);
+    // NOTE: existence of the columns is checked in the SortClauseBuilder, no need to re-check
 
     var vectorAndVectorizeSorts = sortClause.tableVectorSorts();
     var whereCQLClause =
@@ -80,7 +79,11 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
 
     return vectorAndVectorizeSorts.isEmpty()
         ? resolveNonVectorSort(
-            commandContext, whereCQLClause.target(), sortClause, sortColumns, command.skip())
+            commandContext,
+            whereCQLClause.target(),
+            sortClause,
+            sortClause.sortColumnIdentifiers(),
+            command.skip())
         : resolveVectorSort(
             commandContext, sortClause, vectorAndVectorizeSorts, command.skip(), command.limit());
   }
@@ -126,7 +129,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
     }
 
-    // We know all of the order keys are partition sorting keys
+    // We know all the order keys are partition sorting keys
     // if the order of the sort columns is not the same as the clustering keys, we cannot use CQL
     // this covers two cases: if the clustering is [a,b,c] covers
     // -  [a,c] where b is missed
@@ -327,7 +330,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
         new JsonNamedValue(JsonPath.from(vectorSortExpression.getPath()), JsonNodeDecoder.DEFAULT);
     if (jsonNamedValue.bind(commandContext.schemaObject())) {
       // ok, this is a terrible hack, but it needs a JSON node
-      JsonNode jsonNode = null;
+      JsonNode jsonNode;
       if (vectorSortExpression.hasVectorize()) {
         jsonNode = JsonNodeFactory.instance.textNode(vectorSortExpression.getVectorize());
       } else if (vectorSortExpression.hasVector()) {
