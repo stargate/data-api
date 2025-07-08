@@ -16,12 +16,14 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
+import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByClusteringCqlClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByLexicalCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
@@ -199,6 +201,12 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     return WithWarnings.of(cqlOrderBy);
   }
 
+  /**
+   * We have (only) lexical sort in the sort clause.
+   *
+   * <p>This is always implemented by using a CQL Order By BM25 OF to push the search to the
+   * database. See {@link TableOrderByLexicalCqlClause}
+   */
   private WithWarnings<OrderByCqlClause> resolveLexicalSort(
       CommandContext<TableSchemaObject> commandContext,
       SortExpression lexicalSortExpr,
@@ -247,29 +255,18 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
           "jsonNamedValue failed to bind for the sorting on column " + lexicalSortColumn.name());
     }
 
-    if (true) {
-      throw new IllegalArgumentException("Lexical Sort not yet implemented for CQL Tables");
-    }
-
-    // will throw is there is an error
-    // There will be a single value, and we know it is a vector, so use the overload to
-    // create a CqlVectorNamedValue, see class docs for why
     var lexicalNamedValue =
         new CqlNamedValueContainerFactory(
-                CqlVectorNamedValue::new,
+                CqlNamedValue::new,
                 commandContext.schemaObject(),
                 JSONCodecRegistries.DEFAULT_REGISTRY,
                 SORTING_NAMED_VALUE_ERROR_STRATEGY)
             .create(new JsonNamedValueContainer(List.of(jsonNamedValue))).values().stream()
                 .findFirst()
-                .map(namedValue -> (CqlVectorNamedValue) namedValue)
                 .get();
 
     return WithWarnings.of(
-        new TableOrderByANNCqlClause(
-            lexicalNamedValue,
-            commandContext.config().get(OperationsConfig.class).maxVectorSearchLimit()),
-        List.of(WarningException.Code.ZERO_FILTER_OPERATIONS));
+        new TableOrderByLexicalCqlClause(lexicalNamedValue, QueryBuilder.DEFAULT_BM25_LIMIT));
   }
 
   /**
