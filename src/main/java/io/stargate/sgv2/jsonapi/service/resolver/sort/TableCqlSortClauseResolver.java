@@ -461,6 +461,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     return schemaObject.tableMetadata().getIndexes().values().stream()
         .map(IndexMetadata::getTarget)
         .filter(target -> columns.containsKey(CqlIdentifier.fromInternal(target)))
+        .sorted()
         .toList();
   }
 

@@ -133,6 +133,18 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
     }
 
     @Test
+    void noIndexOnColumn() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(null, List.of("id"), Map.of("value", "tag2"))
+          .hasSingleApiError(
+              SortException.Code.CANNOT_LEXICAL_SORT_NON_INDEXED_COLUMNS,
+              SortException.class,
+              "command attempted to lexical sort on column that is not indexed",
+              "has indexes on columns: tags, tags2");
+    }
+
+    @Test
     void lexicalNotAlone() {
       // 2 lexical columns -> cannot do
       assertTableCommand(keyspaceName, TABLE_NAME)
