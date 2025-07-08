@@ -72,6 +72,12 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     // All sorting can only be on columns in the table definition
     // NOTE: existence of the columns is checked in the SortClauseBuilder, no need to re-check
 
+    // First: Lexical sort? Must be alone, if it exists (already validated)
+    var lexicalSortExpr = sortClause.lexicalSortExpression();
+    if (lexicalSortExpr != null) {
+      throw new IllegalArgumentException("Lexical Sort not yet supported with Tables");
+    }
+
     var vectorAndVectorizeSorts = sortClause.tableVectorSorts();
     var whereCQLClause =
         TableWhereCQLClause.forSelect(
