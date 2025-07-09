@@ -39,11 +39,14 @@ public class ApiUdtShallowType implements ApiDataType {
           new UdtBindingPointRule(TypeBindingPoint.TABLE_COLUMN, true, true, false),
           new UdtBindingPointRule(TypeBindingPoint.UDT_FIELD, false, false, false));
 
-  /** Frozen UDTs are used in collection values, and may be created by CQL users. */
+  /**
+   * Frozen UDTs are used in collection values, and may be created by CQL users. When frozen the
+   * fields in the UDT cannot be updated.
+   */
   public static final ApiSupportDef API_SUPPORT_FROZEN_UDT =
-      new ApiSupportDef.Support(true, true, true, true, ApiSupportDef.Update.UDT);
+      new ApiSupportDef.Support(true, true, true, true, ApiSupportDef.Update.NONE);
 
-  /** Normal UDT usage in a column is non-frozen */
+  /** Normal UDT usage in a column is non-frozen, we can update it but cannot filter on it */
   public static final ApiSupportDef API_SUPPORT_NON_FROZEN_UDT =
       new ApiSupportDef.Support(true, true, true, false, ApiSupportDef.Update.UDT);
 
