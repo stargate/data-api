@@ -6,7 +6,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.internal.core.metadata.schema.ShallowUserDefinedType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.UdtRefColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -32,12 +32,12 @@ public class ApiUdtShallowType implements ApiDataType {
   public static final TypeFactoryFromColumnDesc<ApiUdtShallowType, UdtRefColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
 
-  protected static final DefaultTypeBindingRules UDT_BINDING_RULES =
-      new DefaultTypeBindingRules(
-          DefaultTypeBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, true),
-          DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, false, false),
-          DefaultTypeBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
-          DefaultTypeBindingRules.create(TypeBindingPoint.UDT_FIELD, false, false));
+  protected static final BindingPointRules<UdtBindingPointRule> UDT_BINDING_RULES =
+      new BindingPointRules<>(
+          new UdtBindingPointRule(TypeBindingPoint.COLLECTION_VALUE, true, true, true),
+          new UdtBindingPointRule(TypeBindingPoint.MAP_KEY, false, false, false),
+          new UdtBindingPointRule(TypeBindingPoint.TABLE_COLUMN, true, true, false),
+          new UdtBindingPointRule(TypeBindingPoint.UDT_FIELD, false, false, false));
 
   /** Frozen UDTs are used in collection values, and may be created by CQL users. */
   public static final ApiSupportDef API_SUPPORT_FROZEN_UDT =
@@ -72,7 +72,7 @@ public class ApiUdtShallowType implements ApiDataType {
    * {@link ApiUdtType}
    */
   @Override
-  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
     throw new UnsupportedOperationException(
         "ApiUdtShallowType.getSchemaDescription() is not implemented, use ApiUdtType instead");
   }
@@ -142,7 +142,8 @@ public class ApiUdtShallowType implements ApiDataType {
                 "typeName", errFmt(columnDesc.udtName())));
       }
 
-      return new ApiUdtShallowType(columnDesc.udtName(), columnDesc.isFrozen());
+      return new ApiUdtShallowType(
+          columnDesc.udtName(), UDT_BINDING_RULES.rule(bindingPoint).useFrozenUdt);
     }
 
     /** */
@@ -162,4 +163,11 @@ public class ApiUdtShallowType implements ApiDataType {
       return true;
     }
   }
+
+  public record UdtBindingPointRule(
+      TypeBindingPoint bindingPoint,
+      boolean bindableFromDb,
+      boolean bindableFromUser,
+      boolean useFrozenUdt)
+      implements BindingPointRules.BindingPointRule {}
 }

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Custom deserializer to decode the {@link ColumnDesc} from the JSON payload
@@ -65,9 +64,8 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private static final FrozenUdtBindingRules FROZEN_UDT_BINDING_RULES = new FrozenUdtBindingRules();
-
-  private final TypeBindingPoint bindingPoint;
+  //  private final TypeBindingPoint bindingPoint;
+  //  private final SchemaDescSource schemaDescSource ;
 
   /**
    * Default constructor for deserializing column definitions for tables, uses {@link
@@ -75,9 +73,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
    *
    * <p>Needed because used as {@link JsonDeserialize} annotation.
    */
-  public ColumnDescDeserializer() {
-    this(TypeBindingPoint.TABLE_COLUMN);
-  }
+  public ColumnDescDeserializer() {}
 
   /**
    * Constructor for deserializing UDT fields. This constructor is used when deserializing UDT
@@ -86,22 +82,26 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
    * @param bindingPoint Where the column desc is being used, used to get the correct rules from
    *     {@link FrozenUdtBindingRules}.
    */
-  public ColumnDescDeserializer(TypeBindingPoint bindingPoint) {
-    this.bindingPoint = Objects.requireNonNull(bindingPoint, "bindingPoint must not be null");
-  }
+  //  public ColumnDescDeserializer(TypeBindingPoint bindingPoint) {
+  //    this.bindingPoint = Objects.requireNonNull(bindingPoint, "bindingPoint must not be null");
+  //    this.schemaDescSource = SchemaDescSource.USER_SCHEMA_USAGE;
+  //  }
 
   /** See {@link #deserialize(JsonNode, JsonParser, TypeBindingPoint)} */
   @Override
   public ColumnDesc deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
-    return deserialize(deserializationContext.readTree(jsonParser), jsonParser, bindingPoint);
+    return deserialize(
+        deserializationContext.readTree(jsonParser),
+        jsonParser,
+        SchemaDescSource.USER_SCHEMA_USAGE);
   }
 
   /** See {@link #deserialize(JsonNode, JsonParser, ColumnDescRules)} */
-  public static ColumnDesc deserialize(JsonNode descNode, TypeBindingPoint bindingPoint)
+  public static ColumnDesc deserialize(JsonNode descNode, SchemaDescSource schemaDescSource)
       throws JsonProcessingException {
-    return deserialize(descNode, null, bindingPoint);
+    return deserialize(descNode, null, schemaDescSource);
   }
 
   /**
@@ -117,7 +117,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
    * @throws SchemaException if the type name is unknown or not supported by the rule.
    */
   public static ColumnDesc deserialize(
-      JsonNode descNode, JsonParser jsonParser, TypeBindingPoint bindingPoint)
+      JsonNode descNode, JsonParser jsonParser, SchemaDescSource schemaDescSource)
       throws JsonProcessingException {
 
     // throws if type is not defined correctly or not a known type
@@ -131,41 +131,34 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
       return maybePrimitiveType.get();
     }
 
-    // sanity check, if it was not primitive type, then it must be described in long form.
-    if (typeNameDesc.shortFormDesc) {
-      throw new IllegalStateException(
-          "ColumnDescDeserializer.deserialize() - long form description used for a non primitive type, typeNameDesc: "
-              + typeNameDesc);
-    }
-
-    // so we know this is a long form desc of a non-primitive type, e.g. map, set, list, vector, udt
+    // we know it was not a primitive type, but do not throw an error, we want the
+    // type binding rules ot run to detect the error
 
     // if the nodes are missing, the jackson MissingNode will be returned and has "" and 0 for
     // defaults. but to get a decent error message get the dimension as a string
     // arguable that a non integer is a JSON mapping error, but we will handle it as an unsupported
     // dimension value
-    var keyTypeNode = descNode.path(TableDescConstants.ColumnDesc.KEY_TYPE);
-    var valueTypeNode = descNode.path(TableDescConstants.ColumnDesc.VALUE_TYPE);
-    var dimensionString = descNode.path(TableDescConstants.ColumnDesc.DIMENSION).asText();
+    //    var keyTypeNode = descNode.path(TableDescConstants.ColumnDesc.KEY_TYPE);
+    //    var valueTypeNode = descNode.path(TableDescConstants.ColumnDesc.VALUE_TYPE);
+    //    var dimensionString = descNode.path(TableDescConstants.ColumnDesc.DIMENSION).asText();
 
     return switch (typeNameDesc.typeName) {
-      case LIST -> ListColumnDesc.FROM_JSON_FACTORY.create(jsonParser, valueTypeNode);
-      case SET -> SetColumnDesc.FROM_JSON_FACTORY.create(jsonParser, valueTypeNode);
-      case MAP -> MapColumnDesc.FROM_JSON_FACTORY.create(jsonParser, keyTypeNode, valueTypeNode);
+      case LIST -> ListColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
+      case SET -> SetColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
+      case MAP -> MapColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
       case VECTOR -> {
         // call to readTreeAsValue will throw JacksonException, this should be if the databinding is
         // not correct, e.g. if there is a missing field, or the field is not the correct type
         // ok to let this out
-        var serviceNode = descNode.path(TableDescConstants.ColumnDesc.SERVICE);
-        VectorizeConfig vectorConfig =
-            serviceNode.isMissingNode()
-                ? null
-                : OBJECT_MAPPER.treeToValue(serviceNode, VectorizeConfig.class);
-        yield VectorColumnDesc.FROM_JSON_FACTORY.create(dimensionString, vectorConfig);
+        //        var serviceNode = descNode.path(TableDescConstants.ColumnDesc.SERVICE);
+        //        VectorizeConfig vectorConfig =
+        //            serviceNode.isMissingNode()
+        //                ? null
+        //                : OBJECT_MAPPER.treeToValue(serviceNode, VectorizeConfig.class);
+        yield VectorColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
       }
       case UDT -> // The rule tells us if the UDT is frozen or not, see the enum
-          UdtRefColumnDesc.FROM_JSON_FACTORY.create(
-              descNode, FROZEN_UDT_BINDING_RULES.rule(bindingPoint).useFrozenUdt());
+          UdtRefColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
       default ->
           // sanity check, we should have covered all the API types above
           throw new IllegalStateException(

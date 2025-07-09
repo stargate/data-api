@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
@@ -83,7 +83,7 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
   /**
    * Gets the user API description of the type for this column.
    *
-   * <p><b>NOTE:</b> Unlike calling {@link ApiDataType#getSchemaDescription(SchemaDescBindingPoint)}
+   * <p><b>NOTE:</b> Unlike calling {@link ApiDataType#getSchemaDescription(SchemaDescSource)}
    * directly calling on the column will know if the column is static, and is the preferred way when
    * getting the desc to return to the user.
    *
@@ -91,8 +91,8 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
    *     static.
    */
   @Override
-  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
-    var typeDesc = type.getSchemaDescription(bindingPoint);
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
+    var typeDesc = type.getSchemaDescription(schemaDescSource);
     return isStatic ? new ColumnDesc.StaticColumnDesc(typeDesc) : typeDesc;
   }
 
@@ -101,7 +101,7 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
    *
    * <p>...
    */
-  private static class ColumnDescFactory extends FactoryFromDesc
+  private static class ColumnDescFactory extends TypeFactory
       implements ColumnFactoryFromColumnDesc {
 
     @Override

@@ -19,7 +19,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
  */
 public abstract class IndexFactoryFromIndexDesc<
         ApiT extends ApiIndexDef, DescT extends IndexDefinitionDesc>
-    extends FactoryFromDesc {
+    extends TypeFactory {
   /**
    * Called to create an index from the user description in a command
    *

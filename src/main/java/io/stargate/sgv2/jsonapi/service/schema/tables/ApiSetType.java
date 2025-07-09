@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -8,7 +7,7 @@ import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.google.common.annotations.VisibleForTesting;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
@@ -47,11 +46,13 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
   }
 
   @Override
-  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
     // no different representation of the set itself, but pass through the binding point
     // because the key or value type may be different, e.g. UDT is the value type
     return new SetColumnDesc(
-        valueType.getSchemaDescription(bindingPoint), ApiSupportDesc.from(this));
+        schemaDescSource,
+        valueType.getSchemaDescription(schemaDescSource),
+        ApiSupportDesc.from(this));
   }
 
   /**
@@ -83,7 +84,7 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
                     "supportedTypes",
                     errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
                     "unsupportedValueType",
-                    errFmt(columnDesc.valueType()))));
+                    errFmtOrMissing(columnDesc.valueType()))));
       }
 
       try {
@@ -113,8 +114,10 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
       }
 
       // can the value type be used as set value?
-      if (!DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
-          TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
+      // also, we have to have a value type
+      if (columnDesc.valueType() == null
+          || !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
+              TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
         return false;
       }
       return true;

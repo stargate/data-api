@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
 import java.util.Objects;
@@ -20,20 +21,17 @@ public class UdtColumnDesc extends UdtRefColumnDesc {
 
   private final ColumnsDescContainer allFields;
 
-  public UdtColumnDesc(CqlIdentifier udtName, boolean isFrozen, ColumnsDescContainer allFields) {
-    this(
-        udtName,
-        isFrozen,
-        allFields,
-        isFrozen ? API_SUPPORT_DESC_FROZEN_UDT : API_SUPPORT_DESC_NON_FROZEN_UDT);
+  public UdtColumnDesc(
+      SchemaDescSource schemaDescSource, CqlIdentifier udtName, ColumnsDescContainer allFields) {
+    this(schemaDescSource, udtName, allFields, null);
   }
 
   public UdtColumnDesc(
+      SchemaDescSource schemaDescSource,
       CqlIdentifier udtName,
-      boolean isFrozen,
       ColumnsDescContainer allFields,
       ApiSupportDesc apiSupportDesc) {
-    super(udtName, isFrozen, apiSupportDesc);
+    super(schemaDescSource, udtName, apiSupportDesc);
 
     this.allFields = Objects.requireNonNull(allFields, "allFields must not be null");
     // sanity check, UDT must have fields

@@ -4,9 +4,10 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiListType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
 import java.util.Objects;
 
 /** Column type for {@link ApiListType} */
@@ -15,12 +16,14 @@ public class ListColumnDesc extends ComplexColumnDesc {
 
   private final ColumnDesc valueType;
 
-  public ListColumnDesc(ColumnDesc valueType) {
-    this(valueType, ApiSupportDesc.withoutCqlDefinition(ApiListType.API_SUPPORT));
+  /** Creates a column desc from user input, without ApiSupport Description. */
+  public ListColumnDesc(SchemaDescSource schemaDescSource, ColumnDesc valueType) {
+    this(schemaDescSource, valueType, null);
   }
 
-  public ListColumnDesc(ColumnDesc valueType, ApiSupportDesc apiSupportDesc) {
-    super(ApiTypeName.LIST, apiSupportDesc);
+  public ListColumnDesc(
+      SchemaDescSource schemaDescSource, ColumnDesc valueType, ApiSupportDesc apiSupportDesc) {
+    super(schemaDescSource, ApiTypeName.LIST, apiSupportDesc);
     this.valueType = valueType;
   }
 
@@ -51,20 +54,24 @@ public class ListColumnDesc extends ComplexColumnDesc {
    *
    * <p>...
    */
-  public static class FromJsonFactory extends DescFromJsonFactory {
+  public static class FromJsonFactory extends ColumnDescFromJsonFactory<ListColumnDesc> {
 
     FromJsonFactory() {}
 
-    public ListColumnDesc create(JsonParser jsonParser, JsonNode valueTypeNode)
+    @Override
+    public ListColumnDesc create(
+        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode)
         throws JsonProcessingException {
 
       // Cascade deserialization to get the value type, validation is done when we
       // create the ApiDataType form the ColumnDesc
+      var valueTypeNode = columnDescNode.path(TableDescConstants.ColumnDesc.VALUE_TYPE);
       var valueType =
-          ColumnDescDeserializer.deserialize(
-              valueTypeNode, jsonParser, TypeBindingPoint.COLLECTION_VALUE);
+          valueTypeNode.isMissingNode()
+              ? null
+              : ColumnDescDeserializer.deserialize(valueTypeNode, jsonParser, schemaDescSource);
 
-      return new ListColumnDesc(valueType);
+      return new ListColumnDesc(schemaDescSource, valueType);
     }
   }
 }

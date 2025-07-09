@@ -32,7 +32,6 @@ public class PrimitiveTypeFactoryFromColumnDesc
       throws UnsupportedUserType {
 
     if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
-      // TODO: XXX: AARON need a general schema exception ?
       throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
     }
     return primitiveTypeInstance;

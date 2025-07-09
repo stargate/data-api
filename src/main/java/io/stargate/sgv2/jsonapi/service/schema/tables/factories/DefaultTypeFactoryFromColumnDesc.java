@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
 import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -47,15 +48,40 @@ public class DefaultTypeFactoryFromColumnDesc
     ALL_FACTORIES = Collections.unmodifiableMap(factories);
   }
 
-  DefaultTypeFactoryFromColumnDesc() {
+  /**
+   * Use the singleton {@link #INSTANCE}
+   *
+   * <p>...
+   */
+  private DefaultTypeFactoryFromColumnDesc() {
     super(null, ColumnDesc.class); // No specific API type name for the default factory
   }
 
+  /**
+   * Gets a factory to create an {@link ApiDataType} from the given {@link ColumnDesc} parsed form
+   * user input.
+   *
+   * <p>We must have a factory for every {@link ApiTypeName} that is supported by the API, we enfore
+   * this so that any bugs in mapping are more likely to be caught.
+   *
+   * @param bindingPoint The location where the type is used.
+   * @param columnDesc The column description that defines the type from user input.
+   * @return A factory that can create the {@link ApiDataType} from the given {@link ColumnDesc}.
+   * @throws IllegalStateException if there is no factory for the given {@link
+   *     ColumnDesc#typeName()}.
+   */
   public static TypeFactoryFromColumnDesc<? extends ApiDataType, ? extends ColumnDesc> factoryFor(
       TypeBindingPoint bindingPoint, ColumnDesc columnDesc) {
 
     var factory = ALL_FACTORIES.get(columnDesc.typeName());
     if (factory != null) {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "DefaultTypeFactoryFromColumnDesc.factoryFor() - found factory bindingPoint: {}, columnDesc: {}, factory.class: {}",
+            bindingPoint,
+            columnDesc,
+            classSimpleName(factory.getClass()));
+      }
       return factory;
     }
 

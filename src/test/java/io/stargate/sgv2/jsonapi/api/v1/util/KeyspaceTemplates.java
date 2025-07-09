@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiClusteringDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
@@ -36,7 +36,7 @@ public class KeyspaceTemplates extends TemplateRunner {
         """
             .formatted(
                 tableName,
-                asJSON(columns.getSchemaDescription(SchemaDescBindingPoint.DDL_USAGE)),
+                asJSON(columns.getSchemaDescription(SchemaDescSource.DDL_USAGE)),
                 asJSON(primaryKeyDef.name().asInternal()));
     return sender.postCreateTable(json);
   }
@@ -72,7 +72,7 @@ public class KeyspaceTemplates extends TemplateRunner {
           """
             .formatted(
                 tableName,
-                asJSON(columns.getSchemaDescription(SchemaDescBindingPoint.DDL_USAGE)),
+                asJSON(columns.getSchemaDescription(SchemaDescSource.DDL_USAGE)),
                 asJSON(primaryKey));
     return sender.postCreateTable(json);
   }

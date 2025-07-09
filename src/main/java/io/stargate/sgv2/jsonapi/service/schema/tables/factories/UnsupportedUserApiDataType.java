@@ -1,8 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
 import com.datastax.oss.driver.api.core.type.DataType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import java.util.Objects;
 
 /**
@@ -18,12 +19,22 @@ public class UnsupportedUserApiDataType extends UnsupportedApiDataType {
   }
 
   @Override
+  public ApiTypeName typeName() {
+    return columnDesc.typeName();
+  }
+
+  @Override
+  public String apiName() {
+    return columnDesc.getApiName();
+  }
+
+  @Override
   public DataType cqlType() {
     throw new UnsupportedOperationException("UnsupportedUserApiDataType does not have getCqlType");
   }
 
   @Override
-  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
     return columnDesc;
   }
 }

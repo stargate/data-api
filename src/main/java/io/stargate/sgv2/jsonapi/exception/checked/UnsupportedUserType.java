@@ -21,8 +21,7 @@ public class UnsupportedUserType extends CheckedApiException {
     super(msg(bindingPoint, columnDesc), schemaException);
     this.columnDesc = columnDesc;
     this.bindingPoint = bindingPoint;
-    this.schemaException =
-        Objects.requireNonNull(schemaException, "schemaException must not be null");
+    this.schemaException = schemaException;
   }
 
   private static String msg(TypeBindingPoint bindingPoint, ColumnDesc columnDesc) {

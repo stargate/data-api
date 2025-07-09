@@ -2,10 +2,11 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtCqlIdentifier;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
@@ -13,7 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefiniti
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
-import io.stargate.sgv2.jsonapi.service.schema.tables.factories.FactoryFromDesc;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactory;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
@@ -82,12 +83,12 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
    * @return the {@link TableDesc} for the table.
    */
   @Override
-  public TableDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public TableDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
 
     // only describe for a DDL command, for the DML commands it only considers the fields that
     // were read, handled in the {@link TableProjection}
-    if (bindingPoint != SchemaDescBindingPoint.DDL_SCHEMA_OBJECT) {
-      throw bindingPoint.unsupportedException("ApiTableDef.getSchemaDescription()");
+    if (schemaDescSource != SchemaDescSource.DDL_SCHEMA_OBJECT) {
+      throw schemaDescSource.unsupportedException("ApiTableDef.getSchemaDescription()");
     }
 
     // primary key parts are only names, not the full column definition, so no need to
@@ -102,10 +103,11 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
             .toList();
     var primaryKey = PrimaryKeyDesc.from(partitionKeys, orderingKeys);
 
-    return io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc.from(
-        name,
+    return new TableDesc(
+        schemaDescSource,
+        cqlIdentifierToJsonKey(name),
         new TableDefinitionDesc(
-            allColumns.getSchemaDescription(SchemaDescBindingPoint.DDL_USAGE), primaryKey));
+            allColumns.getSchemaDescription(SchemaDescSource.DDL_USAGE), primaryKey));
   }
 
   /** Get the name for this table. */
@@ -186,7 +188,7 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
    *
    * <p>Use the singleton {@link #FROM_TABLE_DESC_FACTORY} to create an instance.
    */
-  public static final class FromTableDescFactory extends FactoryFromDesc {
+  public static final class FromTableDescFactory extends TypeFactory {
 
     FromTableDescFactory() {}
 

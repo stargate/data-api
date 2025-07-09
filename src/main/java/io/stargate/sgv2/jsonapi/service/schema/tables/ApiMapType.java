@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -8,7 +7,7 @@ import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.google.common.annotations.VisibleForTesting;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
@@ -65,12 +64,13 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
   }
 
   @Override
-  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
     // no different representation of the map itself, but pass through the binding point
     // because the key or value type may be different, e.g. UDT is the value type
     return new MapColumnDesc(
-        keyType.getSchemaDescription(bindingPoint),
-        valueType.getSchemaDescription(bindingPoint),
+        schemaDescSource,
+        keyType.getSchemaDescription(schemaDescSource),
+        valueType.getSchemaDescription(schemaDescSource),
         ApiSupportDesc.from(this));
   }
 
@@ -111,8 +111,8 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
             SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.get(
                 Map.of(
                     "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
-                    "unsupportedKeyType", errFmt(columnDesc.keyType()),
-                    "unsupportedValueType", errFmt(columnDesc.valueType()))));
+                    "unsupportedKeyType", errFmtOrMissing(columnDesc.keyType()),
+                    "unsupportedValueType", errFmtOrMissing(columnDesc.valueType()))));
       }
 
       try {
@@ -139,34 +139,26 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         VectorizeConfigValidator validateVectorize) {
 
       //  we accept frozen, but change the support.
-      var supported = true;
 
       // can we use a map of any type in this binding point?
       if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser()) {
-        supported = false;
+        return false;
       }
 
       // can the value and key types be used with a map?
-      if (supported
-          && !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
+      // also, we have to have a key and a value type
+      if (columnDesc.valueType() == null
+          || !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
               TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
-        supported = false;
+        return false;
       }
-      if (supported
-          && !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
+      if (columnDesc.keyType() == null
+          || !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
               TypeBindingPoint.MAP_KEY, columnDesc.keyType(), validateVectorize)) {
-        supported = false;
+        return false;
       }
 
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace(
-            "ApiMapType.isSupported - supported: {}, bindingPoint: {}, keyType: {}, valueType: {}",
-            supported,
-            bindingPoint,
-            columnDesc.keyType(),
-            columnDesc.valueType());
-      }
-      return supported;
+      return true;
     }
   }
 

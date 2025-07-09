@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends DataType>
-    extends FactoryFromCql {
+    extends TypeFactory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeFactoryFromCql.class);
 
@@ -37,12 +37,11 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
   public ApiT createUntyped(
       TypeBindingPoint bindingPoint, DataType cqlType, VectorizeDefinition vectorizeDefn)
       throws UnsupportedCqlType {
-    if (!cqlGenericsClass.isInstance(cqlType)) {
-      throw new IllegalArgumentException(
-          "TypeFactoryFromCql.createUntyped() - cqlType is not an instance of "
-              + cqlGenericsClass.getName());
-    }
-    return create(bindingPoint, cqlGenericsClass.cast(cqlType), vectorizeDefn);
+    var typedCqlType =
+        checkCastToChild(
+            "TypeFactoryFromCql.maybeCreateCacheKeyUntyped()", cqlGenericsClass, cqlType);
+
+    return create(bindingPoint, typedCqlType, vectorizeDefn);
   }
 
   public abstract ApiT create(
@@ -50,12 +49,10 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
       throws UnsupportedCqlType;
 
   public boolean isTypeBindableUntyped(TypeBindingPoint bindingPoint, DataType cqlType) {
-    if (!cqlGenericsClass.isInstance(cqlType)) {
-      throw new IllegalArgumentException(
-          "TypeFactoryFromCql.isSupportedUntyped() - cqlType is not an instance of "
-              + cqlGenericsClass.getName());
-    }
-    return isTypeBindable(bindingPoint, cqlGenericsClass.cast(cqlType));
+    var typedCqlType =
+        checkCastToChild("TypeFactoryFromCql.isTypeBindableUntyped()", cqlGenericsClass, cqlType);
+
+    return isTypeBindable(bindingPoint, typedCqlType);
   }
 
   /**
@@ -74,12 +71,11 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
 
   public Optional<CqlTypeKey> maybeCreateCacheKeyUntyped(
       TypeBindingPoint bindingPoint, DataType cqlType) {
-    if (!cqlGenericsClass.isInstance(cqlType)) {
-      throw new IllegalArgumentException(
-          "TypeFactoryFromCql.maybeCreateCacheKeyUntyped() - cqlType is not an instance of "
-              + cqlGenericsClass.getName());
-    }
-    return maybeCreateCacheKey(bindingPoint, cqlGenericsClass.cast(cqlType));
+
+    var typedCqlType =
+        checkCastToChild(
+            "TypeFactoryFromCql.maybeCreateCacheKeyUntyped()", cqlGenericsClass, cqlType);
+    return maybeCreateCacheKey(bindingPoint, typedCqlType);
   }
 
   public abstract Optional<CqlTypeKey> maybeCreateCacheKey(

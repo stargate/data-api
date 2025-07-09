@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
 import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import com.datastax.oss.driver.api.core.type.*;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
@@ -67,6 +68,14 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
 
     var factory = ALL_FACTORIES.get(cqlType.getProtocolCode());
     if (factory != null) {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "DefaultTypeFactoryFromCql.factoryFor() - found factory bindingPoint: {}, cqlType.asCql: {}, cqlType.getProtocolCode: {}, factory.class: {}",
+            bindingPoint,
+            cqlType.asCql(true, true),
+            cqlType.getProtocolCode(),
+            classSimpleName(factory.getClass()));
+      }
       return factory;
     }
 

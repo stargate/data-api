@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.ApiIndexSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.UnsupportedIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
@@ -57,7 +57,7 @@ public class UnsupportedIndex implements ApiIndexDef {
 
   @Override
   public IndexDesc<UnsupportedIndexDefinitionDesc> getSchemaDescription(
-      SchemaDescBindingPoint bindingPoint) {
+      SchemaDescSource schemaDescSource) {
     // Index is always has same representation
 
     var definition =

@@ -12,12 +12,12 @@ import java.util.Objects;
  * the enum values. Use {@link DefaultTypeBindingRules} if all you need is a simple set of rules for
  * "isSupported"
  */
-public abstract class BindingPointRules<T extends BindingPointRules.BindingPointRule> {
+public class BindingPointRules<T extends BindingPointRules.BindingPointRule> {
 
   private final Map<TypeBindingPoint, T> rules;
 
   @SafeVarargs
-  protected BindingPointRules(T... rules) {
+  public BindingPointRules(T... rules) {
 
     Map<TypeBindingPoint, T> working = new HashMap<>();
 

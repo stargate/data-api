@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  * <p>Factories for specific index types should implement {@link #create(ApiColumnDef,
  * CQLSAIIndex.IndexTarget, IndexMetadata)}
  */
-public abstract class IndexFactoryFromCql extends FactoryFromCql {
+public abstract class IndexFactoryFromCql {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexFactoryFromCql.class);
 
   /**

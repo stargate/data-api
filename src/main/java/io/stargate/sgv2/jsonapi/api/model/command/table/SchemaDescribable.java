@@ -13,9 +13,9 @@ public interface SchemaDescribable<T extends SchemaDescription> {
   /**
    * Called to get the description of the schema for the user.
    *
-   * @param bindingPoint Where the schema description will be used, implementations can use this to
-   *     change the description based on the context.
+   * @param schemaDescSource Where the schema description will be used, implementations can use this
+   *     to change the description based on the context.
    * @return The user description of the object.
    */
-  T getSchemaDescription(SchemaDescBindingPoint bindingPoint);
+  T getSchemaDescription(SchemaDescSource schemaDescSource);
 }

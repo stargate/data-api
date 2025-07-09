@@ -7,7 +7,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.*;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
@@ -47,7 +47,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
   @Override
   public IndexDesc<RegularIndexDefinitionDesc> getSchemaDescription(
-      SchemaDescBindingPoint bindingPoint) {
+      SchemaDescSource schemaDescSource) {
     // Index is always has same representation
 
     // Only the text indexes has the properties, we rely on the factories to create the options

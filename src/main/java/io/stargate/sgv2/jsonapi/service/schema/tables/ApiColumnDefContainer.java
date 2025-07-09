@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
@@ -146,11 +146,12 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   }
 
   @Override
-  public ColumnsDescContainer getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public ColumnsDescContainer getSchemaDescription(SchemaDescSource schemaDescSource) {
 
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
     forEach(
-        (name, columnDef) -> columnsDesc.put(name, columnDef.getSchemaDescription(bindingPoint)));
+        (name, columnDef) ->
+            columnsDesc.put(name, columnDef.getSchemaDescription(schemaDescSource)));
     return columnsDesc;
   }
 

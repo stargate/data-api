@@ -3,11 +3,12 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
 import java.util.Objects;
 
 /**
@@ -28,36 +29,30 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
 
   public static final FromJsonFactory FROM_JSON_FACTORY = new FromJsonFactory();
 
-  protected static final ApiSupportDesc API_SUPPORT_DESC_FROZEN_UDT =
-      ApiSupportDesc.withoutCqlDefinition(ApiUdtType.API_SUPPORT_FROZEN_UDT);
-
-  protected static final ApiSupportDesc API_SUPPORT_DESC_NON_FROZEN_UDT =
-      ApiSupportDesc.withoutCqlDefinition(ApiUdtType.API_SUPPORT_NON_FROZEN_UDT);
-
   private final CqlIdentifier udtName;
-  private final boolean isFrozen;
 
-  public UdtRefColumnDesc(CqlIdentifier udtName, boolean isFrozen) {
-    this(
-        udtName,
-        isFrozen,
-        isFrozen ? API_SUPPORT_DESC_FROZEN_UDT : API_SUPPORT_DESC_NON_FROZEN_UDT);
+  // TODO: XXX : DELETE
+  //  private final boolean isFrozen;
+
+  public UdtRefColumnDesc(SchemaDescSource schemaDescSource, CqlIdentifier udtName) {
+    this(schemaDescSource, udtName, null);
   }
 
-  public UdtRefColumnDesc(CqlIdentifier udtName, boolean isFrozen, ApiSupportDesc apiSupportDesc) {
-    super(ApiTypeName.UDT, apiSupportDesc);
+  public UdtRefColumnDesc(
+      SchemaDescSource schemaDescSource, CqlIdentifier udtName, ApiSupportDesc apiSupportDesc) {
+    super(schemaDescSource, ApiTypeName.UDT, apiSupportDesc);
 
     this.udtName = Objects.requireNonNull(udtName, "udtName must not be null");
-    this.isFrozen = isFrozen;
   }
 
   public CqlIdentifier udtName() {
     return udtName;
   }
 
-  public boolean isFrozen() {
-    return isFrozen;
-  }
+  // TODO: XXX: DELETE
+  //  public boolean isFrozen() {
+  //    return isFrozen;
+  //  }
 
   @Override
   public boolean equals(Object o) {
@@ -68,12 +63,12 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
       return false;
     }
     var udtColumnDesc = (UdtRefColumnDesc) o;
-    return Objects.equals(udtName, udtColumnDesc.udtName) && isFrozen == udtColumnDesc.isFrozen;
+    return Objects.equals(udtName, udtColumnDesc.udtName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(udtName, isFrozen);
+    return Objects.hash(udtName);
   }
 
   /**
@@ -82,7 +77,7 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
    *
    * <p>...
    */
-  public static class FromJsonFactory extends DescFromJsonFactory {
+  public static class FromJsonFactory extends ColumnDescFromJsonFactory<UdtRefColumnDesc> {
     FromJsonFactory() {}
 
     /**
@@ -90,10 +85,10 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
      *
      * @param columnDescNode the whole column desc object <code>
      *     {"type": "userDefined", "udtName": "myUdt"}</code>
-     * @param frozen
      * @return
      */
-    public UdtRefColumnDesc create(JsonNode columnDescNode, boolean frozen) {
+    public UdtRefColumnDesc create(
+        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode) {
 
       Objects.requireNonNull(columnDescNode, "columnDescNode must not be null");
 
@@ -101,7 +96,7 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
       // the Missing node will return an empty text
       var udtName = columnDescNode.path(TableDescConstants.ColumnDesc.UDT_NAME).asText();
 
-      return new UdtRefColumnDesc(cqlIdentifierFromUserInput(udtName), frozen);
+      return new UdtRefColumnDesc(schemaDescSource, cqlIdentifierFromUserInput(udtName));
     }
   }
 }

@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.driver.internal.core.type.UserDefinedTypeBuilder;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -78,18 +78,18 @@ public class ApiUdtType extends ApiUdtShallowType {
   }
 
   @Override
-  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
 
-    return switch (bindingPoint) {
+    return switch (schemaDescSource) {
       case DDL_USAGE -> // just a reference to the UDT
-          new UdtRefColumnDesc(udtName(), isFrozen(), ApiSupportDesc.from(this));
+          new UdtRefColumnDesc(schemaDescSource, udtName(), ApiSupportDesc.from(this));
       case DML_USAGE -> // full inline schema desc
           new UdtColumnDesc(
+              schemaDescSource,
               udtName(),
-              isFrozen(),
-              allFields.getSchemaDescription(bindingPoint),
+              allFields.getSchemaDescription(schemaDescSource),
               ApiSupportDesc.from(this));
-      default -> throw bindingPoint.unsupportedException("ApiUdtType.getSchemaDescription()");
+      default -> throw schemaDescSource.unsupportedException("ApiUdtType.getSchemaDescription()");
     };
   }
 

@@ -4,9 +4,10 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiMapType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
 import java.util.Objects;
 
 /** Column type for {@link ApiMapType} */
@@ -16,12 +17,18 @@ public class MapColumnDesc extends ComplexColumnDesc {
   private final ColumnDesc keyType;
   private final ColumnDesc valueType;
 
-  public MapColumnDesc(ColumnDesc keyType, ColumnDesc valueType) {
-    this(keyType, valueType, ApiSupportDesc.withoutCqlDefinition(ApiMapType.API_SUPPORT));
+  /** Creates a column desc from user input, without ApiSupport Description. */
+  public MapColumnDesc(
+      SchemaDescSource schemaDescSource, ColumnDesc keyType, ColumnDesc valueType) {
+    this(schemaDescSource, keyType, valueType, null);
   }
 
-  public MapColumnDesc(ColumnDesc keyType, ColumnDesc valueType, ApiSupportDesc apiSupportDesc) {
-    super(ApiTypeName.MAP, apiSupportDesc);
+  public MapColumnDesc(
+      SchemaDescSource schemaDescSource,
+      ColumnDesc keyType,
+      ColumnDesc valueType,
+      ApiSupportDesc apiSupportDesc) {
+    super(schemaDescSource, ApiTypeName.MAP, apiSupportDesc);
 
     this.keyType = keyType;
     this.valueType = valueType;
@@ -58,22 +65,29 @@ public class MapColumnDesc extends ComplexColumnDesc {
    *
    * <p>...
    */
-  public static class FromJsonFactory extends DescFromJsonFactory {
+  public static class FromJsonFactory extends ColumnDescFromJsonFactory<MapColumnDesc> {
     FromJsonFactory() {}
 
     /** Create a {@link MapColumnDesc} from key and value type jsonNodes. */
-    public MapColumnDesc create(JsonParser jsonParser, JsonNode keyTypeNode, JsonNode valueTypeNode)
+    public MapColumnDesc create(
+        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode)
         throws JsonProcessingException {
 
-      // Cascade deserialization to get the key and value types, validation is done when we
+      // Cascade deserialization to get the value type, validation is done when we
       // create the ApiDataType form the ColumnDesc
+      var valueTypeNode = columnDescNode.path(TableDescConstants.ColumnDesc.VALUE_TYPE);
       var valueType =
-          ColumnDescDeserializer.deserialize(
-              valueTypeNode, jsonParser, TypeBindingPoint.COLLECTION_VALUE);
-      var keyType =
-          ColumnDescDeserializer.deserialize(keyTypeNode, jsonParser, TypeBindingPoint.MAP_KEY);
+          valueTypeNode.isMissingNode()
+              ? null
+              : ColumnDescDeserializer.deserialize(valueTypeNode, jsonParser, schemaDescSource);
 
-      return new MapColumnDesc(keyType, valueType);
+      var keyTypeNode = columnDescNode.path(TableDescConstants.ColumnDesc.KEY_TYPE);
+      var keyType =
+          keyTypeNode.isMissingNode()
+              ? null
+              : ColumnDescDeserializer.deserialize(keyTypeNode, jsonParser, schemaDescSource);
+
+      return new MapColumnDesc(schemaDescSource, keyType, valueType);
     }
   }
 }

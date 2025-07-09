@@ -4,7 +4,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.google.common.annotations.VisibleForTesting;
-import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescBindingPoint;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
@@ -53,9 +53,10 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
   }
 
   @Override
-  public ColumnDesc getSchemaDescription(SchemaDescBindingPoint bindingPoint) {
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
     // no different representation of the vector
     return new VectorColumnDesc(
+        schemaDescSource,
         dimension,
         vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig(),
         ApiSupportDesc.from(this));
@@ -111,7 +112,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
 
       Integer dimension;
 
-      // if the vectorize config is specified, we validate the dimension or auto-populate the
+      // if the vectorize config is specified, we validate the dimension or autopopulate the
       // default dimension
       if (columnDesc.getVectorizeConfig() != null) {
         dimension =
@@ -125,7 +126,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
         dimension = columnDesc.getDimension();
       }
 
-      if (!isDimensionSupported(columnDesc.getDimension())) {
+      if (!isDimensionSupported(dimension)) {
         throw new UnsupportedUserType(
             bindingPoint,
             columnDesc,
@@ -149,9 +150,7 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
         return false;
       }
 
-      if (!isDimensionSupported(columnDesc.getDimension())) {
-        return false;
-      }
+      // not checking vector dimension, only check if the types are bindable here
 
       // can we use a vector of any type in this binding point?
       if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser()) {

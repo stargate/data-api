@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  * @param <DescT>
  */
 public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT extends ColumnDesc>
-    extends FactoryFromDesc {
+    extends TypeFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeFactoryFromColumnDesc.class);
 
   private final ApiTypeName apiTypeName;
@@ -43,12 +43,9 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
       VectorizeConfigValidator validateVectorize)
       throws UnsupportedUserType {
 
-    if (!descClass.isInstance(columnDesc)) {
-      throw new IllegalArgumentException(
-          "TypeFactoryFromColumnDesc.createUntyped() - columnDesc is not an instance of "
-              + descClass.getName());
-    }
-    return create(bindingPoint, descClass.cast(columnDesc), validateVectorize);
+    var typedDesc =
+        checkCastToChild("TypeFactoryFromColumnDesc.createUntyped()", descClass, columnDesc);
+    return create(bindingPoint, typedDesc, validateVectorize);
   }
 
   /**
@@ -65,12 +62,10 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
       ColumnDesc columnDesc,
       VectorizeConfigValidator validateVectorize) {
 
-    if (!descClass.isInstance(columnDesc)) {
-      throw new IllegalArgumentException(
-          "TypeFactoryFromColumnDesc.isSupportedUntyped() - columnDesc is not an instance of "
-              + descClass.getName());
-    }
-    return isTypeBindable(bindingPoint, descClass.cast(columnDesc), validateVectorize);
+    var typedDesc =
+        checkCastToChild(
+            "TypeFactoryFromColumnDesc.isTypeBindableUntyped()", descClass, columnDesc);
+    return isTypeBindable(bindingPoint, typedDesc, validateVectorize);
   }
 
   public abstract boolean isTypeBindable(
