@@ -1,9 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.*;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The definition of a type the API supports for a table column.
@@ -16,15 +19,31 @@ import java.util.Objects;
  * <p>aaron - 9 sept 2024 - avoiding a record for now as assume will use subclasses for collections
  */
 public class PrimitiveApiDataTypeDef implements ApiDataType {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PrimitiveApiDataTypeDef.class);
 
   private final ApiTypeName typeName;
   private final DataType cqlType;
   private final ApiSupportDef apiSupport;
+  private final DefaultTypeBindingRules supportBindingRules;
 
   public PrimitiveApiDataTypeDef(ApiTypeName typeName, DataType cqlType, ApiSupportDef apiSupport) {
+    this(typeName, cqlType, apiSupport, DefaultTypeBindingRules.ALL_SUPPORTED);
+  }
+
+  public PrimitiveApiDataTypeDef(
+      ApiTypeName typeName,
+      DataType cqlType,
+      ApiSupportDef apiSupport,
+      DefaultTypeBindingRules supportBindingRules) {
     this.typeName = typeName;
     this.cqlType = cqlType;
     this.apiSupport = Objects.requireNonNull(apiSupport, "apiSupport must not be null");
+    this.supportBindingRules =
+        Objects.requireNonNull(supportBindingRules, "bindingRules must not be null");
+  }
+
+  public DefaultTypeBindingRules supportBindingRules() {
+    return supportBindingRules;
   }
 
   @Override
@@ -38,22 +57,14 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
   }
 
   @Override
-  public boolean isPrimitive() {
-    return true;
-  }
-
-  @Override
-  public boolean isContainer() {
-    return false;
-  }
-
-  @Override
   public ApiSupportDef apiSupport() {
     return apiSupport;
   }
 
   @Override
-  public ColumnDesc columnDesc() {
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
+    // Always has same representation
+
     // Not easy to cache in the ctor because of the circular dependency
     // is only a cache lookup so not a big deal
     return PrimitiveColumnDesc.fromApiDataType(this);

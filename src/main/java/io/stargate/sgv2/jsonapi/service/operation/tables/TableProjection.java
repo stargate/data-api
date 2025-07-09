@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
@@ -120,7 +121,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         objectMapper,
         table,
         columns,
-        readApiColumns.toColumnsDesc(),
+        readApiColumns.getSchemaDescription(SchemaDescSource.DML_USAGE),
         TableSimilarityFunction.from(ctx, command));
   }
 

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiClusteringDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
@@ -35,7 +36,7 @@ public class KeyspaceTemplates extends TemplateRunner {
         """
             .formatted(
                 tableName,
-                asJSON(columns.toColumnsDesc()),
+                asJSON(columns.getSchemaDescription(SchemaDescSource.DDL_USAGE)),
                 asJSON(primaryKeyDef.name().asInternal()));
     return sender.postCreateTable(json);
   }
@@ -69,7 +70,10 @@ public class KeyspaceTemplates extends TemplateRunner {
               }
           }
           """
-            .formatted(tableName, asJSON(columns.toColumnsDesc()), asJSON(primaryKey));
+            .formatted(
+                tableName,
+                asJSON(columns.getSchemaDescription(SchemaDescSource.DDL_USAGE)),
+                asJSON(primaryKey));
     return sender.postCreateTable(json);
   }
 
@@ -87,6 +91,20 @@ public class KeyspaceTemplates extends TemplateRunner {
             """
             .formatted(tableName, asJSON(columns), asJSON(primaryKeyDef));
     return sender.postCreateTable(json);
+  }
+
+  public DataApiResponseValidator createType(String typeName, Map<String, Object> fields) {
+    var json =
+            """
+            {
+                "name": "%s",
+                "definition": {
+                    "fields": %s
+                }
+            }
+            """
+            .formatted(typeName, asJSON(fields));
+    return sender.postCreateType(json);
   }
 
   public DataApiResponseValidator dropIndex(String indexName, boolean ifExists) {
@@ -115,6 +133,38 @@ public class KeyspaceTemplates extends TemplateRunner {
         """
             .formatted(tableName, String.valueOf(ifExists));
     return sender.postDropTable(json);
+  }
+
+  public DataApiResponseValidator dropType(String typeName, boolean ifExists) {
+    String json =
+            """
+            {
+              "name": "%s",
+              "options": {
+                "ifExists": %s
+              }
+            }
+        """
+            .formatted(typeName, String.valueOf(ifExists));
+    return sender.postDropType(json);
+  }
+
+  public DataApiResponseValidator alterType(
+      String typeName, Map<String, Object> addingFields, Map<String, String> renamingFields) {
+    var json =
+            """
+            {
+                "name": "%s",
+                "add": {
+                    "fields": %s
+                },
+                "rename": {
+                    "fields": %s
+                }
+            }
+            """
+            .formatted(typeName, asJSON(addingFields), asJSON(renamingFields));
+    return sender.postAlterType(json);
   }
 
   public DataApiResponseValidator listTables(boolean explain) {

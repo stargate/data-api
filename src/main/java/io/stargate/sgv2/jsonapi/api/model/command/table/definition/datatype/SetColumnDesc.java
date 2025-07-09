@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
-
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSetType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import java.util.Map;
 import java.util.Objects;
 
 /** Column type for {@link ApiSetType} */
@@ -14,12 +16,13 @@ public class SetColumnDesc extends ComplexColumnDesc {
 
   private final ColumnDesc valueType;
 
-  public SetColumnDesc(ColumnDesc valueType) {
-    this(valueType, ApiSupportDesc.withoutCqlDefinition(ApiSetType.API_SUPPORT));
+  public SetColumnDesc(SchemaDescSource schemaDescSource, ColumnDesc valueType) {
+    this(schemaDescSource, valueType, null);
   }
 
-  public SetColumnDesc(ColumnDesc valueType, ApiSupportDesc apiSupportDesc) {
-    super(ApiTypeName.SET, apiSupportDesc);
+  public SetColumnDesc(
+      SchemaDescSource schemaDescSource, ColumnDesc valueType, ApiSupportDesc apiSupportDesc) {
+    super(schemaDescSource, ApiTypeName.SET, apiSupportDesc);
     this.valueType = valueType;
   }
 
@@ -45,29 +48,28 @@ public class SetColumnDesc extends ComplexColumnDesc {
     return Objects.hashCode(valueType);
   }
 
-  public static class FromJsonFactory extends DescFromJsonFactory {
+  /**
+   * Factory to create a {@link SetColumnDesc} from a JSON node representing the type
+   *
+   * <p>...
+   */
+  public static class FromJsonFactory extends ColumnDescFromJsonFactory<SetColumnDesc> {
     FromJsonFactory() {}
 
-    public SetColumnDesc create(String valueTypeName) {
+    /** Create a {@link SetColumnDesc} from a JSON node representing the value type. */
+    public SetColumnDesc create(
+        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode)
+        throws JsonProcessingException {
 
-      // step 1 - make sure value names are types we support
-      // it would be better if we called all the way back to the top of the parsing the json
-      // but we know they have to be primitive types
-      var maybeValueDesc = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(valueTypeName);
+      // Cascade deserialization to get the value type, validation is done when we
+      // create the ApiDataType form the ColumnDesc
+      var valueTypeNode = columnDescNode.path(TableDescConstants.ColumnDesc.VALUE_TYPE);
+      var valueType =
+          valueTypeNode.isMissingNode()
+              ? null
+              : ColumnDescDeserializer.deserialize(valueTypeNode, jsonParser, schemaDescSource);
 
-      // step 2 - create the list desc, and then to be sure get the ApiDataType to check it
-      var setDesc = maybeValueDesc.map(SetColumnDesc::new).orElse(null);
-
-      // hack - it's not a vector so ok to not have the vectorize validator
-      if (setDesc == null || !ApiSetType.FROM_COLUMN_DESC_FACTORY.isSupported(setDesc, null)) {
-        throw SchemaException.Code.UNSUPPORTED_SET_DEFINITION.get(
-            Map.of(
-                "supportedTypes",
-                errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
-                "unsupportedValueType",
-                typeNameOrMissing(valueTypeName)));
-      }
-      return setDesc;
+      return new SetColumnDesc(schemaDescSource, valueType);
     }
   }
 }

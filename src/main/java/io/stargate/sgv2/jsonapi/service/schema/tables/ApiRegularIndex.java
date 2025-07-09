@@ -7,6 +7,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.*;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
@@ -14,6 +15,8 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromCql;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromIndexDesc;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +46,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<RegularIndexDefinitionDesc> indexDesc() {
+  public IndexDesc<RegularIndexDefinitionDesc> getSchemaDescription(
+      SchemaDescSource schemaDescSource) {
+    // Index is always has same representation
 
     // Only the text indexes has the properties, we rely on the factories to create the options
     // map in indexOptions with the correct values, so just use get() and return a null if not

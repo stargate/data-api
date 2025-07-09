@@ -312,6 +312,14 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     }
   }
 
+  protected boolean executeCqlStatement(String... statements) {
+    var cqlStatements = new SimpleStatement[statements.length];
+    for (int i = 0; i < statements.length; i++) {
+      cqlStatements[i] = SimpleStatement.newInstance(statements[i]);
+    }
+    return executeCqlStatement(cqlStatements);
+  }
+
   protected boolean executeCqlStatement(SimpleStatement... statements) {
     var cqlSession = createDriverSession();
     for (SimpleStatement statement : statements) {

@@ -12,34 +12,33 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
 
   // Default collection support
   private static final ApiSupportDef DEFAULT_API_SUPPORT =
-      new ApiSupportDef.Support(
-          true, ApiSupportDef.Collection.NONE, true, true, true, ApiSupportDef.Update.FULL);
+      new ApiSupportDef.Support(true, true, true, true, ApiSupportDef.Update.FULL);
 
   // Default collection support when the type is frozen, they cannot be used for create, but we can
   // insert them
   private static final ApiSupportDef DEFAULT_API_SUPPORT_FROZEN =
-      new ApiSupportDef.Support(
-          false, ApiSupportDef.Collection.NONE, true, true, true, ApiSupportDef.Update.NONE);
+      new ApiSupportDef.Support(false, true, true, true, ApiSupportDef.Update.NONE);
 
   protected static ApiSupportDef defaultApiSupport(boolean isFrozen) {
     return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;
   }
 
+  protected static final DefaultTypeBindingRules SUPPORT_BINDING_RULES =
+      new DefaultTypeBindingRules(
+          DefaultTypeBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, false, false),
+          DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, false, false),
+          DefaultTypeBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, true),
+          DefaultTypeBindingRules.create(TypeBindingPoint.UDT_FIELD, false, false));
+
   protected final ApiTypeName typeName;
-  protected final PrimitiveApiDataTypeDef valueType;
+  protected final ApiDataType valueType;
   protected final T cqlType;
 
-  /**
-   * We don't support nested collection datatypes, so {@link ApiSupportDef.Collection} will be
-   * NONE(all false)
-   */
+  /** We don't support nested collection datatypes */
   protected final ApiSupportDef apiSupport;
 
   protected CollectionApiDataType(
-      ApiTypeName typeName,
-      PrimitiveApiDataTypeDef valueType,
-      T cqlType,
-      ApiSupportDef apiSupport) {
+      ApiTypeName typeName, ApiDataType valueType, T cqlType, ApiSupportDef apiSupport) {
     // no null checks here, so subclasses can pass null and then override to create on demand if
     // they want to.
     this.typeName = typeName;
@@ -54,16 +53,6 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   }
 
   @Override
-  public boolean isPrimitive() {
-    return false;
-  }
-
-  @Override
-  public boolean isContainer() {
-    return true;
-  }
-
-  @Override
   public ApiSupportDef apiSupport() {
     return apiSupport;
   }
@@ -73,7 +62,7 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
     return cqlType;
   }
 
-  public PrimitiveApiDataTypeDef getValueType() {
+  public ApiDataType getValueType() {
     return valueType;
   }
 
