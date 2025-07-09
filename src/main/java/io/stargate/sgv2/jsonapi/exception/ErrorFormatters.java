@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
