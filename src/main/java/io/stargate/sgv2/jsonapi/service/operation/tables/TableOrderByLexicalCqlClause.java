@@ -1,7 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.internal.querybuilder.select.DefaultSelect;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.LexicalSortSelect;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
@@ -16,19 +17,18 @@ import java.util.Objects;
  */
 public class TableOrderByLexicalCqlClause implements OrderByCqlClause {
 
-  private final CqlNamedValue sortText;
+  private final CqlNamedValue lexicalSort;
   private final Integer defaultLimit;
 
-  public TableOrderByLexicalCqlClause(CqlNamedValue sortText, Integer defaultLimit) {
-    this.sortText = Objects.requireNonNull(sortText, "sortVector must not be null");
+  public TableOrderByLexicalCqlClause(CqlNamedValue lexicalSort, Integer defaultLimit) {
+    this.lexicalSort = Objects.requireNonNull(lexicalSort, "lexicalSort must not be null");
     this.defaultLimit = Objects.requireNonNull(defaultLimit, "defaultLimit must not be null");
   }
 
   @Override
   public Select apply(Select select) {
-    // !!! TODO: proper ORDER BY BM25
-    return select.orderBy(sortText.name(), ClusteringOrder.DESC);
-    // return select.orderByAnnOf(sortVector.name(), sortVector.cqlVector());
+    return new LexicalSortSelect(
+        (DefaultSelect) select, lexicalSort.name(), (String) lexicalSort.value());
   }
 
   @Override
@@ -43,6 +43,6 @@ public class TableOrderByLexicalCqlClause implements OrderByCqlClause {
 
   @Override
   public List<? extends Deferred> deferred() {
-    return new CqlNamedValueContainer(List.of(sortText)).deferredValues();
+    return new CqlNamedValueContainer(List.of(lexicalSort)).deferredValues();
   }
 }
