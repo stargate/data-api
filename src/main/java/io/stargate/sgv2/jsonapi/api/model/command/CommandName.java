@@ -53,6 +53,7 @@ public enum CommandName {
   INSERT_ONE(Names.INSERT_ONE, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
   LIST_INDEXES(Names.LIST_INDEXES, CommandType.DDL, CommandTarget.TABLE),
   LIST_TABLES(Names.LIST_TABLES, CommandType.DDL, CommandTarget.KEYSPACE),
+  LIST_TYPES(Names.LIST_TYPES, CommandType.DDL, CommandTarget.KEYSPACE),
   UPDATE_MANY(Names.UPDATE_MANY, CommandType.DML, CommandTarget.COLLECTION),
   UPDATE_ONE(Names.UPDATE_ONE, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
   BEGIN_OFFLINE_SESSION(Names.BEGIN_OFFLINE_SESSION, CommandType.DML, CommandTarget.SYSTEM),
@@ -142,6 +143,7 @@ public enum CommandName {
     String INSERT_ONE = "insertOne";
     String LIST_INDEXES = "listIndexes";
     String LIST_TABLES = "listTables";
+    String LIST_TYPES = "listTypes";
     String UPDATE_MANY = "updateMany";
     String UPDATE_ONE = "updateOne";
     String BEGIN_OFFLINE_SESSION = "beginOfflineSession";

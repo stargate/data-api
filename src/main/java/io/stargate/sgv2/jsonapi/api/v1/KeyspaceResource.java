@@ -96,6 +96,7 @@ public class KeyspaceResource {
                         DropIndexCommand.class,
                         DropTableCommand.class,
                         ListTablesCommand.class,
+                        ListTypesCommand.class,
                         CreateTypeCommand.class,
                         AlterTypeCommand.class,
                         DropTypeCommand.class
@@ -112,6 +113,7 @@ public class KeyspaceResource {
                 @ExampleObject(ref = "dropTable"),
                 @ExampleObject(ref = "dropIndex"),
                 @ExampleObject(ref = "listTables"),
+                @ExampleObject(ref = "listTypes"),
                 @ExampleObject(ref = "createType"),
                 @ExampleObject(ref = "alterType"),
                 @ExampleObject(ref = "dropType")

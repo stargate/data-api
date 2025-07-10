@@ -295,10 +295,12 @@ public class MapSetListTableFilter extends TableFilter {
 
     // the driver query builder cannot support map entry filter, so we have to build it manually
     // E.G. map_column[?] = ?
+    // note, since this is raw cql, need to double quote to adapt with quoted identifier
+    // E.G. "map_column"[?] = ?
     Relation relation =
         (filterComponent == MapSetListFilterComponent.MAP_ENTRY)
             ? new DefaultRaw(
-                "%s[?]%s?"
+                "\"%s\"[?]%s?"
                     .formatted(
                         getPathAsCqlIdentifier().asInternal(),
                         operator.cqlPredicate(filterComponent)))

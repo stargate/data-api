@@ -91,11 +91,10 @@ public class UDTCodecs {
       throws ToCQLCodecException {
 
     // raw map key is either String or JsonLiteral of String.
-    Map<?, JsonLiteral<?>> mapValue = (Map<?, JsonLiteral<?>>) rawMapValue;
     UdtValue newUdtValue = userDefinedType.newValue();
 
     // iterate over the raw map entries to populate the expected driver UdtValue
-    for (Map.Entry<?, JsonLiteral<?>> entry : mapValue.entrySet()) {
+    for (Map.Entry<?, ?> entry : rawMapValue.entrySet()) {
 
       Object key =
           (entry.getKey() instanceof JsonLiteral<?> jsonLiteralKey)
@@ -122,7 +121,12 @@ public class UDTCodecs {
 
       List<JSONCodec<?, ?>> codecCandidates = fieldsCodecCandidates.get(fieldIdentifier);
       JSONCodec<Object, Object> fieldCodec = null;
-      Object userInputRawFieldValue = entry.getValue().value();
+
+      Object userInputRawFieldValue =
+          entry.getValue() instanceof JsonLiteral<?> jsonLiteral
+              ? jsonLiteral.value()
+              : entry.getValue();
+
       DataType expectedFieldType = fieldTypes.get(fieldIdentifier);
 
       for (JSONCodec<?, ?> codec : codecCandidates) {

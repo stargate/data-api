@@ -29,9 +29,12 @@ public enum CommandStatus {
   /** Status for reporting existing collections. */
   @JsonProperty(Names.EXISTING_COLLECTIONS)
   EXISTING_COLLECTIONS(Names.EXISTING_COLLECTIONS),
-  /** Status for reporting existing collections. */
+  /** Status for reporting existing tables. */
   @JsonProperty(Names.EXISTING_TABLES)
   EXISTING_TABLES(Names.EXISTING_TABLES),
+  /** Status for reporting existing types. */
+  @JsonProperty(Names.EXISTING_TYPES)
+  EXISTING_TYPES(Names.EXISTING_TYPES),
   /** Status for reporting existing indexes. */
   @JsonProperty(Names.EXISTING_INDEXES)
   EXISTING_INDEXES(Names.EXISTING_INDEXES),
@@ -163,6 +166,7 @@ public enum CommandStatus {
     String EXISTING_RERANKING_PROVIDERS = "rerankingProviders";
     String EXISTING_COLLECTIONS = "collections";
     String EXISTING_TABLES = "tables";
+    String EXISTING_TYPES = "types";
     String EXISTING_INDEXES = "indexes";
     String DOCUMENT_RESPONSES = "documentResponses";
     String INSERTED_IDS = "insertedIds";
