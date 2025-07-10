@@ -7,19 +7,19 @@ import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that lists all available tables in a keyspace.")
-@JsonTypeName(CommandName.Names.LIST_TABLES)
-public record ListTablesCommand(
+@Schema(description = "Command that lists all available types in a keyspace.")
+@JsonTypeName(CommandName.Names.LIST_TYPES)
+public record ListTypesCommand(
     @Nullable
         @Schema(
-            description = "Options for the `listTables` command.",
+            description = "Options for the `listTypes` command.",
             type = SchemaType.OBJECT,
-            implementation = ListTablesCommand.Options.class)
+            implementation = ListTypesCommand.Options.class)
         Options options)
     implements TableOnlyCommand {
   public record Options(
       @Schema(
-              description = "Include table properties.",
+              description = "Include type fields.",
               type = SchemaType.BOOLEAN,
               implementation = Boolean.class)
           boolean explain) {}
@@ -27,6 +27,6 @@ public record ListTablesCommand(
   /** {@inheritDoc} */
   @Override
   public CommandName commandName() {
-    return CommandName.LIST_TABLES;
+    return CommandName.LIST_TYPES;
   }
 }

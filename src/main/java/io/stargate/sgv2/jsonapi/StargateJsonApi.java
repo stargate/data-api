@@ -934,6 +934,52 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                         }
                                      """),
               @ExampleObject(
+                  name = "listTypes",
+                  summary = "`listTypes` lists all types in a keyspace",
+                  value =
+                      """
+                                        {
+                                           "listTypes": {
+                                               "options" : {
+                                                   "explain" : true
+                                               }
+                                           }
+                                       }
+                                    """),
+              @ExampleObject(
+                  name = "listTypesResponse",
+                  summary = "`listTypes` response",
+                  value =
+                      """
+                                            {
+                                                "status": {
+                                                    "types": [
+                                                        {
+                                                            "type": "userDefined",
+                                                            "udtName": "address",
+                                                            "definition": {
+                                                                "fields": {
+                                                                    "city": {
+                                                                        "type": "text"
+                                                                    },
+                                                                    "country": {
+                                                                        "type": "text"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "apiSupport": {
+                                                                "createTable": true,
+                                                                "insert": true,
+                                                                "read": true,
+                                                                "filter": false,
+                                                                "cqlDefinition": "demo.address"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                            """),
+              @ExampleObject(
                   name = "createIndex",
                   summary = "`createIndex` for non vector columns, in tables api",
                   value =

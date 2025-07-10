@@ -22,7 +22,7 @@ import org.junit.jupiter.api.*;
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-public class CQLUdtSupportTest extends AbstractTableIntegrationTestBase {
+public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBase {
   private static final String TABLE_NAME = "table_udt";
 
   @BeforeAll
