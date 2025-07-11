@@ -72,12 +72,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       return WithWarnings.of(OrderByCqlClause.NO_OP);
     }
 
-    // All sorting can only be on columns in the table definition
     // NOTE: existence of the columns is checked in the SortClauseBuilder, no need to re-check
-
-    var whereCQLClause =
-        TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
 
     // First: Lexical sort? Must be alone, if it exists (already validated)
     var lexicalSortExpr = sortClause.lexicalSortExpression();
@@ -87,6 +82,9 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
 
     var vectorAndVectorizeSorts = sortClause.tableVectorSorts();
     if (vectorAndVectorizeSorts.isEmpty()) {
+      var whereCQLClause =
+          TableWhereCQLClause.forSelect(
+              commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
       return resolveNonVectorSort(
           commandContext,
           whereCQLClause.target(),
