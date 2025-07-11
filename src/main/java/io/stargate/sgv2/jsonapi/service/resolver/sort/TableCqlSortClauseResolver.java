@@ -210,13 +210,11 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       SortExpression lexicalSortExpr,
       Optional<Integer> skip,
       Optional<Integer> limit) {
-    // TODO: should we check max limit to use?
-    if (limit.isPresent()) {
-      // No checks yet
-    }
     if (skip.isPresent()) {
       throw SortException.Code.CANNOT_LEXICAL_SORT_WITH_SKIP_OPTION.get();
     }
+    Integer actualLimit = limit.orElse(QueryBuilder.DEFAULT_BM25_LIMIT);
+    actualLimit = Math.min(actualLimit, QueryBuilder.MAX_BM25_LIMIT);
 
     final ApiTableDef apiTableDef = commandContext.schemaObject().apiTableDef();
     final CqlIdentifier lexicalSortIdentifier = lexicalSortExpr.pathAsCqlIdentifier();
@@ -263,8 +261,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 .findFirst()
                 .get();
 
-    return WithWarnings.of(
-        new TableOrderByLexicalCqlClause(lexicalNamedValue, QueryBuilder.DEFAULT_BM25_LIMIT));
+    return WithWarnings.of(new TableOrderByLexicalCqlClause(lexicalNamedValue, actualLimit));
   }
 
   /**
