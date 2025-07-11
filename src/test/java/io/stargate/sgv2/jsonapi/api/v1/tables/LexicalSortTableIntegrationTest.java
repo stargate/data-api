@@ -114,6 +114,29 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
           .body("data.documents", hasSize(2))
           .body("data.documents", jsonEquals(List.of(Map.of("id", "2"), Map.of("id", "4"))));
     }
+
+    // Verify escaping of quotes in lexical sort
+    @Test
+    void simpleSortWithQuotes() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(null, List.of("id"), Map.of("tags", "tag1 'tag3'"))
+          .wasSuccessful()
+          .body("data.documents", hasSize(1))
+          .body("data.documents", jsonEquals(List.of(Map.of("id", "4"))));
+    }
+
+    // also verify that we can combine lexical sort with regular filters
+    @Test
+    void sortWithFiltering() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          // Filter to just doc #2, lexical sort by "tags" (no real effect)
+          .find(Map.of("id", "2"), List.of("id"), Map.of("tags", "tag2"))
+          .wasSuccessful()
+          .body("data.documents", hasSize(1))
+          .body("data.documents", jsonEquals(List.of(Map.of("id", "2"))));
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")

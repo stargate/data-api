@@ -4,11 +4,11 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.BindMarker;
-import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
+import com.datastax.oss.driver.internal.core.util.Strings;
 import com.datastax.oss.driver.internal.querybuilder.select.DefaultSelect;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
@@ -187,7 +187,10 @@ public class LexicalSortSelect extends DefaultSelect {
         + " ORDER BY "
         + sortColumn.asCql(false)
         + " BM25 OF "
-        + QueryBuilder.literal(sortText)
+        // 11-Jul-2025, tatu: ideally would use a BindMarker here, but binding
+        //    values is difficult to do reliably from this context. Hence, escape
+        //    explicitly.
+        + Strings.quote(sortText)
         + cql.substring(ix + ORDER_BY_PLACEHOLDER_TEXT.length());
   }
 }
