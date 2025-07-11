@@ -14,6 +14,8 @@ public class SortException extends RequestException {
   }
 
   public enum Code implements ErrorCode<SortException> {
+    CANNOT_LEXICAL_SORT_NON_INDEXED_COLUMNS,
+    CANNOT_LEXICAL_SORT_WITH_SKIP_OPTION,
     CANNOT_SORT_ON_MULTIPLE_VECTORIZE,
     CANNOT_SORT_ON_MULTIPLE_VECTORS,
     CANNOT_SORT_ON_SPECIAL_WITH_OTHERS,
