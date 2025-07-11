@@ -12,14 +12,12 @@ import com.datastax.oss.driver.internal.core.util.Strings;
 import com.datastax.oss.driver.internal.querybuilder.select.DefaultSelect;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 
 /** Subclass for forcing use of "ORDER BY BM25 OF" (lexical sort) in the select clause. */
 public class LexicalSortSelect extends DefaultSelect {
   private static final ImmutableMap<CqlIdentifier, ClusteringOrder> ORDER_BY_PLACEHOLDER =
-      ImmutableMap.of(CqlIdentifier.fromCql("abc"), ClusteringOrder.DESC);
+      ImmutableMap.of(CqlIdentifier.fromInternal("abc"), ClusteringOrder.DESC);
   private static final String ORDER_BY_PLACEHOLDER_TEXT = "ORDER BY abc DESC";
 
   private final CqlIdentifier sortColumn;
@@ -76,11 +74,12 @@ public class LexicalSortSelect extends DefaultSelect {
   }
 
   @Override
-  public Select limit(@Nullable BindMarker bindMarker) {
+  public Select limit(BindMarker bindMarker) {
     return new LexicalSortSelect(this, bindMarker, this.allowsFiltering());
   }
 
-  // Then overrides we should not need but want to avoid getting called:
+  // Then overrides we should not need and want to fail on if called (to avoid
+  // obscure bugs if called and superclass instance gets created):
 
   @Override
   public SelectFrom json() {
@@ -93,78 +92,78 @@ public class LexicalSortSelect extends DefaultSelect {
   }
 
   @Override
-  public Select as(@NonNull CqlIdentifier alias) {
+  public Select as(CqlIdentifier alias) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support as()");
   }
 
   @Override
-  public Select selector(@NonNull Selector selector) {
+  public Select selector(Selector selector) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support selector()");
   }
 
   @Override
-  public Select selectors(@NonNull Iterable<Selector> additionalSelectors) {
+  public Select selectors(Iterable<Selector> additionalSelectors) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support selectors()");
   }
 
   @Override
-  public Select withSelectors(@NonNull ImmutableList<Selector> newSelectors) {
+  public Select withSelectors(ImmutableList<Selector> newSelectors) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support withSelectors()");
   }
 
   @Override
-  public Select where(@NonNull Relation relation) {
+  public Select where(Relation relation) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support where()");
   }
 
   @Override
-  public Select where(@NonNull Iterable<Relation> additionalRelations) {
+  public Select where(Iterable<Relation> additionalRelations) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support where()");
   }
 
   @Override
-  public Select withRelations(@NonNull ImmutableList<Relation> newRelations) {
+  public Select withRelations(ImmutableList<Relation> newRelations) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support withRelations()");
   }
 
   @Override
-  public Select groupBy(@NonNull Selector groupByClause) {
+  public Select groupBy(Selector groupByClause) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support groupBy()");
   }
 
   @Override
-  public Select groupBy(@NonNull Iterable<Selector> newGroupByClauses) {
+  public Select groupBy(Iterable<Selector> newGroupByClauses) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support groupBy()");
   }
 
   @Override
-  public Select withGroupByClauses(@NonNull ImmutableList<Selector> newGroupByClauses) {
+  public Select withGroupByClauses(ImmutableList<Selector> newGroupByClauses) {
     throw new UnsupportedOperationException(
         "LexicalSortSelect does not support withGroupByClauses()");
   }
 
   @Override
-  public Select orderBy(@NonNull CqlIdentifier columnId, @NonNull ClusteringOrder order) {
+  public Select orderBy(CqlIdentifier columnId, ClusteringOrder order) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support orderBy()");
   }
 
   @Override
-  public Select orderByAnnOf(@NonNull String columnName, @NonNull CqlVector<?> ann) {
+  public Select orderByAnnOf(String columnName, CqlVector<?> ann) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support orderByAnnOf()");
   }
 
   @Override
-  public Select orderByAnnOf(@NonNull CqlIdentifier columnId, @NonNull CqlVector<?> ann) {
+  public Select orderByAnnOf(CqlIdentifier columnId, CqlVector<?> ann) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support orderByAnnOf()");
   }
 
   @Override
-  public Select orderByIds(@NonNull Map<CqlIdentifier, ClusteringOrder> newOrderings) {
+  public Select orderByIds(Map<CqlIdentifier, ClusteringOrder> newOrderings) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support orderByIds()");
   }
 
   @Override
-  public Select withOrderings(@NonNull ImmutableMap<CqlIdentifier, ClusteringOrder> newOrderings) {
+  public Select withOrderings(ImmutableMap<CqlIdentifier, ClusteringOrder> newOrderings) {
     throw new UnsupportedOperationException("LexicalSortSelect does not support withOrderings()");
   }
 
@@ -188,8 +187,7 @@ public class LexicalSortSelect extends DefaultSelect {
         + sortColumn.asCql(false)
         + " BM25 OF "
         // 11-Jul-2025, tatu: ideally would use a BindMarker here, but binding
-        //    values is difficult to do reliably from this context. Hence, escape
-        //    explicitly.
+        //    values is difficult to do from this context. So escape explicitly.
         + Strings.quote(sortText)
         + cql.substring(ix + ORDER_BY_PLACEHOLDER_TEXT.length());
   }

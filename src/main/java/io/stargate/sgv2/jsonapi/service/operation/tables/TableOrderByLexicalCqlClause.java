@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A CQL clause that adds an ORDER BY clause to a SELECT statement to BM25 (Lexical) sort.
+ * A CQL clause that adds an ORDER BY clause to a SELECT statement for BM25 (Lexical) sort.
  *
  * <p>Note: Only supports sorting on a single column
  */
