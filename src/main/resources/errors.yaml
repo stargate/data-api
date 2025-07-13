@@ -846,11 +846,14 @@ request-errors:
 
   - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_FIELD
-    title: Field with the same name are defined in the type schema
+    title: Field with the same name are defined in the type definition
     body: |-
-      Field name must be unique in the type ${typeName}.
-      ${driverMessage}
-      Resend the command using unique field.
+      The command attempted to add a field with a name that already exists in the type definition.
+      
+      The command altered the type: ${typeName}.
+      The existing field name was: ${existingField}.
+      
+      Resend the command using only new field names.
 
   - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
@@ -971,8 +974,11 @@ request-errors:
     code: CANNOT_RENAME_UNKNOWN_TYPE_FIELD
     title: Field cannot be renamed if it is not defined in the type
     body: |-
-      The command attempted to rename a field that is not defined in the type ${typeName}.
-      ${driverMessage}
+      The command attempted to rename a field that is not defined in the named type.
+      
+      The command altered the type: ${typeName}.
+      The unknown field was: ${unknownField}.
+      
       Resend the command using only fields defined in the type.
 
   - scope: SCHEMA
