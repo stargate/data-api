@@ -27,9 +27,6 @@ public class ApiListType extends CollectionApiDataType<ListType> {
   public static final TypeFactoryFromCql<ApiListType, ListType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
-  // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
-  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
-
   /**
    * Creates a new {@link ApiListType} from the given ApiDataType value.
    *
@@ -37,7 +34,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
    */
   @VisibleForTesting
   ApiListType(ApiDataType valueType, boolean isFrozen) {
-    this(valueType, API_SUPPORT, isFrozen);
+    this(valueType, defaultCollectionApiSupport(isFrozen), isFrozen);
   }
 
   private ApiListType(ApiDataType valueType, ApiSupportDef apiSupport, boolean isFrozen) {

@@ -28,12 +28,12 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
       new CqlTypeFactory();
 
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
-  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
+  public static final ApiSupportDef API_SUPPORT = defaultCollectionApiSupport(false);
 
   /** NO VALIDATION - Testing Only */
   @VisibleForTesting
   ApiSetType(ApiDataType valueType, boolean isFrozen) {
-    this(valueType, API_SUPPORT, isFrozen);
+    this(valueType, defaultCollectionApiSupport(isFrozen), isFrozen);
   }
 
   private ApiSetType(ApiDataType valueType, ApiSupportDef apiSupport, boolean isFrozen) {

@@ -10,18 +10,21 @@ import com.datastax.oss.driver.api.core.type.DataType;
  */
 public abstract class CollectionApiDataType<T extends DataType> implements ApiDataType {
 
-  // Default collection support
+  /**
+   * When collection is not frozen we do all operations. See {@link
+   * #defaultCollectionApiSupport(boolean)}
+   */
   private static final ApiSupportDef DEFAULT_API_SUPPORT =
       new ApiSupportDef.Support(true, true, true, true, ApiSupportDef.Update.FULL);
 
-  // Default collection support when the type is frozen, they cannot be used for create, but we can
-  // insert them
+  /**
+   * When the collection is frozen, we cannot use it for create, or mutating the value of the
+   * column, but we can insert, read, and do $set and $unset on the whole value. See {@link
+   * #defaultCollectionApiSupport(boolean)}
+   */
   private static final ApiSupportDef DEFAULT_API_SUPPORT_FROZEN =
-      new ApiSupportDef.Support(false, true, true, true, ApiSupportDef.Update.NONE);
-
-  protected static ApiSupportDef defaultApiSupport(boolean isFrozen) {
-    return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;
-  }
+      new ApiSupportDef.Support(
+          false, true, true, true, new ApiSupportDef.Update(true, true, false, false));
 
   protected static final DefaultTypeBindingRules SUPPORT_BINDING_RULES =
       new DefaultTypeBindingRules(
@@ -66,11 +69,16 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
     return valueType;
   }
 
+  public abstract boolean isFrozen();
+
+  /** Gets the collection default API support based on whether the collection is frozen or not. */
+  protected static ApiSupportDef defaultCollectionApiSupport(boolean isFrozen) {
+    return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;
+  }
+
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
     var builder = ApiDataType.super.recordTo(dataRecorder);
     return builder.append("valueType", valueType);
   }
-
-  public abstract boolean isFrozen();
 }

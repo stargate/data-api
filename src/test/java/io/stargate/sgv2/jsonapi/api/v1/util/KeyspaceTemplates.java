@@ -107,6 +107,20 @@ public class KeyspaceTemplates extends TemplateRunner {
     return sender.postCreateType(json);
   }
 
+  public DataApiResponseValidator createType(String typeName, String fields) {
+    var json =
+            """
+        {
+            "name": "%s",
+            "definition": {
+                "fields": %s
+            }
+        }
+        """
+            .formatted(typeName, fields);
+    return sender.postCreateType(json);
+  }
+
   public DataApiResponseValidator dropIndex(String indexName, boolean ifExists) {
     String json =
             """
@@ -164,6 +178,18 @@ public class KeyspaceTemplates extends TemplateRunner {
             }
             """
             .formatted(typeName, asJSON(addingFields), asJSON(renamingFields));
+    return sender.postAlterType(json);
+  }
+
+  public DataApiResponseValidator alterType(String typeName, String alterOps) {
+    var json =
+            """
+        {
+            "name": "%s",
+            %s
+        }
+        """
+            .formatted(typeName, alterOps);
     return sender.postAlterType(json);
   }
 

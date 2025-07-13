@@ -33,15 +33,16 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
   public static final TypeFactoryFromCql<ApiMapType, MapType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
-  // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
-  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
-
   private final PrimitiveApiDataTypeDef keyType;
 
   /** NO VALIDATION - Testing Only */
   @VisibleForTesting
   ApiMapType(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
-    this((PrimitiveApiDataTypeDef) keyType, valueType, defaultApiSupport(isFrozen), isFrozen);
+    this(
+        (PrimitiveApiDataTypeDef) keyType,
+        valueType,
+        defaultCollectionApiSupport(isFrozen),
+        isFrozen);
   }
 
   private ApiMapType(
