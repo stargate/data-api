@@ -13,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -102,7 +101,6 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
     }
   }
 
-  @Disabled("Temporarily disabled until Table API supports lexical sort")
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(5)
@@ -115,6 +113,29 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
           .wasSuccessful()
           .body("data.documents", hasSize(2))
           .body("data.documents", jsonEquals(List.of(Map.of("id", "2"), Map.of("id", "4"))));
+    }
+
+    // Verify escaping of quotes in lexical sort
+    @Test
+    void simpleSortWithQuotes() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(null, List.of("id"), Map.of("tags", "tag1 'tag3'"))
+          .wasSuccessful()
+          .body("data.documents", hasSize(1))
+          .body("data.documents", jsonEquals(List.of(Map.of("id", "4"))));
+    }
+
+    // also verify that we can combine lexical sort with regular filters
+    @Test
+    void sortWithFiltering() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          // Filter to just doc #2, lexical sort by "tags" (no real effect)
+          .find(Map.of("id", "2"), List.of("id"), Map.of("tags", "tag2"))
+          .wasSuccessful()
+          .body("data.documents", hasSize(1))
+          .body("data.documents", jsonEquals(List.of(Map.of("id", "2"))));
     }
   }
 
@@ -132,6 +153,18 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
               SortException.class,
               "command attempted to sort using columns that are not in the table schema",
               "\"lexicalSortTableTest\" defines the columns");
+    }
+
+    @Test
+    void noIndexOnColumn() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(null, List.of("id"), Map.of("value", "tag2"))
+          .hasSingleApiError(
+              SortException.Code.CANNOT_LEXICAL_SORT_NON_INDEXED_COLUMNS,
+              SortException.class,
+              "command attempted to lexical sort on column that is not indexed",
+              "has indexes on columns: tags, tags2");
     }
 
     @Test
