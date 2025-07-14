@@ -197,6 +197,9 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
     // Add the where clause
     select = whereCQLClause.apply(select, positionalValues);
     // and finally order by
+    // 14-Jul-2025, tatu: NOTE! ORDER BY _MUST_ be added after the where clause,
+    // otherwise we will get UnsupportedOperationException (if different ordering
+    // of construction needed, must change "LexicalSortSelect" to allow that).
     select = orderByCqlClause.apply(select);
 
     return select;

@@ -222,8 +222,6 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
 
     // Column type already validated, no need to check again
     // But we do want to check it has lexical index.
-
-    // see if Table has vector index on the target sort vector column
     var maybeIndex = apiTableDef.indexes().firstIndexFor(lexicalSortIdentifier);
     if (maybeIndex.isEmpty()) {
       throw SortException.Code.CANNOT_LEXICAL_SORT_NON_INDEXED_COLUMNS.get(
