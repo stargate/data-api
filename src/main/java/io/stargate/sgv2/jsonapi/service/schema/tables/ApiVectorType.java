@@ -158,6 +158,11 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
       }
       return true;
     }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
+    }
   }
 
   /**

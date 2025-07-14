@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
@@ -63,6 +64,10 @@ public abstract class ErrorFormatters {
 
   public static String errFmtApiColumnDef(Collection<ApiColumnDef> apiColumnDefs) {
     return errFmtJoin(apiColumnDefs, ErrorFormatters::errFmt);
+  }
+
+  public static String errFmtApiTypeName(Collection<ApiTypeName> apiTypeNames) {
+    return errFmtJoin(apiTypeNames, ApiTypeName::apiName);
   }
 
   public static String errFmtColumnDesc(Collection<ColumnDesc> columnDescs) {

@@ -43,6 +43,11 @@ public class PrimitiveTypeFactoryFromColumnDesc
       ColumnDesc columnDesc,
       VectorizeConfigValidator validateVectorize) {
 
-    return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).bindableFromUser();
+    return primitiveTypeInstance.typeBindingRules().rule(bindingPoint).bindableFromUser();
+  }
+
+  @Override
+  public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+    return primitiveTypeInstance.typeBindingRules().rule(bindingPoint).bindableFromUser();
   }
 }

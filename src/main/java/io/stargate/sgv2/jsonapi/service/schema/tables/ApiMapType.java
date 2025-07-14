@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -105,13 +104,19 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
-        // TODO: XXX: AARON: the suported types is prob wrong, it wont include udt as value ?
         throw new UnsupportedUserType(
             bindingPoint,
             columnDesc,
             SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.get(
                 Map.of(
-                    "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
+                    "supportedKeyTypes",
+                        errFmtApiTypeName(
+                            DefaultTypeFactoryFromColumnDesc.INSTANCE.allBindableTypes(
+                                TypeBindingPoint.MAP_KEY)),
+                    "supportedValueTypes",
+                        errFmtApiTypeName(
+                            DefaultTypeFactoryFromColumnDesc.INSTANCE.allBindableTypes(
+                                TypeBindingPoint.COLLECTION_VALUE)),
                     "unsupportedKeyType", errFmtOrMissing(columnDesc.keyType()),
                     "unsupportedValueType", errFmtOrMissing(columnDesc.valueType()))));
       }
@@ -160,6 +165,11 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       }
 
       return true;
+    }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
     }
   }
 

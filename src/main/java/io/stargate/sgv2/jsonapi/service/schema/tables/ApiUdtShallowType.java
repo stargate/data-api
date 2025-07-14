@@ -169,6 +169,11 @@ public class ApiUdtShallowType implements ApiDataType {
       // UDT. The UDT def with fields is in {@link ApiUdtType} and is created for the full UDT
       return true;
     }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return UDT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
+    }
   }
 
   public record UdtBindingPointRule(

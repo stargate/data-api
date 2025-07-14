@@ -1,9 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Names of the table column data types the API supports
@@ -46,6 +43,10 @@ public enum ApiTypeName {
 
   // UDT Types
   UDT("userDefined", false, false);
+
+  /** Comparator to sort ApiTypeName by their {@link #apiName()} */
+  public static final Comparator<ApiTypeName> COMPARATOR =
+      Comparator.comparing(ApiTypeName::apiName);
 
   private final String apiName;
   private final boolean isPrimitive;
