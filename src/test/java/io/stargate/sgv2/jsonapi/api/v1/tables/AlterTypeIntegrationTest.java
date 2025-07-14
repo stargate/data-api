@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
-import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.common.WithTestResource;
@@ -10,22 +9,21 @@ import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-class AlterTypeIntegrationTest extends AbstractTableIntegrationTestBase {
+class AlterTypeIntegrationTest extends TypeIntegrationTestBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(AlterTypeIntegrationTest.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private String tableName(String typeName){
+  private String tableName(String typeName) {
     return "table_for_" + typeName;
   }
-  private void createTestTypeAndTable(String typeName){
+
+  private void createTypeAndTable(String typeName) {
     var fields =
         """
         {
@@ -37,58 +35,31 @@ class AlterTypeIntegrationTest extends AbstractTableIntegrationTestBase {
           }
         }
         """;
-
-    LOGGER.info("Creating test typeName: {}, tableName: {}", typeName, tableName(typeName));
-    assertNamespaceCommand(keyspaceName).templated().createType(typeName, fields).wasSuccessful();
-
-    // TODO: NO LIST TYPE, WE CANNOT VERIFY THE TYPE WAS CREATED, SO USING CREATE TABLE
-    assertNamespaceCommand(keyspaceName)
-        .templated()
-        .createTable(
-            tableName(typeName),
-            Map.of("id", "text", "udt", Map.of("type", "userDefined", "udtName", typeName)),
-            "id")
-        .wasSuccessful();
-
-    // TODO: NO LIST TYPE, WE CANNOT VERIFY THE TYPE WAS CREATED AS DEFINED, SO USING READ TABLE TO
-    // GET SCHEMA
-    assertTableCommand(keyspaceName, tableName(typeName))
-        .templated()
-        .findOne(Map.of(), List.of())
-        .wasSuccessful()
-        .hasJSONField("status.projectionSchema.udt.definition.fields", fields);
+    createTypeAndTable(typeName, fields);
   }
 
   private void assertAlter(String typeName, String alterOp, String matchFields) {
     LOGGER.info("Assert Alter Type for typeName: {}, alterOp: {}", typeName, alterOp);
 
-    createTestTypeAndTable(typeName);
-
+    createTypeAndTable(typeName);
     assertNamespaceCommand(keyspaceName).templated().alterType(typeName, alterOp).wasSuccessful();
-
-    // TODO: NO LIST TYPE, WE CANNOT VERIFY THE TYPE WAS MODIFIED, SO USING READ TABLE TO GET SCHEMA
-    assertTableCommand(keyspaceName, tableName(typeName))
-        .templated()
-        .findOne(Map.of(), List.of())
-        .wasSuccessful()
-        .hasJSONField("status.projectionSchema.udt.definition.fields", matchFields);
+    assertType(typeName, matchFields);
   }
 
-  private  <T extends APIException>  void assertAlterFails(String typeName, String alterOp,
-                                                           ErrorCode<T> errorCode,
-                                                           Class<T> exceptionClass,
-                                                           String... errorMessage) {
+  private <T extends APIException> void assertAlterFails(
+      String typeName,
+      String alterOp,
+      ErrorCode<T> errorCode,
+      Class<T> exceptionClass,
+      String... errorMessage) {
     LOGGER.info("Assert Failing Alter Type for typeName: {}, alterOp: {}", typeName, alterOp);
 
-    createTestTypeAndTable(typeName);
+    createTypeAndTable(typeName);
 
     assertNamespaceCommand(keyspaceName)
         .templated()
         .alterType(typeName, alterOp)
-        .hasSingleApiError(
-          errorCode,
-          exceptionClass,
-          errorMessage);
+        .hasSingleApiError(errorCode, exceptionClass, errorMessage);
   }
 
   @Test
@@ -158,7 +129,9 @@ class AlterTypeIntegrationTest extends AbstractTableIntegrationTestBase {
         }
         """;
 
-    assertAlterFails("renameMissingField", alterOp,
+    assertAlterFails(
+        "renameMissingField",
+        alterOp,
         SchemaException.Code.CANNOT_RENAME_UNKNOWN_TYPE_FIELD,
         SchemaException.class,
         "The unknown field was: missing_field.");
@@ -176,12 +149,13 @@ class AlterTypeIntegrationTest extends AbstractTableIntegrationTestBase {
         }
         """;
 
-    assertAlterFails("renameExistingField", alterOp,
+    assertAlterFails(
+        "renameExistingField",
+        alterOp,
         SchemaException.Code.CANNOT_ADD_EXISTING_FIELD,
         SchemaException.class,
         "The existing field name was: zip.");
   }
-
 
   @Test
   public void addExistingField() {
@@ -195,7 +169,9 @@ class AlterTypeIntegrationTest extends AbstractTableIntegrationTestBase {
           }
         """;
 
-    assertAlterFails("addExistingField", alterOp,
+    assertAlterFails(
+        "addExistingField",
+        alterOp,
         SchemaException.Code.CANNOT_ADD_EXISTING_FIELD,
         SchemaException.class,
         "The existing field name was: city.");

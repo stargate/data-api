@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTypeCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
@@ -60,22 +59,19 @@ public class AlterTypeCommandResolver implements CommandResolver<AlterTypeComman
     var addingFields = command.add() != null ? command.add().fields() : null;
 
     var allRenamesForHandler =
-        renamingFields != null
-            ? renamingFields.keySet().stream().toList()
-            : List.<String>of();
+        renamingFields != null ? renamingFields.keySet().stream().toList() : List.<String>of();
     var allAddFieldsForHandler =
-        addingFields != null
-            ? addingFields.keySet().stream().toList()
-            : List.<String>of();
+        addingFields != null ? addingFields.keySet().stream().toList() : List.<String>of();
 
-    taskBuilder = taskBuilder
-        .withExceptionHandlerFactory(((keyspaceSchemaObject, simpleStatement) ->
+    taskBuilder =
+        taskBuilder.withExceptionHandlerFactory(
+            ((keyspaceSchemaObject, simpleStatement) ->
                 new AlterTypeExceptionHandler(
-                keyspaceSchemaObject,
-                simpleStatement,
-                udtName,
-                allRenamesForHandler,
-                allAddFieldsForHandler)));
+                    keyspaceSchemaObject,
+                    simpleStatement,
+                    udtName,
+                    allRenamesForHandler,
+                    allAddFieldsForHandler)));
 
     // cannot use taskBuilder in lambda
     // build tasks for renaming fields
@@ -91,7 +87,7 @@ public class AlterTypeCommandResolver implements CommandResolver<AlterTypeComman
           ApiUdtType.FROM_TYPE_DESC_FACTORY.create(
               command.name(), command.add(), validateVectorize);
 
-      for (var fieldDef : apiUdtType.allFields().values()){
+      for (var fieldDef : apiUdtType.allFields().values()) {
         taskGroup.add(taskBuilder.buildForAddField(fieldDef));
       }
     }

@@ -1105,10 +1105,10 @@ request-errors:
     code: UNSUPPORTED_TYPE_FIELDS
     title: Type definition contains unsupported fields.
     body: |-
-      The command contains field definitions that use types which are not supported by user-defined types.
+      The command attempted to create a user defined type with field definitions that use unsupported types.
       
       The supported field data types are: ${supportedTypes}.
-      The command has contained the unsupported types: ${unsupportedFields}.
+      The command used the unsupported types: ${unsupportedFields}.
       
       Resend the command using only supported field data types.
 
