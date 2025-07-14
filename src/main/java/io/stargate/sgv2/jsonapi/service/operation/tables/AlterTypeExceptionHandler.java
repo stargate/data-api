@@ -90,11 +90,11 @@ public class AlterTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
       String message, String prefix, String suffix, List<String> fallbacks) {
 
     // attempt to get the field name from the message
-    int startIndex = message.indexOf(prefix) + prefix.length();
+    int startIndex = message.indexOf(prefix);
     int endIndex = message.indexOf(suffix, startIndex);
 
     if (startIndex > -1 && endIndex > startIndex) {
-      return message.substring(startIndex, endIndex).trim();
+      return message.substring(startIndex + prefix.length(), endIndex).trim();
     }
 
     return "unable to determine field name, is one of: " + errFmtJoin(fallbacks);

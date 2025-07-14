@@ -18,7 +18,7 @@ class TypeIntegrationTestBase extends AbstractTableIntegrationTestBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeIntegrationTestBase.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private String tableName(String typeName) {
+  protected String tableName(String typeName) {
     return "table_for_" + typeName;
   }
 
@@ -48,6 +48,16 @@ class TypeIntegrationTestBase extends AbstractTableIntegrationTestBase {
     // TODO: NO LIST TYPE, WE CANNOT VERIFY THE TYPE WAS CREATED AS DEFINED, SO USING READ TABLE TO
     // GET SCHEMA
     assertType(typeName, matchFields == null ? fields : matchFields);
+  }
+
+  protected void dropTypeTable(String typeName) {
+    LOGGER.info("Dropping type and table for typeName: {}", typeName);
+
+    // Drop the table first
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .dropTable(tableName(typeName), false)
+        .wasSuccessful();
   }
 
   /** Reads on the table to check the schema of the type */

@@ -881,14 +881,14 @@ request-errors:
 
   - scope: SCHEMA
     code: CANNOT_DROP_TYPE_USED_BY_TABLE
-    title: Type cannot be dropped if it is used by tables
+    title: Type cannot be dropped if used by tables
     body: |-
       The command attempted to drop a type that is used by tables.
       
       The command attempted to drop the type: ${usedType}.
-      ${driverMessage}
+      The command is used by the tables: ${tableNames}.
       
-      Resend the command using a type that is not used by any tables.
+      Resend the command using a type that is not used by a table.
 
   - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_COLUMNS
