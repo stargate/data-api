@@ -161,7 +161,7 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0].definition.columns.timestamp_type.type", equalTo("timestamp"))
           .body("status.tables[0].definition.columns.set_type.type", equalTo("set"))
           .body(
-              "status.tables[0].definition.columns.set_type.valueType",
+              "status.tables[0].definition.columns.set_type.valueType.type",
               equalTo("text")) // Set's valueType check
           .body("status.tables[0].definition.columns.bigint_type.type", equalTo("bigint"))
           .body("status.tables[0].definition.columns.boolean_type.type", equalTo("boolean"))
@@ -170,14 +170,14 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0].definition.columns.inet_type.type", equalTo("inet"))
           .body("status.tables[0].definition.columns.list_type.type", equalTo("list"))
           .body(
-              "status.tables[0].definition.columns.list_type.valueType",
+              "status.tables[0].definition.columns.list_type.valueType.type",
               equalTo("text")) // List's valueType check
           .body("status.tables[0].definition.columns.map_type.type", equalTo("map"))
           .body(
-              "status.tables[0].definition.columns.map_type.keyType",
+              "status.tables[0].definition.columns.map_type.keyType.type",
               equalTo("text")) // Map's keyType check
           .body(
-              "status.tables[0].definition.columns.map_type.valueType",
+              "status.tables[0].definition.columns.map_type.valueType.type",
               equalTo("int")) // Map's valueType check
           .body("status.tables[0].definition.columns.varint_type.type", equalTo("varint"))
           .body("status.tables[0].definition.columns.tinyint_type.type", equalTo("tinyint"))

@@ -23,13 +23,30 @@ public class DropTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   @Override
   public RuntimeException handle(InvalidQueryException exception) {
+
+    // Example driver message:
+    // "Type 'demo.fake' doesn't exist"
     if (exception.getMessage().contains("doesn't exist")) {
       return SchemaException.Code.CANNOT_DROP_UNKNOWN_TYPE.get(
           Map.of("unknownType", errFmt(typeName)));
     }
-    if (exception.getMessage().contains("it is still used")) {
+
+    // Example driver message:
+    // "Cannot drop user type 'demo.address' as it is still used by tables table_udt, table_udt2"
+    if (exception.getMessage().contains("is still used by tables")) {
+
+      var prefix = "is still used by tables";
+      var start = exception.getMessage().indexOf(prefix);
+      String tableNames;
+      if (start > -1) {
+        // other errors have " around the names
+        tableNames = "\"" + exception.getMessage().substring(start + prefix.length()).trim() + "\"";
+      } else {
+        tableNames = "unknown tables";
+      }
+
       return SchemaException.Code.CANNOT_DROP_TYPE_USED_BY_TABLE.get(
-          Map.of("usedType", errFmt(typeName), "driverMessage", exception.getMessage()));
+          "usedType", errFmt(typeName), "tableNames", tableNames);
     }
     return super.handle(exception);
   }

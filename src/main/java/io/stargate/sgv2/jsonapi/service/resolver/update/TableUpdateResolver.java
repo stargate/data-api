@@ -21,8 +21,11 @@ import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Resolves the update clause for a command when the target schema object is a {@link
@@ -37,6 +40,7 @@ import java.util.stream.Collectors;
  */
 public class TableUpdateResolver<CmdT extends Command & Updatable>
     extends UpdateResolver<CmdT, TableSchemaObject> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableUpdateResolver.class);
 
   private static final Map<UpdateOperator, TableUpdateOperatorResolver>
       SUPPORTED_OPERATION_RESOLVERS =
@@ -202,6 +206,14 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               .toList();
 
       if (!unsupportedColumns.isEmpty()) {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace(
+              "checkApiSupport() - operator not supported by all columns, table:{},  updateOperator: {} unsupportedColumns: {}",
+              tableSchemaObject.tableMetadata().getName(),
+              updateOperator.apiName(),
+              String.join(",", unsupportedColumns.stream().map(PrettyPrintable::print).toList()));
+        }
+
         throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
             errVars(
                 tableSchemaObject,

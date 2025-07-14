@@ -846,11 +846,14 @@ request-errors:
 
   - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_FIELD
-    title: Field with the same name are defined in the type schema
+    title: Field with the same name are defined in the type definition
     body: |-
-      Field name must be unique in the type ${typeName}.
-      ${driverMessage}
-      Resend the command using unique field.
+      The command attempted to add a field with a name that already exists in the type definition.
+      
+      The command altered the type: ${typeName}.
+      The existing field name was: ${existingField}.
+      
+      Resend the command using only new field names.
 
   - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
@@ -878,14 +881,14 @@ request-errors:
 
   - scope: SCHEMA
     code: CANNOT_DROP_TYPE_USED_BY_TABLE
-    title: Type cannot be dropped if it is used by tables
+    title: Type cannot be dropped if used by tables
     body: |-
       The command attempted to drop a type that is used by tables.
       
       The command attempted to drop the type: ${usedType}.
-      ${driverMessage}
+      The command is used by the tables: ${tableNames}.
       
-      Resend the command using a type that is not used by any tables.
+      Resend the command using a type that is not used by a table.
 
   - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_COLUMNS
@@ -971,8 +974,11 @@ request-errors:
     code: CANNOT_RENAME_UNKNOWN_TYPE_FIELD
     title: Field cannot be renamed if it is not defined in the type
     body: |-
-      The command attempted to rename a field that is not defined in the type ${typeName}.
-      ${driverMessage}
+      The command attempted to rename a field that is not defined in the named type.
+      
+      The command altered the type: ${typeName}.
+      The unknown field was: ${unknownField}.
+      
       Resend the command using only fields defined in the type.
 
   - scope: SCHEMA
@@ -1099,10 +1105,10 @@ request-errors:
     code: UNSUPPORTED_TYPE_FIELDS
     title: Type definition contains unsupported fields.
     body: |-
-      The command contains field definitions that use types which are not supported by user-defined types.
+      The command attempted to create a user defined type with field definitions that use unsupported types.
       
       The supported field data types are: ${supportedTypes}.
-      The command has contained the unsupported types: ${unsupportedFields}.
+      The command used the unsupported types: ${unsupportedFields}.
       
       Resend the command using only supported field data types.
 

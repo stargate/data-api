@@ -41,10 +41,14 @@ public class ApiUdtShallowType implements ApiDataType {
 
   /**
    * Frozen UDTs are used in collection values, and may be created by CQL users. When frozen the
-   * fields in the UDT cannot be updated.
+   * fields in the UDT cannot be updated. But you can set and unset the column itself. HACK: for
+   * now, we cannot update individual fields in the UDT, so marking $set and $unset is OK, but we
+   * have no way to update the fields in the UDT. When support updating fields, we need an update
+   * state for setting fields in the UDT, not the columns itself.
    */
   public static final ApiSupportDef API_SUPPORT_FROZEN_UDT =
-      new ApiSupportDef.Support(true, true, true, true, ApiSupportDef.Update.NONE);
+      new ApiSupportDef.Support(
+          true, true, true, true, new ApiSupportDef.Update(true, true, false, false));
 
   /** Normal UDT usage in a column is non-frozen, we can update it but cannot filter on it */
   public static final ApiSupportDef API_SUPPORT_NON_FROZEN_UDT =
