@@ -1022,22 +1022,6 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
             }
           }""";
 
-      var matchDoc =
-          """
-          {
-            "id": "updatePushOpAllFrozenSetAddress",
-            "all_frozen_set_address": [
-              {
-                "street": "all frozen set udt",
-                "city": "Original City"
-              },
-              {
-                "street": "updatePushOpAllFrozenSetAddress",
-                "city": "updatePushOpAllFrozenSetAddress"
-              }
-            ]
-          }""";
-
       assertUpdateFail(
           "updatePushOpAllFrozenSetAddress",
           update,
@@ -1061,22 +1045,6 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
             }
           }""";
 
-      var matchDoc =
-          """
-          {
-            "id": "updatePushOpAllFrozenListAddress",
-            "all_frozen_list_address": [
-              {
-                "street": "all frozen list udt",
-                "city": "Original City"
-              },
-              {
-                "street": "updatePushOpAllFrozenListAddress",
-                "city": "updatePushOpAllFrozenListAddress"
-              }
-            ]
-          }""";
-
       assertUpdateFail(
           "updatePushOpAllFrozenListAddress",
           update,
@@ -1098,22 +1066,6 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
                   "street": "updatePushOpAllFrozenMapAddress",
                   "city": "updatePushOpAllFrozenMapAddress"
                 }
-              }
-            }
-          }""";
-
-      var matchDoc =
-          """
-          {
-            "id": "updatePushOpAllFrozenMapAddress",
-            "all_frozen_map_address": {
-              "key1": {
-                "street": "all frozen map udt",
-                "city": "Original City"
-              },
-              "key2": {
-                "street": "updatePushOpAllFrozenMapAddress",
-                "city": "updatePushOpAllFrozenMapAddress"
               }
             }
           }""";
@@ -1278,22 +1230,6 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
           }
           """;
 
-      var matchDoc =
-          """
-              {
-                "id": "updatePushEachOpAllFrozenSetAddress",
-                "all_frozen_set_address": [
-                  {
-                    "street": "all frozen set udt",
-                    "city": "Original City"
-                  },
-                  {
-                    "street": "updatePushEachOpAllFrozenSetAddress",
-                    "city": "updatePushEachOpAllFrozenSetAddress"
-                  }
-                ]
-              }""";
-
       assertUpdateFail(
           "updatePushEachOpAllFrozenSetAddress",
           update,
@@ -1324,22 +1260,6 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
           }
           """;
 
-      var matchDoc =
-          """
-              {
-                "id": "updatePushEachOpAllFrozenMapAddress",
-                "all_frozen_map_address": {
-                  "key1": {
-                    "street": "all frozen map udt",
-                    "city": "Original City"
-                  },
-                  "key2": {
-                    "street": "updatePushEachOpAllFrozenMapAddress",
-                    "city": "updatePushEachOpAllFrozenMapAddress"
-                  }
-                }
-              }""";
-
       assertUpdateFail(
           "updatePushEachOpAllFrozenMapAddress",
           update,
@@ -1368,22 +1288,6 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
           }
           """;
 
-      var matchDoc =
-          """
-              {
-                "id": "updatePushEachOpAllFrozenListAddress",
-                "all_frozen_list_address": [
-                  {
-                    "street": "all frozen list udt",
-                    "city": "Original City"
-                  },
-                  {
-                    "street": "updatePushEachOpAllFrozenListAddress",
-                    "city": "updatePushEachOpAllFrozenListAddress"
-                  }
-                ]
-              }""";
-
       assertUpdateFail(
           "updatePushEachOpAllFrozenListAddress",
           update,
@@ -1408,15 +1312,6 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
               }
               """;
 
-      var matchDoc =
-          """
-              {
-                "id": "updateUnsetOpScalarAddressPartial",
-                "scalar_address": {
-                     "street": "scalar udt"
-                }
-              }""";
-
       // TODO: This is failing because we do not yet support partial updates of a UDT, it should be
       // possible to do
       assertUpdateFail(
@@ -1437,15 +1332,6 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
                 }
               }
               """;
-
-      var matchDoc =
-          """
-              {
-                "id": "updateUnsetOpScalarAddressPartial",
-                "frozen_address": {
-                     "street": "scalar udt"
-                }
-              }""";
 
       // TODO: this fails with unknown because we not yet support partial updates of a UDT, when we
       // have that

@@ -43,6 +43,8 @@ public class DropTypeIntegrationTest extends TypeIntegrationTestBase {
 
     createTypeAndTable("dropInUseType", FIELDS);
 
+    // See the DropTypeExceptionHandler, the error message is different for DSE and HCD
+    // so only validating it has the table name in the error message
     assertNamespaceCommand(AbstractKeyspaceIntegrationTestBase.keyspaceName)
         .templated()
         .dropType("dropInUseType", false)
@@ -50,7 +52,7 @@ public class DropTypeIntegrationTest extends TypeIntegrationTestBase {
             SchemaException.Code.CANNOT_DROP_TYPE_USED_BY_TABLE,
             SchemaException.class,
             "The command attempted to drop the type: \"dropInUseType\"",
-            "The command is used by the tables: \"" + tableName("dropInUseType") + "\".");
+            tableName("dropInUseType"));
   }
 
   @Test
