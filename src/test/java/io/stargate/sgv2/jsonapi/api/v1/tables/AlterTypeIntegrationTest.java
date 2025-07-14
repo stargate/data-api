@@ -19,10 +19,6 @@ class AlterTypeIntegrationTest extends TypeIntegrationTestBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(AlterTypeIntegrationTest.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private String tableName(String typeName) {
-    return "table_for_" + typeName;
-  }
-
   private void createTypeAndTable(String typeName) {
     var fields =
         """

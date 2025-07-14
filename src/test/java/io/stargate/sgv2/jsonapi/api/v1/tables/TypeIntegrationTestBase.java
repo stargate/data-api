@@ -19,7 +19,7 @@ class TypeIntegrationTestBase extends AbstractTableIntegrationTestBase {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   protected String tableName(String typeName) {
-    return "table_for_" + typeName;
+    return "table_for_udt_" + typeName;
   }
 
   protected void createTypeAndTable(String typeName, String fields) {
