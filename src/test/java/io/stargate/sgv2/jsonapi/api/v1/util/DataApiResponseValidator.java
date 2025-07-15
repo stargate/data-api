@@ -62,6 +62,7 @@ public class DataApiResponseValidator {
                   CREATE_VECTOR_INDEX,
                   DROP_INDEX,
                   LIST_TABLES,
+                  LIST_TYPES,
                   LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
@@ -133,7 +134,7 @@ public class DataApiResponseValidator {
           DROP_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
-      case LIST_TABLES, LIST_INDEXES -> {
+      case LIST_TABLES, LIST_INDEXES, LIST_TYPES -> {
         return hasNoErrors();
       }
       case CREATE_COLLECTION -> {

@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
@@ -230,6 +231,14 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
       return new ApiColumnDef(
           columnMetadata.getName(),
           DefaultTypeFactoryFromCql.INSTANCE.createUnsupported(columnMetadata.getType()));
+    }
+
+    @Override
+    public ApiColumnDef createUnsupported(DataType type) {
+      Objects.requireNonNull(type, "type must not be null");
+      return new ApiColumnDef(
+          CqlIdentifier.fromCql("unsupportedField"),
+          DefaultTypeFactoryFromCql.INSTANCE.createUnsupported(type));
     }
   }
 }

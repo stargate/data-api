@@ -12,13 +12,14 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
 
-/** TODO: MOVE THE CREATE TABLE TETS INTO THE CREATE TABLE TEST CLASS */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TYPE_NAME = "address";
+
+  private static final Map<String, Object> TYPE_DEF = Map.of("city", "text", "postcode", "text");
 
   private static final String TABLE = "udt_table";
 
@@ -64,7 +65,6 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
   }
 
   @Nested
-  @Order(4)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   // Note, AlterTable shares same logic for handling UDT colum  n, won't test it here.
   class CreateTable {
@@ -147,7 +147,6 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
   }
 
   @Nested
-  @Order(5)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class WriteAndRead {
 
@@ -192,18 +191,7 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
                   }
              """;
 
-    private static final String ROW_2_TUPLE_FORMAT =
-        """
-                      {
-                           "id": "row_2",
-                           "address": [
-                               ["city", "New York"],
-                               ["postcode", "10001"]
-                           ]
-                      }
-                 """;
-
-    private static final String ROW_2_OBJECT_FORMAT =
+    private static final String ROW_2 =
         """
                           {
                                "id": "row_2",
@@ -259,29 +247,28 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
                    }
                """;
 
-    @Test
-    @Order(1)
-    public void insertRow1() {
+    @BeforeAll
+    public static void insertRows() {
       assertTableCommand(keyspaceName, TABLE)
           .templated()
           .insertOne(ROW_1)
           .wasSuccessful()
           .hasInsertedIds(List.of("row_1"));
-    }
 
-    @Test
-    @Order(1)
-    public void insertRow2TupleFormatUdt() {
-      // TODO UDT_TODO UDT tuple format for map/set/list
       assertTableCommand(keyspaceName, TABLE)
           .templated()
-          .insertOne(ROW_2_TUPLE_FORMAT)
+          .insertOne(ROW_2)
           .wasSuccessful()
           .hasInsertedIds(List.of("row_2"));
+
+      assertTableCommand(keyspaceName, TABLE)
+          .templated()
+          .insertOne(ROW_3)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("row_3"));
     }
 
     @Test
-    @Order(2)
     public void readRow1ById() {
       assertTableCommand(keyspaceName, TABLE)
           .templated()
@@ -289,17 +276,6 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
           .find(Map.of("id", "row_1"), null, null, null)
           .wasSuccessful()
           .hasDocumentInPosition(0, ROW_1);
-    }
-
-    @Test
-    @Order(2)
-    public void readRow2ById() {
-      assertTableCommand(keyspaceName, TABLE)
-          .templated()
-          // project all columns
-          .find(Map.of("id", "row_2"), null, null, null)
-          .wasSuccessful()
-          .hasDocumentInPosition(0, ROW_2_OBJECT_FORMAT);
     }
 
     @Test
@@ -371,13 +347,7 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void updateCollectionOfUdt() {
 
-      // insert row_3 first, notice list/set/map are all empty
-      assertTableCommand(keyspaceName, TABLE)
-          .templated()
-          .insertOne(ROW_3)
-          .wasSuccessful()
-          .hasInsertedIds(List.of("row_3"));
-      // push without $each
+      // push without $each to row_3
       var pushJSON =
           """
                     {
@@ -489,6 +459,104 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
           .find(Map.of("id", "row_3"), null, null, null)
           .wasSuccessful()
           .hasDocumentInPosition(0, ROW_3);
+    }
+
+    @Test
+    // set of UDT share the same filtering result
+    public void filterOnListOfUDT() {
+      String filterOnList =
+          """
+            {
+              "listOfAddress": {
+                "$in": [
+                     {
+                         "city": "Los Angeles",
+                         "postcode": "90001"
+                     }
+                ]
+              }
+            }
+          """;
+      assertTableCommand(keyspaceName, TABLE)
+          .templated()
+          .find(filterOnList)
+          .wasSuccessful()
+          .hasDocumentInPosition(0, ROW_1);
+
+      // if we filter $nin with a random address on setOfAddress, we should find all rows
+      String filterOnSet =
+          """
+            {
+              "setOfAddress": {
+                  "$nin": [
+                       {
+                           "city": "Random City",
+                           "postcode": "12345"
+                       }
+                  ]
+              }
+            }
+          """;
+      assertTableCommand(keyspaceName, TABLE)
+          .templated()
+          .find(filterOnSet)
+          .wasSuccessful()
+          .hasDocuments(3)
+          .hasDocumentUnknowingPosition(ROW_1)
+          .hasDocumentUnknowingPosition(ROW_2)
+          .hasDocumentUnknowingPosition(ROW_3);
+    }
+
+    @Test
+    public void filterOnMapOfUDT() {
+      String filterOnMapValues =
+          """
+                    {
+                        "mapOfAddress": {
+                            "$values": {
+                                "$all": [
+                                    {
+                                        "city": "San Francisco",
+                                        "postcode": "94101"
+                                    },
+                                    {
+                                        "city": "Seattle",
+                                        "postcode": "98101"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+            """;
+      assertTableCommand(keyspaceName, TABLE)
+          .templated()
+          .find(filterOnMapValues)
+          .wasSuccessful()
+          .hasDocumentInPosition(0, ROW_1);
+
+      // filter on map entry
+      String filterOnMapEntry =
+          """
+              {
+                "mapOfAddress": {
+                  "$in": [
+                            [
+                                "home",
+                                {
+                                    "city": "San Francisco",
+                                    "postcode": "94101"
+                                }
+                            ]
+                        ]
+                }
+              }
+            """;
+      assertTableCommand(keyspaceName, TABLE)
+          .templated()
+          .find(filterOnMapEntry)
+          .wasSuccessful()
+          .hasDocuments(1)
+          .hasDocumentUnknowingPosition(ROW_1);
     }
   }
 }
