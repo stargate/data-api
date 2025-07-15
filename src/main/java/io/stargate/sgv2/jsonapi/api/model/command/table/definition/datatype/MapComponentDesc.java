@@ -27,8 +27,9 @@ public enum MapComponentDesc {
   }
 
   public static Optional<MapComponentDesc> fromApiName(String userInput) {
-    // TODO: YUQI / AARON / XXX Remove this use of Optional.ofNullable, is the user input nullable ?
-    return Optional.ofNullable(userInput).map(String::toLowerCase).map(COMPONENT_MAP::get);
+    return userInput == null
+        ? Optional.empty()
+        : Optional.ofNullable(COMPONENT_MAP.get(userInput.toLowerCase()));
   }
 
   MapComponentDesc(String value) {

@@ -27,14 +27,6 @@ public interface ApiSupportDef {
   boolean createTable();
 
   /**
-   * The type can be used as component for collection
-   *
-   * <p>E.G. list values, set values, map keys, map values.
-   */
-  // TODO: XXX: DELETE
-  //  Collection collection();
-
-  /**
    * The type can be used in an insert command
    *
    * @return <code>true</code> if the type can be used in an insert command
@@ -71,26 +63,6 @@ public interface ApiSupportDef {
     return !insert() || !read() || !filter();
   }
 
-  // TODO: XXX: DELETE
-  //  /**
-  //   * Record to represent if a dataType is supported as component for map/set/list.
-  //   *
-  //   * @param asListValue If the type can be created as value on a List.
-  //   * @param asSetValue If the type can be created as value on a Set.
-  //   * @param asMapKey If the type can be created as map key.
-  //   * @param asMapValue If the type can be created as map value.
-  //   */
-  //  // TODO: XXX REMOVE
-  //  record Collection(boolean asListValue, boolean asSetValue, boolean asMapKey, boolean
-  // asMapValue) {
-  //    public static final Collection FULL = new Collection(true, true, true, true);
-  //    public static final Collection NONE = new Collection(false, false, false, false);
-  //    // API does not allow UDT(frozen/non-frozen) to be map key.
-  //    public static final Collection FROZEN_UDT = new Collection(true, true, false, true);
-  //    // API does not allow non-frozen UDT to be any map/set/list component.
-  //    public static final Collection NON_FROZEN_UDT = new Collection(false, false, false, false);
-  //  }
-
   /**
    * Record to represent if a dataType is supported for update operations.
    *
@@ -122,14 +94,7 @@ public interface ApiSupportDef {
   /**
    * Helper record to be used when the support can be determined at compile time, or easily cached.
    */
-  record Support(
-      boolean createTable,
-      // TODO: XXX: DELETE
-      //      Collection collection,
-      boolean insert,
-      boolean read,
-      boolean filter,
-      Update update)
+  record Support(boolean createTable, boolean insert, boolean read, boolean filter, Update update)
       implements ApiSupportDef {
 
     public static final Support FULL = new Support(true, true, true, true, Update.PRIMITIVE);

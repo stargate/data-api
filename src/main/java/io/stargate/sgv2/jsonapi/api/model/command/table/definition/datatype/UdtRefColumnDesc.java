@@ -29,10 +29,7 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
 
   public static final FromJsonFactory FROM_JSON_FACTORY = new FromJsonFactory();
 
-  private final CqlIdentifier udtName;
-
-  // TODO: XXX : DELETE
-  //  private final boolean isFrozen;
+  protected final CqlIdentifier udtName;
 
   public UdtRefColumnDesc(SchemaDescSource schemaDescSource, CqlIdentifier udtName) {
     this(schemaDescSource, udtName, null);
@@ -48,11 +45,6 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
   public CqlIdentifier udtName() {
     return udtName;
   }
-
-  // TODO: XXX: DELETE
-  //  public boolean isFrozen() {
-  //    return isFrozen;
-  //  }
 
   @Override
   public boolean equals(Object o) {

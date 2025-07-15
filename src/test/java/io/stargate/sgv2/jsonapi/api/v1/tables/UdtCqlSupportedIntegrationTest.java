@@ -37,8 +37,9 @@ import org.slf4j.LoggerFactory;
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBase {
-  private static final Logger LOGGER = LoggerFactory.getLogger(CQLUdtSupportIntegrationTest.class);
+public class UdtCqlSupportedIntegrationTest extends AbstractTableIntegrationTestBase {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(UdtCqlSupportedIntegrationTest.class);
 
   private static final String TABLE_NAME = "table_udt";
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -457,7 +458,19 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
       assertWrite(doc);
     }
 
-    // TODO: XXX: partial insert of a UDT
+    /** Support inserting to a partially defined scalar UDT column */
+    @Test
+    public void insertScalarAddressPartial() {
+      var doc =
+          """
+              {
+                "id": "insertScalarAddressPartial",
+                "scalar_address": {
+                     "street": "scalar udt"
+                 }
+              }""";
+      assertWrite(doc);
+    }
 
     /** Support inserting to a frozen UDT column */
     @Test
@@ -469,6 +482,20 @@ public class CQLUdtSupportIntegrationTest extends AbstractTableIntegrationTestBa
                 "frozen_address": {
                      "street": "scalar udt",
                      "city": "Original City"
+                 }
+              }""";
+      assertWrite(doc);
+    }
+
+    /** Support inserting to a partially defined frozen scalar UDT column */
+    @Test
+    public void insertFrozenScalarAddressPartial() {
+      var doc =
+          """
+              {
+                "id": "insertFrozenScalarAddressPartial",
+                "scalar_address": {
+                     "street": "scalar udt"
                  }
               }""";
       assertWrite(doc);

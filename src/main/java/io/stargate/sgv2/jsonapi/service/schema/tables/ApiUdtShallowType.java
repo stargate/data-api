@@ -137,8 +137,8 @@ public class ApiUdtShallowType implements ApiDataType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
-        // TODO: XXX: AARON need a general schema exception ?
-        throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
+        // currently do not have anything more specific to throw
+        throw new UnsupportedUserType(bindingPoint, columnDesc);
       }
 
       if (columnDesc.udtName() == null || columnDesc.udtName().asInternal().isBlank()) {

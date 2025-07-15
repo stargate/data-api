@@ -191,7 +191,6 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
       if (!isTypeBindable(bindingPoint, cqlType)) {
-        LOGGER.warn("XXX - ApiMapType.create - after is Support {}", cqlType.asCql(true, true));
         throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
 
@@ -205,7 +204,6 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         return new ApiMapType(keyType, valueType, cqlType.isFrozen());
 
       } catch (UnsupportedCqlType e) {
-        LOGGER.warn("XXX - ApiMapType.create - caught from child {}", cqlType.asCql(true, true));
         // make sure we have the map type, not just the key or value type
         throw new UnsupportedCqlType(bindingPoint, cqlType, e);
       }
@@ -219,20 +217,15 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
 
       // can we use a map of any type in this binding point?
       if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromDb()) {
-        LOGGER.warn("XXX - ApiMapType.isSupported - unsupported MAP {}", cqlType.asCql(true, true));
         return false;
       }
       // now check if the key and value types are supported for binding into a map
       if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
           TypeBindingPoint.MAP_KEY, cqlType.getKeyType())) {
-        LOGGER.warn(
-            "XXX - ApiMapType.isSupported - unsupported key type: {}", cqlType.asCql(true, true));
         return false;
       }
       if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
           TypeBindingPoint.COLLECTION_VALUE, cqlType.getValueType())) {
-        LOGGER.warn(
-            "XXX - ApiMapType.isSupported - unsupported value type: {}", cqlType.asCql(true, true));
         return false;
       }
       return true;
