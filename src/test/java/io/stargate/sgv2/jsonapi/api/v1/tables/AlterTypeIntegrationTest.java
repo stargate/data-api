@@ -174,15 +174,30 @@ class AlterTypeIntegrationTest extends TypeIntegrationTestBase {
   }
 
   @Test
-  public void emptyAddField() {
-
+  public void emptyAdd() {
     var alterOp =
         """
           "add": {}
         """;
 
     assertAlterFails(
-        "emptyAddField",
+        "emptyAdd",
+        alterOp,
+        SchemaException.Code.MISSING_ALTER_TYPE_OPERATIONS,
+        SchemaException.class);
+  }
+
+  @Test
+  public void emptyAddWithNoFields() {
+    var alterOp =
+        """
+              "add": {
+                "fields":{
+                }
+              }
+            """;
+    assertAlterFails(
+        "emptyAddWithNoFields",
         alterOp,
         SchemaException.Code.MISSING_ALTER_TYPE_OPERATIONS,
         SchemaException.class);

@@ -83,7 +83,9 @@ public class AlterTypeCommandResolver implements CommandResolver<AlterTypeComman
     }
 
     // build tasks for adding fields
-    if (command.add() != null && !command.add().fields().isEmpty()) {
+    if (command.add() != null
+        && command.add().fields() != null
+        && !command.add().fields().isEmpty()) {
       var apiUdtType =
           ApiUdtType.FROM_TYPE_DESC_FACTORY.create(
               command.name(), command.add(), validateVectorize);

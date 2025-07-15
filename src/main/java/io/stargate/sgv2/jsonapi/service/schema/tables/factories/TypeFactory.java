@@ -33,6 +33,9 @@ public abstract class TypeFactory {
     return cqlIdentifierFromUserInput(userName);
   }
 
+  /**
+   * Checks that the given superObject is an instance of the childClass, and casts it to childClass.
+   */
   protected <SuperT, ChildT extends SuperT> ChildT checkCastToChild(
       String context, Class<ChildT> childClass, SuperT superObject) {
     if (!childClass.isInstance(superObject)) {
