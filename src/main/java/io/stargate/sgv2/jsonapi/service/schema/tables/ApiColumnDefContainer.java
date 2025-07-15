@@ -17,13 +17,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** A {@link ApiColumnDefContainer} that maintains the order of the columns as they were added. */
 public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef>
     implements SchemaDescribable<ColumnsDescContainer>, Recordable {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ApiColumnDefContainer.class);
 
   private static final ApiColumnDefContainer IMMUTABLE_EMPTY =
       new ApiColumnDefContainer(0).toUnmodifiable();

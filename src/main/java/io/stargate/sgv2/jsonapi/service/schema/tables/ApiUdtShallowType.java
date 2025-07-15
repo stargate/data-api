@@ -65,7 +65,13 @@ public class ApiUdtShallowType implements ApiDataType {
 
   private final ApiSupportDef apiSupport;
 
-  /** TODO: COMMENTS */
+  /**
+   * Constructor for creating a shallow UDT type, this is used when we have a UDT as a column or
+   * collection value type, but we do not have the full definition of the UDT.
+   *
+   * @param udtName The name of the UDT.
+   * @param isFrozen Whether the UDT is frozen or not.
+   */
   protected ApiUdtShallowType(CqlIdentifier udtName, boolean isFrozen) {
     this.udtName = udtName;
     this.isFrozen = isFrozen;
@@ -74,9 +80,9 @@ public class ApiUdtShallowType implements ApiDataType {
   }
 
   /**
-   * Throws {@link UnsupportedOperationException} because we should only be using this type on the
-   * incoming side of a createTable. Once the table or type is created, we should have the full
-   * {@link ApiUdtType}
+   * Throws {@link UnsupportedOperationException} because we should only be using this shallow type
+   * on the incoming side of a createTable. Once the table or type is created, we should have the
+   * full {@link ApiUdtType}
    */
   @Override
   public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {

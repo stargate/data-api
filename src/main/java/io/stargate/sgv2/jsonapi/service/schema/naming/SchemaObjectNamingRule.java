@@ -59,7 +59,7 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
   }
 
   /**
-   * Validate the name agianst the naming rule, and throw a {@link SchemaException} if the name is
+   * Validate the name against the naming rule, and throw a {@link SchemaException} if the name is
    * invalid.
    *
    * @param name The name to validate.

@@ -55,11 +55,7 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
         ApiSupportDesc.from(this));
   }
 
-  /**
-   * Factory to create {@link ApiSetType} from {@link SetColumnDesc} obtained from the user.
-   *
-   * <p>...
-   */
+  /** Factory to create {@link ApiSetType} from {@link SetColumnDesc} obtained from the user. */
   private static final class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiSetType, SetColumnDesc> {
 
@@ -122,6 +118,7 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
               TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
         return false;
       }
+
       return true;
     }
 

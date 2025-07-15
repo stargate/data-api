@@ -56,11 +56,7 @@ public class ApiListType extends CollectionApiDataType<ListType> {
         ApiSupportDesc.from(this));
   }
 
-  /**
-   * Factory to create {@link ApiListType} from {@link ListColumnDesc} obtained from user
-   *
-   * <p>...
-   */
+  /** Factory to create {@link ApiListType} from {@link ListColumnDesc} obtained from user */
   private static class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiListType, ListColumnDesc> {
 
@@ -134,8 +130,6 @@ public class ApiListType extends CollectionApiDataType<ListType> {
 
   /**
    * Type factory to create {@link ApiListType} from {@link ListType} obtained from driver / cql.
-   *
-   * <p>...
    */
   private static class CqlTypeFactory extends TypeFactoryFromCql<ApiListType, ListType> {
 
