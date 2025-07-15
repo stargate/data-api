@@ -83,11 +83,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
     return super.recordTo(dataRecorder).append("keyType", keyType);
   }
 
-  /**
-   * Factory to create {@link ApiMapType} from user provided {@link MapColumnDesc}.
-   *
-   * <p>...
-   */
+  /** Factory to create {@link ApiMapType} from user provided {@link MapColumnDesc}. */
   private static class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc> {
 
@@ -103,6 +99,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
+      // can we use a map of any type in this binding point?
       if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
         throw new UnsupportedUserType(
             bindingPoint,
@@ -173,11 +170,7 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
     }
   }
 
-  /**
-   * Factory to create {@link ApiMapType} from CQL {@link MapType}.
-   *
-   * <p>...
-   */
+  /** Factory to create {@link ApiMapType} from CQL {@link MapType}. */
   private static class CqlTypeFactory extends TypeFactoryFromCql<ApiMapType, MapType> {
 
     CqlTypeFactory() {

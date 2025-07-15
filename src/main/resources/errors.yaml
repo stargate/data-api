@@ -1076,7 +1076,7 @@ request-errors:
       The command attempted to create a list column that used an unsupported type for the value.
       
       Lists can use primitive type for the value, except for counter and timeuuid.
-      Sets can use userDefined type for the value.
+      Lists can use userDefined type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.

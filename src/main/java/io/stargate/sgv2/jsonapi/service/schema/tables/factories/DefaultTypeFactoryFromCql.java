@@ -41,9 +41,9 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
     PRIMITIVE_TYPES.forEach(
         primitiveType -> addFactory(factories, new PrimitiveTypeFactoryFromCql(primitiveType)));
 
-    // types that we know about, but do not support in any configuration , we need a factory for
-    // every
-    // type the DB can return so we can verify that the mapping to find factories is valid.
+    // types that we know about, but do not support in any configuration,
+    // we need a factory for every type the DB can return,
+    // so we can verify that the mapping to find factories is valid.
     factories.put(
         ProtocolConstants.DataType.TUPLE,
         new UnsupportedTypeFactoryFromCql<>(ProtocolConstants.DataType.TUPLE, TupleType.class));
@@ -127,7 +127,7 @@ public class DefaultTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType, D
             try {
               return typeFactory.createUntyped(bindingPoint, cqlType, vectorizeDefn);
             } catch (UnsupportedCqlType e) {
-              // This can happen if it there are parts of the type we do not support,
+              // This can happen if there are parts of the type we do not support,
               // like a collection of collection, wrap the checked
               // exception to get it out of the cache loader, then re-throw below
               throw new RuntimeException(e);

@@ -5,8 +5,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The definition of a type the API supports for a table column.
@@ -19,7 +17,6 @@ import org.slf4j.LoggerFactory;
  * <p>aaron - 9 sept 2024 - avoiding a record for now as assume will use subclasses for collections
  */
 public class PrimitiveApiDataTypeDef implements ApiDataType {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PrimitiveApiDataTypeDef.class);
 
   private final ApiTypeName typeName;
   private final DataType cqlType;

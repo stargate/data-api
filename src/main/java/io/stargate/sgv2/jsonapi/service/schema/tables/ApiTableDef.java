@@ -85,7 +85,7 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
   @Override
   public TableDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
 
-    // only describe for a DDL command, for the DML commands it only considers the fields that
+    // only describe for a DDL command, for the DML commands it only considers the columns that
     // were read, handled in the {@link TableProjection}
     if (schemaDescSource != SchemaDescSource.DDL_SCHEMA_OBJECT) {
       throw schemaDescSource.unsupportedException("ApiTableDef.getSchemaDescription()");

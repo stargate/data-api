@@ -153,14 +153,6 @@ public interface ApiSupportDef {
       return new Matcher(createTable, collectionSupport, insert, read, filter);
     }
 
-    /**
-     * Returns a new matcher with the same values as this object, and the filter value set to the
-     * given value.
-     */
-    public Matcher withFilter(boolean filter) {
-      return new Matcher(createTable, collectionSupport, insert, read, filter);
-    }
-
     @Override
     public boolean test(ApiSupportDef apiSupportDef) {
       Objects.requireNonNull(apiSupportDef, "apiSupportDef must not be null");
