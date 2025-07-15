@@ -202,7 +202,7 @@ public class MapSetListTableFilter extends TableFilter {
     boolean isFirst = true;
     for (List<Object> entryTuple : uncheckedMatchValuesAsTuple()) {
 
-      // TODO: XXX YUQI/ AAROn - should we check the size here ?
+      // TODO: - should we check the size here ?
       // remember, the keys may not be strings they can be any type now.
       var key = entryTuple.get(0);
       var value = entryTuple.get(1);

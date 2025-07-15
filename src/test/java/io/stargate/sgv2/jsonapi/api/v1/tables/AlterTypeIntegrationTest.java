@@ -172,4 +172,34 @@ class AlterTypeIntegrationTest extends TypeIntegrationTestBase {
         SchemaException.class,
         "The existing field name was: city.");
   }
+
+  @Test
+  public void emptyAddField() {
+
+    var alterOp =
+        """
+          "add": {}
+        """;
+
+    assertAlterFails(
+        "emptyAddField",
+        alterOp,
+        SchemaException.Code.MISSING_ALTER_TYPE_OPERATIONS,
+        SchemaException.class);
+  }
+
+  @Test
+  public void emptyRenameField() {
+
+    var alterOp =
+        """
+          "rename": {}
+        """;
+
+    assertAlterFails(
+        "emptyRenameField",
+        alterOp,
+        SchemaException.Code.MISSING_ALTER_TYPE_OPERATIONS,
+        SchemaException.class);
+  }
 }

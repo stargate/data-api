@@ -37,7 +37,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, CreateIndexCommand command) {
 
-    // TODO: XXX: AARON: Validation should happen in the factory for the index
+    // TODO: AARON: Validation should happen in the factory for the index, not here.
     var indexName = NamingRules.INDEX.checkRule(command.name());
 
     var indexType =

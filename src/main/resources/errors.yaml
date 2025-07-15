@@ -816,6 +816,14 @@ request-errors:
       Resend the command including changes to the table.
 
   - scope: SCHEMA
+    code: MISSING_ALTER_TYPE_OPERATIONS
+    title: Alter type command must include operations
+    body: |-
+      The `alterType` command must contain at least one operation to alter the type schema, such as adding or renaming fields.
+      
+      Resend the command including changes to the type.
+
+  - scope: SCHEMA
     code: MISSING_DIMENSION_IN_VECTOR_COLUMN
     title: Dimension is required for vector column if embedding service is not specified
     body: |-
