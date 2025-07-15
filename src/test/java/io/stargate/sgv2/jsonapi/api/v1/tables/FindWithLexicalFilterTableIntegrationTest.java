@@ -73,7 +73,8 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
               "value", "a",
               "tags", "tag1",
               "no_index_tags", "abc"));
-      insertOneInTable(TABLE_NAME, Map.of("id", "2", "value", "b", "tags", "tag2", "no_index_tags", "def"));
+      insertOneInTable(
+          TABLE_NAME, Map.of("id", "2", "value", "b", "tags", "tag2", "no_index_tags", "def"));
       insertOneInTable(
           TABLE_NAME,
           Map.of(
