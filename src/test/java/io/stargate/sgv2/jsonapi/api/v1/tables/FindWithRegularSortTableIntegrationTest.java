@@ -32,8 +32,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * Integration tests for the find command with regular (non-ANN, non-Lexical) sorting on a table.
- * <p>
- * This test class creates a table with various fields and performs find operations with sorting
+ *
+ * <p>This test class creates a table with various fields and performs find operations with sorting
  * on different fields, including text and numeric fields, both ascending and descending.
  */
 @QuarkusIntegrationTest
