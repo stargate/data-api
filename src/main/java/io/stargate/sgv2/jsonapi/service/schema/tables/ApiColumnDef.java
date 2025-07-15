@@ -235,7 +235,7 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
 
     @Override
     public ApiColumnDef createUnsupported(DataType type) {
-      Objects.requireNonNull(type, "type is must not be null");
+      Objects.requireNonNull(type, "type must not be null");
       return new ApiColumnDef(
           CqlIdentifier.fromCql("unsupportedField"),
           DefaultTypeFactoryFromCql.INSTANCE.createUnsupported(type));

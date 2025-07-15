@@ -6,16 +6,11 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -272,18 +267,6 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
           .wasSuccessful()
           .hasInsertedIds(List.of("row_3"));
     }
-
-    //    @Test
-    //    @Order(1)
-    //    public void insertRow1() {
-    //
-    //    }
-    //
-    //    @Test
-    //    @Order(1)
-    //    public void insertRow2TupleFormatUdt() {
-    //
-    //    }
 
     @Test
     public void readRow1ById() {

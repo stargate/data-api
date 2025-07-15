@@ -193,6 +193,19 @@ public class KeyspaceTemplates extends TemplateRunner {
     return sender.postAlterType(json);
   }
 
+  public DataApiResponseValidator listTypes(boolean explain) {
+    String json =
+            """
+            {
+            "options" : {
+                "explain" : %s
+            }
+         }
+         """
+            .formatted(explain);
+    return sender.postListTypes(json);
+  }
+
   public DataApiResponseValidator listTables(boolean explain) {
     String json =
             """

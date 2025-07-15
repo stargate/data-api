@@ -56,19 +56,22 @@ public class ListTypesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
    */
   @Override
   protected Object getSchema() {
+
     // get all types
     var types = keyspaceMetadata.get().getUserDefinedTypes().values();
-
     List<Object> res = new ArrayList<>();
-
     for (UserDefinedType type : types) {
       try {
         var apiUdtType =
             ApiUdtType.FROM_CQL_FACTORY.create(TypeBindingPoint.TABLE_COLUMN, type, null);
         // need full inline schema desc
+        // so UDT schemaDescription needs to be called with SchemaDescSource.DML_USAGE
         res.add(apiUdtType.getSchemaDescription(SchemaDescSource.DML_USAGE));
       } catch (UnsupportedCqlType e) {
-        res.add(ApiColumnDef.FROM_CQL_FACTORY.createUnsupported(type));
+        res.add(
+            ApiColumnDef.FROM_CQL_FACTORY
+                .createUnsupported(type)
+                .getSchemaDescription(SchemaDescSource.DDL_USAGE));
       }
     }
     return res;

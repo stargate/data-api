@@ -13,6 +13,7 @@ public interface ColumnFactoryFromCql {
       TypeBindingPoint bindingPoint, ColumnMetadata columnMetadata, VectorConfig vectorConfig)
       throws UnsupportedCqlColumn;
 
+  /** Creates an unsupported column definition for the given CQL column metadata */
   ApiColumnDef createUnsupported(ColumnMetadata columnMetadata);
 
   /** Creates an unsupported column definition for the given CQL type. */

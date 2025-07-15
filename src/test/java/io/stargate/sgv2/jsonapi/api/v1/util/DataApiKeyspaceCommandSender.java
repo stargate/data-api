@@ -52,6 +52,10 @@ public class DataApiKeyspaceCommandSender
     return postCommand(CommandName.ALTER_TYPE, jsonClause);
   }
 
+  public DataApiResponseValidator postListTypes(String jsonClause) {
+    return postCommand(CommandName.LIST_TYPES, jsonClause);
+  }
+
   public DataApiResponseValidator postListTables(String jsonClause) {
     return postCommand(CommandName.LIST_TABLES, jsonClause);
   }
