@@ -10,12 +10,12 @@ import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
+import com.datastax.oss.driver.internal.querybuilder.select.DefaultSelect;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
-import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedSelect;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
@@ -174,8 +174,7 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
     // Note, use ExtendedSelect to support AND/OR in where clause, see details in
     // ExtendedSelect.java.
-    var selectFrom =
-        ExtendedSelect.selectFrom(schemaObject.keyspaceName(), schemaObject.tableName());
+    var selectFrom = new DefaultSelect(schemaObject.keyspaceName(), schemaObject.tableName());
     var select = applySelect(selectFrom, positionalValues);
     // these are options that go on the query builder, such as limit or allow filtering
     var bindableQuery = applyOptions(select);
@@ -198,6 +197,9 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
     // Add the where clause
     select = whereCQLClause.apply(select, positionalValues);
     // and finally order by
+    // 14-Jul-2025, tatu: NOTE! ORDER BY _MUST_ be added after the where clause,
+    // otherwise we will get UnsupportedOperationException (if different ordering
+    // of construction needed, must change "LexicalSortSelect" to allow that).
     select = orderByCqlClause.apply(select);
 
     return select;

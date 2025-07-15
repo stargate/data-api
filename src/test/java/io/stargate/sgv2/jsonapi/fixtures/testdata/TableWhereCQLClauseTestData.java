@@ -7,10 +7,10 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.internal.querybuilder.select.DefaultSelect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedSelect;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -127,8 +127,7 @@ public class TableWhereCQLClauseTestData extends TestDataSuplier {
     private void callApply() {
       LOGGER.warn("Apply WhereCQLClause: {}\n {}", message, this);
       // Select from all columns
-      var selectFrom =
-          ExtendedSelect.selectFrom(tableMetadata.getKeyspace(), tableMetadata.getName());
+      var selectFrom = new DefaultSelect(tableMetadata.getKeyspace(), tableMetadata.getName());
       var select = selectFrom.all();
       onGoingWhereClause = tableWhereCQLClause.apply(select, positionalValues);
       LOGGER.warn("Apply WhereCQLClause result(OngoingWhereClause): {}", onGoingWhereClause);
