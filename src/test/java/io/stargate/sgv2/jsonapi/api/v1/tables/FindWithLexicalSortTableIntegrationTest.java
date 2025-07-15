@@ -22,7 +22,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
+public class FindWithLexicalSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
   private static final String TABLE_NAME = "lexicalSortTableTest";
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")

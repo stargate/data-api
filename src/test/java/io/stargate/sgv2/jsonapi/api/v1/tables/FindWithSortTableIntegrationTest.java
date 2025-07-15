@@ -32,7 +32,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-public class FindTableOperationWithSortIntegrationTest extends AbstractTableIntegrationTestBase {
+public class FindWithSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "sort_testing";
   private static final List<Object> testDatas = getDocuments(25);
 
