@@ -21,7 +21,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTestBase {
+public class FindWithVectorSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TABLE_NAME = "annSortTableTest";
   private static final VectorDimension5TableScenario SCENARIO =
