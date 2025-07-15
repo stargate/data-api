@@ -115,8 +115,8 @@ public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
       Objects.requireNonNull(columnDesc, "columnDesc is must not be null");
       checkBindingPoint(bindingPoint, "create()");
 
-      // TODO: XXX: explain why we do not check type binding point here and throw
-
+      // It's up to the type factory to check if it can be created at the binding point,
+      // and throw UnsupportedUserType if it cannot.
       try {
         return new ApiColumnDef(
             userNameToIdentifier(fieldName, "fieldName"),

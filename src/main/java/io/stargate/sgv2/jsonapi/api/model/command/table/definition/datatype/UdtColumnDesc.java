@@ -47,28 +47,19 @@ public class UdtColumnDesc extends UdtRefColumnDesc {
   @Override
   public boolean equals(Object o) {
 
-    // TODO: XXX: AARON remove lal equals from column desc, they are not cached
-    return true;
-    //    if (!super.equals(o)) {
-    //      return false;
-    //    }
-    //
-    //    if (this == o) {
-    //      return true;
-    //    }
-    //    if (o == null || getClass() != o.getClass()) {
-    //      return false;
-    //    }
-    //    var udtColumnDesc = (UdtColumnDesc) o;
-    //
-    //    return Objects.equals(udtName, udtColumnDesc.udtName) && isFrozen ==
-    // udtColumnDesc.isFrozen;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    var udtColumnDesc = (UdtColumnDesc) o;
+    return Objects.equals(udtName, udtColumnDesc.udtName)
+        && Objects.equals(allFields, udtColumnDesc.allFields);
   }
 
   @Override
   public int hashCode() {
-    // TODO: XXX: AARON remove lal equals from column desc, they are not cached
-
-    return 1;
+    return Objects.hash(udtName(), allFields);
   }
 }

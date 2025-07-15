@@ -16,7 +16,7 @@ public interface FilterOperation<T> {
    * @param type The JsonType to match against.
    * @param appliesToTableMapSetList if true, the expression must be for a flagged as applying to
    *     table map/set/list column. We need an explicit flag because the operations to filter on
-   *     map/set/list columns look the same as for a JSON array in a collection document. See XXXX
+   *     map/set/list columns look the same as for a JSON array in a collection document.
    */
   boolean match(
       Set<? extends FilterOperator> operators, JsonType type, boolean appliesToTableMapSetList);

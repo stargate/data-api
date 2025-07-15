@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -105,13 +104,19 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
-        // TODO: XXX: AARON: the suported types is prob wrong, it wont include udt as value ?
         throw new UnsupportedUserType(
             bindingPoint,
             columnDesc,
             SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.get(
                 Map.of(
-                    "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
+                    "supportedKeyTypes",
+                        errFmtApiTypeName(
+                            DefaultTypeFactoryFromColumnDesc.INSTANCE.allBindableTypes(
+                                TypeBindingPoint.MAP_KEY)),
+                    "supportedValueTypes",
+                        errFmtApiTypeName(
+                            DefaultTypeFactoryFromColumnDesc.INSTANCE.allBindableTypes(
+                                TypeBindingPoint.COLLECTION_VALUE)),
                     "unsupportedKeyType", errFmtOrMissing(columnDesc.keyType()),
                     "unsupportedValueType", errFmtOrMissing(columnDesc.valueType()))));
       }
@@ -161,6 +166,11 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
 
       return true;
     }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
+    }
   }
 
   /**
@@ -181,7 +191,6 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
       if (!isTypeBindable(bindingPoint, cqlType)) {
-        LOGGER.warn("XXX - ApiMapType.create - after is Support {}", cqlType.asCql(true, true));
         throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
 
@@ -195,7 +204,6 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         return new ApiMapType(keyType, valueType, cqlType.isFrozen());
 
       } catch (UnsupportedCqlType e) {
-        LOGGER.warn("XXX - ApiMapType.create - caught from child {}", cqlType.asCql(true, true));
         // make sure we have the map type, not just the key or value type
         throw new UnsupportedCqlType(bindingPoint, cqlType, e);
       }
@@ -209,20 +217,15 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
 
       // can we use a map of any type in this binding point?
       if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromDb()) {
-        LOGGER.warn("XXX - ApiMapType.isSupported - unsupported MAP {}", cqlType.asCql(true, true));
         return false;
       }
       // now check if the key and value types are supported for binding into a map
       if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
           TypeBindingPoint.MAP_KEY, cqlType.getKeyType())) {
-        LOGGER.warn(
-            "XXX - ApiMapType.isSupported - unsupported key type: {}", cqlType.asCql(true, true));
         return false;
       }
       if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
           TypeBindingPoint.COLLECTION_VALUE, cqlType.getValueType())) {
-        LOGGER.warn(
-            "XXX - ApiMapType.isSupported - unsupported value type: {}", cqlType.asCql(true, true));
         return false;
       }
       return true;

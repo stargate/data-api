@@ -38,7 +38,7 @@ public class PrimitiveTypeFactoryFromCql extends TypeFactoryFromCql<ApiDataType,
 
   @Override
   public boolean isTypeBindable(TypeBindingPoint bindingPoint, DataType cqlType) {
-    return primitiveTypeInstance.supportBindingRules().rule(bindingPoint).bindableFromDb();
+    return primitiveTypeInstance.typeBindingRules().rule(bindingPoint).bindableFromDb();
   }
 
   @Override

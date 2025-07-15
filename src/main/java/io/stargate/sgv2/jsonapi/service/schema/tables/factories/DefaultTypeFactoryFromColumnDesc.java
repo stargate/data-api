@@ -141,51 +141,6 @@ public class DefaultTypeFactoryFromColumnDesc
       }
       throw uut;
     }
-
-    //      var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.typeName());
-    //      if (primitiveType != null) {
-    //        // this will catch things like the counter type
-    //        if (!primitiveType.apiSupport().createTable()) {
-    //          throw new UnsupportedUserType(columnDesc);
-    //        }
-    //        return primitiveType;
-    //      }
-    //
-    //      // Do not cache the Vector type because the ApiVectorType has the user defined
-    // vectorizarion
-    //      // on it
-    //      if (columnDesc instanceof VectorColumnDesc vt) {
-    //        return ApiVectorType.FROM_COLUMN_DESC_FACTORY.create(vt, validateVectorize);
-    //      }
-    //      // Do not cache the UDT type because it can has same name but different definition.
-    //      if (columnDesc instanceof UDTRefColumnDesc udt) {
-    //        return ApiUdtType.FROM_COLUMN_DESC_FACTORY.create(udt, validateVectorize);
-    //      }
-    //
-    //      try {
-    //        return COLLECTION_TYPE_CACHE.computeIfAbsent(
-    //            columnDesc,
-    //            entry -> {
-    //              try {
-    //                return switch (columnDesc) {
-    //                  case ListColumnDesc lt ->
-    //                      ApiListType.FROM_COLUMN_DESC_FACTORY.create(lt, validateVectorize);
-    //                  case MapColumnDesc mt ->
-    //                      ApiMapType.FROM_COLUMN_DESC_FACTORY.create(mt, validateVectorize);
-    //                  case SetColumnDesc st ->
-    //                      ApiSetType.FROM_COLUMN_DESC_FACTORY.create(st, validateVectorize);
-    //                  default -> throw new UnsupportedUserType(columnDesc);
-    //                };
-    //              } catch (UnsupportedUserType e) {
-    //                throw new RuntimeException(e);
-    //              }
-    //            });
-    //      } catch (RuntimeException e) {
-    //        if (e.getCause() instanceof UnsupportedUserType) {
-    //          throw (UnsupportedUserType) e.getCause();
-    //        }
-    //        throw e;
-    //      }
   }
 
   @Override
@@ -196,5 +151,26 @@ public class DefaultTypeFactoryFromColumnDesc
 
     return factoryFor(bindingPoint, columnDesc)
         .isTypeBindableUntyped(bindingPoint, columnDesc, validateVectorize);
+  }
+
+  /** As a default factory we do not support binding, only the real factories do. */
+  @Override
+  public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+    return false;
+  }
+
+  /**
+   * Returns all the {@link ApiTypeName} that can be bound to the given {@link TypeBindingPoint}.
+   *
+   * @param bindingPoint The binding point to check for bindable types.
+   * @return List of supported types, sorted by {@link ApiTypeName#COMPARATOR}.
+   */
+  public List<ApiTypeName> allBindableTypes(TypeBindingPoint bindingPoint) {
+
+    return ALL_FACTORIES.values().stream()
+        .filter(factory -> factory.isTypeBindable(bindingPoint))
+        .map(TypeFactoryFromColumnDesc::apiTypeName)
+        .sorted(ApiTypeName.COMPARATOR)
+        .toList();
   }
 }

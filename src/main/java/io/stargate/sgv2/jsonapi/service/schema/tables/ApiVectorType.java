@@ -106,8 +106,8 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
-        // TODO: XXX: AARON: NEED A general schema error ?
-        throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
+        // currently do not have anything more specific to throw
+        throw new UnsupportedUserType(bindingPoint, columnDesc);
       }
 
       Integer dimension;
@@ -157,6 +157,11 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
         return false;
       }
       return true;
+    }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
     }
   }
 

@@ -218,9 +218,12 @@ public class ApiUdtType extends ApiUdtShallowType {
                           })
               .toList();
 
-      // TODO: XXX AARON - Confused about the vector configs, but we can never have a vector in UDT,
-      // checking if this works
-      // if any of the fields are unsupported, we end up with a ApiColumnDef for unsupported type
+      // AARON - 15 July 2025 - the vectorConfig param is confusing, but we can never have a vector
+      // in a
+      // UDT to OK to pass as a null for now.s
+      // if any of the fields are unsupported, they will create columns with unsupported types
+      // and we will then treat it like any other unsupported type, when read user gets
+      // UNSUPPORTED_COLUMN_TYPES
       var allFields =
           ApiColumnDefContainer.FROM_CQL_FACTORY.create(
               TypeBindingPoint.UDT_FIELD, fieldsAsMetadata, null);

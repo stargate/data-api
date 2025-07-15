@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnDesc;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiTypeName;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.SetType;
@@ -82,7 +82,9 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
             SchemaException.Code.UNSUPPORTED_SET_DEFINITION.get(
                 Map.of(
                     "supportedTypes",
-                    errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
+                    errFmtApiTypeName(
+                        DefaultTypeFactoryFromColumnDesc.INSTANCE.allBindableTypes(
+                            TypeBindingPoint.COLLECTION_VALUE)),
                     "unsupportedValueType",
                     errFmtOrMissing(columnDesc.valueType()))));
       }
@@ -121,6 +123,11 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
         return false;
       }
       return true;
+    }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
     }
   }
 

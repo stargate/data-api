@@ -80,8 +80,9 @@ public enum ApiIndexType {
       ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
       throws UnsupportedCqlIndexException {
 
-    // TODO: XXX: AARON - Possible bug here, unsupported types do not have a type
-    final ApiDataType columnType = apiColumnDef.type();
+    // calling type() can fail for an unsupported type, but we should not be here if the col is
+    // not supported
+    ApiDataType columnType = apiColumnDef.type();
 
     // Let's start with Text (aka Lexical, or Analyzed) indexes: only for TEXT or ASCII columns
     // and with a text analyzer defined in the index options.

@@ -11,6 +11,10 @@ public class UnsupportedUserType extends CheckedApiException {
   public final ColumnDesc columnDesc;
   public final SchemaException schemaException;
 
+  public UnsupportedUserType(TypeBindingPoint bindingPoint, ColumnDesc columnDesc) {
+    this(bindingPoint, columnDesc, (SchemaException) null);
+  }
+
   public UnsupportedUserType(
       TypeBindingPoint bindingPoint, ColumnDesc columnDesc, UnsupportedUserType cause) {
     this(bindingPoint, columnDesc, cause.schemaException);

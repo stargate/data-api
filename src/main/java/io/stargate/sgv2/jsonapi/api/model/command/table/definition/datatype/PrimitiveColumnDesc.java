@@ -62,11 +62,6 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
     return apiSupportDesc;
   }
 
-  // TODO: XXX: DELETE
-  //  public static List<PrimitiveColumnDesc> allPrimitives() {
-  //    return allPrimitives;
-  //  }
-
   public static List<ColumnDesc> allColumnDescs() {
     return allColumnDescs;
   }

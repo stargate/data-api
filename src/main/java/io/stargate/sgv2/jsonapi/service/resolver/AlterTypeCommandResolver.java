@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTypeCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
@@ -94,9 +95,7 @@ public class AlterTypeCommandResolver implements CommandResolver<AlterTypeComman
 
     // sanity check
     if (taskGroup.isEmpty()) {
-      // TODO: XXXX: AARON: what eerror to throw here?
-      throw new IllegalArgumentException(
-          "AlterTypeCommand must have at least one field to add or rename");
+      throw SchemaException.Code.MISSING_ALTER_TYPE_OPERATIONS.get();
     }
 
     return new TaskOperation<>(

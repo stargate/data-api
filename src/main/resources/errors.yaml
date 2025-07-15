@@ -816,6 +816,14 @@ request-errors:
       Resend the command including changes to the table.
 
   - scope: SCHEMA
+    code: MISSING_ALTER_TYPE_OPERATIONS
+    title: Alter type command must include operations
+    body: |-
+      The `alterType` command must contain at least one operation to alter the type schema, such as adding or renaming fields.
+      
+      Resend the command including changes to the type.
+
+  - scope: SCHEMA
     code: MISSING_DIMENSION_IN_VECTOR_COLUMN
     title: Dimension is required for vector column if embedding service is not specified
     body: |-
@@ -1051,11 +1059,11 @@ request-errors:
     body: |-
       The command attempted to create a map column that used unsupported types for either the key or value.
       
-      Maps can use primitive type and userDefined type for the key and value with following exceptions:
-      1. The key can't be duration, counter, timeuuid, userDefined.
-      2. The value can't be counter, timeuuid.
+      Maps can use most primitive types for the key and value, and userDefined types for the value.
       
-      The primitive data types are: ${supportedTypes}.
+      The supported key types are: ${supportedKeyTypes}.
+      The supported value types are: ${supportedValueTypes}.
+      
       The command used the key type: ${unsupportedKeyType}.
       The command used the value type: ${unsupportedValueType}.
       

@@ -137,8 +137,8 @@ public class ApiUdtShallowType implements ApiDataType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
-        // TODO: XXX: AARON need a general schema exception ?
-        throw new UnsupportedUserType(bindingPoint, columnDesc, (SchemaException) null);
+        // currently do not have anything more specific to throw
+        throw new UnsupportedUserType(bindingPoint, columnDesc);
       }
 
       if (columnDesc.udtName() == null || columnDesc.udtName().asInternal().isBlank()) {
@@ -168,6 +168,11 @@ public class ApiUdtShallowType implements ApiDataType {
       // NOTE: we cannot check all the fields in the UDT because this is just a reference to a
       // UDT. The UDT def with fields is in {@link ApiUdtType} and is created for the full UDT
       return true;
+    }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return UDT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
     }
   }
 
