@@ -133,8 +133,20 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
     }
   }
 
+  /**
+   * Write a new object field for a column description that is not primitive. July 16th, 2025, write
+   * string field for primitive types, this is to not break client, value/key types of map/list/set
+   * are still return with short-form.
+   */
   private void newColumnDescObject(JsonGenerator json, String fieldName, ColumnDesc columnDesc)
       throws IOException {
+
+    // July 16th, 2025. To not break client, value/key types of map/list/set are still return with
+    // short-form
+    if (columnDesc.typeName().isPrimitive()) {
+      json.writeStringField(fieldName, columnDesc.getApiName());
+      return;
+    }
 
     json.writeObjectFieldStart(fieldName);
     writeDesc(json, columnDesc);
