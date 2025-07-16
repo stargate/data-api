@@ -160,6 +160,11 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0].definition.columns.duration_type.type", equalTo("duration"))
           .body("status.tables[0].definition.columns.timestamp_type.type", equalTo("timestamp"))
           .body("status.tables[0].definition.columns.set_type.type", equalTo("set"))
+          //          .body(
+          //              "status.tables[0].definition.columns.set_type.valueType.type",
+          //              equalTo("text")) // Set's valueType check
+          // July 16th, 2025. To not break client, value/key types of map/list/set
+          // are still return with short-form
           .body(
               "status.tables[0].definition.columns.set_type.valueType",
               equalTo("text")) // Set's valueType check
@@ -169,6 +174,18 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0].definition.columns.blob_type.type", equalTo("blob"))
           .body("status.tables[0].definition.columns.inet_type.type", equalTo("inet"))
           .body("status.tables[0].definition.columns.list_type.type", equalTo("list"))
+          //          .body(
+          //              "status.tables[0].definition.columns.list_type.valueType.type",
+          //              equalTo("text")) // List's valueType check
+          //          .body("status.tables[0].definition.columns.map_type.type", equalTo("map"))
+          //          .body(
+          //              "status.tables[0].definition.columns.map_type.keyType.type",
+          //              equalTo("text")) // Map's keyType check
+          //          .body(
+          //              "status.tables[0].definition.columns.map_type.valueType.type",
+          //              equalTo("int")) // Map's valueType check
+          // July 16th, 2025. To not break client, value/key types of map/list/set
+          // are still return with short-form
           .body(
               "status.tables[0].definition.columns.list_type.valueType",
               equalTo("text")) // List's valueType check

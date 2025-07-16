@@ -45,7 +45,7 @@ public abstract class CQLSAIIndex {
    * @param indexMetadata the index metadata to check
    * @return true if the index is an SAI index
    */
-  static boolean isSAIIndex(IndexMetadata indexMetadata) {
+  public static boolean isSAIIndex(IndexMetadata indexMetadata) {
     Objects.requireNonNull(indexMetadata, "indexMetadata must not be null");
     return indexMetadata.getKind() == IndexKind.CUSTOM
         && indexClassIsSai(getStringIfPresent(indexMetadata.getOptions(), Options.CLASS_NAME));
@@ -122,7 +122,7 @@ public abstract class CQLSAIIndex {
    * @throws UnsupportedCqlIndexException - could not match the target for the index to extract the
    *     column and function
    */
-  static IndexTarget indexTarget(IndexMetadata indexMetadata)
+  public static IndexTarget indexTarget(IndexMetadata indexMetadata)
       throws UnknownCqlIndexFunctionException, UnsupportedCqlIndexException {
     Objects.requireNonNull(indexMetadata, "indexMetadata must not be null");
 
@@ -161,5 +161,5 @@ public abstract class CQLSAIIndex {
   }
 
   /** For internal to this package use only */
-  record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {}
+  public record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {}
 }

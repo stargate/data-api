@@ -67,6 +67,10 @@ public class TableTemplates extends TemplateRunner {
     };
   }
 
+  public DataApiResponseValidator findOne(String field, String value, List<String> columns) {
+    return findOne(Map.of(field, value), columns, null, null);
+  }
+
   public DataApiResponseValidator findOne(Map<String, Object> filter, List<String> columns) {
     return findOne(filter, columns, null, null);
   }

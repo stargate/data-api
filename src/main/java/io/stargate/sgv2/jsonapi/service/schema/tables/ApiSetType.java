@@ -1,28 +1,42 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiTypeName;
+
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.SetType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.SetColumnDesc;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
+import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.*;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public class ApiSetType extends CollectionApiDataType<SetType> {
 
   public static final TypeFactoryFromColumnDesc<ApiSetType, SetColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
+
   public static final TypeFactoryFromCql<ApiSetType, SetType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
-  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
+  public static final ApiSupportDef API_SUPPORT = defaultCollectionApiSupport(false);
 
-  private ApiSetType(
-      PrimitiveApiDataTypeDef valueType, ApiSupportDef apiSupport, boolean isFrozen) {
+  /** NO VALIDATION - Testing Only */
+  @VisibleForTesting
+  ApiSetType(ApiDataType valueType, boolean isFrozen) {
+    this(valueType, defaultCollectionApiSupport(isFrozen), isFrozen);
+  }
+
+  private ApiSetType(ApiDataType valueType, ApiSupportDef apiSupport, boolean isFrozen) {
     super(ApiTypeName.SET, valueType, DataTypes.setOf(valueType.cqlType(), isFrozen), apiSupport);
   }
 
@@ -32,100 +46,151 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
   }
 
   @Override
-  public ColumnDesc columnDesc() {
-    return new SetColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
+    // no different representation of the set itself, but pass through the binding point
+    // because the key or value type may be different, e.g. UDT is the value type
+    return new SetColumnDesc(
+        schemaDescSource,
+        valueType.getSchemaDescription(schemaDescSource),
+        ApiSupportDesc.from(this));
   }
 
-  /**
-   * Creates a new {@link ApiSetType} from the given ApiDataType value.
-   *
-   * <p>ApiSupport for valueType should be already validated.
-   */
-  static ApiSetType from(ApiDataType valueType, boolean isFrozen) {
-    Objects.requireNonNull(valueType, "valueType must not be null");
-    if (isValueTypeSupported(valueType)) {
-      return new ApiSetType(
-          (PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen), isFrozen);
-    }
-    throw new IllegalArgumentException(
-        "valueType is not supported, valueType%s".formatted(valueType));
-  }
-
-  public static boolean isValueTypeSupported(ApiDataType valueType) {
-    Objects.requireNonNull(valueType, "valueType must not be null");
-    return valueType.apiSupport().collection().asSetValue();
-  }
-
+  /** Factory to create {@link ApiSetType} from {@link SetColumnDesc} obtained from the user. */
   private static final class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiSetType, SetColumnDesc> {
 
+    private ColumnDescFactory() {
+      super(ApiTypeName.SET, SetColumnDesc.class);
+    }
+
     @Override
-    public ApiSetType create(SetColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiSetType create(
+        TypeBindingPoint bindingPoint,
+        SetColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      ApiDataType valueType;
+      if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
+        throw new UnsupportedUserType(
+            bindingPoint,
+            columnDesc,
+            SchemaException.Code.UNSUPPORTED_SET_DEFINITION.get(
+                Map.of(
+                    "supportedTypes",
+                    errFmtApiTypeName(
+                        DefaultTypeFactoryFromColumnDesc.INSTANCE.allBindableTypes(
+                            TypeBindingPoint.COLLECTION_VALUE)),
+                    "unsupportedValueType",
+                    errFmtOrMissing(columnDesc.valueType()))));
+      }
+
       try {
-        valueType =
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize);
+        var valueType =
+            DefaultTypeFactoryFromColumnDesc.INSTANCE.create(
+                TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize);
+        // can never be frozen when created from ColumnDesc / API
+        return new ApiSetType(valueType, false);
+
       } catch (UnsupportedUserType e) {
-        throw new UnsupportedUserType(columnDesc, e);
+        // make sure we have the list type, not just the key or value type
+        throw new UnsupportedUserType(bindingPoint, columnDesc, e);
       }
-      // not calling isSupported to avoid double decoding of the valueType
-      if (isValueTypeSupported(valueType)) {
-        // never frozen from the API
-        return ApiSetType.from(valueType, false);
-      }
-      throw new UnsupportedUserType(columnDesc);
     }
 
     @Override
-    public boolean isSupported(
-        SetColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
-      Objects.requireNonNull(columnDesc, "columnDesc must not be null");
+    public boolean isTypeBindable(
+        TypeBindingPoint bindingPoint,
+        SetColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize) {
 
-      try {
-        return isValueTypeSupported(
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize));
-      } catch (UnsupportedUserType e) {
+      //  we accept frozen, but change the support.
+
+      // can we use a set of any type in this binding point?
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser()) {
         return false;
       }
+
+      // can the value type be used as set value?
+      // also, we have to have a value type
+      if (columnDesc.valueType() == null
+          || !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
+              TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
     }
   }
 
+  /**
+   * Factory to create {@link ApiSetType} from {@link SetType} obtained from driver / cql.
+   *
+   * <p>...
+   */
   private static final class CqlTypeFactory extends TypeFactoryFromCql<ApiSetType, SetType> {
 
+    private CqlTypeFactory() {
+      super(ProtocolConstants.DataType.SET, SetType.class);
+    }
+
     @Override
-    public ApiSetType create(SetType cqlType, VectorizeDefinition vectorizeDefn)
+    public ApiSetType create(
+        TypeBindingPoint bindingPoint, SetType cqlType, VectorizeDefinition vectorizeDefn)
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
+      if (!isTypeBindable(bindingPoint, cqlType)) {
+        throw new UnsupportedCqlType(bindingPoint, cqlType);
+      }
+
       try {
-        ApiDataType valueType =
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn);
-        if (!isValueTypeSupported(valueType)) {
-          throw new UnsupportedCqlType(cqlType);
-        }
-        return ApiSetType.from(
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn),
-            cqlType.isFrozen());
+        var valueType =
+            DefaultTypeFactoryFromCql.INSTANCE.create(
+                TypeBindingPoint.COLLECTION_VALUE, cqlType.getElementType(), vectorizeDefn);
+        return new ApiSetType(valueType, cqlType.isFrozen());
+
       } catch (UnsupportedCqlType e) {
         // make sure we have the list type, not just the key or value type
-        throw new UnsupportedCqlType(cqlType, e);
+        throw new UnsupportedCqlType(bindingPoint, cqlType, e);
       }
     }
 
     @Override
-    public boolean isSupported(SetType cqlType) {
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint, SetType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
       //  we accept frozen, but change the support.
-      try {
-        var valueType = TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), null);
-        return isValueTypeSupported(valueType);
-      } catch (UnsupportedCqlType e) {
+
+      // can we use a set of any type in this binding point?
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromDb()) {
         return false;
       }
+
+      // can the value type be used as set value?
+      if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
+          TypeBindingPoint.COLLECTION_VALUE, cqlType.getElementType())) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public Optional<CqlTypeKey> maybeCreateCacheKey(
+        TypeBindingPoint bindingPoint, SetType cqlType) {
+
+      // we can cache the set type if the value type is not a UDT, because the UDT types are tenant
+      // specific.
+      if (cqlType.getElementType() instanceof UserDefinedType) {
+        return Optional.empty();
+      }
+      return Optional.of(
+          CqlTypeKey.create(cqlType, cqlType.getElementType(), null, cqlType.isFrozen()));
     }
   }
 }

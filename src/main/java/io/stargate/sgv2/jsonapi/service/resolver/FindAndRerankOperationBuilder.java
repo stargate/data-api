@@ -340,7 +340,7 @@ class FindAndRerankOperationBuilder {
           .sortExpressions()
           .add(SortExpression.collectionVectorSort(command.sortClause().vectorSort()));
     } else {
-      throw new IllegalArgumentException("buildVectorRead() - XXX TODO - no vector or vectorize");
+      throw new IllegalArgumentException("buildVectorRead() - no vector or vectorize");
     }
 
     // The intermediate task will set the sort when we give it the deferred vectorize
@@ -398,8 +398,7 @@ class FindAndRerankOperationBuilder {
       finalRerankField = rerankOn;
 
     } else {
-      throw new IllegalArgumentException(
-          "TODO XXX rerankOn() - rerankOn required and not specified");
+      throw new IllegalArgumentException("rerankOn() - rerankOn required and not specified");
     }
 
     return PathMatchLocator.forPath(finalRerankField);

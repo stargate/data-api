@@ -7,13 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
@@ -101,7 +95,11 @@ public class KeyspaceResource {
                         CreateTableCommand.class,
                         DropIndexCommand.class,
                         DropTableCommand.class,
-                        ListTablesCommand.class
+                        ListTablesCommand.class,
+                        ListTypesCommand.class,
+                        CreateTypeCommand.class,
+                        AlterTypeCommand.class,
+                        DropTypeCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "createCollection"),
@@ -114,7 +112,11 @@ public class KeyspaceResource {
                 @ExampleObject(ref = "createTableWithMultipleKeys"),
                 @ExampleObject(ref = "dropTable"),
                 @ExampleObject(ref = "dropIndex"),
-                @ExampleObject(ref = "listTables")
+                @ExampleObject(ref = "listTables"),
+                @ExampleObject(ref = "listTypes"),
+                @ExampleObject(ref = "createType"),
+                @ExampleObject(ref = "alterType"),
+                @ExampleObject(ref = "dropType")
               }))
   @APIResponses(
       @APIResponse(

@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.List;
 import java.util.Map;
+import net.javacrumbs.jsonunit.core.Option;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
@@ -32,11 +33,14 @@ public class DataApiResponseValidator {
         switch (commandName) {
           case DROP_TABLE,
                   DROP_INDEX,
+                  DROP_TYPE,
                   CREATE_INDEX,
                   CREATE_TEXT_INDEX,
                   CREATE_VECTOR_INDEX,
                   CREATE_TABLE,
+                  CREATE_TYPE,
                   ALTER_TABLE,
+                  ALTER_TYPE,
                   FIND_ONE,
                   FIND ->
               responseIsErrorWithOptionalStatus();
@@ -49,12 +53,16 @@ public class DataApiResponseValidator {
               responseIsWriteSuccess();
           case ALTER_TABLE,
                   CREATE_TABLE,
+                  CREATE_TYPE,
                   DROP_TABLE,
+                  DROP_TYPE,
+                  ALTER_TYPE,
                   CREATE_INDEX,
                   CREATE_TEXT_INDEX,
                   CREATE_VECTOR_INDEX,
                   DROP_INDEX,
                   LIST_TABLES,
+                  LIST_TYPES,
                   LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
@@ -116,14 +124,17 @@ public class DataApiResponseValidator {
       }
       case ALTER_TABLE,
           CREATE_TABLE,
+          CREATE_TYPE,
           DROP_TABLE,
+          DROP_TYPE,
+          ALTER_TYPE,
           CREATE_INDEX,
           CREATE_TEXT_INDEX,
           CREATE_VECTOR_INDEX,
           DROP_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
-      case LIST_TABLES, LIST_INDEXES -> {
+      case LIST_TABLES, LIST_INDEXES, LIST_TYPES -> {
         return hasNoErrors();
       }
       case CREATE_COLLECTION -> {
@@ -365,7 +376,9 @@ public class DataApiResponseValidator {
   }
 
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
-    return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
+    return body(
+        "data.documents[%s]".formatted(position),
+        jsonEquals(documentJSON).when(Option.IGNORING_ARRAY_ORDER));
   }
 
   public DataApiResponseValidator hasDocumentsMatchedByIds(List<Object> ids) {
