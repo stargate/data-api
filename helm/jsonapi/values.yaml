@@ -8,7 +8,7 @@ replicaCount: 1
 # Coordinator or bridge registry and image
 image:
   registry: "docker.io"
-  repository: "stargateio/jsonapi"
+  repository: "stargateio/data-api"
   tag: "v1"
 
 # topology key for anti affinity
