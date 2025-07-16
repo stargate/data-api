@@ -29,7 +29,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrationTestBase {
+public class FindWithClusteringKeyTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TABLE_NAME = "nonANNSortTableTest";
   private static final ThreeClusteringKeysTableScenario SCENARIO =
@@ -76,6 +76,23 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
                 .formatted(
                     SCENARIO.fieldName(ThreeClusteringKeysTableScenario.CLUSTER_COL_1)
                         + "unknown"));
+  }
+
+  // Tests passing of int not 1 or -1
+  @ParameterizedTest
+  @MethodSource("findCommandNames")
+  public void sortInvalidIntValue(CommandName commandName) {
+
+    Map<String, Object> sort =
+        ImmutableMap.of(SCENARIO.fieldName(ThreeClusteringKeysTableScenario.CLUSTER_COL_1), 42);
+
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .find(commandName, FILTER_ID, null, sort)
+        .hasSingleApiError(
+            SortException.Code.INVALID_REGULAR_SORT_EXPRESSION,
+            SortException.class,
+            "The command attempted to use unsupported JSON expression `42` (type Number) for sort clause");
   }
 
   @ParameterizedTest

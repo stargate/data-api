@@ -24,7 +24,7 @@
 # ===========
 #
 # "snippets" is a list of text snippets than can be included in any error body, the snippets are included in the
-# variables when running the tempalte for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
+# variables when running the template for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
 # where <NAME> is the name of the snippet key.
 # Each snippet has:
 # - name: UPPER_SNAKE_CASE_1
@@ -76,11 +76,22 @@ snippets:
     body: |-
       Resend the command using only defined columns.
 
+  - name: REGULAR_SORT_EXPLANATION
+    body: |-
+      A regular sort expression in the sort clause identifies the column by name and then provides either:  
+      - `1` for ascending
+      - `-1` for descending
+
+  - name: LEXICAL_SORT_EXPLANATION
+    body: |-
+      A lexical sort expression in the sort clause identifies the column by name and then provides:
+      - String to use for lexical matching to sort by (most similar first)
+
   - name: VECTOR_SORT_EXPLANATION
     body: |-
       A vector sort in the sort clause identifies the vector column by name and then provides either:  
       - The vector as an array of decimal numbers.
-      - The vector as a base64 encoded `{"$binary": "base64-encoded-vector"}` object.
+      - The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
       - A string to be vectorized if enabled for the column.
 
   - name: CURRENTLY_UNSUPPORTED
@@ -282,6 +293,24 @@ request-errors:
       Resend the command using only supported column values.
 
   - scope: FILTER
+    code: INVALID_MAP_SET_LIST_FILTER
+    title: Command has invalid filter against a map, set, or list column
+    body: |-
+      Command has an invalid filter, ${detailedReason}.
+      
+      Supported filter operators for map, set, list are '$in', '$nin', '$all'.
+      Filter examples for map column:
+      - filter on map keys {"mapColumn": {"$keys": {"$in": ["key1", "key2"]}}}
+      - filter on map values {"mapColumn": {"$values": {"$nin": ["value1", "value2"]}}}
+      - filter on map entries {"mapColumn": {"$all": [["key1", "value1"], ["key2", "value2"]]}}
+      Filter examples for list column:
+      - filter on list {"listColumn": {"$in": ["value1", "value2"]}}}
+      Filter examples for set column:
+      - filter on set {"setColumn": {"$nin": ["value1", "value2"]}}}
+      
+      Resend the command using correct filter.
+
+  - scope: FILTER
     code: UNSUPPORTED_COLUMN_TYPES
     title: Column types in the filter are not supported
     body: |-
@@ -370,7 +399,7 @@ request-errors:
     body: |-
       The command requires a filter on the primary key that specifies all of the partitioning keys, and the partition sort keys in order.
       
-      If a partititon sort key is excluded, then all following partition sort keys must be excluded. 
+      If a partition sort key is excluded, then all following partition sort keys must be excluded. 
       
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
       
@@ -928,6 +957,13 @@ request-errors:
       Resend the command using only columns that use the `vector` type.
 
   - scope: SCHEMA
+    code: LEXICAL_NOT_ENABLED_FOR_COLLECTION
+    title: Lexical search is not enabled for the collection
+    body: |-
+      Lexical content can only be added and filtering and sort only be used on Collections for which Lexical feature is enabled.
+      The Collection ${keyspace}.${table} does not have Lexical feature enabled.
+
+  - scope: SCHEMA
     code: UNKNOWN_DATA_TYPE
     title: Data type is unknown
     body: |-
@@ -1315,6 +1351,31 @@ request-errors:
 # ================================================================================================================
 
   - scope: SORT
+    code: CANNOT_LEXICAL_SORT_NON_INDEXED_COLUMNS
+    title: Lexical sort cannot be used for non-indexed columns
+    body: |-
+      The command attempted to lexical sort on column that is not indexed.
+      
+      Lexical sorting is only supported on columns that have been indexed.
+      
+      ${SNIPPET.LEXICAL_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} has indexes on columns: ${indexedColumns}.
+      The command attempted to sort columns: ${sortColumn}.
+      
+      Resend the command using indexed column.
+
+  - scope: SORT
+    code: CANNOT_LEXICAL_SORT_WITH_SKIP_OPTION
+    title: Skip option cannot be used with lexical sort
+    body: |-
+      The command attempted to lexical sort column along with skip option set.
+      
+      ${SNIPPET.LEXICAL_SORT_EXPLANATION}
+      
+      Resend the command without the skip option.
+
+  - scope: SORT
     code: CANNOT_SORT_ON_MULTIPLE_VECTORS
     title: More than one vector sort provided
     body: |-
@@ -1341,6 +1402,19 @@ request-errors:
       Resend the command with only one vectorize sort.
 
   - scope: SORT
+    code: CANNOT_SORT_ON_SPECIAL_WITH_OTHERS
+    title: Special sort combined with other sort expressions
+    body: |-
+      The command used a sort clause with a special (lexical/vector/vectorize) sort combined with one or more other sort expressions:
+      Special sorts can only be used on their own, and cannot be combined with other sort expressions.
+      
+      The command attempted to use lexical sort on columns: ${lexicalSorts}.
+      The command attempted to use vector/vectorize sort on columns: ${vectorSorts}.
+      The command attempted to use regular sort on columns: ${regularSorts}.
+      
+      Resend the command with only one special sort expression.
+
+  - scope: SORT
     code: CANNOT_SORT_UNKNOWN_COLUMNS
     title: Sorted columns are not defined in the table schema
     body: |-
@@ -1365,12 +1439,12 @@ request-errors:
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort columns are not `vector` type
     body: |-
-      The command attempted to vectorize sort on a column that is not of `vector` type.
+      The command attempted to vector sort on a column that is not of `vector` type.
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
       Resend the command using only `vector` columns.
 
@@ -1382,10 +1456,10 @@ request-errors:
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
-      Resend the command using only `vector` columns wth vectorize enabled.
+      Resend the command using only `vector` columns with vectorize enabled.
 
   - scope: SORT
     code: CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION
@@ -1452,6 +1526,26 @@ request-errors:
       The command attempted to sort the non-vector columns: ${sortNonVectorColumns}.
       
       Resend the command using either vector or non-vector sorting.
+
+  - scope: SORT
+    code: INVALID_REGULAR_SORT_EXPRESSION
+    title: Sort expression is not valid for regular sort
+    body: |-
+      The command attempted to use unsupported JSON expression `${jsonExpr}` (type ${jsonType}) for sort clause.
+      
+      ${SNIPPET.REGULAR_SORT_EXPLANATION}
+      
+      Resend the command with only valid sort expressions.
+
+  - scope: SORT
+    code: INVALID_VECTOR_SORT_EXPRESSION
+    title: Sort expression is not valid for vector/vectorize sort
+    body: |-
+      The command attempted to use unsupported JSON type (${jsonType}) for vector or vectorize sort.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      Resend the command with valid vector/vectorize sort expression.
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND

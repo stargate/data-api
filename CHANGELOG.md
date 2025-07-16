@@ -1,5 +1,110 @@
 # Changelog
 
+## [v1.0.27](https://github.com/stargate/data-api/tree/v1.0.27) (2025-06-24)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.26...v1.0.27)
+
+**Merged pull requests:**
+
+- Updates for EGW to use ModelUsage and bug fixes [\#2140](https://github.com/stargate/data-api/pull/2140) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2138](https://github.com/stargate/data-api/pull/2138) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.26](https://github.com/stargate/data-api/tree/v1.0.26) (2025-06-18)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.25...v1.0.26)
+
+**Implemented enhancements:**
+
+- Add Trace logging for schema listening [\#2124](https://github.com/stargate/data-api/issues/2124)
+- Pass the API Authentication token through to Embedding Providers if no other auth available [\#2099](https://github.com/stargate/data-api/issues/2099)
+- Expire CqlSession for a SLA checker request from the CqlSessionCache faster [\#2078](https://github.com/stargate/data-api/issues/2078)
+- Simplify tenant id management for cql driver [\#2059](https://github.com/stargate/data-api/issues/2059)
+- Add Callback capability to the CQLSessionCache to support tenant metrics eviction [\#2048](https://github.com/stargate/data-api/issues/2048)
+- Add metrics for usage of hybrid search features [\#1987](https://github.com/stargate/data-api/issues/1987)
+- Add metrics for calls to the reranking provider [\#1986](https://github.com/stargate/data-api/issues/1986)
+- Unmapped `AllNodesFailedException` \(`SERVER\_UNHANDLED\_ERROR`\): `IllegalArgumentException` with "Invalid or misconfigured tenant ID" not handled [\#1206](https://github.com/stargate/data-api/issues/1206)
+
+**Fixed bugs:**
+
+- Time mertrics are reporting perctile / qualite and histogram under /metrics [\#2056](https://github.com/stargate/data-api/issues/2056)
+- force load of new error templates during startup and fail if it fails  [\#1420](https://github.com/stargate/data-api/issues/1420)
+
+**Closed issues:**
+
+- Fix the fixed `SchemaCacheSchemaChangeListener` in the `CqlSessionFactory` [\#2126](https://github.com/stargate/data-api/issues/2126)
+- Add back TenantAwareCqlSessionBuilder [\#2119](https://github.com/stargate/data-api/issues/2119)
+- Free Hugging Api Inference endpoint has moved [\#2107](https://github.com/stargate/data-api/issues/2107)
+- Remove metrics for tenants from the `MeterRegistry` when the tenant is evicted from the `CQLSessionCache` [\#2096](https://github.com/stargate/data-api/issues/2096)
+- Rename, refactor `SortSpec`/`FilterSpec` [\#2093](https://github.com/stargate/data-api/issues/2093)
+- Update to DSE 6.9.9 [\#2086](https://github.com/stargate/data-api/issues/2086)
+- Log error when invoking `buildCommandLog` in `.onFailure\(\)` in `MeteredCommandProcessor.processCommand` [\#2081](https://github.com/stargate/data-api/issues/2081)
+- Make sure the error from `HybridFieldExpander.expandHybridField\(\)` is captured [\#2073](https://github.com/stargate/data-api/issues/2073)
+- Convert "lexical too big" `INVALID\_QUERY` into proper error \(follow-up to \#2063\) [\#2068](https://github.com/stargate/data-api/issues/2068)
+- Add tests for max `$lexical` length that can be inserted in a Document [\#2063](https://github.com/stargate/data-api/issues/2063)
+- `NullPointerException` when using `findAndRerank` command without `sort` clause [\#2057](https://github.com/stargate/data-api/issues/2057)
+- Add support for "$match" BM25-filter operation on Collections, "$lexical" field [\#2052](https://github.com/stargate/data-api/issues/2052)
+- Implement `createTextIndex` command for API Tables, lexical/BM25 search [\#2051](https://github.com/stargate/data-api/issues/2051)
+- Confusing error message when using `$hybrid` together with `$lexical` or `$vector` in `insert` command [\#2044](https://github.com/stargate/data-api/issues/2044)
+- Prefer `$\*` as the wildcard projection over `\*` [\#2025](https://github.com/stargate/data-api/issues/2025)
+- Creating a collection: passing an incorrect key for lexical options throws an error but creates the collection [\#2011](https://github.com/stargate/data-api/issues/2011)
+- Confusing error message trying to filter with string inequalities [\#1992](https://github.com/stargate/data-api/issues/1992)
+- Improve `DseTestResource` handling of running ITs outside Maven: read DB version from `./docker-compose/.env` [\#1952](https://github.com/stargate/data-api/issues/1952)
+- Update JDK version to 21.0.7 [\#1885](https://github.com/stargate/data-api/issues/1885)
+- Refactor creation of `SortClause` to be able to pass, use `CommandContext` [\#1838](https://github.com/stargate/data-api/issues/1838)
+- Support any combination of embedding provider, model, and vector dimensions in the same command for tables [\#1792](https://github.com/stargate/data-api/issues/1792)
+- Allow `createIndex` on maps [\#1553](https://github.com/stargate/data-api/issues/1553)
+- SPEC - complete spec on the projection clause [\#128](https://github.com/stargate/data-api/issues/128)
+- SPEC - Define numerical type conversation rules for update operations [\#125](https://github.com/stargate/data-api/issues/125)
+- SPEC - document how numbers are handed in doc storing and filtering [\#124](https://github.com/stargate/data-api/issues/124)
+
+**Merged pull requests:**
+
+- Fixes the response from `findEmbeddingProviders`: the parameters type - from "NUMBER" to "number" [\#2133](https://github.com/stargate/data-api/pull/2133) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Continue work on \#2054: complete SortClause decoding for Lexical Sort support for Tables \(but not actual Sort execution\) [\#2130](https://github.com/stargate/data-api/pull/2130) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add static access for "debug mode", to solve an access problem from error mappers [\#2128](https://github.com/stargate/data-api/pull/2128) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix the fixed `SchemaCacheSchemaChangeListener` in the `CqlSessionFactory` [\#2127](https://github.com/stargate/data-api/pull/2127) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Refactor SortClause handling to prep for \#2054 [\#2123](https://github.com/stargate/data-api/pull/2123) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Prep for \#2054: refactor to support for lexical \(BM25\) sort for Tables \(not yet implemented\) [\#2122](https://github.com/stargate/data-api/pull/2122) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add back TenantAwareCqlSessionBuilder [\#2120](https://github.com/stargate/data-api/pull/2120) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update Hugging Face endpoint [\#2108](https://github.com/stargate/data-api/pull/2108) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update JDK version to 21.0.7 \(image tag 1.21-2\) [\#2105](https://github.com/stargate/data-api/pull/2105) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Pass the API Authentication token through to Embedding Providers [\#2104](https://github.com/stargate/data-api/pull/2104) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Minor improvement to fail message of metrics verification \(used for troubleshooting\) [\#2103](https://github.com/stargate/data-api/pull/2103) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix an issue found when prepping for \#2051: one test fails when run from IDEA \(due to max indexes\) [\#2102](https://github.com/stargate/data-api/pull/2102) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2051: implement "createTextIndex" Table\(-only\) command [\#2101](https://github.com/stargate/data-api/pull/2101) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor more Collection ITs to use compact "givenXxx\(\)" calls \(to improve maintainability\) [\#2097](https://github.com/stargate/data-api/pull/2097) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor some of biggest Collection ITs \(easier to read, maintain\) [\#2095](https://github.com/stargate/data-api/pull/2095) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2093: refactor/rename FilterSpec, SortSpec etc [\#2094](https://github.com/stargate/data-api/pull/2094) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Remove metrics for tenants from the MeterRegistry when the tenant is evicted from the CQLSessionCache [\#2092](https://github.com/stargate/data-api/pull/2092) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update to DSE-6.9.9 [\#2091](https://github.com/stargate/data-api/pull/2091) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- \[Tables\]  filter logical operator support [\#2089](https://github.com/stargate/data-api/pull/2089) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Support `$match` on Collections [\#2088](https://github.com/stargate/data-api/pull/2088) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2078 fast expire sla user CQL session [\#2085](https://github.com/stargate/data-api/pull/2085) ([amorton](https://github.com/amorton))
+- Fixes \#2056 stop publishing metric histograms [\#2077](https://github.com/stargate/data-api/pull/2077) ([amorton](https://github.com/amorton))
+- Fix \#2073 and \#2081: Make sure the error from `HybridFieldExpander` can be captured, and the logging works when executions fail [\#2076](https://github.com/stargate/data-api/pull/2076) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Use Stargate v2.1.0-BETA-25 [\#2075](https://github.com/stargate/data-api/pull/2075) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix \#1838: Initial refactoring of deserialization of SortClause [\#2072](https://github.com/stargate/data-api/pull/2072) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2048 refactor CqlSessionCache & add callbacks [\#2071](https://github.com/stargate/data-api/pull/2071) ([amorton](https://github.com/amorton))
+- Fixes \#2068: map INVALID\_QUERY into proper LEXICAL\_CONTENT\_TOO\_BIG [\#2069](https://github.com/stargate/data-api/pull/2069) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2063: test that max-$lexical length limit is enforced [\#2067](https://github.com/stargate/data-api/pull/2067) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Tweaks on `HYBRID\_FIELD\_CONFLICT` error message [\#2065](https://github.com/stargate/data-api/pull/2065) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Clean up the code in `MeteredCommandProcessor` [\#2064](https://github.com/stargate/data-api/pull/2064) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fixes \#2057: findAndRerank, NPE for empty object [\#2062](https://github.com/stargate/data-api/pull/2062) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- simplify how we add tenant to the cql session [\#2060](https://github.com/stargate/data-api/pull/2060) ([amorton](https://github.com/amorton))
+- Add metrics for usage of hybrid search features [\#2058](https://github.com/stargate/data-api/pull/2058) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update error message when using `$hybrid` and \($lexical or $vector\) together [\#2046](https://github.com/stargate/data-api/pull/2046) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Align the reranking model deprecation to embedding [\#2043](https://github.com/stargate/data-api/pull/2043) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Use Stargate v2.1.0-BETA-24 [\#2027](https://github.com/stargate/data-api/pull/2027) ([github-actions[bot]](https://github.com/apps/github-actions))
+- \(partially\) fixes \#988: try to re-enable EstimatedDocumentCountIntegrationTest [\#2024](https://github.com/stargate/data-api/pull/2024) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Group all metrics classes to new metrics package [\#2021](https://github.com/stargate/data-api/pull/2021) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fixes \#2011: Validate LexicalConfig [\#2020](https://github.com/stargate/data-api/pull/2020) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1952: reduce duplication of HCD image name/tag settings [\#2019](https://github.com/stargate/data-api/pull/2019) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2018](https://github.com/stargate/data-api/pull/2018) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix, collection DocumentID range filter with different dataType values. [\#2012](https://github.com/stargate/data-api/pull/2012) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Usage metering for embedding and reranking [\#2008](https://github.com/stargate/data-api/pull/2008) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add metrics for rerank calls [\#2003](https://github.com/stargate/data-api/pull/2003) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- embedding model deprecation ability  [\#1963](https://github.com/stargate/data-api/pull/1963) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
 ## [v1.0.25](https://github.com/stargate/data-api/tree/v1.0.25) (2025-04-18)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.24...v1.0.25)

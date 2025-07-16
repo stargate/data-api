@@ -81,7 +81,7 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
     var embeddingProvider =
         commandContext
             .embeddingProviderFactory()
-            .getConfiguration(
+            .create(
                 commandContext.requestContext().getTenantId(),
                 commandContext.requestContext().getCassandraToken(),
                 vectorizeDefinition.provider(),

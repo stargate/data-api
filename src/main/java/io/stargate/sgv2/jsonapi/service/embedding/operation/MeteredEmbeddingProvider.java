@@ -11,10 +11,15 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a metered version of an {@link EmbeddingProvider}, adding metrics collection to the
@@ -23,6 +28,10 @@ import org.apache.commons.lang3.tuple.Pair;
  * input texts.
  */
 public class MeteredEmbeddingProvider extends EmbeddingProvider {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MeteredEmbeddingProvider.class);
+
+  private static final String UNKNOWN_TENANT_ID = "unknown";
+
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
   private final RequestContext requestContext;
@@ -35,11 +44,27 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
       RequestContext requestContext,
       EmbeddingProvider embeddingProvider,
       String commandName) {
+    // aaron 9 June 2025 - we need to remove this "metered" design pattern, for now just pass the
+    // config through
+    super(
+        embeddingProvider.modelProvider(),
+        embeddingProvider.providerConfig,
+        embeddingProvider.modelConfig,
+        embeddingProvider.serviceConfig,
+        embeddingProvider.dimension,
+        embeddingProvider.vectorizeServiceParameters);
+
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     this.requestContext = requestContext;
     this.embeddingProvider = embeddingProvider;
     this.commandName = commandName;
+  }
+
+  @Override
+  protected String errorMessageJsonPtr() {
+    // not used we are just passing through
+    return "";
   }
 
   /**
@@ -52,11 +77,16 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
   @Override
-  public Uni<Response> vectorize(
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+
+    Objects.requireNonNull(texts, "texts must not be null");
+    Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
+    Objects.requireNonNull(embeddingRequestType, "embeddingRequestType type must not be null");
+
     // String bytes metrics for vectorize
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.vectorizeInputBytesMetrics())
@@ -94,11 +124,24 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
               Collections.sort(
                   vectorizedBatches, (a, b) -> Integer.compare(a.batchId(), b.batchId()));
               List<float[]> result = new ArrayList<>();
-              for (Response vectorizedBatch : vectorizedBatches) {
+
+              ModelUsage aggregatedModelUsage = null;
+              for (BatchedEmbeddingResponse vectorizedBatch : vectorizedBatches) {
+
+                aggregatedModelUsage =
+                    aggregatedModelUsage == null
+                        ? vectorizedBatch.modelUsage()
+                        : aggregatedModelUsage.merge(vectorizedBatch.modelUsage());
                 // create the final ordered result
                 result.addAll(vectorizedBatch.embeddings());
               }
-              return Response.of(1, result);
+              var embeddingResponse = new BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
+              if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace(
+                    "Vectorize call completed, aggregatedModelUsage: {}",
+                    PrettyPrintable.print(aggregatedModelUsage));
+              }
+              return embeddingResponse;
             })
         .invoke(
             () ->

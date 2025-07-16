@@ -13,7 +13,10 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.microprofile.config.spi.Converter;
 
+// TODO: SOME DOCUMENTATION FOR WHAT THIS IS MEANT TO DO!!!
 public interface EmbeddingProvidersConfig {
+
+  // TODO: WHAT IS THE KEY FOR THIS MAP ?????
   Map<String, EmbeddingProviderConfig> providers();
 
   @Nullable
@@ -279,15 +282,14 @@ public interface EmbeddingProvidersConfig {
       NUMBER("number"),
       BOOLEAN("boolean");
 
-      private final String type;
+      private final String apiName;
 
-      ParameterType(final String type) {
-        this.type = type;
+      ParameterType(final String apiName) {
+        this.apiName = apiName;
       }
 
-      @Override
-      public String toString() {
-        return type;
+      public String getApiName() {
+        return apiName;
       }
     }
   }

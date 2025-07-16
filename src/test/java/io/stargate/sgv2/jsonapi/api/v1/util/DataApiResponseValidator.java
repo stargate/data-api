@@ -211,7 +211,7 @@ public class DataApiResponseValidator {
 
   public <T extends APIException> DataApiResponseValidator hasSingleApiException(T expected) {
 
-    // TODO: aaron 19-oct-2024 this is a bit of a hack, will build ticket to refector the matchers
+    // TODO: aaron 19-oct-2024 this is a bit of a hack, will build ticket to refactor the matchers
     // for errors
     return body("$", responseIsError)
         .body("errors", hasSize(1))
@@ -366,6 +366,10 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
     return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
+  }
+
+  public DataApiResponseValidator hasDocumentsMatchedByIds(List<Object> ids) {
+    return body("data.documents.id", containsInAnyOrder(ids.toArray()));
   }
 
   public DataApiResponseValidator hasDocumentUnknowingPosition(String documentJSON) {

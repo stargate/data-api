@@ -21,10 +21,9 @@ public abstract class OperationAttemptPageBuilder<
     extends OperationAttemptAccumulator<SchemaT, AttemptT> {
 
   protected boolean useErrorObjectV2 = false;
-  protected boolean debugMode = false;
 
   /**
-   * Called ot turn the accumulated attempts into a {@link CommandResult}.
+   * Called to turn the accumulated attempts into a {@link CommandResult}.
    *
    * @return A supplier that will provide the {@link CommandResult} when called, normally a sublcass
    *     of {@link OperationAttemptPage}
@@ -38,17 +37,6 @@ public abstract class OperationAttemptPageBuilder<
   public <SubT extends OperationAttemptPageBuilder<SchemaT, AttemptT>> SubT useErrorObjectV2(
       boolean useErrorObjectV2) {
     this.useErrorObjectV2 = useErrorObjectV2;
-    return (SubT) this;
-  }
-
-  /**
-   * Set if API is running in debug mode, this adds additional info to the response. See {@link
-   * io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder}.
-   */
-  @SuppressWarnings("unchecked")
-  public <SubT extends OperationAttemptPageBuilder<SchemaT, AttemptT>> SubT debugMode(
-      boolean debugMode) {
-    this.debugMode = debugMode;
     return (SubT) this;
   }
 }

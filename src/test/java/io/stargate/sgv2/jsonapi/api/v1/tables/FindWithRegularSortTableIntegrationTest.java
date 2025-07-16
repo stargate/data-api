@@ -30,9 +30,15 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+/**
+ * Integration tests for the find command with regular (non-ANN, non-Lexical) sorting on a table.
+ *
+ * <p>This test class creates a table with various fields and performs find operations with sorting
+ * on different fields, including text and numeric fields, both ascending and descending.
+ */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-public class FindTableOperationWithSortIntegrationTest extends AbstractTableIntegrationTestBase {
+public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "sort_testing";
   private static final List<Object> testDatas = getDocuments(25);
 
@@ -61,7 +67,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class FindTableOperationWithSort {
+  class FindSortSuccess {
 
     @Test
     @Order(1)
@@ -303,7 +309,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class FindTableOperationWithFailingSort {
+  class FindSortFail {
     static final String biggerTableName = "col_fail_" + RandomStringUtils.randomAlphanumeric(16);
 
     // Test limit is max 100, create couple more

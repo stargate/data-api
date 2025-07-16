@@ -5,7 +5,6 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
@@ -13,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -29,7 +29,7 @@ public class CqlSessionFactoryTests {
 
     var schemaListener = mock(SchemaChangeListener.class);
     var endpoints = List.<String>of();
-    var fixture = newFixture(DatabaseType.ASTRA, endpoints, List.of(schemaListener));
+    var fixture = newFixture(DatabaseType.ASTRA, endpoints, () -> schemaListener);
 
     assertions(fixture, endpoints, schemaListener);
   }
@@ -39,7 +39,7 @@ public class CqlSessionFactoryTests {
 
     var schemaListener = mock(SchemaChangeListener.class);
     var endpoints = List.<String>of("127.0.0.1", "127.0.0.2");
-    var fixture = newFixture(DatabaseType.CASSANDRA, endpoints, List.of(schemaListener));
+    var fixture = newFixture(DatabaseType.CASSANDRA, endpoints, () -> schemaListener);
 
     assertions(fixture, endpoints, schemaListener);
   }
@@ -60,7 +60,7 @@ public class CqlSessionFactoryTests {
                   DATACENTER,
                   endpoints,
                   CASSANDRA_PORT,
-                  List.of(schemaListener));
+                  () -> schemaListener);
             });
     assertThat(ex)
         .as("Cassandra DB needs endpoints")
@@ -104,6 +104,8 @@ public class CqlSessionFactoryTests {
     verify(fixture.sessionBuilder, never()).addContactEndPoints(any());
     verify(fixture.sessionBuilder).addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
+    verify(fixture.sessionBuilder).withTenantId(TENANT_ID);
+
     if (!endpoints.isEmpty()) {
       var expectedEndpoints =
           endpoints.stream().map(host -> new InetSocketAddress(host, CASSANDRA_PORT)).toList();
@@ -116,7 +118,7 @@ public class CqlSessionFactoryTests {
   }
 
   record Fixture(
-      CqlSessionBuilder sessionBuilder,
+      TenantAwareCqlSessionBuilder sessionBuilder,
       CqlCredentials credentials,
       CqlSession session,
       CqlSessionFactory factory) {}
@@ -124,11 +126,11 @@ public class CqlSessionFactoryTests {
   private Fixture newFixture(
       DatabaseType databaseType,
       List<String> endpoints,
-      List<SchemaChangeListener> schemaChangeListeners) {
+      Supplier<SchemaChangeListener> schemaChangeListenerSupplier) {
 
     var session = mock(CqlSession.class);
 
-    var sessionBuilder = mock(CqlSessionBuilder.class);
+    var sessionBuilder = mock(TenantAwareCqlSessionBuilder.class);
     when(sessionBuilder.withLocalDatacenter(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.withClassLoader(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.withConfigLoader(any())).thenReturn(sessionBuilder);
@@ -137,6 +139,7 @@ public class CqlSessionFactoryTests {
     when(sessionBuilder.withAuthCredentials(any(), any())).thenReturn(sessionBuilder);
     when(sessionBuilder.addContactPoints(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.addTypeCodecs(any())).thenReturn(sessionBuilder);
+    when(sessionBuilder.withTenantId(any())).thenReturn(sessionBuilder);
 
     when(sessionBuilder.build()).thenReturn(session);
 
@@ -150,7 +153,7 @@ public class CqlSessionFactoryTests {
             DATACENTER,
             endpoints,
             CASSANDRA_PORT,
-            schemaChangeListeners,
+            schemaChangeListenerSupplier,
             () -> sessionBuilder);
     return new Fixture(sessionBuilder, credentials, session, factory);
   }
