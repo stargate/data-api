@@ -5,7 +5,7 @@
 # API instance replica count
 replicaCount: 1
 
-# Coordinator or bridge registry and image
+# Coordinator or bridge registry and image 
 image:
   registry: "docker.io"
   repository: "stargateio/data-api"
