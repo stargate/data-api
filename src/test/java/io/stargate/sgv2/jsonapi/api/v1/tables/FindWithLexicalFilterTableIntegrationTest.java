@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
-import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.common.WithTestResource;
@@ -100,13 +100,13 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
   @Order(5)
   class HappyLexicalFilter {
     @Test
-    void simpleSort() {
+    void simpleFilter() {
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()
           .find(Map.of("tags", Map.of("$match", "tag3")), List.of("id"), null)
           .wasSuccessful()
           .body("data.documents", hasSize(2))
-          .body("data.documents", jsonEquals(List.of(Map.of("id", "3"), Map.of("id", "4"))));
+          .body("data.documents", containsInAnyOrder(Map.of("id", "3"), Map.of("id", "4")));
     }
   }
 }

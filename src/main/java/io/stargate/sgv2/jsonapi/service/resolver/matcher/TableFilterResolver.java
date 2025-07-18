@@ -144,7 +144,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
                                       (ValueComparisonOperator) expression.operator()),
-                                  (String) expression.value()));
+                                  expression.value()));
                         });
                   });
 
@@ -258,6 +258,22 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   expression.path(),
                                   (List<Object>) expression.value(),
                                   expression.filterComponent()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_MATCH_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<String> dynamicMatchGroup = (CaptureGroup<String>) captureGroup;
+                    dynamicMatchGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new TextTableFilter(
+                                  expression.path(),
+                                  NativeTypeTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  expression.value()));
                         });
                   });
         };
