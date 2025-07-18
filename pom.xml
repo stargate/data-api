@@ -221,6 +221,11 @@
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
     <dependency>
+      <groupId>ai.djl.huggingface</groupId>
+      <artifactId>tokenizers</artifactId>
+      <version>0.24.0</version>
+    </dependency>
+    <dependency>
       <!-- Support for Optional used when loading error config seehttps://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes -->
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
