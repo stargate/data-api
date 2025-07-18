@@ -33,6 +33,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
   private static final Object DYNAMIC_EJSON_GROUP = new Object();
   private static final Object DYNAMIC_GROUP_IN = new Object();
   private static final Object DYNAMIC_MAP_SET_LIST_GROUP = new Object();
+  private static final Object DYNAMIC_MATCH_GROUP = new Object();
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -114,7 +115,9 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ArrayComparisonOperator.ALL,
                 // NOTANY is not public exposed in API, only be negated by ALL.
                 ArrayComparisonOperator.NOTANY),
-            JsonType.ARRAY);
+            JsonType.ARRAY)
+        .capture(DYNAMIC_MATCH_GROUP) // For $match operator
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING);
     return matchRules;
   }
 
