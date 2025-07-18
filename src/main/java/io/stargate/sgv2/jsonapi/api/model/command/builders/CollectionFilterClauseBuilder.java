@@ -73,8 +73,8 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
           // Only $match valid on $lexical field
           if (operator != ValueComparisonOperator.MATCH) {
             throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "$match operator can only be used with the '%s' field, not '%s'",
-                DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, path);
+                "Cannot filter on '%s' field using operator %s: only $match is supported",
+                path, operator.getOperator());
           }
           return path;
         }
