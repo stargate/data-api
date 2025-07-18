@@ -65,7 +65,9 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
     LT(BuiltConditionPredicate.LT, new FilterBehaviour.Behaviour(false, true)),
     GT(BuiltConditionPredicate.GT, new FilterBehaviour.Behaviour(false, true)),
     LTE(BuiltConditionPredicate.LTE, new FilterBehaviour.Behaviour(false, true)),
-    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true));
+    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true)),
+    // ":" operator (text search)
+    TEXT_SEARCH(BuiltConditionPredicate.TEXT_SEARCH, new FilterBehaviour.Behaviour(false, false));
 
     public final BuiltConditionPredicate predicate;
     public final FilterBehaviour filterBehaviour;
@@ -83,6 +85,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
         case GTE -> GTE;
         case LT -> LT;
         case LTE -> LTE;
+        case MATCH -> TEXT_SEARCH;
         default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
       };
     }
