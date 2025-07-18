@@ -81,6 +81,14 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
       }
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "filter clause path ('%s') cannot start with `$`", path);
+    } else {
+      // and one special-case operator
+      // $match only valid on $lexical field (ok case handled above)
+      if (operator == ValueComparisonOperator.MATCH) {
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            "%s operator can only be used with the '%s' field, not '%s'",
+            operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, path);
+      }
     }
 
     try {

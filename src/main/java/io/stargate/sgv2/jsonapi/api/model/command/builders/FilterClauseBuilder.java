@@ -169,10 +169,13 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                 "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                 entry.getKey());
-        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD ->
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "Cannot filter on '%s' field using operator $eq: only $match is supported",
-                entry.getKey());
+          // Now handled in validateFilterClausePath
+          /*
+          case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD ->
+              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                  "Cannot filter on '%s' field using operator $eq: only $match is supported",
+                  entry.getKey());
+           */
       }
       // the key should match pattern
       String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
