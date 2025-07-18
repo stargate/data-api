@@ -175,7 +175,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
                 entry.getKey());
       }
       // the key should match pattern
-      String key = validateFilterClausePath(entry.getKey());
+      String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
       logicalExpression.addComparisonExpressions(
           List.of(ComparisonExpression.eq(key, jsonNodeValue(key, entry.getValue()))));
     }
@@ -207,7 +207,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         if ((etype == null) && updateKey.startsWith("$")) {
           throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
         }
-        String key = validateFilterClausePath(entry.getKey());
+        String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
         // JSON Extension type needs to be explicitly handled:
         Object value;
         if (etype != null) {
@@ -224,7 +224,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         return comparisonExpressionList;
       }
 
-      String entryKey = validateFilterClausePath(entry.getKey());
+      String entryKey = validateFilterClausePath(entry.getKey(), operator);
 
       // First things first: $lexical field can only be used with $match operator
       if (entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)
@@ -263,13 +263,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
               operator.getOperator());
         }
       } else if (operator == ValueComparisonOperator.MATCH) {
-        // $match operator can only be used with String value and for Collections
-        // only on $lexical field
-        if (!entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "%s operator can only be used with the '%s' field, not '%s'",
-              operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, entryKey);
-        }
+        // $match operator can only be used with String value
         if (!(valueObject instanceof String)) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "%s operator must have `String` value, was `%s`",
@@ -588,7 +582,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    * path.
    *
    * @param path Path to be validated
+   * @param operator FilterOperator that is used for this path
    * @return Path after validation - currently not changed
    */
-  protected abstract String validateFilterClausePath(String path);
+  protected abstract String validateFilterClausePath(String path, FilterOperator operator);
 }

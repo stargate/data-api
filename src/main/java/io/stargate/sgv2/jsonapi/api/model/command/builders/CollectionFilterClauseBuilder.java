@@ -54,7 +54,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
   }
 
   @Override
-  protected String validateFilterClausePath(String path) {
+  protected String validateFilterClausePath(String path, FilterOperator operator) {
     if (!NamingRules.FIELD.apply(path)) {
       if (path.isEmpty()) {
         throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
@@ -69,6 +69,12 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
         case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD -> {
           if (!schema.lexicalConfig().enabled()) {
             throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
+          }
+          // Only $match valid on $lexical field
+          if (operator != ValueComparisonOperator.MATCH) {
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                "$match operator can only be used with the '%s' field, not '%s'",
+                DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, path);
           }
           return path;
         }

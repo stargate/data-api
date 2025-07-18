@@ -2,10 +2,13 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -89,6 +92,21 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
               "value", "d",
               "tags", "tag2 tag1 tag3",
               "no_index_tags", "jkl"));
+    }
+  }
+
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
+  @Nested
+  @Order(5)
+  class HappyLexicalFilter {
+    @Test
+    void simpleSort() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(Map.of("tags", Map.of("$match", "tag3")), List.of("id"), null)
+          .wasSuccessful()
+          .body("data.documents", hasSize(2))
+          .body("data.documents", jsonEquals(List.of(Map.of("id", "3"), Map.of("id", "4"))));
     }
   }
 }
