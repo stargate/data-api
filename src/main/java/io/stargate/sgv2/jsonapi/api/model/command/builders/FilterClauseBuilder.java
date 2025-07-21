@@ -163,19 +163,14 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else { // neither Array nor Object, simple implicit "$eq" comparison
+      // TODO: (21-Jul-2025) Should be refactor to CollectionFilterClauseBuilder as it
+      // only applies to Collections
       switch (entry.getKey()) {
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                 DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
             throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                 "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                 entry.getKey());
-          // Now handled in validateFilterClausePath
-          /*
-          case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD ->
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "Cannot filter on '%s' field using operator $eq: only $match is supported",
-                  entry.getKey());
-           */
       }
       // the key should match pattern
       String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
