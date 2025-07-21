@@ -120,8 +120,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         if (!next.isObject()) {
           // nodes in $and/$or array must be objects
           throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
-              "Unsupported NodeType %s in $%s",
-              next.getNodeType(), logicalExpression.getLogicalRelation());
+              "Unsupported NodeType '%s' for $%s filter",
+              JsonUtil.nodeTypeAsString(next), logicalExpression.getLogicalRelation());
         }
         populateExpression(logicalExpression, next);
       }
@@ -150,6 +150,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             case "$or" -> LogicalExpression.or();
             case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                     DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
+                // TODO: (21-Jul-2025) Should be refactored to CollectionFilterClauseBuilder as it
+                // only applies to Collections
                 throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                     "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                     entry.getKey());
@@ -163,7 +165,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else { // neither Array nor Object, simple implicit "$eq" comparison
-      // TODO: (21-Jul-2025) Should be refactor to CollectionFilterClauseBuilder as it
+      // TODO: (21-Jul-2025) Should be refactored to CollectionFilterClauseBuilder as it
       // only applies to Collections
       switch (entry.getKey()) {
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
