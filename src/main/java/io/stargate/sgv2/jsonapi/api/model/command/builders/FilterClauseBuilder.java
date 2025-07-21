@@ -225,15 +225,6 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       }
 
       String entryKey = validateFilterClausePath(entry.getKey(), operator);
-
-      // First things first: $lexical field can only be used with $match operator
-      if (entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)
-          && (operator != ValueComparisonOperator.MATCH)) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "Cannot filter on '%s' field using operator %s: only $match is supported",
-            entry.getKey(), operator.getOperator());
-      }
-
       JsonNode value = updateField.getValue();
       Object valueObject = jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
