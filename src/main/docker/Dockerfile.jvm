@@ -1,7 +1,8 @@
 # ---- Stage 1: JDK Fetch and Setup ----
 FROM registry.access.redhat.com/ubi9/ubi AS data-api-jdk-builder
 
-# Latest JDK 21
+# JDK 21 binaries can be found at https://github.com/adoptium/temurin21-binaries/releases/
+# Note that the '+' is encodede as '%2B' in the URL, sample url https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.7%2B6
 ARG JDK_VERSION=21.0.7_6
 ARG JDK_BUILD=jdk-21.0.7%2B6
 ARG JDK_DIST=OpenJDK21U-jdk_x64_linux_hotspot_21.0.7_6.tar.gz
