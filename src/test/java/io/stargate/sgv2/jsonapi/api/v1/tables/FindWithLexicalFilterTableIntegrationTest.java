@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +108,37 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
           .wasSuccessful()
           .body("data.documents", hasSize(2))
           .body("data.documents", containsInAnyOrder(Map.of("id", "3"), Map.of("id", "4")));
+    }
+  }
+
+  // Failing cases
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
+  @Nested
+  @Order(10)
+  class SadLexicalFilter {
+    @Test
+    void failOnMissingColumn() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(Map.of("unknown-column", Map.of("$match", "value")), List.of("id"), null)
+          .hasSingleApiError(
+              FilterException.Code.UNKNOWN_TABLE_COLUMNS,
+              FilterException.class,
+              "Only columns defined in the table schema can be",
+              "defines the columns: ");
+    }
+
+    @Test
+    void failOnNonIndexedColumn() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(Map.of("no_index_tags", Map.of("$match", "value")), List.of("id"), null)
+          // NOT RIGHT ERROR CODE: just a placeholder
+          .hasSingleApiError(
+              FilterException.Code.UNKNOWN_TABLE_COLUMNS,
+              FilterException.class,
+              "Only columns defined in the table schema can be",
+              "defines the columns: ");
     }
   }
 }
