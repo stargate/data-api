@@ -13,7 +13,8 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <!-- 27-Mar-2025, tatu: Updated to later but not Latest available Quarkus -->
-    <quarkus.platform.version>3.20.0</quarkus.platform.version>
+    <!-- 24-Jul-2025, cedrick: Updated to later but not Latest available Quarkus -->
+    <quarkus.platform.version>3.24.4</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <mockito.version>5.12.0</mockito.version>
@@ -235,16 +236,6 @@
       <version>5.0.0</version>
     </dependency>
     <!-- clunven fixing cve https://datastax.jira.com/browse/MC-1977 -->
-    <dependency>
-      <groupId>io.smallrye</groupId>
-      <artifactId>smallrye-fault-tolerance-core</artifactId>
-      <version>6.9.0</version>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-core</artifactId>
-      <version>4.5.16</version>
-    </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>

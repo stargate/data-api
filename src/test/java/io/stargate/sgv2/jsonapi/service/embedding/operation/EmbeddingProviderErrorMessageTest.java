@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
  * NOTE: this test relies on the {@link EmbeddingClientTestResource} to mock the server responses
  */
 @QuarkusTest
-@WithTestResource(EmbeddingClientTestResource.class)
+@QuarkusTestResource(EmbeddingClientTestResource.class)
 public class EmbeddingProviderErrorMessageTest {
 
   @Inject EmbeddingProvidersConfig embeddingProvidersConfig;
