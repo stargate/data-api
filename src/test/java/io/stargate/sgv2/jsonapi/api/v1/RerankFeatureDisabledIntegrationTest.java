@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.*;
 import static org.hamcrest.Matchers.*;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.*;
  * enabled)
  */
 @QuarkusIntegrationTest
-@WithTestResource(
+@QuarkusTestResource(
     value = RerankFeatureDisabledIntegrationTest.TestResource.class,
     // NOTE, restrictToAnnotatedClass has to be true, since most IT use the default DseTestResource,
     // if this set to false, it will impact other integration tests classes.

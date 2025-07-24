@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.fi
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.PartitionedKeyValueTableScenario;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.ThreeClusteringKeysTableScenario;
@@ -16,7 +16,7 @@ import java.util.Map;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindPaginationTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
