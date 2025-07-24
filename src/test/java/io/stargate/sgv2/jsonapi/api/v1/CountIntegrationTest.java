@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.is;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 /**
  * To run this test DseTestResource is updated to have maxCountLimit to `5` and getCountPageSize to

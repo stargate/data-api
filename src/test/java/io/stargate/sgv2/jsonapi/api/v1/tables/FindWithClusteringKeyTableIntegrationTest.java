@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.ID
 import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.fieldName;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.ThreeClusteringKeysTableScenario;
@@ -27,7 +27,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
  * sorting and basic checks that when we do db sorting we get expected results.
  */
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindWithClusteringKeyTableIntegrationTest extends AbstractTableIntegrationTestBase {
 

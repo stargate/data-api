@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.hasSize;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindWithLexicalSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
   private static final String TABLE_NAME = "lexicalSortTableTest";
