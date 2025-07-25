@@ -37,7 +37,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  * on different fields, including text and numeric fields, both ascending and descending.
  */
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "sort_testing";
   private static final List<Object> testDatas = getDocuments(25);

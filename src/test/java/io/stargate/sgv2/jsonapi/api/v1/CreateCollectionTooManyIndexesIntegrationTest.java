@@ -18,8 +18,7 @@ import org.junit.jupiter.api.TestClassOrder;
  */
 @QuarkusIntegrationTest
 @WithTestResource(
-    value = CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class,
-    restrictToAnnotatedClass = true)
+    value = CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   private static final int COLLECTIONS_TO_CREATE = 3;

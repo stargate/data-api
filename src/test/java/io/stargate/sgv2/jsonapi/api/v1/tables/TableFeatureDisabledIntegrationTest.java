@@ -18,9 +18,7 @@ import org.junit.jupiter.api.TestClassOrder;
  * feature enabled)
  */
 @QuarkusIntegrationTest
-@WithTestResource(
-    value = TableFeatureDisabledIntegrationTest.TestResource.class,
-    restrictToAnnotatedClass = true)
+@WithTestResource(value = TableFeatureDisabledIntegrationTest.TestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegrationTestBase {
   // Need to be able to enable/disable the TABLES feature

@@ -20,7 +20,7 @@ import org.junit.jupiter.api.*;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
