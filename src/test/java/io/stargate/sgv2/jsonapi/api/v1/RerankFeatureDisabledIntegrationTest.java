@@ -17,12 +17,12 @@ import org.junit.jupiter.api.*;
  */
 @QuarkusIntegrationTest
 @WithTestResource(
-    value = RerankFeatureDisabledIntegrationTest.TestResource.class,
+    value = RerankFeatureDisabledIntegrationTest.TestResource.class
     // NOTE, restrictToAnnotatedClass has to be true, since most IT use the default DseTestResource,
     // if this set to false, it will impact other integration tests classes.
     // And if it applies to a class with inner test class, set to true will not work, since test
     // resource will not be applied to inner class.
-    restrictToAnnotatedClass = true)
+    )
 public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   // Need to be able to enable/disable the RERANKING feature
   public static class TestResource extends DseTestResource {

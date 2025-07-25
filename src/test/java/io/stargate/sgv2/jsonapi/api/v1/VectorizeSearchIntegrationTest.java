@@ -20,7 +20,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 

@@ -15,9 +15,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(
-    value = CountByCassandraIntegrationTest.CassandraCounterTestResource.class,
-    restrictToAnnotatedClass = true)
+@WithTestResource(value = CountByCassandraIntegrationTest.CassandraCounterTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrationTestBase {

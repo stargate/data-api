@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 public class FindCollectionWithSortIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

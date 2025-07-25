@@ -17,8 +17,7 @@ import org.junit.jupiter.api.TestClassOrder;
  */
 @QuarkusIntegrationTest
 @WithTestResource(
-    value = CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class,
-    restrictToAnnotatedClass = true)
+    value = CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   // Let's use relatively low limit to trigger test failure
