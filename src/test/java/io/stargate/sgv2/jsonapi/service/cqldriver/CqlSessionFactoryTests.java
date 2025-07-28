@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -28,7 +29,7 @@ public class CqlSessionFactoryTests {
 
     var schemaListener = mock(SchemaChangeListener.class);
     var endpoints = List.<String>of();
-    var fixture = newFixture(DatabaseType.ASTRA, endpoints, List.of(schemaListener));
+    var fixture = newFixture(DatabaseType.ASTRA, endpoints, () -> schemaListener);
 
     assertions(fixture, endpoints, schemaListener);
   }
@@ -38,7 +39,7 @@ public class CqlSessionFactoryTests {
 
     var schemaListener = mock(SchemaChangeListener.class);
     var endpoints = List.<String>of("127.0.0.1", "127.0.0.2");
-    var fixture = newFixture(DatabaseType.CASSANDRA, endpoints, List.of(schemaListener));
+    var fixture = newFixture(DatabaseType.CASSANDRA, endpoints, () -> schemaListener);
 
     assertions(fixture, endpoints, schemaListener);
   }
@@ -59,7 +60,7 @@ public class CqlSessionFactoryTests {
                   DATACENTER,
                   endpoints,
                   CASSANDRA_PORT,
-                  List.of(schemaListener));
+                  () -> schemaListener);
             });
     assertThat(ex)
         .as("Cassandra DB needs endpoints")
@@ -125,7 +126,7 @@ public class CqlSessionFactoryTests {
   private Fixture newFixture(
       DatabaseType databaseType,
       List<String> endpoints,
-      List<SchemaChangeListener> schemaChangeListeners) {
+      Supplier<SchemaChangeListener> schemaChangeListenerSupplier) {
 
     var session = mock(CqlSession.class);
 
@@ -152,7 +153,7 @@ public class CqlSessionFactoryTests {
             DATACENTER,
             endpoints,
             CASSANDRA_PORT,
-            schemaChangeListeners,
+            schemaChangeListenerSupplier,
             () -> sessionBuilder);
     return new Fixture(sessionBuilder, credentials, session, factory);
   }

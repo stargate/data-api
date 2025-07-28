@@ -58,24 +58,7 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     }
   }
 
-  /**
-   * Returns a codec that can convert a Java object into the object expected by the CQL driver for a
-   * specific CQL data type.
-   *
-   * <p>
-   *
-   * @param table {@link TableMetadata} to find the column definition in
-   * @param column {@link CqlIdentifier} for the column we want to get the codec for.
-   * @param value The value to be written to the column
-   * @param <JavaT> Type of the Java object we want to convert.
-   * @param <CqlT> Type fo the Java object the CQL driver expects.
-   * @return The {@link JSONCodec} that can convert the value to the expected type for the column,
-   *     or an exception if the codec cannot be found.
-   * @throws UnknownColumnException If the column is not found in the table.
-   * @throws MissingJSONCodecException If no codec is found for the column and type of the value.
-   * @throws ToCQLCodecException If there is a codec for CQL type, but not one for converting from
-   *     the Java value type
-   */
+  /** {@inheritDoc} */
   @Override
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
       TableMetadata table, CqlIdentifier column, Object value)
@@ -86,15 +69,24 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
 
     var columnMetadata =
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
+    return codecToCQL(table, column, columnMetadata.getType(), value);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
+      TableMetadata table, CqlIdentifier column, DataType toCQLType, Object value)
+      throws MissingJSONCodecException, ToCQLCodecException {
+
+    Objects.requireNonNull(table, "table must not be null");
+    Objects.requireNonNull(column, "column must not be null");
+    Objects.requireNonNull(toCQLType, "toCQLType must not be null");
 
     // Next, simplify later code by handling nulls directly here (but after column lookup)
     if (value == null) {
       return (JSONCodec<JavaT, CqlT>) TO_CQL_NULL_CODEC;
     }
-
-    // First find candidates for CQL target type in question (if any)
-    final DataType columnType = columnMetadata.getType();
-    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(columnType);
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(toCQLType);
 
     if (candidates != null) {
       // this is a scalar type, so we can just use the first codec
@@ -108,7 +100,7 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
       if (match == null) {
         // Different exception for this case: CQL type supported but not from given Java type
         // (f.ex, CQL Boolean from Java/JSON number)
-        throw new ToCQLCodecException(value, columnType, "no codec matching value type");
+        throw new ToCQLCodecException(value, toCQLType, "no codec matching value type");
       }
       return match;
     }
@@ -118,7 +110,7 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     // candidate
     // but there was a type error
     JSONCodec<JavaT, CqlT> collectionCodec =
-        switch (columnType) {
+        switch (toCQLType) {
           case ListType lt -> codecToCQL(lt, value);
           case SetType st -> codecToCQL(st, value);
           case MapType mt -> codecToCQL(mt, value);
@@ -129,7 +121,7 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     if (collectionCodec != null) {
       return collectionCodec;
     }
-    throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
+    throw new MissingJSONCodecException(table, column, toCQLType, value.getClass(), value);
   }
 
   protected <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(ListType listType, Object value)

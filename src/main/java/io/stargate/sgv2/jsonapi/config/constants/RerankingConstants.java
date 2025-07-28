@@ -6,6 +6,4 @@ public interface RerankingConstants {
     String ENABLED = "enabled";
     String SERVICE = ServiceDescConstants.SERVICE;
   }
-
-  interface RerankingService extends ServiceDescConstants {}
 }

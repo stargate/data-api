@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.RegularIndexColumnDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.serializer.RegularIndexColumnSerializer;
-import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import jakarta.annotation.Nullable;
@@ -55,7 +55,7 @@ public record RegularIndexDefinitionDesc(
           @Schema(description = "Optional component of a map column to index, $keys or $values")
           // Note, user can only specify $keys and $values, default will be resolved in entries
           // later.
-          ApiMapComponent mapComponent) {}
+          MapComponentDesc mapComponent) {}
 
   /**
    * Options for the index. Text and ascii primitive datatypes can have the analyzer options

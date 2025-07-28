@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType.BINARY;
 
 import com.fasterxml.jackson.core.JacksonException;
@@ -14,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
@@ -170,9 +172,8 @@ public class DocumentShredder {
 
     // Verify that "$lexical" field is not present if lexical indexing is disabled
     if (!collectionSettings.lexicalConfig().enabled() && shreddedDoc.queryLexicalValue() != null) {
-      throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-          "Document contains lexical content, but lexical indexing is not enabled for collection '%s'",
-          collectionSettings.name().table());
+      throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
+          errVars(collectionSettings));
     }
 
     return shreddedDoc;

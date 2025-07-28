@@ -45,7 +45,8 @@ public class SortClauseUtilTest {
     @Test
     public void happyPathVectorSearch() {
       SortClause sortClause =
-          new SortClause(List.of(SortExpression.vsearch(new float[] {0.11f, 0.22f, 0.33f})));
+          new SortClause(
+              List.of(SortExpression.collectionVectorSort(new float[] {0.11f, 0.22f, 0.33f})));
       final float[] vsearch = SortClauseUtil.resolveVsearch(sortClause);
       assertThat(vsearch)
           .isNotNull()

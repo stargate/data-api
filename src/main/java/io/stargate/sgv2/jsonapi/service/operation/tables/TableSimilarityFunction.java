@@ -67,7 +67,7 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
 
     return new TableSimilarityFunctionImpl(
         requestedVectorColumnPath,
-        CqlVectorUtil.floatsToCqlVector(sortExpression.vector()),
+        CqlVectorUtil.floatsToCqlVector(sortExpression.getVector()),
         similarityFunction);
   }
 

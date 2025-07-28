@@ -10,7 +10,7 @@ public record CountOperationPage(long count, boolean moreData) implements Suppli
   public CommandResult get() {
 
     var builder =
-        CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+        CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
             .addStatus(CommandStatus.COUNTED_DOCUMENT, count);
     if (moreData) {
       builder.addStatus(CommandStatus.MORE_DATA, true);

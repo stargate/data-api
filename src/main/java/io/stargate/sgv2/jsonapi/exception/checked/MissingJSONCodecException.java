@@ -1,7 +1,8 @@
 package io.stargate.sgv2.jsonapi.exception.checked;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
 
 /**
  * Checked exception thrown when we cannot find a codec for a column that matches the types we are
@@ -14,18 +15,24 @@ public class MissingJSONCodecException extends CheckedApiException {
 
   // TODO: both javaType and value may be null when going toJSON
   public final TableMetadata table;
-  public final ColumnMetadata column;
+  public final CqlIdentifier columnName;
+  public final DataType cqlType;
   public final Class<?> javaType;
   public final Object value;
 
   public MissingJSONCodecException(
-      TableMetadata table, ColumnMetadata column, Class<?> javaType, Object value) {
+      TableMetadata table,
+      CqlIdentifier columnName,
+      DataType cqlType,
+      Class<?> javaType,
+      Object value) {
     super(
         String.format(
             "No JSONCodec found for table '%s' column '%s' column type %s with java type %s and value %s",
-            table.getName(), column.getName(), column.getType(), javaType, value));
+            table.getName(), columnName.toString(), cqlType, javaType, value));
     this.table = table;
-    this.column = column;
+    this.columnName = columnName;
+    this.cqlType = cqlType;
     this.javaType = javaType;
     this.value = value;
   }

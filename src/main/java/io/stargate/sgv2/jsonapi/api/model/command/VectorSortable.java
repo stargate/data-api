@@ -16,8 +16,8 @@ public interface VectorSortable extends Sortable {
   }
 
   /**
-   * Returns the first SortExpression that has {@link SortExpression#vector()} not null, if there is
-   * more than one raises {@link IllegalStateException}.
+   * Returns the first SortExpression that returns true for {@link SortExpression#hasVector()}, if
+   * there is more than one raises {@link IllegalStateException}.
    *
    * @return the vector sort expression if it exists.
    */
@@ -26,7 +26,7 @@ public interface VectorSortable extends Sortable {
     if (sortClause.sortExpressions() != null) {
       var vectorSorts =
           sortClause.sortExpressions().stream()
-              .filter(expression -> expression.vector() != null)
+              .filter(expression -> expression.hasVector())
               .toList();
       if (vectorSorts.size() > 1) {
         throw new IllegalStateException("Only one vector sort expression is allowed");
