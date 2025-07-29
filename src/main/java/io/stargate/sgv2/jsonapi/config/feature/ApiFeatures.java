@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.config.feature;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Accessor for combined state of feature flags; typically based on static configuration (with its
@@ -15,11 +16,11 @@ import java.util.Map;
  * io.stargate.sgv2.jsonapi.api.model.command.CommandContext#apiFeatures()}
  */
 public class ApiFeatures {
-  private final Map<ApiFeature, Boolean> fromConfig;
+  private final Map<ApiFeature, Optional<Boolean>> fromConfig;
   private final RequestContext.HttpHeaderAccess httpHeaders;
 
   private ApiFeatures(
-      Map<ApiFeature, Boolean> fromConfig, RequestContext.HttpHeaderAccess httpHeaders) {
+      Map<ApiFeature, Optional<Boolean>> fromConfig, RequestContext.HttpHeaderAccess httpHeaders) {
     this.fromConfig = fromConfig;
     this.httpHeaders = httpHeaders;
   }
@@ -30,7 +31,7 @@ public class ApiFeatures {
 
   public static ApiFeatures fromConfigAndRequest(
       FeaturesConfig config, RequestContext.HttpHeaderAccess httpHeaders) {
-    Map<ApiFeature, Boolean> fromConfig = config.flags();
+    Map<ApiFeature, Optional<Boolean>> fromConfig = config.flags();
     if (fromConfig == null) {
       fromConfig = Collections.emptyMap();
     }
@@ -39,7 +40,8 @@ public class ApiFeatures {
 
   public boolean isFeatureEnabled(ApiFeature flag) {
     // First check if there is definition from configuration
-    Boolean b = fromConfig.get(flag);
+    Optional<Boolean> optB = fromConfig.get(flag);
+    Boolean b = optB != null ? optB.orElse(null) : null;
     if (b == null) {
       // and only if not, allow per-request specification
       if (httpHeaders != null) {
