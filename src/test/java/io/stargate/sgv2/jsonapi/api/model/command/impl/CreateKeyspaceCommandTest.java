@@ -92,7 +92,7 @@ class CreateKeyspaceCommandTest {
   }
 
   @Nested
-  class DeprecatedCreateNamespaceTest {
+  class DeprecatedCreateNamespace {
 
     @Test
     public void nameCorrectPattern() throws Exception {

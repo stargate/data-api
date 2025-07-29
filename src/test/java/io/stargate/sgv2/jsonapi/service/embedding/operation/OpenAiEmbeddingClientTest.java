@@ -105,7 +105,7 @@ public class OpenAiEmbeddingClientTest {
   }
 
   @Nested
-  class OpenAiEmbeddingTest {
+  class OpenAiEmbedding {
 
     @Test
     public void happyPath() throws Exception {

@@ -532,7 +532,7 @@ public class DocumentUpdaterTest {
   }
 
   @Nested
-  class VectorizeUpdateTest {
+  class VectorizeUpdate {
 
     @Test
     public void updateVectorize() throws Exception {
@@ -914,7 +914,7 @@ public class DocumentUpdaterTest {
   }
 
   @Nested
-  class replaceVectorizeTest {
+  class replaceVectorize {
 
     @Test
     public void replaceDocument() throws Exception {

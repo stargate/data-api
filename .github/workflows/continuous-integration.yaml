@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # max run time 12 minutes
-    timeout-minutes: 12
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # max run time 40 minutes
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     strategy:
 

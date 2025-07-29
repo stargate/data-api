@@ -82,8 +82,9 @@ public class EmbeddingProviderErrorMessageTest {
               REQUEST_PROPERTIES.maxBatchSize()),
           Map.of());
 
-  private NvidiaEmbeddingProvider createProvider() {
-    return new NvidiaEmbeddingProvider(
+  private io.stargate.sgv2.jsonapi.service.embedding.operation.NvidiaEmbeddingProvider
+      createProvider() {
+    return new io.stargate.sgv2.jsonapi.service.embedding.operation.NvidiaEmbeddingProvider(
         PROVIDER_CONFIG, MODEL_CONFIG, SERVICE_CONFIG, DEFAULT_DIMENSIONS, null);
   }
 
@@ -99,7 +100,7 @@ public class EmbeddingProviderErrorMessageTest {
   }
 
   @Nested
-  class NvidiaEmbeddingProviderTest {
+  class NvidiaEmbeddingProvider {
     @Test
     public void test429() throws Exception {
 
