@@ -168,27 +168,29 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(404);
     }
 
-    //    @Test
-    //    public void methodNotFound() {
-    //      String json =
-    //          """
-    //            {
-    //              "find": {
-    //                "options" : {
-    //                  "limit" : 1
-    //                }
-    //              }
-    //            }
-    //            """;
-    //      given()
-    //          .headers(getHeaders())
-    //          .contentType(ContentType.JSON)
-    //          .body(json)
-    //          .when()
-    //          .get(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-    //          .then()
-    //          .statusCode(405);
-    //    }
+    // GET instead of POST to test method not found
+    @Disabled("Fails with 404, but should be 405, with Quarkus 3.24.x")
+    @Test
+    public void methodNotFound() {
+      String json =
+          """
+                {
+                  "find": {
+                    "options" : {
+                      "limit" : 1
+                    }
+                  }
+                }
+                """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .get(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(405);
+    }
   }
 
   @Nested
@@ -351,24 +353,25 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(404);
     }
 
-    //    @Test
-    //    public void methodNotFound() {
-    //      String json =
-    //          """
-    //              {
-    //                "createNamespace": {
-    //                  "name": "ignore_me"
-    //                }
-    //              }
-    //            """;
-    //      given()
-    //          .headers(getHeaders())
-    //          .contentType(ContentType.JSON)
-    //          .body(json)
-    //          .when()
-    //          .get(GeneralResource.BASE_PATH)
-    //          .then()
-    //          .statusCode(405);
-    //    }
+    // GET instead of POST to test method not found
+    @Test
+    public void methodNotFound() {
+      String json =
+          """
+                  {
+                    "createNamespace": {
+                      "name": "ignore_me"
+                    }
+                  }
+                """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .get(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(405);
+    }
   }
 }
