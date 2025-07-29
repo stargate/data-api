@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.config.feature;
 
 import io.smallrye.config.ConfigMapping;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Configuration mapping for Data API Feature flags as read from main application configuration
@@ -15,7 +14,7 @@ import java.util.Optional;
  */
 @ConfigMapping(prefix = "stargate.feature")
 public interface FeaturesConfig {
-  // Quarkus/SmallRye Config won't accept use of `null` values, so we use Optional
-  // to indicate "undefined" state (i.e. not set).
-  Map<ApiFeature, Optional<Boolean>> flags();
+  // Quarkus/SmallRye Config won't accept use of `null` values, so we must bind
+  // as Strings and only convert to Boolean when needed.
+  Map<ApiFeature, String> flags();
 }
