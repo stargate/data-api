@@ -60,7 +60,7 @@ class ObjectMapperConfigurationTest {
   private final TestConstants testConstants = new TestConstants();
 
   @Nested
-  class UnmatchedOperationCommandHandlerTest {
+  class UnmatchedOperationCommandHandler {
     @Test
     public void notExistedCommandMatchKeyspaceCommand() throws Exception {
       String json =

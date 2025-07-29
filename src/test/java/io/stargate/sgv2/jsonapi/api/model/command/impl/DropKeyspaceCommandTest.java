@@ -62,7 +62,7 @@ class DropKeyspaceCommandTest {
   }
 
   @Nested
-  class DeprecatedDropKeyspaceCommandTest {
+  class DeprecatedDropKeyspaceCommand {
 
     @Test
     public void noName() throws Exception {

@@ -99,7 +99,7 @@ public class EmbeddingProviderErrorMessageTest {
   }
 
   @Nested
-  class NvidiaEmbeddingProviderTest {
+  class NvidiaEmbeddingProviderHappyPath {
     @Test
     public void test429() throws Exception {
 
