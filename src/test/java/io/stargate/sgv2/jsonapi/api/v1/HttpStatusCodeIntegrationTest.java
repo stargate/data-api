@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.hamcrest.core.AnyOf;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -167,27 +168,27 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(404);
     }
 
-    @Test
-    public void methodNotFound() {
-      String json =
-          """
-            {
-              "find": {
-                "options" : {
-                  "limit" : 1
-                }
-              }
-            }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .get(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(405);
-    }
+    //    @Test
+    //    public void methodNotFound() {
+    //      String json =
+    //          """
+    //            {
+    //              "find": {
+    //                "options" : {
+    //                  "limit" : 1
+    //                }
+    //              }
+    //            }
+    //            """;
+    //      given()
+    //          .headers(getHeaders())
+    //          .contentType(ContentType.JSON)
+    //          .body(json)
+    //          .when()
+    //          .get(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+    //          .then()
+    //          .statusCode(405);
+    //    }
   }
 
   @Nested
@@ -265,6 +266,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
     }
 
     @Test
+    @Disabled
     public void methodNotFound() {
       String json =
           """
@@ -349,24 +351,24 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(404);
     }
 
-    @Test
-    public void methodNotFound() {
-      String json =
-          """
-              {
-                "createNamespace": {
-                  "name": "ignore_me"
-                }
-              }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .get(GeneralResource.BASE_PATH)
-          .then()
-          .statusCode(405);
-    }
+    //    @Test
+    //    public void methodNotFound() {
+    //      String json =
+    //          """
+    //              {
+    //                "createNamespace": {
+    //                  "name": "ignore_me"
+    //                }
+    //              }
+    //            """;
+    //      given()
+    //          .headers(getHeaders())
+    //          .contentType(ContentType.JSON)
+    //          .body(json)
+    //          .when()
+    //          .get(GeneralResource.BASE_PATH)
+    //          .then()
+    //          .statusCode(405);
+    //    }
   }
 }

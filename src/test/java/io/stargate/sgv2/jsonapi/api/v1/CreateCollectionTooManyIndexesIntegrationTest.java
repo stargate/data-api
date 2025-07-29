@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -17,8 +17,9 @@ import org.junit.jupiter.api.TestClassOrder;
  * Indexes being created: that is, cannot create enough indexes for a new Collection.
  */
 @QuarkusIntegrationTest
-@WithTestResource(
-    value = CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class)
+@QuarkusTestResource(
+    value = CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class,
+    restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   private static final int COLLECTIONS_TO_CREATE = 3;
