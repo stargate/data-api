@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSu
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.is;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -16,8 +17,8 @@ import org.junit.jupiter.api.TestClassOrder;
  * Collections per DB being created.
  */
 @QuarkusIntegrationTest
-@WithTestResource(
-    value = CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class)
+@QuarkusTestResource(
+    value = CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class, restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   // Let's use relatively low limit to trigger test failure
