@@ -325,8 +325,6 @@
           </systemPropertyVariables>
           <excludes>
             <exclude>**/*IntegrationTest.*</exclude>
-            <!-- Exclude any inner classes to support versions above quarkus 3.17 -->
-            <!-- <exclude>**/*$*.class</exclude> -->
           </excludes>
           <skip>${skipUnitTests}</skip>
         </configuration>
