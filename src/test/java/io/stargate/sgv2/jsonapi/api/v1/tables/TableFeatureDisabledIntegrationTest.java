@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.TestClassOrder;
  * feature enabled)
  */
 @QuarkusIntegrationTest
-@WithTestResource(
+@QuarkusTestResource(
     value = TableFeatureDisabledIntegrationTest.TestResource.class,
     restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)

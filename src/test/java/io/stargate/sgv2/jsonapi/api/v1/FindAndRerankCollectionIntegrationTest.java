@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
  * collection.
  */
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   // used to cleanup the collection from a previous test, if non-null

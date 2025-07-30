@@ -57,7 +57,29 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   @BeforeAll
   public void createKeyspace() {
+    waitForRestEndpoint(GeneralResource.BASE_PATH, 60); // Wait max 60 seconds
     createKeyspace(keyspaceName);
+  }
+
+  /** Tentative to let the system start before creating the keyspace. */
+  private void waitForRestEndpoint(String baseUrl, int timeoutSeconds) {
+    long startTime = System.currentTimeMillis();
+    while ((System.currentTimeMillis() - startTime) < timeoutSeconds * 1000) {
+      try {
+        int statusCode =
+            RestAssured.given().port(getTestPort()).when().get(baseUrl).getStatusCode();
+        if (statusCode >= 200 && statusCode < 500) {
+          return; // ready
+        }
+      } catch (Exception e) {
+        // Ignore and retry
+      }
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException ignored) {
+      }
+    }
+    throw new RuntimeException("REST endpoint not available at " + baseUrl + " after timeout");
   }
 
   protected void createKeyspace(String nsToCreate) {

@@ -1,27 +1,30 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.*;
-import static org.hamcrest.Matchers.*;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertGeneralCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 
 /**
  * Basic testing to see what happens when feature is disabled (other tests will have feature
  * enabled)
  */
 @QuarkusIntegrationTest
-@WithTestResource(
-    value = RerankFeatureDisabledIntegrationTest.TestResource.class,
+@QuarkusTestResource(
+    value = RerankFeatureDisabledIntegrationTest.TestResource.class
     // NOTE, restrictToAnnotatedClass has to be true, since most IT use the default DseTestResource,
     // if this set to false, it will impact other integration tests classes.
     // And if it applies to a class with inner test class, set to true will not work, since test
     // resource will not be applied to inner class.
+    ,
     restrictToAnnotatedClass = true)
 public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   // Need to be able to enable/disable the RERANKING feature
