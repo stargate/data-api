@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
@@ -23,7 +22,6 @@ import org.junit.jupiter.api.TestClassOrder;
     value = TableFeatureDisabledIntegrationTest.TestResource.class,
     restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-@Disabled
 public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegrationTestBase {
   // Need to be able to enable/disable the TABLES feature
   public static class TestResource extends DseTestResource {
@@ -31,9 +29,10 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
 
     @Override
     public String getFeatureFlagTables() {
-      // return empty to leave feature "undefined" (disabled unless per-request header override)
+      // return BLANK String to leave feature "undefined" (disabled unless per-request header
+      // override)
       // ("false" would be "disabled" for all tests, regardless of headers)
-      return "";
+      return " ";
     }
   }
 

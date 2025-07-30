@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.Test;
     // resource will not be applied to inner class.
     ,
     restrictToAnnotatedClass = true)
-@Disabled
 public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   // Need to be able to enable/disable the RERANKING feature
   public static class TestResource extends DseTestResource {
@@ -35,9 +33,10 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
 
     @Override
     public String getFeatureFlagReranking() {
-      // return empty to leave feature "undefined" (disabled unless per-request header override)
+      // return BLANK String to leave feature "undefined" (disabled unless per-request header
+      // override)
       // ("false" would be "disabled" for all tests, regardless of headers)
-      return "";
+      return " ";
     }
   }
 
