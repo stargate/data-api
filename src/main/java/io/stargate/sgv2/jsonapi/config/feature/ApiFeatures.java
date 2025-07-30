@@ -53,8 +53,9 @@ public class ApiFeatures {
   }
 
   private Boolean booleanFromString(String str) {
-    if (str == null || str.isBlank()) {
-      return null; // no value, so not enabled
+    // We will allow "*" as an alias in case config file cannot contain blank String value
+    if (str == null || str.isBlank() || "*".equals(str)) {
+      return null; // undefined
     }
     if ("true".equals(str)) {
       return Boolean.TRUE;
@@ -63,6 +64,8 @@ public class ApiFeatures {
       return Boolean.FALSE;
     }
     throw new IllegalArgumentException(
-        "Invalid `Boolean` value: '" + str + "'. Expected 'true' or 'false'.");
+        "Invalid `Boolean` value: '"
+            + str
+            + "'. Expected 'true', 'false' or blank String (undefined).");
   }
 }
