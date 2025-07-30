@@ -8,12 +8,13 @@
     <stargate.version>2.1.0-BETA-25</stargate.version>
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
     <!-- 23-Oct-2024, tatu: For latest FP optimizations let's get 2.18 -->
-    <jackson.version>2.18.3</jackson.version>
+    <jackson.version>2.18.4</jackson.version>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <!-- 27-Mar-2025, tatu: Updated to later but not Latest available Quarkus -->
-    <quarkus.platform.version>3.15.4</quarkus.platform.version>
+    <!-- 29-Jul-2025, cedrick: Updated to latest Quarkus -->
+    <quarkus.platform.version>3.24.5</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <mockito.version>5.12.0</mockito.version>
@@ -155,6 +156,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
+      <version>3.18.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
