@@ -30,9 +30,10 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
 
     @Override
     public String getFeatureFlagReranking() {
-      // return empty to leave feature "undefined" (disabled unless per-request header override)
+      // return BLANK String to leave feature "undefined" (disabled unless per-request header
+      // override)
       // ("false" would be "disabled" for all tests, regardless of headers)
-      return "";
+      return " ";
     }
   }
 

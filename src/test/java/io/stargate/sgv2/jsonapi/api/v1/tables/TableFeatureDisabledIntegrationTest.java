@@ -29,9 +29,10 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
 
     @Override
     public String getFeatureFlagTables() {
-      // return empty to leave feature "undefined" (disabled unless per-request header override)
+      // return BLANK String to leave feature "undefined" (disabled unless per-request header
+      // override)
       // ("false" would be "disabled" for all tests, regardless of headers)
-      return "";
+      return " ";
     }
   }
 
