@@ -410,9 +410,6 @@
                 <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
                 <maven.home>${maven.home}</maven.home>
                 <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
-                <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
-                <!-- 1 hour -->
-                <reuseForks>false</reuseForks>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>
