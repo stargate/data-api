@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.0.29](https://github.com/stargate/data-api/tree/v1.0.29) (2025-07-30)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.28...v1.0.29)
+
+**Merged pull requests:**
+
+- Revert Docker image build change of \#2162 [\#2169](https://github.com/stargate/data-api/pull/2169) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix cosign action failure for CI [\#2168](https://github.com/stargate/data-api/pull/2168) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2167](https://github.com/stargate/data-api/pull/2167) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.28](https://github.com/stargate/data-api/tree/v1.0.28) (2025-07-30)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.27...v1.0.28)
