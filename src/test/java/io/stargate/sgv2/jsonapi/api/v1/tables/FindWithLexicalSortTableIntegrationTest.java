@@ -30,7 +30,7 @@ public class FindWithLexicalSortTableIntegrationTest extends AbstractTableIntegr
   @Order(1)
   class Setup {
     @Test
-    void createCollectionWithLexicalIndex() {
+    void createTableWithLexicalIndex() {
       // Create a table with a lexical index on the "tags" column
       assertNamespaceCommand(keyspaceName)
           .templated()
