@@ -19,7 +19,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableIntegrationTestBase {
   private static final String TABLE_NAME = "lexicalFilterTableTest";
