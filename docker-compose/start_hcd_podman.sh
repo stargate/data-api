@@ -26,7 +26,7 @@ LOGLEVEL=INFO
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
 
-# These should come from .vn
+# These should come from .env file, not from here
 #HCDTAG="1.2.1-early-preview"
 #HCDIMAGE="cr.dtsx.io/datastax/hcd"
 #HCDIMAGE="559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd"
