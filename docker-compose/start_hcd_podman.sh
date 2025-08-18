@@ -26,9 +26,9 @@ LOGLEVEL=INFO
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
 
-HCDTAG="1.2.1-early-preview"
-#HCDIMAGE="cr.dtsx.io/datastax/hcd"
-HCDIMAGE="559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd"
+# 18-Aug-2025, tatu:  These should come from .env file, not included here
+#HCDTAG=
+#HCDIMAGE=
 HCDONLY="false"
 HCDNODES=1
 
