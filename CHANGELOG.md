@@ -1,5 +1,6 @@
 # Changelog
 
+
 ## [v1.0.29](https://github.com/stargate/data-api/tree/v1.0.29) (2025-07-30)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.28...v1.0.29)
