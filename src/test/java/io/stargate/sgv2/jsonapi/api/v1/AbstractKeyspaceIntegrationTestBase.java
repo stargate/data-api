@@ -44,6 +44,8 @@ import org.junit.jupiter.api.TestInstance;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
+  // Property to disable lexical search tests when lexical/BM25 functionality not available
+  public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
@@ -55,7 +57,29 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   @BeforeAll
   public void createKeyspace() {
+    waitForRestEndpoint(GeneralResource.BASE_PATH, 60); // Wait max 60 seconds
     createKeyspace(keyspaceName);
+  }
+
+  /** Tentative to let the system start before creating the keyspace. */
+  private void waitForRestEndpoint(String baseUrl, int timeoutSeconds) {
+    long startTime = System.currentTimeMillis();
+    while ((System.currentTimeMillis() - startTime) < timeoutSeconds * 1000) {
+      try {
+        int statusCode =
+            RestAssured.given().port(getTestPort()).when().get(baseUrl).getStatusCode();
+        if (statusCode >= 200 && statusCode < 500) {
+          return; // ready
+        }
+      } catch (Exception e) {
+        // Ignore and retry
+      }
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException ignored) {
+      }
+    }
+    throw new RuntimeException("REST endpoint not available at " + baseUrl + " after timeout");
   }
 
   protected void createKeyspace(String nsToCreate) {

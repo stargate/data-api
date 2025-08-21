@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
  * collection.
  */
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   // used to cleanup the collection from a previous test, if non-null
@@ -95,7 +95,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         }
         """,
         "LEXICAL_NOT_ENABLED_FOR_COLLECTION",
-        "Lexical search is not enabled for collection");
+        "only be used on Collections for which Lexical feature is enabled");
   }
 
   // https://github.com/stargate/data-api/issues/2057

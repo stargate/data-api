@@ -107,8 +107,8 @@ class SortClauseBuilderTest {
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
-      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
-      assertThat(sortClause.sortExpressions().get(0).vector())
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).getVector())
           .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
     }
 
@@ -129,8 +129,8 @@ class SortClauseBuilderTest {
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
-      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
-      assertThat(sortClause.sortExpressions().get(0).vector())
+      assertThat(sortClause.sortExpressions().getFirst().getPath()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().getFirst().getVector())
           .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
     }
 
@@ -142,7 +142,7 @@ class SortClauseBuilderTest {
       String json =
               """
             {
-             "test" : { "$binary" : "%s"}
+             "$vector" : { "$binary" : "%s"}
             }
             """
               .formatted(vectorString);
@@ -151,8 +151,8 @@ class SortClauseBuilderTest {
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
-      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("test");
-      assertThat(sortClause.sortExpressions().get(0).vector())
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).getVector())
           .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
     }
 
@@ -248,8 +248,8 @@ class SortClauseBuilderTest {
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
-      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vectorize");
-      assertThat(sortClause.sortExpressions().get(0).vectorize()).isEqualTo("test data");
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vectorize");
+      assertThat(sortClause.sortExpressions().get(0).getVectorize()).isEqualTo("test data");
     }
 
     @Test
@@ -281,8 +281,7 @@ class SortClauseBuilderTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
-          .contains(
-              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vectorize, Value: {}.");
+          .contains("$vectorize search clause needs to be non-blank text value");
     }
 
     @Test
@@ -319,21 +318,6 @@ class SortClauseBuilderTest {
     }
 
     @Test
-    public void mustTrimPath() throws Exception {
-      String json =
-          """
-              {"some.path " : 1}
-          """;
-
-      SortClause sortClause = deserializeSortClause(json);
-
-      assertThat(sortClause).isNotNull();
-      assertThat(sortClause.sortExpressions())
-          .hasSize(1)
-          .contains(SortExpression.sort("some.path", true));
-    }
-
-    @Test
     public void mustHandleNull() throws Exception {
       String json = "null";
 
@@ -357,15 +341,12 @@ class SortClauseBuilderTest {
     }
 
     @Test
-    public void mustNotContainBlankString() {
-      String json =
-          """
-              {" " : 1}
-          """;
-
-      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
-
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+    public void mustHandleBlankNotEmptyString() throws Exception {
+      String json = "{\"   \": 1}";
+      SortClause sortClause = deserializeSortClause(json);
+      assertThat(sortClause.sortExpressions())
+          .hasSize(1)
+          .contains(SortExpression.sort("   ", true));
     }
 
     @Test

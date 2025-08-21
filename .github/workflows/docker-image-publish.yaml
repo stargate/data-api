@@ -35,7 +35,7 @@ jobs:
             profile: ''
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -82,7 +82,8 @@ jobs:
 
     env:
       # not a newest version, this reflects riptano action target version
-      COSIGN_VERSION: v1.9.0
+      # 22-Jul-2025, tatu: pre-2.0.0 no longer supported, use current latest
+      COSIGN_VERSION: v2.5.3
 
     steps:
       - name: Install Cosign

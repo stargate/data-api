@@ -20,7 +20,7 @@ import org.junit.jupiter.api.*;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
@@ -126,13 +126,16 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
     @Test
     @Order(4)
     public void canNotFilterOnFrozen() {
+      var filter =
+          """
+                {
+                    "frozen_set": {"$in" : ["1", "2"]}
+                }
+              """;
       assertTableCommand(keyspaceName, TABLE_FROZEN_MAP_SET_LIST)
           .templated()
-          .findOne(ImmutableMap.of("frozen_set", "123"), null)
-          .hasSingleApiError(
-              FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES,
-              FilterException.class,
-              "Filtering is only supported on primitive data types such as `text` not on container types such as `list`, `set`, `map`, or `vector`");
+          .find(filter)
+          .wasSuccessful();
     }
   }
 
