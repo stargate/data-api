@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 /** Data API unsupported UDT created by CQL user */
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTestBase {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(UdtCqlUnsupportedIntegrationTest.class);

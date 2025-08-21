@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 public class UdtCqlSupportedIntegrationTest extends AbstractTableIntegrationTestBase {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(UdtCqlSupportedIntegrationTest.class);

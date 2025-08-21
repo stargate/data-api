@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class DropTypeIntegrationTest extends TypeIntegrationTestBase {
 

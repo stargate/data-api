@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 class TypeIntegrationTestBase extends AbstractTableIntegrationTestBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeIntegrationTestBase.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

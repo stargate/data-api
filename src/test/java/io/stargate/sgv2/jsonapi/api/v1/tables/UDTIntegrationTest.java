@@ -13,7 +13,7 @@ import java.util.Map;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
 

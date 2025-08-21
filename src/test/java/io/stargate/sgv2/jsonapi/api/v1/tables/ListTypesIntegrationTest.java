@@ -12,7 +12,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 public class ListTypesIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String SUPPORTED_UDT = "supported_udt";
