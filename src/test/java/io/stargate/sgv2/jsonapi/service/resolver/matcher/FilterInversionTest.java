@@ -46,7 +46,7 @@ public class FilterInversionTest {
   }
 
   @Nested
-  public class CollectionTest {
+  public class CollectionInversion {
 
     @Test
     public void simpleNot() throws Exception {
@@ -786,7 +786,7 @@ public class FilterInversionTest {
   }
 
   @Nested
-  public class TableTest {
+  public class TableInversion {
 
     public static final TestData TEST_DATA = new TestData();
     public static final TableSchemaObject TABLE_SCHEMA_OBJECT =

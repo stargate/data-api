@@ -1,5 +1,40 @@
 # Changelog
 
+
+## [v1.0.29](https://github.com/stargate/data-api/tree/v1.0.29) (2025-07-30)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.28...v1.0.29)
+
+**Merged pull requests:**
+
+- Revert Docker image build change of \#2162 [\#2169](https://github.com/stargate/data-api/pull/2169) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix cosign action failure for CI [\#2168](https://github.com/stargate/data-api/pull/2168) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2167](https://github.com/stargate/data-api/pull/2167) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.28](https://github.com/stargate/data-api/tree/v1.0.28) (2025-07-30)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.27...v1.0.28)
+
+**Closed issues:**
+
+- Change to fix breaking Quarkus config \(SmallRye\): "" no longer acceptable as `null` for `Boolean` [\#2164](https://github.com/stargate/data-api/issues/2164)
+- "mismatched input 'BM25' expecting EOF \(...: ? ORDER BY query\_lexical\_value \[BM25\]...\)" when sorting by $lexical locally [\#2144](https://github.com/stargate/data-api/issues/2144)
+- Update to DSE 6.9.11 [\#2143](https://github.com/stargate/data-api/issues/2143)
+- Add support for BM25/Lexical sort on "analyzed text" indexed Table columns [\#2054](https://github.com/stargate/data-api/issues/2054)
+
+**Merged pull requests:**
+
+- Fix \#2164: Map\<K, Boolean\> into Map\<K, String\> + post-process for config handling [\#2165](https://github.com/stargate/data-api/pull/2165) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Pre-merge part of \#2162: @Nested classes names should NOT end with "Test" [\#2163](https://github.com/stargate/data-api/pull/2163) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixing CVE in Docker Image [\#2162](https://github.com/stargate/data-api/pull/2162) ([clun](https://github.com/clun))
+- Re-created PR \#2118 to fix docker repo ref [\#2157](https://github.com/stargate/data-api/pull/2157) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2143: update to DSE 6.9.11 [\#2155](https://github.com/stargate/data-api/pull/2155) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Test class renaming [\#2153](https://github.com/stargate/data-api/pull/2153) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Remove useless override class [\#2149](https://github.com/stargate/data-api/pull/2149) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2142](https://github.com/stargate/data-api/pull/2142) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Work on \#2054: add support in API Tables for Lexical Sort [\#2135](https://github.com/stargate/data-api/pull/2135) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- \[Tables Feature\] Filtering support for map, set, list column [\#2079](https://github.com/stargate/data-api/pull/2079) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
 ## [v1.0.27](https://github.com/stargate/data-api/tree/v1.0.27) (2025-06-24)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.26...v1.0.27)

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_TEXT_COLUMNS = "insertOneTextColumnsTable";
