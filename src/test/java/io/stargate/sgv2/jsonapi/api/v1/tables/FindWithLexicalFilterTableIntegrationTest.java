@@ -137,7 +137,7 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()
           .find(Map.of("no_index_tags", Map.of("$match", "value")), List.of("id"), null)
-          // NOT RIGHT ERROR CODE: just a placeholder
+          // 21-Aug-2025, tatu: NOT RIGHT ERROR CODE: just a placeholder
           .hasSingleApiError(
               FilterException.Code.UNKNOWN_TABLE_COLUMNS,
               FilterException.class,
