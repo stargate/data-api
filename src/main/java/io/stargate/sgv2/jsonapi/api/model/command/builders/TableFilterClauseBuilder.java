@@ -53,7 +53,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
   }
 
   @Override
-  protected String validateFilterClausePath(String path) {
+  protected String validateFilterClausePath(String path, FilterOperator operator) {
     return path;
   }
 
