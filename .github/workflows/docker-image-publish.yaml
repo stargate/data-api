@@ -54,7 +54,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::237073351946:role/stargate_git_ecr
+          role-to-assume: ${{ secrets.ECR_FEDERATED_ROLE }}
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
@@ -97,7 +97,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::237073351946:role/stargate_git_ecr
+          role-to-assume: ${{ secrets.ECR_FEDERATED_ROLE }}
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
