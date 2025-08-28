@@ -22,6 +22,11 @@ on:
         required: true
         type: string
 
+# needed when a workflow wants to use OIDC (OpenID Connect) to authenticate to cloud
+permissions:
+  id-token: write
+  contents: read
+
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
@@ -208,11 +213,10 @@ jobs:
           ./mvnw -B -ntp versions:set -DremoveSnapshot versions:commit
 
       # build and push Astra image to Amazon ECR
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          role-to-assume: arn:aws:iam::237073351946:role/stargate_git_ecr
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
@@ -267,11 +271,10 @@ jobs:
         with:
           cosign-release: ${COSIGN_VERSION}
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          role-to-assume: arn:aws:iam::237073351946:role/stargate_git_ecr
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
