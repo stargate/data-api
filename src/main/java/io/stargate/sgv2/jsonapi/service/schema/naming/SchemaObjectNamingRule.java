@@ -1,6 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.schema.naming;
 
+import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -53,5 +56,29 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
    */
   public int getMaxLength() {
     return MAX_NAME_LENGTH;
+  }
+
+  /**
+   * Validate the name against the naming rule, and throw a {@link SchemaException} if the name is
+   * invalid.
+   *
+   * @param name The name to validate.
+   * @return The validated name, same as the rule passed in.
+   * @throws SchemaException with {@link SchemaException.Code#UNSUPPORTED_SCHEMA_NAME} if the name
+   *     is invalid.
+   */
+  public String checkRule(String name) {
+
+    if (!apply(name)) {
+      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
+          Map.of(
+              "schemaType",
+              schemaType().apiName(),
+              "maxNameLength",
+              String.valueOf(getMaxLength()),
+              "unsupportedSchemaName",
+              ErrorTemplate.replaceIfNull(name)));
+    }
+    return name;
   }
 }

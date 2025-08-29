@@ -37,7 +37,8 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, CreateIndexCommand command) {
 
-    final var indexName = validateSchemaName(command.name(), NamingRules.INDEX);
+    // TODO: AARON: Validation should happen in the factory for the index, not here.
+    var indexName = NamingRules.INDEX.checkRule(command.name());
 
     var indexType =
         command.indexType() == null

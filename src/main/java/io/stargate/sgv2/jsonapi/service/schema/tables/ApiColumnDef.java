@@ -6,6 +6,8 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
@@ -14,6 +16,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.*;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Comparator;
 import java.util.Objects;
@@ -33,7 +36,7 @@ import java.util.Objects;
  * When you have more than one use a {@link ApiColumnDefContainer} to hold them, it also contains
  * the serialization logic.
  */
-public class ApiColumnDef implements Recordable {
+public class ApiColumnDef implements SchemaDescribable<ColumnDesc>, Recordable {
 
   public static final ColumnFactoryFromCql FROM_CQL_FACTORY = new CqlColumnFactory();
   public static ColumnFactoryFromColumnDesc FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
@@ -81,34 +84,59 @@ public class ApiColumnDef implements Recordable {
   /**
    * Gets the user API description of the type for this column.
    *
-   * <p><b>NOTE:</b> Unlike calling {@link ApiDataType#columnDesc()} directly calling on the column
-   * will know if the column is static, and is the preferred way when getting the desc to return to
-   * the user.
+   * <p><b>NOTE:</b> Unlike calling {@link ApiDataType#getSchemaDescription(SchemaDescSource)}
+   * directly calling on the column will know if the column is static, and is the preferred way when
+   * getting the desc to return to the user.
    *
    * @return the user API description of the type for this column, including if the column is
    *     static.
    */
-  public ColumnDesc columnDesc() {
-    var typeDesc = type.columnDesc();
+  @Override
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
+    var typeDesc = type.getSchemaDescription(schemaDescSource);
     return isStatic ? new ColumnDesc.StaticColumnDesc(typeDesc) : typeDesc;
   }
 
-  private static class ColumnDescFactory extends FactoryFromDesc
+  /**
+   * Creates a new {@link ApiColumnDef} from user provided {@link ColumnDesc}
+   *
+   * <p>...
+   */
+  private static class ColumnDescFactory extends TypeFactory
       implements ColumnFactoryFromColumnDesc {
 
     @Override
     public ApiColumnDef create(
-        String fieldName, ColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+        TypeBindingPoint bindingPoint,
+        String fieldName,
+        ColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserColumn {
       Objects.requireNonNull(columnDesc, "columnDesc is must not be null");
+      checkBindingPoint(bindingPoint, "create()");
 
+      // It's up to the type factory to check if it can be created at the binding point,
+      // and throw UnsupportedUserType if it cannot.
       try {
         return new ApiColumnDef(
             userNameToIdentifier(fieldName, "fieldName"),
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc, validateVectorize));
+            DefaultTypeFactoryFromColumnDesc.INSTANCE.create(
+                bindingPoint, columnDesc, validateVectorize));
       } catch (UnsupportedUserType e) {
         throw new UnsupportedUserColumn(fieldName, columnDesc, e);
       }
+    }
+
+    @Override
+    public boolean isTypeBindable(
+        TypeBindingPoint bindingPoint,
+        String fieldName,
+        ColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize) {
+      checkBindingPoint(bindingPoint, "isSupported()");
+
+      return DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindable(
+          bindingPoint, columnDesc, validateVectorize);
     }
 
     @Override
@@ -117,7 +145,14 @@ public class ApiColumnDef implements Recordable {
 
       return new ApiColumnDef(
           userNameToIdentifier(fieldName, "fieldName"),
-          TypeFactoryFromColumnDesc.DEFAULT.createUnsupported(columnDesc));
+          DefaultTypeFactoryFromColumnDesc.INSTANCE.createUnsupported(columnDesc));
+    }
+
+    private static void checkBindingPoint(TypeBindingPoint bindingPoint, String methodName) {
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw bindingPoint.unsupportedException("ApiColumnDef.ColumnDescFactory." + methodName);
+      }
     }
   }
 
@@ -139,7 +174,7 @@ public class ApiColumnDef implements Recordable {
   }
 
   @Override
-  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
     return dataRecorder
         .append("name", name.asCql(true))
         .append("isStatic", isStatic)
@@ -157,15 +192,37 @@ public class ApiColumnDef implements Recordable {
      *     API.
      */
     @Override
-    public ApiColumnDef create(ColumnMetadata columnMetadata, VectorConfig vectorConfig)
+    public ApiColumnDef create(
+        TypeBindingPoint bindingPoint, ColumnMetadata columnMetadata, VectorConfig vectorConfig)
         throws UnsupportedCqlColumn {
       Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
 
-      return create(
-          columnMetadata.getName(),
-          columnMetadata.isStatic(),
-          columnMetadata.getType(),
-          vectorConfig.getVectorizeDefinition(columnMetadata.getName()).orElse(null));
+      VectorizeDefinition vectorizeDefinition;
+      if (bindingPoint == TypeBindingPoint.TABLE_COLUMN) {
+        Objects.requireNonNull(vectorConfig, "vectorConfig is must not be null for table columns");
+        vectorizeDefinition =
+            vectorConfig.getVectorizeDefinition(columnMetadata.getName()).orElse(null);
+      } else {
+        // cannot have vectorize in a UDT field yet.
+        vectorizeDefinition = null;
+      }
+
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw new IllegalArgumentException(
+            "CqlColumnFactory only supports binding point %s or %s, bindingPoint: %s"
+                .formatted(
+                    TypeBindingPoint.TABLE_COLUMN, TypeBindingPoint.UDT_FIELD, bindingPoint));
+      }
+      try {
+        return new ApiColumnDef(
+            columnMetadata.getName(),
+            columnMetadata.isStatic(),
+            DefaultTypeFactoryFromCql.INSTANCE.create(
+                bindingPoint, columnMetadata.getType(), vectorizeDefinition));
+      } catch (UnsupportedCqlType e) {
+        throw new UnsupportedCqlColumn(columnMetadata.getName(), columnMetadata.getType(), e);
+      }
     }
 
     @Override
@@ -173,22 +230,15 @@ public class ApiColumnDef implements Recordable {
       Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
       return new ApiColumnDef(
           columnMetadata.getName(),
-          TypeFactoryFromCql.DEFAULT.createUnsupported(columnMetadata.getType()));
+          DefaultTypeFactoryFromCql.INSTANCE.createUnsupported(columnMetadata.getType()));
     }
 
-    private static ApiColumnDef create(
-        CqlIdentifier column, boolean isStatic, DataType dataType, VectorizeDefinition vectorizeDef)
-        throws UnsupportedCqlColumn {
-
-      Objects.requireNonNull(column, "column is must not be null");
-      Objects.requireNonNull(dataType, "dataType is must not be null");
-
-      try {
-        return new ApiColumnDef(
-            column, isStatic, TypeFactoryFromCql.DEFAULT.create(dataType, vectorizeDef));
-      } catch (UnsupportedCqlType e) {
-        throw new UnsupportedCqlColumn(column, dataType, e);
-      }
+    @Override
+    public ApiColumnDef createUnsupported(DataType type) {
+      Objects.requireNonNull(type, "type must not be null");
+      return new ApiColumnDef(
+          CqlIdentifier.fromCql("unsupportedField"),
+          DefaultTypeFactoryFromCql.INSTANCE.createUnsupported(type));
     }
   }
 }

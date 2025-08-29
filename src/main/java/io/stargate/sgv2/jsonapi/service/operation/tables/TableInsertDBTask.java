@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -60,6 +61,6 @@ public class TableInsertDBTask extends InsertDBTask<TableSchemaObject> {
       throw new IllegalStateException("Unsupported columns primary key: %s" + unsupported);
     }
 
-    return Optional.of(apiColumns.toColumnsDesc());
+    return Optional.of(apiColumns.getSchemaDescription(SchemaDescSource.DML_USAGE));
   }
 }

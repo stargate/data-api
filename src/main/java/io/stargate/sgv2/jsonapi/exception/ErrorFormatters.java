@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
@@ -11,11 +9,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -57,12 +54,20 @@ public abstract class ErrorFormatters {
     return errFmtJoin(identifiers, ErrorFormatters::errFmt);
   }
 
+  public static String errFmtApiDataType(Collection<? extends ApiDataType> apiDataTypes) {
+    return errFmtJoin(apiDataTypes, ErrorFormatters::errFmt);
+  }
+
   public static String errFmtApiColumnDef(ApiColumnDefContainer apiColumnDefs) {
     return errFmtApiColumnDef(apiColumnDefs.values());
   }
 
   public static String errFmtApiColumnDef(Collection<ApiColumnDef> apiColumnDefs) {
     return errFmtJoin(apiColumnDefs, ErrorFormatters::errFmt);
+  }
+
+  public static String errFmtApiTypeName(Collection<ApiTypeName> apiTypeNames) {
+    return errFmtJoin(apiTypeNames, ApiTypeName::apiName);
   }
 
   public static String errFmtColumnDesc(Collection<ColumnDesc> columnDescs) {
@@ -73,28 +78,35 @@ public abstract class ErrorFormatters {
     return errFmtJoin(cqlNamedValues, ErrorFormatters::errFmt);
   }
 
+  private static <T> String nullSafe(T target, Function<T, String> toString) {
+    return target == null ? "null" : toString.apply(target);
+  }
+
   public static String errFmt(ColumnMetadata column) {
-    return String.format("%s(%s)", errFmt(column.getName()), errFmt(column.getType()));
+    return nullSafe(column, c -> String.format("%s(%s)", errFmt(c.getName()), errFmt(c.getType())));
   }
 
   public static String errFmt(CqlIdentifier identifier) {
-    return cqlIdentifierToMessageString(identifier);
+    return nullSafe(identifier, CqlIdentifierUtil::cqlIdentifierToMessageString);
   }
 
   public static String errFmt(ApiColumnDef apiColumnDef) {
-    return String.format("%s(%s)", errFmt(apiColumnDef.name()), errFmt(apiColumnDef.type()));
+    return nullSafe(apiColumnDef, a -> String.format("%s(%s)", errFmt(a.name()), errFmt(a.type())));
   }
 
   public static String errFmt(CqlNamedValue cqlNamedValue) {
     // If there is a bind error we did not have the ApiColumnDef
-    return cqlNamedValue.state().equals(CqlNamedValue.NamedValueState.BIND_ERROR)
-        ? errFmt(cqlNamedValue.name())
-        : errFmt(cqlNamedValue.apiColumnDef());
+    return nullSafe(
+        cqlNamedValue,
+        c ->
+            c.state().equals(CqlNamedValue.NamedValueState.BIND_ERROR)
+                ? errFmt(c.name())
+                : errFmt(c.apiColumnDef()));
   }
 
   public static String errFmt(ColumnDesc columnDesc) {
     // NOTE: call apiName on the ColumnDesc so unsupported types can return a string
-    return columnDesc.getApiName();
+    return nullSafe(columnDesc, ColumnDesc::getApiName);
   }
 
   /**
@@ -103,11 +115,11 @@ public abstract class ErrorFormatters {
    */
   public static String errFmt(ApiDataType apiDataType) {
     // the safe way to get the  name when the type may be unsupported
-    return apiDataType.apiName();
+    return nullSafe(apiDataType, ApiDataType::apiName);
   }
 
   public static String errFmt(DataType dataType) {
-    return dataType.asCql(true, true);
+    return nullSafe(dataType, d -> d.asCql(true, true));
   }
 
   public static Map<String, String> errVars(SchemaObject schemaObject) {
