@@ -107,10 +107,6 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
   @Nested
   @Order(10)
   class SadLexicalFilter {
-    // 21-Aug-2025, tatu: Disabled for now to get working cases in: enable when
-    //   https://github.com/stargate/data-api/issues/2175
-    //   implemented
-    @Disabled("Disabled until [https://github.com/stargate/data-api/issues/2175] implemented")
     @Test
     void failOnMissingColumn() {
       assertTableCommand(keyspaceName, TABLE_NAME)
@@ -123,10 +119,6 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
               "defines the columns: ");
     }
 
-    // 21-Aug-2025, tatu: Disabled for now to get working cases in: enable when
-    //   https://github.com/stargate/data-api/issues/2175
-    //   implemented
-    @Disabled("Disabled until [https://github.com/stargate/data-api/issues/2175] implemented")
     @Test
     void failOnNonIndexedColumn() {
       assertTableCommand(keyspaceName, TABLE_NAME)
