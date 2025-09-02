@@ -10,6 +10,11 @@ on:
     - cron: '0 0 * * SUN'
   workflow_dispatch:
 
+# needed when a workflow wants to use OIDC (OpenID Connect) to authenticate to cloud
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
 
   # Runs Postman Collection against local Stargate instance using docker compose scripts
@@ -25,18 +30,16 @@ jobs:
           ref: main
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
           cache: maven
 
-      # login to ECR to we can pull coord image from there
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          role-to-assume: ${{ secrets.ECR_FEDERATED_ROLE }}
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
