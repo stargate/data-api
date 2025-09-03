@@ -82,7 +82,7 @@ public class RerankingEGWClient extends RerankingProvider {
             .setProviderContext(contextBuilder.build())
             .build();
 
-    // TODO: XXX Why is this error handling here not part of the uni pipeline?
+    // TODO: Why is this error handling here not part of the uni pipeline?
     Uni<EmbeddingGateway.RerankingResponse> gatewayRerankingUni;
     try {
       gatewayRerankingUni = grpcGatewayService.rerank(gatewayRequest);

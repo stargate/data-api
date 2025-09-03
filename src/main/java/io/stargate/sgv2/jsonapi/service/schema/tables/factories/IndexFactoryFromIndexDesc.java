@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.schema.tables;
+package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
@@ -7,6 +7,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.Index
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
 
 /**
  * Base for Factories that can create a {@link ApiIndexDef} subclass from the user description in a
@@ -17,7 +19,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
  */
 public abstract class IndexFactoryFromIndexDesc<
         ApiT extends ApiIndexDef, DescT extends IndexDefinitionDesc>
-    extends FactoryFromDesc {
+    extends TypeFactory {
   /**
    * Called to create an index from the user description in a command
    *

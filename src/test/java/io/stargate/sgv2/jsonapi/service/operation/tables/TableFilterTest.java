@@ -325,19 +325,19 @@ class TableFilterTest {
       return Stream.of(
           Arguments.of(
               MapSetListTableFilter.Operator.IN,
-              "WHERE ((%s[?] = ? OR %s[?] = ?))",
+              "WHERE ((\"%s\"[?] = ? OR \"%s\"[?] = ?))",
               MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.NIN,
-              "WHERE ((%s[?] != ? AND %s[?] != ?))",
+              "WHERE ((\"%s\"[?] != ? AND \"%s\"[?] != ?))",
               MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.ALL,
-              "WHERE ((%s[?] = ? AND %s[?] = ?))",
+              "WHERE ((\"%s\"[?] = ? AND \"%s\"[?] = ?))",
               MapSetListFilterComponent.MAP_KEY),
           Arguments.of(
               MapSetListTableFilter.Operator.NOT_ANY,
-              "WHERE ((%s[?] != ? OR %s[?] != ?))",
+              "WHERE ((\"%s\"[?] != ? OR \"%s\"[?] != ?))",
               MapSetListFilterComponent.MAP_KEY));
     }
 

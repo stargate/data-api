@@ -84,10 +84,20 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0].definition.columns.vehicle_id_4.type", equalTo("text"))
           .body("status.tables[0].definition.columns.physicalAddress.type", equalTo("text"))
           .body("status.tables[0].definition.columns.list_type.type", equalTo("list"))
+          // July 16th, 2025. To not break client, value/key types of map/list/set
+          // are still return with short-form
+          //          .body("status.tables[0].definition.columns.list_type.valueType.type",
+          // equalTo("text"))
           .body("status.tables[0].definition.columns.list_type.valueType", equalTo("text"))
           .body("status.tables[0].definition.columns.set_type.type", equalTo("set"))
+          //          .body("status.tables[0].definition.columns.set_type.valueType.type",
+          // equalTo("text"))
           .body("status.tables[0].definition.columns.set_type.valueType", equalTo("text"))
           .body("status.tables[0].definition.columns.map_type.type", equalTo("map"))
+          //          .body("status.tables[0].definition.columns.map_type.keyType.type",
+          // equalTo("text"))
+          //          .body("status.tables[0].definition.columns.map_type.valueType.type",
+          // equalTo("text"))
           .body("status.tables[0].definition.columns.map_type.keyType", equalTo("text"))
           .body("status.tables[0].definition.columns.map_type.valueType", equalTo("text"))
           .body("status.tables[0].definition.columns.vector_type_1.type", equalTo("vector"))

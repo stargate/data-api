@@ -881,6 +881,105 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                               }
                                             """),
               @ExampleObject(
+                  name = "createType",
+                  summary = "create type that can be used in tables",
+                  value =
+                      """
+                                {
+                                    "createType": {
+                                        "name": "address",
+                                        "definition": {
+                                            "fields": {
+                                                "city": "text",
+                                                "postcode": "int"
+                                            }
+                                        }
+                                    }
+                                }
+                              """),
+              @ExampleObject(
+                  name = "dropType",
+                  summary = "create type in the keyspace",
+                  value =
+                      """
+                                      {
+                                          "dropType": {
+                                              "name": "address",
+                                              "options":{
+                                                 "ifExists": true
+                                              }
+                                          }
+                                      }
+                                    """),
+              @ExampleObject(
+                  name = "alterType",
+                  summary = "alter existing type in the keyspace",
+                  value =
+                      """
+                                        {
+                                            "alterType": {
+                                                "name": "address",
+                                                "rename": {
+                                                    "fields" : {
+                                                        "country": "countryCode"
+                                                     }
+                                                },
+                                                "add": {
+                                                    "fields": {
+                                                        "city": "text",
+                                                        "post_code": "int"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                     """),
+              @ExampleObject(
+                  name = "listTypes",
+                  summary = "`listTypes` lists all types in a keyspace",
+                  value =
+                      """
+                                        {
+                                           "listTypes": {
+                                               "options" : {
+                                                   "explain" : true
+                                               }
+                                           }
+                                       }
+                                    """),
+              @ExampleObject(
+                  name = "listTypesResponse",
+                  summary = "`listTypes` response",
+                  value =
+                      """
+                                            {
+                                                "status": {
+                                                    "types": [
+                                                        {
+                                                            "type": "userDefined",
+                                                            "udtName": "address",
+                                                            "definition": {
+                                                                "fields": {
+                                                                    "city": {
+                                                                        "type": "text"
+                                                                    },
+                                                                    "country": {
+                                                                        "type": "text"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "apiSupport": {
+                                                                "createTable": true,
+                                                                "insert": true,
+                                                                "read": true,
+                                                                "filter": false,
+                                                                "cqlDefinition": "demo.address"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                            """),
+              @ExampleObject(
                   name = "createIndex",
                   summary = "`createIndex` for non vector columns, in tables api",
                   value =

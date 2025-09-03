@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactory;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,7 +33,7 @@ public class ApiClusteringDef implements Recordable {
     return dataRecorder.append("order", order).append("columnDef", columnDef);
   }
 
-  public static class FromUserDescFactory extends FactoryFromDesc {
+  public static class FromUserDescFactory extends TypeFactory {
 
     public Optional<ApiClusteringDef> create(
         ApiColumnDefContainer columns, PrimaryKeyDesc.OrderingKeyDesc orderingKeyDesc) {

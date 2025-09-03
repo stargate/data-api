@@ -27,16 +27,16 @@ public class ApiIndexTypeTests {
       new ApiColumnDef(CqlIdentifier.fromCql("ASCII_COL"), ApiDataTypeDefs.ASCII);
   private static final ApiColumnDef SET_COL =
       new ApiColumnDef(
-          CqlIdentifier.fromCql("SET_COL"), ApiSetType.from(ApiDataTypeDefs.TEXT, false));
+          CqlIdentifier.fromCql("SET_COL"), new ApiSetType(ApiDataTypeDefs.TEXT, false));
   private static final ApiColumnDef LIST_COL =
       new ApiColumnDef(
-          CqlIdentifier.fromCql("LIST_COL"), ApiListType.from(ApiDataTypeDefs.TEXT, false));
+          CqlIdentifier.fromCql("LIST_COL"), new ApiListType(ApiDataTypeDefs.TEXT, false));
   private static final ApiColumnDef MAP_COL =
       new ApiColumnDef(
           CqlIdentifier.fromCql("MAP_COL"),
-          ApiMapType.from(ApiDataTypeDefs.TEXT, ApiDataTypeDefs.TEXT, false));
+          new ApiMapType(ApiDataTypeDefs.TEXT, ApiDataTypeDefs.TEXT, false));
   private static final ApiColumnDef VECTOR_COL =
-      new ApiColumnDef(CqlIdentifier.fromCql("VECTOR_COL"), ApiVectorType.from(512));
+      new ApiColumnDef(CqlIdentifier.fromCql("VECTOR_COL"), new ApiVectorType(512, null));
 
   @Test
   public void nullApiNameReturnsNull() {

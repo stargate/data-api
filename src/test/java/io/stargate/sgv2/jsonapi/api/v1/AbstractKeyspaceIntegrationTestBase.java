@@ -50,6 +50,11 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
 
+  /**
+   * Access is protected via {@link #createDriverSession()} method and closed in {@link #cleanUp()}.
+   */
+  private CqlSession cqlSession;
+
   @BeforeAll
   public static void enableLog() {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
@@ -59,6 +64,13 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   public void createKeyspace() {
     waitForRestEndpoint(GeneralResource.BASE_PATH, 60); // Wait max 60 seconds
     createKeyspace(keyspaceName);
+  }
+
+  @AfterAll
+  public void cleanUp() {
+    if (cqlSession != null) {
+      cqlSession.close();
+    }
   }
 
   /** Tentative to let the system start before creating the keyspace. */
@@ -334,35 +346,48 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     }
   }
 
+  protected boolean executeCqlStatement(String... statements) {
+    var cqlStatements = new SimpleStatement[statements.length];
+    for (int i = 0; i < statements.length; i++) {
+      cqlStatements[i] = SimpleStatement.newInstance(statements[i]);
+    }
+    return executeCqlStatement(cqlStatements);
+  }
+
   protected boolean executeCqlStatement(SimpleStatement... statements) {
     var cqlSession = createDriverSession();
     for (SimpleStatement statement : statements) {
       if (!cqlSession.execute(statement).wasApplied()) {
-        cqlSession.close();
         return false;
       }
     }
-    cqlSession.close();
     return true;
   }
 
-  private CqlSession createDriverSession() {
-    int port =
-        useCoordinator()
-            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
-            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-    String dc;
-    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
-      dc = "dc1";
-    } else {
-      dc = "datacenter1";
+  /**
+   * Synchronized to avoid creating multiple sessions, performance is not a concern. Session is
+   * closed in {@link #cleanUp()} method.
+   */
+  private synchronized CqlSession createDriverSession() {
+    if (cqlSession == null) {
+      int port =
+          useCoordinator()
+              ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
+              : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+      String dc;
+      if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
+        dc = "dc1";
+      } else {
+        dc = "datacenter1";
+      }
+      var builder =
+          new CqlSessionBuilder()
+              .withLocalDatacenter(dc)
+              .addContactPoint(new InetSocketAddress("localhost", port))
+              .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
+      cqlSession = builder.build();
     }
-    var builder =
-        new CqlSessionBuilder()
-            .withLocalDatacenter(dc)
-            .addContactPoint(new InetSocketAddress("localhost", port))
-            .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
-    return builder.build();
+    return cqlSession;
   }
 
   /** Helper method for determining if lexical search is available for the database backend */

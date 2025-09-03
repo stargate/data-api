@@ -116,11 +116,18 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
                     map.put("reason", "combine $push and $each for adding multiple elements");
                   }));
 
-      case ObjectNode objectNode ->
+      case ObjectNode objectNode -> {
+        // when $push to set/list follows with an objectNode
+        if (objectNode.has("$each")) {
+          // 1. could be pushing multiple elements using $each
           // $push + $each for adding multiple elements, we should have the obj with $each here
           // {"$push" : {"textList" : {"$each": ["textValue1", "textValue2"]}
-          getValidEachRHS(tableSchemaObject, objectNode, true);
-
+          yield getValidEachRHS(tableSchemaObject, objectNode, true);
+        } else {
+          // 2, could be pushing single UDT element
+          yield JsonNodeFactory.instance.arrayNode(1).add(opRHS);
+        }
+      }
       default ->
           // $push with single element, .e.g
           // {"$push" : {"textList" : "textValue",

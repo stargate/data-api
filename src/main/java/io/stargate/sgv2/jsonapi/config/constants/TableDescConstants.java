@@ -20,6 +20,9 @@ public interface TableDescConstants {
     String DIMENSION = "dimension";
     String SERVICE = "service";
     String API_SUPPORT = "apiSupport";
+    String UDT_NAME = "udtName";
+    String DEFINITION = "definition";
+    String FIELDS = "fields";
   }
 
   interface PrimaryKey {
