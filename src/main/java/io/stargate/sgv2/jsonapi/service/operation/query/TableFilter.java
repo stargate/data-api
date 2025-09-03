@@ -35,6 +35,10 @@ public abstract class TableFilter extends DBFilterBase implements FilterBehaviou
     this.filterBehaviour = filterBehaviour == null ? UNSUPPORTED_BEHAVIOUR : filterBehaviour;
   }
 
+  public CqlIdentifier getColumn() {
+    return column;
+  }
+
   /**
    * Tests if this filter matches the given column.
    *
