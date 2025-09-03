@@ -202,7 +202,7 @@ public class MapSetListTableFilter extends TableFilter {
     boolean isFirst = true;
     for (List<Object> entryTuple : uncheckedMatchValuesAsTuple()) {
 
-      // TODO: XXX YUQI/ AAROn - should we check the size here ?
+      // TODO: - should we check the size here ?
       // remember, the keys may not be strings they can be any type now.
       var key = entryTuple.get(0);
       var value = entryTuple.get(1);
@@ -295,10 +295,12 @@ public class MapSetListTableFilter extends TableFilter {
 
     // the driver query builder cannot support map entry filter, so we have to build it manually
     // E.G. map_column[?] = ?
+    // note, since this is raw cql, need to double quote to adapt with quoted identifier
+    // E.G. "map_column"[?] = ?
     Relation relation =
         (filterComponent == MapSetListFilterComponent.MAP_ENTRY)
             ? new DefaultRaw(
-                "%s[?]%s?"
+                "\"%s\"[?]%s?"
                     .formatted(
                         getPathAsCqlIdentifier().asInternal(),
                         operator.cqlPredicate(filterComponent)))

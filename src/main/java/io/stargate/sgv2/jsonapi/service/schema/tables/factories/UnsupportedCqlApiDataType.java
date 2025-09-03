@@ -1,6 +1,7 @@
-package io.stargate.sgv2.jsonapi.service.schema.tables;
+package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
 import com.datastax.oss.driver.api.core.type.DataType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.UnsupportedColumnDesc;
 import java.util.Objects;
@@ -20,7 +21,9 @@ public class UnsupportedCqlApiDataType extends UnsupportedApiDataType {
   }
 
   @Override
-  public ColumnDesc columnDesc() {
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
+    // Always has same representation
+
     return new UnsupportedColumnDesc.UnsupportedCqlColumnDesc(apiSupport(), cqlType);
   }
 }

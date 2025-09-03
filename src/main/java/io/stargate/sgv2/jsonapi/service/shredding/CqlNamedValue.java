@@ -72,7 +72,6 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
         return maybeVectorize(vectorType, rawValue);
       }
     }
-
     // not deferring, so we need to push the value through the codecs to get what to send to CQL
     return decodeToCQL(rawValue.value().value());
   }

@@ -16,14 +16,16 @@ public enum CommandName {
   // them ?
 
   ALTER_TABLE(Names.ALTER_TABLE_NAME, CommandType.DDL, CommandTarget.TABLE),
+  ALTER_TYPE(Names.ALTER_TYPE, CommandType.DDL, CommandTarget.TABLE),
   COUNT_DOCUMENTS(Names.COUNT_DOCUMENTS, CommandType.DML, CommandTarget.COLLECTION),
   CREATE_COLLECTION(Names.CREATE_COLLECTION, CommandType.DDL, CommandTarget.KEYSPACE),
   CREATE_INDEX(Names.CREATE_INDEX, CommandType.DDL, CommandTarget.TABLE),
-  CREATE_TEXT_INDEX(Names.CREATE_TEXT_INDEX, CommandType.DDL, CommandTarget.TABLE),
-  CREATE_VECTOR_INDEX(Names.CREATE_VECTOR_INDEX, CommandType.DDL, CommandTarget.TABLE),
   CREATE_KEYSPACE(Names.CREATE_KEYSPACE, CommandType.DDL, CommandTarget.DATABASE),
   CREATE_NAMESPACE(Names.CREATE_NAMESPACE, CommandType.DDL, CommandTarget.DATABASE),
   CREATE_TABLE(Names.CREATE_TABLE, CommandType.DDL, CommandTarget.KEYSPACE),
+  CREATE_TEXT_INDEX(Names.CREATE_TEXT_INDEX, CommandType.DDL, CommandTarget.TABLE),
+  CREATE_TYPE(Names.CREATE_TYPE, CommandType.DDL, CommandTarget.KEYSPACE),
+  CREATE_VECTOR_INDEX(Names.CREATE_VECTOR_INDEX, CommandType.DDL, CommandTarget.TABLE),
   DELETE_COLLECTION(Names.DELETE_COLLECTION, CommandType.DDL, CommandTarget.KEYSPACE),
   DELETE_MANY(Names.DELETE_MANY, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
   DELETE_ONE(Names.DELETE_ONE, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
@@ -31,6 +33,7 @@ public enum CommandName {
   DROP_NAMESPACE(Names.DROP_NAMESPACE, CommandType.DDL, CommandTarget.DATABASE),
   DROP_KEYSPACE(Names.DROP_KEYSPACE, CommandType.DDL, CommandTarget.DATABASE),
   DROP_TABLE(Names.DROP_TABLE, CommandType.DDL, CommandTarget.KEYSPACE),
+  DROP_TYPE(Names.DROP_TYPE, CommandType.DDL, CommandTarget.KEYSPACE),
   ESTIMATED_DOCUMENT_COUNT(
       Names.ESTIMATED_DOCUMENT_COUNT, CommandType.DML, CommandTarget.COLLECTION),
   FIND(Names.FIND, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
@@ -50,6 +53,7 @@ public enum CommandName {
   INSERT_ONE(Names.INSERT_ONE, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
   LIST_INDEXES(Names.LIST_INDEXES, CommandType.DDL, CommandTarget.TABLE),
   LIST_TABLES(Names.LIST_TABLES, CommandType.DDL, CommandTarget.KEYSPACE),
+  LIST_TYPES(Names.LIST_TYPES, CommandType.DDL, CommandTarget.KEYSPACE),
   UPDATE_MANY(Names.UPDATE_MANY, CommandType.DML, CommandTarget.COLLECTION),
   UPDATE_ONE(Names.UPDATE_ONE, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
   BEGIN_OFFLINE_SESSION(Names.BEGIN_OFFLINE_SESSION, CommandType.DML, CommandTarget.SYSTEM),
@@ -105,14 +109,16 @@ public enum CommandName {
 
   public interface Names {
     String ALTER_TABLE_NAME = "alterTable";
+    String ALTER_TYPE = "alterType";
     String COUNT_DOCUMENTS = "countDocuments";
     String CREATE_COLLECTION = "createCollection";
     String CREATE_INDEX = "createIndex";
-    String CREATE_TEXT_INDEX = "createTextIndex";
-    String CREATE_VECTOR_INDEX = "createVectorIndex";
     String CREATE_KEYSPACE = "createKeyspace";
     String CREATE_NAMESPACE = "createNamespace";
     String CREATE_TABLE = "createTable";
+    String CREATE_TEXT_INDEX = "createTextIndex";
+    String CREATE_TYPE = "createType";
+    String CREATE_VECTOR_INDEX = "createVectorIndex";
     String DELETE_COLLECTION = "deleteCollection";
     String DELETE_MANY = "deleteMany";
     String DELETE_ONE = "deleteOne";
@@ -120,6 +126,7 @@ public enum CommandName {
     String DROP_NAMESPACE = "dropNamespace";
     String DROP_KEYSPACE = "dropKeyspace";
     String DROP_TABLE = "dropTable";
+    String DROP_TYPE = "dropType";
     String ESTIMATED_DOCUMENT_COUNT = "estimatedDocumentCount";
     String FIND = "find";
     String FIND_AND_RERANK = "findAndRerank";
@@ -136,6 +143,7 @@ public enum CommandName {
     String INSERT_ONE = "insertOne";
     String LIST_INDEXES = "listIndexes";
     String LIST_TABLES = "listTables";
+    String LIST_TYPES = "listTypes";
     String UPDATE_MANY = "updateMany";
     String UPDATE_ONE = "updateOne";
     String BEGIN_OFFLINE_SESSION = "beginOfflineSession";

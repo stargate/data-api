@@ -32,15 +32,16 @@ public class VectorizeTableScenario extends TestDataScenario {
   public static final ApiColumnDef INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1 =
       new ApiColumnDef(
           CqlIdentifier.fromCql("indexed_vectorize_def_1"),
-          ApiVectorType.from(5, vectorizeDefinition));
+          new ApiVectorType(5, vectorizeDefinition));
   public static final ApiColumnDef INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_2 =
       new ApiColumnDef(
           CqlIdentifier.fromCql("indexed_vectorize_def_2"),
-          ApiVectorType.from(5, vectorizeDefinition));
+          new ApiVectorType(5, vectorizeDefinition));
   public static final ApiColumnDef INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1 =
-      new ApiColumnDef(CqlIdentifier.fromCql("indexed_no_vectorize_def_1"), ApiVectorType.from(5));
+      new ApiColumnDef(
+          CqlIdentifier.fromCql("indexed_no_vectorize_def_1"), new ApiVectorType(5, null));
   public static final ApiColumnDef UNINDEXED_VECTOR_COL_1 =
-      new ApiColumnDef(CqlIdentifier.fromCql("unindexed_vector_1"), ApiVectorType.from(5));
+      new ApiColumnDef(CqlIdentifier.fromCql("unindexed_vector_1"), new ApiVectorType(5, null));
 
   public static final List<String> DEFAULT_INSERTED_ROW_IDS =
       IntStream.rangeClosed(1, 20).mapToObj(i -> "row" + i).collect(Collectors.toList());

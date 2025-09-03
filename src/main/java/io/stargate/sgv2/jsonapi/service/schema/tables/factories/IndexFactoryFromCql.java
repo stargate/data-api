@@ -1,9 +1,10 @@
-package io.stargate.sgv2.jsonapi.service.schema.tables;
+package io.stargate.sgv2.jsonapi.service.schema.tables.factories;
 
 import com.datastax.oss.driver.api.core.metadata.schema.IndexKind;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
+import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +16,7 @@ import org.slf4j.LoggerFactory;
  * <p>Factories for specific index types should implement {@link #create(ApiColumnDef,
  * CQLSAIIndex.IndexTarget, IndexMetadata)}
  */
-public abstract class IndexFactoryFromCql extends FactoryFromCql {
+public abstract class IndexFactoryFromCql {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexFactoryFromCql.class);
 
   /**

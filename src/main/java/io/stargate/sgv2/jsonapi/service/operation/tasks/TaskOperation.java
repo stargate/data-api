@@ -59,7 +59,6 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
    */
   @Override
   public Uni<Supplier<CommandResult>> execute(CommandContext<SchemaT> commandContext) {
-
     commandContext
         .requestTracing()
         .maybeTrace(

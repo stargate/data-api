@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.TextIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
@@ -18,6 +19,8 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromCql;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromIndexDesc;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.util.HashMap;
@@ -43,10 +46,12 @@ public class ApiTextIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<TextIndexDefinitionDesc> indexDesc() {
+  public IndexDesc<TextIndexDefinitionDesc> getSchemaDescription(
+      SchemaDescSource schemaDescSource) {
+    // Index is always has same representation
 
-    final var definitionOptions = new TextIndexDefinitionDesc.TextIndexDescOptions(analyzer);
-    final var definition =
+    var definitionOptions = new TextIndexDefinitionDesc.TextIndexDescOptions(analyzer);
+    var definition =
         new TextIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
 
     return new IndexDesc<>() {
