@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtCqlIdentifier;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
@@ -20,13 +21,13 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListTableF
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <b>NOTES:</b>
@@ -38,8 +39,6 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 public class WhereCQLClauseAnalyzer {
-  private static final Logger LOGGER = LoggerFactory.getLogger(WhereCQLClauseAnalyzer.class);
-
   /** Different statementTypes for analyzer to work on, thus different strategies. */
   public enum StatementType {
     SELECT,
@@ -57,7 +56,9 @@ public class WhereCQLClauseAnalyzer {
         case SELECT ->
             new AnalysisStrategy(
                 List.of(
-                    analyzer::checkAllColumnsExist, analyzer::checkComparisonFilterAgainstDuration),
+                    analyzer::checkAllColumnsExist,
+                    analyzer::checkLexicalFilterOnlyOnLexicalIndex,
+                    analyzer::checkComparisonFilterAgainstDuration),
                 List.of(
                     analyzer::warnMissingIndexOnScalar,
                     analyzer::warnMissingIndexOnMapSetList,
@@ -219,6 +220,41 @@ public class WhereCQLClauseAnalyzer {
     }
   }
 
+  /** Check that all lexical filters are on columns with lexical index. */
+  private void checkLexicalFilterOnlyOnLexicalIndex(
+      Map<CqlIdentifier, TableFilter> identifierToFilter) {
+    List<NativeTypeTableFilter> lexicalFilters =
+        identifierToFilter.values().stream()
+            .filter(NativeTypeTableFilter.class::isInstance)
+            .map(NativeTypeTableFilter.class::cast)
+            .filter(f -> f.operator == NativeTypeTableFilter.Operator.TEXT_SEARCH)
+            .toList();
+    var indexes = apiTableDef.indexes();
+    var lexicalFilterColumnsWithoutIndex =
+        lexicalFilters.stream()
+            .filter(
+                f -> {
+                  Optional<ApiIndexDef> maybeIndex = indexes.firstIndexFor(f.getColumn());
+                  return maybeIndex.isEmpty() || maybeIndex.get().indexType() != ApiIndexType.TEXT;
+                })
+            .map(NativeTypeTableFilter::getColumn)
+            .toList();
+    if (!lexicalFilterColumnsWithoutIndex.isEmpty()) {
+      var textIndexedColumns =
+          indexes.allIndexes().stream()
+              .filter(index -> index.indexType() == ApiIndexType.TEXT)
+              .map(ApiIndexDef::targetColumn)
+              .toList();
+      throw FilterException.Code.CANNOT_LEXICAL_FILTER_NON_INDEXED_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("indexedColumns", errFmtCqlIdentifier(textIndexedColumns));
+                map.put("filterColumns", errFmtCqlIdentifier(lexicalFilterColumnsWithoutIndex));
+              }));
+    }
+  }
+
   /**
    * Check if any non $eq filter is used.
    *
@@ -352,7 +388,7 @@ public class WhereCQLClauseAnalyzer {
     var filtersToCheck =
         pkFullySpecified
             ? identifierToFilter.keySet().stream()
-                .filter(tableFilter -> !apiTableDef.primaryKeys().containsKey(tableFilter))
+                .filter(filterColumn -> !apiTableDef.primaryKeys().containsKey(filterColumn))
                 .toList()
             : identifierToFilter.keySet().stream().toList();
 

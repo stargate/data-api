@@ -160,7 +160,11 @@ public class CommandResultBuilder {
                   ? new ResponseData.SingleResponseData(
                       documents.isEmpty() ? null : documents.getFirst())
                   : null;
-          case MULTI_DOCUMENT -> new ResponseData.MultiResponseData(documents, nextPageState);
+          case MULTI_DOCUMENT ->
+              // if there are any errors we do not return the response data for multi doc either
+              finalErrors == null
+                  ? new ResponseData.MultiResponseData(documents, nextPageState)
+                  : null;
           case STATUS_ONLY -> null;
         };
 
