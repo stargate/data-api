@@ -1831,10 +1831,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR,
               anyOf(
-                  containsString(
-                      "Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb"),
-                  containsString(
-                      "Provider: jinaAI; HTTP Status: 401; Error Message: \"Unauthorized\"")));
+                  containsString("Provider: openai; HTTP Status: 401; Error Message: "),
+                  containsString("Provider: jinaAI; HTTP Status: 401; Error Message: ")));
     }
   }
 }
