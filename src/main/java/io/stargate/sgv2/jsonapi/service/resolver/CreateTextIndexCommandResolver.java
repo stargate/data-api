@@ -38,7 +38,7 @@ public class CreateTextIndexCommandResolver implements CommandResolver<CreateTex
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, CreateTextIndexCommand command) {
 
-    final var indexName = validateSchemaName(command.name(), NamingRules.INDEX);
+    var indexName = NamingRules.INDEX.checkRule(command.name());
 
     var indexType =
         command.indexType() == null

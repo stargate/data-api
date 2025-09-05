@@ -6,6 +6,9 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.internal.core.type.DefaultListType;
+import com.datastax.oss.driver.internal.core.type.DefaultMapType;
+import com.datastax.oss.driver.internal.core.type.DefaultSetType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
@@ -77,6 +80,14 @@ public class LogicalExpressionTestData extends TestDataSuplier {
 
     public FixtureT notInOn(CqlIdentifier column) {
       rootImplicitAnd.addFilter(nin(tableMetadata.getColumn(column).orElseThrow()));
+      return fixture;
+    }
+
+    public FixtureT mapListSetTableFilter(
+        CqlIdentifier column,
+        MapSetListTableFilter.Operator operator,
+        MapSetListFilterComponent component) {
+      rootImplicitAnd.addFilter(filterOnMapSetList(column, operator, component));
       return fixture;
     }
 
@@ -219,6 +230,67 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           InTableFilter.Operator.NIN,
           columnMetadata.getName().asInternal(),
           List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
+    }
+
+    /**
+     * Creates the table filter for map/set/list column. Caller should specify the operator and the
+     * MapSetListComponent. Method will create the filter based on the column type and the
+     * component, and also populate the positionalValues.
+     */
+    public TableFilter filterOnMapSetList(
+        CqlIdentifier columnCqlIdentifier,
+        MapSetListTableFilter.Operator operator,
+        MapSetListFilterComponent mapSetListComponent) {
+      var columnMetadata = tableMetadata.getColumn(columnCqlIdentifier).get();
+      return switch (mapSetListComponent) {
+        case LIST_VALUE:
+          {
+            DefaultListType listType = (DefaultListType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(value(listType.getElementType()), value(listType.getElementType())),
+                MapSetListFilterComponent.LIST_VALUE);
+          }
+        case SET_VALUE:
+          {
+            DefaultSetType setType = (DefaultSetType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(value(setType.getElementType()), value(setType.getElementType())),
+                MapSetListFilterComponent.SET_VALUE);
+          }
+        case MAP_KEY:
+          {
+            DefaultMapType mapType = (DefaultMapType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(value(mapType.getKeyType()), value(mapType.getKeyType())),
+                MapSetListFilterComponent.MAP_KEY);
+          }
+        case MAP_VALUE:
+          {
+            DefaultMapType mapType = (DefaultMapType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(value(mapType.getValueType()), value(mapType.getValueType())),
+                MapSetListFilterComponent.MAP_VALUE);
+          }
+        case MAP_ENTRY:
+          {
+            DefaultMapType mapType = (DefaultMapType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(
+                    List.of(value(mapType.getKeyType()), value(mapType.getValueType())),
+                    List.of(value(mapType.getKeyType()), value(mapType.getValueType()))),
+                MapSetListFilterComponent.MAP_ENTRY);
+          }
+      };
     }
 
     public static TableFilter filter(

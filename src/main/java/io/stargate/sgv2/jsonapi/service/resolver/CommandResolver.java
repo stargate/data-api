@@ -15,17 +15,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.naming.SchemaObjectNamingRule;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -230,27 +226,5 @@ public interface CommandResolver<C extends Command> {
     for (DBLogicalExpression subDBLogicalExpression : dbLogicalExpression.subExpressions()) {
       getIndexUsageTags(subDBLogicalExpression, indexUsage);
     }
-  }
-
-  /**
-   * Validate the name of a schema object (e.g., keyspace, table, collection, or index).
-   *
-   * @param name The name to validate.
-   * @param namingRule The naming rule to apply.
-   * @return The validated name.
-   * @throws SchemaException if the name is invalid.
-   */
-  default String validateSchemaName(String name, SchemaObjectNamingRule namingRule) {
-    if (!namingRule.apply(name)) {
-      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
-          Map.of(
-              "schemaType",
-              namingRule.schemaType().apiName(),
-              "maxNameLength",
-              String.valueOf(namingRule.getMaxLength()),
-              "unsupportedSchemaName",
-              ErrorTemplate.replaceIfNull(name)));
-    }
-    return name;
   }
 }

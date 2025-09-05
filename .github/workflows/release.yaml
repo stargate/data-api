@@ -22,6 +22,11 @@ on:
         required: true
         type: string
 
+# needed when a workflow wants to use OIDC (OpenID Connect) to authenticate to cloud
+permissions:
+  id-token: write
+  contents: read
+
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
@@ -74,10 +79,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -146,10 +151,10 @@ jobs:
             profile: ''
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -190,10 +195,10 @@ jobs:
             profile: ''
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -208,11 +213,10 @@ jobs:
           ./mvnw -B -ntp versions:set -DremoveSnapshot versions:commit
 
       # build and push Astra image to Amazon ECR
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          role-to-assume: ${{ secrets.ECR_FEDERATED_ROLE }}
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
@@ -258,7 +262,8 @@ jobs:
 
     env:
       # not a newest version, this reflects riptano action target version
-      COSIGN_VERSION: v1.9.0
+      # 22-Jul-2025, tatu: pre-2.0.0 no longer supported, use current latest
+      COSIGN_VERSION: v2.5.3
 
     steps:
       - name: Install Cosign
@@ -266,11 +271,10 @@ jobs:
         with:
           cosign-release: ${COSIGN_VERSION}
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
+          role-to-assume: ${{ secrets.ECR_FEDERATED_ROLE }}
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
@@ -304,10 +308,10 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'

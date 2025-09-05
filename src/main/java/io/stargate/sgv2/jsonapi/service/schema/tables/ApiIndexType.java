@@ -6,6 +6,8 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * What type of index the API views a CQL index as.
@@ -26,6 +28,8 @@ public enum ApiIndexType {
     String TEXT = "text";
     String VECTOR = "vector";
   }
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiIndexType.class);
 
   private final String apiName;
 
@@ -72,11 +76,13 @@ public enum ApiIndexType {
    * @return The ApiIndexType for the index, if it cannot be determined it will throw an exception.
    * @throws UnsupportedCqlIndexException Unable to determine or unsupported index type.
    */
-  static ApiIndexType fromCql(
+  public static ApiIndexType fromCql(
       ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
       throws UnsupportedCqlIndexException {
 
-    final ApiDataType columnType = apiColumnDef.type();
+    // calling type() can fail for an unsupported type, but we should not be here if the col is
+    // not supported
+    ApiDataType columnType = apiColumnDef.type();
 
     // Let's start with Text (aka Lexical, or Analyzed) indexes: only for TEXT or ASCII columns
     // and with a text analyzer defined in the index options.

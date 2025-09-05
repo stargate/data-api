@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -61,7 +62,11 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
         .stream()
         .filter(TABLE_MATCHER)
         .map(tableMetadata -> TableSchemaObject.from(tableMetadata, OBJECT_MAPPER))
-        .map(tableSchemaObject -> tableSchemaObject.apiTableDef().toTableDesc())
+        .map(
+            tableSchemaObject ->
+                tableSchemaObject
+                    .apiTableDef()
+                    .getSchemaDescription(SchemaDescSource.DDL_SCHEMA_OBJECT))
         .toList();
   }
 }

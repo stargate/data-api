@@ -1,4 +1,4 @@
-# DSE Config Version: 6.9.9
+# DSE Config Version: 6.9.13
 
 # Memory limit for DSE In-Memory tables as a fraction of system memory. When not set,
 # the default is 0.2 (20% of system memory).

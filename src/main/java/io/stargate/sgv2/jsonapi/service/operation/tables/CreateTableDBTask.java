@@ -85,8 +85,8 @@ public class CreateTableDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
               clusteringDef.columnDef().name(), clusteringDef.columnDef().type().cqlType());
     }
 
-    for (var columnDef : tableDef.nonPKColumns().values()) {
-      createTable = createTable.withColumn(columnDef.name(), columnDef.type().cqlType());
+    for (var apiColumnDef : tableDef.nonPKColumns().values()) {
+      createTable = createTable.withColumn(apiColumnDef.name(), apiColumnDef.type().cqlType());
     }
     return createTable;
   }

@@ -85,6 +85,23 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    */
   protected abstract boolean isDocId(String path);
 
+  /**
+   * Method to build the list of ComparisonExpression from a single path entry. Collection and Table
+   * will have different implementations of this method.
+   *
+   * <p>E.G.
+   *
+   * <ul>
+   *   <li><code>{"name": {"$eq" : "Tim"}}</code>
+   *   <li><code>{"name": {"$gt" : 10, "$lt" : 50}}</code>
+   *   <li><code>
+   *       {"listColumn": {"$in": ["listValue1", "listValue2"], "$nin": ["listValue3", "listValue4"]}}
+   *       </code> ...
+   * </ul>
+   */
+  protected abstract List<ComparisonExpression> buildFromPathEntry(
+      Map.Entry<String, JsonNode> entry);
+
   // // // Construction of LogicalExpression from JSON
 
   private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {
@@ -103,8 +120,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         if (!next.isObject()) {
           // nodes in $and/$or array must be objects
           throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
-              "Unsupported NodeType %s in $%s",
-              next.getNodeType(), logicalExpression.getLogicalRelation());
+              "Unsupported NodeType '%s' for $%s filter",
+              JsonUtil.nodeTypeAsString(next), logicalExpression.getLogicalRelation());
         }
         populateExpression(logicalExpression, next);
       }
@@ -123,7 +140,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         populateExpression(innerLogicalExpression, entry.getValue());
         logicalExpression.addLogicalExpression(innerLogicalExpression);
       } else {
-        logicalExpression.addComparisonExpressions(createComparisonExpressionList(entry));
+        logicalExpression.addComparisonExpressions(buildFromPathEntry(entry));
       }
       // inside of this entry, only implicit and, no explicit $and/$or
     } else if (entry.getValue().isArray()) {
@@ -133,6 +150,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             case "$or" -> LogicalExpression.or();
             case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                     DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
+                // TODO: (21-Jul-2025) Should be refactored to CollectionFilterClauseBuilder as it
+                // only applies to Collections
                 throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                     "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                     entry.getKey());
@@ -146,37 +165,34 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else { // neither Array nor Object, simple implicit "$eq" comparison
+      // TODO: (21-Jul-2025) Should be refactored to CollectionFilterClauseBuilder as it
+      // only applies to Collections
       switch (entry.getKey()) {
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                 DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
             throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                 "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                 entry.getKey());
-        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD ->
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "Cannot filter on '%s' field using operator $eq: only $match is supported",
-                entry.getKey());
       }
       // the key should match pattern
-      String key = validateFilterClausePath(entry.getKey());
+      String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
       logicalExpression.addComparisonExpressions(
           List.of(ComparisonExpression.eq(key, jsonNodeValue(key, entry.getValue()))));
     }
   }
 
   /**
-   * The filter clause is entry will have field path as key and object type as value. The value can
-   * have multiple operator and condition values.
+   * The common path shared by both {@link CollectionFilterClauseBuilder} and {@link
+   * TableFilterClauseBuilder}. It takes a single path entry and creates a list of {@link
+   * ComparisonExpression} from it. E.G.
    *
-   * <p>Eg 1: {"field" : {"$eq" : "value"}}
-   *
-   * <p>Eg 2: {"field" : {"$gt" : 10, "$lt" : 50}}
-   *
-   * @param entry
-   * @return
+   * <ul>
+   *   <li><code>{"name" : {"$eq" : "value"}}</code>
+   *   <li><code>{"name" : {"$gt" : 10, "$lt" : 50}}</code>
+   * </ul>
    */
-  private List<ComparisonExpression> createComparisonExpressionList(
-      Map.Entry<String, JsonNode> entry) {
+  protected List<ComparisonExpression> buildFromPathEntryCommon(Map.Entry<String, JsonNode> entry) {
+
     final List<ComparisonExpression> comparisonExpressionList = new ArrayList<>();
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
@@ -191,7 +207,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         if ((etype == null) && updateKey.startsWith("$")) {
           throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
         }
-        String key = validateFilterClausePath(entry.getKey());
+        String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
         // JSON Extension type needs to be explicitly handled:
         Object value;
         if (etype != null) {
@@ -208,16 +224,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         return comparisonExpressionList;
       }
 
-      String entryKey = validateFilterClausePath(entry.getKey());
-
-      // First things first: $lexical field can only be used with $match operator
-      if (entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)
-          && (operator != ValueComparisonOperator.MATCH)) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "Cannot filter on '%s' field using operator %s: only $match is supported",
-            entry.getKey(), operator.getOperator());
-      }
-
+      String entryKey = validateFilterClausePath(entry.getKey(), operator);
       JsonNode value = updateField.getValue();
       Object valueObject = jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
@@ -247,13 +254,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
               operator.getOperator());
         }
       } else if (operator == ValueComparisonOperator.MATCH) {
-        // $match operator can only be used with String value and for Collections
-        // only on $lexical field
-        if (!entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "%s operator can only be used with the '%s' field, not '%s'",
-              operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, entryKey);
-        }
+        // $match operator can only be used with String value
         if (!(valueObject instanceof String)) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "%s operator must have `String` value, was `%s`",
@@ -276,7 +277,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    * @param node - JsonNode which has the operand value of a filter clause
    * @return
    */
-  private Object jsonNodeValue(String path, JsonNode node) {
+  protected Object jsonNodeValue(String path, JsonNode node) {
     // If the path is _id, then the value is resolved as DocumentId and Array type handled for `$in`
     // operator in filter
     if (isDocId(path)) {
@@ -297,7 +298,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    * Method to parse each filter clause and return node value. Called recursively in case of array
    * and object json types.
    */
-  private Object jsonNodeValue(JsonNode node) {
+  protected Object jsonNodeValue(JsonNode node) {
     switch (node.getNodeType()) {
       case BOOLEAN:
         return node.booleanValue();
@@ -572,7 +573,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    * path.
    *
    * @param path Path to be validated
+   * @param operator FilterOperator that is used for this path
    * @return Path after validation - currently not changed
    */
-  protected abstract String validateFilterClausePath(String path);
+  protected abstract String validateFilterClausePath(String path, FilterOperator operator);
 }

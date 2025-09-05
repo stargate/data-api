@@ -1,15 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.stream.Collectors;
-import org.bson.types.ObjectId;
 
 /**
  * This object represents conditions based for a json path (node) that need to be tested Spec says
@@ -19,18 +13,107 @@ import org.bson.types.ObjectId;
  */
 public class ComparisonExpression implements Invertible {
 
+  /**
+   * The json node string representing the filter path. E.G. <code>name</code> for <code>
+   * {"name" : "aaron"}</code>
+   */
   private final String path;
 
-  @Valid @NotEmpty private List<FilterOperation<?>> filterOperations;
+  /**
+   * The nullable enum representing the map/set/list component aims to filter on.
+   *
+   * <p>For a Collection, mapSetListComponent will be null. For a Table, mapSetListComponent will be
+   * null for scalar column path, will be set for map/set/list column path.
+   */
+  private final MapSetListFilterComponent mapSetListComponent;
+
+  private List<FilterOperation<?>> filterOperations;
 
   private List<DBFilterBase> dbFilters;
 
-  public List<DBFilterBase> getDbFilters() {
-    return dbFilters;
+  public ComparisonExpression(
+      String path, List<FilterOperation<?>> filterOperations, List<DBFilterBase> dbFilters) {
+    this(path, filterOperations, dbFilters, null);
   }
 
-  public List<FilterOperation<?>> getFilterOperations() {
-    return filterOperations;
+  public ComparisonExpression(
+      String path,
+      List<FilterOperation<?>> filterOperations,
+      List<DBFilterBase> dbFilters,
+      MapSetListFilterComponent mapSetListComponent) {
+    this.path = path;
+    this.mapSetListComponent = mapSetListComponent;
+    // the list is mutable via the add() method, make defensive copy when exposing it
+    this.filterOperations = filterOperations;
+    this.dbFilters = dbFilters;
+  }
+
+  /**
+   * The Shortcut to create ComparisonExpression with EQ filterOperator. E.G.
+   *
+   * <ul>
+   *   <li><code>{"filter": {"username" : "aaron"}}</code> shortcut form for EQ
+   *   <li><code>{"filter": {"username" : {"$eq": "aaron"}}}</code> full form for EQ, using {@link
+   *       ComparisonExpression#add(FilterOperator, Object)}
+   * </ul>
+   *
+   * @param path json node path representing the filter path.
+   * @param value plain object value from request filter json body.
+   * @return {@link ComparisonExpression} with equal operator,
+   */
+  public static ComparisonExpression eq(String path, Object value) {
+    return new ComparisonExpression(
+        path, List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, value)), null);
+  }
+
+  /**
+   * Adds a comparison operation using given filterOperator and plain value to the filter
+   * operations. E.G.
+   *
+   * <ul>
+   *   <li><code>{"filter": {"username" : "aaron"}}</code> will be EQ operator with value "aaron"
+   *   <li><code>{"filter": {"age":{"$lt": 18}}}</code> will be LT operator with value 18
+   * </ul>
+   */
+  public void add(FilterOperator operator, Object value) {
+    filterOperations.add(ValueComparisonOperation.build(operator, value));
+  }
+
+  /**
+   * This method is used to match the path and operator with the filter operations.
+   *
+   * @param matchPath The path to match.
+   * @param operator The operator to match.
+   * @param type The type of the value.
+   * @param appliesToTableMapSetList if true, the expression must be for a flagged as applying to
+   *     table map/set/list column. We need an explicit flag because the operations to filter on
+   *     map/set/list columns look the same as for a JSON array in a collection document. See XXXX
+   * @return List of FilterOperation that match the criteria.
+   */
+  public List<FilterOperation<?>> match(
+      String matchPath,
+      Set<? extends FilterOperator> operator,
+      JsonType type,
+      boolean appliesToTableMapSetList) {
+
+    // Two sanity checks, Capture should align with the ComparisonExpression to start the match.
+    if (appliesToTableMapSetList && this.mapSetListComponent == null) {
+      // this expression is not for a table map/set/list column, but the caller wants it to be.
+      return List.of();
+    }
+    if (!appliesToTableMapSetList && this.mapSetListComponent != null) {
+      // this expression is for a table map/set/list column, but the caller does not want it to be.
+      return List.of();
+    }
+
+    // this is comparing JSON paths, so we need a case-sensitive match.
+    if ("*".equals(matchPath) || matchPath.equals(path)) {
+      return filterOperations.stream()
+          .filter(a -> a.match(operator, type, appliesToTableMapSetList))
+          .toList();
+    } else {
+      return List.of();
+    }
   }
 
   /**
@@ -44,14 +127,22 @@ public class ComparisonExpression implements Invertible {
       final FilterOperator invertedOperator = filterOperation.operator().invert();
       JsonLiteral<?> operand =
           getFlippedOperandValue(filterOperation.operator(), filterOperation.operand());
-      filterOperations.add(new ValueComparisonOperation<>(invertedOperator, operand));
+      filterOperations.add(
+          new ValueComparisonOperation<>(
+              invertedOperator, operand, filterOperation.mapSetListComponent()));
     }
     this.filterOperations = filterOperations;
     return this;
   }
 
   /**
-   * This method is used to flip the operand value when not operator is applied, e.g. $exists, $size
+   * This method is used to flip the operand value when $not logical operator is applied. E.G.
+   *
+   * <ul>
+   *   <li><code>$exists</code> -> flip the boolean operand value
+   *   <li><code>$size</code> -> negate the BigDecimal value if not zero, special handling zero
+   *       since there is no negating zero
+   * </ul>
    */
   private JsonLiteral<?> getFlippedOperandValue(FilterOperator operator, JsonLiteral<?> operand) {
     if (operator == ElementComparisonOperator.EXISTS) {
@@ -68,101 +159,13 @@ public class ComparisonExpression implements Invertible {
     }
   }
 
-  public ComparisonExpression(
-      @NotBlank(message = "json node path can not be null in filter") String path,
-      List<FilterOperation<?>> filterOperations,
-      List<DBFilterBase> dbFilters) {
-    this.path = path;
-    this.filterOperations = filterOperations;
-    this.dbFilters = dbFilters;
-  }
-
-  /**
-   * Shortcut to create equals against a literal, mare condition cannot be added using add().
-   *
-   * <p>e.g. {"username" : "aaron"}
-   *
-   * @param path Json node path
-   * @param value Value returned by the deserializer
-   * @return {@link ComparisonExpression} with equal operator
-   */
-  public static ComparisonExpression eq(String path, Object value) {
-    return new ComparisonExpression(
-        path,
-        List.of(new ValueComparisonOperation<>(ValueComparisonOperator.EQ, getLiteral(value))),
-        null);
-  }
-
-  /**
-   * Adds a comparison operation
-   *
-   * <p>e.g. {"username" : "aaron"}
-   *
-   * @param value Value returned by the deserializer
-   * @return {@link ComparisonExpression} with equal operator
-   */
-  public void add(FilterOperator operator, Object value) {
-    filterOperations.add(new ValueComparisonOperation<>(operator, getLiteral(value)));
-  }
-
+  // Getters, Setters, toString.
   public String getPath() {
     return path;
   }
 
-  /**
-   * Create Typed JsonLiteral object for the value
-   *
-   * @param value object came in the request
-   * @return {@link JsonLiteral}
-   */
-  private static JsonLiteral<?> getLiteral(Object value) {
-    if (value == null) {
-      return new JsonLiteral<>(null, JsonType.NULL);
-    }
-    if (value instanceof DocumentId) {
-      return new JsonLiteral<>((DocumentId) value, JsonType.DOCUMENT_ID);
-    }
-    if (value instanceof BigDecimal) {
-      return new JsonLiteral<>((BigDecimal) value, JsonType.NUMBER);
-    }
-    if (value instanceof Boolean) {
-      return new JsonLiteral<>((Boolean) value, JsonType.BOOLEAN);
-    }
-    if (value instanceof Date) {
-      return new JsonLiteral<>((Date) value, JsonType.DATE);
-    }
-    if (value instanceof String) {
-      return new JsonLiteral<>((String) value, JsonType.STRING);
-    }
-    if (value instanceof List) {
-      return new JsonLiteral<>((List<Object>) value, JsonType.ARRAY);
-    }
-    if (value instanceof Map map) {
-      return new JsonLiteral<>(map, JsonType.SUB_DOC);
-    }
-    if (value instanceof UUID || value instanceof ObjectId) {
-      return new JsonLiteral<>(value.toString(), JsonType.STRING);
-    }
-    if (value instanceof byte[] bytes) {
-      return new JsonLiteral<>(bytes, JsonType.EJSON_WRAPPER);
-    }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unsupported filter value type `%s`", value.getClass().getName());
-  }
-
-  public List<FilterOperation<?>> match(
-      String matchPath, EnumSet<? extends FilterOperator> operator, JsonType type) {
-    if ("*".equals(matchPath) || matchPath.equals(path)) {
-      return filterOperations.stream()
-          .filter(a -> a.match(operator, type))
-          .collect(Collectors.toList());
-    } else {
-      return List.of();
-    }
-  }
-
-  public void setDBFilters(List<DBFilterBase> dbFilters) {
-    this.dbFilters = dbFilters;
+  public List<FilterOperation<?>> getFilterOperations() {
+    return List.copyOf(filterOperations);
   }
 
   @Override
@@ -171,6 +174,8 @@ public class ComparisonExpression implements Invertible {
         + "path='"
         + path
         + '\''
+        + ", mapSetListComponent="
+        + mapSetListComponent
         + ", filterOperations="
         + filterOperations
         + ", dbFilters="

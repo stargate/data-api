@@ -7,6 +7,7 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
@@ -37,11 +38,19 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
   @Override
   public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
       throws JsonApiException {
+
     // If the status is 0, it means something went wrong (maybe a timeout). Directly return and pass
     // the error to the client
     if (responseContext.getStatus() == 0) {
       return;
     }
+
+    // only validate for successful responses, errors may return non-JSON content,
+    // e.g. a HTTP 401 may just have "Unauthorized" in the response body
+    if (responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+      return;
+    }
+
     // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(

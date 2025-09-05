@@ -16,8 +16,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
@@ -38,6 +36,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -62,7 +61,7 @@ class ObjectMapperConfigurationTest {
   private final TestConstants testConstants = new TestConstants();
 
   @Nested
-  class UnmatchedOperationCommandHandlerTest {
+  class UnmatchedOperationCommandHandler {
     @Test
     public void notExistedCommandMatchKeyspaceCommand() throws Exception {
       String json =
@@ -193,10 +192,8 @@ class ObjectMapperConfigurationTest {
                     .singleElement()
                     .satisfies(
                         expression -> {
-                          ValueComparisonOperation<String> op =
-                              new ValueComparisonOperation<>(
-                                  ValueComparisonOperator.EQ,
-                                  new JsonLiteral<>("aaron", JsonType.STRING));
+                          ValueComparisonOperation<?> op =
+                              ValueComparisonOperation.build(ValueComparisonOperator.EQ, "aaron");
 
                           assertThat(expression.getPath()).isEqualTo("username");
                           assertThat(expression.getFilterOperations())
@@ -382,9 +379,8 @@ class ObjectMapperConfigurationTest {
 
                 assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
                     .isEqualTo("username");
-                ValueComparisonOperation<String> op =
-                    new ValueComparisonOperation<>(
-                        ValueComparisonOperator.EQ, new JsonLiteral<>("Aaron", JsonType.STRING));
+                ValueComparisonOperation<?> op =
+                    ValueComparisonOperation.build(ValueComparisonOperator.EQ, "Aaron");
                 assertThat(
                         filterClause
                             .logicalExpression()
@@ -1107,17 +1103,21 @@ class ObjectMapperConfigurationTest {
                               .containsEntry(
                                   "new_col_2",
                                   new MapColumnDesc(
-                                      PrimitiveColumnDesc.TEXT, PrimitiveColumnDesc.TEXT));
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
+                                      PrimitiveColumnDesc.TEXT,
+                                      PrimitiveColumnDesc.TEXT));
                           assertThat(columns)
                               .containsEntry(
                                   "content",
                                   new VectorColumnDesc(
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
                                       1024,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                           assertThat(columns)
                               .containsEntry(
                                   "vector_1",
                                   new VectorColumnDesc(
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
                                       null,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });

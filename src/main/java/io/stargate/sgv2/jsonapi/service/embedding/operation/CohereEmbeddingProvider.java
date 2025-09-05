@@ -1,24 +1,25 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -31,136 +32,157 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * of chosen Cohere model.
  */
 public class CohereEmbeddingProvider extends EmbeddingProvider {
-  private static final String providerId = ProviderConstants.COHERE;
-  private final CohereEmbeddingProviderClient cohereEmbeddingProviderClient;
+
+  private final CohereEmbeddingProviderClient cohereClient;
 
   public CohereEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
-      String baseUrl,
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters,
-      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
-    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
+      Map<String, Object> vectorizeServiceParameters) {
+    super(
+        ModelProvider.COHERE,
+        providerConfig,
+        modelConfig,
+        serviceConfig,
+        dimension,
+        vectorizeServiceParameters);
 
-    cohereEmbeddingProviderClient =
+    cohereClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .baseUri(URI.create(serviceConfig.getBaseUrl(modelName())))
+            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(CohereEmbeddingProviderClient.class);
   }
 
-  @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface CohereEmbeddingProviderClient {
-    @POST
-    @Path("/embed")
-    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
-    Uni<EmbeddingResponse> embed(
-        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
-
-    @ClientExceptionMapper
-    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      String errorMessage = getErrorMessage(response);
-      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
-    }
-
-    /**
-     * Extract the error message from the response body. The example response body is:
-     *
-     * <pre>
-     * {
-     *   "message": "invalid api token"
-     * }
-     *
-     * 429 response body:
-     * {
-     *   "data": "string"
-     * }
-     * </pre>
-     *
-     * @param response The response body as a String.
-     * @return The error message extracted from the response body.
-     */
-    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      // Get the whole response body
-      JsonNode rootNode = response.readEntity(JsonNode.class);
-      // Log the response body
-      logger.error(
-          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
-      // Check if the root node contains a "message" field
-      JsonNode messageNode = rootNode.path("message");
-      if (!messageNode.isMissingNode()) {
-        return messageNode.toString();
-      }
-      // Check if the root node contains a "data" field
-      JsonNode dataNode = rootNode.path("data");
-      if (!dataNode.isMissingNode()) {
-        return dataNode.toString();
-      }
-      // Return the whole response body if no message or data field is found
-      return rootNode.toString();
-    }
+  @Override
+  protected String errorMessageJsonPtr() {
+    // overriding the function that calls this
+    return "";
   }
 
-  private record EmbeddingRequest(String[] texts, String model, String input_type) {}
+  /**
+   * The example response body is:
+   *
+   * <pre>
+   * {
+   *   "message": "invalid api token"
+   * }
+   *
+   * 429 response body:
+   * {
+   *   "data": "string"
+   * }
+   */
+  @Override
+  protected String responseErrorMessage(JsonNode rootNode) {
 
-  // @JsonIgnoreProperties({"id", "texts", "meta", "response_type"})
-  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
-  private static class EmbeddingResponse {
-
-    protected EmbeddingResponse() {}
-
-    private List<float[]> embeddings;
-
-    public List<float[]> getEmbeddings() {
-      return embeddings;
+    JsonNode messageNode = rootNode.path("message");
+    if (!messageNode.isMissingNode()) {
+      return messageNode.toString();
     }
 
-    public void setEmbeddings(List<float[]> embeddings) {
-      this.embeddings = embeddings;
+    JsonNode dataNode = rootNode.path("data");
+    if (!dataNode.isMissingNode()) {
+      return dataNode.toString();
     }
+
+    // Return the whole response body if no message or data field is found
+    return rootNode.toString();
   }
-
-  // Input type to be used for vector search should "search_query"
-  private static final String SEARCH_QUERY = "search_query";
-  private static final String SEARCH_DOCUMENT = "search_document";
 
   @Override
-  public Uni<Response> vectorize(
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    // Check if using an EOF model
+
     checkEOLModelUsage();
-    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
+    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
-    String[] textArray = new String[texts.size()];
-    String input_type =
-        embeddingRequestType == EmbeddingRequestType.INDEX ? SEARCH_DOCUMENT : SEARCH_QUERY;
-    EmbeddingRequest request =
-        new EmbeddingRequest(texts.toArray(textArray), model.name(), input_type);
+    // Input type to be used for vector search should "search_query"
+    var input_type =
+        embeddingRequestType == EmbeddingRequestType.INDEX ? "search_document" : "search_query";
+    var cohereRequest =
+        new CohereEmbeddingRequest(
+            texts.toArray(new String[texts.size()]), modelName(), input_type);
 
-    Uni<EmbeddingResponse> response =
-        applyRetry(
-            cohereEmbeddingProviderClient.embed(
-                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
-                request));
+    // TODO: V2 error
+    // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
+    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
 
-    return response
+    long callStartNano = System.nanoTime();
+
+    return retryHTTPCall(cohereClient.embed(accessToken, cohereRequest))
         .onItem()
         .transform(
-            resp -> {
-              if (resp.getEmbeddings() == null) {
-                return Response.of(batchId, Collections.emptyList());
+            jakartaResponse -> {
+              var cohereResponse = decodeResponse(jakartaResponse, CohereEmbeddingResponse.class);
+              long callDurationNano = System.nanoTime() - callStartNano;
+
+              // aaron - 10 June 2025 - previous code would silently swallow no data returned
+              // and return an empty result. If we made a request we should get a response.
+              if (cohereResponse.embeddings() == null) {
+                throwEmptyData(jakartaResponse);
               }
-              return Response.of(batchId, resp.getEmbeddings());
+
+              var modelUsage =
+                  createModelUsage(
+                      embeddingCredentials.tenantId(),
+                      ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+                      cohereResponse.meta().billed_units().input_tokens(),
+                      cohereResponse.meta().billed_units().input_tokens(),
+                      jakartaResponse,
+                      callDurationNano);
+              return new BatchedEmbeddingResponse(
+                  batchId, cohereResponse.embeddings().values(), modelUsage);
             });
   }
 
-  @Override
-  public int maxBatchSize() {
-    return requestProperties.maxBatchSize();
+  /**
+   * REST client interface for the Cohere Embedding Service.
+   *
+   * <p>..
+   */
+  @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(ProviderHttpInterceptor.class)
+  public interface CohereEmbeddingProviderClient {
+    @POST
+    @Path("/embed")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
+    Uni<Response> embed(
+        @HeaderParam("Authorization") String accessToken, CohereEmbeddingRequest request);
+  }
+
+  /**
+   * Request structure of the Cohere REST service.
+   *
+   * <p>..
+   */
+  public record CohereEmbeddingRequest(String[] texts, String model, String input_type) {}
+
+  /**
+   * Response structure of the Cohere REST service.
+   *
+   * <p>aaron - 9 June 2025, change from class to record, check git if this breaks.
+   * https://docs.cohere.com/reference/embed#response
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record CohereEmbeddingResponse(
+      String id, List<String> texts, Embeddings embeddings, Meta meta) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Embeddings(@JsonProperty("float") List<float[]> values) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Meta(ApiVersion api_version, BilledUnits billed_units, List<String> warnings) {
+      @JsonIgnoreProperties(ignoreUnknown = true)
+      public record ApiVersion(String version, boolean is_experimental) {}
+
+      @JsonIgnoreProperties(ignoreUnknown = true)
+      public record BilledUnits(int input_tokens) {}
+    }
   }
 }
