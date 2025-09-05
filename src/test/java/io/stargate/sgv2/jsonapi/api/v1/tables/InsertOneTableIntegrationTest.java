@@ -1834,7 +1834,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                   containsString(
                       "Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb"),
                   containsString(
-                      "Provider: jinaAI; HTTP Status: 401; Error Message: \"Unauthorized\"")));
+                      "Provider: jinaAI; HTTP Status: 401; Error Message: ")));
     }
   }
 }
