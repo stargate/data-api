@@ -14,7 +14,8 @@
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <!-- 27-Mar-2025, tatu: Updated to later but not Latest available Quarkus -->
     <!-- 29-Jul-2025, cedrick: Updated to latest Quarkus -->
-    <quarkus.platform.version>3.24.5</quarkus.platform.version>
+    <!-- 10-Sep-2025, tatu: Updated to latest Quarkus -->
+    <quarkus.platform.version>3.25.4</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <mockito.version>5.12.0</mockito.version>
@@ -41,7 +42,7 @@
     <!-- Cassandra driver -->
     <driver.version>4.17.0</driver.version>
     <!-- Compiler -->
-    <compiler-plugin.version>3.11.0</compiler-plugin.version>
+    <compiler-plugin.version>3.14.0</compiler-plugin.version>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.release>21</maven.compiler.release>
@@ -51,7 +52,7 @@
     <!-- Testing -->
     <skipTests>false</skipTests>
     <skipUnitTests>${skipTests}</skipUnitTests>
-    <surefire-plugin.version>3.5.2</surefire-plugin.version>
+    <surefire-plugin.version>3.5.3</surefire-plugin.version>
     <skipITs>false</skipITs>
   </properties>
   <dependencyManagement>
