@@ -1,5 +1,32 @@
 # Changelog
 
+## [v1.0.31](https://github.com/stargate/data-api/tree/v1.0.31) (2025-09-18)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.30...v1.0.31)
+
+**Merged pull requests:**
+
+- Grant contents: write access to GH action to create a release [\#2197](https://github.com/stargate/data-api/pull/2197) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
+## [v1.0.30](https://github.com/stargate/data-api/tree/v1.0.30) (2025-09-10)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.29...v1.0.30)
+
+**Merged pull requests:**
+
+- Fix \#2191: update Quarkus to 3.25.4 [\#2192](https://github.com/stargate/data-api/pull/2192) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Re-create PR \#2188 \(which fails for lack of access\) [\#2189](https://github.com/stargate/data-api/pull/2189) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2016: Fix flaky integration test [\#2186](https://github.com/stargate/data-api/pull/2186) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Re-create PR \#2179 [\#2183](https://github.com/stargate/data-api/pull/2183) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2171: update to DSE 6.9.13 [\#2181](https://github.com/stargate/data-api/pull/2181) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- ECR login changed to federated  [\#2180](https://github.com/stargate/data-api/pull/2180) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#2175: add error checking for Lexical Table Filter handling [\#2178](https://github.com/stargate/data-api/pull/2178) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix HCD image reference \(staging-\>prod\), simplify script to reduce duplication [\#2174](https://github.com/stargate/data-api/pull/2174) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bump actions/checkout from 4 to 5 in the github-actions group [\#2173](https://github.com/stargate/data-api/pull/2173) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Bumping version for next data-api release [\#2170](https://github.com/stargate/data-api/pull/2170) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Feature/udt [\#2156](https://github.com/stargate/data-api/pull/2156) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#2053: add Lexical Filter support for Tables [\#2154](https://github.com/stargate/data-api/pull/2154) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix the proto format problem from the Postman import [\#2114](https://github.com/stargate/data-api/pull/2114) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 
 ## [v1.0.29](https://github.com/stargate/data-api/tree/v1.0.29) (2025-07-30)
 

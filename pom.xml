@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.30-SNAPSHOT</version>
+  <version>1.0.31-SNAPSHOT</version>
   <properties>
     <stargate.version>2.1.0-BETA-25</stargate.version>
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
