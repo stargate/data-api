@@ -131,13 +131,15 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
     var taskMulti = Multi.createFrom().iterable(taskGroup).onItem();
 
     if (taskGroup.getSequentialProcessing()) {
-      // We want to process the tasks sequentially, and stop processing the tasks if one fails
-      // This should not cause the multi to emit a failure, we track the failures in the tasks
-      // (transformToUniAndConcatenate is for sequential processing)
+      // Tasks are processed sequentially. If one task fails, subsequent tasks should fail fast
+      // without stopping the entire multi. Failures are recorded within the task objects
+      // themselves,
+      // rather than being emitted as failures by the multi stream.
+      // (transformToUniAndConcatenate ensures sequential execution)
 
       return taskMulti.transformToUniAndConcatenate(
           task -> {
-            var failFast = taskGroup.shouldFailFast();
+            var failFast = taskGroup.shouldFailFast(task);
             LOGGER.debug(
                 "startMulti() - dequeuing task for sequential processing, failFast={}, task={}",
                 failFast,
