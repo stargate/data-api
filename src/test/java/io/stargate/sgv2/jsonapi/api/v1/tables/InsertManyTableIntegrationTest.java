@@ -60,21 +60,14 @@ public class InsertManyTableIntegrationTest extends AbstractTableIntegrationTest
               addDoubleQuote("name" + i)));
     }
     if (ordered) {
-      var json =
-              """
-          {
-            "insertMany": {
-              "documents": [%s],
-              "options": { "ordered": true }
-            }
-          }
-          """
-              .formatted(String.join(",", documents));
-      assertTableCommand(keyspaceName, TABLE_1PK_1REGULAR).postInsertMany(json).wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_1PK_1REGULAR)
+          .templated()
+          .insertMany(documents, true)
+          .wasSuccessful();
     } else {
       assertTableCommand(keyspaceName, TABLE_1PK_1REGULAR)
           .templated()
-          .insertMany(documents)
+          .insertMany(documents, false)
           .wasSuccessful();
     }
     // verify 10 rows are inserted
@@ -117,18 +110,9 @@ public class InsertManyTableIntegrationTest extends AbstractTableIntegrationTest
     if (ordered) {
       // if ordered, any row before the faulty row should succeed, so just id1 is inserted
       // we should get two errors back for id2 and id4
-      var json =
-              """
-          {
-            "insertMany": {
-              "documents": [%s],
-              "options": { "ordered": true }
-            }
-          }
-          """
-              .formatted(String.join(",", documents));
       assertTableCommand(keyspaceName, TABLE_1PK_1REGULAR)
-          .postInsertMany(json)
+          .templated()
+          .insertMany(documents, true)
           .hasInsertedIdCount(1)
           .body("errors", org.hamcrest.Matchers.hasSize(2))
           .body(
@@ -149,7 +133,7 @@ public class InsertManyTableIntegrationTest extends AbstractTableIntegrationTest
       // we also should get two errors back for id2 and id4
       assertTableCommand(keyspaceName, TABLE_1PK_1REGULAR)
           .templated()
-          .insertMany(documents)
+          .insertMany(documents, false)
           .hasInsertedIdCount(3)
           .body("errors", org.hamcrest.Matchers.hasSize(2))
           .body(
