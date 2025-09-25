@@ -81,17 +81,50 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
   }
 
   /**
-   * Checks if, given the config of the container and the current state of the tasks, the container
-   * should fail fast and stop processing any further tasks.
+   * Determines whether the given {@code targetTask} should fail fast based on the container's
+   * configuration and the current state of all tasks in this container.
    *
-   * @return <code>true</code> if the container is configured for sequential processing and there is
-   *     at least one error
+   * <p>If sequential processing is disabled, this method always returns {@code false} — all tasks
+   * are allowed to run regardless of prior failures.
+   *
+   * <p>If sequential processing is enabled:
+   *
+   * <ul>
+   *   <li>If the {@code targetTask} itself is in error state, it should fail fast.
+   *   <li>If any task that comes <em>before</em> the {@code targetTask} is in error state, the
+   *       {@code targetTask} should also fail fast.
+   *   <li>Otherwise, the {@code targetTask} may proceed.
+   * </ul>
+   *
+   * <p><b>Example:</b>
+   *
+   * <pre>
+   * Suppose there are 5 tasks in order: a, b, c, d, e
+   * Task c is in ERROR status.
+   *
+   * shouldFailFast(a) → false   (no errors before 'a', and 'a' is not in error)
+   * shouldFailFast(b) → false   (no errors before 'b', and 'b' is not in error)
+   * shouldFailFast(c) → true    ('c' itself is in error)
+   * shouldFailFast(d) → true    ('c' failed earlier, so 'd' must fail fast)
+   * shouldFailFast(e) → true    ('c' failed earlier, so 'e' must fail fast)
+   * </pre>
+   *
+   * @param targetTask the task to evaluate
+   * @return {@code true} if the container is configured for sequential processing and the {@code
+   *     targetTask} (or any earlier task) is in error state; {@code false} otherwise
    */
-  public boolean shouldFailFast() {
+  public boolean shouldFailFast(TaskT targetTask) {
     if (!sequentialProcessing) {
       return false;
     }
-    return stream().anyMatch(task -> task.status() == BaseTask.TaskStatus.ERROR);
+    // In sequential processing, if the target task is already in error state, we should fail fast
+    if (targetTask.status() == BaseTask.TaskStatus.ERROR) {
+      return true;
+    }
+    // In sequential processing, if any prior task is in error state, we should fail fast
+    return stream()
+        .takeWhile(task -> task != targetTask)
+        .anyMatch(task -> task.status() == BaseTask.TaskStatus.ERROR);
   }
 
   @Override

@@ -191,21 +191,23 @@ public class TableTemplates extends TemplateRunner {
   }
 
   public DataApiResponseValidator insertManyMap(List<Map<String, Object>> documents) {
-    return insertMany(documents.stream().map(TemplateRunner::asJSON).collect(Collectors.toList()));
+    return insertMany(
+        documents.stream().map(TemplateRunner::asJSON).collect(Collectors.toList()), false);
   }
 
   public DataApiResponseValidator insertMany(String... documents) {
-    return insertMany(List.of(documents));
+    return insertMany(List.of(documents), false);
   }
 
-  public DataApiResponseValidator insertMany(List<String> documents) {
+  public DataApiResponseValidator insertMany(List<String> documents, boolean ordered) {
     var json =
             """
          {
-          "documents": [%s]
+          "documents": [%s],
+          "options": { "ordered": %s }
          }
         """
-            .formatted(String.join(",", documents));
+            .formatted(String.join(",", documents), ordered);
     return sender.postInsertMany(json);
   }
 
