@@ -67,8 +67,7 @@ class YamlMergerTest {
   }
 
   // Embedding providers config path
-  private static final String CONFIG_PATH =
-      "/Users/hazel.he/Desktop/jsonapi/src/main/resources/embedding-providers-config.yaml";
+  private static final String CONFIG_PATH = "src/main/resources/embedding-providers-config.yaml";
 
   @Test
   void patch_enable_disable_openai_provider() throws Exception {
