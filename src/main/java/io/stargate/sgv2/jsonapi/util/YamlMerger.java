@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
@@ -22,8 +21,6 @@ import java.util.Map;
  *   <li>Arrays: replaced entirely when present in patch
  *   <li>Scalars (string/number/boolean/null): replaced by patch value
  * </ul>
- *
- * This class is independent and can be used without other framework pieces.
  */
 public final class YamlMerger {
 
@@ -31,8 +28,6 @@ public final class YamlMerger {
 
   public YamlMerger() {
     this.yamlMapper = new ObjectMapper(new YAMLFactory());
-    // Register commonly used modules; harmless if not needed
-    this.yamlMapper.registerModule(new Jdk8Module());
   }
 
   /** Merge two YAML strings and return the merged YAML string. */
@@ -90,7 +85,7 @@ public final class YamlMerger {
 
     // If both are objects, merge field-by-field
     if (base.isObject() && patch.isObject()) {
-      ObjectNode result = ((ObjectNode) base.deepCopy());
+      ObjectNode result = base.deepCopy();
       Iterator<Map.Entry<String, JsonNode>> fields = patch.fields();
       while (fields.hasNext()) {
         Map.Entry<String, JsonNode> entry = fields.next();
