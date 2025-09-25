@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
@@ -84,6 +86,27 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body("status.ok", is(1));
     }
 
+    // [data-api#1186]: handling of non-existing keyspace
+    @Test
+    public void nonExistingKeyspace() {
+      givenHeadersAndJson(
+              """
+              {
+                "deleteCollection": {
+                  "name": "some-collection"
+                }
+              }
+          """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, "no_such_keyspace")
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
+          .body("errors[0].message", containsString("no_such_keyspace"));
+    }
+
     @Test
     public void invalidCommand() {
       givenHeadersAndJson(
@@ -98,8 +121,8 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("$", responseIsError())
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               is(
