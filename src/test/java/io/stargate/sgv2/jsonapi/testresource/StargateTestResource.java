@@ -196,8 +196,9 @@ public abstract class StargateTestResource
             + " -Dcassandra.sai.validate_max_term_size_at_coordinator=true"
             // 25-Sep-2025, tatu: 1.2.3 does proper checks, need to enable right format:
             + " -Dcassandra.sai.latest.version=ec"
-            // this MAY be needed too wrt ^^^
-            + " -Dcassandra.sai.jvector_version=4";
+        // this MAY be needed too wrt ^^^
+        // + " -Dcassandra.sai.jvector_version=4"
+        ;
     container
         .withEnv("HEAP_NEWSIZE", "512M")
         .withEnv("MAX_HEAP_SIZE", "2048M")
