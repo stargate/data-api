@@ -33,16 +33,35 @@ class YamlMergerTest {
   @Test
   void example_scalar_and_object_merge_semantics() throws Exception {
     String base =
-        "server:\n  host: localhost\n  port: 8080\n  ssl:\n    enabled: false\n    protocols: [TLSv1.2]\n";
-    String patch = "server:\n  port: 9090\n  ssl:\n    enabled: true\n";
+        """
+            server:
+              host: localhost
+              port: 8080
+              ssl:
+                enabled: false
+                protocols: [TLSv1.2]
+            """;
+    String patch =
+        """
+            server:
+              port: 9090
+              ssl:
+                enabled: true
+            """;
+    String output =
+        """
+            server:
+              host: localhost
+              port: 9090
+              ssl:
+                enabled: true
+                protocols: [TLSv1.2]
+            """;
 
-    String out = merger.mergeYamlStrings(base, patch);
-    JsonNode node = yamlMapper.readTree(out);
-
-    assertThat(node.at("/server/host").asText()).isEqualTo("localhost");
-    assertThat(node.at("/server/port").asInt()).isEqualTo(9090);
-    assertThat(node.at("/server/ssl/enabled").asBoolean()).isTrue();
-    assertThat(node.at("/server/ssl/protocols/0").asText()).isEqualTo("TLSv1.2");
+    String mergedOutput = merger.mergeYamlStrings(base, patch);
+    JsonNode expectedNode = yamlMapper.readTree(output);
+    JsonNode actualNode = yamlMapper.readTree(mergedOutput);
+    assertThat(actualNode).isEqualTo(expectedNode);
   }
 
   // Embedding providers config path
@@ -54,7 +73,14 @@ class YamlMergerTest {
     String base = loadResource(CONFIG_PATH);
 
     String patchDisable =
-        "stargate:\n  jsonapi:\n    embedding:\n      providers:\n        openai:\n          enabled: false\n";
+        """
+            stargate:
+              jsonapi:
+                embedding:
+                  providers:
+                    openai:
+                      enabled: false
+            """;
 
     String outDisabled = merger.mergeYamlStrings(base, patchDisable);
     JsonNode disabled = yamlMapper.readTree(outDisabled);
@@ -62,7 +88,14 @@ class YamlMergerTest {
         .isFalse();
 
     String patchEnable =
-        "stargate:\n  jsonapi:\n    embedding:\n      providers:\n        openai:\n          enabled: true\n";
+        """
+            stargate:
+              jsonapi:
+                embedding:
+                  providers:
+                    openai:
+                      enabled: true
+            """;
 
     String outEnabled = merger.mergeYamlStrings(base, patchEnable);
     JsonNode enabled = yamlMapper.readTree(outEnabled);
@@ -71,35 +104,37 @@ class YamlMergerTest {
   }
 
   @Test
-  void patch_change_nvidia_url_and_enable() throws Exception {
-    String base = loadResource(CONFIG_PATH);
-    String patch =
-        "stargate:\n  jsonapi:\n    embedding:\n      providers:\n        nvidia:\n          enabled: true\n          url: https://new.nvidia.example/embeddings\n";
-
-    String out = merger.mergeYamlStrings(base, patch);
-    JsonNode node = yamlMapper.readTree(out);
-    assertThat(node.at("/stargate/jsonapi/embedding/providers/nvidia/enabled").asBoolean())
-        .isTrue();
-    assertThat(node.at("/stargate/jsonapi/embedding/providers/nvidia/url").asText())
-        .isEqualTo("https://new.nvidia.example/embeddings");
-  }
-
-  @Test
   void patch_enable_nvidia_set_url_and_replace_models() throws Exception {
     String base = loadResource(CONFIG_PATH);
     String patch =
-        "stargate:\n  jsonapi:\n    embedding:\n      providers:\n        nvidia:\n          enabled: true\n          url: https://new.nvidia.example/embeddings\n          models:\n            - name: nv-new-model-a\n              vector-dimension: 2048\n            - name: nv-new-model-b\n              vector-dimension: 512\n";
+        """
+            stargate:
+              jsonapi:
+                embedding:
+                  providers:
+                    nvidia:
+                      enabled: true
+                      url: https://new.nvidia.example/embeddings
+                      models:
+                        - name: nv-new-model-a
+                          vector-dimension: 2048
+                        - name: nv-new-model-b
+                          vector-dimension: 512
+            """;
 
     String out = merger.mergeYamlStrings(base, patch);
     JsonNode node = yamlMapper.readTree(out);
 
+    // Verify the enabled and url
     assertThat(node.at("/stargate/jsonapi/embedding/providers/nvidia/enabled").asBoolean())
         .isTrue();
     assertThat(node.at("/stargate/jsonapi/embedding/providers/nvidia/url").asText())
         .isEqualTo("https://new.nvidia.example/embeddings");
 
-    // Array replacement semantics
+    // Verify the model list is replaced entirely
     assertThat(node.at("/stargate/jsonapi/embedding/providers/nvidia/models").isArray()).isTrue();
+    assertThat(node.at("/stargate/jsonapi/embedding/providers/nvidia/models").size())
+        .isEqualTo(2);
     assertThat(node.at("/stargate/jsonapi/embedding/providers/nvidia/models/0/name").asText())
         .isEqualTo("nv-new-model-a");
     assertThat(
@@ -118,17 +153,42 @@ class YamlMergerTest {
   void patch_enable_openai_set_url_and_replace_models() throws Exception {
     String base = loadResource(CONFIG_PATH);
     String patch =
-        "stargate:\n  jsonapi:\n    embedding:\n      providers:\n        openai:\n          enabled: true\n          url: https://api.openai.com/v2/\n          models:\n            - name: new-embed-small\n              parameters:\n                - name: vectorDimension\n                  type: number\n                  required: true\n                  default-value: 256\n            - name: new-embed-large\n              parameters:\n                - name: vectorDimension\n                  type: number\n                  required: true\n                  default-value: 4096\n";
+        """
+            stargate:
+              jsonapi:
+                embedding:
+                  providers:
+                    openai:
+                      enabled: true
+                      url: https://api.openai.com/v2/
+                      models:
+                        - name: new-embed-small
+                          parameters:
+                            - name: vectorDimension
+                              type: number
+                              required: true
+                              default-value: 256
+                        - name: new-embed-large
+                          parameters:
+                            - name: vectorDimension
+                              type: number
+                              required: true
+                              default-value: 4096
+            """;
 
     String out = merger.mergeYamlStrings(base, patch);
     JsonNode node = yamlMapper.readTree(out);
 
+    // Verify the enabled and url
     assertThat(node.at("/stargate/jsonapi/embedding/providers/openai/enabled").asBoolean())
         .isTrue();
     assertThat(node.at("/stargate/jsonapi/embedding/providers/openai/url").asText())
         .isEqualTo("https://api.openai.com/v2/");
 
+    // Verify the model list is replaced entirely
     assertThat(node.at("/stargate/jsonapi/embedding/providers/openai/models").isArray()).isTrue();
+    assertThat(node.at("/stargate/jsonapi/embedding/providers/openai/models").size())
+        .isEqualTo(2);
     assertThat(node.at("/stargate/jsonapi/embedding/providers/openai/models/0/name").asText())
         .isEqualTo("new-embed-small");
     assertThat(
