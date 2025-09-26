@@ -168,6 +168,16 @@ public abstract class StargateTestResource
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
     GenericContainer<?> container;
+
+    // Some JVM options are same for all backends, start with those:
+    String JVM_EXTRA_OPTS =
+        "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8"
+            // 18-Mar-2025, tatu: to work around [https://github.com/riptano/cndb/issues/13330],
+            // need to temporarily add this for HCD:
+            + " -Dcassandra.cluster_version_provider.min_stable_duration_ms=-1"
+            // 02-May-2025, tatu: [data-api#2063] force checking of max analyzed text length
+            + " -Dcassandra.sai.validate_max_term_size_at_coordinator=true";
+
     if (this.isDse()) {
       container =
           new GenericContainer<>(image)
@@ -180,6 +190,13 @@ public abstract class StargateTestResource
               .withCopyFileToContainer(
                   MountableFile.forClasspathResource("cassandra-hcd.yaml"),
                   "/opt/hcd/resources/cassandra/conf/cassandra.yaml");
+      // 25-Sep-2025, tatu: HCD 1.2.3 does proper format version checks, need to enable
+      // recent enough format:
+      JVM_EXTRA_OPTS += " -Dcassandra.sai.latest.version=ec"
+      // this MAY be needed too wrt ^^^
+      // + " -Dcassandra.sai.jvector_version=4"
+      ;
+
     } else {
       container =
           new GenericContainer<>(image)
@@ -187,18 +204,7 @@ public abstract class StargateTestResource
                   MountableFile.forClasspathResource("cassandra.yaml"),
                   "/etc/cassandra/cassandra.yaml");
     }
-    final String JVM_EXTRA_OPTS =
-        "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8"
-            // 18-Mar-2025, tatu: to work around [https://github.com/riptano/cndb/issues/13330],
-            // need to temporarily add this for HCD:
-            + " -Dcassandra.cluster_version_provider.min_stable_duration_ms=-1"
-            // 02-May-2025, tatu: [data-api#2063] force checking of max analyzed text length
-            + " -Dcassandra.sai.validate_max_term_size_at_coordinator=true"
-            // 25-Sep-2025, tatu: 1.2.3 does proper checks, need to enable right format:
-            + " -Dcassandra.sai.latest.version=ec"
-        // this MAY be needed too wrt ^^^
-        // + " -Dcassandra.sai.jvector_version=4"
-        ;
+
     container
         .withEnv("HEAP_NEWSIZE", "512M")
         .withEnv("MAX_HEAP_SIZE", "2048M")
