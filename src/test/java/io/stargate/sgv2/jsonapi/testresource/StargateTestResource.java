@@ -178,13 +178,10 @@ public abstract class StargateTestResource
             // 02-May-2025, tatu: [data-api#2063] force checking of max analyzed text length
             + " -Dcassandra.sai.validate_max_term_size_at_coordinator=true";
 
-    if (this.isDse()) {
-      container =
-          new GenericContainer<>(image)
-              .withCopyFileToContainer(
-                  MountableFile.forClasspathResource("dse.yaml"),
-                  "/opt/dse/resources/dse/conf/dse.yaml");
-    } else if (this.isHcd()) {
+    // Important: Start by checking if we are running HCD: default for local testing.
+    // (for some reason looks like both "isHcd()" and "isDse()" may return true under
+    // some conditions...)
+    if (this.isHcd()) {
       container =
           new GenericContainer<>(image)
               .withCopyFileToContainer(
@@ -196,7 +193,12 @@ public abstract class StargateTestResource
       // this MAY be needed too wrt ^^^
       // + " -Dcassandra.sai.jvector_version=4"
       ;
-
+    } else if (this.isDse()) {
+      container =
+          new GenericContainer<>(image)
+              .withCopyFileToContainer(
+                  MountableFile.forClasspathResource("dse.yaml"),
+                  "/opt/dse/resources/dse/conf/dse.yaml");
     } else {
       container =
           new GenericContainer<>(image)
@@ -293,8 +295,8 @@ public abstract class StargateTestResource
   }
 
   public static boolean isHcd() {
-    String dse = System.getProperty("testing.containers.cluster-hcd", null);
-    return "true".equals(dse);
+    String hcd = System.getProperty("testing.containers.cluster-hcd", null);
+    return "true".equals(hcd);
   }
 
   public static boolean isRunningUnderMaven() {
