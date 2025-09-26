@@ -4,6 +4,7 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.31...v1.0.32)
 
+
 **Merged pull requests:**
 
 - Update Data API version in pom file [\#2199](https://github.com/stargate/data-api/pull/2199) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
