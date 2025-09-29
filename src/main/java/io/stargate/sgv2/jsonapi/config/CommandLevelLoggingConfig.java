@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Extra, JSON API command level logging related configurations. */
-@ConfigMapping(prefix = "stargate.jsonapi.logging")
+@ConfigMapping(prefix = "data-api.logging")
 public interface CommandLevelLoggingConfig {
 
   /**

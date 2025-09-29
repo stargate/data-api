@@ -84,7 +84,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
     @Override
     public Map<String, String> getConfigOverrides() {
       return ImmutableMap.<String, String>builder()
-          .put("stargate.queries.serial-consistency", "LOCAL_SERIAL")
+          .put("data-api.queries.serial-consistency", "LOCAL_SERIAL")
           .build();
     }
   }

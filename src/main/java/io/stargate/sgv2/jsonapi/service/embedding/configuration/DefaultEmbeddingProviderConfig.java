@@ -8,7 +8,7 @@ import java.util.Map;
  * Do NOT inject this interface, use EmbeddingProvidersConfig instead EmbeddingProvidersConfig bean
  * produced by EmbeddingProvidersConfigProducer based on EGW enabled or not
  */
-@ConfigMapping(prefix = "stargate.jsonapi.embedding")
+@ConfigMapping(prefix = "data-api.embedding")
 public interface DefaultEmbeddingProviderConfig {
 
   // TODO: WHAT DOES THIS ACTUALLY RETURN ?

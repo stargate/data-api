@@ -18,9 +18,9 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
   // NOTE: These are the host and path to use with this lifecycle manager.
   // previously the start() methods returned below to override quarkus config properties,
   //      return Map.of(
-  //          "stargate.jsonapi.embedding.providers.nvidia.url",
+  //          "data-api.embedding.providers.nvidia.url",
   //          wireMockServer.baseUrl() + "/v1/embeddings",
-  //          "stargate.jsonapi.embedding.providers.openai.url",
+  //          "data-api.embedding.providers.openai.url",
   //          wireMockServer.baseUrl() + "/v1/");
 
   public static final String HOST = "http://localhost:8080";

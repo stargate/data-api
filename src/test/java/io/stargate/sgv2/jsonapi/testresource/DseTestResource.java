@@ -131,68 +131,67 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put("RERANKING_CONFIG_RESOURCE", "test-reranking-providers-config.yaml");
     propsBuilder.put("EMBEDDING_CONFIG_RESOURCE", "test-embedding-providers-config.yaml");
 
-    propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
+    propsBuilder.put("data-api.custom.embedding.enabled", "true");
 
     // 17-Mar-2025, tatu: [data-api#1903] Lexical search/sort feature flag
     String lexicalFeatureSetting = getFeatureFlagLexical();
     if (lexicalFeatureSetting != null) {
-      propsBuilder.put("stargate.feature.flags.lexical", lexicalFeatureSetting);
+      propsBuilder.put("data-api.feature.flags.lexical", lexicalFeatureSetting);
     }
 
     // 04-Sep-2024, tatu: [data-api#1335] Enable Tables using new Feature Flag:
     String tableFeatureSetting = getFeatureFlagTables();
     if (tableFeatureSetting != null) {
-      propsBuilder.put("stargate.feature.flags.tables", tableFeatureSetting);
+      propsBuilder.put("data-api.feature.flags.tables", tableFeatureSetting);
     }
 
     // 31-Mar-2025, yuqi: [data-api#1904] Reranking feature flag:
     String featureFlagReranking = getFeatureFlagReranking();
     if (featureFlagReranking != null) {
-      propsBuilder.put("stargate.feature.flags.reranking", featureFlagReranking);
+      propsBuilder.put("data-api.feature.flags.reranking", featureFlagReranking);
     }
 
     propsBuilder.put(
-        "stargate.jsonapi.custom.embedding.clazz",
+        "data-api.custom.embedding.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider");
     propsBuilder.put(
-        "stargate.jsonapi.embedding.providers.huggingface.supported-authentications.HEADER.enabled",
+        "data-api.embedding.providers.huggingface.supported-authentications.HEADER.enabled",
         "false");
     propsBuilder.put(
-        "stargate.jsonapi.embedding.providers.openai.supported-authentications.SHARED_SECRET.enabled",
+        "data-api.embedding.providers.openai.supported-authentications.SHARED_SECRET.enabled",
         "true");
-    propsBuilder.put("stargate.jsonapi.embedding.providers.vertexai.enabled", "true");
+    propsBuilder.put("data-api.embedding.providers.vertexai.enabled", "true");
     propsBuilder.put(
-        "stargate.jsonapi.embedding.providers.vertexai.models[0].parameters[0].required", "true");
+        "data-api.embedding.providers.vertexai.models[0].parameters[0].required", "true");
     if (this.containerNetworkId.isPresent()) {
       String host =
           useCoordinator()
               ? System.getProperty("quarkus.grpc.clients.bridge.host")
               : System.getProperty("stargate.int-test.cassandra.host");
-      propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
+      propsBuilder.put("data-api.operations.database-config.cassandra-end-points", host);
     } else {
       int port =
           useCoordinator()
               ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
               : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-      propsBuilder.put(
-          "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
+      propsBuilder.put("data-api.operations.database-config.cassandra-port", String.valueOf(port));
     }
     if (useCoordinator()) {
       String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
       if (defaultToken != null) {
-        propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
+        propsBuilder.put("data-api.operations.database-config.fixed-token", defaultToken);
       }
     }
     if (isDse() || isHcd()) {
-      propsBuilder.put("stargate.jsonapi.operations.database-config.local-datacenter", "dc1");
+      propsBuilder.put("data-api.operations.database-config.local-datacenter", "dc1");
     }
     propsBuilder.put("stargate.data-store.ignore-bridge", "true");
-    propsBuilder.put("stargate.debug.enabled", "true");
+    propsBuilder.put("data-api.debug.enabled", "true");
     // Reduce the delay for ITs
     if (Boolean.getBoolean("run-create-index-parallel")) {
-      propsBuilder.put("stargate.jsonapi.operations.database-config.ddl-delay-millis", "0");
+      propsBuilder.put("data-api.operations.database-config.ddl-delay-millis", "0");
     } else {
-      propsBuilder.put("stargate.jsonapi.operations.database-config.ddl-delay-millis", "50");
+      propsBuilder.put("data-api.operations.database-config.ddl-delay-millis", "50");
     }
     return propsBuilder.build();
   }
