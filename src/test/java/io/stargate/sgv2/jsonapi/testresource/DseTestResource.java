@@ -185,7 +185,7 @@ public class DseTestResource extends StargateTestResource {
     if (isDse() || isHcd()) {
       propsBuilder.put("data-api.operations.database-config.local-datacenter", "dc1");
     }
-    propsBuilder.put("stargate.data-store.ignore-bridge", "true");
+    propsBuilder.put("data-api.data-store.ignore-bridge", "true");
     propsBuilder.put("data-api.debug.enabled", "true");
     // Reduce the delay for ITs
     if (Boolean.getBoolean("run-create-index-parallel")) {
