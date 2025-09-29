@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -364,5 +365,52 @@ class YamlMergerTest {
       assertThat(n1.at("/a/c/d").asBoolean()).isTrue();
       assertThat(n1.at("/a/e").asText()).isEqualTo("test");
     }
+  }
+
+  @Test
+  void mergeYamlStrings_invalidYaml_throws() {
+    String invalidBase = ": not-yaml";
+    String validPatch = "a: 1";
+    assertThatThrownBy(() -> merger.mergeYamlStrings(invalidBase, validPatch))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Failed to merge YAML");
+  }
+
+  @Test
+  void mergeYamlStreams_invalidYaml_throws() {
+    byte[] invalid = ": not-yaml".getBytes(StandardCharsets.UTF_8);
+    byte[] valid = "a: 1".getBytes(StandardCharsets.UTF_8);
+    try (ByteArrayInputStream baseIn = new ByteArrayInputStream(invalid);
+        ByteArrayInputStream patchIn = new ByteArrayInputStream(valid)) {
+      assertThatThrownBy(() -> merger.mergeYamlStreams(baseIn, patchIn))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Failed to merge YAML streams");
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  void mergeNodes_baseObject_patchNull_returnsBaseDeepCopy() throws Exception {
+    JsonNode base = yamlMapper.readTree("a: 1\nb: 2\n");
+    JsonNode result = merger.mergeNodes(base, null);
+    assertThat(result).isNotSameAs(base);
+    assertThat(result.at("/a").asInt()).isEqualTo(1);
+    assertThat(result.at("/b").asInt()).isEqualTo(2);
+  }
+
+  @Test
+  void mergeNodes_baseNull_patchObject_returnsPatchDeepCopy() throws Exception {
+    JsonNode patch = yamlMapper.readTree("a: 3\nc: test\n");
+    JsonNode result = merger.mergeNodes(null, patch);
+    assertThat(result).isNotSameAs(patch);
+    assertThat(result.at("/a").asInt()).isEqualTo(3);
+    assertThat(result.at("/c").asText()).isEqualTo("test");
+  }
+
+  @Test
+  void mergeNodes_bothNull_returnsNull() {
+    JsonNode result = merger.mergeNodes(null, null);
+    assertThat(result).isNull();
   }
 }

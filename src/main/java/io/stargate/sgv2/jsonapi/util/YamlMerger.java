@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.POJONode;
 import com.fasterxml.jackson.databind.node.ValueNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
@@ -27,7 +25,7 @@ public final class YamlMerger {
   private final ObjectMapper yamlMapper;
 
   public YamlMerger() {
-    this.yamlMapper = new ObjectMapper(new YAMLFactory());
+    this.yamlMapper = new YAMLMapper();
   }
 
   /** Merge two YAML strings and return the merged YAML string. */
@@ -51,26 +49,6 @@ public final class YamlMerger {
       return yamlMapper.writeValueAsString(merged);
     } catch (IOException e) {
       throw new IllegalArgumentException("Failed to merge YAML streams", e);
-    }
-  }
-
-  /** Merge two YAML strings and return the merged node. */
-  public JsonNode mergeToNode(String baseYaml, String patchYaml) {
-    try {
-      JsonNode base = yamlMapper.readTree(baseYaml);
-      JsonNode patch = yamlMapper.readTree(patchYaml);
-      return mergeNodes(base, patch);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Failed to merge YAML", e);
-    }
-  }
-
-  /** Serialize a node back to a YAML string. */
-  public String toYaml(JsonNode node) {
-    try {
-      return yamlMapper.writeValueAsString(node);
-    } catch (JsonProcessingException e) {
-      throw new IllegalArgumentException("Failed to write YAML", e);
     }
   }
 
@@ -115,23 +93,11 @@ public final class YamlMerger {
     if (node == null) {
       return null;
     }
-    if (node.isPojo()) {
-      // Ensure POJOs remain intact, but wrapped safely
-      return new POJONode(((POJONode) node).getPojo());
-    }
     if (node.isObject() || node.isArray()) {
       return node.deepCopy();
     }
-    // ValueNode (scalar) - immutable, return as is; but make a trivial copy by re-parsing to avoid
-    // shared refs
     if (node instanceof ValueNode) {
-      try {
-        String yaml = yamlMapper.writeValueAsString(node);
-        return yamlMapper.readTree(yaml);
-      } catch (IOException e) {
-        // Fallback to returning the same instance; scalars are immutable
-        return node;
-      }
+      return node;
     }
     // Default path
     return node.deepCopy();
