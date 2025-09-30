@@ -4,7 +4,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import jakarta.validation.constraints.NotBlank;
 
-@ConfigMapping(prefix = "stargate.jsonapi.metric")
+@ConfigMapping(prefix = "data-api.metric")
 public interface JsonApiMetricsConfig {
   @NotBlank
   @WithDefault("error.class")
