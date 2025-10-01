@@ -128,7 +128,7 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
   protected Multi<TaskT> startMulti(CommandContext<SchemaT> commandContext) {
 
     // Common start pattern for all operations
-    var taskMulti = Multi.createFrom().iterable(taskGroup).onItem();
+    var taskMulti = Multi.createFrom().iterable(taskGroup.tasks()).onItem();
 
     if (taskGroup.getSequentialProcessing()) {
       // Tasks are processed sequentially. If one task fails, subsequent tasks should fail fast
@@ -140,12 +140,13 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
       return taskMulti.transformToUniAndConcatenate(
           task -> {
             var failFast = taskGroup.shouldFailFast(task);
-            LOGGER.debug(
-                "startMulti() - dequeuing task for sequential processing, failFast={}, task={}",
-                failFast,
-                task);
 
             if (failFast) {
+              LOGGER.debug(
+                  "startMulti() - dequeuing task for sequential processing, failFast={}, task={}",
+                  failFast,
+                  task);
+
               // Stop processing tasks, but we do not want to return a UniFailure, so we set the
               // tasks to skipped and do not call execute() on it.
               task.setSkippedIfReady();

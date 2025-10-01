@@ -137,4 +137,50 @@ public class TaskGroupTest {
     assertThat(group.shouldFailFast(tasks.get(3))).isFalse(); // d
     assertThat(group.shouldFailFast(tasks.get(4))).isFalse(); // e
   }
+
+  @Test
+  public void addTasksInNonPositionOrder() {
+    TaskGroup<BaseTaskTestTask, TableSchemaObject> seqGroup = new TaskGroup<>(true);
+    TaskGroup<BaseTaskTestTask, TableSchemaObject> parGroup = new TaskGroup<>(false);
+
+    seqGroup.add(okTask(3));
+    parGroup.add(okTask(3));
+    seqGroup.add(okTask(0));
+    parGroup.add(okTask(0));
+    seqGroup.add(okTask(4));
+    parGroup.add(okTask(4));
+    seqGroup.add(okTask(1));
+    parGroup.add(okTask(1));
+    seqGroup.add(okTask(2));
+    parGroup.add(okTask(2));
+
+    int numTasks = 5;
+    assertThat(seqGroup.tasks()).hasSize(numTasks);
+    assertThat(parGroup.tasks()).hasSize(numTasks);
+
+    for (int i = 0; i < numTasks; i++) {
+      assertThat(seqGroup.tasks().get(i).position())
+          .as("Task in sequential group at matches position:" + i)
+          .isEqualTo(i);
+      assertThat(parGroup.tasks().get(i).position())
+          .as("Task in parallel group at matches position:" + i)
+          .isEqualTo(i);
+    }
+
+    int pos = 0;
+    for (Task<?> t : seqGroup.tasks()) {
+      assertThat(t.position())
+          .as("Task in sequential group at matches position:" + pos)
+          .isEqualTo(pos);
+      pos++;
+    }
+
+    pos = 0;
+    for (Task<?> t : seqGroup.tasks()) {
+      assertThat(t.position())
+          .as("Task in sequential group at matches position:" + pos)
+          .isEqualTo(pos);
+      pos++;
+    }
+  }
 }

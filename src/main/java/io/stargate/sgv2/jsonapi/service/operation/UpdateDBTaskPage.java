@@ -37,7 +37,7 @@ public class UpdateDBTaskPage<SchemaT extends TableSchemaObject>
     // However - we do not know if an upsert happened :(
     // NOTE when update collection uses operation attempt this will get more complex
     // If there is error, we won't add this status.
-    if (tasks.errorTasks().isEmpty()) {
+    if (taskGroup.errorTasks().isEmpty()) {
       resultBuilder.addStatus(CommandStatus.MATCHED_COUNT, 1);
       resultBuilder.addStatus(CommandStatus.MODIFIED_COUNT, 1);
     }

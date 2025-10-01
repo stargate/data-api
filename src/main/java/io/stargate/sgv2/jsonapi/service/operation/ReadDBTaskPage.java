@@ -48,7 +48,7 @@ public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
     maybeAddSortedRowCount();
     maybeAddSchema(CommandStatus.PROJECTION_SCHEMA);
 
-    tasks.completedTasks().stream()
+    taskGroup.completedTasks().stream()
         .flatMap(task -> task.documents().stream())
         .forEach(resultBuilder::addDocument);
   }
@@ -56,7 +56,7 @@ public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
   protected void maybeAddSortedRowCount() {
 
     var rowCounts =
-        tasks.completedTasks().stream()
+        taskGroup.completedTasks().stream()
             .map(ReadDBTask::sortedRowCount)
             .filter(Optional::isPresent)
             .map(Optional::get)
