@@ -84,6 +84,24 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
+    public void invalidUdtTypeKeyword() {
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              "invalidKeyword",
+              // should be "udtName" not "udtType"
+              // so error will treat this situation as missing udtName.
+              Map.ofEntries(
+                  Map.entry("id", "text"),
+                  Map.entry("address", Map.of("type", "userDefined", "udtType", "address"))),
+              "id")
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_USER_DEFINED_TYPE_NAME,
+              SchemaException.class,
+              "The user defined type name must not be empty");
+    }
+
+    @Test
     public void unKnownUserDefinedType() {
       assertNamespaceCommand(keyspaceName)
           .templated()
