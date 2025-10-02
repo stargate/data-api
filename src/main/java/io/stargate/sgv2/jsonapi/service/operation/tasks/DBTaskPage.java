@@ -8,8 +8,8 @@ import java.util.Optional;
 public abstract class DBTaskPage<TaskT extends DBTask<SchemaT>, SchemaT extends SchemaObject>
     extends TaskPage<TaskT, SchemaT> {
 
-  protected DBTaskPage(TaskGroup<TaskT, SchemaT> tasks, CommandResultBuilder resultBuilder) {
-    super(tasks, resultBuilder);
+  protected DBTaskPage(TaskGroup<TaskT, SchemaT> taskGroup, CommandResultBuilder resultBuilder) {
+    super(taskGroup, resultBuilder);
   }
 
   /**
@@ -19,11 +19,11 @@ public abstract class DBTaskPage<TaskT extends DBTask<SchemaT>, SchemaT extends 
    * have the _id or PK to report.
    */
   protected void maybeAddSchema(CommandStatus statusKey) {
-    if (tasks.isEmpty()) {
+    if (taskGroup.tasks().isEmpty()) {
       return;
     }
 
-    tasks.stream()
+    taskGroup.tasks().stream()
         .map(DBTask::schemaDescription)
         .filter(Optional::isPresent)
         .findFirst()
