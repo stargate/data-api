@@ -86,8 +86,9 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
       Objects.requireNonNull(columnDescNode, "columnDescNode must not be null");
 
       // udt column desc must have the udtName field
-      if (columnDescNode.path(TableDescConstants.ColumnDesc.UDT_NAME).isMissingNode()) {
-        throw SchemaException.Code.INVALID_USER_DEFINED_TYPE_NAME.get("typeName", "null");
+      if (!columnDescNode.has(TableDescConstants.ColumnDesc.UDT_NAME)) {
+        throw SchemaException.Code.INVALID_USER_DEFINED_TYPE_NAME.get(
+            TableDescConstants.ColumnDesc.UDT_NAME, "null");
       }
       // the Missing node will return an empty text
       var udtName = columnDescNode.path(TableDescConstants.ColumnDesc.UDT_NAME).asText();
