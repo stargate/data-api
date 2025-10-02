@@ -1445,9 +1445,9 @@ request-errors:
     code: INVALID_USER_DEFINED_TYPE_NAME
     title: User defined type name is not valid.
     body: |-
-        User defined type name is not valid: ${typeName}.
+        User defined type name is not valid: ${udtName}.
         
-        The user defined type name must not be empty.
+        The user defined type name "udtName" must not be empty.
         
         Resend the command using a valid user defined type name.
 
