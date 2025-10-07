@@ -9,6 +9,7 @@ import com.datastax.oss.driver.internal.core.metadata.schema.ShallowUserDefinedT
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.UdtRefColumnDesc;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
@@ -152,7 +153,7 @@ public class ApiUdtShallowType implements ApiDataType {
             bindingPoint,
             columnDesc,
             SchemaException.Code.INVALID_USER_DEFINED_TYPE_NAME.get(
-                "typeName", errFmt(columnDesc.udtName())));
+                TableDescConstants.ColumnDesc.UDT_NAME, errFmt(columnDesc.udtName())));
       }
 
       return new ApiUdtShallowType(
