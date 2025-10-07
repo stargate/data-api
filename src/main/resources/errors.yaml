@@ -269,6 +269,19 @@ request-errors:
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
 
+  - scope: FILTER
+    code: CANNOT_LEXICAL_FILTER_NON_INDEXED_COLUMNS
+    title: Lexical filter cannot be used for non-indexed columns
+    body: |-
+      The command attempted to lexical filter on column that is not text-indexed.
+      
+      Lexical filtering is only supported on columns that have been text-indexed.
+      
+      The table ${keyspace}.${table} has text indexes on columns: ${indexedColumns}.
+      The command attempted to filter column(s): ${filterColumns}.
+      
+      Resend the command using indexed column(s).
+
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the DOCUMENT scope
   - scope: FILTER
     code: UNKNOWN_TABLE_COLUMNS
@@ -1432,9 +1445,9 @@ request-errors:
     code: INVALID_USER_DEFINED_TYPE_NAME
     title: User defined type name is not valid.
     body: |-
-        User defined type name is not valid: ${typeName}.
+        User defined type name is not valid: ${udtName}.
         
-        The user defined type name must not be empty.
+        The user defined type name "udtName" must not be empty.
         
         Resend the command using a valid user defined type name.
 

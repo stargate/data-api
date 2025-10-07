@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import java.util.Objects;
 
@@ -84,7 +85,11 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
 
       Objects.requireNonNull(columnDescNode, "columnDescNode must not be null");
 
-      // Validation is done when we create the ApiUdtType from the ColumnDesc,
+      // udt column desc must have the udtName field
+      if (!columnDescNode.has(TableDescConstants.ColumnDesc.UDT_NAME)) {
+        throw SchemaException.Code.INVALID_USER_DEFINED_TYPE_NAME.get(
+            TableDescConstants.ColumnDesc.UDT_NAME, "null");
+      }
       // the Missing node will return an empty text
       var udtName = columnDescNode.path(TableDescConstants.ColumnDesc.UDT_NAME).asText();
 

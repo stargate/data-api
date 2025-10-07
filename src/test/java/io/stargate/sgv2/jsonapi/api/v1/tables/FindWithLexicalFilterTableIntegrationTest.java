@@ -107,10 +107,6 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
   @Nested
   @Order(10)
   class SadLexicalFilter {
-    // 21-Aug-2025, tatu: Disabled for now to get working cases in: enable when
-    //   https://github.com/stargate/data-api/issues/2175
-    //   implemented
-    @Disabled("Disabled until [https://github.com/stargate/data-api/issues/2175] implemented")
     @Test
     void failOnMissingColumn() {
       assertTableCommand(keyspaceName, TABLE_NAME)
@@ -123,21 +119,31 @@ public class FindWithLexicalFilterTableIntegrationTest extends AbstractTableInte
               "defines the columns: ");
     }
 
-    // 21-Aug-2025, tatu: Disabled for now to get working cases in: enable when
-    //   https://github.com/stargate/data-api/issues/2175
-    //   implemented
-    @Disabled("Disabled until [https://github.com/stargate/data-api/issues/2175] implemented")
     @Test
-    void failOnNonIndexedColumn() {
+    void failOnColumnWithNoIndex() {
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()
           .find(Map.of("no_index_tags", Map.of("$match", "value")), List.of("id"), null)
-          // 21-Aug-2025, tatu: NOT RIGHT ERROR CODE: just a placeholder
           .hasSingleApiError(
-              FilterException.Code.UNKNOWN_TABLE_COLUMNS,
+              FilterException.Code.CANNOT_LEXICAL_FILTER_NON_INDEXED_COLUMNS,
               FilterException.class,
-              "Only columns defined in the table schema can be",
-              "defines the columns: ");
+              "command attempted to lexical filter on column that is not text-indexed",
+              "has text indexes on columns: ",
+              "command attempted to filter column(s): no_index_tags");
+    }
+
+    // Test for handling of regular, non-text-index column filtering, fail
+    @Test
+    void failOnColumnWithRegularIndex() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(Map.of("value", Map.of("$match", "value")), List.of("id"), null)
+          .hasSingleApiError(
+              FilterException.Code.CANNOT_LEXICAL_FILTER_NON_INDEXED_COLUMNS,
+              FilterException.class,
+              "command attempted to lexical filter on column that is not text-indexed",
+              "has text indexes on columns: ",
+              "command attempted to filter column(s): value");
     }
   }
 }
