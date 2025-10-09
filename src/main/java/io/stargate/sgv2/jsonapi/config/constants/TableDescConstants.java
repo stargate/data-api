@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
+import java.util.List;
+
 public interface TableDescConstants {
 
   interface TableDesc {
@@ -23,6 +25,29 @@ public interface TableDescConstants {
     String UDT_NAME = "udtName";
     String DEFINITION = "definition";
     String FIELDS = "fields";
+
+    /**
+     * Helper method for checked whether given field name refers to valid column definition input
+     * field or not.
+     *
+     * @param fname Given field name
+     * @return true If given field name is a valid main-level column definition input field; false
+     *     if not
+     */
+    static boolean isKnownDefinitionInputField(String fname) {
+      return switch (fname) {
+        case TYPE, KEY_TYPE, VALUE_TYPE, DIMENSION, SERVICE -> true;
+        default -> false;
+      };
+    }
+
+    /**
+     * Accessor for a set of known fields for which {@link #isKnownDefinitionInputField(String)}
+     * would return true.
+     */
+    static List<String> getKnownDefinitionInputFields() {
+      return List.of(TYPE, KEY_TYPE, VALUE_TYPE, DIMENSION, SERVICE);
+    }
   }
 
   interface PrimaryKey {

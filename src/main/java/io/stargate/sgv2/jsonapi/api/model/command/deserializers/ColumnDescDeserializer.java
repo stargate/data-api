@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
@@ -13,6 +14,8 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -76,6 +79,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
     return deserialize(
+        jsonParser.currentName(),
         deserializationContext.readTree(jsonParser),
         jsonParser,
         SchemaDescSource.USER_SCHEMA_USAGE);
@@ -84,6 +88,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
   /**
    * Re-usable method to deserialize a {@link ColumnDesc} from a {@link JsonNode}
    *
+   * @param columnName Name of the column described (for error messages)
    * @param descNode The JSON node representing the column description, see class comments.
    * @param jsonParser Nullable {@link JsonParser} used to deserialize the node, is used when
    *     creating {@link JsonMappingException}.
@@ -94,11 +99,19 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
    * @throws SchemaException if the type name is unknown or not supported by the rule.
    */
   public static ColumnDesc deserialize(
-      JsonNode descNode, JsonParser jsonParser, SchemaDescSource schemaDescSource)
+      String columnName,
+      JsonNode descNode,
+      JsonParser jsonParser,
+      SchemaDescSource schemaDescSource)
       throws JsonProcessingException {
 
     // throws if type is not defined correctly or not a known type
     var typeNameDesc = getTypeName(descNode, jsonParser);
+
+    // 09-Oct-2025, tatu: [data-api#1560] Need to validate fields to catch unknown
+    if (descNode.isObject()) {
+      validateTypeFields(columnName, descNode, jsonParser);
+    }
 
     // check if this is primitive type, no matter if it is short or long form
     var maybePrimitiveType = PrimitiveColumnDesc.FROM_JSON_FACTORY.create(typeNameDesc.typeName);
@@ -117,21 +130,29 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
     // dimension value
 
     return switch (typeNameDesc.typeName) {
-      case LIST -> ListColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
-      case SET -> SetColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
-      case MAP -> MapColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
+      case LIST ->
+          ListColumnDesc.FROM_JSON_FACTORY.create(
+              columnName, schemaDescSource, jsonParser, descNode);
+      case SET ->
+          SetColumnDesc.FROM_JSON_FACTORY.create(
+              columnName, schemaDescSource, jsonParser, descNode);
+      case MAP ->
+          MapColumnDesc.FROM_JSON_FACTORY.create(
+              columnName, schemaDescSource, jsonParser, descNode);
       case VECTOR -> {
         // call to readTreeAsValue will throw JacksonException, this should be if the databinding is
         // not correct, e.g. if there is a missing field, or the field is not the correct type
         // ok to let this out
-        yield VectorColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
+        yield VectorColumnDesc.FROM_JSON_FACTORY.create(
+            columnName, schemaDescSource, jsonParser, descNode);
       }
       case UDT -> // The rule tells us if the UDT is frozen or not, see the enum
-          UdtRefColumnDesc.FROM_JSON_FACTORY.create(schemaDescSource, jsonParser, descNode);
+          UdtRefColumnDesc.FROM_JSON_FACTORY.create(
+              columnName, schemaDescSource, jsonParser, descNode);
       default ->
           // sanity check, we should have covered all the API types above
           throw new IllegalStateException(
-              "ColumnDescDeserializer - unsupported known APiTypeName: "
+              "ColumnDescDeserializer - unsupported known ApiTypeName: "
                   + typeNameDesc.typeName.apiName());
     };
   }
@@ -216,6 +237,27 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
     return new TypeNameDesc(maybeTypeName.get(), shortFormDesc);
   }
 
+  private static void validateTypeFields(
+      String columnName, JsonNode descNode, JsonParser jsonParser) throws JsonMappingException {
+    var it = descNode.fieldNames();
+    while (it.hasNext()) {
+      String propName = it.next();
+      var knownFields = TableDescConstants.ColumnDesc.getKnownDefinitionInputFields();
+      if (!TableDescConstants.ColumnDesc.isKnownDefinitionInputField(propName)) {
+        String msg =
+            "`%s` field for column '%s' contains unknown sub-field '%s': not one of recognized properties: %s"
+                .formatted(TableDescConstants.ColumnDesc.TYPE, columnName, propName, knownFields);
+        throw new UnrecognizedPropertyException(
+            jsonParser,
+            msg,
+            jsonParser.currentTokenLocation(),
+            ColumnDesc.class,
+            propName,
+            (Collection<Object>) (List<?>) knownFields);
+      }
+    }
+  }
+
   /**
    * How the {@link ApiTypeName} was represented in the JSON payload.
    *
@@ -224,5 +266,4 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
    *     long form
    */
   public record TypeNameDesc(ApiTypeName typeName, boolean shortFormDesc) {}
-  ;
 }

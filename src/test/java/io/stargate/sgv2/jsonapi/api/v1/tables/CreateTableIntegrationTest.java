@@ -1197,8 +1197,9 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                     }
                                 }
                                 """,
-                  SchemaException.Code.UNSUPPORTED_TYPE_FIELDS,
-                  "The command used the unsupported type field 'favorite_color'")));
+                  // Currently gets converted by handlers to ErrorCodeV1: will be upgraded in future
+                  ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD,
+                  "unrecognized JSON field: \"favorite_color\" not one of known fields (")));
 
       return testCases.stream();
     }

@@ -70,7 +70,10 @@ public class MapColumnDesc extends ComplexColumnDesc {
 
     /** Create a {@link MapColumnDesc} from key and value type jsonNodes. */
     public MapColumnDesc create(
-        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode)
+        String columnName,
+        SchemaDescSource schemaDescSource,
+        JsonParser jsonParser,
+        JsonNode columnDescNode)
         throws JsonProcessingException {
 
       // Cascade deserialization to get the value type, validation is done when we
@@ -79,13 +82,15 @@ public class MapColumnDesc extends ComplexColumnDesc {
       var valueType =
           valueTypeNode.isMissingNode()
               ? null
-              : ColumnDescDeserializer.deserialize(valueTypeNode, jsonParser, schemaDescSource);
+              : ColumnDescDeserializer.deserialize(
+                  columnName, valueTypeNode, jsonParser, schemaDescSource);
 
       var keyTypeNode = columnDescNode.path(TableDescConstants.ColumnDesc.KEY_TYPE);
       var keyType =
           keyTypeNode.isMissingNode()
               ? null
-              : ColumnDescDeserializer.deserialize(keyTypeNode, jsonParser, schemaDescSource);
+              : ColumnDescDeserializer.deserialize(
+                  columnName, keyTypeNode, jsonParser, schemaDescSource);
 
       return new MapColumnDesc(schemaDescSource, keyType, valueType);
     }

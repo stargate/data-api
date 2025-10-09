@@ -33,7 +33,7 @@ public class TypeFieldsContainerDeserializer extends JsonDeserializer<ColumnsDes
       container.put(
           entry.getKey(),
           ColumnDescDeserializer.deserialize(
-              entry.getValue(), jsonParser, SchemaDescSource.USER_SCHEMA_OBJECT));
+              entry.getKey(), entry.getValue(), jsonParser, SchemaDescSource.USER_SCHEMA_OBJECT));
     }
     return container;
   }
