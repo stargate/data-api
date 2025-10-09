@@ -1180,6 +1180,26 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ' !@#'.")));
+
+      // [data-api#1560]: unrecognized column option should lead to failure
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  "createTableInvalidColumnOption",
+                  """
+                                {
+                                    "name": "createTableInvalidColumnOption",
+                                    "definition": {
+                                        "columns": {
+                                            "id": { "type": "int", "favorite_color": "teal"}
+                                        },
+                                        "primaryKey": "id"
+                                    }
+                                }
+                                """,
+                  SchemaException.Code.UNSUPPORTED_TYPE_FIELDS,
+                  "The command used the unsupported type field 'favorite_color'")));
+
       return testCases.stream();
     }
   }

@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.util.Map;
 
@@ -69,7 +70,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
    */
   public ColumnDescDeserializer() {}
 
-  /** See {@link #(JsonNode, JsonParser, TypeBindingPoint)} */
+  /** See {@link #(JsonNode, JsonParser, SchemaDescSource)} */
   @Override
   public ColumnDesc deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
@@ -155,18 +156,21 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
       throws JsonMappingException {
 
     String rawTypeName;
-    boolean shortFormDesc = true;
-    if (descNode.isTextual()) {
-      // in sort form, e.g. {"userName": "text"}
-      rawTypeName = descNode.asText();
-
+    final boolean shortFormDesc = descNode.isTextual();
+    if (shortFormDesc) {
+      // in short form, e.g. {"userName": "text"}
+      rawTypeName = descNode.textValue();
     } else {
-      shortFormDesc = false;
       // in long form, e.g.  {"userName": {"type": "text"}}
 
       // Must be an object with type field
       if (!descNode.isObject()) {
-        throw new JsonMappingException(jsonParser, ERR_OBJECT_WITH_TYPE + " (node is not object)");
+        throw new JsonMappingException(
+            jsonParser,
+            ERR_OBJECT_WITH_TYPE
+                + " (node is not Object but "
+                + JsonUtil.nodeTypeAsString(descNode)
+                + ")");
       }
 
       var typeNode = descNode.path(TableDescConstants.ColumnDesc.TYPE);
@@ -180,7 +184,9 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
         throw new JsonMappingException(
             jsonParser,
             ERR_OBJECT_WITH_TYPE
-                + " (`%s` field is not text)".formatted(TableDescConstants.ColumnDesc.TYPE));
+                + " (`%s` field is not Text but %s)"
+                    .formatted(
+                        TableDescConstants.ColumnDesc.TYPE, JsonUtil.nodeTypeAsString(typeNode)));
       }
       rawTypeName = typeNode.asText();
     }
