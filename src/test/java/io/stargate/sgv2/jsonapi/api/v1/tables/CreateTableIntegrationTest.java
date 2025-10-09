@@ -38,18 +38,18 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
   @Order(1)
   class CreateTable {
     @ParameterizedTest
-    @MethodSource("allTableDataPass")
-    public void testCreateTablePass(CreateTableTestData testData) {
-      doTestCreateTable(testData);
+    @MethodSource("testCasesForCreateTablePass")
+    public void createTablePassTests(CreateTableTestData testData) {
+      runCreateTableTests(testData);
     }
 
     @ParameterizedTest
-    @MethodSource("allTableDataFail")
-    public void testCreateTableFail(CreateTableTestData testData) {
-      doTestCreateTable(testData);
+    @MethodSource("testCasesForCreateTableFail")
+    public void createTableFailTests(CreateTableTestData testData) {
+      runCreateTableTests(testData);
     }
 
-    private void doTestCreateTable(CreateTableTestData testData) {
+    private void runCreateTableTests(CreateTableTestData testData) {
       if (testData.hasErrorCode()) {
         assertNamespaceCommand(keyspaceName)
             .postCreateTable(testData.request())
@@ -65,7 +65,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     // Set of passing ITs
-    static Stream<Arguments> allTableDataPass() {
+    static Stream<Arguments> testCasesForCreateTablePass() {
       List<Arguments> testCases = new ArrayList<>();
       // create table with all types
       testCases.add(
@@ -398,7 +398,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       return testCases.stream();
     }
 
-    static Stream<Arguments> allTableDataFail() {
+    static Stream<Arguments> testCasesForCreateTableFail() {
       List<Arguments> testCases = new ArrayList<>();
 
       // invalidPrimaryKeyTable
