@@ -245,7 +245,7 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
       var knownFields = TableDescConstants.ColumnDesc.getKnownDefinitionInputFields();
       if (!TableDescConstants.ColumnDesc.isKnownDefinitionInputField(propName)) {
         String msg =
-            "`%s` field for column '%s' contains unknown sub-field '%s': not one of recognized properties: %s"
+            "`%s` field for column '%s' contains unknown sub-field '%s': not one of recognized sub-fields %s"
                 .formatted(TableDescConstants.ColumnDesc.TYPE, columnName, propName, knownFields);
         throw new UnrecognizedPropertyException(
             jsonParser,
