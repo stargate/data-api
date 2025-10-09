@@ -23,14 +23,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
   private record CreateTableTestData(
-      String request, String tableName, boolean error, String errorCode, String errorMessage) {
+      String request, String tableName, boolean error, Enum<?> errorCode, String errorMessage) {
     // Constructor for passing (non-erroring) tests
     CreateTableTestData(String request, String tableName) {
       this(request, tableName, false, null, null);
     }
 
     // Constructor for failing (erroring) tests
-    CreateTableTestData(String request, String tableName, String errorCode, String errorMessage) {
+    CreateTableTestData(String request, String tableName, Enum<?> errorCode, String errorMessage) {
       this(request, tableName, true, errorCode, errorMessage);
     }
   }
@@ -54,7 +54,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       if (testData.error()) {
         assertNamespaceCommand(keyspaceName)
             .postCreateTable(testData.request())
-            .hasSingleApiError(testData.errorCode(), testData.errorMessage());
+            .hasSingleApiError(testData.errorCode().name(), testData.errorMessage());
       } else {
         assertNamespaceCommand(keyspaceName).postCreateTable(testData.request()).wasSuccessful();
 
@@ -427,7 +427,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPrimaryKeyTable",
                   true,
-                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
+                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS,
                   "The partition includes the unknown columns: error_column.")));
       // invalidPartitionByTable
       testCases.add(
@@ -455,7 +455,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPartitionByTable",
                   true,
-                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
+                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS,
                   "The partition includes the unknown columns: error_column.")));
       // invalidPartitionSortTable
       testCases.add(
@@ -483,7 +483,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPartitionSortTable",
                   true,
-                  SchemaException.Code.UNKNOWN_PARTITION_SORT_COLUMNS.name(),
+                  SchemaException.Code.UNKNOWN_PARTITION_SORT_COLUMNS,
                   "The partition sort includes the unknown columns: error_column.")));
       // invalidPartitionSortOrderingValueTable
       testCases.add(
@@ -511,7 +511,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPartitionSortOrderingValueTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
       // invalidPartitionSortOrderingValueTypeTable
       testCases.add(
@@ -539,7 +539,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPartitionSortOrderingValueTypeTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
       // invalidColumnTypeTable
       testCases.add(
@@ -568,7 +568,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidColumnTypeTable",
                   true,
-                  SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.name(),
+                  SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE,
                   "The command used the unsupported data type: invalid_type.")));
       // Column type not provided: nullColumnTypeTable
       testCases.add(
@@ -597,7 +597,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "nullColumnTypeTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
                   "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
       // unsupported primitive api types: timeuuid, counter
       testCases.add(
@@ -621,7 +621,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "unsupportedPrimitiveApiTypes",
                   true,
-                  SchemaException.Code.UNSUPPORTED_DATA_TYPE_TABLE_CREATION.name(),
+                  SchemaException.Code.UNSUPPORTED_DATA_TYPE_TABLE_CREATION,
                   "The command used the unsupported data types for table creation : timeuuid")));
       testCases.add(
           Arguments.of(
@@ -645,7 +645,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       }""",
                   "unsupported map counter as key type",
                   true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the key type: counter.")));
       testCases.add(
           Arguments.of(
@@ -669,7 +669,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       }""",
                   "unsupported map duration as key type",
                   true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the key type: duration.")));
       testCases.add(
           Arguments.of(
@@ -693,7 +693,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       }""",
                   "unsupported map timeuuid as key type",
                   true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the key type: timeuuid.")));
 
       testCases.add(
@@ -717,7 +717,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       }""",
                   "mapTypeMissingValue value type not provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the value type: [MISSING].")));
       testCases.add(
           Arguments.of(
@@ -740,7 +740,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       }""",
                   "mapTypeMissingKey key type not provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the key type: [MISSING].")));
       testCases.add(
           Arguments.of(
@@ -765,7 +765,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "mapTypeListValueType not primitive type provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the value type: list.")));
 
       testCases.add(
@@ -790,7 +790,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       }""",
                   "mapTypeListKeyType not primitive type provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the value type: text.")));
 
       // List type tests
@@ -815,7 +815,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "listTypeMissingValueType value type not provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION,
                   "The command used the value type: [MISSING].")));
 
       testCases.add(
@@ -840,7 +840,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "listTypeListValueType not primitive type provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION,
                   "The command used the value type: list.")));
 
       // Set type tests
@@ -864,7 +864,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       }""",
                   "listTypeMissingValueType value type not provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION,
                   "The command used the value type: [MISSING].")));
 
       testCases.add(
@@ -889,7 +889,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "listTypeListValueType not primitive type provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION.name(),
+                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION,
                   "The command used the value type: list.")));
 
       // Vector type tests
@@ -915,7 +915,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidVectorType value type not provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
+                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION,
                   "The command used the dimension: -5.")));
 
       testCases.add(
@@ -940,7 +940,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidVectorType not primitive type provided",
                   true,
-                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
+                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION,
                   "The command used the dimension: aaa.")));
 
       // vector type with invalid vectorize config
@@ -973,7 +973,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidVectorizeServiceNameConfig",
                   true,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
+                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
                   "The provided options are invalid: Service provider 'invalid_service' is not supported")));
 
       // vector type with invalid model name config
@@ -1006,7 +1006,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidVectorizeModelNameConfig",
                   true,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
+                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
                   "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
 
       // vector type with deprecated model
@@ -1036,7 +1036,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "deprecatedEmbedModel",
                   true,
-                  SchemaException.Code.DEPRECATED_AI_MODEL.name(),
+                  SchemaException.Code.DEPRECATED_AI_MODEL,
                   "The model is: a-deprecated-nvidia-embedding-model. It is at DEPRECATED status.")));
 
       // vector type with end_of_life model
@@ -1066,7 +1066,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                         """,
                   "deprecatedEmbedModel",
                   true,
-                  SchemaException.Code.END_OF_LIFE_AI_MODEL.name(),
+                  SchemaException.Code.END_OF_LIFE_AI_MODEL,
                   "The model is: a-EOL-nvidia-embedding-model. It is at END_OF_LIFE status.")));
 
       // vector type with dimension mismatch
@@ -1099,7 +1099,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                         """,
                   "invalidVectorizeModelNameConfig",
                   true,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
+                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
                   "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
 
       // unspecified dimension with unspecified vectorize
@@ -1122,7 +1122,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                         """,
                   "invalidUnspecifiedDimensionUnspecifiedVectorize",
                   true,
-                  SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.name(),
+                  SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN,
                   "The dimension is required for vector columns if the embedding service is not specified.")));
 
       // table name is empty
@@ -1144,7 +1144,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """,
                   "",
                   true,
-                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ''.")));
 
       // table name is blank
@@ -1166,7 +1166,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """,
                   " ",
                   true,
-                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ' '.")));
 
       // table name too long
@@ -1188,7 +1188,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """,
                   "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
                   true,
-                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: 'this_is_a_very_long_table_name_that_is_longer_than_48_characters'.")));
 
       // table name with special characters
@@ -1210,7 +1210,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """,
                   " !@#",
                   true,
-                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ' !@#'.")));
       return testCases.stream();
     }
