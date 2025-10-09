@@ -1180,7 +1180,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ' !@#'.")));
-      if (true) testCases.clear();
+
       // [data-api#1560]: unrecognized column option should lead to failure
       testCases.add(
           Arguments.of(
@@ -1199,7 +1199,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                 """,
                   // Currently gets converted by handlers to ErrorCodeV1: will be upgraded in future
                   ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD,
-                  "Request invalid, unrecognized JSON field: `type` field for column 'id' contains unknown sub-field 'favorite_color': not one of recognized sub-fields [type,")));
+                  "Request invalid, unrecognized JSON field: column 'id' definition contains unknown field 'favorite_color': not one of recognized fields [type,")));
 
       return testCases.stream();
     }

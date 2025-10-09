@@ -241,18 +241,18 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
       String columnName, JsonNode descNode, JsonParser jsonParser) throws JsonMappingException {
     var it = descNode.fieldNames();
     while (it.hasNext()) {
-      String propName = it.next();
+      String fieldName = it.next();
       var knownFields = TableDescConstants.ColumnDesc.getKnownDefinitionInputFields();
-      if (!TableDescConstants.ColumnDesc.isKnownDefinitionInputField(propName)) {
+      if (!TableDescConstants.ColumnDesc.isKnownDefinitionInputField(fieldName)) {
         String msg =
-            "`%s` field for column '%s' contains unknown sub-field '%s': not one of recognized sub-fields %s"
-                .formatted(TableDescConstants.ColumnDesc.TYPE, columnName, propName, knownFields);
+            "column '%s' definition contains unknown field '%s': not one of recognized fields %s"
+                .formatted(columnName, fieldName, knownFields);
         throw new UnrecognizedPropertyException(
             jsonParser,
             msg,
             jsonParser.currentTokenLocation(),
             ColumnDesc.class,
-            propName,
+            fieldName,
             (Collection<Object>) (List<?>) knownFields);
       }
     }
