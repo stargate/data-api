@@ -566,252 +566,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
                   "The command used the key type: timeuuid.")));
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "mapTypeMissingValue",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "map_type": {
-                                                "type": "map",
-                                                "keyType": "text"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }""",
-                  "mapTypeMissingValue value type not provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the value type: [MISSING].")));
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "mapTypeMissingKey",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "map_type": {
-                                                "type": "map",
-                                                "valueType": "text"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }""",
-                  "mapTypeMissingKey key type not provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the key type: [MISSING].")));
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "mapTypeListValueType",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "map_type": {
-                                                "type": "map",
-                                                "valueType": "list",
-                                                "keyType": "text"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }
-                                        """,
-                  "mapTypeListValueType not primitive type provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the value type: list.")));
 
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "mapTypeListKeyType",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "map_type": {
-                                                "type": "map",
-                                                "valueType": "text",
-                                                "keyType": "list"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }""",
-                  "mapTypeListKeyType not primitive type provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the value type: text.")));
-
-      // List type tests
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "listTypeMissingValueType",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "list_type": {
-                                                "type": "list"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }
-                                        """,
-                  "listTypeMissingValueType value type not provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.name(),
-                  "The command used the value type: [MISSING].")));
-
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "listTypeListValueType",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "list_type": {
-                                                "type": "list",
-                                                "valueType": "list"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }
-                                        """,
-                  "listTypeListValueType not primitive type provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.name(),
-                  "The command used the value type: list.")));
-
-      // Set type tests
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "listTypeMissingValueType",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "set_type": {
-                                                "type": "set"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }""",
-                  "listTypeMissingValueType value type not provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION.name(),
-                  "The command used the value type: [MISSING].")));
-
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "listTypeListValueType",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "set_type": {
-                                                "type": "set",
-                                                "valueType": "list"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }
-                                        """,
-                  "listTypeListValueType not primitive type provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION.name(),
-                  "The command used the value type: list.")));
-
-      // Vector type tests
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "invalidVectorType",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "vector_type": {
-                                                "type": "vector",
-                                                "dimension": -5
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }
-                                        """,
-                  "invalidVectorType value type not provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
-                  "The command used the dimension: -5.")));
-
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "invalidVectorType",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "vector_type": {
-                                                "type": "vector",
-                                                "dimension": "aaa"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }
-                                        """,
-                  "invalidVectorType not primitive type provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
-                  "The command used the dimension: aaa.")));
       // vector type with vectorize
       testCases.add(
           Arguments.of(
@@ -844,102 +599,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   false,
                   null,
                   null)));
-
-      // vector type with invalid vectorixe config
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                           "name": "invalidVectorizeServiceNameConfig",
-                                           "definition": {
-                                               "columns": {
-                                                   "id": {
-                                                       "type": "text"
-                                                   },
-                                                   "age": {
-                                                       "type": "int"
-                                                   },
-                                                   "content": {
-                                                     "type": "vector",
-                                                     "dimension": 1024,
-                                                     "service": {
-                                                       "provider": "invalid_service",
-                                                       "modelName": "NV-Embed-QA"
-                                                     }
-                                                   }
-                                               },
-                                               "primaryKey": "id"
-                                           }
-                                        }
-                                        """,
-                  "invalidVectorizeServiceNameConfig",
-                  true,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
-                  "The provided options are invalid: Service provider 'invalid_service' is not supported")));
-
-      // vector type with invalid model name config
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                           "name": "invalidVectorizeModelNameConfig",
-                                           "definition": {
-                                               "columns": {
-                                                   "id": {
-                                                       "type": "text"
-                                                   },
-                                                   "age": {
-                                                       "type": "int"
-                                                   },
-                                                   "content": {
-                                                     "type": "vector",
-                                                     "dimension": 1024,
-                                                     "service": {
-                                                      "provider": "mistral",
-                                                      "modelName": "mistral-embed-invalid"
-                                                    }
-                                                   }
-                                               },
-                                               "primaryKey": "id"
-                                           }
-                                        }
-                                        """,
-                  "invalidVectorizeModelNameConfig",
-                  true,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
-                  "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
-
-      // vector type with deprecated model
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                           "name": "deprecatedEmbedModel",
-                                           "definition": {
-                                               "columns": {
-                                                   "id": {
-                                                       "type": "text"
-                                                   },
-                                                   "content": {
-                                                     "type": "vector",
-                                                     "dimension": 1024,
-                                                     "service": {
-                                                      "provider": "nvidia",
-                                                      "modelName": "a-deprecated-nvidia-embedding-model"
-                                                    }
-                                                   }
-                                               },
-                                               "primaryKey": "id"
-                                           }
-                                        }
-                                        """,
-                  "deprecatedEmbedModel",
-                  true,
-                  SchemaException.Code.DEPRECATED_AI_MODEL.name(),
-                  "The model is: a-deprecated-nvidia-embedding-model. It is at DEPRECATED status.")));
 
       // unspecified dimension with specified vectorize
       testCases.add(
@@ -1062,6 +721,349 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
     static Stream<Arguments> allTableDataFail() {
       List<Arguments> testCases = new ArrayList<>();
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "mapTypeMissingValue",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "map_type": {
+                                                              "type": "map",
+                                                              "keyType": "text"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }""",
+                  "mapTypeMissingValue value type not provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the value type: [MISSING].")));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "mapTypeMissingKey",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "map_type": {
+                                                              "type": "map",
+                                                              "valueType": "text"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }""",
+                  "mapTypeMissingKey key type not provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: [MISSING].")));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "mapTypeListValueType",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "map_type": {
+                                                              "type": "map",
+                                                              "valueType": "list",
+                                                              "keyType": "text"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }
+                                                      """,
+                  "mapTypeListValueType not primitive type provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the value type: list.")));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "mapTypeListKeyType",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "map_type": {
+                                                              "type": "map",
+                                                              "valueType": "text",
+                                                              "keyType": "list"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }""",
+                  "mapTypeListKeyType not primitive type provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the value type: text.")));
+
+      // List type tests
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "listTypeMissingValueType",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "list_type": {
+                                                              "type": "list"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }
+                                                      """,
+                  "listTypeMissingValueType value type not provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.name(),
+                  "The command used the value type: [MISSING].")));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "listTypeListValueType",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "list_type": {
+                                                              "type": "list",
+                                                              "valueType": "list"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }
+                                                      """,
+                  "listTypeListValueType not primitive type provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.name(),
+                  "The command used the value type: list.")));
+
+      // Set type tests
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "listTypeMissingValueType",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "set_type": {
+                                                              "type": "set"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }""",
+                  "listTypeMissingValueType value type not provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION.name(),
+                  "The command used the value type: [MISSING].")));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "listTypeListValueType",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "set_type": {
+                                                              "type": "set",
+                                                              "valueType": "list"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }
+                                                      """,
+                  "listTypeListValueType not primitive type provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION.name(),
+                  "The command used the value type: list.")));
+
+      // Vector type tests
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "invalidVectorType",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "vector_type": {
+                                                              "type": "vector",
+                                                              "dimension": -5
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }
+                                                      """,
+                  "invalidVectorType value type not provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
+                  "The command used the dimension: -5.")));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "invalidVectorType",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "vector_type": {
+                                                              "type": "vector",
+                                                              "dimension": "aaa"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }
+                                                      """,
+                  "invalidVectorType not primitive type provided",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
+                  "The command used the dimension: aaa.")));
+
+      // vector type with invalid vectorize config
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                         "name": "invalidVectorizeServiceNameConfig",
+                                                         "definition": {
+                                                             "columns": {
+                                                                 "id": {
+                                                                     "type": "text"
+                                                                 },
+                                                                 "age": {
+                                                                     "type": "int"
+                                                                 },
+                                                                 "content": {
+                                                                   "type": "vector",
+                                                                   "dimension": 1024,
+                                                                   "service": {
+                                                                     "provider": "invalid_service",
+                                                                     "modelName": "NV-Embed-QA"
+                                                                   }
+                                                                 }
+                                                             },
+                                                             "primaryKey": "id"
+                                                         }
+                                                      }
+                                                      """,
+                  "invalidVectorizeServiceNameConfig",
+                  true,
+                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
+                  "The provided options are invalid: Service provider 'invalid_service' is not supported")));
+
+      // vector type with invalid model name config
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                         "name": "invalidVectorizeModelNameConfig",
+                                                         "definition": {
+                                                             "columns": {
+                                                                 "id": {
+                                                                     "type": "text"
+                                                                 },
+                                                                 "age": {
+                                                                     "type": "int"
+                                                                 },
+                                                                 "content": {
+                                                                   "type": "vector",
+                                                                   "dimension": 1024,
+                                                                   "service": {
+                                                                    "provider": "mistral",
+                                                                    "modelName": "mistral-embed-invalid"
+                                                                  }
+                                                                 }
+                                                             },
+                                                             "primaryKey": "id"
+                                                         }
+                                                      }
+                                                      """,
+                  "invalidVectorizeModelNameConfig",
+                  true,
+                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
+                  "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
+
+      // vector type with deprecated model
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                         "name": "deprecatedEmbedModel",
+                                                         "definition": {
+                                                             "columns": {
+                                                                 "id": {
+                                                                     "type": "text"
+                                                                 },
+                                                                 "content": {
+                                                                   "type": "vector",
+                                                                   "dimension": 1024,
+                                                                   "service": {
+                                                                    "provider": "nvidia",
+                                                                    "modelName": "a-deprecated-nvidia-embedding-model"
+                                                                  }
+                                                                 }
+                                                             },
+                                                             "primaryKey": "id"
+                                                         }
+                                                      }
+                                                      """,
+                  "deprecatedEmbedModel",
+                  true,
+                  SchemaException.Code.DEPRECATED_AI_MODEL.name(),
+                  "The model is: a-deprecated-nvidia-embedding-model. It is at DEPRECATED status.")));
 
       // vector type with end_of_life model
       testCases.add(
