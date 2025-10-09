@@ -23,7 +23,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
   private record CreateTableTestData(
-      String request, String tableName, boolean error, String errorCode, String errorMessage) {}
+      String request, String tableName, boolean error, String errorCode, String errorMessage) {
+    // Constructor for passing (non-erroring) tests
+    CreateTableTestData(String request, String tableName) {
+      this(request, tableName, false, null, null);
+    }
+
+    // Constructor for failing (erroring) tests
+    CreateTableTestData(String request, String tableName, String errorCode, String errorMessage) {
+      this(request, tableName, true, errorCode, errorMessage);
+    }
+  }
 
   @Nested
   @Order(1)
@@ -55,6 +65,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       }
     }
 
+    // Set of passing ITs
     static Stream<Arguments> allTableDataPass() {
       List<Arguments> testCases = new ArrayList<>();
       // create table with all types
@@ -106,10 +117,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                            }
                                         }
                                         """,
-                  "allTypesTable",
-                  false,
-                  null,
-                  null)));
+                  "allTypesTable")));
       // primaryKeyAsString
       testCases.add(
           Arguments.of(
@@ -133,10 +141,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                            }
                                         }
                                         """,
-                  "primaryKeyAsStringTable",
-                  false,
-                  null,
-                  null)));
+                  "primaryKeyAsStringTable")));
 
       // primaryKeyWithQuotable
       testCases.add(
@@ -158,10 +163,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                               }
                                           }
                                         """,
-                  "primaryKeyWithQuotable",
-                  false,
-                  null,
-                  null)));
+                  "primaryKeyWithQuotable")));
 
       // columnTypeUsingShortHandTable
       testCases.add(
@@ -180,10 +182,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                            }
                                         }
                                         """,
-                  "columnTypeUsingShortHandTable",
-                  false,
-                  null,
-                  null)));
+                  "columnTypeUsingShortHandTable")));
 
       // primaryKeyAsJsonObjectTable
       testCases.add(
@@ -215,237 +214,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                         }
                                         """,
-                  "primaryKeyAsJsonObjectTable",
-                  false,
-                  null,
-                  null)));
+                  "primaryKeyAsJsonObjectTable")));
 
-      // invalidPrimaryKeyTable
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                         "name": "invalidPrimaryKeyTable",
-                                         "definition": {
-                                             "columns": {
-                                                 "id": {
-                                                     "type": "text"
-                                                 },
-                                                 "age": {
-                                                     "type": "int"
-                                                 },
-                                                 "name": {
-                                                     "type": "text"
-                                                 }
-                                             },
-                                             "primaryKey": "error_column"
-                                         }
-                                        }
-                                        """,
-                  "invalidPrimaryKeyTable",
-                  true,
-                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
-                  "The partition includes the unknown columns: error_column.")));
-
-      // invalidPartitionByTable
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "invalidPartitionByTable",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text"
-                                            },
-                                            "primaryKey": {
-                                              "partitionBy": [
-                                                "error_column"
-                                              ],
-                                              "partitionSort" : {
-                                                "name" : 1, "age" : -1
-                                              }
-                                            }
-                                          }
-                                        }
-                                        """,
-                  "invalidPartitionByTable",
-                  true,
-                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
-                  "The partition includes the unknown columns: error_column.")));
-
-      // invalidPartitionSortTable
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                            "name": "invalidPartitionSortTable",
-                                            "definition": {
-                                              "columns": {
-                                                "id": "text",
-                                                "age": "int",
-                                                "name": "text"
-                                              },
-                                              "primaryKey": {
-                                                "partitionBy": [
-                                                  "id"
-                                                ],
-                                                "partitionSort" : {
-                                                  "error_column" : 1, "age" : -1
-                                                }
-                                              }
-                                            }
-                                          }
-                                        """,
-                  "invalidPartitionSortTable",
-                  true,
-                  SchemaException.Code.UNKNOWN_PARTITION_SORT_COLUMNS.name(),
-                  "The partition sort includes the unknown columns: error_column.")));
-
-      // invalidPartitionSortOrderingValueTable
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "invalidPartitionSortOrderingValueTable",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text"
-                                            },
-                                            "primaryKey": {
-                                              "partitionBy": [
-                                                "id"
-                                              ],
-                                              "partitionSort" : {
-                                                "id" : 1, "age" : 0
-                                              }
-                                            }
-                                          }
-                                        }
-                                        """,
-                  "invalidPartitionSortOrderingValueTable",
-                  true,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
-                  " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
-
-      // invalidPartitionSortOrderingValueTypeTable
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                            "name": "invalidPartitionSortOrderingValueTypeTable",
-                                            "definition": {
-                                              "columns": {
-                                                "id": "text",
-                                                "age": "int",
-                                                "name": "text"
-                                              },
-                                              "primaryKey": {
-                                                "partitionBy": [
-                                                  "id"
-                                                ],
-                                                "partitionSort" : {
-                                                  "id" : 1, "age" : "invalid"
-                                                }
-                                              }
-                                            }
-                                          }
-                                        """,
-                  "invalidPartitionSortOrderingValueTypeTable",
-                  true,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
-                  " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
-
-      // invalidColumnTypeTable
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "invalidColumnTypeTable",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "invalid_type",
-                                              "age": "int",
-                                              "name": "text"
-                                            },
-                                            "primaryKey": {
-                                              "partitionBy": [
-                                                  "id"
-                                              ],
-                                              "partitionSort": {
-                                                  "id": 1,
-                                                  "age": -1
-                                              }
-                                            }
-                                          }
-                                        }
-                                        """,
-                  "invalidColumnTypeTable",
-                  true,
-                  SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.name(),
-                  "The command used the unsupported data type: invalid_type.")));
-      // Column type not provided: nullColumnTypeTable
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "nullColumnTypeTable",
-                                          "definition": {
-                                            "columns": {
-                                              "id": null,
-                                              "age": "int",
-                                              "name": "text"
-                                            },
-                                            "primaryKey": {
-                                              "partitionBy": [
-                                                  "id"
-                                              ],
-                                              "partitionSort": {
-                                                  "id": 1,
-                                                  "age": -1
-                                              }
-                                            }
-                                          }
-                                        }
-                                        """,
-                  "nullColumnTypeTable",
-                  true,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
-                  "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
-      // unsupported primitive api types: timeuuid, counter
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                         "name": "unsupportedPrimitiveApiTypes",
-                                         "definition": {
-                                             "columns": {
-                                                 "id": {
-                                                     "type": "text"
-                                                 },
-                                                 "timeuuid": {
-                                                     "type": "timeuuid"
-                                                 }
-                                             },
-                                             "primaryKey": "id"
-                                         }
-                                        }
-                                        """,
-                  "unsupportedPrimitiveApiTypes",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_DATA_TYPE_TABLE_CREATION.name(),
-                  "The command used the unsupported data types for table creation : timeuuid")));
       // Map type tests
       testCases.add(
           Arguments.of(
@@ -490,82 +260,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                             "primaryKey": "id"
                                           }
                                         }""",
-                  "apiSupportedMap",
-                  false,
-                  null,
-                  null)));
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "unsupported",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "map_type": {
-                                                "type": "map",
-                                                "keyType": "counter",
-                                                "valueType": "text"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }""",
-                  "unsupported map counter as key type",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the key type: counter.")));
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "unsupported",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "map_type": {
-                                                "type": "map",
-                                                "keyType": "duration",
-                                                "valueType": "text"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }""",
-                  "unsupported map duration as key type",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the key type: duration.")));
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                        {
-                                          "name": "unsupported",
-                                          "definition": {
-                                            "columns": {
-                                              "id": "text",
-                                              "age": "int",
-                                              "name": "text",
-                                              "map_type": {
-                                                "type": "map",
-                                                "keyType": "timeuuid",
-                                                "valueType": "text"
-                                              }
-                                            },
-                                            "primaryKey": "id"
-                                          }
-                                        }""",
-                  "unsupported map timeuuid as key type",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the key type: timeuuid.")));
+                  "apiSupportedMap")));
 
       // vector type with vectorize
       testCases.add(
@@ -595,10 +290,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                            }
                                         }
                                         """,
-                  "vectorizeConfigTest",
-                  false,
-                  null,
-                  null)));
+                  "vectorizeConfigTest")));
 
       // unspecified dimension with specified vectorize
       testCases.add(
@@ -622,10 +314,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                  }
                                              }
                                         """,
-                  "validUnspecifiedDimension",
-                  false,
-                  null,
-                  null)));
+                  "validUnspecifiedDimension")));
 
       // empty dimension string with specified vectorize
       testCases.add(
@@ -650,10 +339,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                  }
                                              }
                                         """,
-                  "validEmptyDimension",
-                  false,
-                  null,
-                  null)));
+                  "validEmptyDimension")));
 
       // blank dimension string with specified vectorize
       testCases.add(
@@ -678,10 +364,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                    }
                                                }
                                         """,
-                  "validBlankDimension",
-                  false,
-                  null,
-                  null)));
+                  "validBlankDimension")));
 
       // Two vector columns with the one has vectorizeDefinition and the other one doesn't.
       // This should be allowed.
@@ -711,16 +394,307 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                            }
                                         }
                                         """,
-                  "twoVectorColumnsWithOneVectorizeDefinition",
-                  false,
-                  null,
-                  null)));
+                  "twoVectorColumnsWithOneVectorizeDefinition")));
 
       return testCases.stream();
     }
 
     static Stream<Arguments> allTableDataFail() {
       List<Arguments> testCases = new ArrayList<>();
+
+      // invalidPrimaryKeyTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                       "name": "invalidPrimaryKeyTable",
+                                                       "definition": {
+                                                           "columns": {
+                                                               "id": {
+                                                                   "type": "text"
+                                                               },
+                                                               "age": {
+                                                                   "type": "int"
+                                                               },
+                                                               "name": {
+                                                                   "type": "text"
+                                                               }
+                                                           },
+                                                           "primaryKey": "error_column"
+                                                       }
+                                                      }
+                                                      """,
+                  "invalidPrimaryKeyTable",
+                  true,
+                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
+                  "The partition includes the unknown columns: error_column.")));
+      // invalidPartitionByTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "invalidPartitionByTable",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text"
+                                                          },
+                                                          "primaryKey": {
+                                                            "partitionBy": [
+                                                              "error_column"
+                                                            ],
+                                                            "partitionSort" : {
+                                                              "name" : 1, "age" : -1
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                      """,
+                  "invalidPartitionByTable",
+                  true,
+                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
+                  "The partition includes the unknown columns: error_column.")));
+      // invalidPartitionSortTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                          "name": "invalidPartitionSortTable",
+                                                          "definition": {
+                                                            "columns": {
+                                                              "id": "text",
+                                                              "age": "int",
+                                                              "name": "text"
+                                                            },
+                                                            "primaryKey": {
+                                                              "partitionBy": [
+                                                                "id"
+                                                              ],
+                                                              "partitionSort" : {
+                                                                "error_column" : 1, "age" : -1
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      """,
+                  "invalidPartitionSortTable",
+                  true,
+                  SchemaException.Code.UNKNOWN_PARTITION_SORT_COLUMNS.name(),
+                  "The partition sort includes the unknown columns: error_column.")));
+      // invalidPartitionSortOrderingValueTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "invalidPartitionSortOrderingValueTable",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text"
+                                                          },
+                                                          "primaryKey": {
+                                                            "partitionBy": [
+                                                              "id"
+                                                            ],
+                                                            "partitionSort" : {
+                                                              "id" : 1, "age" : 0
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                      """,
+                  "invalidPartitionSortOrderingValueTable",
+                  true,
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
+                  " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
+      // invalidPartitionSortOrderingValueTypeTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                          "name": "invalidPartitionSortOrderingValueTypeTable",
+                                                          "definition": {
+                                                            "columns": {
+                                                              "id": "text",
+                                                              "age": "int",
+                                                              "name": "text"
+                                                            },
+                                                            "primaryKey": {
+                                                              "partitionBy": [
+                                                                "id"
+                                                              ],
+                                                              "partitionSort" : {
+                                                                "id" : 1, "age" : "invalid"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      """,
+                  "invalidPartitionSortOrderingValueTypeTable",
+                  true,
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
+                  " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
+      // invalidColumnTypeTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "invalidColumnTypeTable",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "invalid_type",
+                                                            "age": "int",
+                                                            "name": "text"
+                                                          },
+                                                          "primaryKey": {
+                                                            "partitionBy": [
+                                                                "id"
+                                                            ],
+                                                            "partitionSort": {
+                                                                "id": 1,
+                                                                "age": -1
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                      """,
+                  "invalidColumnTypeTable",
+                  true,
+                  SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.name(),
+                  "The command used the unsupported data type: invalid_type.")));
+      // Column type not provided: nullColumnTypeTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "nullColumnTypeTable",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": null,
+                                                            "age": "int",
+                                                            "name": "text"
+                                                          },
+                                                          "primaryKey": {
+                                                            "partitionBy": [
+                                                                "id"
+                                                            ],
+                                                            "partitionSort": {
+                                                                "id": 1,
+                                                                "age": -1
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                      """,
+                  "nullColumnTypeTable",
+                  true,
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
+                  "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
+      // unsupported primitive api types: timeuuid, counter
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                       "name": "unsupportedPrimitiveApiTypes",
+                                                       "definition": {
+                                                           "columns": {
+                                                               "id": {
+                                                                   "type": "text"
+                                                               },
+                                                               "timeuuid": {
+                                                                   "type": "timeuuid"
+                                                               }
+                                                           },
+                                                           "primaryKey": "id"
+                                                       }
+                                                      }
+                                                      """,
+                  "unsupportedPrimitiveApiTypes",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_DATA_TYPE_TABLE_CREATION.name(),
+                  "The command used the unsupported data types for table creation : timeuuid")));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "unsupported",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "map_type": {
+                                                              "type": "map",
+                                                              "keyType": "counter",
+                                                              "valueType": "text"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }""",
+                  "unsupported map counter as key type",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: counter.")));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "unsupported",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "map_type": {
+                                                              "type": "map",
+                                                              "keyType": "duration",
+                                                              "valueType": "text"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }""",
+                  "unsupported map duration as key type",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: duration.")));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                      {
+                                                        "name": "unsupported",
+                                                        "definition": {
+                                                          "columns": {
+                                                            "id": "text",
+                                                            "age": "int",
+                                                            "name": "text",
+                                                            "map_type": {
+                                                              "type": "map",
+                                                              "keyType": "timeuuid",
+                                                              "valueType": "text"
+                                                            }
+                                                          },
+                                                          "primaryKey": "id"
+                                                        }
+                                                      }""",
+                  "unsupported map timeuuid as key type",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: timeuuid.")));
 
       testCases.add(
           Arguments.of(
