@@ -23,15 +23,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
   private record CreateTableTestData(
-      String request, String tableName, boolean error, Enum<?> errorCode, String errorMessage) {
+      String tableName, String request, Enum<?> errorCode, String errorMessage) {
     // Constructor for passing (non-erroring) tests
-    CreateTableTestData(String request, String tableName) {
-      this(request, tableName, false, null, null);
+    CreateTableTestData(String tableName, String request) {
+      this(tableName, request, null, null);
     }
 
-    // Constructor for failing (erroring) tests
-    CreateTableTestData(String request, String tableName, Enum<?> errorCode, String errorMessage) {
-      this(request, tableName, true, errorCode, errorMessage);
+    public boolean hasErrorCode() {
+      return errorCode != null;
     }
   }
 
@@ -51,7 +50,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     private void doTestCreateTable(CreateTableTestData testData) {
-      if (testData.error()) {
+      if (testData.hasErrorCode()) {
         assertNamespaceCommand(keyspaceName)
             .postCreateTable(testData.request())
             .hasSingleApiError(testData.errorCode().name(), testData.errorMessage());
@@ -72,6 +71,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "allTypesTable",
                   """
                                         {
                                            "name": "allTypesTable",
@@ -116,12 +116,12 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                "primaryKey": "text_type"
                                            }
                                         }
-                                        """,
-                  "allTypesTable")));
+                                        """)));
       // primaryKeyAsString
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "primaryKeyAsStringTable",
                   """
                                         {
                                            "name": "primaryKeyAsStringTable",
@@ -140,13 +140,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                "primaryKey": "id"
                                            }
                                         }
-                                        """,
-                  "primaryKeyAsStringTable")));
+                                        """)));
 
       // primaryKeyWithQuotable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "primaryKeyWithQuotable",
                   """
                                         {
                                               "name": "primaryKeyWithQuotable",
@@ -162,13 +162,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                 }
                                               }
                                           }
-                                        """,
-                  "primaryKeyWithQuotable")));
+                                        """)));
 
       // columnTypeUsingShortHandTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "columnTypeUsingShortHandTable",
                   """
                                         {
                                            "name": "columnTypeUsingShortHandTable",
@@ -181,13 +181,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                "primaryKey": "id"
                                            }
                                         }
-                                        """,
-                  "columnTypeUsingShortHandTable")));
+                                        """)));
 
       // primaryKeyAsJsonObjectTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "primaryKeyAsJsonObjectTable",
                   """
                                         {
                                           "name": "primaryKeyAsJsonObjectTable",
@@ -213,13 +213,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                             }
                                           }
                                         }
-                                        """,
-                  "primaryKeyAsJsonObjectTable")));
+                                        """)));
 
       // Map type tests
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "apiSupportedMap",
                   """
                                         {
                                           "name": "apiSupportedMap",
@@ -259,13 +259,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                             },
                                             "primaryKey": "id"
                                           }
-                                        }""",
-                  "apiSupportedMap")));
+                                        }""")));
 
       // vector type with vectorize
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "vectorizeConfigTest",
                   """
                                         {
                                            "name": "vectorizeConfigTest",
@@ -289,13 +289,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                "primaryKey": "id"
                                            }
                                         }
-                                        """,
-                  "vectorizeConfigTest")));
+                                        """)));
 
       // unspecified dimension with specified vectorize
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "validUnspecifiedDimension",
                   """
                                              {
                                                  "name": "validUnspecifiedDimension",
@@ -313,13 +313,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                      "primaryKey": "t"
                                                  }
                                              }
-                                        """,
-                  "validUnspecifiedDimension")));
+                                        """)));
 
       // empty dimension string with specified vectorize
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "validEmptyDimension",
                   """
                                              {
                                                  "name": "validEmptyDimension",
@@ -338,13 +338,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                      "primaryKey": "t"
                                                  }
                                              }
-                                        """,
-                  "validEmptyDimension")));
+                                        """)));
 
       // blank dimension string with specified vectorize
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "validBlankDimension",
                   """
                                                {
                                                    "name": "validBlankDimension",
@@ -363,14 +363,14 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                        "primaryKey": "t"
                                                    }
                                                }
-                                        """,
-                  "validBlankDimension")));
+                                        """)));
 
       // Two vector columns with the one has vectorizeDefinition and the other one doesn't.
       // This should be allowed.
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "twoVectorColumnsWithOneVectorizeDefinition",
                   """
                                         {
                                            "name": "twoVectorColumnsWithOneVectorizeDefinition",
@@ -393,8 +393,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                               "primaryKey": "t"
                                            }
                                         }
-                                        """,
-                  "twoVectorColumnsWithOneVectorizeDefinition")));
+                                        """)));
 
       return testCases.stream();
     }
@@ -406,6 +405,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "invalidPrimaryKeyTable",
                   """
                                                       {
                                                        "name": "invalidPrimaryKeyTable",
@@ -425,42 +425,40 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                        }
                                                       }
                                                       """,
-                  "invalidPrimaryKeyTable",
-                  true,
                   SchemaException.Code.UNKNOWN_PARTITION_COLUMNS,
                   "The partition includes the unknown columns: error_column.")));
       // invalidPartitionByTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "invalidPartitionByTable",
                   """
-                                                      {
-                                                        "name": "invalidPartitionByTable",
-                                                        "definition": {
-                                                          "columns": {
-                                                            "id": "text",
-                                                            "age": "int",
-                                                            "name": "text"
-                                                          },
-                                                          "primaryKey": {
-                                                            "partitionBy": [
-                                                              "error_column"
-                                                            ],
-                                                            "partitionSort" : {
-                                                              "name" : 1, "age" : -1
+                                                          {
+                                                            "name": "invalidPartitionByTable",
+                                                            "definition": {
+                                                              "columns": {
+                                                                "id": "text",
+                                                                "age": "int",
+                                                                "name": "text"
+                                                              },
+                                                              "primaryKey": {
+                                                                "partitionBy": [
+                                                                  "error_column"
+                                                                ],
+                                                                "partitionSort" : {
+                                                                  "name" : 1, "age" : -1
+                                                                }
+                                                              }
                                                             }
                                                           }
-                                                        }
-                                                      }
-                                                      """,
-                  "invalidPartitionByTable",
-                  true,
+                                                          """,
                   SchemaException.Code.UNKNOWN_PARTITION_COLUMNS,
                   "The partition includes the unknown columns: error_column.")));
       // invalidPartitionSortTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "invalidPartitionSortTable",
                   """
                                                       {
                                                           "name": "invalidPartitionSortTable",
@@ -481,14 +479,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           }
                                                         }
                                                       """,
-                  "invalidPartitionSortTable",
-                  true,
                   SchemaException.Code.UNKNOWN_PARTITION_SORT_COLUMNS,
                   "The partition sort includes the unknown columns: error_column.")));
       // invalidPartitionSortOrderingValueTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "invalidPartitionSortOrderingValueTable",
                   """
                                                       {
                                                         "name": "invalidPartitionSortOrderingValueTable",
@@ -509,14 +506,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  "invalidPartitionSortOrderingValueTable",
-                  true,
                   ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
       // invalidPartitionSortOrderingValueTypeTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "invalidPartitionSortOrderingValueTypeTable",
                   """
                                                       {
                                                           "name": "invalidPartitionSortOrderingValueTypeTable",
@@ -537,14 +533,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           }
                                                         }
                                                       """,
-                  "invalidPartitionSortOrderingValueTypeTable",
-                  true,
                   ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
       // invalidColumnTypeTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "invalidColumnTypeTable",
                   """
                                                       {
                                                         "name": "invalidColumnTypeTable",
@@ -566,14 +561,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  "invalidColumnTypeTable",
-                  true,
                   SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE,
                   "The command used the unsupported data type: invalid_type.")));
       // Column type not provided: nullColumnTypeTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "nullColumnTypeTable",
                   """
                                                       {
                                                         "name": "nullColumnTypeTable",
@@ -595,14 +589,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  "nullColumnTypeTable",
-                  true,
                   ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
                   "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
       // unsupported primitive api types: timeuuid, counter
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "unsupportedPrimitiveApiTypes",
                   """
                                                       {
                                                        "name": "unsupportedPrimitiveApiTypes",
@@ -619,16 +612,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                        }
                                                       }
                                                       """,
-                  "unsupportedPrimitiveApiTypes",
-                  true,
                   SchemaException.Code.UNSUPPORTED_DATA_TYPE_TABLE_CREATION,
                   "The command used the unsupported data types for table creation : timeuuid")));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "unsupportedMapCounterAsKeyType",
                   """
                                                       {
-                                                        "name": "unsupported",
+                                                        "name": "unsupportedMapCounterAsKeyType",
                                                         "definition": {
                                                           "columns": {
                                                             "id": "text",
@@ -643,16 +635,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           "primaryKey": "id"
                                                         }
                                                       }""",
-                  "unsupported map counter as key type",
-                  true,
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the key type: counter.")));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "unsupportedMapDurationAsKeyType",
                   """
                                                       {
-                                                        "name": "unsupported",
+                                                        "name": "unsupportedMapDurationAsKeyType",
                                                         "definition": {
                                                           "columns": {
                                                             "id": "text",
@@ -667,16 +658,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           "primaryKey": "id"
                                                         }
                                                       }""",
-                  "unsupported map duration as key type",
-                  true,
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the key type: duration.")));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "unsupportedMapUuidAsKeyType",
                   """
                                                       {
-                                                        "name": "unsupported",
+                                                        "name": "unsupportedMapUuidAsKeyType",
                                                         "definition": {
                                                           "columns": {
                                                             "id": "text",
@@ -691,14 +681,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           "primaryKey": "id"
                                                         }
                                                       }""",
-                  "unsupported map timeuuid as key type",
-                  true,
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the key type: timeuuid.")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "mapTypeMissingValue",
                   """
                                                       {
                                                         "name": "mapTypeMissingValue",
@@ -715,16 +704,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           "primaryKey": "id"
                                                         }
                                                       }""",
-                  "mapTypeMissingValue value type not provided",
-                  true,
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the value type: [MISSING].")));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "mapTypeMissingKeyType",
                   """
                                                       {
-                                                        "name": "mapTypeMissingKey",
+                                                        "name": "mapTypeMissingKeyType",
                                                         "definition": {
                                                           "columns": {
                                                             "id": "text",
@@ -738,13 +726,12 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           "primaryKey": "id"
                                                         }
                                                       }""",
-                  "mapTypeMissingKey key type not provided",
-                  true,
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the key type: [MISSING].")));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "mapTypeListValueType",
                   """
                                                       {
                                                         "name": "mapTypeListValueType",
@@ -763,14 +750,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  "mapTypeListValueType not primitive type provided",
-                  true,
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the value type: list.")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "mapTypeListKeyType",
                   """
                                                       {
                                                         "name": "mapTypeListKeyType",
@@ -788,8 +774,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           "primaryKey": "id"
                                                         }
                                                       }""",
-                  "mapTypeListKeyType not primitive type provided",
-                  true,
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
                   "The command used the value type: text.")));
 
@@ -797,6 +781,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "listTypeMissingValueType",
                   """
                                                       {
                                                         "name": "listTypeMissingValueType",
@@ -813,14 +798,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  "listTypeMissingValueType value type not provided",
-                  true,
                   SchemaException.Code.UNSUPPORTED_LIST_DEFINITION,
                   "The command used the value type: [MISSING].")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "listTypeListValueType",
                   """
                                                       {
                                                         "name": "listTypeListValueType",
@@ -838,8 +822,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  "listTypeListValueType not primitive type provided",
-                  true,
                   SchemaException.Code.UNSUPPORTED_LIST_DEFINITION,
                   "The command used the value type: list.")));
 
@@ -847,6 +829,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "listTypeMissingValueType",
                   """
                                                       {
                                                         "name": "listTypeMissingValueType",
@@ -862,14 +845,13 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           "primaryKey": "id"
                                                         }
                                                       }""",
-                  "listTypeMissingValueType value type not provided",
-                  true,
                   SchemaException.Code.UNSUPPORTED_SET_DEFINITION,
                   "The command used the value type: [MISSING].")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "listTypeListValueType",
                   """
                                                       {
                                                         "name": "listTypeListValueType",
@@ -887,8 +869,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  "listTypeListValueType not primitive type provided",
-                  true,
                   SchemaException.Code.UNSUPPORTED_SET_DEFINITION,
                   "The command used the value type: list.")));
 
@@ -896,50 +876,48 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "invalidVectorDimensionNegative",
                   """
-                                                      {
-                                                        "name": "invalidVectorType",
-                                                        "definition": {
-                                                          "columns": {
-                                                            "id": "text",
-                                                            "age": "int",
-                                                            "name": "text",
-                                                            "vector_type": {
-                                                              "type": "vector",
-                                                              "dimension": -5
-                                                            }
-                                                          },
-                                                          "primaryKey": "id"
-                                                        }
-                                                      }
-                                                      """,
-                  "invalidVectorType value type not provided",
-                  true,
+                          {
+                            "name": "invalidVectorDimensionNegative",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text",
+                                "vector_type": {
+                                  "type": "vector",
+                                  "dimension": -5
+                                }
+                              },
+                              "primaryKey": "id"
+                            }
+                          }
+                          """,
                   SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION,
                   "The command used the dimension: -5.")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "invalidVectorDimensionNotNumber",
                   """
-                                                      {
-                                                        "name": "invalidVectorType",
-                                                        "definition": {
-                                                          "columns": {
-                                                            "id": "text",
-                                                            "age": "int",
-                                                            "name": "text",
-                                                            "vector_type": {
-                                                              "type": "vector",
-                                                              "dimension": "aaa"
-                                                            }
-                                                          },
-                                                          "primaryKey": "id"
-                                                        }
-                                                      }
-                                                      """,
-                  "invalidVectorType not primitive type provided",
-                  true,
+                          {
+                            "name": "invalidVectorDimensionNotNumber",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text",
+                                "vector_type": {
+                                  "type": "vector",
+                                  "dimension": "aaa"
+                                }
+                              },
+                              "primaryKey": "id"
+                            }
+                          }
+                          """,
                   SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION,
                   "The command used the dimension: aaa.")));
 
@@ -947,32 +925,31 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
-                  """
-                                                      {
-                                                         "name": "invalidVectorizeServiceNameConfig",
-                                                         "definition": {
-                                                             "columns": {
-                                                                 "id": {
-                                                                     "type": "text"
-                                                                 },
-                                                                 "age": {
-                                                                     "type": "int"
-                                                                 },
-                                                                 "content": {
-                                                                   "type": "vector",
-                                                                   "dimension": 1024,
-                                                                   "service": {
-                                                                     "provider": "invalid_service",
-                                                                     "modelName": "NV-Embed-QA"
-                                                                   }
-                                                                 }
-                                                             },
-                                                             "primaryKey": "id"
-                                                         }
-                                                      }
-                                                      """,
                   "invalidVectorizeServiceNameConfig",
-                  true,
+                  """
+                  {
+                     "name": "invalidVectorizeServiceNameConfig",
+                     "definition": {
+                         "columns": {
+                             "id": {
+                                 "type": "text"
+                             },
+                             "age": {
+                                 "type": "int"
+                             },
+                             "content": {
+                               "type": "vector",
+                               "dimension": 1024,
+                               "service": {
+                                 "provider": "invalid_service",
+                                 "modelName": "NV-Embed-QA"
+                               }
+                             }
+                         },
+                         "primaryKey": "id"
+                     }
+                  }
+                  """,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
                   "The provided options are invalid: Service provider 'invalid_service' is not supported")));
 
@@ -980,32 +957,31 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
-                  """
-                                                      {
-                                                         "name": "invalidVectorizeModelNameConfig",
-                                                         "definition": {
-                                                             "columns": {
-                                                                 "id": {
-                                                                     "type": "text"
-                                                                 },
-                                                                 "age": {
-                                                                     "type": "int"
-                                                                 },
-                                                                 "content": {
-                                                                   "type": "vector",
-                                                                   "dimension": 1024,
-                                                                   "service": {
-                                                                    "provider": "mistral",
-                                                                    "modelName": "mistral-embed-invalid"
-                                                                  }
-                                                                 }
-                                                             },
-                                                             "primaryKey": "id"
-                                                         }
-                                                      }
-                                                      """,
                   "invalidVectorizeModelNameConfig",
-                  true,
+                  """
+                  {
+                     "name": "invalidVectorizeModelNameConfig",
+                     "definition": {
+                         "columns": {
+                             "id": {
+                                 "type": "text"
+                             },
+                             "age": {
+                                 "type": "int"
+                             },
+                             "content": {
+                               "type": "vector",
+                               "dimension": 1024,
+                               "service": {
+                                "provider": "mistral",
+                                "modelName": "mistral-embed-invalid"
+                              }
+                             }
+                         },
+                         "primaryKey": "id"
+                     }
+                  }
+                  """,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
                   "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
 
@@ -1013,29 +989,28 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
-                  """
-                                                      {
-                                                         "name": "deprecatedEmbedModel",
-                                                         "definition": {
-                                                             "columns": {
-                                                                 "id": {
-                                                                     "type": "text"
-                                                                 },
-                                                                 "content": {
-                                                                   "type": "vector",
-                                                                   "dimension": 1024,
-                                                                   "service": {
-                                                                    "provider": "nvidia",
-                                                                    "modelName": "a-deprecated-nvidia-embedding-model"
-                                                                  }
-                                                                 }
-                                                             },
-                                                             "primaryKey": "id"
-                                                         }
-                                                      }
-                                                      """,
                   "deprecatedEmbedModel",
-                  true,
+                  """
+                  {
+                     "name": "deprecatedEmbedModel",
+                     "definition": {
+                         "columns": {
+                             "id": {
+                                 "type": "text"
+                             },
+                             "content": {
+                               "type": "vector",
+                               "dimension": 1024,
+                               "service": {
+                                "provider": "nvidia",
+                                "modelName": "a-deprecated-nvidia-embedding-model"
+                              }
+                             }
+                         },
+                         "primaryKey": "id"
+                     }
+                  }
+                  """,
                   SchemaException.Code.DEPRECATED_AI_MODEL,
                   "The model is: a-deprecated-nvidia-embedding-model. It is at DEPRECATED status.")));
 
@@ -1043,29 +1018,28 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  "eolEmbedModel",
                   """
-                                        {
-                                           "name": "deprecatedEmbedModel",
-                                           "definition": {
-                                               "columns": {
-                                                   "id": {
-                                                       "type": "text"
+                                            {
+                                               "name": "eolEmbedModel",
+                                               "definition": {
+                                                   "columns": {
+                                                       "id": {
+                                                           "type": "text"
+                                                       },
+                                                       "content": {
+                                                         "type": "vector",
+                                                         "dimension": 1024,
+                                                         "service": {
+                                                          "provider": "nvidia",
+                                                          "modelName": "a-EOL-nvidia-embedding-model"
+                                                        }
+                                                       }
                                                    },
-                                                   "content": {
-                                                     "type": "vector",
-                                                     "dimension": 1024,
-                                                     "service": {
-                                                      "provider": "nvidia",
-                                                      "modelName": "a-EOL-nvidia-embedding-model"
-                                                    }
-                                                   }
-                                               },
-                                               "primaryKey": "id"
-                                           }
-                                        }
-                                        """,
-                  "deprecatedEmbedModel",
-                  true,
+                                                   "primaryKey": "id"
+                                               }
+                                            }
+                                            """,
                   SchemaException.Code.END_OF_LIFE_AI_MODEL,
                   "The model is: a-EOL-nvidia-embedding-model. It is at END_OF_LIFE status.")));
 
@@ -1073,32 +1047,31 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
-                  """
-                                        {
-                                           "name": "invalidVectorizeModelNameConfig",
-                                           "definition": {
-                                               "columns": {
-                                                   "id": {
-                                                       "type": "text"
-                                                   },
-                                                   "age": {
-                                                       "type": "int"
-                                                   },
-                                                   "content": {
-                                                     "type": "vector",
-                                                     "dimension": 1536,
-                                                     "service": {
-                                                      "provider": "mistral",
-                                                      "modelName": "mistral-embed"
-                                                    }
-                                                   }
-                                               },
-                                               "primaryKey": "id"
-                                           }
-                                        }
-                                        """,
                   "invalidVectorizeModelNameConfig",
-                  true,
+                  """
+                    {
+                       "name": "invalidVectorizeModelNameConfig",
+                       "definition": {
+                           "columns": {
+                               "id": {
+                                   "type": "text"
+                               },
+                               "age": {
+                                   "type": "int"
+                               },
+                               "content": {
+                                 "type": "vector",
+                                 "dimension": 1536,
+                                 "service": {
+                                  "provider": "mistral",
+                                  "modelName": "mistral-embed"
+                                }
+                               }
+                           },
+                           "primaryKey": "id"
+                       }
+                    }
+                    """,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
                   "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
 
@@ -1106,22 +1079,21 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
-                  """
-                                               {
-                                                   "name": "invalidUnspecifiedDimensionUnspecifiedVectorize",
-                                                   "definition": {
-                                                       "columns": {
-                                                           "t": "text",
-                                                           "v": {
-                                                               "type": "vector"
-                                                           }
-                                                       },
-                                                       "primaryKey": "t"
-                                                   }
-                                               }
-                                        """,
                   "invalidUnspecifiedDimensionUnspecifiedVectorize",
-                  true,
+                  """
+                           {
+                               "name": "invalidUnspecifiedDimensionUnspecifiedVectorize",
+                               "definition": {
+                                   "columns": {
+                                       "t": "text",
+                                       "v": {
+                                           "type": "vector"
+                                       }
+                                   },
+                                   "primaryKey": "t"
+                               }
+                           }
+                    """,
                   SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN,
                   "The dimension is required for vector columns if the embedding service is not specified.")));
 
@@ -1129,21 +1101,20 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
-                  """
-                                          {
-                                              "name": "",
-                                              "definition": {
-                                                  "columns": {
-                                                      "id": "text",
-                                                      "age": "int",
-                                                      "name": "text"
-                                                  },
-                                                  "primaryKey": "id"
-                                              }
-                                          }
-                                          """,
                   "",
-                  true,
+                  """
+                  {
+                      "name": "",
+                      "definition": {
+                          "columns": {
+                              "id": "text",
+                              "age": "int",
+                              "name": "text"
+                          },
+                          "primaryKey": "id"
+                      }
+                  }
+                  """,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ''.")));
 
@@ -1151,6 +1122,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  " ",
                   """
                                           {
                                               "name": " ",
@@ -1164,8 +1136,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                               }
                                           }
                                           """,
-                  " ",
-                  true,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ' '.")));
 
@@ -1173,21 +1143,20 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
-                  """
-                                          {
-                                              "name": "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
-                                              "definition": {
-                                                  "columns": {
-                                                      "id": "text",
-                                                      "age": "int",
-                                                      "name": "text"
-                                                  },
-                                                  "primaryKey": "id"
-                                              }
-                                          }
-                                          """,
                   "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
-                  true,
+                  """
+                                              {
+                                                  "name": "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
+                                                  "definition": {
+                                                      "columns": {
+                                                          "id": "text",
+                                                          "age": "int",
+                                                          "name": "text"
+                                                      },
+                                                      "primaryKey": "id"
+                                                  }
+                                              }
+                                              """,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: 'this_is_a_very_long_table_name_that_is_longer_than_48_characters'.")));
 
@@ -1195,6 +1164,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
+                  " !@#",
                   """
                                           {
                                               "name": " !@#",
@@ -1208,8 +1178,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                               }
                                           }
                                           """,
-                  " !@#",
-                  true,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ' !@#'.")));
       return testCases.stream();
