@@ -36,7 +36,7 @@ public interface TableDescConstants {
      */
     static boolean isKnownDefinitionInputField(String fname) {
       return switch (fname) {
-        case TYPE, KEY_TYPE, VALUE_TYPE, DIMENSION, SERVICE -> true;
+        case TYPE, KEY_TYPE, VALUE_TYPE, UDT_NAME, DIMENSION, SERVICE -> true;
         default -> false;
       };
     }
@@ -46,7 +46,7 @@ public interface TableDescConstants {
      * would return true.
      */
     static List<String> getKnownDefinitionInputFields() {
-      return List.of(TYPE, KEY_TYPE, VALUE_TYPE, DIMENSION, SERVICE);
+      return List.of(TYPE, KEY_TYPE, VALUE_TYPE, UDT_NAME, DIMENSION, SERVICE);
     }
   }
 
