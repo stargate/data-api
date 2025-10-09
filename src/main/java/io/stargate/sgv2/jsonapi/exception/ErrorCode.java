@@ -24,6 +24,8 @@ import java.util.Map;
  * @param <T> Type of the {@link APIException} the error code creates.
  */
 public interface ErrorCode<T extends APIException> {
+  /** Since these are always implemented as Enums, can and should expose logical name as well */
+  String name();
 
   /**
    * Gets an instance of the {@link APIException} the error code represents without providing any
