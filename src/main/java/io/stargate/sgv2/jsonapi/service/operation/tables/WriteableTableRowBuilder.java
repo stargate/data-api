@@ -16,8 +16,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerF
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.*;
 import java.util.function.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Builds a {@link WriteableTableRow} from a {@link JsonNamedValueContainer}.
@@ -26,9 +24,6 @@ import org.slf4j.LoggerFactory;
  * enforces the rules that {@link WriteableTableRow} has to be valid.
  */
 public class WriteableTableRowBuilder {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(WriteableTableRowBuilder.class);
-
   private static final CqlNamedValue.ErrorStrategy<DocumentException> ERROR_STRATEGY =
       new CqlNamedValue.ErrorStrategy<>() {
 

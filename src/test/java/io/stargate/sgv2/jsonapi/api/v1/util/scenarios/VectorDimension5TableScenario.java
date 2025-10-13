@@ -22,7 +22,7 @@ import java.util.*;
  *       vector col
  *   <li>One row with a vector all set to 1.0 , that has id row-1, so you can check to get a vector
  *       that is expected
- *   <li>The well known vector row availanle in {@link #KNOWN_VECTOR_ROW_JSON}
+ *   <li>The well-known vector row available in {@link #KNOWN_VECTOR_ROW_JSON}
  * </ul>
  */
 public class VectorDimension5TableScenario extends TestDataScenario {

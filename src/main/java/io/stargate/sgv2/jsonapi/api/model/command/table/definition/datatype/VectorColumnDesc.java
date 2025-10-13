@@ -82,7 +82,10 @@ public class VectorColumnDesc extends ComplexColumnDesc {
 
     @Override
     public VectorColumnDesc create(
-        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode)
+        String columnName,
+        SchemaDescSource schemaDescSource,
+        JsonParser jsonParser,
+        JsonNode columnDescNode)
         throws JsonProcessingException {
 
       // if the nodes are missing, the jackson MissingNode will be returned and has "" and 0 for
