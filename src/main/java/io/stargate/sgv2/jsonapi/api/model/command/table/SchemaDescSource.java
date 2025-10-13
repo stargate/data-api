@@ -62,7 +62,6 @@ public enum SchemaDescSource {
    * @return a new UnsupportedOperationException with a message, throw it yourself :)
    */
   public UnsupportedOperationException unsupportedException(String context) {
-    return new UnsupportedOperationException(
-        context + " - unsupported SchemaDescBindingPoint: " + this);
+    return new UnsupportedOperationException(context + " - unsupported SchemaDescSource: " + this);
   }
 }

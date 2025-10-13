@@ -81,7 +81,10 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
      * @return
      */
     public UdtRefColumnDesc create(
-        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode) {
+        String columnName,
+        SchemaDescSource schemaDescSource,
+        JsonParser jsonParser,
+        JsonNode columnDescNode) {
 
       Objects.requireNonNull(columnDescNode, "columnDescNode must not be null");
 

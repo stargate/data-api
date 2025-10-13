@@ -1180,6 +1180,27 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
                   "The command used the unsupported Table name: ' !@#'.")));
+
+      // [data-api#1560]: unrecognized column option should lead to failure
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  "createTableInvalidColumnOption",
+                  """
+                                {
+                                    "name": "createTableInvalidColumnOption",
+                                    "definition": {
+                                        "columns": {
+                                            "id": { "type": "int", "favorite_color": "teal"}
+                                        },
+                                        "primaryKey": "id"
+                                    }
+                                }
+                                """,
+                  // Currently gets converted by handlers to ErrorCodeV1: will be upgraded in future
+                  ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD,
+                  "Request invalid, unrecognized JSON field: column 'id' definition contains unknown field 'favorite_color': not one of recognized fields [type,")));
+
       return testCases.stream();
     }
   }
