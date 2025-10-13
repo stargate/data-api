@@ -11,10 +11,8 @@
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <!-- 27-Mar-2025, tatu: Updated to later but not Latest available Quarkus -->
-    <!-- 29-Jul-2025, cedrick: Updated to latest Quarkus -->
-    <!-- 10-Sep-2025, tatu: Updated to latest Quarkus -->
-    <quarkus.platform.version>3.25.4</quarkus.platform.version>
+    <!-- 14-oct-2025 , aaron: Updated to latest Quarkus for security fixes in netty -->
+    <quarkus.platform.version>3.28.3</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <mockito.version>5.12.0</mockito.version>
