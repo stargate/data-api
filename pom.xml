@@ -5,9 +5,8 @@
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.33-SNAPSHOT</version>
   <properties>
-    <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
-    <!-- 23-Oct-2024, tatu: For latest FP optimizations let's get 2.18 -->
-    <jackson.version>2.18.4</jackson.version>
+    <!-- 13-Oct-2025, tatu: Quarkus 3.25 depends on this, sync -->
+    <jackson.version>2.19.2</jackson.version>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
@@ -156,12 +155,12 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.18.0</version>
+      <version>3.19.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.12.0</version>
+      <version>1.14.0</version>
     </dependency>
     <dependency>
       <groupId>com.bpodgursky</groupId>
@@ -232,7 +231,7 @@
       <!-- for generating UUIDs of versions not supported by JDK -->
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
-      <version>5.1.0</version>
+      <version>5.1.1</version>
     </dependency>
     <dependency>
       <!-- for ObjectId handling -->
