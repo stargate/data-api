@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public interface TableDescConstants {
 
@@ -35,10 +37,7 @@ public interface TableDescConstants {
      *     if not
      */
     static boolean isKnownDefinitionInputField(String fname) {
-      return switch (fname) {
-        case TYPE, KEY_TYPE, VALUE_TYPE, UDT_NAME, DIMENSION, SERVICE -> true;
-        default -> false;
-      };
+      return KNOWN_DEFINITION_INPUT_FIELDS_SET.contains(fname);
     }
 
     /**
@@ -46,8 +45,15 @@ public interface TableDescConstants {
      * would return true.
      */
     static List<String> getKnownDefinitionInputFields() {
-      return List.of(TYPE, KEY_TYPE, VALUE_TYPE, UDT_NAME, DIMENSION, SERVICE);
+      return KNOWN_DEFINITION_INPUT_FIELDS_LIST;
     }
+
+    /** List of known main-level input fields for Column Definitions */
+    List<String> KNOWN_DEFINITION_INPUT_FIELDS_LIST =
+        List.of(TYPE, KEY_TYPE, VALUE_TYPE, UDT_NAME, DIMENSION, SERVICE);
+
+    Set<String> KNOWN_DEFINITION_INPUT_FIELDS_SET =
+        new HashSet<>(KNOWN_DEFINITION_INPUT_FIELDS_LIST);
   }
 
   interface PrimaryKey {
