@@ -351,7 +351,7 @@ jobs:
 
     steps:
       - name: Repository dispatch
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.STARGATE_GH_RELEASE }}
           repository: riptano/embedding-gateway
