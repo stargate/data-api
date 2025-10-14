@@ -5,8 +5,6 @@
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.33-SNAPSHOT</version>
   <properties>
-    <!-- 13-Oct-2025, tatu: Quarkus 3.25 depends on this, sync -->
-    <jackson.version>2.19.2</jackson.version>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
@@ -53,15 +51,10 @@
   </properties>
   <dependencyManagement>
     <dependencies>
-      <!-- 17-May-2023, tatu: [json-api#172] Need Jackson 2.15.x -->
-      <!-- NOTE: MUST come before Quarkus bom to have precedence -->
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+      <!-- 14-Oct-2025, tatu: No more jackson-bom; we rely on Quarkus
+           to select compatible and recent Jackson version
+        -->
+      <!-- Use Quarkus BOM for version alignment -->
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>${quarkus.platform.artifact-id}</artifactId>
@@ -69,6 +62,7 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- And AWS SDK BOM as secondary (lower precedence) -->
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>bom</artifactId>
