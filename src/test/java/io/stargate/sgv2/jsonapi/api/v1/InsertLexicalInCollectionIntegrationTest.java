@@ -224,9 +224,9 @@ public class InsertLexicalInCollectionIntegrationTest
           .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
           .body(
               "errors[0].message",
-              containsString("only be used on Collections for which Lexical feature is enabled"));
+              containsString("only be used on collections for which Lexical feature is enabled"));
 
-      // And finally, drop the Collection after use
+      // And finally, drop the collection after use
       deleteCollection(COLLECTION_WITHOUT_LEXICAL);
     }
 
