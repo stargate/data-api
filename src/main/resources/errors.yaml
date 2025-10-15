@@ -1845,7 +1845,7 @@ server-errors:
     body: |-
       The Data API command generated a database query to truncate the table, and the database was either unable to start or complete the operation.     
       
-      Truncating a collection or table requires that all worker nodes in the Keyspace are available, and complete the operation in the required time. Completing the operation includes flushing memory to disk, and snapshotting on disk files. 
+      Truncating a collection or table requires all worker nodes in the keyspace to be available and complete the operation in the required time. Completing the operation includes flushing memory to disk and snapshotting on disk files. 
       
       This is operation has the lowest level of availability as all nodes must be involved. And so it may fail while other read and write operations success, as they do not require all nodes to be available. 
       
