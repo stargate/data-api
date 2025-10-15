@@ -1830,7 +1830,7 @@ server-errors:
     body: |-
       The Data API command generated a database query that used the Compare and Set feature, and the database was unable to determine if the operation was successful.    
       
-      This should be a rare error, and may be due to a temporary capacity issue with the database. The API uses idempotent operations when modifying Documents in collections which removes the possibility of data corruption.
+      This should be a rare error, and may be due to a temporary capacity issue with the database. The API uses idempotent operations when modifying documents in collections which removes the possibility of data corruption.
       
       The command used the keyspace and table or collection: ${keyspace}.${table}.
       The command generated the CQL query: ${cql}.
