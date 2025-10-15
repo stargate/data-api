@@ -167,7 +167,7 @@ request-errors:
     body: |-
       The `findAndRerank` is not enabled for the collection.
       
-      The Command is only supported for collections that are configured with `vector`, `lexical`, and `rerank` configurations. They additionally require a vectorize configuration if `$vectorize` is used.
+      The Command is only supported for collections that have `vector`, `lexical`, and `rerank` configured. They additionally require a vectorize configuration if `$vectorize` is used.
       
       Resend using a supported collection. 
 
