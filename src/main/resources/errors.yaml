@@ -1903,7 +1903,7 @@ server-errors:
       
       This error indicates an issue processing the request, not that the request timed out before completing. 
       
-      When working with collections the data will be consistent, even when failing to write data. When working with tables the data may be in an Eventually Consistent state, as the operation may have completed on some replicas, but not all.
+      When working with collections, the data will be consistent, even when failing to write data. When working with tables, the data may be in an Eventually Consistent state, as the operation may have completed on some replicas, but not all.
       
       This may be due to a temporary capacity issue with the database, or a wider outage. 
       
