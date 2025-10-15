@@ -1946,7 +1946,7 @@ server-errors:
       
       The query was most likely correct, but not enough nodes confirmed the operation had completed before the timeout.
       
-      For collections that data will be consistent. When working with tables the data may be in an Eventually Consistent state, as the operation may have completed on some replicas but not all, which can result in inconsistent reads.
+      For collections, that data will be consistent. When working with tables, the data may be in an Eventually Consistent state, as the operation may have completed on some replicas but not all, which can result in inconsistent reads.
       
       This may be due to a temporary capacity issue with the database, or a wider outage.
       
