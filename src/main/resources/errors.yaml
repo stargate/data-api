@@ -1714,7 +1714,7 @@ request-errors:
     body: |-
       The command attempted to vectorize sort against a collection that does not have vectorize enabled. 
 
-      Vectorize allows the collection to calculate the sort vector for a text value server side. Vectorize is enabled when creating a collection via the `vector` configuration option, it must be defined at creation time as all vectors have the same dimension and model.
+      Vectorize allows the collection to calculate the sort vector for a text value server side. Vectorize is enabled when creating a collection via the `vector` configuration option, and it must be defined at creation time as all vectors have the same dimension and model.
       
       The collection ${keyspace}.${table} does not have vectorize enabled.
       
