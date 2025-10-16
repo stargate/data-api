@@ -36,21 +36,28 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
 
     JsonNode lexicalNode = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
     if (lexicalNode != null) {
-      // We can also check if lexical sort supported by the collection:
-      if (!schema.lexicalConfig().enabled()) {
-        throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
+      // Typical we need a String, but "old" 1/-1 still allowed: so bail out
+      // if we got a Number
+      if (lexicalNode.isNumber()) {
+        ; // do nothing, yet, fall-through to next block
+      } else {
+        // We can also check if lexical sort supported by the collection:
+        if (!schema.lexicalConfig().enabled()) {
+          throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
+        }
+        if (sortNode.size() > 1) {
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+              "if sorting by '%s' no other sort expressions allowed",
+              DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+        }
+        if (!lexicalNode.isTextual()) {
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+              "if sorting by '%s' value must be String, not %s",
+              DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+              JsonUtil.nodeTypeAsString(lexicalNode));
+        }
+        return SortClause.immutable(SortExpression.collectionLexicalSort(lexicalNode.textValue()));
       }
-      if (sortNode.size() > 1) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "if sorting by '%s' no other sort expressions allowed",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
-      }
-      if (!lexicalNode.isTextual()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "if sorting by '%s' value must be String, not %s",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, JsonUtil.nodeTypeAsString(lexicalNode));
-      }
-      return SortClause.immutable(SortExpression.collectionLexicalSort(lexicalNode.textValue()));
     }
     JsonNode vectorNode = sortNode.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     if (vectorNode != null) {
