@@ -1,4 +1,4 @@
-stargate:
+data-api:
   debug:
     enabled: true
   feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig

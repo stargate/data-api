@@ -1,7 +1,7 @@
 ---
 # please keep properties in the alphabetical order
 
-stargate:
+data-api:
   # security and authentication configuration
   # see io.stargate.sgv2.jsonapi.config.AuthConfig for all config properties and options
   auth:

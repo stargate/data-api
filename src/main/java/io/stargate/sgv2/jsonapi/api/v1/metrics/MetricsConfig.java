@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 
 /** Extra, Stargate related configuration for the metrics. */
-@ConfigMapping(prefix = "stargate.metrics")
+@ConfigMapping(prefix = "data-api.metrics")
 public interface MetricsConfig {
 
   /**
@@ -28,7 +28,7 @@ public interface MetricsConfig {
     /**
      * @return If tenant request counter is enabled.
      */
-    @WithDefault("${stargate.multi-tenancy.enabled}")
+    @WithDefault("${data-api.multi-tenancy.enabled}")
     boolean enabled();
 
     /**

@@ -70,8 +70,8 @@ You can run your application in dev mode that enables live coding using:
 ```shell script
 docker run -d --rm -e CLUSTER_NAME=dse-cluster -e CLUSTER_VERSION=6.8 -e ENABLE_AUTH=true -e DEVELOPER_MODE=true -e DS_LICENSE=accept -e DSE=true -p 8081:8081 -p 8091:8091 -p 9042:9042 stargateio/coordinator-dse-next:v2
 
-./mvnw compile quarkus:dev -Dstargate.jsonapi.operations.vectorize-enabled=true \
-  -Dstargate.jsonapi.operations.database-config.local-datacenter=dc1
+./mvnw compile quarkus:dev -Ddata-api.operations.vectorize-enabled=true \
+  -Ddata-api.operations.database-config.local-datacenter=dc1
 ```
 
 The command above will first spin the single Stargate DSE coordinator in dev that the API would communicate to.
@@ -254,5 +254,5 @@ We regularly update the integration tests and [Docker compose](docker-compose) s
     ```
 - The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`. Set the correct `local-datacenter` as the jvm option. 
     ```
-     java -Dstargate.jsonapi.operations.database-config.local-datacenter=dc1 -jar target/quarkus-app/quarkus-run.jar
+     java -Ddata-api.operations.database-config.local-datacenter=dc1 -jar target/quarkus-app/quarkus-run.jar
     ```

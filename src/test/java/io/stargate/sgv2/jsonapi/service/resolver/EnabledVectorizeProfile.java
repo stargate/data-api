@@ -13,7 +13,7 @@ public class EnabledVectorizeProfile implements QuarkusTestProfile {
   @Override
   public Map<String, String> getConfigOverrides() {
     return ImmutableMap.<String, String>builder()
-        .put("stargate.jsonapi.operations.vectorize-enabled", "true")
+        .put("data-api.operations.vectorize-enabled", "true")
         .build();
   }
 }

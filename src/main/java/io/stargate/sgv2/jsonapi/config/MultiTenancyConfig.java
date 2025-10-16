@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 /** Configuration mapping for the tenant resolver. */
-@ConfigMapping(prefix = "stargate.multi-tenancy")
+@ConfigMapping(prefix = "data-api.multi-tenancy")
 public interface MultiTenancyConfig {
 
   /**
