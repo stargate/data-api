@@ -96,7 +96,7 @@ snippets:
 
   - name: CURRENTLY_UNSUPPORTED
     body: |-
-      Currently API Tables has limited support for: 
+      Currently API tables have limited support for: 
       
       - Cassandra `timeuuid`, `counter` types.
       - Tuple types.
@@ -111,7 +111,7 @@ snippets:
 
   - name: EXPLAIN_PARTITIONING
     body: |-
-      Rows in API Tables are partitioned by the partition key, which can be one or more columns. All rows in the same partition share the same partition key values and can be very quickly read in the order of the partition sorting.
+      Rows in API tables are partitioned by the partition key, which can be one or more columns. All rows in the same partition share the same partition key values and can be very quickly read in the order of the partition sorting.
 
 
 
@@ -131,11 +131,11 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND
-    title: Command is not supported by Tables
+    title: Command is not supported by tables
     body: |-
-      The command is not supported by Tables in the API.  
+      The command is not supported by tables in the API.  
       
-      While many commands operate on both Tables and Collections, some commands can only be run against Tables or Collections. 
+      While many commands operate on both tables and collections, some commands can only be run against tables or collections. 
       
       The commands supported by tables are: ${tableCommands}.
       The commands supported by collections are: ${collectionCommands}.
@@ -147,11 +147,11 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_COLLECTION_COMMAND
-    title: Command is not supported by Collections
+    title: Command is not supported by collections
     body: |-
-      The command is not supported by Collections in the API.  
+      The command is not supported by collections in the API.  
       
-      While many commands operate on both Tables and Collections, some commands can only be run against Tables or Collections. 
+      While many commands operate on both tables and collections, some commands can only be run against tables or collections. 
       
       The commands supported by collections are: ${collectionCommands}.
       The commands supported by tables are: ${tableCommands}.
@@ -163,13 +163,13 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_RERANKING_COMMAND
-    title: Reranking not enabled for Collection
+    title: Reranking not enabled for collection
     body: |-
-      The `findAndRerank` is not enabled for the Collection.
+      The `findAndRerank` is not enabled for the collection.
       
-      The Command is only supported for Collections that are configured with `vector`, `lexical`, and `rerank` configurations. They additionally require a vectorize configuration if `$vectorize` is used.
+      The Command is only supported for collections that have `vector`, `lexical`, and `rerank` configured. They additionally require a vectorize configuration if `$vectorize` is used.
       
-      Resend using a supported Collection. 
+      Resend using a supported collection. 
 
   # unscoped because this touches both the sort and the options
   - scope:
@@ -364,7 +364,7 @@ request-errors:
     code: MISSING_FILTER_FOR_UPDATE_DELETE
     title: Update and delete commands require a filter
     body: |-
-      Update and delete commands for Tables require a filter.
+      Update and delete commands for tables require a filter.
       
       These commands require a filter that identifies a either a single row (for `updateOne` and `deleteOne`) or a partition and a sequence of rows (for `deleteMany`). 
       
@@ -543,11 +543,11 @@ request-errors:
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE
-    title: Update operation not supported by Tables
+    title: Update operation not supported by tables
     body: |-
-      The command included update operations that are not supported by Tables.
+      The command included update operations that are not supported by tables.
       
-      API Tables supports the update operations: ${supportedUpdateOperations}.
+      API tables support the update operations: ${supportedUpdateOperations}.
       The update included the unsupported operations: ${usedUnsupportedUpdateOperations}.
       
       Resend the command using only supported update operations.
@@ -813,7 +813,7 @@ request-errors:
 
   - scope: SCHEMA
     code: MISSING_PARTITION_COLUMNS
-    title: Partitioning keys are required for Tables
+    title: Partitioning keys are required for tables
     body: |-
         The table definition must have at least one partition key.
       
@@ -943,7 +943,7 @@ request-errors:
     code: DEPRECATED_AI_MODEL
     title: Cannot use deprecated model.
     body: |-
-      The command attempted to create or alter a Collection or Table to use a AI Model that has been marked as deprecated. Deprecated models are only supported by the API for existing use and will later be removed.
+      The command attempted to create or alter a collection or table to use a AI Model that has been marked as deprecated. Deprecated models are only supported by the API for existing use and will later be removed.
 
       The model is: ${model}. It is at ${modelStatus} status.
       ${message}
@@ -954,7 +954,7 @@ request-errors:
     code: END_OF_LIFE_AI_MODEL
     title: Cannot use end of life model.
     body: |-
-      The command attempted to use an AI Model that has been marked as end of life. End of life models cannot be used in any way. Collections or Tables that use the model must be recreated as data such as embeddings is not transferrable.
+      The command attempted to use an AI Model that has been marked as end of life. End of life models cannot be used in any way. Collections or tables that use the model must be recreated as data such as embeddings is not transferrable.
       
       The model is: ${model}. It is at ${modelStatus} status.
       ${message}
@@ -1023,8 +1023,8 @@ request-errors:
     code: LEXICAL_NOT_ENABLED_FOR_COLLECTION
     title: Lexical search is not enabled for the collection
     body: |-
-      Lexical content can only be added and filtering and sort only be used on Collections for which Lexical feature is enabled.
-      The Collection ${keyspace}.${table} does not have Lexical feature enabled.
+      Lexical content can only be added and filtering and sort only be used on collections for which Lexical feature is enabled.
+      The collection ${keyspace}.${table} does not have Lexical feature enabled.
 
   - scope: SCHEMA
     code: UNKNOWN_DATA_TYPE
@@ -1666,7 +1666,7 @@ request-errors:
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND
-    title: Sorting not supported by delete command on Tables
+    title: Sorting not supported by delete command on tables
     body: |-
       The command attempted to sort a delete command running against a table. 
 
@@ -1676,7 +1676,7 @@ request-errors:
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_UPDATE_COMMAND
-    title: Sorting not supported by update command on Tables
+    title: Sorting not supported by update command on tables
     body: |-
       The command attempted to sort a update command running against a table. 
 
@@ -1697,28 +1697,28 @@ request-errors:
 
   - scope: SORT
     code: UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION
-    title: Vector sorting not supported by the Collection
+    title: Vector sorting not supported by the collection
     body: |-
-      The command attempted to vector sort against a Collection that does not have vectors enabled. 
+      The command attempted to vector sort against a collection that does not have vectors enabled. 
 
       Vector sorting is enabled when creating a collection via the `vector` configuration option. It must be defined at creation time as all vectors have the same dimension.
       
-      The Collection ${keyspace}.${table} does not have vectors enabled.
+      The collection ${keyspace}.${table} does not have vectors enabled.
       
-      Resend the command using a Collection with vectors enabled, or create a new Collection.
+      Resend the command using a collection with vectors enabled, or create a new collection.
 
 
   - scope: SORT
     code: UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION
-    title: Vectorize sorting not supported by the Collection
+    title: Vectorize sorting not supported by the collection
     body: |-
-      The command attempted to vectorize sort against a Collection that does not have vectorize enabled. 
+      The command attempted to vectorize sort against a collection that does not have vectorize enabled. 
 
-      Vectorize allows the Collection to calculate the sort vector for a text value server side. Vectorize is enabled when creating a collection via the `vector` configuration option, it must be defined at creation time as all vectors have the same dimension and model.
+      Vectorize allows the collection to calculate the sort vector for a text value server side. Vectorize is enabled when creating a collection via the `vector` configuration option, and it must be defined at creation time as all vectors have the same dimension and model.
       
-      The Collection ${keyspace}.${table} does not have vectorize enabled.
+      The collection ${keyspace}.${table} does not have vectorize enabled.
       
-      Resend the command using a Collection with vectorize enabled, or create a new Collection.
+      Resend the command using a collection with vectorize enabled, or create a new collection.
 # ================================================================================================================
 # ================================================================================================================
 #                                           Server Errors
@@ -1830,7 +1830,7 @@ server-errors:
     body: |-
       The Data API command generated a database query that used the Compare and Set feature, and the database was unable to determine if the operation was successful.    
       
-      This should be a rare error, and may be due to a temporary capacity issue with the database. The API uses idempotent operations when modifying Documents in Collections which removes the possibility of data corruption.
+      This should be a rare error, and may be due to a temporary capacity issue with the database. The API uses idempotent operations when modifying documents in collections which removes the possibility of data corruption.
       
       The command used the keyspace and table or collection: ${keyspace}.${table}.
       The command generated the CQL query: ${cql}.
@@ -1845,7 +1845,7 @@ server-errors:
     body: |-
       The Data API command generated a database query to truncate the table, and the database was either unable to start or complete the operation.     
       
-      Truncating a Collection or Table requires that all worker nodes in the Keyspace are available, and complete the operation in the required time. Completing the operation includes flushing memory to disk, and snapshotting on disk files. 
+      Truncating a collection or table requires all worker nodes in the keyspace to be available and complete the operation in the required time. Completing the operation includes flushing memory to disk and snapshotting on disk files. 
       
       This is operation has the lowest level of availability as all nodes must be involved. And so it may fail while other read and write operations success, as they do not require all nodes to be available. 
       
@@ -1903,7 +1903,7 @@ server-errors:
       
       This error indicates an issue processing the request, not that the request timed out before completing. 
       
-      When working with Collections the data will be consistent, even when failing to write data. When working with Tables the data may be in an Eventually Consistent state, as the operation may have completed on some replicas, but not all.
+      When working with collections, the data will be consistent, even when failing to write data. When working with tables, the data may be in an Eventually Consistent state, as the operation may have completed on some replicas, but not all.
       
       This may be due to a temporary capacity issue with the database, or a wider outage. 
       
@@ -1946,7 +1946,7 @@ server-errors:
       
       The query was most likely correct, but not enough nodes confirmed the operation had completed before the timeout.
       
-      For Collections that data will be consistent. When working with Tables the data may be in an Eventually Consistent state, as the operation may have completed on some replicas but not all, which can result in inconsistent reads.
+      For collections, that data will be consistent. When working with tables, the data may be in an Eventually Consistent state, as the operation may have completed on some replicas but not all, which can result in inconsistent reads.
       
       This may be due to a temporary capacity issue with the database, or a wider outage.
       

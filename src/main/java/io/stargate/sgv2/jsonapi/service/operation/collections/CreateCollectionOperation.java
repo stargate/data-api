@@ -434,7 +434,7 @@ public record CreateCollectionOperation(
         // If that is not a valid Data API collection, error out the createCollectionCommand
         if (!COLLECTION_MATCHER.test(table)) {
           throw ErrorCodeV1.EXISTING_TABLE_NOT_DATA_API_COLLECTION.toApiException(
-              "table ('%s') already exists and it is not a valid Data API Collection", tableName);
+              "table ('%s') already exists and it is not a valid Data API collection", tableName);
         }
         // If that is a valid Data API table, we returned it
         return table;
