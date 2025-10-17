@@ -4,7 +4,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -22,26 +21,25 @@ import java.util.function.Supplier;
 public abstract class TaskPage<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject>
     implements Supplier<CommandResult> {
 
-  protected final TaskGroup<TaskT, SchemaT> tasks;
+  protected final TaskGroup<TaskT, SchemaT> taskGroup;
   protected final CommandResultBuilder resultBuilder;
 
   /**
    * Create a new page of {@link Task} results.
    *
-   * @param tasks The group of tasks that have been run.
+   * @param taskGroup The group of tasks that have been run.
    * @param resultBuilder The builder to use to create the {@link CommandResult}, it will have
    *     already being with any specifics for the response structure.
    */
-  protected TaskPage(TaskGroup<TaskT, SchemaT> tasks, CommandResultBuilder resultBuilder) {
+  protected TaskPage(TaskGroup<TaskT, SchemaT> taskGroup, CommandResultBuilder resultBuilder) {
 
-    this.tasks = Objects.requireNonNull(tasks, "tasks cannot be null");
+    this.taskGroup = Objects.requireNonNull(taskGroup, "taskGroup cannot be null");
     this.resultBuilder = Objects.requireNonNull(resultBuilder, "resultBuilder cannot be null");
   }
 
   /** Get the {@link CommandResult} that represents the page of tasks that have been run. */
   @Override
   public CommandResult get() {
-    Collections.sort(tasks);
     buildCommandResult();
     return resultBuilder.build();
   }
@@ -59,7 +57,7 @@ public abstract class TaskPage<TaskT extends Task<SchemaT>, SchemaT extends Sche
 
     // any driver errors on the task will have been through the DriverExceptionHandler and turned
     // into ApiExceptions
-    tasks.errorTasks().stream()
+    taskGroup.errorTasks().stream()
         .map(Task::failure)
         .filter(Optional::isPresent)
         .map(Optional::get)
@@ -67,7 +65,7 @@ public abstract class TaskPage<TaskT extends Task<SchemaT>, SchemaT extends Sche
   }
 
   protected void addTaskWarningsToResult() {
-    tasks.stream()
+    taskGroup.tasks().stream()
         .flatMap(task -> task.warningsExcludingSuppressed().stream())
         .forEach(resultBuilder::addWarning);
   }

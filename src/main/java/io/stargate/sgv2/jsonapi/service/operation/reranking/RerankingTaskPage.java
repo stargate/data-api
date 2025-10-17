@@ -41,11 +41,11 @@ public class RerankingTaskPage<SchemaT extends TableBasedSchemaObject>
   protected void buildCommandResult() {
 
     // There should only be 1 rerankig task
-    if (tasks.completedTasks().size() != 1) {
+    if (taskGroup.completedTasks().size() != 1) {
       throw new IllegalStateException(
-          "Expected exactly 1 completed RerankingTask, got " + tasks.completedTasks().size());
+          "Expected exactly 1 completed RerankingTask, got " + taskGroup.completedTasks().size());
     }
-    var completedTask = tasks.completedTasks().getFirst();
+    var completedTask = taskGroup.completedTasks().getFirst();
 
     // add any errors and warnings
     super.buildCommandResult();
