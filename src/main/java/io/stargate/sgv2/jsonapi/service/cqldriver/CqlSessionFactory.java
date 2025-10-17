@@ -180,7 +180,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     builder = builder.addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
     // aaron - this used to have an if / else that threw an exception if the database type was not
-    // known but we test that when creating the credentials for the cache key so no need to do it
+    // known, but we test that when creating the credentials for the cache key so no need to do it
     // here.
     return builder.build();
   }
