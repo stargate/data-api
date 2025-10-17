@@ -141,7 +141,10 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
         .hasProjectionSchema()
         .hasDocuments(1)
         .hasProjectionSchemaWith("id", ApiDataTypeDefs.TEXT)
-        .doesNotHaveProjectionSchemaWith("MISSING_COLUMN");
+        .hasSingleApiError(
+            ProjectionException.Code.UNKNOWN_TABLE_COLUMNS,
+            ProjectionException.class,
+            "The projection included the following unknown columns: [MISSING_COLUMN]");
   }
 
   @Test

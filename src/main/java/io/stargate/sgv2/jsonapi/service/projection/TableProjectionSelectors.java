@@ -8,20 +8,29 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Encapsulates a map of table projection selectors for inclusion-only projections. Only tracks what
  * we want to include - exclusion logic is handled by not including items.
  */
 public final class TableProjectionSelectors {
+  /**
+   * The map of column identifiers to their projection selectors. The presence of a selector in this
+   * map means the column is included in the projection.
+   */
   private final Map<CqlIdentifier, TableProjectionSelector> selectors;
+
   private final TableSchemaObject table;
+
+  /**
+   * Match if a column does not support reads, we can find unsupported columns from the projection.
+   */
+  private static final Predicate<ApiSupportDef> MATCH_READ_UNSUPPORTED =
+      ApiSupportDef.Matcher.NO_MATCHES.withRead(false);
 
   private TableProjectionSelectors(
       Map<CqlIdentifier, TableProjectionSelector> selectors, TableSchemaObject table) {
@@ -35,10 +44,27 @@ public final class TableProjectionSelectors {
    */
   public static TableProjectionSelectors from(
       TableProjectionDefinition definition, TableSchemaObject table) {
+
+    // check if the table columns is not readable first
+    // this is to avoid trigger the UnsupportedApiDataType typeName() exception
+    List<ApiColumnDef> unsupportedReadColumns =
+        table.apiTableDef().allColumns().filterBySupportToList(MATCH_READ_UNSUPPORTED);
+    if (!unsupportedReadColumns.isEmpty()) {
+      throw ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+          errVars(
+              table,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(table.apiTableDef().allColumns()));
+                map.put("unsupportedColumns", errFmtApiColumnDef(unsupportedReadColumns));
+              }));
+    }
+
+    // create selectors based on inclusion or exclusion mode
     var selectors =
         definition.isInclusion()
             ? buildInclusionSelectors(definition, table)
             : buildExclusionSelectors(definition, table);
+
     return selectors;
   }
 
@@ -80,6 +106,7 @@ public final class TableProjectionSelectors {
       var rootIdentifier = CqlIdentifier.fromInternal(root);
       var rootApiColumnDef = allColumnsInTable.get(rootIdentifier);
 
+      // if root column not found, this is an invalid projection path
       if (rootApiColumnDef == null) {
         unknownProjectionPaths.add(path);
         continue;
@@ -194,7 +221,6 @@ public final class TableProjectionSelectors {
         // Whole column excluded - remove it entirely
         selectorMap.remove(rootIdentifier);
       } else if (docPath.getSegmentsSize() > 1) {
-
         if (docPath.getSegmentsSize() != 2
             || rootApiColumnDef.type().typeName() != ApiTypeName.UDT) {
           // Invalid path: only UDT fields can be sub-selected, and only one level deep

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTestBase {
+public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -79,9 +79,9 @@ public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTest
           .hasProjectionSchemaWith("age", ApiDataTypeDefs.INT)
           .doesNotHaveProjectionSchemaWith("active")
           .doesNotHaveProjectionSchemaWith("id")
-          .hasSingleDocument()
-          .hasJSONField(
-              "data.document",
+          .hasDocuments(1)
+          .hasDocumentInPosition(
+              0,
               """
               {
                 "name": "Ada",
@@ -102,9 +102,9 @@ public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTest
           .hasProjectionSchemaWith("name", ApiDataTypeDefs.TEXT)
           .hasProjectionSchemaWith("age", ApiDataTypeDefs.INT)
           .hasProjectionSchemaWith("active", ApiDataTypeDefs.BOOLEAN)
-          .hasSingleDocument()
-          .hasJSONField(
-              "data.document",
+          .hasDocuments(1)
+          .hasDocumentInPosition(
+              0,
               """
               {
                 "id": "u1",
@@ -127,9 +127,9 @@ public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTest
           .doesNotHaveProjectionSchemaWith("name")
           .doesNotHaveProjectionSchemaWith("age")
           .doesNotHaveProjectionSchemaWith("active")
-          .hasSingleDocument()
-          .hasJSONField(
-              "data.document",
+          .hasDocuments(1)
+          .hasDocumentInPosition(
+              0,
               """
               {
                 "id": "u2"
@@ -149,9 +149,9 @@ public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTest
           .hasProjectionSchemaWith("name", ApiDataTypeDefs.TEXT)
           .hasProjectionSchemaWith("age", ApiDataTypeDefs.INT)
           .doesNotHaveProjectionSchemaWith("active")
-          .hasSingleDocument()
-          .hasJSONField(
-              "data.document",
+          .hasDocuments(1)
+          .hasDocumentInPosition(
+              0,
               """
               {
                 "id": "u1",
@@ -211,11 +211,13 @@ public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTest
           .hasProjectionSchemaUdt("address", TYPE_NAME)
           .hasProjectionSchemaUdtField("address", "city", "text")
           .hasProjectionSchemaUdtField("address", "country", "text")
-          .hasSingleDocument()
-          .hasJSONField(
-              "data.document.address",
+          .hasDocuments(1)
+          .hasDocumentInPosition(
+              0,
               """
-              {"city": "New York", "country": "USA"}
+              {
+                "address": {"city": "New York", "country": "USA"}
+              }
               """);
     }
 
@@ -231,11 +233,13 @@ public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTest
           .hasProjectionSchemaUdt("address", TYPE_NAME)
           .hasProjectionSchemaUdtField("address", "city", "text")
           .doesNotHaveProjectionSchemaUdtField("address", "country")
-          .hasSingleDocument()
-          .hasJSONField(
-              "data.document.address",
+          .hasDocuments(1)
+          .hasDocumentInPosition(
+              0,
               """
-              {"city": "New York"}
+              {
+                "address": {"city": "New York"}
+              }
               """);
     }
 
@@ -251,11 +255,13 @@ public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTest
           .hasProjectionSchemaUdt("address", TYPE_NAME)
           .hasProjectionSchemaUdtField("address", "city", "text")
           .hasProjectionSchemaUdtField("address", "country", "text")
-          .hasSingleDocument()
-          .hasJSONField(
-              "data.document.address",
+          .hasDocuments(1)
+          .hasDocumentInPosition(
+              0,
               """
-              {"city": "New York", "country": "USA"}
+              {
+                "address": {"city": "New York", "country": "USA"}
+              }
               """);
     }
 
@@ -271,11 +277,13 @@ public class ProjectionTableIntegrationTest extends AbstractTableIntegrationTest
           .hasProjectionSchemaUdt("address", TYPE_NAME)
           .hasProjectionSchemaUdtField("address", "country", "text")
           .doesNotHaveProjectionSchemaUdtField("address", "city")
-          .hasSingleDocument()
-          .hasJSONField(
-              "data.document.address",
+          .hasDocuments(1)
+          .hasDocumentInPosition(
+              0,
               """
-              {"country": "USA"}
+              {
+                "address": {"country": "USA"}
+              }
               """);
     }
   }

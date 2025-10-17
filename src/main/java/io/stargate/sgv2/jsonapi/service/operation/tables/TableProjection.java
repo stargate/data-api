@@ -25,10 +25,8 @@ import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.projection.TableProjectionSelector;
 import io.stargate.sgv2.jsonapi.service.projection.TableProjectionSelectors;
 import io.stargate.sgv2.jsonapi.service.projection.TableUDTProjectionSelector;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
 import java.util.*;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,13 +41,6 @@ import org.slf4j.LoggerFactory;
  */
 public class TableProjection implements SelectCQLClause, OperationProjection {
   private static final Logger LOGGER = LoggerFactory.getLogger(TableProjection.class);
-
-  /**
-   * Match if a column does not support reads so we can find unsupported columns from the
-   * projection.
-   */
-  private static final Predicate<ApiSupportDef> MATCH_READ_UNSUPPORTED =
-      ApiSupportDef.Matcher.NO_MATCHES.withRead(false);
 
   private ObjectMapper objectMapper;
   private TableSchemaObject table;
@@ -117,24 +108,6 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
                 map.put(
                     "unknownColumns",
                     command.tableProjectionDefinition().getColumnNames().toString());
-              }));
-    }
-
-    // result set has ColumnDefinitions not ColumnMetadata kind of weird
-    var readApiColumns =
-        table
-            .apiTableDef()
-            .allColumns()
-            .filterByIdentifiers(selectedColumns.stream().map(ColumnMetadata::getName).toList());
-
-    var unsupportedColumns = readApiColumns.filterBySupportToList(MATCH_READ_UNSUPPORTED);
-    if (!unsupportedColumns.isEmpty()) {
-      throw ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES.get(
-          errVars(
-              table,
-              map -> {
-                map.put("allColumns", errFmtApiColumnDef(table.apiTableDef().allColumns()));
-                map.put("unsupportedColumns", errFmtApiColumnDef(unsupportedColumns));
               }));
     }
 
