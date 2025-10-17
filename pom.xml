@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.33-SNAPSHOT</version>
+  <version>1.0.34-SNAPSHOT</version>
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -12,7 +12,12 @@
     <quarkus.platform.version>3.28.3</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
-    <mockito.version>5.12.0</mockito.version>
+    <!-- 17-Oct-2025, tatu: Although quarkus-bom provides for Mockito version,
+       matching property is NOT available when we import it (instead of using as parent pom.
+       But we need version for "maven-surefire-plugin" config! So we have no choice
+       but duplicate this, unfortunately & need to keep things in sync manually
+      -->
+    <mockito.version>5.19.0</mockito.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Integration test props -->
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
@@ -46,7 +51,7 @@
     <!-- Testing -->
     <skipTests>false</skipTests>
     <skipUnitTests>${skipTests}</skipUnitTests>
-    <surefire-plugin.version>3.5.3</surefire-plugin.version>
+    <surefire-plugin.version>3.5.4</surefire-plugin.version>
     <skipITs>false</skipITs>
   </properties>
   <dependencyManagement>
@@ -304,7 +309,11 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
         <configuration>
-          <argLine>-Xmx4g</argLine>
+          <!-- 17-Oct-2025, tatu: agent settings needed to get rid of "inline mock" warning by Mockito;
+              leading to duplication of "mockito.version".
+              See: https://github.com/stargate/data-api/pull/2233
+            -->
+          <argLine>-Xmx4g -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <maven.home>${maven.home}</maven.home>
