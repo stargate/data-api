@@ -33,9 +33,9 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   //   so cannot refer from code
   static {
     final String PROP_KEY = "config.override_with_env_vars";
-    // System.err.println("WARN: setting '" + PROP_KEY + "'...");
     LOGGER.info(
-        "Setting system property '{}' to 'true' to enable ENV variable override for Cassandra Java Driver config");
+        "Setting system property '{}' to 'true' to enable ENV variable override for Cassandra Java Driver config",
+        PROP_KEY);
     System.setProperty(PROP_KEY, "true");
   }
 
