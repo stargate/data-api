@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultIndexMetadata;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
+import com.datastax.oss.driver.internal.core.type.UserDefinedTypeBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;
@@ -223,22 +224,8 @@ public class TableMetadataTestData extends TestDataSuplier {
   }
 
   public TableMetadata tableAllDatatypesNotIndexed() {
-    return new DefaultTableMetadata(
-        names.KEYSPACE_NAME,
-        names.TABLE_NAME,
-        UUID.randomUUID(),
-        false,
-        false,
-        ImmutableList.of(
-            columnMetadata(names.COL_PARTITION_KEY_1, DataTypes.TEXT),
-            columnMetadata(names.COL_PARTITION_KEY_2, DataTypes.TEXT)),
-        ImmutableMap.of(
-            columnMetadata(names.COL_CLUSTERING_KEY_1, DataTypes.TEXT),
-            ClusteringOrder.ASC,
-            columnMetadata(names.COL_CLUSTERING_KEY_2, DataTypes.TEXT),
-            ClusteringOrder.ASC,
-            columnMetadata(names.COL_CLUSTERING_KEY_3, DataTypes.TEXT),
-            ClusteringOrder.ASC),
+    // Build base columns as before
+    var baseColumns =
         columnMap(
             Map.entry(names.COL_PARTITION_KEY_1, DataTypes.TEXT),
             Map.entry(names.COL_PARTITION_KEY_2, DataTypes.TEXT),
@@ -269,7 +256,37 @@ public class TableMetadataTestData extends TestDataSuplier {
             Map.entry(names.CQL_SET_COLUMN, DataTypes.setOf(DataTypes.TEXT)),
             Map.entry(names.CQL_MAP_COLUMN, DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT)),
             Map.entry(names.CQL_LIST_COLUMN, DataTypes.listOf(DataTypes.TEXT)),
-            Map.entry(names.CQL_VECTOR_COLUMN, DataTypes.vectorOf(DataTypes.FLOAT, 3))),
+            Map.entry(names.CQL_VECTOR_COLUMN, DataTypes.vectorOf(DataTypes.FLOAT, 3)));
+
+    // Add a non-frozen UDT column: address_udt(city text, country text)
+    var udt =
+        new UserDefinedTypeBuilder(names.KEYSPACE_NAME, names.CQL_NON_FROZEN_UDT_COLUMN_ADDRESS)
+            .withField(names.CQL_ADDRESS_CITY_FIELD, DataTypes.TEXT)
+            .withField(names.CQL_ADDRESS_COUNTRY_FIELD, DataTypes.TEXT)
+            .build();
+
+    var extendedColumns = new java.util.LinkedHashMap<CqlIdentifier, ColumnMetadata>(baseColumns);
+    extendedColumns.put(
+        names.CQL_NON_FROZEN_UDT_COLUMN_ADDRESS,
+        columnMetadata(names.CQL_NON_FROZEN_UDT_COLUMN_ADDRESS, udt));
+
+    return new DefaultTableMetadata(
+        names.KEYSPACE_NAME,
+        names.TABLE_NAME,
+        UUID.randomUUID(),
+        false,
+        false,
+        ImmutableList.of(
+            columnMetadata(names.COL_PARTITION_KEY_1, DataTypes.TEXT),
+            columnMetadata(names.COL_PARTITION_KEY_2, DataTypes.TEXT)),
+        ImmutableMap.of(
+            columnMetadata(names.COL_CLUSTERING_KEY_1, DataTypes.TEXT),
+            ClusteringOrder.ASC,
+            columnMetadata(names.COL_CLUSTERING_KEY_2, DataTypes.TEXT),
+            ClusteringOrder.ASC,
+            columnMetadata(names.COL_CLUSTERING_KEY_3, DataTypes.TEXT),
+            ClusteringOrder.ASC),
+        extendedColumns,
         ImmutableMap.of(),
         ImmutableMap.of());
   }

@@ -102,43 +102,8 @@ public class TableProjectionDefinition {
     return new TableProjectionDefinition(inclusionProjection, columnNames);
   }
 
-  /**
-   * Method that selects columns from a map of column definitions, based on this projection
-   * definition.
-   *
-   * @param columnDefs Column definitions by matching name to proper identifier
-   * @return Filtered List of matching columns
-   * @param <T> Actual column identifier type
-   */
-  public <T> List<T> extractSelectedColumns(Map<String, T> columnDefs) {
-    // "missing" root layer used as short-cut for include-all/exclude-all
-    if (columnNames.isEmpty()) {
-      if (inclusion) { // exclude-all
-        return Collections.emptyList();
-      }
-      // include-all
-      return columnDefs.values().stream().toList();
-    }
-
-    // Otherwise need to actually determine
-    List<T> included = new ArrayList<>();
-
-    if (inclusion) {
-      for (String columnName : columnNames) {
-        T columnDef = columnDefs.get(columnName);
-        if (columnDef != null) {
-          included.add(columnDef);
-        }
-      }
-    } else {
-      for (Map.Entry<String, T> entry : columnDefs.entrySet()) {
-        if (!columnNames.contains(entry.getKey())) {
-          included.add(entry.getValue());
-        }
-      }
-    }
-
-    return included;
+  public boolean isInclusion() {
+    return inclusion;
   }
 
   private static boolean extractIncludeOrExclude(String path, JsonNode value) {
