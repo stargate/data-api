@@ -8,8 +8,9 @@ import com.datastax.oss.driver.api.core.config.DriverConfig;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.DriverOption;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-public class CqlDriverConfigLoadTests {
+public class CqlDriverConfigLoadBasicTests {
   private final String DEFAULT_SESSION = "tenant-none";
   // from Driver's "reference.conf"
   private final String DEFAULT_CONSISTENCY = "LOCAL_ONE";
@@ -24,6 +25,7 @@ public class CqlDriverConfigLoadTests {
     verifyTenantAndConsistency(loader.getInitialConfig(), DEFAULT_SESSION, DEFAULT_CONSISTENCY);
   }
 
+  // Tests for override via System properties over defaults
   @Test
   void testSystemPropOverrides() {
     final String TENANT_OVERRIDE = "tenant-X";
