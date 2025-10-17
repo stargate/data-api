@@ -12,7 +12,7 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase {
+public class ProjectionABCIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TYPE_NAME = "Address";
   private static final String TABLE = "proj_udt";
