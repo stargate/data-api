@@ -12,7 +12,6 @@
     <quarkus.platform.version>3.28.3</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
-    <mockito.version>5.12.0</mockito.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Integration test props -->
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
@@ -273,7 +272,6 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
-      <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
