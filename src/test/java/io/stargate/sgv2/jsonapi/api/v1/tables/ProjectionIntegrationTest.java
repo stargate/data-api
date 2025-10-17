@@ -72,7 +72,7 @@ public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase 
       assertTableCommand(keyspaceName, TABLE)
           .templated()
           .findWithExplicitProjection(
-              Map.of("id", "u1"), "{\"name\":1,\"age\":1}", Map.of(), Map.of())
+              Map.of("id", "u1"), Map.of("name", 1, "age", 1), Map.of(), Map.of())
           .wasSuccessful()
           .hasProjectionSchema()
           .hasProjectionSchemaWith("name", ApiDataTypeDefs.TEXT)
@@ -120,7 +120,7 @@ public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase 
       // Selecting only id should return only id
       assertTableCommand(keyspaceName, TABLE)
           .templated()
-          .findWithExplicitProjection(Map.of("id", "u2"), "{\"id\":1}", Map.of(), Map.of())
+          .findWithExplicitProjection(Map.of("id", "u2"), Map.of("id", 1), Map.of(), Map.of())
           .wasSuccessful()
           .hasProjectionSchema()
           .hasProjectionSchemaWith("id", ApiDataTypeDefs.TEXT)
@@ -142,7 +142,7 @@ public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase 
       // Exclude a single column via raw projection JSON
       assertTableCommand(keyspaceName, TABLE)
           .templated()
-          .findWithExplicitProjection(Map.of("id", "u1"), "{\"active\":0}", Map.of(), Map.of())
+          .findWithExplicitProjection(Map.of("id", "u1"), Map.of("active", 0), Map.of(), Map.of())
           .wasSuccessful()
           .hasProjectionSchema()
           .hasProjectionSchemaWith("id", ApiDataTypeDefs.TEXT)
@@ -205,7 +205,7 @@ public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase 
       // Project the entire UDT column
       assertTableCommand(keyspaceName, TABLE)
           .templated()
-          .findWithExplicitProjection(Map.of("id", "r1"), "{\"address\":1}", Map.of(), Map.of())
+          .findWithExplicitProjection(Map.of("id", "r1"), Map.of("address", 1), Map.of(), Map.of())
           .wasSuccessful()
           .hasProjectionSchema()
           .hasProjectionSchemaUdt("address", TYPE_NAME)
@@ -227,7 +227,7 @@ public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase 
       assertTableCommand(keyspaceName, TABLE)
           .templated()
           .findWithExplicitProjection(
-              Map.of("id", "r1"), "{\"address.city\":1}", Map.of(), Map.of())
+              Map.of("id", "r1"), Map.of("address.city", 1), Map.of(), Map.of())
           .wasSuccessful()
           .hasProjectionSchema()
           .hasProjectionSchemaUdt("address", TYPE_NAME)
@@ -249,7 +249,7 @@ public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase 
       assertTableCommand(keyspaceName, TABLE)
           .templated()
           .findWithExplicitProjection(
-              Map.of("id", "r1"), "{\"address\":1,\"address.city\":1}", Map.of(), Map.of())
+              Map.of("id", "r1"), Map.of("address", 1, "address.city", 1), Map.of(), Map.of())
           .wasSuccessful()
           .hasProjectionSchema()
           .hasProjectionSchemaUdt("address", TYPE_NAME)
@@ -271,7 +271,7 @@ public class ProjectionIntegrationTest extends AbstractTableIntegrationTestBase 
       assertTableCommand(keyspaceName, TABLE)
           .templated()
           .findWithExplicitProjection(
-              Map.of("id", "r1"), "{\"address.city\":0}", Map.of(), Map.of())
+              Map.of("id", "r1"), Map.of("address.city", 0), Map.of(), Map.of())
           .wasSuccessful()
           .hasProjectionSchema()
           .hasProjectionSchemaUdt("address", TYPE_NAME)

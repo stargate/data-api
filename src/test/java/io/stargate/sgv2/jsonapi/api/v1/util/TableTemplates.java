@@ -43,7 +43,7 @@ public class TableTemplates extends TemplateRunner {
 
   private String findClause(
       Map<String, Object> filter,
-      String projectionJSON,
+      Map<String, Object> projection,
       Map<String, Object> sort,
       Map<String, Object> options) {
 
@@ -51,8 +51,8 @@ public class TableTemplates extends TemplateRunner {
     if (filter != null) {
       clause.put("filter", filter);
     }
-    if (projectionJSON != null) {
-      clause.put("projection", projectionJSON);
+    if (projection != null) {
+      clause.put("projection", projection);
     }
     if (sort != null) {
       clause.put("sort", sort);
@@ -133,10 +133,10 @@ public class TableTemplates extends TemplateRunner {
    */
   public DataApiResponseValidator findWithExplicitProjection(
       Map<String, Object> filter,
-      String projectionJSON,
+      Map<String, Object> projection,
       Map<String, Object> sort,
       Map<String, Object> options) {
-    return sender.postFind(findClause(filter, projectionJSON, sort, options));
+    return sender.postFind(findClause(filter, projection, sort, options));
   }
 
   public DataApiResponseValidator find(String filter) {

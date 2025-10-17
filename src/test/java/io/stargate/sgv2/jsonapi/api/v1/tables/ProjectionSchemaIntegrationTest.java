@@ -137,10 +137,6 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
     assertTableCommand(keyspaceName, TABLE_NAME)
         .templated()
         .find(Map.of("id", "row-1"), List.of("id", "MISSING_COLUMN"), Map.of(), Map.of())
-        .wasSuccessful()
-        .hasProjectionSchema()
-        .hasDocuments(1)
-        .hasProjectionSchemaWith("id", ApiDataTypeDefs.TEXT)
         .hasSingleApiError(
             ProjectionException.Code.UNKNOWN_TABLE_COLUMNS,
             ProjectionException.class,
