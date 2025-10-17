@@ -26,6 +26,19 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CqlSessionFactory.class);
 
+  // 16-Oct-2025, tatu: [data-api#2230] Ensure ENV vars used as source too (see
+  //
+  // https://github.com/lightbend/config/blob/main/config/src/main/java/com/typesafe/config/ConfigFactory.java#L42
+  //   -- ConfigFactory#OVERRIDE_WITH_ENV_PROPERTY_NAME -- which, alas, is `static private`
+  //   so cannot refer from code
+  static {
+    final String PROP_KEY = "config.override_with_env_vars";
+    // System.err.println("WARN: setting '" + PROP_KEY + "'...");
+    LOGGER.info(
+        "Setting system property '{}' to 'true' to enable ENV variable override for Cassandra Java Driver config");
+    System.setProperty(PROP_KEY, "true");
+  }
+
   private final String applicationName;
 
   private final DatabaseType databaseType;
