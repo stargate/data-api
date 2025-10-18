@@ -36,7 +36,8 @@ public class CqlDriverConfigLoadEnvTests {
   @BeforeAll
   static void initializeSessionFactory() {
     // Important! CqlSessionFactory sets System property for considering
-    // Env var overrides; must be called before tests
+    // Env var overrides; must be called before tests. So just constructs
+    // a factory instance to force classloading; not used for anything
     CqlSessionFactory f =
         new CqlSessionFactory(
             "test",
@@ -50,16 +51,6 @@ public class CqlDriverConfigLoadEnvTests {
                 return null;
               }
             });
-
-    /*
-         String applicationName,
-         DatabaseType databaseType,
-         String localDatacenter,
-         List<String> cassandraEndPoints,
-         Integer cassandraPort,
-         Supplier<SchemaChangeListener> schemaChangeListenerSupplier) {
-
-    */
   }
 
   @BeforeEach
@@ -73,9 +64,11 @@ public class CqlDriverConfigLoadEnvTests {
     // * 1 underscore (_) represents dot "."
     // * 2 underscores (_) represents hyphen "-"
     // * 3 underscores (_) represents underscore "_"
-    final String PREFIX = "CONFIG_FORCE_datastax__java__driver_";
-    environmentVariables.set(PREFIX + "basic_session__name", TENANT_OVERRIDE);
-    environmentVariables.set(PREFIX + "basic_request_consistency", CONSISTENCY_OVERRIDE);
+    final String PREFIX_TYPESAFE = "CONFIG_FORCE_";
+    final String FULL_PREFIX = PREFIX_TYPESAFE + "datastax__java__driver_";
+
+    environmentVariables.set(FULL_PREFIX + "basic_session__name", TENANT_OVERRIDE);
+    environmentVariables.set(FULL_PREFIX + "basic_request_consistency", CONSISTENCY_OVERRIDE);
   }
 
   // Sanity check for Env var overridability (outside of config loading)
