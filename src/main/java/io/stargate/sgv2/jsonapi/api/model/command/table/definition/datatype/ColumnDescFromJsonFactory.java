@@ -8,6 +8,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 abstract class ColumnDescFromJsonFactory<T extends ColumnDesc> {
 
   public abstract T create(
-      SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode)
+      String columnName,
+      SchemaDescSource schemaDescSource,
+      JsonParser jsonParser,
+      JsonNode columnDescNode)
       throws JsonProcessingException;
 }

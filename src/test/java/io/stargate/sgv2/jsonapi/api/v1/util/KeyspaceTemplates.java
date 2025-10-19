@@ -2,10 +2,13 @@ package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiClusteringDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +39,7 @@ public class KeyspaceTemplates extends TemplateRunner {
         """
             .formatted(
                 tableName,
-                asJSON(columns.getSchemaDescription(SchemaDescSource.DDL_USAGE)),
+                columnsAsJSON(columns.getSchemaDescription(SchemaDescSource.DDL_USAGE)),
                 asJSON(primaryKeyDef.name().asInternal()));
     return sender.postCreateTable(json);
   }
@@ -72,7 +75,7 @@ public class KeyspaceTemplates extends TemplateRunner {
           """
             .formatted(
                 tableName,
-                asJSON(columns.getSchemaDescription(SchemaDescSource.DDL_USAGE)),
+                columnsAsJSON(columns.getSchemaDescription(SchemaDescSource.DDL_USAGE)),
                 asJSON(primaryKey));
     return sender.postCreateTable(json);
   }
@@ -91,6 +94,21 @@ public class KeyspaceTemplates extends TemplateRunner {
             """
             .formatted(tableName, asJSON(columns), asJSON(primaryKeyDef));
     return sender.postCreateTable(json);
+  }
+
+  private String columnsAsJSON(ColumnsDescContainer columnDefs) {
+    // Unfortunately column defs includes invalid "apiSupport" property in some cases;
+    // need to filter out
+    JsonNode columnDefsNode = asJsonNode(columnDefs);
+    for (Map.Entry<String, JsonNode> entry : columnDefsNode.properties()) {
+      Iterator<Map.Entry<String, JsonNode>> it = entry.getValue().properties().iterator();
+      while (it.hasNext()) {
+        if ("apiSupport".equals(it.next().getKey())) {
+          it.remove();
+        }
+      }
+    }
+    return asJSON(columnDefsNode);
   }
 
   public DataApiResponseValidator createType(String typeName, Map<String, Object> fields) {
