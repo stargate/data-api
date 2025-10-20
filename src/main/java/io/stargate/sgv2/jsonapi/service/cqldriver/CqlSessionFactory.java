@@ -54,10 +54,11 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
         PROP_KEY);
     System.setProperty(PROP_KEY, "true");
 
-    // But then also directly load, to show overrides (only): Env Var and System Properties.
-    // Driver will use these as overrides ultimately
+    // But then let's also log overrides we have: Env Var and System Properties.
+    // Driver will use these as overrides ultimately, over "application.conf" and "reference.conf",
+    // but we will first log overrides.
     Config allOverrides = ConfigFactory.defaultOverrides();
-    LOGGER.warn("Combined Type-safe Config overrides for `cassandra-java-driver`:");
+    LOGGER.warn("Type-safe Config overrides for `cassandra-java-driver`:");
     LOGGER.warn("{}", allOverrides.root().render(ConfigRenderOptions.defaults().setJson(true)));
   }
 
