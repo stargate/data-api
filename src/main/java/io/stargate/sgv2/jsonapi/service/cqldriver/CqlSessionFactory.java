@@ -30,7 +30,20 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   //
   // https://github.com/lightbend/config/blob/main/config/src/main/java/com/typesafe/config/ConfigFactory.java#L42
   //   -- ConfigFactory#OVERRIDE_WITH_ENV_PROPERTY_NAME -- which, alas, is `static private`
-  //   so cannot refer from code
+  //   so cannot refer from code.
+  //
+  // NOTE: actual overrides must use prefix "CONFIG_FORCE_" before modified property name.
+  // Property names need to be modified so that
+  //
+  // * 1 underscore (_) represents dot "."
+  // * 2 underscores (_) represents hyphen "-"
+  // * 3 underscores (_) represents underscore "_"
+  //
+  // So, to override property for session name -- "datastax-java-driver.basic.session-name" --
+  // We need to use env-var name of:
+  //
+  // "CONFIG_FORCE_" + "datastax__java__driver_" + "basic_session__name"
+  // == "CONFIG_FORCE_datastax__java__driver_basic_session__name"
   static {
     final String PROP_KEY = "config.override_with_env_vars";
     LOGGER.info(
