@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
+import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
 import com.google.common.annotations.VisibleForTesting;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -60,6 +61,17 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     Config allOverrides = ConfigFactory.defaultOverrides();
     LOGGER.warn("Type-safe Config overrides for `cassandra-java-driver`:");
     LOGGER.warn("{}", allOverrides.root().render(ConfigRenderOptions.defaults().setJson(true)));
+    // So let's also log expected effective configuration, under "datastax-java-driver"
+    Config mergedConfig = ConfigFactory.load();
+    LOGGER.warn(
+        "Type-safe Config merged config (under '{}') for `cassandra-java-driver`:",
+        DefaultDriverConfigLoader.DEFAULT_ROOT_PATH);
+    LOGGER.warn(
+        "{}",
+        mergedConfig
+            .getConfig(DefaultDriverConfigLoader.DEFAULT_ROOT_PATH)
+            .root()
+            .render(ConfigRenderOptions.defaults().setComments(false).setJson(true)));
   }
 
   private final String applicationName;
