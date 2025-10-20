@@ -6,6 +6,9 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.google.common.annotations.VisibleForTesting;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigRenderOptions;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
@@ -50,6 +53,12 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
         "Setting system property '{}' to 'true' to enable ENV variable override for Cassandra Java Driver config",
         PROP_KEY);
     System.setProperty(PROP_KEY, "true");
+
+    // But then also directly load, to show overrides (only): Env Var and System Properties.
+    // Driver will use these as overrides ultimately
+    Config allOverrides = ConfigFactory.defaultOverrides();
+    LOGGER.warn("Combined Type-safe Config overrides for `cassandra-java-driver`:");
+    LOGGER.warn("{}", allOverrides.root().render(ConfigRenderOptions.defaults().setJson(true)));
   }
 
   private final String applicationName;

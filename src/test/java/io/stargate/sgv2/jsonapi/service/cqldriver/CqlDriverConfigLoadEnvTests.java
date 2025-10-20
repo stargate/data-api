@@ -7,12 +7,10 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfig;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.DriverOption;
-import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.util.List;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,17 +39,7 @@ public class CqlDriverConfigLoadEnvTests {
     // a factory instance to force classloading; not used for anything
     CqlSessionFactory f =
         new CqlSessionFactory(
-            "test",
-            DatabaseType.CASSANDRA,
-            "DC0",
-            List.of("127.0.0.1"),
-            1111,
-            new Supplier<SchemaChangeListener>() {
-              @Override
-              public SchemaChangeListener get() {
-                return null;
-              }
-            });
+            "test", DatabaseType.CASSANDRA, "DC0", List.of("127.0.0.1"), 1111, () -> null);
   }
 
   @BeforeEach
@@ -82,7 +70,9 @@ public class CqlDriverConfigLoadEnvTests {
   // @Test
   void testEnvVarOverridesDEBUG() {
     Config config = ConfigFactory.systemEnvironmentOverrides();
-    System.err.println("Config -> " + config.root().render());
+    System.err.println("Config overides ENV only -> " + config.root().render());
+    Config config2 = ConfigFactory.defaultOverrides();
+    System.err.println("Config overrides ALL -> " + config2.root().render());
   }
 
   // Tests for override via ENV variables over defaults
