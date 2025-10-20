@@ -34,7 +34,7 @@ public class HeaderBasedSecurityConfiguration {
 
   @Produces
   @ApplicationScoped
-  @LookupIfProperty(name = "stargate.auth.header-based.enabled", stringValue = "true")
+  @LookupIfProperty(name = "data-api.auth.header-based.enabled", stringValue = "true")
   HttpAuthenticationMechanism httpAuthenticationMechanism(
       AuthConfig config, Instance<ErrorChallengeSender> customChallengeSender) {
     String headerName = config.headerBased().headerName();
@@ -43,7 +43,7 @@ public class HeaderBasedSecurityConfiguration {
 
   @Produces
   @ApplicationScoped
-  @LookupIfProperty(name = "stargate.auth.header-based.enabled", stringValue = "true")
+  @LookupIfProperty(name = "data-api.auth.header-based.enabled", stringValue = "true")
   IdentityProvider<HeaderAuthenticationRequest> identityProvider() {
     return new HeaderIdentityProvider();
   }

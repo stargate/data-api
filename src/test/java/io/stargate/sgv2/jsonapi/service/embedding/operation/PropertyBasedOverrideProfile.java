@@ -13,13 +13,11 @@ public class PropertyBasedOverrideProfile implements QuarkusTestProfile {
   @Override
   public Map<String, String> getConfigOverrides() {
     return ImmutableMap.<String, String>builder()
-        .put("stargate.jsonapi.embedding.providers.openai.enabled", "true")
-        .put("stargate.jsonapi.embedding.providers.openai.url", "https://api.openai.com/v1/")
-        .put("stargate.jsonapi.embedding.providers.huggingface.enabled", "true")
-        .put(
-            "stargate.jsonapi.embedding.providers.huggingface.url",
-            "https://api-inference.huggingface.co")
-        .put("stargate.jsonapi.embedding.providers.vertexai.enabled", "false")
+        .put("data-api.embedding.providers.openai.enabled", "true")
+        .put("data-api.embedding.providers.openai.url", "https://api.openai.com/v1/")
+        .put("data-api.embedding.providers.huggingface.enabled", "true")
+        .put("data-api.embedding.providers.huggingface.url", "https://api-inference.huggingface.co")
+        .put("data-api.embedding.providers.vertexai.enabled", "false")
         .build();
   }
 }

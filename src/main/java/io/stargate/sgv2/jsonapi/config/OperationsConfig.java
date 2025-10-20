@@ -30,7 +30,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 /** Configuration for the operation execution. */
-@ConfigMapping(prefix = "stargate.jsonapi.operations")
+@ConfigMapping(prefix = "data-api.operations")
 public interface OperationsConfig {
   /** Defines the default max size of filter fields. */
   int DEFAULT_MAX_FILTER_SIZE = 64;

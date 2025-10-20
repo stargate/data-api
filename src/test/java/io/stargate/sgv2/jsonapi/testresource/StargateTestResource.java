@@ -83,22 +83,19 @@ public abstract class StargateTestResource
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
       // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
       propsBuilder.put(
-          "stargate.database.limits.max-collections",
+          "data-api.database.limits.max-collections",
           String.valueOf(getMaxCollectionsPerDBOverride()));
       propsBuilder.put(
-          "stargate.database.limits.indexes-available-per-database",
+          "data-api.database.limits.indexes-available-per-database",
           String.valueOf(getIndexesPerDBOverride()));
+      propsBuilder.put("data-api.operations.max-count-limit", String.valueOf(getMaxCountLimit()));
       propsBuilder.put(
-          "stargate.jsonapi.operations.max-count-limit", String.valueOf(getMaxCountLimit()));
-      propsBuilder.put(
-          "stargate.jsonapi.operations.default-count-page-size",
-          String.valueOf(getCountPageSize()));
+          "data-api.operations.default-count-page-size", String.valueOf(getCountPageSize()));
       Long maxToSort = getMaxDocumentSortCount();
       if (maxToSort != null) {
-        propsBuilder.put(
-            "stargate.jsonapi.operations.max-document-sort-count", String.valueOf(maxToSort));
+        propsBuilder.put("data-api.operations.max-document-sort-count", String.valueOf(maxToSort));
       }
-      propsBuilder.put("stargate.jsonapi.operations.vectorize-enabled", "true");
+      propsBuilder.put("data-api.operations.vectorize-enabled", "true");
 
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);

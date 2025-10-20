@@ -24,7 +24,7 @@ import jakarta.validation.constraints.Positive;
 
 /** Configuration for limits that apply to Databases. */
 @StaticInitSafe
-@ConfigMapping(prefix = "stargate.database.limits")
+@ConfigMapping(prefix = "data-api.database.limits")
 public interface DatabaseLimitsConfig {
   /**
    * Default setting for {@link #maxCollections()}}: maximum number of Collections allowed to be

@@ -32,7 +32,7 @@ public class DataApiTokenConfiguration {
 
   @Produces
   @ApplicationScoped
-  @LookupIfProperty(name = "stargate.auth.token-resolver.type", stringValue = "header")
+  @LookupIfProperty(name = "data-api.auth.token-resolver.type", stringValue = "header")
   DataApiTokenResolver headerTokenResolver(AuthConfig config) {
     String headerName = config.tokenResolver().header().headerName();
     return new HeaderTokenResolver(headerName);
@@ -40,14 +40,14 @@ public class DataApiTokenConfiguration {
 
   @Produces
   @ApplicationScoped
-  @LookupIfProperty(name = "stargate.auth.token-resolver.type", stringValue = "principal")
+  @LookupIfProperty(name = "data-api.auth.token-resolver.type", stringValue = "principal")
   DataApiTokenResolver principalTokenResolver() {
     return new PrincipalTokenResolver();
   }
 
   @Produces
   @ApplicationScoped
-  @LookupIfProperty(name = "stargate.auth.token-resolver.type", stringValue = "fixed")
+  @LookupIfProperty(name = "data-api.auth.token-resolver.type", stringValue = "fixed")
   DataApiTokenResolver fixedTokenResolver(AuthConfig config) {
     return new FixedTokenResolver(config.tokenResolver().fixed());
   }
@@ -55,7 +55,7 @@ public class DataApiTokenConfiguration {
   @Produces
   @ApplicationScoped
   @LookupIfProperty(
-      name = "stargate.auth.token-resolver.type",
+      name = "data-api.auth.token-resolver.type",
       stringValue = "noop",
       lookupIfMissing = true)
   DataApiTokenResolver noopCassandraTokenResolver() {

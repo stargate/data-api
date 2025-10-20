@@ -31,16 +31,16 @@ public class TenantConfiguration {
 
   @Produces
   @ApplicationScoped
-  @LookupIfProperty(name = "stargate.multi-tenancy.tenant-resolver.type", stringValue = "subdomain")
-  @LookupIfProperty(name = "stargate.multi-tenancy.enabled", stringValue = "true")
+  @LookupIfProperty(name = "data-api.multi-tenancy.tenant-resolver.type", stringValue = "subdomain")
+  @LookupIfProperty(name = "data-api.multi-tenancy.enabled", stringValue = "true")
   DataApiTenantResolver subdomainTenantResolver(MultiTenancyConfig config) {
     return new SubdomainTenantResolver(config.tenantResolver().subdomain());
   }
 
   @Produces
   @ApplicationScoped
-  @LookupIfProperty(name = "stargate.multi-tenancy.tenant-resolver.type", stringValue = "fixed")
-  @LookupIfProperty(name = "stargate.multi-tenancy.enabled", stringValue = "true")
+  @LookupIfProperty(name = "data-api.multi-tenancy.tenant-resolver.type", stringValue = "fixed")
+  @LookupIfProperty(name = "data-api.multi-tenancy.enabled", stringValue = "true")
   DataApiTenantResolver fixedTenantResolver(MultiTenancyConfig config) {
     return new FixedTenantResolver(config.tenantResolver().fixed());
   }
@@ -48,11 +48,11 @@ public class TenantConfiguration {
   @Produces
   @ApplicationScoped
   @LookupIfProperty(
-      name = "stargate.multi-tenancy.tenant-resolver.type",
+      name = "data-api.multi-tenancy.tenant-resolver.type",
       stringValue = "noop",
       lookupIfMissing = true)
   @LookupIfProperty(
-      name = "stargate.multi-tenancy.enabled",
+      name = "data-api.multi-tenancy.enabled",
       stringValue = "false",
       lookupIfMissing = true)
   DataApiTenantResolver noopTenantResolver() {
