@@ -1,5 +1,28 @@
 # Changelog
 
+## [v1.0.33](https://github.com/stargate/data-api/tree/v1.0.33) (2025-10-16)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.32...v1.0.33)
+
+**Merged pull requests:**
+
+- Update datastax links for asset generation [\#2227](https://github.com/stargate/data-api/pull/2227) ([skedwards88](https://github.com/skedwards88))
+- Fix \#1977: Table/Collection -\> table/collection in error messages \(as per style guide\) [\#2223](https://github.com/stargate/data-api/pull/2223) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Remove jackson-bom; quarkus-bom sufficient [\#2222](https://github.com/stargate/data-api/pull/2222) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Re-do \#2215 with proper access \(update dispatch GH action version\) [\#2221](https://github.com/stargate/data-api/pull/2221) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Upgrade quarkus to 3.28.3 to get netty to 4.1.125+  [\#2219](https://github.com/stargate/data-api/pull/2219) ([amorton](https://github.com/amorton))
+- Update Jackson to same as what Quarkus brings in; java-uuid-gen/commons-lang3/commons-text to latest [\#2218](https://github.com/stargate/data-api/pull/2218) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1560: validate properties for column type [\#2217](https://github.com/stargate/data-api/pull/2217) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactoring to prep for \#1560 [\#2216](https://github.com/stargate/data-api/pull/2216) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add validation to missing udtType for CreateTable [\#2213](https://github.com/stargate/data-api/pull/2213) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#2210: update to latest ubi9 base image [\#2211](https://github.com/stargate/data-api/pull/2211) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update dep to HCD 1.2.3 [\#2205](https://github.com/stargate/data-api/pull/2205) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2202: remove `stargate.version` property, GH action for creating pr for update [\#2203](https://github.com/stargate/data-api/pull/2203) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#2194: update DSE to 6.9.14 \(from 6.9.13\) [\#2201](https://github.com/stargate/data-api/pull/2201) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2200](https://github.com/stargate/data-api/pull/2200) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Use Stargate v2.1.0-BETA-32 [\#2195](https://github.com/stargate/data-api/pull/2195) ([github-actions[bot]](https://github.com/apps/github-actions))
+- \[Tables\] insertMany ordered as true, middle faulty row should not fail the whole batch. [\#2193](https://github.com/stargate/data-api/pull/2193) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
 ## [v1.0.32](https://github.com/stargate/data-api/tree/v1.0.32) (2025-09-18)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.31...v1.0.32)
