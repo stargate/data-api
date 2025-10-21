@@ -272,6 +272,7 @@ public class ProjectionABCIntegrationTest extends AbstractTableIntegrationTestBa
               Map.of("id", "r1"), Map.of("address.city", 0), Map.of(), Map.of())
           .wasSuccessful()
           .hasProjectionSchema()
+          .hasProjectionSchemaWith("id", ApiDataTypeDefs.TEXT)
           .hasProjectionSchemaUdt("address", TYPE_NAME)
           .hasProjectionSchemaUdtField("address", "country", "text")
           .doesNotHaveProjectionSchemaUdtField("address", "city")
@@ -280,6 +281,7 @@ public class ProjectionABCIntegrationTest extends AbstractTableIntegrationTestBa
               0,
               """
               {
+                "id": "r1",
                 "address": {"country": "USA"}
               }
               """);
