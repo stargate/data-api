@@ -5,7 +5,11 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
+import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
 import com.google.common.annotations.VisibleForTesting;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigRenderOptions;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
@@ -25,6 +29,51 @@ import org.slf4j.LoggerFactory;
 public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CqlSessionFactory.class);
+
+  // 16-Oct-2025, tatu: [data-api#2230] Ensure ENV vars used as source too (see
+  //
+  // https://github.com/lightbend/config/blob/main/config/src/main/java/com/typesafe/config/ConfigFactory.java#L42
+  //   -- ConfigFactory#OVERRIDE_WITH_ENV_PROPERTY_NAME -- which, alas, is `static private`
+  //   so cannot refer from code.
+  //
+  // NOTE: actual overrides must use prefix "CONFIG_FORCE_" before modified property name.
+  // Property names need to be modified so that
+  //
+  // * 1 underscore (_) represents dot "."
+  // * 2 underscores (_) represents hyphen "-"
+  // * 3 underscores (_) represents underscore "_"
+  //
+  // So, to override property for session name -- "datastax-java-driver.basic.session-name" --
+  // We need to use env-var name of:
+  //
+  // "CONFIG_FORCE_" + "datastax__java__driver_" + "basic_session__name"
+  // == "CONFIG_FORCE_datastax__java__driver_basic_session__name"
+  static {
+    final String PROP_KEY = "config.override_with_env_vars";
+    LOGGER.info(
+        "Setting system property '{}' to 'true' to enable ENV variable override for Cassandra Java Driver config",
+        PROP_KEY);
+    System.setProperty(PROP_KEY, "true");
+
+    // But then let's also log overrides we have: Env Var and System Properties.
+    // Driver will use these as overrides ultimately, over "application.conf" and "reference.conf",
+    // but we will first log overrides.
+    Config allOverrides = ConfigFactory.defaultOverrides();
+    LOGGER.warn(
+        "Typesafe Config overrides for `cassandra-java-driver`: {}",
+        allOverrides.root().render(ConfigRenderOptions.defaults().setJson(true)));
+
+    // And let's also log effective configuration, under "datastax-java-driver"
+    Config mergedConfig = ConfigFactory.load();
+    LOGGER.warn(
+        "Typesafe Config merged config for `cassandra-java-driver` (under '{}'): {}",
+        DefaultDriverConfigLoader.DEFAULT_ROOT_PATH,
+        mergedConfig
+            .getConfig(DefaultDriverConfigLoader.DEFAULT_ROOT_PATH)
+            .root()
+            // Remove comments from "reference.conf", very verbose:
+            .render(ConfigRenderOptions.defaults().setComments(false).setJson(true)));
+  }
 
   private final String applicationName;
 
@@ -167,7 +216,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     builder = builder.addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
     // aaron - this used to have an if / else that threw an exception if the database type was not
-    // known but we test that when creating the credentials for the cache key so no need to do it
+    // known, but we test that when creating the credentials for the cache key so no need to do it
     // here.
     return builder.build();
   }
