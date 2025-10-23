@@ -1645,6 +1645,19 @@ request-errors:
       Resend the command using either vector or non-vector sorting.
 
   - scope: SORT
+    code: CANNOT_VECTOR_SORT_ON_MISMATCHED_VECTOR_DIMENSIONS
+    title: Vector sort cannot be used with mismatched vector dimensions
+    body: |-
+      The command attempted to vector sort vector columns with a mismatched vector dimension.
+
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The command attempted to sort the vector columns: ${sortVectorColumns}.
+      
+      Resend the command providing vector that have the same dimension as target vector column.
+
+  - scope: SORT
     code: INVALID_REGULAR_SORT_EXPRESSION
     title: Sort expression is not valid for regular sort
     body: |-

@@ -367,6 +367,15 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
               }));
     }
 
+    // already validated the column is a vector type
+    // the optional get won't fail
+    var vectorColumnDefinition =
+        commandContext
+            .schemaObject()
+            .vectorConfig()
+            .getColumnDefinition(vectorSortIdentifier)
+            .get();
+
     // see if Table has vector index on the target sort vector column
     var optionalVectorIndex = apiTableDef.indexes().firstIndexFor(vectorSortIdentifier);
     if (optionalVectorIndex.isEmpty()) {
@@ -404,6 +413,25 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       if (vectorSortExpression.hasVectorize()) {
         jsonNode = JsonNodeFactory.instance.textNode(vectorSortExpression.getVectorize());
       } else if (vectorSortExpression.hasVector()) {
+
+        // check if provided vector dimension matches column definition
+        if (vectorSortExpression.getVector().length != vectorColumnDefinition.vectorSize()) {
+          throw SortException.Code.CANNOT_VECTOR_SORT_ON_MISMATCHED_VECTOR_DIMENSIONS.get(
+              errVars(
+                  commandContext.schemaObject(),
+                  map -> {
+                    map.put(
+                        "vectorColumns",
+                        errFmtApiColumnDef(apiTableDef.allColumns().filterVectorColumnsToList()));
+                    map.put(
+                        "sortVectorColumns",
+                        errFmtJoin(
+                            vectorAndVectorizeSorts.stream()
+                                .map(SortExpression::getPath)
+                                .toList()));
+                  }));
+        }
+
         var arrayNode = JsonNodeFactory.instance.arrayNode();
         for (float f : vectorSortExpression.getVector()) {
           arrayNode.add(f);
