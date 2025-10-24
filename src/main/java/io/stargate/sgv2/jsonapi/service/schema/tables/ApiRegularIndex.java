@@ -122,6 +122,10 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
       // create ApiRegularIndex for the target primitive column
       if (apiColumnDef.type().isPrimitive()) {
+        if (mapComponentDesc != null) {
+          // if user specified $keys/$values for a scalar primitive column, error out
+          throw SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN.get();
+        }
         return createApiIndexForPrimitive(
             tableSchemaObject, apiColumnDef, indexIdentifier, targetIdentifier, indexDesc);
       }

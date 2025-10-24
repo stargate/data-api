@@ -865,6 +865,28 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               "Request invalid, mismatching JSON structure: underlying problem");
     }
 
+    @MethodSource("invalidIndexFunction")
+    @ParameterizedTest
+    public void invalidIndexFunctionForScalar(Object indexFunction) {
+      // Try to create an index on a scalar column with an index function
+      // Should just use the column name as a string
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                      {
+                        "name": "text_field_3_invalid_idx",
+                        "definition": {
+                          "column": {"text_field_3" : %s}
+                        }
+                      }
+                      """
+                  .formatted(indexFunction))
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN,
+              SchemaException.class,
+              "Command has an invalid format for index creation column.");
+    }
+
     private static Stream<Arguments> invalidIndexFunction() {
       return Stream.of(
           Arguments.of("\"$keyss\""),
