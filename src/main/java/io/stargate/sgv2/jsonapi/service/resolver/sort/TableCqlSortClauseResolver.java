@@ -423,12 +423,11 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                     map.put(
                         "vectorColumns",
                         errFmtApiColumnDef(apiTableDef.allColumns().filterVectorColumnsToList()));
+                    map.put("targetVectorColumn", errFmt(vectorSortIdentifier));
+                    map.put("actualDimension", String.valueOf(vectorColumnDefinition.vectorSize()));
                     map.put(
-                        "sortVectorColumns",
-                        errFmtJoin(
-                            vectorAndVectorizeSorts.stream()
-                                .map(SortExpression::getPath)
-                                .toList()));
+                        "providedDimension",
+                        String.valueOf(vectorSortExpression.getVector().length));
                   }));
         }
 
