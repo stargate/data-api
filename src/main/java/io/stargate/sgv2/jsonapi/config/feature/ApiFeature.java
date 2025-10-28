@@ -30,9 +30,9 @@ public enum ApiFeature {
    * commands, and support commands on Tables. If disabled, those operations will fail with {@link
    * ErrorCodeV1#TABLE_FEATURE_NOT_ENABLED}.
    *
-   * <p>Disabled by default.
+   * <p>Enabled by default.
    */
-  TABLES("tables", false),
+  TABLES("tables", true),
 
   /**
    * API Reranking feature flag: if enabled, the API will expose:

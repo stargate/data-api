@@ -80,4 +80,4 @@ Other Quarkus properties that are specifically relevant for the service:
 
 | Property                        | Type      | Default | Description                                                                                                         |
 |---------------------------------|-----------|---------|---------------------------------------------------------------------------------------------------------------------|
-| `stargate.feature.flags.tables` | `boolean` | `null`   | Setting it to `true` enables Tables functionality; `false` disables; leaving as `null` allows per-request override.|
+| `stargate.feature.flags.tables` | `boolean` | `true` (enabled by default)   | Setting it to `true` enables Tables functionality; `false` disables; leaving as `null` uses the default (enabled).|
