@@ -224,16 +224,15 @@ public class CQLSessionCache {
 
     // Validation happens when creating the credentials and session key
     evictSession(
-              requestContext.getTenantId().orElse(""),
-              requestContext.getCassandraToken().orElse(""),
-              requestContext.getUserAgent().orElse(null));
-
+        requestContext.getTenantId().orElse(""),
+        requestContext.getCassandraToken().orElse(""),
+        requestContext.getUserAgent().orElse(null));
   }
 
   /**
    * Evicts a session from the cache programmatically. This is intended for use in scenarios where a
-   * session is known to be in an unrecoverable state (e.g., after all cluster nodes restart) and needs to
-   * be forcibly removed to allow for a fresh connection on the next request.
+   * session is known to be in an unrecoverable state (e.g., after all cluster nodes restart) and
+   * needs to be forcibly removed to allow for a fresh connection on the next request.
    *
    * @param tenantId the identifier for the tenant
    * @param authToken the authentication token for accessing the session
@@ -246,9 +245,7 @@ public class CQLSessionCache {
     // Invalidate the key. This will trigger the onKeyRemoved listener,
     // which will close the CqlSession and run other cleanup.
     sessionCache.invalidate(cacheKey);
-    LOGGER.warn(
-        "Explicitly evicted session from cache. Cache Key: {}",
-        cacheKey);
+    LOGGER.warn("Explicitly evicted session from cache. Cache Key: {}", cacheKey);
   }
 
   /**

@@ -50,8 +50,10 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    *
    * @param schemaObject The schema object to provide context for the errors, must not be null.
    * @param statement Optional statement that the error handler is being used with.
-   * @param requestContext The context of the current request, for cache eviction when encountering AllNodesFailedException.
-   * @param sessionCache The CQL session cache instance, for cache eviction when encountering AllNodesFailedException.
+   * @param requestContext The context of the current request, for cache eviction when encountering
+   *     AllNodesFailedException.
+   * @param sessionCache The CQL session cache instance, for cache eviction when encountering
+   *     AllNodesFailedException.
    */
   public DefaultDriverExceptionHandler(
       SchemaT schemaObject,
@@ -485,7 +487,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   @FunctionalInterface
   public interface Factory<T extends SchemaObject> {
 
-      /** Signature of the constructor for the DefaultDriverExceptionHandler. */
+    /** Signature of the constructor for the DefaultDriverExceptionHandler. */
     DriverExceptionHandler apply(
         T schemaObject,
         SimpleStatement statement,
@@ -494,12 +496,14 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
     /**
      * Returns a factory that will call {@link FactoryWithIdentifier#apply(SchemaObject,
-     * SimpleStatement, RequestContext, CQLSessionCache, CqlIdentifier)} with the supplied identifier.
+     * SimpleStatement, RequestContext, CQLSessionCache, CqlIdentifier)} with the supplied
+     * identifier.
      */
     static <StaticT extends SchemaObject> Factory<StaticT> withIdentifier(
         FactoryWithIdentifier<StaticT> factoryWithIdentifier, CqlIdentifier identifier) {
       return (schemaObject, statement, requestContext, sessionCache) ->
-          factoryWithIdentifier.apply(schemaObject, statement, requestContext, sessionCache, identifier);
+          factoryWithIdentifier.apply(
+              schemaObject, statement, requestContext, sessionCache, identifier);
     }
   }
 
