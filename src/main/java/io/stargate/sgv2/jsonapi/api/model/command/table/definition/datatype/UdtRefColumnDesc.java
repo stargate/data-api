@@ -96,6 +96,12 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
       // the Missing node will return an empty text
       var udtName = columnDescNode.path(TableDescConstants.ColumnDesc.UDT_NAME).asText();
 
+      // Validate that udtName is not empty or blank to avoid StringIndexOutOfBoundsException
+      if (udtName == null || udtName.isBlank()) {
+        throw SchemaException.Code.INVALID_USER_DEFINED_TYPE_NAME.get(
+            TableDescConstants.ColumnDesc.UDT_NAME, udtName);
+      }
+
       return new UdtRefColumnDesc(schemaDescSource, cqlIdentifierFromUserInput(udtName));
     }
   }
