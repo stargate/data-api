@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -28,13 +27,13 @@ public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaOb
   }
 
   public DefaultDriverExceptionHandler.Factory<SchemaT> getHandlerFactory() {
-    return (SchemaT schemaObject, SimpleStatement statement) -> {
+    return (schemaObject, statement, requestContext, sessionCache) -> {
       // do not think we should be calling this multiple times
       if (target != null) {
         throw new IllegalStateException("ErrorHandler Factory already called");
       }
 
-      target = spy(handlerFactory.apply(schemaObject, statement));
+      target = spy(handlerFactory.apply(schemaObject, statement, requestContext, sessionCache));
       handlePairs.forEach(pair -> pair.apply(target));
       return target;
     };

@@ -4,9 +4,12 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.mockito.Mockito;
 
 public class DefaultDriverExceptionHandlerTestData {
 
@@ -40,6 +43,11 @@ public class DefaultDriverExceptionHandlerTestData {
             Map.of());
     TABLE_SCHEMA_OBJECT = TableSchemaObject.from(tableMetadata, new ObjectMapper());
 
-    DRIVER_HANDLER = new DefaultDriverExceptionHandler<>(TABLE_SCHEMA_OBJECT, STATEMENT);
+    DRIVER_HANDLER =
+        new DefaultDriverExceptionHandler<>(
+            TABLE_SCHEMA_OBJECT,
+            STATEMENT,
+            Mockito.mock(RequestContext.class),
+            Mockito.mock(CQLSessionCache.class));
   }
 }
