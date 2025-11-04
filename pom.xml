@@ -193,6 +193,9 @@
           <groupId>org.hdrhistogram</groupId>
           <artifactId>HdrHistogram</artifactId>
         </exclusion>
+        <!-- 04-Nov-2025, tatu: [data-api#2241] SpotBugs annotations to be
+             excluded from Docker image so need to:
+          -->
         <exclusion>
           <groupId>com.github.spotbugs</groupId>
           <artifactId>spotbugs-annotations</artifactId>
@@ -245,15 +248,6 @@
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
       <version>1.0.0</version>
-    </dependency>
-    <!-- 04-Nov-2025, tatu: [data-api#2241] SpotBugs annotations for compile-time
-         only (excluded from runtime)
-      -->
-    <dependency>
-      <groupId>com.github.spotbugs</groupId>
-      <artifactId>spotbugs-annotations</artifactId>
-      <version>3.1.12</version>
-      <scope>provided</scope>
     </dependency>
     <!-- Test dependencies -->
     <dependency>
