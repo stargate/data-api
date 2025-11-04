@@ -4,12 +4,12 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.RowAccumulator;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Accumulates rows from multiple {@link AsyncResultSet} instances into a single page of rows using
