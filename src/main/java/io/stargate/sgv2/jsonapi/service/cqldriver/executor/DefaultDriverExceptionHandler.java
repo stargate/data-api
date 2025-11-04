@@ -6,10 +6,11 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.*;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import java.util.*;
-import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,18 +42,28 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   // metadata
   // rather than using statements.
   protected final SimpleStatement statement;
+  protected final RequestContext requestContext;
+  protected final CQLSessionCache sessionCache;
 
   /**
    * Creates a new instance of the driver exception mapper.
    *
    * @param schemaObject The schema object to provide context for the errors, must not be null.
    * @param statement Optional statement that the error handler is being used with.
+   * @param requestContext The context of the current request, for cache eviction when encountering AllNodesFailedException.
+   * @param sessionCache The CQL session cache instance, for cache eviction when encountering AllNodesFailedException.
    */
-  public DefaultDriverExceptionHandler(SchemaT schemaObject, SimpleStatement statement) {
+  public DefaultDriverExceptionHandler(
+      SchemaT schemaObject,
+      SimpleStatement statement,
+      RequestContext requestContext,
+      CQLSessionCache sessionCache) {
 
     this.schemaObject = Objects.requireNonNull(schemaObject, "schemaObject must not be null");
     // no null check, statement may be null
     this.statement = statement;
+    this.requestContext = Objects.requireNonNull(requestContext, "requestContext must not be null");
+    this.sessionCache = Objects.requireNonNull(sessionCache, "sessionCache must not be null");
   }
 
   /** Lower priority is more important, used when examining a list of errors from nodes */
@@ -152,9 +163,18 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
   @Override
   public RuntimeException handle(AllNodesFailedException exception) {
-    // Should always be created with errors from calling each node, re-process the most important
-    // error
+    // Evict the session from the cache, as it's likely in a "zombie" state
+    // where the driver's topology is completely stale.
+    try {
+      sessionCache.evictSession(requestContext);
+    } catch (Exception e) {
+      LOGGER.error(
+          "Failed to evict session for tenant '{}' after AllNodesFailedException.",
+          requestContext.getTenantId().orElse(""),
+          e);
+    }
 
+    // find the highest priority cause and translate it into a meaningful API error.
     var highestPriority = findHighestPriority(exception).orElseGet(() -> null);
 
     return switch (highestPriority) {
@@ -463,17 +483,23 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler}
    */
   @FunctionalInterface
-  public interface Factory<T extends SchemaObject>
-      extends BiFunction<T, SimpleStatement, DriverExceptionHandler> {
+  public interface Factory<T extends SchemaObject> {
+
+      /** Signature of the constructor for the DefaultDriverExceptionHandler. */
+    DriverExceptionHandler apply(
+        T schemaObject,
+        SimpleStatement statement,
+        RequestContext requestContext,
+        CQLSessionCache sessionCache);
 
     /**
      * Returns a factory that will call {@link FactoryWithIdentifier#apply(SchemaObject,
-     * SimpleStatement, CqlIdentifier)} with the supplied identifier.
+     * SimpleStatement, RequestContext, CQLSessionCache, CqlIdentifier)} with the supplied identifier.
      */
     static <StaticT extends SchemaObject> Factory<StaticT> withIdentifier(
         FactoryWithIdentifier<StaticT> factoryWithIdentifier, CqlIdentifier identifier) {
-      return (schemaObject, statement) ->
-          factoryWithIdentifier.apply(schemaObject, statement, identifier);
+      return (schemaObject, statement, requestContext, sessionCache) ->
+          factoryWithIdentifier.apply(schemaObject, statement, requestContext, sessionCache, identifier);
     }
   }
 
@@ -487,7 +513,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * <ol>
    *   <li>Declare the constructor with params <code>(SchemaObject, SimpleStatement, CqlIdentifier)
    *       </code> to match {@link FactoryWithIdentifier#apply(SchemaObject, SimpleStatement,
-   *       CqlIdentifier)}
+   *       RequestContext, CQLSessionCache, CqlIdentifier)}
    *   <li>Pass a method reference to the constructor to {@link
    *       Factory#withIdentifier(FactoryWithIdentifier, CqlIdentifier)} to get a {@link Factory}
    *       function for example:
@@ -512,6 +538,10 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
     /** Signature of the constructor for the handler. */
     DriverExceptionHandler apply(
-        T schemaObject, SimpleStatement statement, CqlIdentifier identifier);
+        T schemaObject,
+        SimpleStatement statement,
+        RequestContext requestContext,
+        CQLSessionCache sessionCache,
+        CqlIdentifier identifier);
   }
 }
