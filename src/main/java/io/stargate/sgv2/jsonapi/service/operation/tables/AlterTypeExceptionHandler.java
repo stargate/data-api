@@ -6,7 +6,9 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,8 @@ public class AlterTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
    *
    * @param schemaObject
    * @param statement
+   * @param requestContext
+   * @param sessionCache
    * @param udtName Name of the UDT that is being altered.
    * @param allFieldRenames List of the field names that are being renamed, the from names not the
    *     to names.
@@ -30,10 +34,12 @@ public class AlterTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
   public AlterTypeExceptionHandler(
       KeyspaceSchemaObject schemaObject,
       SimpleStatement statement,
+      RequestContext requestContext,
+      CQLSessionCache sessionCache,
       CqlIdentifier udtName,
       List<String> allFieldRenames,
       List<String> allAddFieldNames) {
-    super(schemaObject, statement);
+    super(schemaObject, statement, requestContext, sessionCache);
 
     this.udtName = Objects.requireNonNull(udtName, "udtName must not be null");
     this.allFieldRenames = allFieldRenames == null ? List.of() : List.copyOf(allFieldRenames);

@@ -66,13 +66,15 @@ public class AlterTypeCommandResolver implements CommandResolver<AlterTypeComman
 
     taskBuilder =
         taskBuilder.withExceptionHandlerFactory(
-            ((keyspaceSchemaObject, simpleStatement) ->
+            (keyspaceSchemaObject, simpleStatement, requestContext, sessionCache) ->
                 new AlterTypeExceptionHandler(
                     keyspaceSchemaObject,
                     simpleStatement,
+                    requestContext,
+                    sessionCache,
                     udtName,
                     allRenamesForHandler,
-                    allAddFieldsForHandler)));
+                    allAddFieldsForHandler));
 
     // cannot use taskBuilder in lambda
     // build tasks for renaming fields

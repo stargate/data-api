@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.Map;
 import java.util.Objects;
@@ -15,8 +17,12 @@ public class AlterTableExceptionHandler extends TableDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public AlterTableExceptionHandler(
-      TableSchemaObject schemaObject, SimpleStatement statement, CqlIdentifier tableName) {
-    super(schemaObject, statement);
+      TableSchemaObject schemaObject,
+      SimpleStatement statement,
+      RequestContext requestContext,
+      CQLSessionCache sessionCache,
+      CqlIdentifier tableName) {
+    super(schemaObject, statement, requestContext, sessionCache);
     this.tableName = Objects.requireNonNull(tableName, "tableName must not be null");
   }
 

@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -16,7 +18,10 @@ public class TableDriverExceptionHandler
     extends DefaultDriverExceptionHandler<TableBasedSchemaObject> {
 
   public TableDriverExceptionHandler(
-      TableBasedSchemaObject schemaObject, SimpleStatement statement) {
-    super(schemaObject, statement);
+      TableBasedSchemaObject schemaObject,
+      SimpleStatement statement,
+      RequestContext requestContext,
+      CQLSessionCache sessionCache) {
+    super(schemaObject, statement, requestContext, sessionCache);
   }
 }

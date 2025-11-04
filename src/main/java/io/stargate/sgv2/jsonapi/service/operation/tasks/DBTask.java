@@ -121,7 +121,10 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     var handler =
         Objects.requireNonNull(
             exceptionHandlerFactory.apply(
-                schemaObject, resultSupplier == null ? null : resultSupplier.statement),
+                schemaObject,
+                resultSupplier == null ? null : resultSupplier.statement,
+                resultSupplier == null ? null : resultSupplier.commandContext.requestContext(),
+                resultSupplier == null ? null : resultSupplier.commandContext.cqlSessionCache()),
             "DBTask.maybeHandleException() - exceptionHandlerFactory returned null");
 
     return handler.maybeHandle(runtimeException);

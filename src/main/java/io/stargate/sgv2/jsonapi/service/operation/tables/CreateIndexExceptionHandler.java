@@ -5,7 +5,9 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.Map;
 import java.util.Objects;
@@ -17,8 +19,12 @@ public class CreateIndexExceptionHandler extends TableDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public CreateIndexExceptionHandler(
-      TableSchemaObject schemaObject, SimpleStatement statement, CqlIdentifier indexName) {
-    super(schemaObject, statement);
+      TableSchemaObject schemaObject,
+      SimpleStatement statement,
+      RequestContext requestContext,
+      CQLSessionCache sessionCache,
+      CqlIdentifier indexName) {
+    super(schemaObject, statement, requestContext, sessionCache);
     this.indexName = Objects.requireNonNull(indexName, "indexName must not be null");
   }
 

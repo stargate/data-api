@@ -5,7 +5,9 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import java.util.Map;
 import java.util.Objects;
@@ -16,8 +18,12 @@ public class DropTableExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public DropTableExceptionHandler(
-      KeyspaceSchemaObject schemaObject, SimpleStatement simpleStatement, CqlIdentifier tableName) {
-    super(schemaObject, simpleStatement);
+      KeyspaceSchemaObject schemaObject,
+      SimpleStatement simpleStatement,
+      RequestContext requestContext,
+      CQLSessionCache sessionCache,
+      CqlIdentifier tableName) {
+    super(schemaObject, simpleStatement, requestContext, sessionCache);
     this.tableName = Objects.requireNonNull(tableName, "tableName must not be null");
   }
 
