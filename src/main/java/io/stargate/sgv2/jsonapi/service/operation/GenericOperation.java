@@ -123,12 +123,13 @@ public class GenericOperation<
               // and do not call exectute() on it.
               return Uni.createFrom().item(attempt.setSkippedIfReady());
             }
-            return attempt.execute(commandQueryExecutor, exceptionHandlerFactory);
+            return attempt.execute(commandQueryExecutor, commandContext, exceptionHandlerFactory);
           });
     }
 
     // Parallel processing using transformToUniAndMerge() - no extra testing.
     return attemptMulti.transformToUniAndMerge(
-        readAttempt -> readAttempt.execute(commandQueryExecutor, exceptionHandlerFactory));
+        readAttempt ->
+            readAttempt.execute(commandQueryExecutor, commandContext, exceptionHandlerFactory));
   }
 }
