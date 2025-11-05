@@ -950,6 +950,29 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.class,
               "Index function `entries` can not apply to map column when analyze options are specified.");
     }
+
+    @Test
+    public void emptyOptionsForEntriesIndexOnMap() {
+      // Test for issue #1911: empty options object should be treated same as omitting options
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                  {
+                                    "name": "idx_t_map_text_int_e",
+                                    "definition": {
+                                      "column": "map_type",
+                                      "options": {}
+                                    }
+                                  }
+                                  """)
+          .wasSuccessful();
+
+      verifyCreatedIndex("idx_t_map_text_int_e");
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("idx_t_map_text_int_e", false)
+          .wasSuccessful();
+    }
   }
 
   @Nested

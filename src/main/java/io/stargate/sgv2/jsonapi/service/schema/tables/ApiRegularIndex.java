@@ -277,7 +277,14 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                 switch (indexFunction) {
                   case KEYS -> apiMapType.getKeyType().typeName();
                   case VALUES -> apiMapType.getValueType().typeName();
-                  case ENTRIES ->
+                  case ENTRIES -> {
+                    // Check if any analyze options are actually specified
+                    var anyPresent =
+                        optionsDesc.ascii() != null
+                            || optionsDesc.caseSensitive() != null
+                            || optionsDesc.normalize() != null;
+
+                    if (anyPresent) {
                       throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
                           errVars(
                               tableSchemaObject,
@@ -289,6 +296,10 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                                 map.put("targetColumn", errFmt(apiColumnDef.name()));
                                 map.put("analyzedOptions", optionsDesc.toString());
                               }));
+                    }
+                    // Empty options object - no analyze options, return null to skip type checking
+                    yield null;
+                  }
                   case null ->
                       throw new IllegalStateException(
                           "Unexpected indexFunction for ApiMapType: " + indexFunction);
@@ -298,6 +309,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
               // Primitive type
             default -> apiColumnDef.type().typeName();
           };
+
+      // Handle ENTRIES index with empty options - no validation needed, just return empty map
+      if (targetTypeName == null) {
+        return new HashMap<>();
+      }
 
       if (targetTypeName != ApiTypeName.TEXT && targetTypeName != ApiTypeName.ASCII) {
         // Only text and ascii fields can have the text analysis options specified
