@@ -118,13 +118,14 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       AsyncResultSetSupplier resultSupplier, RuntimeException runtimeException) {
 
     // resultSupplier may be null if we did not get to execute a statement
+    // In that case, use the commandContext from the BaseTask
     var handler =
         Objects.requireNonNull(
             exceptionHandlerFactory.apply(
                 schemaObject,
                 resultSupplier == null ? null : resultSupplier.statement,
-                resultSupplier == null ? null : resultSupplier.commandContext.requestContext(),
-                resultSupplier == null ? null : resultSupplier.commandContext.cqlSessionCache()),
+                commandContext.requestContext(),
+                commandContext.cqlSessionCache()),
             "DBTask.maybeHandleException() - exceptionHandlerFactory returned null");
 
     return handler.maybeHandle(runtimeException);
