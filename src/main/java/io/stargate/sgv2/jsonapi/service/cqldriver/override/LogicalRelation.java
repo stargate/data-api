@@ -2,8 +2,8 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.override;
 
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import net.jcip.annotations.Immutable;
+import org.jspecify.annotations.NonNull;
 
 /**
  * This class is to add AND/OR relation support to java driver, and it is a temporary override
