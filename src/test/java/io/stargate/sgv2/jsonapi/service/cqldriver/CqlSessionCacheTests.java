@@ -528,7 +528,7 @@ public class CqlSessionCacheTests {
             false,
             true);
 
-    // Add a session to the cache
+    // Add a session to the cache and verify it is present
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
@@ -569,7 +569,7 @@ public class CqlSessionCacheTests {
     var requestContext =
         new RequestContext(Optional.of(TENANT_ID), Optional.of(AUTH_TOKEN), null, null);
 
-    // Add a session to the cache
+    // Add a session to the cache and verify it is present
     var actualSession = fixture.cache.getSession(requestContext);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
@@ -592,6 +592,37 @@ public class CqlSessionCacheTests {
     assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
         .as("Session is removed from cache after explicit eviction")
         .isNotPresent();
+  }
+
+  @Test
+  public void evictSessionNotInCache() {
+    var consumer = consumerWithLogging();
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(consumer),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
+
+    // Verify cache is empty
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Cache is empty before eviction")
+        .isNotPresent();
+
+    // Evict a non-existent session - should not throw
+    fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null);
+
+    // Verify cache is still empty
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Cache is still empty after eviction")
+        .isNotPresent();
+
+    // Verify no interactions with session factory
+    verifyNoInteractions(fixture.sessionFactory);
   }
 
   // =======================================================
@@ -662,23 +693,6 @@ public class CqlSessionCacheTests {
         SLA_USER_TTL,
         false,
         true);
-  }
-
-  private Fixture newFixture(
-      DatabaseType databaseType,
-      List<CQLSessionCache.DeactivatedTenantConsumer> consumers,
-      Duration cacheTTL,
-      int cacheSize,
-      boolean setExpected) {
-    return newFixture(
-        databaseType,
-        consumers,
-        cacheTTL,
-        cacheSize,
-        SLA_USER_AGENT,
-        SLA_USER_TTL,
-        false,
-        setExpected);
   }
 
   private Fixture newFixture(
