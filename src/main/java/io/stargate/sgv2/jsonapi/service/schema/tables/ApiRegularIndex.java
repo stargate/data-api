@@ -54,11 +54,15 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     // map in indexOptions with the correct values, so just use get() and return a null if not
     // found.
     // Then rely on the RegularIndexDescOptions to exclude nulls in its serialisation
+
+    // indexOptions can be null or empty for indexes without explicit analyzer options
     var definitionOptions =
-        new RegularIndexDefinitionDesc.RegularIndexDescOptions(
-            getBooleanIfPresent(indexOptions, CQLOptions.ASCII),
-            getBooleanIfPresent(indexOptions, CQLOptions.CASE_SENSITIVE),
-            getBooleanIfPresent(indexOptions, CQLOptions.NORMALIZE));
+        (indexOptions == null || indexOptions.isEmpty())
+            ? new RegularIndexDefinitionDesc.RegularIndexDescOptions(null, null, null)
+            : new RegularIndexDefinitionDesc.RegularIndexDescOptions(
+                getBooleanIfPresent(indexOptions, CQLOptions.ASCII),
+                getBooleanIfPresent(indexOptions, CQLOptions.CASE_SENSITIVE),
+                getBooleanIfPresent(indexOptions, CQLOptions.NORMALIZE));
 
     var definition =
         new RegularIndexDefinitionDesc(
@@ -277,18 +281,25 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                 switch (indexFunction) {
                   case KEYS -> apiMapType.getKeyType().typeName();
                   case VALUES -> apiMapType.getValueType().typeName();
-                  case ENTRIES ->
-                      throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
-                          errVars(
-                              tableSchemaObject,
-                              map -> {
-                                map.put(
-                                    "allColumns",
-                                    errFmtApiColumnDef(
-                                        tableSchemaObject.apiTableDef().allColumns()));
-                                map.put("targetColumn", errFmt(apiColumnDef.name()));
-                                map.put("analyzedOptions", optionsDesc.toString());
-                              }));
+                  case ENTRIES -> {
+                    // Check if any analyze options are actually specified
+                    if (optionsDesc.isEmpty()) {
+                      // Empty options object - no analyze options, return null to skip type
+                      // checking
+                      yield null;
+                    }
+                    // If any are, tho, fail:
+                    throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
+                        errVars(
+                            tableSchemaObject,
+                            map -> {
+                              map.put(
+                                  "allColumns",
+                                  errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                              map.put("targetColumn", errFmt(apiColumnDef.name()));
+                              map.put("analyzedOptions", optionsDesc.toString());
+                            }));
+                  }
                   case null ->
                       throw new IllegalStateException(
                           "Unexpected indexFunction for ApiMapType: " + indexFunction);
@@ -298,6 +309,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
               // Primitive type
             default -> apiColumnDef.type().typeName();
           };
+
+      // Handle ENTRIES index with empty options - return empty options map
+      if (targetTypeName == null) {
+        return new HashMap<>();
+      }
 
       if (targetTypeName != ApiTypeName.TEXT && targetTypeName != ApiTypeName.ASCII) {
         // Only text and ascii fields can have the text analysis options specified
