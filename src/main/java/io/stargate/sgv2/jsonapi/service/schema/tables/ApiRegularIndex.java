@@ -54,11 +54,15 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     // map in indexOptions with the correct values, so just use get() and return a null if not
     // found.
     // Then rely on the RegularIndexDescOptions to exclude nulls in its serialisation
+
+    // indexOptions can be null or empty for indexes without explicit analyzer options
     var definitionOptions =
-        new RegularIndexDefinitionDesc.RegularIndexDescOptions(
-            getBooleanIfPresent(indexOptions, CQLOptions.ASCII),
-            getBooleanIfPresent(indexOptions, CQLOptions.CASE_SENSITIVE),
-            getBooleanIfPresent(indexOptions, CQLOptions.NORMALIZE));
+        (indexOptions == null || indexOptions.isEmpty())
+            ? new RegularIndexDefinitionDesc.RegularIndexDescOptions(null, null, null)
+            : new RegularIndexDefinitionDesc.RegularIndexDescOptions(
+                getBooleanIfPresent(indexOptions, CQLOptions.ASCII),
+                getBooleanIfPresent(indexOptions, CQLOptions.CASE_SENSITIVE),
+                getBooleanIfPresent(indexOptions, CQLOptions.NORMALIZE));
 
     var definition =
         new RegularIndexDefinitionDesc(
