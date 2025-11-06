@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
@@ -28,8 +29,11 @@ import java.util.*;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +48,66 @@ public class DefaultDriverExceptionHandlerTest {
 
   private static final DefaultDriverExceptionHandlerTestData TEST_DATA =
       new DefaultDriverExceptionHandlerTestData();
+
+  @BeforeEach
+  public void resetMocks() {
+    Mockito.reset(TEST_DATA.SESSION_CACHE, TEST_DATA.REQUEST_CONTEXT);
+  }
+
+  @Test
+  public void handleAllNodesFailedExceptionEvictsSessionFromCache() {
+    // Setup the AllNodesFailedException
+    var allNodesFailedException = allFailedUnexpectedDriverError();
+
+    // Handle the exception
+    var handledException = TEST_DATA.DRIVER_HANDLER.maybeHandle(allNodesFailedException);
+
+    // Verify that evictSession was called
+    verify(TEST_DATA.SESSION_CACHE, times(1)).evictSession(TEST_DATA.REQUEST_CONTEXT);
+    verifyNoMoreInteractions(TEST_DATA.SESSION_CACHE);
+
+    // Test `tableDriverErrorHandled` will verify the exception is handled properly, will not test
+    // here
+  }
+
+  @Test
+  public void handleAllNodesFailedExceptionEvictsSessionEvenWhenEvictionFails() {
+    // Make evictSession throw an exception
+    doThrow(new RuntimeException("Eviction failed"))
+        .when(TEST_DATA.SESSION_CACHE)
+        .evictSession(TEST_DATA.REQUEST_CONTEXT);
+
+    // Setup the AllNodesFailedException
+    var allNodesFailedException = allFailedOneRuntime();
+
+    // Handle the exception - should not throw despite eviction error
+    var handledException =
+        assertDoesNotThrow(() -> TEST_DATA.DRIVER_HANDLER.maybeHandle(allNodesFailedException));
+
+    // Verify that evictSession was attempted
+    verify(TEST_DATA.SESSION_CACHE, times(1)).evictSession(TEST_DATA.REQUEST_CONTEXT);
+    verifyNoMoreInteractions(TEST_DATA.SESSION_CACHE);
+
+    // Test `tableDriverErrorHandled` will verify the exception is handled properly, will not test
+    // here
+  }
+
+  @Test
+  public void handleNoNodeAvailableExceptionAlsoEvictsSession() {
+    // Handle NoNodeAvailableException (which is a subclass of AllNodesFailedException)
+    var noNodeAvailableException = new NoNodeAvailableException();
+
+    // Handle the exception
+    var handledException = TEST_DATA.DRIVER_HANDLER.maybeHandle(noNodeAvailableException);
+
+    // Verify that evictSession was called because NoNodeAvailableException is handled
+    // as AllNodesFailedException first, which triggers eviction
+    verify(TEST_DATA.SESSION_CACHE, times(1)).evictSession(TEST_DATA.REQUEST_CONTEXT);
+    verifyNoMoreInteractions(TEST_DATA.SESSION_CACHE);
+
+    // Test `tableDriverErrorHandled` will verify the exception is handled properly, will not test
+    // here
+  }
 
   @ParameterizedTest
   @MethodSource("tableDriverErrorHandledData")

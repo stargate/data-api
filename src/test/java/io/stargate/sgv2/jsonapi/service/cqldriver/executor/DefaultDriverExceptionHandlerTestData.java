@@ -17,6 +17,10 @@ public class DefaultDriverExceptionHandlerTestData {
 
   public final TableSchemaObject TABLE_SCHEMA_OBJECT;
 
+  public final RequestContext REQUEST_CONTEXT;
+
+  public final CQLSessionCache SESSION_CACHE;
+
   public final CqlIdentifier KEYSPACE_NAME =
       CqlIdentifier.fromInternal("keyspace-" + System.currentTimeMillis());
 
@@ -27,6 +31,8 @@ public class DefaultDriverExceptionHandlerTestData {
       SimpleStatement.newInstance("SELECT * FROM " + TABLE_NAME.asCql(true) + " WHERE x=?;", 1);
 
   public DefaultDriverExceptionHandlerTestData() {
+    REQUEST_CONTEXT = Mockito.mock(RequestContext.class);
+    SESSION_CACHE = Mockito.mock(CQLSessionCache.class);
 
     // Its just as easy to create the table metadata from the driver.
     var tableMetadata =
@@ -45,9 +51,6 @@ public class DefaultDriverExceptionHandlerTestData {
 
     DRIVER_HANDLER =
         new DefaultDriverExceptionHandler<>(
-            TABLE_SCHEMA_OBJECT,
-            STATEMENT,
-            Mockito.mock(RequestContext.class),
-            Mockito.mock(CQLSessionCache.class));
+            TABLE_SCHEMA_OBJECT, STATEMENT, REQUEST_CONTEXT, SESSION_CACHE);
   }
 }
