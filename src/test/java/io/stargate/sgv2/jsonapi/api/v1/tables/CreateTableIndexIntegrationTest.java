@@ -958,7 +958,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .postCreateIndex(
               """
                                   {
-                                    "name": "idx_t_map_text_int_e",
+                                    "name": "idx_map_type_entries_empty_options",
                                     "definition": {
                                       "column": "map_type",
                                       "options": {}
@@ -967,10 +967,10 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   """)
           .wasSuccessful();
 
-      verifyCreatedIndex("idx_t_map_text_int_e");
+      verifyCreatedIndex("idx_map_type_entries_empty_options");
       assertNamespaceCommand(keyspaceName)
           .templated()
-          .dropIndex("idx_t_map_text_int_e", false)
+          .dropIndex("idx_map_type_entries_empty_options", false)
           .wasSuccessful();
     }
   }
