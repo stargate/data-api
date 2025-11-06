@@ -213,6 +213,9 @@ public class DefaultDriverExceptionHandlerTest {
             new UnsupportedProtocolVersionException(null, "unsupported protocol", List.of()),
             Assertions.isUnexpectedDriverException()),
         new TestArguments(
+            allFailedTwoNodesOneWriteTimeout(),
+            Assertions.of(DatabaseException.Code.TIMEOUT_WRITING_DATA)),
+        new TestArguments(
             allFailedTwoNodesAllAuth(), Assertions.of(DatabaseException.Code.UNAUTHORIZED_ACCESS)),
         new TestArguments(
             allFailedOneRuntime(),
