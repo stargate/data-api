@@ -126,9 +126,9 @@ public abstract class OperationAttempt<
   /**
    * Executes this attempt, delegating down to the subclass to build the query.
    *
+   * @param commandContext The {@link CommandContext} to provide context for the operation attempt.
    * @param queryExecutor The {@link CommandQueryExecutor} to use for executing the query, this
    *     handles interacting with the driver.
-   * @param commandContext The {@link CommandContext} to provide context for the operation attempt.
    * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver,
    *     exceptions thrown by the driver are passed through here before being added to the {@link
    *     OperationAttempt}.
@@ -136,8 +136,8 @@ public abstract class OperationAttempt<
    *     object's state will be updated as the operation runs.
    */
   public Uni<SubT> execute(
-      CommandQueryExecutor queryExecutor,
       CommandContext<SchemaT> commandContext,
+      CommandQueryExecutor queryExecutor,
       DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
 
     if (LOGGER.isDebugEnabled()) {
@@ -209,7 +209,7 @@ public abstract class OperationAttempt<
   /**
    * Subclasses must implement this method to build the query and provide a supplier that executes
    * query and returns results. They should not do anything with Uni for retry etc., that is handled
-   * in the base class {@link #execute(CommandQueryExecutor, CommandContext,
+   * in the base class {@link #execute(CommandContext, CommandQueryExecutor,
    * DefaultDriverExceptionHandler.Factory)}.
    *
    * @param queryExecutor The {@link CommandQueryExecutor} for subclasses to access the database
@@ -456,8 +456,8 @@ public abstract class OperationAttempt<
    * execute if we have an error.
    *
    * <p>This is only updated after any retries have completed, the throwable is passed through the
-   * {@link DriverExceptionHandler} provided in the {@link #execute(CommandQueryExecutor,
-   * CommandContext, DefaultDriverExceptionHandler.Factory)} method.
+   * {@link DriverExceptionHandler} provided in the {@link #execute(CommandContext,
+   * CommandQueryExecutor, DefaultDriverExceptionHandler.Factory)} method.
    */
   public Optional<Throwable> failure() {
     return Optional.ofNullable(failure);
@@ -468,7 +468,7 @@ public abstract class OperationAttempt<
    * the attempt status to {@link OperationStatus#ERROR} if no non-null failure is added.
    *
    * <p>If this method is called multiple times then only the first error is kept. The {@link
-   * #execute(CommandQueryExecutor, CommandContext, DefaultDriverExceptionHandler.Factory)} only
+   * #execute(CommandContext, CommandQueryExecutor, DefaultDriverExceptionHandler.Factory)} only
    * calls this after all retries have been attempted.
    *
    * <p>OK to add a failure to the attempt before calling execute, we do this for shredding errors,
