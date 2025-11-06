@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -102,6 +103,7 @@ public record RegularIndexDefinitionDesc(
           @JsonProperty(TableDescConstants.RegularIndexDefinitionDescOptions.NORMALIZE)
           Boolean normalize) {
 
+    @JsonIgnore
     public boolean isEmpty() {
       return ascii == null && caseSensitive == null && normalize == null;
     }
