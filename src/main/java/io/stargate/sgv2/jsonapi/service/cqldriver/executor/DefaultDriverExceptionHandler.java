@@ -176,7 +176,8 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
           e);
     }
 
-    // find the highest priority cause and translate it into a meaningful API error.
+    // Should always be created with errors from calling each node, re-process the most important
+    // error
     var highestPriority = findHighestPriority(exception).orElseGet(() -> null);
 
     return switch (highestPriority) {
