@@ -18,12 +18,12 @@ public class CreateTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public CreateTypeExceptionHandler(
+      RequestContext requestContext,
       KeyspaceSchemaObject schemaObject,
       SimpleStatement statement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache,
       CqlIdentifier udtName) {
-    super(schemaObject, statement, requestContext, sessionCache);
+    super(requestContext, schemaObject, statement, sessionCache);
     this.udtName = Objects.requireNonNull(udtName, "udtName must not be null");
   }
 

@@ -27,13 +27,13 @@ public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaOb
   }
 
   public DefaultDriverExceptionHandler.Factory<SchemaT> getHandlerFactory() {
-    return (schemaObject, statement, requestContext, sessionCache) -> {
+    return (requestContext, schemaObject, statement, sessionCache) -> {
       // do not think we should be calling this multiple times
       if (target != null) {
         throw new IllegalStateException("ErrorHandler Factory already called");
       }
 
-      target = spy(handlerFactory.apply(schemaObject, statement, requestContext, sessionCache));
+      target = spy(handlerFactory.apply(requestContext, schemaObject, statement, sessionCache));
       handlePairs.forEach(pair -> pair.apply(target));
       return target;
     };

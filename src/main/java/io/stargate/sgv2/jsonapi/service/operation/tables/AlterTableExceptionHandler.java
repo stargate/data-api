@@ -17,12 +17,12 @@ public class AlterTableExceptionHandler extends TableDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public AlterTableExceptionHandler(
+      RequestContext requestContext,
       TableSchemaObject schemaObject,
       SimpleStatement statement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache,
       CqlIdentifier tableName) {
-    super(schemaObject, statement, requestContext, sessionCache);
+    super(requestContext, schemaObject, statement, sessionCache);
     this.tableName = Objects.requireNonNull(tableName, "tableName must not be null");
   }
 

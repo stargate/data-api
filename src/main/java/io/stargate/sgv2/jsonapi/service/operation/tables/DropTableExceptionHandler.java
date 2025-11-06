@@ -18,12 +18,12 @@ public class DropTableExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public DropTableExceptionHandler(
+      RequestContext requestContext,
       KeyspaceSchemaObject schemaObject,
       SimpleStatement simpleStatement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache,
       CqlIdentifier tableName) {
-    super(schemaObject, simpleStatement, requestContext, sessionCache);
+    super(requestContext, schemaObject, simpleStatement, sessionCache);
     this.tableName = Objects.requireNonNull(tableName, "tableName must not be null");
   }
 

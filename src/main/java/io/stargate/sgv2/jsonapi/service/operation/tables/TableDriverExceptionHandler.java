@@ -18,10 +18,10 @@ public class TableDriverExceptionHandler
     extends DefaultDriverExceptionHandler<TableBasedSchemaObject> {
 
   public TableDriverExceptionHandler(
+      RequestContext requestContext,
       TableBasedSchemaObject schemaObject,
       SimpleStatement statement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache) {
-    super(schemaObject, statement, requestContext, sessionCache);
+    super(requestContext, schemaObject, statement, sessionCache);
   }
 }

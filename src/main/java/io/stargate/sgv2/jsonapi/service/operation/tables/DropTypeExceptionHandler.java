@@ -18,12 +18,12 @@ public class DropTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public DropTypeExceptionHandler(
+      RequestContext requestContext,
       KeyspaceSchemaObject schemaObject,
       SimpleStatement simpleStatement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache,
       CqlIdentifier typeName) {
-    super(schemaObject, simpleStatement, requestContext, sessionCache);
+    super(requestContext, schemaObject, simpleStatement, sessionCache);
     this.typeName = Objects.requireNonNull(typeName, "typeName must not be null");
   }
 

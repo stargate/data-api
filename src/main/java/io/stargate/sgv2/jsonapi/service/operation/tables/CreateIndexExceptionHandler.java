@@ -19,12 +19,12 @@ public class CreateIndexExceptionHandler extends TableDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public CreateIndexExceptionHandler(
+      RequestContext requestContext,
       TableSchemaObject schemaObject,
       SimpleStatement statement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache,
       CqlIdentifier indexName) {
-    super(schemaObject, statement, requestContext, sessionCache);
+    super(requestContext, schemaObject, statement, sessionCache);
     this.indexName = Objects.requireNonNull(indexName, "indexName must not be null");
   }
 

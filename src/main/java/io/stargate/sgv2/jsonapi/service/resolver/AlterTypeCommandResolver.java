@@ -66,11 +66,11 @@ public class AlterTypeCommandResolver implements CommandResolver<AlterTypeComman
 
     taskBuilder =
         taskBuilder.withExceptionHandlerFactory(
-            (keyspaceSchemaObject, simpleStatement, requestContext, sessionCache) ->
+            (requestContext, keyspaceSchemaObject, simpleStatement, sessionCache) ->
                 new AlterTypeExceptionHandler(
+                    requestContext,
                     keyspaceSchemaObject,
                     simpleStatement,
-                    requestContext,
                     sessionCache,
                     udtName,
                     allRenamesForHandler,

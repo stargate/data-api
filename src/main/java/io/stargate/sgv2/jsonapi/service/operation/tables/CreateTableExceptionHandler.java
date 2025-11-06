@@ -20,12 +20,12 @@ public class CreateTableExceptionHandler extends KeyspaceDriverExceptionHandler 
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public CreateTableExceptionHandler(
+      RequestContext requestContext,
       KeyspaceSchemaObject schemaObject,
       SimpleStatement statement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache,
       CqlIdentifier tableName) {
-    super(schemaObject, statement, requestContext, sessionCache);
+    super(requestContext, schemaObject, statement, sessionCache);
     this.tableName = Objects.requireNonNull(tableName, "tableName must not be null");
   }
 

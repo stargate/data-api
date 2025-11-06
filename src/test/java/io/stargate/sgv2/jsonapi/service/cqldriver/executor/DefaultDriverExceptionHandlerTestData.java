@@ -15,9 +15,9 @@ public class DefaultDriverExceptionHandlerTestData {
 
   public final DriverExceptionHandler DRIVER_HANDLER;
 
-  public final TableSchemaObject TABLE_SCHEMA_OBJECT;
-
   public final RequestContext REQUEST_CONTEXT;
+
+  public final TableSchemaObject TABLE_SCHEMA_OBJECT;
 
   public final CQLSessionCache SESSION_CACHE;
 
@@ -51,6 +51,6 @@ public class DefaultDriverExceptionHandlerTestData {
 
     DRIVER_HANDLER =
         new DefaultDriverExceptionHandler<>(
-            TABLE_SCHEMA_OBJECT, STATEMENT, REQUEST_CONTEXT, SESSION_CACHE);
+            REQUEST_CONTEXT, TABLE_SCHEMA_OBJECT, STATEMENT, SESSION_CACHE);
   }
 }

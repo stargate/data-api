@@ -298,9 +298,9 @@ public abstract class OperationAttempt<
         throwable instanceof RuntimeException re
             ? exceptionHandlerFactory
                 .apply(
+                    commandContext.requestContext(),
                     schemaObject,
                     currentStatement == null ? null : currentStatement.statement(),
-                    commandContext.requestContext(),
                     commandContext.cqlSessionCache())
                 .maybeHandle(re)
             : throwable;

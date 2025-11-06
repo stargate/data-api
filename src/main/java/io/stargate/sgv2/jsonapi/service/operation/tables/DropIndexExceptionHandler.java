@@ -18,12 +18,12 @@ public class DropIndexExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   /** Compatible with {@link FactoryWithIdentifier} */
   public DropIndexExceptionHandler(
+      RequestContext requestContext,
       KeyspaceSchemaObject schemaObject,
       SimpleStatement statement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache,
       CqlIdentifier indexName) {
-    super(schemaObject, statement, requestContext, sessionCache);
+    super(requestContext, schemaObject, statement, sessionCache);
     this.indexName = Objects.requireNonNull(indexName, "indexName must not be null");
   }
 

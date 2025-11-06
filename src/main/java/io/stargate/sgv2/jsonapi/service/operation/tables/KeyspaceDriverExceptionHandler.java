@@ -17,10 +17,10 @@ public class KeyspaceDriverExceptionHandler
     extends DefaultDriverExceptionHandler<KeyspaceSchemaObject> {
 
   public KeyspaceDriverExceptionHandler(
+      RequestContext requestContext,
       KeyspaceSchemaObject schemaObject,
       SimpleStatement statement,
-      RequestContext requestContext,
       CQLSessionCache sessionCache) {
-    super(schemaObject, statement, requestContext, sessionCache);
+    super(requestContext, schemaObject, statement, sessionCache);
   }
 }
