@@ -102,6 +102,10 @@ public record RegularIndexDefinitionDesc(
           @JsonProperty(TableDescConstants.RegularIndexDefinitionDescOptions.NORMALIZE)
           Boolean normalize) {
 
+    public boolean isEmpty() {
+      return ascii == null && caseSensitive == null && normalize == null;
+    }
+
     @Override
     public String toString() {
       return "ascii=" + ascii + ", caseSensitive=" + caseSensitive + ", normalize=" + normalize;

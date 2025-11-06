@@ -279,26 +279,22 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                   case VALUES -> apiMapType.getValueType().typeName();
                   case ENTRIES -> {
                     // Check if any analyze options are actually specified
-                    var anyPresent =
-                        optionsDesc.ascii() != null
-                            || optionsDesc.caseSensitive() != null
-                            || optionsDesc.normalize() != null;
-
-                    if (anyPresent) {
-                      throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
-                          errVars(
-                              tableSchemaObject,
-                              map -> {
-                                map.put(
-                                    "allColumns",
-                                    errFmtApiColumnDef(
-                                        tableSchemaObject.apiTableDef().allColumns()));
-                                map.put("targetColumn", errFmt(apiColumnDef.name()));
-                                map.put("analyzedOptions", optionsDesc.toString());
-                              }));
+                    if (optionsDesc.isEmpty()) {
+                      // Empty options object - no analyze options, return null to skip type
+                      // checking
+                      yield null;
                     }
-                    // Empty options object - no analyze options, return null to skip type checking
-                    yield null;
+                    // If any are, tho, fail:
+                    throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
+                        errVars(
+                            tableSchemaObject,
+                            map -> {
+                              map.put(
+                                  "allColumns",
+                                  errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                              map.put("targetColumn", errFmt(apiColumnDef.name()));
+                              map.put("analyzedOptions", optionsDesc.toString());
+                            }));
                   }
                   case null ->
                       throw new IllegalStateException(
@@ -310,7 +306,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
             default -> apiColumnDef.type().typeName();
           };
 
-      // Handle ENTRIES index with empty options - no validation needed, just return empty map
+      // Handle ENTRIES index with empty options - return empty options map
       if (targetTypeName == null) {
         return new HashMap<>();
       }
