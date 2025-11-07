@@ -167,12 +167,12 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   public RuntimeException handle(AllNodesFailedException exception) {
     // Evict the session from the cache, as it's likely in a "zombie" state
     // where the driver's topology is completely stale.
-    LOGGER.warn(
-        "Evict session for tenant '{}' after AllNodesFailedException.",
-        requestContext.getTenantId().orElse(""));
-
     try {
-      sessionCache.evictSession(requestContext);
+      if (sessionCache.evictSession(requestContext)) {
+        LOGGER.info(
+            "Evicted session for tenant '{}' after AllNodesFailedException.",
+            requestContext.getTenantId().orElse(""));
+      }
     } catch (Exception e) {
       LOGGER.error(
           "Failed to evict session for tenant '{}' after AllNodesFailedException.",

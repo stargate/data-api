@@ -73,9 +73,8 @@ public class DefaultDriverExceptionHandlerTest {
   @Test
   public void handleAllNodesFailedExceptionEvictsSessionEvenWhenEvictionFails() {
     // Make evictSession throw an exception
-    doThrow(new RuntimeException("Eviction failed"))
-        .when(TEST_DATA.SESSION_CACHE)
-        .evictSession(TEST_DATA.REQUEST_CONTEXT);
+    when(TEST_DATA.SESSION_CACHE.evictSession(TEST_DATA.REQUEST_CONTEXT))
+        .thenThrow(new RuntimeException("Eviction failed"));
 
     // Setup the AllNodesFailedException
     var allNodesFailedException = allFailedOneRuntime();
