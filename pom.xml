@@ -9,8 +9,8 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <!-- 14-oct-2025, aaron: Updated to latest Quarkus for security fixes in netty -->
-    <!-- 10-nov-2025, tatu: Updated to latest Quarkus -->
-    <quarkus.platform.version>3.29.2</quarkus.platform.version>
+    <!-- 10-nov-2025, tatu: Updated to later Quarkus (issues with 3.29.x tho -->
+    <quarkus.platform.version>3.28.5</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <!-- 17-Oct-2025, tatu: Although quarkus-bom provides for Mockito version,
