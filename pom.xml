@@ -18,7 +18,10 @@
        But we need version for "maven-surefire-plugin" config! So we have no choice
        but duplicate this, unfortunately & need to keep things in sync manually
       -->
-    <mockito.version>5.19.0</mockito.version>
+    <!-- 10-Nov-2025, tatu: Looks like this is quite sensitive, must match what
+       Quarkus wants: ideally we should drop it but for now, sync
+      -->
+    <mockito.version>5.20.0</mockito.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Integration test props -->
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
