@@ -35,7 +35,7 @@ public class CqlCredentialsFactory implements CQLSessionCache.CredentialsFactory
     this.fixedUserName = fixedUserName;
     this.fixedPassword = fixedPassword;
 
-    if (fixedToken != null && LOGGER.isWarnEnabled()) {
+    if (fixedToken != null) {
       LOGGER.warn("Fixed token is set, all tokens will be validated against this token.");
     }
   }
