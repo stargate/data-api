@@ -65,7 +65,6 @@ public class CqlCredentialsFactoryTests {
 
   @Test
   public void missingTokenErrorsForOnline() {
-
     var dbTypes = List.of(DatabaseType.ASTRA, DatabaseType.CASSANDRA);
     var tokens = new String[] {null, ""};
 
@@ -107,6 +106,28 @@ public class CqlCredentialsFactoryTests {
 
     assertUsernamePassword((CqlCredentials.UsernamePasswordCredentials) creds, userName, password);
     assertAddToSessionBuilder(creds, userName, password, false);
+  }
+
+  @Test
+  public void cassandraTokenInvalid() {
+    var brokenToken = "Cassandra:x:y";
+
+    var dbTypes = List.of(DatabaseType.ASTRA, DatabaseType.CASSANDRA);
+
+    for (var dbType : dbTypes) {
+      var fixture = fixtureWithoutFixed(dbType);
+
+      UnauthorizedException ex =
+          assertThrows(
+              UnauthorizedException.class,
+              () -> {
+                fixture.factory.apply(brokenToken);
+              });
+      assertThat(ex)
+          .as("Exception message for dbType=%s, token='%s'", dbType, brokenToken)
+          .hasMessageContaining(
+              "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
+    }
   }
 
   @Test
@@ -182,7 +203,11 @@ public class CqlCredentialsFactoryTests {
   }
 
   private Fixture fixtureWithoutFixed() {
-    return newFixture(null, null, null, DatabaseType.ASTRA);
+    return fixtureWithoutFixed(DatabaseType.ASTRA);
+  }
+
+  private Fixture fixtureWithoutFixed(DatabaseType dbType) {
+    return newFixture(null, null, null, dbType);
   }
 
   private Fixture newFixture(
