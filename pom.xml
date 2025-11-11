@@ -71,7 +71,15 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!-- And AWS SDK BOM as secondary (lower precedence) -->
+      <!-- Another Quarkus BOM for MCP -->
+      <dependency>
+        <groupId>io.quarkiverse.mcp</groupId>
+        <artifactId>quarkus-mcp-server-bom</artifactId>
+        <version>1.7.1</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- And AWS SDK BOM (lower precedence) -->
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>bom</artifactId>
@@ -148,6 +156,10 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-logging-json</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkiverse.mcp</groupId>
+      <artifactId>quarkus-mcp-server-sse</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.validation</groupId>
