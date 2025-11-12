@@ -61,8 +61,7 @@ public class GenericOperation<
    * the attempts are caught and attached to the {@link OperationAttempt} so the Page Builder can
    * include them in the response.
    *
-   * @param dataApiRequestInfo Request information used to get the tenantId and token
-   * @param queryExecutor The {@link QueryExecutor} to use for executing the attempts
+   * @param commandContext The context to use for executing the operation.
    * @return A supplier of {@link CommandResult} that represents the result of running all the
    *     attempts.
    */
@@ -123,12 +122,13 @@ public class GenericOperation<
               // and do not call exectute() on it.
               return Uni.createFrom().item(attempt.setSkippedIfReady());
             }
-            return attempt.execute(commandQueryExecutor, exceptionHandlerFactory);
+            return attempt.execute(commandContext, commandQueryExecutor, exceptionHandlerFactory);
           });
     }
 
     // Parallel processing using transformToUniAndMerge() - no extra testing.
     return attemptMulti.transformToUniAndMerge(
-        readAttempt -> readAttempt.execute(commandQueryExecutor, exceptionHandlerFactory));
+        readAttempt ->
+            readAttempt.execute(commandContext, commandQueryExecutor, exceptionHandlerFactory));
   }
 }

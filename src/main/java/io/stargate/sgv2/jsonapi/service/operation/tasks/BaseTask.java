@@ -59,6 +59,9 @@ public abstract class BaseTask<
   /** The current result supplier, supplied by the subclass every time we try / re-try */
   private ResultSupplierT resultSupplier = null;
 
+  /** The command context for the current execution, set when execute() is called */
+  protected CommandContext<SchemaT> commandContext = null;
+
   // Number of times the task has been retried, we started with 0 and only increase when we
   // decide to retry.
   private int retryCount = 0;
@@ -89,6 +92,9 @@ public abstract class BaseTask<
   /** {@inheritDoc} */
   @Override
   public <SubT extends Task<SchemaT>> Uni<SubT> execute(CommandContext<SchemaT> commandContext) {
+
+    // Save the command context for use in exception handling
+    this.commandContext = commandContext;
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("execute() - starting {}", taskDesc());

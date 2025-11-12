@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 
@@ -15,7 +17,10 @@ public class KeyspaceDriverExceptionHandler
     extends DefaultDriverExceptionHandler<KeyspaceSchemaObject> {
 
   public KeyspaceDriverExceptionHandler(
-      KeyspaceSchemaObject schemaObject, SimpleStatement statement) {
-    super(schemaObject, statement);
+      RequestContext requestContext,
+      KeyspaceSchemaObject schemaObject,
+      SimpleStatement statement,
+      CQLSessionCache sessionCache) {
+    super(requestContext, schemaObject, statement, sessionCache);
   }
 }
