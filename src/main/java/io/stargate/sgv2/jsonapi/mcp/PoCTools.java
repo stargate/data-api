@@ -36,10 +36,9 @@ public class PoCTools {
             .withMeterRegistry(meterRegistry);
   }
 
-  @Tool(description = "Simple Ping tool (with configurable message)")
-  String ping(
-      @ToolArg(description = "Response message", defaultValue = "OK") String responseMessage) {
-    return responseMessage;
+  @Tool(description = "Simple Echo tool")
+  String echo(@ToolArg(description = "Response", defaultValue = "OK") String response) {
+    return response;
   }
 
   @Tool(description = "System info printer")
