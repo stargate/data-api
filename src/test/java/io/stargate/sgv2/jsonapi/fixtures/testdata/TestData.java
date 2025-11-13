@@ -92,4 +92,8 @@ public class TestData {
   public TableUpdateOperatorTestData tableUpdateOperator() {
     return getOrCache(TableUpdateOperatorTestData.class);
   }
+
+  public TableProjectionTestData tableProjection() {
+    return getOrCache(TableProjectionTestData.class);
+  }
 }
