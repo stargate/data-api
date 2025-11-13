@@ -43,7 +43,7 @@ public class SchemaDBTaskPage<TaskT extends SchemaDBTask<SchemaT>, SchemaT exten
   protected void buildCommandResult() {
     super.buildCommandResult();
 
-    resultBuilder.addStatus(CommandStatus.OK, tasks.allTasksCompleted() ? 1 : 0);
+    resultBuilder.addStatus(CommandStatus.OK, taskGroup.allTasksCompleted() ? 1 : 0);
   }
 
   public static class Accumulator<TaskT extends SchemaDBTask<SchemaT>, SchemaT extends SchemaObject>

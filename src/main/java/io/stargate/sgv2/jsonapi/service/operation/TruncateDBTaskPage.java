@@ -48,7 +48,7 @@ public class TruncateDBTaskPage<
     super.buildCommandResult();
 
     // truncate a table, set delete_count status as -1
-    if (tasks.errorTasks().isEmpty()) {
+    if (taskGroup.errorTasks().isEmpty()) {
       resultBuilder.addStatus(CommandStatus.DELETED_COUNT, -1);
     }
   }
