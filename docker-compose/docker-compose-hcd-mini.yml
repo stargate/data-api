@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  hcd:
+    image: 559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd:1.2.1-early-preview
+    platform: linux/amd64
+    networks:
+      - stargate
+    mem_limit: 3G
+    environment:
+      - MAX_HEAP_SIZE=1536M
+      - CLUSTER_NAME=hcd-1.2.3-cluster
+      - DS_LICENSE=accept
+      - HCD_AUTO_CONF_OFF=cassandra.yaml
+      - JVM_EXTRA_OPTS=-Dcassandra.sai.latest.version=ec
+    volumes:
+      - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
+    ports:
+      - 9042:9042
+    healthcheck:
+      test: [ "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+networks:
+  stargate:
