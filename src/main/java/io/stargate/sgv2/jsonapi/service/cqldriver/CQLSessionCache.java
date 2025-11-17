@@ -7,12 +7,16 @@ import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -57,11 +61,14 @@ public class CQLSessionCache {
   private final String slaUserAgent;
   private final Duration slaUserTTL;
 
-  private final LoadingCache<SessionCacheKey, SessionValueHolder> sessionCache;
+  private final AsyncLoadingCache<SessionCacheKey, SessionValueHolder> sessionCache;
   private final CqlCredentialsFactory credentialsFactory;
   private final SessionFactory sessionFactory;
 
   private List<DeactivatedTenantConsumer> deactivatedTenantConsumers;
+
+  // Thread pool executor for async session creation to prevent blocking Vert.x event loop threads
+  private final Executor sessionCreationExecutor;
 
   /**
    * Constructs a new instance of the {@link CQLSessionCache}.
@@ -140,14 +147,26 @@ public class CQLSessionCache {
     this.deactivatedTenantConsumers =
         deactivatedTenantConsumer == null ? List.of() : List.copyOf(deactivatedTenantConsumer);
 
+    // Using a fixed thread pool sized based on available processors, with a reasonable max
+    int poolSize = Math.max(4, Runtime.getRuntime().availableProcessors());
+    this.sessionCreationExecutor =
+        Executors.newFixedThreadPool(
+            poolSize,
+            r -> {
+              Thread t = new Thread(r, "cql-session-creator");
+              t.setDaemon(true);
+              return t;
+            });
+
     LOGGER.info(
-        "Initializing CQLSessionCache with cacheTTL={}, cacheMaxSize={}, databaseType={}, slaUserAgent={}, slaUserTTL={}, deactivatedTenantConsumers.count={}",
+        "Initializing CQLSessionCache with cacheTTL={}, cacheMaxSize={}, databaseType={}, slaUserAgent={}, slaUserTTL={}, deactivatedTenantConsumers.count={}, sessionCreationThreadPoolSize={}",
         cacheTTL,
         cacheMaxSize,
         databaseType,
         slaUserAgent,
         slaUserTTL,
-        deactivatedTenantConsumers.size());
+        deactivatedTenantConsumers.size(),
+        poolSize);
 
     var builder =
         Caffeine.newBuilder()
@@ -156,20 +175,32 @@ public class CQLSessionCache {
             .removalListener(this::onKeyRemoved)
             .recordStats();
 
+    // Configure executor for async cache operations - this ensures session creation
+    // happens on worker threads, not the Vert.x event loop
     if (asyncTaskOnCaller) {
       LOGGER.warn(
           "CQLSessionCache CONFIGURED TO RUN ASYNC TASKS SUCH AS CALLBACKS ON THE CALLER THREAD, DO NOT USE IN PRODUCTION.");
       builder = builder.executor(Runnable::run);
+    } else {
+      // Use our dedicated thread pool for async cache operations
+      builder = builder.executor(sessionCreationExecutor);
     }
     if (cacheTicker != null) {
       LOGGER.warn("CQLSessionCache CONFIGURED TO USE A CUSTOM TICKER, DO NOT USE IN PRODUCTION.");
       builder = builder.ticker(cacheTicker);
     }
-    LoadingCache<SessionCacheKey, SessionValueHolder> loadingCache =
-        builder.build(this::onLoadSession);
 
-    this.sessionCache =
-        CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
+    // Use AsyncLoadingCache to prevent blocking Vert.x event loop threads
+    // Caffeine will use the executor we configured above to run the loader
+    AsyncLoadingCache<SessionCacheKey, SessionValueHolder> asyncCache =
+        builder.buildAsync((key, executor) -> onLoadSessionAsync(key, executor));
+
+    // Monitor the async cache metrics using the synchronous view
+    CaffeineCacheMetrics.monitor(meterRegistry, asyncCache.synchronous(), "cql_sessions_cache");
+
+    // Wrap the async cache to provide synchronous access for backward compatibility
+    // Note: get() will still block, but the actual session creation happens on worker threads
+    this.sessionCache = asyncCache;
   }
 
   /**
@@ -195,6 +226,10 @@ public class CQLSessionCache {
    * from the cache without creating a new session if it is not present. For other database types, a
    * new session will be created if it is not already cached.
    *
+   * <p><b>NOTE:</b> This method may block while waiting for session creation, but the actual
+   * session creation work happens on a worker thread pool to prevent blocking Vert.x event loop
+   * threads.
+   *
    * @param tenantId the identifier for the tenant
    * @param authToken the authentication token for accessing the session
    * @param userAgent Nullable user agent, if matching the configured SLA checker user agent then
@@ -204,13 +239,87 @@ public class CQLSessionCache {
   public CqlSession getSession(String tenantId, String authToken, String userAgent) {
 
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
-    // TODO: why is this different for OFFLINE ?
-    var holder =
-        switch (databaseType) {
-          case OFFLINE_WRITER -> sessionCache.getIfPresent(cacheKey);
-          default -> sessionCache.get(cacheKey);
-        };
-    return holder == null ? null : holder.session();
+    try {
+      // TODO: why is this different for OFFLINE ?
+      SessionValueHolder holder =
+          switch (databaseType) {
+            case OFFLINE_WRITER -> {
+              CompletableFuture<SessionValueHolder> future = sessionCache.getIfPresent(cacheKey);
+              yield future != null ? future.join() : null;
+            }
+            default -> {
+              // get() returns CompletableFuture, join() blocks but work happens on worker thread
+              yield sessionCache.get(cacheKey).join();
+            }
+          };
+      return holder == null ? null : holder.session();
+    } catch (Exception e) {
+      // If session creation fails, log and rethrow
+      LOGGER.error(
+          "Failed to get or create CQL session for tenantId={}, cacheKey={}",
+          tenantId,
+          cacheKey,
+          e);
+      throw e;
+    }
+  }
+
+  /**
+   * Gets or creates a {@link CqlSession} asynchronously for the provided request context. This
+   * method does not block the calling thread and should be used in reactive chains.
+   *
+   * @param requestContext {@link RequestContext} to get the session for.
+   * @return {@link Uni} that emits the {@link CqlSession} for this tenant and credentials.
+   */
+  public Uni<CqlSession> getSessionAsync(RequestContext requestContext) {
+    Objects.requireNonNull(requestContext, "requestContext must not be null");
+    return getSessionAsync(
+        requestContext.getTenantId().orElse(""),
+        requestContext.getCassandraToken().orElse(""),
+        requestContext.getUserAgent().orElse(null));
+  }
+
+  /**
+   * Retrieves or creates a {@link CqlSession} asynchronously for the specified tenant and
+   * authentication token. This method does not block the calling thread and should be used in
+   * reactive chains.
+   *
+   * <p>If the database type is OFFLINE_WRITER, this method will attempt to retrieve the session
+   * from the cache without creating a new session if it is not present. For other database types, a
+   * new session will be created if it is not already cached.
+   *
+   * @param tenantId the identifier for the tenant
+   * @param authToken the authentication token for accessing the session
+   * @param userAgent Nullable user agent, if matching the configured SLA checker user agent then
+   *     the session will use the TTL for the SLA user.
+   * @return {@link Uni} that emits the {@link CqlSession} associated with the given tenantId and
+   *     authToken
+   */
+  public Uni<CqlSession> getSessionAsync(String tenantId, String authToken, String userAgent) {
+    var cacheKey = createCacheKey(tenantId, authToken, userAgent);
+
+    CompletableFuture<SessionValueHolder> future;
+    switch (databaseType) {
+      case OFFLINE_WRITER -> {
+        future = sessionCache.getIfPresent(cacheKey);
+        if (future == null) {
+          return Uni.createFrom().item((CqlSession) null);
+        }
+      }
+      default -> future = sessionCache.get(cacheKey);
+    }
+
+    return Uni.createFrom()
+        .completionStage(future)
+        .map(holder -> holder == null ? null : holder.session())
+        .onFailure()
+        .invoke(
+            e ->
+                LOGGER.error(
+                    "Failed to get or create CQL session for tenantId={}, cacheKey={}",
+                    tenantId,
+                    cacheKey,
+                    e));
   }
 
   /**
@@ -220,8 +329,8 @@ public class CQLSessionCache {
   @VisibleForTesting
   protected Optional<CqlSession> peekSession(String tenantId, String authToken, String userAgent) {
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
-    return Optional.ofNullable(sessionCache.getIfPresent(cacheKey))
-        .map(SessionValueHolder::session);
+    CompletableFuture<SessionValueHolder> future = sessionCache.getIfPresent(cacheKey);
+    return Optional.ofNullable(future).map(f -> f.getNow(null)).map(SessionValueHolder::session);
   }
 
   /** Process a key being removed from the cache for any reason. */
@@ -265,19 +374,40 @@ public class CQLSessionCache {
     }
   }
 
-  /** Callback to create a new session when one is needed for the cache */
-  private SessionValueHolder onLoadSession(SessionCacheKey cacheKey) {
+  /**
+   * Async callback to create a new session when one is needed for the cache.
+   *
+   * <p>The executor parameter is provided by Caffeine and is already configured to run on worker
+   * threads (not the Vert.x event loop). We use it to offload the blocking session creation work.
+   *
+   * <p>Caffeine's AsyncLoadingCache already ensures that concurrent requests for the same cache key
+   * share a single loader invocation, so no additional serialization is needed.
+   */
+  private CompletableFuture<SessionValueHolder> onLoadSessionAsync(
+      SessionCacheKey cacheKey, Executor executor) {
 
-    // factory will do some logging
-    var holder =
-        new SessionValueHolder(
-            sessionFactory.apply(cacheKey.tenantId(), cacheKey.credentials()), cacheKey);
+    // Use the executor provided by Caffeine (which we configured to use sessionCreationExecutor)
+    // This ensures the blocking session creation happens on a worker thread, not the event loop
+    return CompletableFuture.supplyAsync(
+        () -> {
+          // Create the session on the worker thread
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(
+                "Creating CQLSession on worker thread for cacheKey={}, thread={}",
+                cacheKey,
+                Thread.currentThread().getName());
+          }
 
-    if (LOGGER.isDebugEnabled()) {
-      // so we get the identity hash code of the session holder
-      LOGGER.debug("Loaded CQLSession into cache, holder={}", holder);
-    }
-    return holder;
+          var holder =
+              new SessionValueHolder(
+                  sessionFactory.apply(cacheKey.tenantId(), cacheKey.credentials()), cacheKey);
+
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Loaded CQLSession into cache, holder={}", holder);
+          }
+          return holder;
+        },
+        executor);
   }
 
   /** Builds the cache key to use for the supplied tenant and authentication token. */
@@ -313,8 +443,8 @@ public class CQLSessionCache {
   @VisibleForTesting
   void clearCache() {
     LOGGER.info("Manually clearing CQLSession cache");
-    sessionCache.invalidateAll();
-    sessionCache.cleanUp();
+    sessionCache.synchronous().invalidateAll();
+    sessionCache.synchronous().cleanUp();
   }
 
   /**
@@ -323,7 +453,7 @@ public class CQLSessionCache {
    */
   @VisibleForTesting
   void cleanUp() {
-    sessionCache.cleanUp();
+    sessionCache.synchronous().cleanUp();
   }
 
   /** Key for CQLSession cache. */
