@@ -74,7 +74,7 @@ public class APIExceptionTest extends ConfiguredErrorTest {
   }
 
   @Test
-  public void defaultXxceptionActionsFieldEmpty() {
+  public void defaultExceptionActionsFieldEmpty() {
     var exception =
         TestScopeException.Code.SCOPED_REQUEST_ERROR.get(
             "name", TEST_DATA.VAR_NAME,
@@ -99,5 +99,15 @@ public class APIExceptionTest extends ConfiguredErrorTest {
     assertThat(exception.exceptionActions)
         .as("exceptionActions should contain EVICT_SESSION_CACHE")
         .contains(ExceptionAction.EVICT_SESSION_CACHE);
+  }
+
+  @Test
+  public void exceptionActionsMultiple() {
+    var actions = EnumSet.of(ExceptionAction.RETRY, ExceptionAction.EVICT_SESSION_CACHE);
+    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get(actions, new String[] {});
+
+    assertThat(exception.exceptionActions)
+        .as("Exception should contain both actions")
+        .containsExactlyInAnyOrder(ExceptionAction.RETRY, ExceptionAction.EVICT_SESSION_CACHE);
   }
 }

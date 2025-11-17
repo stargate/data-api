@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.exception;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import java.util.EnumSet;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -50,60 +49,6 @@ public class ErrorCodeTest extends ConfiguredErrorTest {
     assertThat(errorFromParamArgs.errorId)
         .describedAs("errorId is different between from param args and map")
         .isNotEqualTo(errorFromMap.errorId);
-  }
-
-  @Test
-  public void getWithExceptionActions() {
-    var errorCode = TestScopeException.Code.SCOPED_REQUEST_ERROR;
-    var exceptionActions = EnumSet.of(ExceptionAction.EVICT_SESSION_CACHE);
-
-    var error =
-        assertDoesNotThrow(
-            () ->
-                errorCode.get(
-                    exceptionActions, "name", TEST_DATA.VAR_NAME, "value", TEST_DATA.VAR_VALUE),
-            "Can create error with exception actions");
-
-    assertThat(error.exceptionActions)
-        .describedAs("ExceptionActions should be set correctly")
-        .isEqualTo(exceptionActions);
-  }
-
-  @Test
-  public void getWithExceptionActionsFromMap() {
-    var errorCode = TestScopeException.Code.SCOPED_REQUEST_ERROR;
-    var exceptionActions = EnumSet.of(ExceptionAction.RETRY);
-
-    var error =
-        assertDoesNotThrow(
-            () ->
-                errorCode.get(
-                    exceptionActions,
-                    Map.of("name", TEST_DATA.VAR_NAME, "value", TEST_DATA.VAR_VALUE)),
-            "Can create error with exception actions from map");
-
-    assertThat(error.exceptionActions)
-        .describedAs("ExceptionActions should be set correctly")
-        .isEqualTo(exceptionActions);
-  }
-
-  @Test
-  public void getWithoutExceptionActionsDefaultsToEmpty() {
-    var errorCode = TestRequestException.Code.NO_VARIABLES_TEMPLATE;
-
-    // Test with no arguments
-    var errorFromNoArgs = assertDoesNotThrow(() -> errorCode.get());
-
-    assertThat(errorFromNoArgs.exceptionActions)
-        .describedAs("ExceptionActions should default to empty set when called with no args")
-        .isEmpty();
-
-    // Test with empty map
-    var errorFromEmptyMap = assertDoesNotThrow(() -> errorCode.get(Map.of()));
-
-    assertThat(errorFromEmptyMap.exceptionActions)
-        .describedAs("ExceptionActions should default to empty set when called with empty map")
-        .isEmpty();
   }
 
   @Test
