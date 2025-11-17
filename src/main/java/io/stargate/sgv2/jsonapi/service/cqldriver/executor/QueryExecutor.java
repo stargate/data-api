@@ -67,8 +67,9 @@ public class QueryExecutor {
     DBTraceMessages.executingStatement(
         requestTracing, stmtWithTracing, "Executing statement for non task based operation");
 
-    return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(stmtWithTracing))
+    return cqlSessionCache
+        .getSessionAsync(requestContext)
+        .flatMap(session -> Uni.createFrom().completionStage(session.executeAsync(stmtWithTracing)))
         .onItem()
         .call(
             asyncResultSet ->
@@ -113,11 +114,14 @@ public class QueryExecutor {
    */
   public CompletionStage<AsyncResultSet> executeCount(
       RequestContext requestContext, SimpleStatement simpleStatement) {
-    simpleStatement =
+    final SimpleStatement finalStatement =
         simpleStatement
             .setExecutionProfileName("count")
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
-    return cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement);
+    return cqlSessionCache
+        .getSessionAsync(requestContext)
+        .flatMap(session -> Uni.createFrom().completionStage(session.executeAsync(finalStatement)))
+        .subscribeAsCompletionStage();
   }
 
   /**
@@ -129,10 +133,13 @@ public class QueryExecutor {
    */
   public CompletionStage<AsyncResultSet> executeEstimatedCount(
       RequestContext requestContext, SimpleStatement simpleStatement) {
-    simpleStatement =
+    final SimpleStatement finalStatement =
         simpleStatement.setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
 
-    return cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement);
+    return cqlSessionCache
+        .getSessionAsync(requestContext)
+        .flatMap(session -> Uni.createFrom().completionStage(session.executeAsync(finalStatement)))
+        .subscribeAsCompletionStage();
   }
 
   /**
@@ -174,17 +181,19 @@ public class QueryExecutor {
    */
   public Uni<AsyncResultSet> executeWrite(
       RequestContext requestContext, SimpleStatement statement) {
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache
-                .getSession(requestContext)
-                .executeAsync(
-                    statement
-                        .setIdempotent(true)
-                        .setConsistencyLevel(
-                            operationsConfig.queriesConfig().consistency().writes())
-                        .setSerialConsistencyLevel(
-                            operationsConfig.queriesConfig().serialConsistency())));
+    return cqlSessionCache
+        .getSessionAsync(requestContext)
+        .flatMap(
+            session ->
+                Uni.createFrom()
+                    .completionStage(
+                        session.executeAsync(
+                            statement
+                                .setIdempotent(true)
+                                .setConsistencyLevel(
+                                    operationsConfig.queriesConfig().consistency().writes())
+                                .setSerialConsistencyLevel(
+                                    operationsConfig.queriesConfig().serialConsistency()))));
   }
 
   /**
@@ -225,16 +234,21 @@ public class QueryExecutor {
 
   private Uni<AsyncResultSet> executeSchemaChange(
       RequestContext requestContext, SimpleStatement boundStatement, String profile) {
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache
-                .getSession(requestContext)
-                .executeAsync(
-                    boundStatement
-                        .setExecutionProfileName(profile)
-                        .setIdempotent(true)
-                        .setSerialConsistencyLevel(
-                            operationsConfig.queriesConfig().consistency().schemaChanges())))
+    return cqlSessionCache
+        .getSessionAsync(requestContext)
+        .flatMap(
+            session ->
+                Uni.createFrom()
+                    .completionStage(
+                        session.executeAsync(
+                            boundStatement
+                                .setExecutionProfileName(profile)
+                                .setIdempotent(true)
+                                .setSerialConsistencyLevel(
+                                    operationsConfig
+                                        .queriesConfig()
+                                        .consistency()
+                                        .schemaChanges()))))
         .onFailure(
             error ->
                 error instanceof DriverTimeoutException
@@ -255,19 +269,21 @@ public class QueryExecutor {
                   .onItem()
                   .transformToUni(
                       v ->
-                          Uni.createFrom()
-                              .completionStage(
-                                  cqlSessionCache
-                                      .getSession(requestContext)
-                                      .executeAsync(
-                                          duplicate
-                                              .setExecutionProfileName(profile)
-                                              .setIdempotent(true)
-                                              .setSerialConsistencyLevel(
-                                                  operationsConfig
-                                                      .queriesConfig()
-                                                      .consistency()
-                                                      .schemaChanges()))));
+                          cqlSessionCache
+                              .getSessionAsync(requestContext)
+                              .flatMap(
+                                  session ->
+                                      Uni.createFrom()
+                                          .completionStage(
+                                              session.executeAsync(
+                                                  duplicate
+                                                      .setExecutionProfileName(profile)
+                                                      .setIdempotent(true)
+                                                      .setSerialConsistencyLevel(
+                                                          operationsConfig
+                                                              .queriesConfig()
+                                                              .consistency()
+                                                              .schemaChanges())))));
             })
         .onFailure(
             error ->
@@ -288,26 +304,33 @@ public class QueryExecutor {
    */
   protected Uni<Optional<TableMetadata>> getSchema(
       RequestContext requestContext, String namespace, String collectionName) {
-    try {
-      var session = cqlSessionCache.getSession(requestContext);
-      return Uni.createFrom()
-          .completionStage(session.refreshSchemaAsync())
-          .onItem()
-          .transformToUni(
-              v -> {
-                KeyspaceMetadata keyspaceMetadata =
-                    session.getMetadata().getKeyspaces().get(cqlIdentifierFromUserInput(namespace));
-                if (keyspaceMetadata == null) {
-                  return Uni.createFrom()
-                      .failure(ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
-                }
-                return Uni.createFrom()
-                    .item(keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName)));
-              });
-    } catch (Exception e) {
-      // TODO: this ^^ is a very wide error catch, confirm what it should actually be catching
-      return Uni.createFrom().failure(e);
-    }
+    return cqlSessionCache
+        .getSessionAsync(requestContext)
+        .flatMap(
+            session ->
+                Uni.createFrom()
+                    .completionStage(session.refreshSchemaAsync())
+                    .onItem()
+                    .transformToUni(
+                        v -> {
+                          KeyspaceMetadata keyspaceMetadata =
+                              session
+                                  .getMetadata()
+                                  .getKeyspaces()
+                                  .get(cqlIdentifierFromUserInput(namespace));
+                          if (keyspaceMetadata == null) {
+                            return Uni.createFrom()
+                                .failure(
+                                    ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
+                                        "%s", namespace));
+                          }
+                          return Uni.createFrom()
+                              .item(
+                                  keyspaceMetadata.getTable(
+                                      cqlIdentifierFromUserInput(collectionName)));
+                        }))
+        .onFailure()
+        .recoverWithUni(e -> Uni.createFrom().failure(e));
   }
 
   /**
@@ -319,16 +342,21 @@ public class QueryExecutor {
    */
   protected Uni<TableMetadata> getCollectionSchema(
       RequestContext requestContext, String namespace, String collectionName) {
-    Optional<KeyspaceMetadata> keyspaceMetadata;
-    if ((keyspaceMetadata =
-            cqlSessionCache.getSession(requestContext).getMetadata().getKeyspace(namespace))
-        .isPresent()) {
-      Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(collectionName);
-      if (tableMetadata.isPresent()) {
-        return Uni.createFrom().item(tableMetadata.get());
-      }
-    }
-    return Uni.createFrom().nullItem();
+    return cqlSessionCache
+        .getSessionAsync(requestContext)
+        .map(
+            session -> {
+              Optional<KeyspaceMetadata> keyspaceMetadata =
+                  session.getMetadata().getKeyspace(namespace);
+              if (keyspaceMetadata.isPresent()) {
+                Optional<TableMetadata> tableMetadata =
+                    keyspaceMetadata.get().getTable(collectionName);
+                if (tableMetadata.isPresent()) {
+                  return tableMetadata.get();
+                }
+              }
+              return null;
+            });
   }
 
   private static byte[] decodeBase64(String base64encoded) {

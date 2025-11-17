@@ -178,7 +178,12 @@ public class CommandQueryExecutor {
         dbRequestContext.tracingEnabled() != statement.isTracing()
             ? statement.setTracing(dbRequestContext.tracingEnabled())
             : statement;
-    return Uni.createFrom().completionStage(session().executeAsync(execStatement));
+    return cqlSessionCache
+        .getSessionAsync(
+            dbRequestContext.tenantId().orElse(""),
+            dbRequestContext.authToken().orElse(""),
+            dbRequestContext.userAgent().orElse(null))
+        .flatMap(session -> Uni.createFrom().completionStage(session.executeAsync(execStatement)));
   }
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext

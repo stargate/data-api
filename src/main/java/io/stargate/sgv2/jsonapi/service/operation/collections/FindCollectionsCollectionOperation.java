@@ -55,38 +55,45 @@ public record FindCollectionsCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
-    KeyspaceMetadata keyspaceMetadata =
-        cqlSessionCache
-            .getSession(dataApiRequestInfo)
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
-    if (keyspaceMetadata == null) {
-      return Uni.createFrom()
-          .failure(
-              ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
-                  "Unknown keyspace '%s', you must create it first",
-                  commandContext.schemaObject().name().keyspace()));
-    }
-    return Uni.createFrom()
-        .item(
-            () -> {
-              List<CollectionSchemaObject> properties =
-                  keyspaceMetadata
-                      // get all tables
-                      .getTables()
-                      .values()
-                      .stream()
-                      // filter for valid collections
-                      .filter(tableMatcher)
-                      // map to name
-                      .map(
-                          table ->
-                              CollectionSchemaObject.getCollectionSettings(table, objectMapper))
-                      // get as list
-                      .toList();
-              // Wrap the properties list into a command result
-              return new Result(explain, properties);
+    return cqlSessionCache
+        .getSessionAsync(dataApiRequestInfo)
+        .flatMap(
+            session -> {
+              KeyspaceMetadata keyspaceMetadata =
+                  session
+                      .getMetadata()
+                      .getKeyspaces()
+                      .get(
+                          CqlIdentifier.fromInternal(
+                              commandContext.schemaObject().name().keyspace()));
+              if (keyspaceMetadata == null) {
+                return Uni.createFrom()
+                    .failure(
+                        ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
+                            "Unknown keyspace '%s', you must create it first",
+                            commandContext.schemaObject().name().keyspace()));
+              }
+              return Uni.createFrom()
+                  .item(
+                      () -> {
+                        List<CollectionSchemaObject> properties =
+                            keyspaceMetadata
+                                // get all tables
+                                .getTables()
+                                .values()
+                                .stream()
+                                // filter for valid collections
+                                .filter(tableMatcher)
+                                // map to name
+                                .map(
+                                    table ->
+                                        CollectionSchemaObject.getCollectionSettings(
+                                            table, objectMapper))
+                                // get as list
+                                .toList();
+                        // Wrap the properties list into a command result
+                        return new Result(explain, properties);
+                      });
             });
   }
 

@@ -41,18 +41,14 @@ public class FindKeyspacesOperation implements Operation {
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
 
-    return Uni.createFrom()
-        .item(
-            () -> {
+    return queryExecutor
+        .getCqlSessionCache()
+        .getSessionAsync(dataApiRequestInfo)
+        .map(
+            session -> {
               // get all existing keyspaces
               List<String> keyspacesList =
-                  queryExecutor
-                      .getCqlSessionCache()
-                      .getSession(dataApiRequestInfo)
-                      .getMetadata()
-                      .getKeyspaces()
-                      .keySet()
-                      .stream()
+                  session.getMetadata().getKeyspaces().keySet().stream()
                       .map(CqlIdentifier::asInternal)
                       .toList();
               return new Result(keyspacesList, useKeyspaceNaming);
