@@ -96,11 +96,13 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
   /**
    * Any driver exception that is not handled (handler returns same exception instance) wil be
-   * mapped to the {@link DatabaseException.Code#UNEXPECTED_DRIVER_ERROR}
+   * mapped to the {@link DatabaseException.Code#UNEXPECTED_DRIVER_ERROR}. We assume any unexpected
+   * error from the driver causes a session recycle, so adding EVICT_SESSION_CACHE enum here
    */
   @Override
   public RuntimeException handleUnhandled(DriverException exception) {
-    return DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.get(errVars(schemaObject, exception));
+    return DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.get(
+        EnumSet.of(EVICT_SESSION_CACHE), errVars(schemaObject, exception));
   }
 
   // ========================================================================

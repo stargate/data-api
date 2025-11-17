@@ -2,11 +2,13 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.exception.ExceptionAction.EVICT_SESSION_CACHE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
+import com.datastax.oss.driver.api.core.connection.ConnectionInitException;
 import com.datastax.oss.driver.api.core.loadbalancing.NodeDistance;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.metadata.Node;
@@ -25,6 +27,8 @@ import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.nio.channels.ClosedChannelException;
 import java.util.*;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
@@ -116,7 +120,12 @@ public class DefaultDriverExceptionHandlerTest {
 
     public static Assertions isUnexpectedDriverException() {
       return new Assertions(
-          DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, true, true, false, null, null);
+          DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
+          true,
+          true,
+          false,
+          null,
+          EnumSet.of(EVICT_SESSION_CACHE));
     }
 
     /**
@@ -248,19 +257,25 @@ public class DefaultDriverExceptionHandlerTest {
             Assertions.of(
                 DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
                 "unexpected runtime",
-                EnumSet.of(ExceptionAction.EVICT_SESSION_CACHE))),
+                EnumSet.of(EVICT_SESSION_CACHE))),
         new TestArguments(
             allFailedUnexpectedDriverError(),
             Assertions.of(
                 DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
                 "closed",
-                EnumSet.of(ExceptionAction.EVICT_SESSION_CACHE))),
+                EnumSet.of(EVICT_SESSION_CACHE))),
+        new TestArguments(
+            allFailedClusterNodeRecycled(),
+            Assertions.of(
+                DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
+                "cluster node recycled, unable to connect to it",
+                EnumSet.of(EVICT_SESSION_CACHE))),
         new TestArguments(
             new NoNodeAvailableException(),
             Assertions.of(
                 DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE,
                 "unable to connect to any nodes",
-                EnumSet.of(ExceptionAction.EVICT_SESSION_CACHE))),
+                EnumSet.of(EVICT_SESSION_CACHE))),
         // AlreadyExistsException should be handled by a specific subclass that knows the type of
         // command
         // see CreateTableExceptionHandler
@@ -432,6 +447,22 @@ public class DefaultDriverExceptionHandlerTest {
 
     var node2 = mockNode("node2");
     var node2Ex = new ClosedConnectionException("closed");
+
+    return AllNodesFailedException.fromErrors(
+        List.of(
+            new AbstractMap.SimpleEntry<>(node1, node1Ex),
+            new AbstractMap.SimpleEntry<>(node2, node2Ex)));
+  }
+
+  private static AllNodesFailedException allFailedClusterNodeRecycled() {
+    // using an error here that we expect to map to the UNEXPECTED_DRIVER_ERROR
+    var node1 = mockNode("node1");
+    var node1Ex =
+        new ConnectionInitException(
+            "cluster node recycled, unable to connect to it", new ClosedChannelException());
+
+    var node2 = mockNode("node2");
+    var node2Ex = new UnknownHostException("unknown host");
 
     return AllNodesFailedException.fromErrors(
         List.of(
