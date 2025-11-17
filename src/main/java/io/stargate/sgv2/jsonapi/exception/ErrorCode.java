@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
 import com.google.common.base.Preconditions;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,19 +42,24 @@ public interface ErrorCode<T extends APIException> {
    * Gets an instance of the {@link APIException} the error code represents, providing substitution
    * values for the error body as a param array.
    *
+   * @param exceptionActions The set of exception actions to apply to this error instance.
    * @param values Substitution values for the error body. The array length must be a multiple of 2,
    *     each pair of strings is treated as a key-value pair for example ["key-1", "value-1",
    *     "key-2", "value-2"]
    * @return Instance of {@link APIException} the error code represents.
    */
-  default T get(String... values) {
+  default T get(EnumSet<ExceptionAction> exceptionActions, String... values) {
     Preconditions.checkArgument(
         values.length % 2 == 0, "Length of the values must be a multiple of 2");
     Map<String, String> valuesMap = new HashMap<>(values.length / 2);
     for (int i = 0; i < values.length; i += 2) {
       valuesMap.put(values[i], values[i + 1]);
     }
-    return get(valuesMap);
+    return get(exceptionActions, valuesMap);
+  }
+
+  default T get(String... values) {
+    return get(EnumSet.noneOf(ExceptionAction.class), values);
   }
 
   /**
@@ -65,6 +71,10 @@ public interface ErrorCode<T extends APIException> {
    */
   default T get(Map<String, String> values) {
     return template().toException(values);
+  }
+
+  default T get(EnumSet<ExceptionAction> exceptionActions, Map<String, String> values) {
+    return template().toException(values, exceptionActions);
   }
 
   /**

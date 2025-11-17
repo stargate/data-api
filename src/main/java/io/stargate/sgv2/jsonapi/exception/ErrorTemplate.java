@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import org.apache.commons.text.StringSubstitutor;
 
 /**
@@ -56,7 +53,8 @@ public record ErrorTemplate<T extends APIException>(
     String code,
     String title,
     String messageTemplate,
-    Optional<Integer> httpStatusOverride) {
+    Optional<Integer> httpStatusOverride,
+    EnumSet<ExceptionAction> exceptionActions) {
 
   public static final String NULL_REPLACEMENT = "(null)";
 
@@ -71,8 +69,8 @@ public record ErrorTemplate<T extends APIException>(
     return value == null ? NULL_REPLACEMENT : value;
   }
 
-  public T toException(Map<String, String> values) {
-    var errorInstance = toInstance(values);
+  public T toException(Map<String, String> values, EnumSet<ExceptionAction> exceptionActions) {
+    var errorInstance = toInstance(values, exceptionActions);
 
     try {
       return constructor().newInstance(errorInstance);
@@ -81,6 +79,10 @@ public record ErrorTemplate<T extends APIException>(
           "Failed to create a new instance of " + constructor().getDeclaringClass().getSimpleName(),
           e);
     }
+  }
+
+  public T toException(Map<String, String> values) {
+    return toException(values, exceptionActions());
   }
 
   /**
@@ -93,12 +95,14 @@ public record ErrorTemplate<T extends APIException>(
    * <p>
    *
    * @param values The values to use in the template for the error body.
+   * @param exceptionActions The set of exception actions to apply to this error instance.
    * @return {@link ErrorInstance} created from the template.
    * @throws UnresolvedErrorTemplateVariable if the template string for the body of the exception
    *     has variables e.g <code>${my_var}</code> that are not in the <code>values</code> passed in
    *     or not in the {@link ErrorConfig#getSnippetVars()} from the error config.
    */
-  private ErrorInstance toInstance(Map<String, String> values) {
+  private ErrorInstance toInstance(
+      Map<String, String> values, EnumSet<ExceptionAction> exceptionActions) {
 
     // use the apache string substitution to replace the variables in the messageTemplate
     Map<String, String> allValues = new HashMap<>(values);
@@ -119,7 +123,7 @@ public record ErrorTemplate<T extends APIException>(
     }
 
     return new ErrorInstance(
-        UUID.randomUUID(), family, scope, code, title, msg, httpStatusOverride);
+        UUID.randomUUID(), family, scope, code, title, msg, httpStatusOverride, exceptionActions);
   }
 
   /**
@@ -171,6 +175,7 @@ public record ErrorTemplate<T extends APIException>(
         code,
         errorConfig.title(),
         errorConfig.body(),
-        errorConfig.httpStatusOverride());
+        errorConfig.httpStatusOverride(),
+        EnumSet.noneOf(ExceptionAction.class));
   }
 }

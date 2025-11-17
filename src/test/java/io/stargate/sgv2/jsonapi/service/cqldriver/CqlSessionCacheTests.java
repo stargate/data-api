@@ -9,9 +9,11 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.Ticker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link CQLSessionCache}. */
@@ -512,6 +514,126 @@ public class CqlSessionCacheTests {
         .isNotPresent();
   }
 
+  @Test
+  public void evictSessionWithTenantId() {
+    var consumer = consumerWithLogging();
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(consumer),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
+
+    // Add a session to the cache and verify it is present
+    var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
+    assertThat(actualSession)
+        .as("Session from cache is instance from factory")
+        .isSameAs(fixture.expectedSession);
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Session is present in cache after adding")
+        .isPresent();
+
+    // Evict the session
+    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null);
+
+    // Verify eviction was successful
+    assertThat(evicted).as("Eviction should return true when session exists").isTrue();
+
+    // Verify session is closed
+    verify(fixture.expectedSession).close();
+
+    // verify consumer is called
+    verify(consumer).accept(TENANT_ID, RemovalCause.EXPLICIT);
+    verifyNoMoreInteractions(consumer);
+
+    // Verify session is no longer in the cache
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Session is removed from cache after explicit eviction")
+        .isNotPresent();
+  }
+
+  @Test
+  public void evictSessionWithRequestContext() {
+    var consumer = consumerWithLogging();
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(consumer),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
+    var requestContext =
+        new RequestContext(Optional.of(TENANT_ID), Optional.of(AUTH_TOKEN), null, null);
+
+    // Add a session to the cache and verify it is present
+    var actualSession = fixture.cache.getSession(requestContext);
+    assertThat(actualSession)
+        .as("Session from cache is instance from factory")
+        .isSameAs(fixture.expectedSession);
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Session is present in cache after adding")
+        .isPresent();
+
+    // Evict the session using RequestContext
+    boolean evicted = fixture.cache.evictSession(requestContext);
+
+    // Verify eviction was successful
+    assertThat(evicted).as("Eviction should return true when session exists").isTrue();
+
+    // Verify session is closed
+    verify(fixture.expectedSession).close();
+
+    // verify consumer is called
+    verify(consumer).accept(TENANT_ID, RemovalCause.EXPLICIT);
+    verifyNoMoreInteractions(consumer);
+
+    // Verify session is no longer in the cache
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Session is removed from cache after explicit eviction")
+        .isNotPresent();
+  }
+
+  @Test
+  public void evictSessionNotInCache() {
+    var consumer = consumerWithLogging();
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(consumer),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
+
+    // Verify cache is empty
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Cache is empty before eviction")
+        .isNotPresent();
+
+    // Evict a non-existent session - should not throw
+    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null);
+
+    // Verify eviction returned false
+    assertThat(evicted).as("Eviction returns false when no entry is removed").isFalse();
+
+    // Verify cache is still empty
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Cache is still empty after eviction")
+        .isNotPresent();
+
+    // Verify no interactions with session factory
+    verifyNoInteractions(fixture.sessionFactory);
+  }
+
   // =======================================================
   // Helpers / no more tests below
   // =======================================================
@@ -580,23 +702,6 @@ public class CqlSessionCacheTests {
         SLA_USER_TTL,
         false,
         true);
-  }
-
-  private Fixture newFixture(
-      DatabaseType databaseType,
-      List<CQLSessionCache.DeactivatedTenantConsumer> consumers,
-      Duration cacheTTL,
-      int cacheSize,
-      boolean setExpected) {
-    return newFixture(
-        databaseType,
-        consumers,
-        cacheTTL,
-        cacheSize,
-        SLA_USER_AGENT,
-        SLA_USER_TTL,
-        false,
-        setExpected);
   }
 
   private Fixture newFixture(

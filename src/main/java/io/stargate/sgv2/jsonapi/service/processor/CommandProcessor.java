@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
+import io.stargate.sgv2.jsonapi.exception.ExceptionAction;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -141,6 +142,9 @@ public class CommandProcessor {
 
     return switch (throwable) {
       case APIException apiException -> {
+        // Handle exception actions before building the error response
+        handleExceptionActions(commandContext, apiException);
+
         // new error object V2
         var errorBuilder = new APIExceptionCommandErrorBuilder(errorObjectV2);
         yield () ->
@@ -164,6 +168,32 @@ public class CommandProcessor {
         yield new ThrowableCommandResultSupplier(throwable);
       }
     };
+  }
+
+  /**
+   * Handles exception actions specified in the APIException. For example, evicting the session from
+   * cache when encountering AllNodesFailedException.
+   *
+   * @param commandContext The command context.
+   * @param apiException The API exception that may contain exception actions.
+   * @param <SchemaT> The schema object type.
+   */
+  private <SchemaT extends SchemaObject> void handleExceptionActions(
+      CommandContext<SchemaT> commandContext, APIException apiException) {
+    var exceptionActions = apiException.exceptionActions;
+    if (exceptionActions == null || exceptionActions.isEmpty()) {
+      return;
+    }
+
+    for (ExceptionAction action : exceptionActions) {
+      switch (action) {
+        case EVICT_SESSION_CACHE ->
+            commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
+        default -> {
+          // No-op for actions that are not handled at this level.
+        }
+      }
+    }
   }
 
   /**

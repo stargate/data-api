@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.exception;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -86,6 +87,8 @@ public abstract class APIException extends RuntimeException implements Recordabl
    */
   public final String body;
 
+  public final EnumSet<ExceptionAction> exceptionActions;
+
   public APIException(ErrorInstance errorInstance) {
     Objects.requireNonNull(errorInstance, "ErrorInstance cannot be null");
 
@@ -97,11 +100,22 @@ public abstract class APIException extends RuntimeException implements Recordabl
     this.body = errorInstance.body();
     Objects.requireNonNull(errorInstance.httpStatusOverride(), "httpStatusOverride cannot be null");
     this.httpStatus = errorInstance.httpStatusOverride().orElse(DEFAULT_HTTP_STATUS);
+    Objects.requireNonNull(errorInstance.exceptionActions(), "exceptionActions cannot be null");
+    this.exceptionActions = errorInstance.exceptionActions();
   }
 
   public APIException(
       ErrorFamily family, ErrorScope scope, String code, String title, String body) {
-    this(new ErrorInstance(UUID.randomUUID(), family, scope, code, title, body, Optional.empty()));
+    this(
+        new ErrorInstance(
+            UUID.randomUUID(),
+            family,
+            scope,
+            code,
+            title,
+            body,
+            Optional.empty(),
+            EnumSet.noneOf(ExceptionAction.class)));
   }
 
   /**

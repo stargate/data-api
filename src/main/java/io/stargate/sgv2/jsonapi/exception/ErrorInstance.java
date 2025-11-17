@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,4 +34,5 @@ public record ErrorInstance(
     String code,
     String title,
     String body,
-    Optional<Integer> httpStatusOverride) {}
+    Optional<Integer> httpStatusOverride,
+    EnumSet<ExceptionAction> exceptionActions) {}
