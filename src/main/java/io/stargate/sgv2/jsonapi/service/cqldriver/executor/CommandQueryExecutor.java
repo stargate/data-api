@@ -1,16 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.AsyncPagingIterable;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -136,17 +138,28 @@ public class CommandQueryExecutor {
     return executeAndWrap(statement);
   }
 
+  public Uni<Metadata> getMetadata(boolean forceRefresh) {
+
+    if (forceRefresh) {
+      return session()
+          .flatMap(session -> Uni.createFrom().completionStage(session.refreshSchemaAsync()));
+    }
+
+    return session().map(CqlSession::getMetadata);
+  }
+
   /**
    * Get the metadata for the given keyspace using session.
    *
    * @param keyspace The keyspace name.
    * @return The keyspace metadata if it exists.
    */
-  public Optional<KeyspaceMetadata> getKeyspaceMetadata(String keyspace) {
-    return session()
-        .getMetadata()
-        .getKeyspace(CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspace));
+  public Uni<Optional<KeyspaceMetadata>> getKeyspaceMetadata(
+      CqlIdentifier keyspace, boolean forceRefresh) {
+
+    return getMetadata(forceRefresh).map(metadata -> metadata.getKeyspace(keyspace));
   }
+
 
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
 
@@ -155,11 +168,8 @@ public class CommandQueryExecutor {
     return executeAndWrap(statement);
   }
 
-  private CqlSession session() {
-    return cqlSessionCache.getSession(
-        dbRequestContext.tenantId().orElse(""),
-        dbRequestContext.authToken().orElse(""),
-        dbRequestContext.userAgent().orElse(null));
+  private Uni<CqlSession> session() {
+    return cqlSessionCache.getSession(dbRequestContext);
   }
 
   private String getExecutionProfile(QueryType queryType) {
@@ -178,7 +188,10 @@ public class CommandQueryExecutor {
         dbRequestContext.tracingEnabled() != statement.isTracing()
             ? statement.setTracing(dbRequestContext.tracingEnabled())
             : statement;
-    return Uni.createFrom().completionStage(session().executeAsync(execStatement));
+
+    return session()
+        .flatMap(
+            session -> Uni.createFrom().completionStage(() -> session.executeAsync(execStatement)));
   }
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext
@@ -186,5 +199,14 @@ public class CommandQueryExecutor {
       Optional<String> tenantId,
       Optional<String> authToken,
       Optional<String> userAgent,
-      boolean tracingEnabled) {}
+      boolean tracingEnabled) {
+
+    public DBRequestContext(CommandContext<?> commandContext) {
+      this(
+          commandContext.requestContext().getTenantId(),
+          commandContext.requestContext().getCassandraToken(),
+          commandContext.requestContext().getUserAgent(),
+          commandContext.requestTracing().enabled());
+    }
+  }
 }

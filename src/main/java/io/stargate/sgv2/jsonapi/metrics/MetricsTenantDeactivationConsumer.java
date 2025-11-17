@@ -12,12 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link CQLSessionCache.DeactivatedTenantConsumer} responsible for removing tenant-specific
+ * A {@link CQLSessionCache.DeactivatedTenantListener} responsible for removing tenant-specific
  * metrics from the {@link MeterRegistry} when a tenant's session is evicted from the {@link
  * CQLSessionCache}.
  */
 public class MetricsTenantDeactivationConsumer
-    implements CQLSessionCache.DeactivatedTenantConsumer {
+    implements CQLSessionCache.DeactivatedTenantListener {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(MetricsTenantDeactivationConsumer.class);
   private final MeterRegistry meterRegistry;
@@ -34,10 +34,9 @@ public class MetricsTenantDeactivationConsumer
    *
    * @param tenantId The ID of the tenant whose session was deactivated. This value will be used to
    *     find metrics with a matching tag.
-   * @param cause The reason for the removal from the cache.
    */
   @Override
-  public void accept(String tenantId, RemovalCause cause) {
+  public void accept(String tenantId) {
     if (tenantId == null) {
       LOGGER.warn("Received null tenantId for deactivation");
       return;

@@ -99,7 +99,7 @@ public class SchemaCache {
    * Gets a consumer to use with the {@link CQLSessionCache} to remove the schema cache entries when
    * a tenant is deactivated.
    */
-  public CQLSessionCache.DeactivatedTenantConsumer getDeactivatedTenantConsumer() {
+  public CQLSessionCache.DeactivatedTenantListener getDeactivatedTenantConsumer() {
     return new SchemaCacheDeactivatedTenantConsumer(this);
   }
 
@@ -293,7 +293,7 @@ public class SchemaCache {
    * tenant is deactivated.
    */
   private static class SchemaCacheDeactivatedTenantConsumer
-      implements CQLSessionCache.DeactivatedTenantConsumer {
+      implements CQLSessionCache.DeactivatedTenantListener {
 
     private final SchemaCache schemaCache;
 
@@ -302,7 +302,7 @@ public class SchemaCache {
     }
 
     @Override
-    public void accept(String tenantId, RemovalCause cause) {
+    public void accept(String tenantId) {
       // the sessions are keyed on the tenantID and the credentials, and one session can work with
       // multiple keyspaces. So we need to evict all the keyspaces for the tenantId
       schemaCache.evictAllKeyspaces(tenantId);

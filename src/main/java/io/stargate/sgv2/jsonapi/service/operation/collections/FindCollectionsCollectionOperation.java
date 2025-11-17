@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
@@ -11,14 +12,19 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+
 import java.util.List;
 import java.util.function.Supplier;
+
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 /**
  * Find collection operation. Uses {@link CQLSessionCache} to fetch all valid jsonapi tables for a
@@ -54,39 +60,26 @@ public record FindCollectionsCollectionOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
-    KeyspaceMetadata keyspaceMetadata =
-        cqlSessionCache
-            .getSession(dataApiRequestInfo)
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
-    if (keyspaceMetadata == null) {
-      return Uni.createFrom()
-          .failure(
-              ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
-                  "Unknown keyspace '%s', you must create it first",
-                  commandContext.schemaObject().name().keyspace()));
-    }
-    return Uni.createFrom()
-        .item(
-            () -> {
-              List<CollectionSchemaObject> properties =
-                  keyspaceMetadata
-                      // get all tables
-                      .getTables()
-                      .values()
-                      .stream()
-                      // filter for valid collections
+      RequestContext requestContext, QueryExecutor queryExecutor) {
+
+    return queryExecutor
+        .getDriverMetadata(requestContext)
+        .map(Metadata::getKeyspaces)
+        .map(keyspaces -> keyspaces.get(CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace())))
+        .map(
+            keyspaceMetadata -> {
+              if (keyspaceMetadata == null) {
+                throw SchemaException.Code.UNKNOWN_KEYSPACE.get(
+                    errVars(commandContext.schemaObject()));
+              }
+              var collections =
+                  keyspaceMetadata.getTables().values().stream()
                       .filter(tableMatcher)
-                      // map to name
                       .map(
                           table ->
                               CollectionSchemaObject.getCollectionSettings(table, objectMapper))
-                      // get as list
                       .toList();
-              // Wrap the properties list into a command result
-              return new Result(explain, properties);
+              return new Result(explain, collections);
             });
   }
 

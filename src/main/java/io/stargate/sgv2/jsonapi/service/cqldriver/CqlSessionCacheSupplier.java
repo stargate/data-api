@@ -55,9 +55,8 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
 
     singleton =
         new CQLSessionCache(
-            dbConfig.type(),
-            Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
             dbConfig.sessionCacheMaxSize(),
+            Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
             operationsConfig.slaUserAgent().orElse(null),
             Duration.ofSeconds(dbConfig.slaSessionCacheTtlSeconds()),
             credentialsFactory,

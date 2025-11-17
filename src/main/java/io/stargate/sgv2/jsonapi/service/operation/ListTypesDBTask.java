@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TypeBindingPoint;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** Attempt to list types in a keyspace. */
 public class ListTypesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
@@ -39,8 +40,10 @@ public class ListTypesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
   @Override
   protected List<String> getNames() {
 
+    // aaron - see the MetadataDBTask, need better control on when this is set
+    Objects.requireNonNull(keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+
     return keyspaceMetadata
-        .get()
         // get all types
         .getUserDefinedTypes()
         .values()
@@ -57,8 +60,11 @@ public class ListTypesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
   @Override
   protected Object getSchema() {
 
+    // aaron - see the MetadataDBTask, need better control on when this is set
+    Objects.requireNonNull(keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+
     // get all types
-    var types = keyspaceMetadata.get().getUserDefinedTypes().values();
+    var types = keyspaceMetadata.getUserDefinedTypes().values();
     List<Object> res = new ArrayList<>();
     for (UserDefinedType type : types) {
       try {

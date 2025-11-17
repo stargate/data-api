@@ -788,7 +788,16 @@ request-errors:
   # Family: REQUEST         Scope: SCHEMA
   # ================================================================================================================
 
-  # aaron errors
+  - scope: SCHEMA
+    code: UNKNOWN_KEYSPACE
+    title: Keyspace does not exist in the Database
+    body: |-
+      The command tried to use a Keyspace that does not exist in the Database.
+
+      The keyspace used by the command: ${keyspace}.
+
+      Resend the command using a Keyspace that exists.
+
   - scope: SCHEMA
     code: UNKNOWN_PARTITION_SORT_COLUMNS
     title: Partition sort columns are not defined in the table schema
