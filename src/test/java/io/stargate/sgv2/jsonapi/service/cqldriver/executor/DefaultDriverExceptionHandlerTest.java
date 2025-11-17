@@ -19,6 +19,7 @@ import com.google.common.base.Strings;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
+import io.stargate.sgv2.jsonapi.exception.ExceptionAction;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -90,19 +91,32 @@ public class DefaultDriverExceptionHandlerTest {
       boolean assertSchemaNames,
       boolean assertOrigError,
       boolean assertCql,
-      String assertMessage) {
+      String assertMessage,
+      EnumSet<ExceptionAction> assertExceptionActions) {
 
     public static Assertions of(DatabaseException.Code code) {
-      return new Assertions(code, true, false, false, null);
+      return new Assertions(code, true, false, false, null, null);
     }
 
     public static Assertions of(DatabaseException.Code code, String assertMessage) {
-      return new Assertions(code, true, false, false, assertMessage);
+      return new Assertions(code, true, false, false, assertMessage, null);
+    }
+
+    public static Assertions of(
+        DatabaseException.Code code, EnumSet<ExceptionAction> assertExceptionActions) {
+      return new Assertions(code, true, false, false, null, assertExceptionActions);
+    }
+
+    public static Assertions of(
+        DatabaseException.Code code,
+        String assertMessage,
+        EnumSet<ExceptionAction> assertExceptionActions) {
+      return new Assertions(code, true, false, false, assertMessage, assertExceptionActions);
     }
 
     public static Assertions isUnexpectedDriverException() {
       return new Assertions(
-          DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, true, true, false, null);
+          DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, true, true, false, null, null);
     }
 
     /**
@@ -113,7 +127,12 @@ public class DefaultDriverExceptionHandlerTest {
      */
     public static Assertions isUnexpectedDriverException(RuntimeException cause) {
       return new Assertions(
-          DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, true, false, false, cause.getMessage());
+          DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
+          true,
+          false,
+          false,
+          cause.getMessage(),
+          null);
     }
 
     public void runAssertions(
@@ -156,14 +175,20 @@ public class DefaultDriverExceptionHandlerTest {
             .as("Handled error message contains assertions message")
             .hasMessageContaining(assertMessage);
       }
+
+      if (assertExceptionActions != null) {
+        assertThat(handledException.exceptionActions)
+            .as("Handled error should have expected exception actions")
+            .isEqualTo(assertExceptionActions);
+      }
     }
 
     @Override
     public String toString() {
       // simplified to be called from the TestArguments
       return String.format(
-          "expectedCode='%s', assertSchemaNames=%s, assertMessage='%s'",
-          expectedCode, assertSchemaNames, assertMessage);
+          "expectedCode='%s', assertSchemaNames=%s, assertMessage='%s', assertExceptionActions=%s",
+          expectedCode, assertSchemaNames, assertMessage, assertExceptionActions);
     }
   }
 
@@ -203,7 +228,8 @@ public class DefaultDriverExceptionHandlerTest {
                 false,
                 false,
                 false,
-                TEST_DATA.KEYSPACE_NAME.asCql(true))),
+                TEST_DATA.KEYSPACE_NAME.asCql(true),
+                null)),
         new TestArguments(
             new NodeUnavailableException(mockNode("node: monkeys")),
             Assertions.isUnexpectedDriverException()),
@@ -219,13 +245,22 @@ public class DefaultDriverExceptionHandlerTest {
             allFailedTwoNodesAllAuth(), Assertions.of(DatabaseException.Code.UNAUTHORIZED_ACCESS)),
         new TestArguments(
             allFailedOneRuntime(),
-            Assertions.of(DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, "unexpected runtime")),
+            Assertions.of(
+                DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
+                "unexpected runtime",
+                EnumSet.of(ExceptionAction.EVICT_SESSION_CACHE))),
         new TestArguments(
             allFailedUnexpectedDriverError(),
-            Assertions.of(DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, "closed")),
+            Assertions.of(
+                DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
+                "closed",
+                EnumSet.of(ExceptionAction.EVICT_SESSION_CACHE))),
         new TestArguments(
             new NoNodeAvailableException(),
-            Assertions.of(DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE)),
+            Assertions.of(
+                DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE,
+                "unable to connect to any nodes",
+                EnumSet.of(ExceptionAction.EVICT_SESSION_CACHE))),
         // AlreadyExistsException should be handled by a specific subclass that knows the type of
         // command
         // see CreateTableExceptionHandler
@@ -243,7 +278,12 @@ public class DefaultDriverExceptionHandlerTest {
         new TestArguments(
             new InvalidQueryException(mockNode("node1"), "Invalid CQL"),
             new Assertions(
-                DatabaseException.Code.INVALID_DATABASE_QUERY, true, false, true, "Invalid CQL")),
+                DatabaseException.Code.INVALID_DATABASE_QUERY,
+                true,
+                false,
+                true,
+                "Invalid CQL",
+                null)),
         new TestArguments(
             new SyntaxError(mockNode("node1"), "Syntax Error CQL"),
             new Assertions(
@@ -251,7 +291,8 @@ public class DefaultDriverExceptionHandlerTest {
                 true,
                 false,
                 true,
-                "Syntax Error CQL")),
+                "Syntax Error CQL",
+                null)),
         new TestArguments(
             new CASWriteUnknownException(mockNode("node1"), ConsistencyLevel.QUORUM, 1, 2),
             new Assertions(
@@ -259,7 +300,8 @@ public class DefaultDriverExceptionHandlerTest {
                 true,
                 false,
                 true,
-                "CAS operation result is unknown - proposal was not accepted by a quorum.")),
+                "CAS operation result is unknown - proposal was not accepted by a quorum.",
+                null)),
         new TestArguments(
             new TruncateException(
                 mockNode("node1"),
@@ -269,7 +311,8 @@ public class DefaultDriverExceptionHandlerTest {
                 true,
                 false,
                 true,
-                "Error during truncate: Truncate Error")),
+                "Error during truncate: Truncate Error",
+                null)),
         new TestArguments(
             new UnavailableException(mockNode("node1"), ConsistencyLevel.QUORUM, 2, 1),
             new Assertions(
@@ -277,7 +320,8 @@ public class DefaultDriverExceptionHandlerTest {
                 true,
                 false,
                 false,
-                "Not enough replicas available for query at consistency QUORUM (2 required but only 1 alive)")),
+                "Not enough replicas available for query at consistency QUORUM (2 required but only 1 alive)",
+                null)),
         new TestArguments(
             new ReadFailureException(
                 mockNode("node1"),
@@ -296,7 +340,8 @@ public class DefaultDriverExceptionHandlerTest {
                 true,
                 false,
                 false,
-                "Cassandra failure during read query at consistency QUORUM (2 responses were required but only 1 replica responded, 2 failed")),
+                "Cassandra failure during read query at consistency QUORUM (2 responses were required but only 1 replica responded, 2 failed",
+                null)),
         new TestArguments(
             new WriteFailureException(
                 mockNode("node1"),
@@ -315,15 +360,18 @@ public class DefaultDriverExceptionHandlerTest {
                 true,
                 false,
                 false,
-                "Cassandra failure during write query at consistency QUORUM (2 responses were required but only 1 replica responded, 2 failed")),
+                "Cassandra failure during write query at consistency QUORUM (2 responses were required but only 1 replica responded, 2 failed",
+                null)),
         new TestArguments( // the AllNodesFailed test only checks the code is TIMEOUT this checks
             // the details of the error
             new WriteTimeoutException(
                 mockNode("node1"), ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE),
-            new Assertions(DatabaseException.Code.TIMEOUT_WRITING_DATA, true, false, true, null)),
+            new Assertions(
+                DatabaseException.Code.TIMEOUT_WRITING_DATA, true, false, true, null, null)),
         new TestArguments(
             new ReadTimeoutException(mockNode("node1"), ConsistencyLevel.QUORUM, 1, 2, false),
-            new Assertions(DatabaseException.Code.TIMEOUT_READING_DATA, true, false, true, null)));
+            new Assertions(
+                DatabaseException.Code.TIMEOUT_READING_DATA, true, false, true, null, null)));
   }
 
   private static InetAddress getInetAddress(byte[] address) {
