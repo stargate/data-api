@@ -31,6 +31,8 @@ import java.util.UUID;
  *       it does not then use {@link ErrorScope#NONE}.
  *   <li>Decide on the {@link ErrorCode}, it should be unique within the Family and Scope
  *       combination.
+ *   <li>Decide on the {@link ExceptionAction}, it should be the deferred actions of the exception,
+ *       such as evict the session from cache.
  *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body
  *       body.
  *   <li>Add the error code to the Code enum for the Exception class, such as {@link
@@ -87,6 +89,10 @@ public abstract class APIException extends RuntimeException implements Recordabl
    */
   public final String body;
 
+  /**
+   * The deferred actions of the exception(e.g. evict the session from cache). By default, it's
+   * empty.
+   */
   public final EnumSet<ExceptionAction> exceptionActions;
 
   public APIException(ErrorInstance errorInstance) {

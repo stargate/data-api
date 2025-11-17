@@ -45,6 +45,7 @@ import org.apache.commons.text.StringSubstitutor;
  * @param messageTemplate A template for the error body, with variables to be replaced at runtime
  *     using the {@link StringSubstitutor} from Apache Commons Text.
  * @param httpStatusOverride If present, overrides the default HTTP 200 response code for errors.
+ * @param exceptionActions The set of exception actions to apply to this error instance.
  */
 public record ErrorTemplate<T extends APIException>(
     Constructor<T> constructor,
