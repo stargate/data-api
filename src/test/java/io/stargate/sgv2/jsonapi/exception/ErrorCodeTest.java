@@ -1,8 +1,11 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import static io.stargate.sgv2.jsonapi.exception.ExceptionAction.EVICT_SESSION_CACHE;
+import static io.stargate.sgv2.jsonapi.exception.ExceptionAction.RETRY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import java.util.EnumSet;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +52,33 @@ public class ErrorCodeTest extends ConfiguredErrorTest {
     assertThat(errorFromParamArgs.errorId)
         .describedAs("errorId is different between from param args and map")
         .isNotEqualTo(errorFromMap.errorId);
+  }
+
+  @Test
+  public void getWithExceptionActions() {
+    var errorCode = TestScopeException.Code.SCOPED_REQUEST_ERROR;
+    var actions = EnumSet.of(EVICT_SESSION_CACHE, RETRY);
+
+    var errorFromParamArgs =
+        assertDoesNotThrow(
+            () -> errorCode.get(actions, "name", TEST_DATA.VAR_NAME, "value", TEST_DATA.VAR_VALUE));
+
+    var errorFromMap =
+        assertDoesNotThrow(
+            () ->
+                errorCode.get(
+                    actions,
+                    Map.of(
+                        "name", TEST_DATA.VAR_NAME,
+                        "value", TEST_DATA.VAR_VALUE)),
+            String.format("Creating exception with template %s", errorCode.template()));
+
+    assertThat(errorFromParamArgs.exceptionActions)
+        .as("Exception created with param args carries the given actions")
+        .isEqualTo(actions);
+    assertThat(errorFromMap.exceptionActions)
+        .as("Exception created with map carries the given actions")
+        .isEqualTo(actions);
   }
 
   @Test
