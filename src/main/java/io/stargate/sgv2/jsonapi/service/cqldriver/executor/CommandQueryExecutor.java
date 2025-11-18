@@ -160,7 +160,6 @@ public class CommandQueryExecutor {
     return getMetadata(forceRefresh).map(metadata -> metadata.getKeyspace(keyspace));
   }
 
-
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
 
     Objects.requireNonNull(statement, "statement must not be null");

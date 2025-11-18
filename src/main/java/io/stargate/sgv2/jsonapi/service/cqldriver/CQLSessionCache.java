@@ -50,8 +50,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
-   * request
-   * amornt; 17 Nov 2025 - will be removed soon
+   * request amornt; 17 Nov 2025 - will be removed soon
    */
   public static final String DEFAULT_TENANT = "default_tenant";
 
@@ -179,7 +178,9 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.getTenantId().orElse(""), requestContext.getCassandraToken().orElse(""), requestContext.getUserAgent().orElse(""));
+        requestContext.getTenantId().orElse(""),
+        requestContext.getCassandraToken().orElse(""),
+        requestContext.getUserAgent().orElse(""));
   }
 
   public Uni<CqlSession> getSession(CommandQueryExecutor.DBRequestContext requestContext) {
@@ -187,7 +188,9 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.tenantId().orElse(""),  requestContext.authToken().orElse(""), requestContext.userAgent().orElse(""));
+        requestContext.tenantId().orElse(""),
+        requestContext.authToken().orElse(""),
+        requestContext.userAgent().orElse(""));
   }
 
   /**

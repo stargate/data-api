@@ -11,8 +11,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -425,6 +423,7 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
       public int hashCode() {
         return key.hashCode();
       }
+
       @Override
       public boolean equals(Object obj) {
         if (this == obj) {

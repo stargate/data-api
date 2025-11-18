@@ -44,9 +44,10 @@ public class TestConstants {
   // Names
   // ============================================================
 
-  /** A unique identifier for the test run, append to names to ensure uniqueness
-   * and stable ID for the test class instance.
-   * */
+  /**
+   * A unique identifier for the test run, append to names to ensure uniqueness and stable ID for
+   * the test class instance.
+   */
   public final String CORRELATION_ID;
 
   public final String COMMAND_NAME;
@@ -56,7 +57,7 @@ public class TestConstants {
 
   public final SchemaObjectName SCHEMA_OBJECT_NAME;
 
-  /** Raw SLA user agent, Use {@link #SLA_USER_AGENT}*/
+  /** Raw SLA user agent, Use {@link #SLA_USER_AGENT} */
   public final String SLA_USER_AGENT_NAME = "Datastax-SLA-Checker";
 
   // ============================================================
@@ -76,7 +77,6 @@ public class TestConstants {
   // ============================================================
   // Schema Objects
   // ============================================================
-
 
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;

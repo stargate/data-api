@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.metrics;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.SESSION_TAG;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
 
-import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;

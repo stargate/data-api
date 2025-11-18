@@ -34,10 +34,10 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
   private Optional<ApiIndexDefContainer> indexesForTable() {
 
     // aaron - see the MetadataDBTask, need better control on when this is set
-    Objects.requireNonNull(keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+    Objects.requireNonNull(
+        keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
 
-    var tableMetadata =
-        keyspaceMetadata.getTable(schemaObject.tableMetadata().getName()).get();
+    var tableMetadata = keyspaceMetadata.getTable(schemaObject.tableMetadata().getName()).get();
 
     // aaron - this should not happen ?
     if (!TABLE_MATCHER.test(tableMetadata)) {

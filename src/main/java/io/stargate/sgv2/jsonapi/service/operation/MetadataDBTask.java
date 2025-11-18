@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -19,10 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
-
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
 /**
  * A task to read metadata from the database, such as list tables.
@@ -58,7 +57,11 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
       CommandContext<SchemaT> commandContext, CommandQueryExecutor queryExecutor) {
 
     return new MetadataAsyncResultSetSupplier(
-        commandContext, this, null, queryExecutor, CqlIdentifier.fromInternal(schemaObject.name().keyspace()));
+        commandContext,
+        this,
+        null,
+        queryExecutor,
+        CqlIdentifier.fromInternal(schemaObject.name().keyspace()));
   }
 
   @Override
@@ -98,9 +101,9 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
 
                     return optMetadata.isEmpty()
                         ? Uni.createFrom()
-                        .failure(
-                            SchemaException.Code.INVALID_KEYSPACE.get(
-                                Map.of("keyspace", cqlIdentifierToMessageString(keyspaceName))))
+                            .failure(
+                                SchemaException.Code.INVALID_KEYSPACE.get(
+                                    Map.of("keyspace", cqlIdentifierToMessageString(keyspaceName))))
                         : Uni.createFrom().item(new EmptyAsyncResultSet());
                   });
     }

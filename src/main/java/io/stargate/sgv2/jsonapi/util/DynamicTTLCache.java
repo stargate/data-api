@@ -138,9 +138,8 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
 
   /**
    * Asynchronously retrieves or creates value for the given key.
-   * <p>
-   *  Errors from creating the value will be propagated through the Uni.
-   * </p>
+   *
+   * <p>Errors from creating the value will be propagated through the Uni.
    */
   protected Uni<ValueT> get(KeyT key) {
 
@@ -180,9 +179,10 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   }
 
   /**
-   *  Process a key being removed from the cache for any reason.
-   * <p/>
-   * */
+   * Process a key being removed from the cache for any reason.
+   *
+   * <p>
+   */
   private void onKeyRemoved(KeyT key, ValueHolder<KeyT, ValueT> valueHolder, RemovalCause cause) {
 
     if (LOGGER.isTraceEnabled()) {
@@ -207,11 +207,13 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   /**
    * Called to load a new value for the cache, either from caffine because of cache miss or when
    * force refresh is used.
-   * <p/>
-   * */
+   *
+   * <p>
+   */
   private CompletableFuture<ValueHolder<KeyT, ValueT>> onLoadValue(KeyT key, Executor executor) {
 
-    // let errors from the factory when it is creating the completion stage propagate out for fast failure.
+    // let errors from the factory when it is creating the completion stage propagate out for fast
+    // failure.
     CompletionStage<ValueT> stage = valueFactory.apply(key);
     // sanity checking the valueFactory returns a CompletionStage
     if (stage == null) {
@@ -220,7 +222,8 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     }
 
     return stage
-        // if completed exceptionally, it is wrapped in a CompletionStage that is also completed exceptionally
+        // if completed exceptionally, it is wrapped in a CompletionStage that is also completed
+        // exceptionally
         .exceptionallyCompose(CompletableFuture::failedFuture)
         .thenApply(
             value -> {
@@ -253,8 +256,8 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   /**
    * Clean up the cache, for testing when items are invalidated. The cache will try to be lazy, so
    * things like evictions may not happen exactly at the TTL, this is a way to force it.
-   * <p>
-   * Look at using a custom ticker (see constructor) to have more control over time in tests.
+   *
+   * <p>Look at using a custom ticker (see constructor) to have more control over time in tests.
    */
   @VisibleForTesting
   public void cleanUp() {
@@ -263,16 +266,17 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
 
   /**
    * Base for all keys in the cache, which must all have a TTL associated with them.
-   * <p/>
-   * */
+   *
+   * <p>
+   */
   public interface CacheKey {
     Duration ttl();
 
     /**
      * When true the cache will force a refresh of the value even if it is present.
-     * <p>
-     * Useful or things like the schema cache, where we want to force reload the schema
-     * before running schema based commands.
+     *
+     * <p>Useful or things like the schema cache, where we want to force reload the schema before
+     * running schema based commands.
      */
     default boolean forceRefresh() {
       return false;
@@ -282,8 +286,8 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   /**
    * Holder for the value added to the cache to make it very clear what key was used when it was
    * added so we can get the TTL used when it was loaded.
-   * <p>
-   * See {@link DynamicExpiryPolicy} for usage.
+   *
+   * <p>See {@link DynamicExpiryPolicy} for usage.
    */
   record ValueHolder<KeyT extends CacheKey, ValueT>(ValueT value, KeyT loadingKey) {
 
@@ -317,8 +321,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
    * agent coming in. So if an SLA user agent adds it, then a non SLA uses it the non SLA user agent
    * TTL will be used.
    *
-   * <p>The last user who access the session will set the TTL for the value if their TTL is
-   * higher.
+   * <p>The last user who access the session will set the TTL for the value if their TTL is higher.
    */
   static class DynamicExpiryPolicy<KeyT extends CacheKey, ValueT>
       implements Expiry<KeyT, ValueHolder<KeyT, ValueT>> {
@@ -357,9 +360,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     }
   }
 
-  /**
-   * Helper the encapsulated the logic to decide the TTL based on user agent.
-   */
+  /** Helper the encapsulated the logic to decide the TTL based on user agent. */
   protected static class DynamicTTLSupplier {
 
     private final Duration cacheTTL;
@@ -368,9 +369,12 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
 
     /**
      * Constructor for the DynamicTTLSupplier.
+     *
      * @param cacheTTL The TTL to use for normal access.
-     * @param slaUserAgent The user agent string that identifies SLA users, can be null or empty if not used.
-     * @param slaUserTTL The TTL to use for SLA users, must be non-null and positive if slaUserAgent is set.
+     * @param slaUserAgent The user agent string that identifies SLA users, can be null or empty if
+     *     not used.
+     * @param slaUserTTL The TTL to use for SLA users, must be non-null and positive if slaUserAgent
+     *     is set.
      */
     public DynamicTTLSupplier(Duration cacheTTL, String slaUserAgent, Duration slaUserTTL) {
 
@@ -417,7 +421,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     void onRemoved(KeyT key, ValueT value, RemovalCause cause);
   }
 
-  /** Function called to create a new value for the cache when none is needed.  */
+  /** Function called to create a new value for the cache when none is needed. */
   @FunctionalInterface
   public interface ValueFactory<KeyT extends CacheKey, ValueT>
       extends Function<KeyT, CompletionStage<ValueT>> {

@@ -6,7 +6,6 @@ import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
@@ -16,7 +15,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.nio.ByteBuffer;
@@ -24,7 +22,6 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -242,7 +239,7 @@ public class QueryExecutor {
                 error instanceof DriverTimeoutException
                     || error instanceof InvalidQueryException
                     || (error instanceof TruncateException
-                    && "Failed to interrupt compactions".equals(error.getMessage())))
+                        && "Failed to interrupt compactions".equals(error.getMessage())))
         .recoverWithUni(
             throwable -> {
               logger.error(
@@ -268,7 +265,7 @@ public class QueryExecutor {
                 error instanceof DriverTimeoutException
                     || error instanceof InvalidQueryException
                     || (error instanceof TruncateException
-                    && "Failed to interrupt compactions".equals(error.getMessage())))
+                        && "Failed to interrupt compactions".equals(error.getMessage())))
         .retry()
         .atMost(2);
   }

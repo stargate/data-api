@@ -15,8 +15,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnly
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -61,20 +59,21 @@ public class CqlSessionFactoryTests {
             IllegalArgumentException.class,
             () -> {
               // contact points are checked before the factory init's
-              var fixture = newFixture(cassandraTenant,DatabaseType.CASSANDRA, null, schemaListener);
+              var fixture =
+                  newFixture(cassandraTenant, DatabaseType.CASSANDRA, null, schemaListener);
             });
 
     assertThat(ex)
         .as("Cassandra DB needs endpoints")
-        .hasMessageContaining("Database type is CASSANDRA but cassandraEndPoints is null or empty.");
+        .hasMessageContaining(
+            "Database type is CASSANDRA but cassandraEndPoints is null or empty.");
   }
 
   private void assertions(
       Fixture fixture, List<String> endpoints, SchemaChangeListener schemaListener) {
 
-    var actualSession = fixture.factory.apply(fixture.tenant, fixture.credentials)
-        .toCompletableFuture()
-        .join();
+    var actualSession =
+        fixture.factory.apply(fixture.tenant, fixture.credentials).toCompletableFuture().join();
 
     assertThat(actualSession)
         .as("session is same as returned from session builder")

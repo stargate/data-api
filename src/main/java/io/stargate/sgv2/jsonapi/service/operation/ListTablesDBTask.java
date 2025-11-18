@@ -36,7 +36,8 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
   protected List<String> getNames() {
 
     // aaron - see the MetadataDBTask, need better control on when this is set
-    Objects.requireNonNull(keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+    Objects.requireNonNull(
+        keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
 
     return keyspaceMetadata
         // get all tables
@@ -57,7 +58,8 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
   protected Object getSchema() {
 
     // aaron - see the MetadataDBTask, need better control on when this is set
-    Objects.requireNonNull(keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+    Objects.requireNonNull(
+        keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
 
     return keyspaceMetadata
         // get all tables
