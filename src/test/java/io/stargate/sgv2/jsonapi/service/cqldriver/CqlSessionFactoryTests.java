@@ -5,31 +5,36 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /** Tests for {@link CqlSessionFactory}. */
 public class CqlSessionFactoryTests {
 
-  private static final String APP_NAME = "appName" + System.currentTimeMillis();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
+
   private static final String DATACENTER = "datacenter";
   private static final int CASSANDRA_PORT = 9042;
-  private static final String TENANT_ID = "tenantId" + System.currentTimeMillis();
 
   @Test
   public void createAstraDbSession() {
 
     var schemaListener = mock(SchemaChangeListener.class);
     var endpoints = List.<String>of();
-    var fixture = newFixture(DatabaseType.ASTRA, endpoints, () -> schemaListener);
+    var astraTenant = "astra-tenant-" + TEST_CONSTANTS.CORRELATION_ID;
+    var fixture = newFixture(astraTenant, DatabaseType.ASTRA, endpoints, schemaListener);
 
     assertions(fixture, endpoints, schemaListener);
   }
@@ -39,7 +44,8 @@ public class CqlSessionFactoryTests {
 
     var schemaListener = mock(SchemaChangeListener.class);
     var endpoints = List.<String>of("127.0.0.1", "127.0.0.2");
-    var fixture = newFixture(DatabaseType.CASSANDRA, endpoints, () -> schemaListener);
+    String cassandraTenant = "SINGLE-TENANT";
+    var fixture = newFixture(cassandraTenant, DatabaseType.CASSANDRA, endpoints, schemaListener);
 
     assertions(fixture, endpoints, schemaListener);
   }
@@ -48,29 +54,28 @@ public class CqlSessionFactoryTests {
   public void cassandraDBNeedsEndpoints() {
 
     var schemaListener = mock(SchemaChangeListener.class);
-    var endpoints = List.<String>of();
+    String cassandraTenant = null;
 
     var ex =
         assertThrows(
             IllegalArgumentException.class,
             () -> {
-              new CqlSessionFactory(
-                  APP_NAME,
-                  DatabaseType.CASSANDRA,
-                  DATACENTER,
-                  endpoints,
-                  CASSANDRA_PORT,
-                  () -> schemaListener);
+              // contact points are checked before the factory init's
+              var fixture = newFixture(cassandraTenant,DatabaseType.CASSANDRA, null, schemaListener);
             });
+
     assertThat(ex)
         .as("Cassandra DB needs endpoints")
-        .hasMessageContaining("but cassandraEndPoints is empty.");
+        .hasMessageContaining("Database type is CASSANDRA but cassandraEndPoints is null or empty.");
   }
 
   private void assertions(
       Fixture fixture, List<String> endpoints, SchemaChangeListener schemaListener) {
 
-    var actualSession = fixture.factory.apply(TENANT_ID, fixture.credentials);
+    var actualSession = fixture.factory.apply(fixture.tenant, fixture.credentials)
+        .toCompletableFuture()
+        .join();
+
     assertThat(actualSession)
         .as("session is same as returned from session builder")
         .isSameAs(fixture.session);
@@ -91,9 +96,9 @@ public class CqlSessionFactoryTests {
         .isTrue();
     assertThat(defaultDriverProfile.getString(DefaultDriverOption.SESSION_NAME))
         .as("sessionName set to tenantId")
-        .isEqualTo(TENANT_ID);
+        .isEqualTo(fixture.tenant);
 
-    verify(fixture.sessionBuilder).withApplicationName(APP_NAME);
+    verify(fixture.sessionBuilder).withApplicationName(TEST_CONSTANTS.APP_NAME);
     verify(fixture.sessionBuilder).addSchemaChangeListener(schemaListener);
 
     // verifying it called the CqlCredentials to add to the session not how they were added to the
@@ -104,8 +109,6 @@ public class CqlSessionFactoryTests {
     verify(fixture.sessionBuilder, never()).addContactEndPoints(any());
     verify(fixture.sessionBuilder).addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
-    verify(fixture.sessionBuilder).withTenantId(TENANT_ID);
-
     if (!endpoints.isEmpty()) {
       var expectedEndpoints =
           endpoints.stream().map(host -> new InetSocketAddress(host, CASSANDRA_PORT)).toList();
@@ -113,24 +116,28 @@ public class CqlSessionFactoryTests {
     }
 
     // this is going to be called once only.
-    verify(fixture.sessionBuilder).build();
+    verify(fixture.sessionBuilder).buildAsync();
     verifyNoMoreInteractions(fixture.sessionBuilder);
   }
 
   record Fixture(
-      TenantAwareCqlSessionBuilder sessionBuilder,
+      String tenant,
+      CqlSessionBuilder sessionBuilder,
       CqlCredentials credentials,
       CqlSession session,
       CqlSessionFactory factory) {}
 
   private Fixture newFixture(
-      DatabaseType databaseType,
+      String tenant,
+      DatabaseType databaseType, // aaron- this is wrapped into the Tenant class in later versions
       List<String> endpoints,
-      Supplier<SchemaChangeListener> schemaChangeListenerSupplier) {
+      SchemaChangeListener schemaChangeListener) {
 
+    // we are testing that the CqlSessionFactory calls the session builder correctly,
+    // so we mock the session builder and verify that it is called correctly.
     var session = mock(CqlSession.class);
 
-    var sessionBuilder = mock(TenantAwareCqlSessionBuilder.class);
+    var sessionBuilder = mock(CqlSessionBuilder.class);
     when(sessionBuilder.withLocalDatacenter(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.withClassLoader(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.withConfigLoader(any())).thenReturn(sessionBuilder);
@@ -139,22 +146,21 @@ public class CqlSessionFactoryTests {
     when(sessionBuilder.withAuthCredentials(any(), any())).thenReturn(sessionBuilder);
     when(sessionBuilder.addContactPoints(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.addTypeCodecs(any())).thenReturn(sessionBuilder);
-    when(sessionBuilder.withTenantId(any())).thenReturn(sessionBuilder);
 
-    when(sessionBuilder.build()).thenReturn(session);
+    when(sessionBuilder.buildAsync()).thenReturn(CompletableFuture.completedFuture(session));
 
     var credentials = mock(CqlCredentials.class);
     when(credentials.addToSessionBuilder(any())).thenReturn(sessionBuilder);
 
     var factory =
         new CqlSessionFactory(
-            APP_NAME,
+            TEST_CONSTANTS.APP_NAME,
             databaseType,
             DATACENTER,
             endpoints,
             CASSANDRA_PORT,
-            schemaChangeListenerSupplier,
+            schemaChangeListener != null ? () -> schemaChangeListener : null,
             () -> sessionBuilder);
-    return new Fixture(sessionBuilder, credentials, session, factory);
+    return new Fixture(tenant, sessionBuilder, credentials, session, factory);
   }
 }

@@ -6,14 +6,19 @@ import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import java.util.List;
+import java.util.Optional;
+
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link CqlSessionCacheSupplier}. */
 public class CqlSessionCacheSupplierTests {
+
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   @Test
   public void testSingleton() {
@@ -24,17 +29,25 @@ public class CqlSessionCacheSupplierTests {
     when(dbConfig.localDatacenter()).thenReturn("datacenter1");
     when(dbConfig.cassandraEndPoints()).thenReturn(List.of());
 
+    when(dbConfig.sessionCacheMaxSize()).thenReturn(100);
+    when(dbConfig.sessionCacheTtlSeconds()).thenReturn(60L);
+    when(dbConfig.slaSessionCacheTtlSeconds()).thenReturn(120L);
+
     var operationsConfig = mock(OperationsConfig.class);
     when(operationsConfig.databaseConfig()).thenReturn(dbConfig);
+    when(operationsConfig.slaUserAgent()).thenReturn(Optional.of( TEST_CONSTANTS.SLA_USER_AGENT_NAME));
 
-    var schemaCache = mock(SchemaCache.class);
-    when(schemaCache.getSchemaChangeListener()).thenReturn(mock(SchemaChangeListener.class));
-    when(schemaCache.getDeactivatedTenantConsumer())
-        .thenReturn(mock(CQLSessionCache.DeactivatedTenantConsumer.class));
+    // aaron - changes to the schema cache come later
+    var mockSchemaCache = mock(SchemaCache.class);
+    when(mockSchemaCache.getSchemaChangeListener())
+        .thenReturn(mock(SchemaChangeListener.class));
+
+    when(mockSchemaCache.getDeactivatedTenantConsumer())
+        .thenReturn(mock(CQLSessionCache.DeactivatedTenantListener.class));
 
     var factory =
         new CqlSessionCacheSupplier(
-            "testApp", operationsConfig, new SimpleMeterRegistry(), schemaCache);
+            "testApp", operationsConfig, new SimpleMeterRegistry(), mockSchemaCache);
 
     var sessionCache1 = factory.get();
     var sessionCache2 = factory.get();

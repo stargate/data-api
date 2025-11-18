@@ -104,10 +104,9 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
 
     // these never change, and we do not have them in astra, so we can cache
     if (databaseType == DatabaseType.CASSANDRA) {
-      Objects.requireNonNull(cassandraEndPoints, "cassandraEndPoints must not be null");
-      if (cassandraEndPoints.isEmpty()) {
+      if (cassandraEndPoints == null || cassandraEndPoints.isEmpty()) {
         throw new IllegalArgumentException(
-            "Database type is %s but cassandraEndPoints is empty.".formatted(databaseType));
+            "Database type is %s but cassandraEndPoints is null or empty.".formatted(databaseType));
       }
       contactPoints =
           cassandraEndPoints.stream()

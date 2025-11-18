@@ -198,7 +198,7 @@ public class BaseTaskAssertions<
             task,
             times(times)
                 .description("onSuccess() called %s times when: %s".formatted(times, message)))
-        .onSuccess(any());
+        .onSuccess(any(), any());
     return this;
   }
 
@@ -210,7 +210,7 @@ public class BaseTaskAssertions<
                 .description(
                     "onSuccess() called with assertions result %s when: %s"
                         .formatted(expected, message)))
-        .onSuccess(expected);
+        .onSuccess(any(), expected);
     return this;
   }
 
