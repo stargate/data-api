@@ -39,7 +39,7 @@ public class NamespaceCacheTest {
     @Test
     public void checkValidJsonApiTable() {
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.getSchema(any(), any(), any()))
+      when(queryExecutor.getTableMetadata(any(), any(), any()))
           .then(
               i -> {
                 List<ColumnMetadata> partitionColumn =
@@ -168,7 +168,7 @@ public class NamespaceCacheTest {
     @Test
     public void checkValidJsonApiTableWithIndexing() {
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.getSchema(any(), any(), any()))
+      when(queryExecutor.getTableMetadata(any(), any(), any()))
           .then(
               i -> {
                 List<ColumnMetadata> partitionColumn =
@@ -301,7 +301,7 @@ public class NamespaceCacheTest {
     @Test
     public void checkNonCollectionJsonApiTable() {
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.getSchema(any(), any(), any()))
+      when(queryExecutor.getTableMetadata(any(), any(), any()))
           .then(
               i -> {
                 List<ColumnMetadata> partitionColumn =

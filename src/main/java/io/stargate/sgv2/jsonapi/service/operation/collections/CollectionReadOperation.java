@@ -28,7 +28,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -398,20 +397,15 @@ public interface CollectionReadOperation extends CollectionOperation {
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    AtomicLong counter = new AtomicLong();
-    final CompletionStage<AsyncResultSet> async =
-        queryExecutor
-            .executeCount(dataApiRequestInfo, simpleStatement)
-            .whenComplete(
-                (rs, error) -> {
-                  getCount(rs, error, counter);
-                });
 
-    return Uni.createFrom()
-        .completionStage(async)
-        .onItem()
+    AtomicLong counter = new AtomicLong();
+
+    return queryExecutor
+        .executeCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
         .transform(
-            rs -> {
+            (rs, failure) -> {
+              getCount(rs, failure, counter);
               return new CountResponse(counter.get());
             });
   }
@@ -428,8 +422,9 @@ public interface CollectionReadOperation extends CollectionOperation {
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    return Uni.createFrom()
-        .completionStage(queryExecutor.executeCount(dataApiRequestInfo, simpleStatement))
+
+    return queryExecutor
+        .executeCount(dataApiRequestInfo, simpleStatement)
         .onItem()
         .transform(
             rSet -> {
@@ -461,20 +456,15 @@ public interface CollectionReadOperation extends CollectionOperation {
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    AtomicLong counter = new AtomicLong();
-    final CompletionStage<AsyncResultSet> async =
-        queryExecutor
-            .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
-            .whenComplete(
-                (rs, error) -> {
-                  getEstimatedCount(rs, error, counter);
-                });
 
-    return Uni.createFrom()
-        .completionStage(async)
-        .onItem()
+    AtomicLong counter = new AtomicLong();
+
+    return queryExecutor
+        .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
         .transform(
-            rs -> {
+            (rs, failure) -> {
+              getEstimatedCount(rs, failure, counter);
               return new CountResponse(counter.get());
             });
   }

@@ -77,13 +77,13 @@ public class OperationTestBase {
 
     COLLECTION_CONTEXT =
         testConstants.collectionContext(
-            testConstants.TEST_COMMAND_NAME,
+            testConstants.COMMAND_NAME,
             COLLECTION_SCHEMA_OBJECT,
             jsonProcessingMetricsReporter,
             null);
     KEYSPACE_CONTEXT =
         testConstants.keyspaceContext(
-            testConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+            testConstants.COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
   }
 
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(

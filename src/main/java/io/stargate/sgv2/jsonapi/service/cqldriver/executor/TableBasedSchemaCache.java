@@ -93,7 +93,7 @@ public class TableBasedSchemaCache {
   private Uni<SchemaObject> loadSchemaObject(RequestContext requestContext, String collectionName) {
 
     return queryExecutor
-        .getSchema(requestContext, namespace, collectionName)
+        .getTableMetadata(requestContext, namespace, collectionName)
         .onItem()
         .transform(
             optionalTable -> {
