@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
-import static io.stargate.sgv2.jsonapi.exception.ExceptionAction.EVICT_SESSION_CACHE;
+import static io.stargate.sgv2.jsonapi.exception.ExceptionFlags.UNRELIABLE_DB_SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -21,7 +21,7 @@ import com.google.common.base.Strings;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
-import io.stargate.sgv2.jsonapi.exception.ExceptionAction;
+import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -96,7 +96,7 @@ public class DefaultDriverExceptionHandlerTest {
       boolean assertOrigError,
       boolean assertCql,
       String assertMessage,
-      EnumSet<ExceptionAction> assertExceptionActions) {
+      EnumSet<ExceptionFlags> assertExceptionFlags) {
 
     public static Assertions of(DatabaseException.Code code) {
       return new Assertions(code, true, false, false, null, null);
@@ -107,15 +107,15 @@ public class DefaultDriverExceptionHandlerTest {
     }
 
     public static Assertions of(
-        DatabaseException.Code code, EnumSet<ExceptionAction> assertExceptionActions) {
-      return new Assertions(code, true, false, false, null, assertExceptionActions);
+        DatabaseException.Code code, EnumSet<ExceptionFlags> assertExceptionFlags) {
+      return new Assertions(code, true, false, false, null, assertExceptionFlags);
     }
 
     public static Assertions of(
         DatabaseException.Code code,
         String assertMessage,
-        EnumSet<ExceptionAction> assertExceptionActions) {
-      return new Assertions(code, true, false, false, assertMessage, assertExceptionActions);
+        EnumSet<ExceptionFlags> assertExceptionFlags) {
+      return new Assertions(code, true, false, false, assertMessage, assertExceptionFlags);
     }
 
     public static Assertions isUnexpectedDriverException() {
@@ -125,7 +125,7 @@ public class DefaultDriverExceptionHandlerTest {
           true,
           false,
           null,
-          EnumSet.of(EVICT_SESSION_CACHE));
+          EnumSet.of(UNRELIABLE_DB_SESSION));
     }
 
     /**
@@ -185,10 +185,10 @@ public class DefaultDriverExceptionHandlerTest {
             .hasMessageContaining(assertMessage);
       }
 
-      if (assertExceptionActions != null) {
-        assertThat(handledException.exceptionActions)
+      if (assertExceptionFlags != null) {
+        assertThat(handledException.exceptionFlags)
             .as("Handled error should have expected exception actions")
-            .isEqualTo(assertExceptionActions);
+            .isEqualTo(assertExceptionFlags);
       }
     }
 
@@ -196,8 +196,8 @@ public class DefaultDriverExceptionHandlerTest {
     public String toString() {
       // simplified to be called from the TestArguments
       return String.format(
-          "expectedCode='%s', assertSchemaNames=%s, assertMessage='%s', assertExceptionActions=%s",
-          expectedCode, assertSchemaNames, assertMessage, assertExceptionActions);
+          "expectedCode='%s', assertSchemaNames=%s, assertMessage='%s', assertExceptionFlags=%s",
+          expectedCode, assertSchemaNames, assertMessage, assertExceptionFlags);
     }
   }
 
@@ -257,25 +257,25 @@ public class DefaultDriverExceptionHandlerTest {
             Assertions.of(
                 DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
                 "unexpected runtime",
-                EnumSet.of(EVICT_SESSION_CACHE))),
+                EnumSet.of(UNRELIABLE_DB_SESSION))),
         new TestArguments(
             allFailedUnexpectedDriverError(),
             Assertions.of(
                 DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
                 "closed",
-                EnumSet.of(EVICT_SESSION_CACHE))),
+                EnumSet.of(UNRELIABLE_DB_SESSION))),
         new TestArguments(
             allFailedClusterNodeRecycled(),
             Assertions.of(
                 DatabaseException.Code.UNEXPECTED_DRIVER_ERROR,
                 "cluster node recycled, unable to connect to it",
-                EnumSet.of(EVICT_SESSION_CACHE))),
+                EnumSet.of(UNRELIABLE_DB_SESSION))),
         new TestArguments(
             new NoNodeAvailableException(),
             Assertions.of(
                 DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE,
                 "unable to connect to any nodes",
-                EnumSet.of(EVICT_SESSION_CACHE))),
+                EnumSet.of(UNRELIABLE_DB_SESSION))),
         // AlreadyExistsException should be handled by a specific subclass that knows the type of
         // command
         // see CreateTableExceptionHandler

@@ -246,11 +246,14 @@ public class CQLSessionCache {
 
     // Invalidate the key. This will trigger the onKeyRemoved listener,
     // which will close the CqlSession and run other cleanup.
-    if (sessionCache.asMap().remove(cacheKey) != null) {
-      LOGGER.warn("Explicitly evicted session from cache. Cache Key: {}", cacheKey);
-      return true;
-    }
-    return false;
+    // Use .asMap().remove() as the author suggested:
+    // https://stackoverflow.com/questions/67994799/how-do-i-make-invalidate-an-entry-and-return-its-value-from-a-caffeine-cache
+    boolean entryFound = sessionCache.asMap().remove(cacheKey) != null;
+    LOGGER.warn(
+        "Explicitly evicted session from cache. Cache Key: {} (entry found: {})",
+        cacheKey,
+        entryFound);
+    return entryFound;
   }
 
   /**

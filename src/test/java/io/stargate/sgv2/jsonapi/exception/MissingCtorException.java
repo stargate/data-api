@@ -26,7 +26,7 @@ public class MissingCtorException extends TestRequestException {
             "title",
             "body",
             Optional.empty(),
-            EnumSet.noneOf(ExceptionAction.class)));
+            EnumSet.noneOf(ExceptionFlags.class)));
   }
 
   // This is the CTOR that is missing, kept commented out to show what is missing

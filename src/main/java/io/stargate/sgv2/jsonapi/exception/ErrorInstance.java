@@ -35,4 +35,4 @@ public record ErrorInstance(
     String title,
     String body,
     Optional<Integer> httpStatusOverride,
-    EnumSet<ExceptionAction> exceptionActions) {}
+    EnumSet<ExceptionFlags> exceptionFlags) {}

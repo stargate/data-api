@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
-import static io.stargate.sgv2.jsonapi.exception.ExceptionAction.EVICT_SESSION_CACHE;
+import static io.stargate.sgv2.jsonapi.exception.ExceptionFlags.UNRELIABLE_DB_SESSION;
 
 import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -97,12 +97,12 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   /**
    * Any driver exception that is not handled (handler returns same exception instance) wil be
    * mapped to the {@link DatabaseException.Code#UNEXPECTED_DRIVER_ERROR}. We assume any unexpected
-   * error from the driver causes a session recycle, so adding EVICT_SESSION_CACHE enum here
+   * error from the driver causes a session recycle, so adding UNRELIABLE_DB_SESSION enum here
    */
   @Override
   public RuntimeException handleUnhandled(DriverException exception) {
     return DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.get(
-        EnumSet.of(EVICT_SESSION_CACHE), errVars(schemaObject, exception));
+        EnumSet.of(UNRELIABLE_DB_SESSION), errVars(schemaObject, exception));
   }
 
   // ========================================================================
@@ -166,7 +166,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
         // this is a non-driver based exception, so map to generic unexpected driver error
       case RuntimeException re ->
           DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.get(
-              EnumSet.of(EVICT_SESSION_CACHE), errVars(schemaObject, re));
+              EnumSet.of(UNRELIABLE_DB_SESSION), errVars(schemaObject, re));
         // could not work out what the node error was OR this was a subclass of the
         // AllNodesFailedException
         // this will be the null case, but also need a default label
@@ -179,7 +179,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   public RuntimeException handle(NoNodeAvailableException exception) {
     // this is a special case of AllNodesFailedException where no nodes were available
     return DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE.get(
-        EnumSet.of(EVICT_SESSION_CACHE), errVars(schemaObject, exception));
+        EnumSet.of(UNRELIABLE_DB_SESSION), errVars(schemaObject, exception));
   }
 
   // ========================================================================

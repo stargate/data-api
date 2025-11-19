@@ -45,7 +45,7 @@ import org.apache.commons.text.StringSubstitutor;
  * @param messageTemplate A template for the error body, with variables to be replaced at runtime
  *     using the {@link StringSubstitutor} from Apache Commons Text.
  * @param httpStatusOverride If present, overrides the default HTTP 200 response code for errors.
- * @param exceptionActions The set of exception actions to apply to this error instance.
+ * @param exceptionFlags The set of exception actions to apply to this error instance.
  */
 public record ErrorTemplate<T extends APIException>(
     Constructor<T> constructor,
@@ -55,7 +55,7 @@ public record ErrorTemplate<T extends APIException>(
     String title,
     String messageTemplate,
     Optional<Integer> httpStatusOverride,
-    EnumSet<ExceptionAction> exceptionActions) {
+    EnumSet<ExceptionFlags> exceptionFlags) {
 
   public static final String NULL_REPLACEMENT = "(null)";
 
@@ -70,8 +70,8 @@ public record ErrorTemplate<T extends APIException>(
     return value == null ? NULL_REPLACEMENT : value;
   }
 
-  public T toException(Map<String, String> values, EnumSet<ExceptionAction> exceptionActions) {
-    var errorInstance = toInstance(values, exceptionActions);
+  public T toException(Map<String, String> values, EnumSet<ExceptionFlags> exceptionFlags) {
+    var errorInstance = toInstance(values, exceptionFlags);
 
     try {
       return constructor().newInstance(errorInstance);
@@ -83,7 +83,7 @@ public record ErrorTemplate<T extends APIException>(
   }
 
   public T toException(Map<String, String> values) {
-    return toException(values, exceptionActions());
+    return toException(values, exceptionFlags());
   }
 
   /**
@@ -96,14 +96,14 @@ public record ErrorTemplate<T extends APIException>(
    * <p>
    *
    * @param values The values to use in the template for the error body.
-   * @param exceptionActions The set of exception actions to apply to this error instance.
+   * @param exceptionFlags The set of exception actions to apply to this error instance.
    * @return {@link ErrorInstance} created from the template.
    * @throws UnresolvedErrorTemplateVariable if the template string for the body of the exception
    *     has variables e.g <code>${my_var}</code> that are not in the <code>values</code> passed in
    *     or not in the {@link ErrorConfig#getSnippetVars()} from the error config.
    */
   private ErrorInstance toInstance(
-      Map<String, String> values, EnumSet<ExceptionAction> exceptionActions) {
+      Map<String, String> values, EnumSet<ExceptionFlags> exceptionFlags) {
 
     // use the apache string substitution to replace the variables in the messageTemplate
     Map<String, String> allValues = new HashMap<>(values);
@@ -124,7 +124,7 @@ public record ErrorTemplate<T extends APIException>(
     }
 
     return new ErrorInstance(
-        UUID.randomUUID(), family, scope, code, title, msg, httpStatusOverride, exceptionActions);
+        UUID.randomUUID(), family, scope, code, title, msg, httpStatusOverride, exceptionFlags);
   }
 
   /**
@@ -177,6 +177,6 @@ public record ErrorTemplate<T extends APIException>(
         errorConfig.title(),
         errorConfig.body(),
         errorConfig.httpStatusOverride(),
-        EnumSet.noneOf(ExceptionAction.class));
+        EnumSet.noneOf(ExceptionFlags.class));
   }
 }

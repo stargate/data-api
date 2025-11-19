@@ -31,7 +31,7 @@ import java.util.UUID;
  *       it does not then use {@link ErrorScope#NONE}.
  *   <li>Decide on the {@link ErrorCode}, it should be unique within the Family and Scope
  *       combination.
- *   <li>Decide on the {@link ExceptionAction}, it should be the deferred actions of the exception,
+ *   <li>Decide on the {@link ExceptionFlags}, it should be the deferred actions of the exception,
  *       such as evict the session from cache.
  *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body
  *       body.
@@ -93,7 +93,7 @@ public abstract class APIException extends RuntimeException implements Recordabl
    * The deferred actions of the exception(e.g. evict the session from cache). By default, it's
    * empty.
    */
-  public final EnumSet<ExceptionAction> exceptionActions;
+  public final EnumSet<ExceptionFlags> exceptionFlags;
 
   public APIException(ErrorInstance errorInstance) {
     Objects.requireNonNull(errorInstance, "ErrorInstance cannot be null");
@@ -106,8 +106,8 @@ public abstract class APIException extends RuntimeException implements Recordabl
     this.body = errorInstance.body();
     Objects.requireNonNull(errorInstance.httpStatusOverride(), "httpStatusOverride cannot be null");
     this.httpStatus = errorInstance.httpStatusOverride().orElse(DEFAULT_HTTP_STATUS);
-    Objects.requireNonNull(errorInstance.exceptionActions(), "exceptionActions cannot be null");
-    this.exceptionActions = errorInstance.exceptionActions();
+    Objects.requireNonNull(errorInstance.exceptionFlags(), "exceptionFlags cannot be null");
+    this.exceptionFlags = errorInstance.exceptionFlags();
   }
 
   public APIException(
@@ -121,7 +121,7 @@ public abstract class APIException extends RuntimeException implements Recordabl
             title,
             body,
             Optional.empty(),
-            EnumSet.noneOf(ExceptionAction.class)));
+            EnumSet.noneOf(ExceptionFlags.class)));
   }
 
   /**

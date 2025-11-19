@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import static io.stargate.sgv2.jsonapi.exception.ExceptionAction.EVICT_SESSION_CACHE;
-import static io.stargate.sgv2.jsonapi.exception.ExceptionAction.RETRY;
+import static io.stargate.sgv2.jsonapi.exception.ExceptionFlags.RETRY;
+import static io.stargate.sgv2.jsonapi.exception.ExceptionFlags.UNRELIABLE_DB_SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -57,7 +57,7 @@ public class ErrorCodeTest extends ConfiguredErrorTest {
   @Test
   public void getWithExceptionActions() {
     var errorCode = TestScopeException.Code.SCOPED_REQUEST_ERROR;
-    var actions = EnumSet.of(EVICT_SESSION_CACHE, RETRY);
+    var actions = EnumSet.of(UNRELIABLE_DB_SESSION, RETRY);
 
     var errorFromParamArgs =
         assertDoesNotThrow(
@@ -73,10 +73,10 @@ public class ErrorCodeTest extends ConfiguredErrorTest {
                         "value", TEST_DATA.VAR_VALUE)),
             String.format("Creating exception with template %s", errorCode.template()));
 
-    assertThat(errorFromParamArgs.exceptionActions)
+    assertThat(errorFromParamArgs.exceptionFlags)
         .as("Exception created with param args carries the given actions")
         .isEqualTo(actions);
-    assertThat(errorFromMap.exceptionActions)
+    assertThat(errorFromMap.exceptionFlags)
         .as("Exception created with map carries the given actions")
         .isEqualTo(actions);
   }

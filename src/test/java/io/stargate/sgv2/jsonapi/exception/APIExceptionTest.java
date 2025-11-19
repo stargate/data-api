@@ -80,8 +80,8 @@ public class APIExceptionTest extends ConfiguredErrorTest {
             "name", TEST_DATA.VAR_NAME,
             "value", TEST_DATA.VAR_VALUE);
 
-    assertThat(exception.exceptionActions)
-        .as("exceptionActions field should not be null and should be empty EnumSet")
+    assertThat(exception.exceptionFlags)
+        .as("exceptionFlags field should not be null and should be empty EnumSet")
         .isNotNull()
         .isEmpty();
   }
@@ -90,24 +90,24 @@ public class APIExceptionTest extends ConfiguredErrorTest {
   public void exceptionActionsSetViaConstructor() {
     var exception =
         TestScopeException.Code.SCOPED_REQUEST_ERROR.get(
-            EnumSet.of(ExceptionAction.EVICT_SESSION_CACHE),
+            EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION),
             "name",
             TEST_DATA.VAR_NAME,
             "value",
             TEST_DATA.VAR_VALUE);
 
-    assertThat(exception.exceptionActions)
-        .as("exceptionActions should contain EVICT_SESSION_CACHE")
-        .contains(ExceptionAction.EVICT_SESSION_CACHE);
+    assertThat(exception.exceptionFlags)
+        .as("exceptionFlags should contain UNRELIABLE_DB_SESSION")
+        .contains(ExceptionFlags.UNRELIABLE_DB_SESSION);
   }
 
   @Test
   public void exceptionActionsMultiple() {
-    var actions = EnumSet.of(ExceptionAction.RETRY, ExceptionAction.EVICT_SESSION_CACHE);
+    var actions = EnumSet.of(ExceptionFlags.RETRY, ExceptionFlags.UNRELIABLE_DB_SESSION);
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get(actions, new String[] {});
 
-    assertThat(exception.exceptionActions)
+    assertThat(exception.exceptionFlags)
         .as("Exception should contain both actions")
-        .containsExactlyInAnyOrder(ExceptionAction.RETRY, ExceptionAction.EVICT_SESSION_CACHE);
+        .containsExactlyInAnyOrder(ExceptionFlags.RETRY, ExceptionFlags.UNRELIABLE_DB_SESSION);
   }
 }
