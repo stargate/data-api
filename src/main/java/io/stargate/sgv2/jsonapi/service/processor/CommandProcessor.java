@@ -142,8 +142,8 @@ public class CommandProcessor {
 
     return switch (throwable) {
       case APIException apiException -> {
-        // Handle exception actions before building the error response
-        handleExceptionFlags(commandContext, apiException);
+        // Check if session should be evicted before building the error response
+        maybeEvictSession(commandContext, apiException);
 
         // new error object V2
         var errorBuilder = new APIExceptionCommandErrorBuilder(errorObjectV2);
@@ -171,28 +171,18 @@ public class CommandProcessor {
   }
 
   /**
-   * Handles exception actions specified in the APIException. For example, evicting the session from
-   * cache when encountering AllNodesFailedException.
+   * Evicts the CQL session when the {@link APIException} indicates the current session is
+   * unreliable (for example, when all cluster nodes have restarted).
    *
    * @param commandContext The command context.
-   * @param apiException The API exception that may contain exception actions.
+   * @param apiException The API exception that may contain exception flags.
    * @param <SchemaT> The schema object type.
    */
-  private <SchemaT extends SchemaObject> void handleExceptionFlags(
+  private <SchemaT extends SchemaObject> void maybeEvictSession(
       CommandContext<SchemaT> commandContext, APIException apiException) {
-    var exceptionActions = apiException.exceptionFlags;
-    if (exceptionActions == null || exceptionActions.isEmpty()) {
-      return;
-    }
-
-    for (ExceptionFlags action : exceptionActions) {
-      switch (action) {
-        case UNRELIABLE_DB_SESSION ->
-            commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
-        default -> {
-          // No-op for actions that are not handled at this level.
-        }
-      }
+    // exceptionFlags is guaranteed to be non-null by ErrorInstance and APIException constructors
+    if (apiException.exceptionFlags.contains(ExceptionFlags.UNRELIABLE_DB_SESSION)) {
+      commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
     }
   }
 
