@@ -58,6 +58,10 @@ public interface ErrorCode<T extends APIException> {
     return get(exceptionFlags, valuesMap);
   }
 
+  /**
+   * Convenience overload that delegates to {@link #get(EnumSet, String...)} with an empty set of
+   * {@link ExceptionFlags}.
+   */
   default T get(String... values) {
     return get(EnumSet.noneOf(ExceptionFlags.class), values);
   }
@@ -74,7 +78,7 @@ public interface ErrorCode<T extends APIException> {
   }
 
   default T get(EnumSet<ExceptionFlags> exceptionFlags, Map<String, String> values) {
-    return template().toException(values, exceptionFlags);
+    return template().toException(exceptionFlags, values);
   }
 
   /**

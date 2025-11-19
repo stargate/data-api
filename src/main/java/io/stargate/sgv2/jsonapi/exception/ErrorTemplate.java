@@ -70,7 +70,7 @@ public record ErrorTemplate<T extends APIException>(
     return value == null ? NULL_REPLACEMENT : value;
   }
 
-  public T toException(Map<String, String> values, EnumSet<ExceptionFlags> exceptionFlags) {
+  public T toException(EnumSet<ExceptionFlags> exceptionFlags, Map<String, String> values) {
     var errorInstance = toInstance(values, exceptionFlags);
 
     try {
@@ -83,7 +83,7 @@ public record ErrorTemplate<T extends APIException>(
   }
 
   public T toException(Map<String, String> values) {
-    return toException(values, exceptionFlags());
+    return toException(EnumSet.noneOf(ExceptionFlags.class), values);
   }
 
   /**
