@@ -75,7 +75,7 @@
       <dependency>
         <groupId>io.quarkiverse.mcp</groupId>
         <artifactId>quarkus-mcp-server-bom</artifactId>
-        <version>1.7.1</version>
+        <version>1.7.2</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
