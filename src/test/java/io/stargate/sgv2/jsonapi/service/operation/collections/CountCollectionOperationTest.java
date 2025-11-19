@@ -59,7 +59,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -73,7 +73,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, implicitAnd, 100, -1);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -104,7 +104,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -119,7 +119,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -150,7 +150,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -165,7 +165,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -193,7 +193,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -206,7 +206,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
       Throwable result =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -240,7 +240,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -252,7 +252,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -282,7 +282,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -297,7 +297,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -327,7 +327,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -343,7 +343,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, implicitAnd, 100, 10);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -371,7 +371,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -385,7 +385,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
       Throwable result =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()

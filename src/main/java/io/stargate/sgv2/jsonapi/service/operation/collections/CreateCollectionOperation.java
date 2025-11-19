@@ -141,7 +141,8 @@ public record CreateCollectionOperation(
               // refactor to make
               // this operation fully Async, without refactoring all the logic.
               KeyspaceMetadata currKeyspace =
-                  allKeyspaces.get(commandContext.schemaObject().name().keyspace());
+                  allKeyspaces.get(
+                      CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
 
               if (currKeyspace == null) {
                 return Uni.createFrom()

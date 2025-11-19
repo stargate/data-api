@@ -158,7 +158,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -196,7 +196,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -225,7 +225,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -265,7 +265,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -311,7 +311,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -536,7 +536,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -561,7 +561,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -610,7 +610,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -771,7 +771,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -808,7 +808,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -839,7 +839,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -879,7 +879,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -908,7 +908,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -939,7 +939,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1030,7 +1030,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1056,7 +1056,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1107,7 +1107,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1198,7 +1198,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1223,7 +1223,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1269,7 +1269,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1302,7 +1302,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1339,7 +1339,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1366,7 +1366,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1399,7 +1399,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1441,7 +1441,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1519,7 +1519,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           Arrays.asList(resultRow(0, "doc1", tx_id1, doc1), resultRow(0, "doc2", tx_id2, doc2));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1534,7 +1534,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1547,7 +1547,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
       final AtomicInteger callCount3 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt3)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt3)))
           .then(
               invocation -> {
                 callCount3.incrementAndGet();
@@ -1591,7 +1591,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1624,7 +1624,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1646,7 +1646,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1689,7 +1689,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1723,7 +1723,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1766,7 +1766,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

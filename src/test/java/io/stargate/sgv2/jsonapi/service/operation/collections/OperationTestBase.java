@@ -42,7 +42,7 @@ public class OperationTestBase {
   @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
   // this will work even though the base class is not managed by Quarkus
-  @InjectMock protected RequestContext dataApiRequestInfo;
+  @InjectMock protected RequestContext requestContext;
 
   private final TestConstants testConstants = new TestConstants();
 
