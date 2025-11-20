@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -152,12 +153,14 @@ public class CommandProcessor {
                 .addCommandResultError(errorBuilder.buildLegacyCommandResultError(apiException))
                 .build();
       }
-      case JsonApiException jsonApiException ->
-          // old error objects, old comment below
-          // Note: JsonApiException means that JSON API itself handled the situation
-          // (created, or wrapped the exception) -- should not be logged (have already
-          // been logged if necessary)
-          jsonApiException;
+      case JsonApiException jsonApiException -> {
+        // old error objects, old comment below
+        // Note: JsonApiException means that JSON API itself handled the situation
+        // (created, or wrapped the exception) -- should not be logged (have already
+        // been logged if necessary)
+        maybeEvictSession(commandContext, jsonApiException.getCause());
+        yield jsonApiException;
+      }
       default -> {
         // Old error handling below, to be replaced eventually (aaron aug 28 2024)
         // But other exception types are unexpected, so log for now
@@ -165,6 +168,9 @@ public class CommandProcessor {
             "Command '{}' failed with exception",
             originalCommand.getClass().getSimpleName(),
             throwable);
+
+        maybeEvictSession(commandContext, throwable);
+
         yield new ThrowableCommandResultSupplier(throwable);
       }
     };
@@ -182,6 +188,21 @@ public class CommandProcessor {
       CommandContext<SchemaT> commandContext, APIException apiException) {
     // exceptionFlags is guaranteed to be non-null by ErrorInstance and APIException constructors
     if (apiException.exceptionFlags.contains(ExceptionFlags.UNRELIABLE_DB_SESSION)) {
+      commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
+    }
+  }
+
+  /**
+   * Evicts the CQL session when the throwable is {@link AllNodesFailedException}, which indicates
+   * the current session is unreliable (for example, when all cluster nodes have restarted).
+   *
+   * @param commandContext
+   * @param throwable
+   * @param <SchemaT>
+   */
+  private <SchemaT extends SchemaObject> void maybeEvictSession(
+      CommandContext<SchemaT> commandContext, Throwable throwable) {
+    if (throwable instanceof AllNodesFailedException) {
       commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
     }
   }
