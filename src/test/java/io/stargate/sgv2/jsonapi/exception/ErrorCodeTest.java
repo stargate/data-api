@@ -54,30 +54,30 @@ public class ErrorCodeTest extends ConfiguredErrorTest {
   }
 
   @Test
-  public void getWithExceptionActions() {
+  public void getWithExceptionFlags() {
     var errorCode = TestScopeException.Code.SCOPED_REQUEST_ERROR;
-    var actions = EnumSet.of(UNRELIABLE_DB_SESSION);
+    var flags = EnumSet.of(UNRELIABLE_DB_SESSION);
 
     var errorFromParamArgs =
         assertDoesNotThrow(
-            () -> errorCode.get(actions, "name", TEST_DATA.VAR_NAME, "value", TEST_DATA.VAR_VALUE));
+            () -> errorCode.get(flags, "name", TEST_DATA.VAR_NAME, "value", TEST_DATA.VAR_VALUE));
 
     var errorFromMap =
         assertDoesNotThrow(
             () ->
                 errorCode.get(
-                    actions,
+                    flags,
                     Map.of(
                         "name", TEST_DATA.VAR_NAME,
                         "value", TEST_DATA.VAR_VALUE)),
             String.format("Creating exception with template %s", errorCode.template()));
 
     assertThat(errorFromParamArgs.exceptionFlags)
-        .as("Exception created with param args carries the given actions")
-        .isEqualTo(actions);
+        .as("Exception created with param args carries the given flags")
+        .isEqualTo(flags);
     assertThat(errorFromMap.exceptionFlags)
-        .as("Exception created with map carries the given actions")
-        .isEqualTo(actions);
+        .as("Exception created with map carries the given flags")
+        .isEqualTo(flags);
   }
 
   @Test

@@ -74,7 +74,7 @@ public class APIExceptionTest extends ConfiguredErrorTest {
   }
 
   @Test
-  public void defaultExceptionActionsFieldEmpty() {
+  public void defaultExceptionFlagsFieldEmpty() {
     var exception =
         TestScopeException.Code.SCOPED_REQUEST_ERROR.get(
             "name", TEST_DATA.VAR_NAME,
@@ -87,7 +87,7 @@ public class APIExceptionTest extends ConfiguredErrorTest {
   }
 
   @Test
-  public void exceptionActionsSetViaConstructor() {
+  public void exceptionFlagsSetViaConstructor() {
     var exception =
         TestScopeException.Code.SCOPED_REQUEST_ERROR.get(
             EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION),
