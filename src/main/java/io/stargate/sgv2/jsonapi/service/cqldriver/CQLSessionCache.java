@@ -214,6 +214,49 @@ public class CQLSessionCache {
   }
 
   /**
+   * Evicts a session from the cache based on the provided {@link RequestContext}.
+   *
+   * @see #evictSession(String, String, String) for details on eviction.
+   * @param requestContext The request context containing tenant, auth, and user agent info.
+   * @return {@code true} if a session was evicted, {@code false} otherwise.
+   */
+  public boolean evictSession(RequestContext requestContext) {
+    Objects.requireNonNull(requestContext, "requestContext must not be null for eviction");
+
+    // Validation happens when creating the credentials and session key
+    return evictSession(
+        requestContext.getTenantId().orElse(""),
+        requestContext.getCassandraToken().orElse(""),
+        requestContext.getUserAgent().orElse(null));
+  }
+
+  /**
+   * Evicts a session from the cache programmatically. This is intended for use in scenarios where a
+   * session is known to be in an unrecoverable state (e.g., after all cluster nodes restart) and
+   * needs to be forcibly removed to allow for a fresh connection on the next request.
+   *
+   * @param tenantId the identifier for the tenant
+   * @param authToken the authentication token for accessing the session
+   * @param userAgent Nullable user agent
+   * @return {@code true} if a session was evicted, {@code false} otherwise.
+   */
+  public boolean evictSession(String tenantId, String authToken, String userAgent) {
+
+    var cacheKey = createCacheKey(tenantId, authToken, userAgent);
+
+    // Invalidate the key. This will trigger the onKeyRemoved listener,
+    // which will close the CqlSession and run other cleanup.
+    // Use .asMap().remove() as the author suggested:
+    // https://stackoverflow.com/questions/67994799/how-do-i-make-invalidate-an-entry-and-return-its-value-from-a-caffeine-cache
+    boolean entryFound = sessionCache.asMap().remove(cacheKey) != null;
+    LOGGER.warn(
+        "Explicitly evicted session from cache. Cache Key: {} (entry found: {})",
+        cacheKey,
+        entryFound);
+    return entryFound;
+  }
+
+  /**
    * For testing, peek into the cache to see if a session is present for the given tenantId,
    * authToken, and userAgent.
    */
