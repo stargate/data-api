@@ -195,10 +195,6 @@ public class CommandProcessor {
   /**
    * Evicts the CQL session when the throwable is {@link AllNodesFailedException}, which indicates
    * the current session is unreliable (for example, when all cluster nodes have restarted).
-   *
-   * @param commandContext
-   * @param throwable
-   * @param <SchemaT>
    */
   private <SchemaT extends SchemaObject> void maybeEvictSession(
       CommandContext<SchemaT> commandContext, Throwable throwable) {
