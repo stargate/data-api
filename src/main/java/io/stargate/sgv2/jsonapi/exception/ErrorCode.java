@@ -74,7 +74,7 @@ public interface ErrorCode<T extends APIException> {
    * @return Instance of {@link APIException} the error code represents.
    */
   default T get(Map<String, String> values) {
-    return template().toException(values);
+    return get(EnumSet.noneOf(ExceptionFlags.class), values);
   }
 
   default T get(EnumSet<ExceptionFlags> exceptionFlags, Map<String, String> values) {

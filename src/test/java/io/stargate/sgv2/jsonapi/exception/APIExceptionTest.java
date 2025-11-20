@@ -100,14 +100,4 @@ public class APIExceptionTest extends ConfiguredErrorTest {
         .as("exceptionFlags should contain UNRELIABLE_DB_SESSION")
         .contains(ExceptionFlags.UNRELIABLE_DB_SESSION);
   }
-
-  @Test
-  public void exceptionActionsMultiple() {
-    var actions = EnumSet.of(ExceptionFlags.RETRY, ExceptionFlags.UNRELIABLE_DB_SESSION);
-    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get(actions, new String[] {});
-
-    assertThat(exception.exceptionFlags)
-        .as("Exception should contain both actions")
-        .containsExactlyInAnyOrder(ExceptionFlags.RETRY, ExceptionFlags.UNRELIABLE_DB_SESSION);
-  }
 }

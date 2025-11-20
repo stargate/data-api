@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import static io.stargate.sgv2.jsonapi.exception.ExceptionFlags.RETRY;
 import static io.stargate.sgv2.jsonapi.exception.ExceptionFlags.UNRELIABLE_DB_SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -57,7 +56,7 @@ public class ErrorCodeTest extends ConfiguredErrorTest {
   @Test
   public void getWithExceptionActions() {
     var errorCode = TestScopeException.Code.SCOPED_REQUEST_ERROR;
-    var actions = EnumSet.of(UNRELIABLE_DB_SESSION, RETRY);
+    var actions = EnumSet.of(UNRELIABLE_DB_SESSION);
 
     var errorFromParamArgs =
         assertDoesNotThrow(

@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import java.util.EnumSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import com.google.common.collect.Sets;
+import java.util.*;
 
 /**
  * The information to use when creating an error, included as a record to make it easier to pass
@@ -36,7 +34,7 @@ public record ErrorInstance(
     String title,
     String body,
     Optional<Integer> httpStatusOverride,
-    EnumSet<ExceptionFlags> exceptionFlags) {
+    Set<ExceptionFlags> exceptionFlags) {
 
   /**
    * Compact canonical constructor that validates all parameters and sets defaults where
@@ -50,6 +48,6 @@ public record ErrorInstance(
     Objects.requireNonNull(title, "title cannot be null");
     Objects.requireNonNull(body, "body cannot be null");
     Objects.requireNonNull(httpStatusOverride, "httpStatusOverride cannot be null");
-    exceptionFlags = exceptionFlags == null ? EnumSet.noneOf(ExceptionFlags.class) : exceptionFlags;
+    exceptionFlags = exceptionFlags == null ? Set.of() : Sets.immutableEnumSet(exceptionFlags);
   }
 }

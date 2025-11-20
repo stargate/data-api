@@ -8,7 +8,7 @@ package io.stargate.sgv2.jsonapi.exception;
  * io.stargate.sgv2.jsonapi.service.processor.CommandProcessor}) decide which remediation steps to
  * perform.
  *
- * @see io.stargate.sgv2.jsonapi.service.processor.CommandProcessor#handleExceptionFlags
+ * @see io.stargate.sgv2.jsonapi.service.processor.CommandProcessor#maybeEvictSession
  * @see io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler
  */
 public enum ExceptionFlags {
@@ -18,10 +18,4 @@ public enum ExceptionFlags {
    * request.
    */
   UNRELIABLE_DB_SESSION,
-
-  /**
-   * This flag tells clients if they should retry the query, such as for a timeout from the DB. Not
-   * yet used in the codebase but kept for future implementation.
-   */
-  RETRY
 }

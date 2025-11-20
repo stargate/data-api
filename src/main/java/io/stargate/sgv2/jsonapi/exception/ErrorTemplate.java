@@ -45,7 +45,6 @@ import org.apache.commons.text.StringSubstitutor;
  * @param messageTemplate A template for the error body, with variables to be replaced at runtime
  *     using the {@link StringSubstitutor} from Apache Commons Text.
  * @param httpStatusOverride If present, overrides the default HTTP 200 response code for errors.
- * @param exceptionFlags The set of exception actions to apply to this error instance.
  */
 public record ErrorTemplate<T extends APIException>(
     Constructor<T> constructor,
@@ -54,8 +53,7 @@ public record ErrorTemplate<T extends APIException>(
     String code,
     String title,
     String messageTemplate,
-    Optional<Integer> httpStatusOverride,
-    EnumSet<ExceptionFlags> exceptionFlags) {
+    Optional<Integer> httpStatusOverride) {
 
   public static final String NULL_REPLACEMENT = "(null)";
 
@@ -80,10 +78,6 @@ public record ErrorTemplate<T extends APIException>(
           "Failed to create a new instance of " + constructor().getDeclaringClass().getSimpleName(),
           e);
     }
-  }
-
-  public T toException(Map<String, String> values) {
-    return toException(EnumSet.noneOf(ExceptionFlags.class), values);
   }
 
   /**
@@ -176,7 +170,6 @@ public record ErrorTemplate<T extends APIException>(
         code,
         errorConfig.title(),
         errorConfig.body(),
-        errorConfig.httpStatusOverride(),
-        EnumSet.noneOf(ExceptionFlags.class));
+        errorConfig.httpStatusOverride());
   }
 }
