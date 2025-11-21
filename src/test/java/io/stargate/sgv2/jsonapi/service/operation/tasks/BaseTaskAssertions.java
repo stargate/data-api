@@ -210,7 +210,7 @@ public class BaseTaskAssertions<
                 .description(
                     "onSuccess() called with assertions result %s when: %s"
                         .formatted(expected, message)))
-        .onSuccess(any(), expected);
+        .onSuccess(any(), eq(expected));
     return this;
   }
 
