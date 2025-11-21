@@ -154,6 +154,14 @@ public class TestDataNames {
   public final CqlIdentifier CQL_VECTOR_COLUMN =
       CqlIdentifier.fromInternal("vector_column_" + System.currentTimeMillis());
 
+  // UDT columns
+  public final CqlIdentifier CQL_NON_FROZEN_UDT_COLUMN_ADDRESS =
+      CqlIdentifier.fromInternal("non_frozen_address_" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_ADDRESS_CITY_FIELD =
+      CqlIdentifier.fromInternal("address_city_" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_ADDRESS_COUNTRY_FIELD =
+      CqlIdentifier.fromInternal("address_country_" + System.currentTimeMillis());
+
   public final CqlIdentifier CQL_MAP_COLUMN_INDEX =
       CqlIdentifier.fromInternal("map_column_index_" + System.currentTimeMillis());
   public final CqlIdentifier CQL_LIST_COLUMN_INDEX =

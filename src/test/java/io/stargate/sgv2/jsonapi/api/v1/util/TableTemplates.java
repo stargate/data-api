@@ -41,6 +41,28 @@ public class TableTemplates extends TemplateRunner {
     return asJSON(clause);
   }
 
+  private String findClause(
+      Map<String, Object> filter,
+      Map<String, Object> projection,
+      Map<String, Object> sort,
+      Map<String, Object> options) {
+
+    var clause = new LinkedHashMap<>();
+    if (filter != null) {
+      clause.put("filter", filter);
+    }
+    if (projection != null) {
+      clause.put("projection", projection);
+    }
+    if (sort != null) {
+      clause.put("sort", sort);
+    }
+    if (options != null) {
+      clause.put("options", options);
+    }
+    return asJSON(clause);
+  }
+
   public DataApiResponseValidator find(
       CommandName commandName, Map<String, Object> filter, List<String> columns) {
     return find(commandName, filter, columns, null);
@@ -100,6 +122,18 @@ public class TableTemplates extends TemplateRunner {
   public DataApiResponseValidator find(
       Map<String, Object> filter,
       List<String> projection,
+      Map<String, Object> sort,
+      Map<String, Object> options) {
+    return sender.postFind(findClause(filter, projection, sort, options));
+  }
+
+  /**
+   * Passing raw projectionJSON, this is useful when we want to express inclusion and exclusion mode
+   * in the projection.
+   */
+  public DataApiResponseValidator findWithExplicitProjection(
+      Map<String, Object> filter,
+      Map<String, Object> projection,
       Map<String, Object> sort,
       Map<String, Object> options) {
     return sender.postFind(findClause(filter, projection, sort, options));

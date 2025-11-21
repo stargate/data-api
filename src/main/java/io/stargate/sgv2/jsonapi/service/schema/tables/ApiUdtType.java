@@ -10,6 +10,7 @@ import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.driver.internal.core.type.UserDefinedTypeBuilder;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -89,6 +90,33 @@ public class ApiUdtType extends ApiUdtShallowType {
               udtName(),
               allFields.getSchemaDescription(schemaDescSource),
               ApiSupportDesc.from(this));
+      default -> throw schemaDescSource.unsupportedException("ApiUdtType.getSchemaDescription()");
+    };
+  }
+
+  /**
+   * When projecting a UDT, we may only want a subset of the fields in the UDT schema description.
+   * Note, this is only used when projecting UDT in a table. Other schema description path still
+   * goes through {@link #getSchemaDescription(SchemaDescSource)}
+   */
+  public ColumnDesc projectedSchemaDescription(
+      SchemaDescSource schemaDescSource, Set<CqlIdentifier> selectedFields) {
+    return switch (schemaDescSource) {
+      case DDL_USAGE -> // just a reference to the UDT
+          new UdtRefColumnDesc(schemaDescSource, udtName(), ApiSupportDesc.from(this));
+      case DML_USAGE -> // full inline schema desc
+      {
+        var allFieldsDesc = allFields.getSchemaDescription(schemaDescSource);
+        // exclude mapEntry that is not in selectedFields
+        var selectedFieldsDesc = new ColumnsDescContainer();
+        for (var entry : allFieldsDesc.entrySet()) {
+          if (selectedFields.contains(CqlIdentifier.fromInternal(entry.getKey()))) {
+            selectedFieldsDesc.put(entry.getKey(), entry.getValue());
+          }
+        }
+        yield new UdtColumnDesc(
+            schemaDescSource, udtName(), selectedFieldsDesc, ApiSupportDesc.from(this));
+      }
       default -> throw schemaDescSource.unsupportedException("ApiUdtType.getSchemaDescription()");
     };
   }

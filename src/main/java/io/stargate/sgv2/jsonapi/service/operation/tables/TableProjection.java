@@ -22,9 +22,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
+import io.stargate.sgv2.jsonapi.service.projection.TableProjectionSelector;
+import io.stargate.sgv2.jsonapi.service.projection.TableProjectionSelectors;
+import io.stargate.sgv2.jsonapi.service.projection.TableUDTProjectionSelector;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
 import java.util.*;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,31 +42,37 @@ import org.slf4j.LoggerFactory;
 public class TableProjection implements SelectCQLClause, OperationProjection {
   private static final Logger LOGGER = LoggerFactory.getLogger(TableProjection.class);
 
-  /**
-   * Match if a column does not support reads so we can find unsupported columns from the
-   * projection.
-   */
-  private static final Predicate<ApiSupportDef> MATCH_READ_UNSUPPORTED =
-      ApiSupportDef.Matcher.NO_MATCHES.withRead(false);
-
   private ObjectMapper objectMapper;
   private TableSchemaObject table;
-  private List<ColumnMetadata> columns;
-  private ColumnsDescContainer columnsDesc;
+
+  /**
+   * The columns selected at the top level, based on the projection definition. This is a subset of
+   * all table columns.
+   */
+  private List<ColumnMetadata> selectedColumns;
+
+  /**
+   * Selectors for precise selection of scalar column and UDT subfields. Since we get the top level
+   * values from selected {@link #selectedColumns}, we need to use the selectors to do 1. precise
+   * projection, column level or selected UDT subfields level. 2. precise schema description, column
+   * level or selected UDT subfields level.
+   */
+  private TableProjectionSelectors preciseSelectors;
+
   private TableSimilarityFunction tableSimilarityFunction;
 
   private TableProjection(
       ObjectMapper objectMapper,
       TableSchemaObject table,
-      List<ColumnMetadata> columns,
-      ColumnsDescContainer columnsDesc,
-      TableSimilarityFunction tableSimilarityFunction) {
+      List<ColumnMetadata> selectedColumns,
+      TableSimilarityFunction tableSimilarityFunction,
+      TableProjectionSelectors preciseSelectors) {
 
     this.objectMapper = objectMapper;
     this.table = table;
-    this.columns = columns;
-    this.columnsDesc = columnsDesc;
+    this.selectedColumns = selectedColumns;
     this.tableSimilarityFunction = tableSimilarityFunction;
+    this.preciseSelectors = preciseSelectors;
   }
 
   /**
@@ -75,18 +83,23 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
       CommandContext<TableSchemaObject> ctx, ObjectMapper objectMapper, CmdT command) {
 
     TableSchemaObject table = ctx.schemaObject();
+
+    // Build projectionSelectors first
+    var projectionSelectors =
+        TableProjectionSelectors.from(command.tableProjectionDefinition(), table);
+
+    // Get column metadata map
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
-    // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
     table
         .tableMetadata()
         .getColumns()
         .forEach((id, column) -> columnsByName.put(id.asInternal(), column));
 
-    List<ColumnMetadata> columns =
-        command.tableProjectionDefinition().extractSelectedColumns(columnsByName);
+    // Then compute selected topLevel selectedColumns based on inclusion/exclusion mode
+    List<ColumnMetadata> selectedColumns = projectionSelectors.toCqlColumns();
 
-    // TODO: A table can't be with empty columns. Think a redundant check.
-    if (columns.isEmpty()) {
+    // TODO: A table can't be with empty selectedColumns. Think a redundant check.
+    if (selectedColumns.isEmpty()) {
       throw ProjectionException.Code.UNKNOWN_TABLE_COLUMNS.get(
           errVars(
               table,
@@ -98,37 +111,21 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
               }));
     }
 
-    // result set has ColumnDefinitions not ColumnMetadata kind of weird
+    TableProjection projection =
+        new TableProjection(
+            objectMapper,
+            table,
+            selectedColumns,
+            TableSimilarityFunction.from(ctx, command),
+            projectionSelectors);
 
-    var readApiColumns =
-        table
-            .apiTableDef()
-            .allColumns()
-            .filterByIdentifiers(columns.stream().map(ColumnMetadata::getName).toList());
-
-    var unsupportedColumns = readApiColumns.filterBySupportToList(MATCH_READ_UNSUPPORTED);
-    if (!unsupportedColumns.isEmpty()) {
-      throw ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES.get(
-          errVars(
-              table,
-              map -> {
-                map.put("allColumns", errFmtApiColumnDef(table.apiTableDef().allColumns()));
-                map.put("unsupportedColumns", errFmtApiColumnDef(unsupportedColumns));
-              }));
-    }
-
-    return new TableProjection(
-        objectMapper,
-        table,
-        columns,
-        readApiColumns.getSchemaDescription(SchemaDescSource.DML_USAGE),
-        TableSimilarityFunction.from(ctx, command));
+    return projection;
   }
 
   @Override
   public Select apply(OngoingSelection ongoingSelection) {
     Set<CqlIdentifier> readColumns = new LinkedHashSet<>();
-    readColumns.addAll(columns.stream().map(ColumnMetadata::getName).toList());
+    readColumns.addAll(selectedColumns.stream().map(ColumnMetadata::getName).toList());
     Select select = ongoingSelection.columnsIds(readColumns);
 
     // may apply similarity score function
@@ -142,8 +139,8 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
     int skippedNullCount = 0;
 
     ObjectNode result = objectMapper.createObjectNode();
-    for (int i = 0, len = columns.size(); i < len; ++i) {
-      final ColumnMetadata column = columns.get(i);
+    for (int i = 0, len = selectedColumns.size(); i < len; ++i) {
+      final ColumnMetadata column = selectedColumns.get(i);
       final String columnName = column.getName().asInternal();
       JSONCodec codec;
 
@@ -159,23 +156,20 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         // By default, null value will not be returned.
         // https://github.com/stargate/data-api/issues/1636 issue for adding nullOption
         switch (columnValue) {
-          case null -> {
-            skippedNullCount++;
-          }
-            // For set/list/map values, java driver wrap up as empty Collection/Map, Data API only
-            // returns non-sparse data currently.
-          case Collection<?> collection when collection.isEmpty() -> {
-            skippedNullCount++;
-          }
-          case Map<?, ?> map when map.isEmpty() -> {
-            skippedNullCount++;
-          }
+          case null -> skippedNullCount++;
+          case Collection<?> collection when collection.isEmpty() ->
+              // For set/list/map values, java driver wrap up as empty Collection/Map, Data API only
+              // returns non-sparse data currently.
+              skippedNullCount++;
+          case Map<?, ?> map when map.isEmpty() -> skippedNullCount++;
           default -> {
             nonNullCount++;
-            result.put(columnName, codec.toJSON(objectMapper, columnValue));
+            JsonNode projectedValue = projectColumnValue(column, columnValue, codec);
+            if (projectedValue != null) {
+              result.set(columnName, projectedValue);
+            }
           }
         }
-
       } catch (ToJSONCodecException e) {
         throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
             e,
@@ -191,7 +185,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
       LOGGER.debug(
           "projectRow() row build durationMs={}, columns.size={}, nonNullCount={}, skippedNullCount={}",
           durationMs,
-          columns.size(),
+          selectedColumns.size(),
           nonNullCount,
           skippedNullCount);
     }
@@ -209,8 +203,67 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
     return result;
   }
 
+  /**
+   * Projects a column value based on the configured selectors.
+   *
+   * <p>This method handles both simple column values and complex UDT values with subfield
+   * projections.
+   *
+   * @param column the column metadata
+   * @param columnValue the raw column value from the database row
+   * @param rootCodec the JSON codec for converting the root column value
+   * @return the projected JSON value, or null if the column should be excluded entirely
+   */
+  private JsonNode projectColumnValue(
+      ColumnMetadata column, Object columnValue, JSONCodec rootCodec) throws ToJSONCodecException {
+
+    // Find selector that applies to this root column
+    TableProjectionSelector targetSelector =
+        preciseSelectors.getSelectorForColumn(column.getName());
+
+    JsonNode fullProjectionNode = rootCodec.toJSON(objectMapper, columnValue);
+    if (fullProjectionNode == null) return null;
+
+    return targetSelector.projectToJsonNode(fullProjectionNode);
+  }
+
   @Override
   public ColumnsDescContainer getSchemaDescription() {
-    return columnsDesc;
+    // Build projected schema directly from selectors
+    return buildProjectionSchema();
+  }
+
+  /**
+   * Build projection schema directly from selectors. For non-UDT columns, include the whole column
+   * schema. For UDT columns with subfield selections, include only the selected field schema.
+   */
+  private ColumnsDescContainer buildProjectionSchema() {
+
+    ColumnsDescContainer projectedSchemaDesc = new ColumnsDescContainer();
+
+    // Build schema for each selected column based on its selector
+    for (var selector : preciseSelectors.getSelectors().values()) {
+      CqlIdentifier columnIdentifier = selector.getColumnIdentifier();
+
+      if (selector.isProjectOnUDTColumn()) {
+        var udtSelector = (TableUDTProjectionSelector) selector;
+        var udtApiType = (ApiUdtType) udtSelector.getColumnDef().type();
+        projectedSchemaDesc.put(
+            columnIdentifier.asInternal(),
+            udtApiType.projectedSchemaDescription(
+                SchemaDescSource.DML_USAGE, udtSelector.getSelectedUDTFields()));
+      } else {
+        // Non-UDT column - include the whole column schema
+        var columnDesc = selector.getColumnDef().getSchemaDescription(SchemaDescSource.DML_USAGE);
+        if (columnDesc != null) {
+          projectedSchemaDesc.put(selector.getColumnIdentifier(), columnDesc);
+        }
+      }
+    }
+    return projectedSchemaDesc;
+  }
+
+  public List<ColumnMetadata> getSelectedColumns() {
+    return selectedColumns;
   }
 }

@@ -375,6 +375,27 @@ public class DataApiResponseValidator {
     return body("$", not(hasKey("status.projectionSchema." + columnName)));
   }
 
+  // UDT-specific projection schema assertions
+  public DataApiResponseValidator hasProjectionSchemaUdt(String columnName, String udtName) {
+    return body("status.projectionSchema." + columnName + ".type", equalTo("userDefined"))
+        .body("status.projectionSchema." + columnName + ".udtName", equalTo(udtName));
+  }
+
+  public DataApiResponseValidator hasProjectionSchemaUdtField(
+      String columnName, String fieldName, String expectedType) {
+    // Example path: status.projectionSchema.address.definition.fields.city.type == text
+    return body(
+        "status.projectionSchema." + columnName + ".definition.fields." + fieldName + ".type",
+        equalTo(expectedType));
+  }
+
+  public DataApiResponseValidator doesNotHaveProjectionSchemaUdtField(
+      String columnName, String fieldName) {
+    return body(
+        "$",
+        not(hasKey("status.projectionSchema." + columnName + ".definition.fields." + fieldName)));
+  }
+
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
     return body(
         "data.documents[%s]".formatted(position),
