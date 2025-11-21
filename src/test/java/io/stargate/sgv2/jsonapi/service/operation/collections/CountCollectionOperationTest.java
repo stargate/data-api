@@ -15,6 +15,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
@@ -195,8 +197,9 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void error() {
+
       // failures are propagated down
-      RuntimeException failure = new RuntimeException("Test failure message.");
+      RuntimeException dbFailure = new RuntimeException("Test failure message.");
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
@@ -207,14 +210,15 @@ public class CountCollectionOperationTest extends OperationTestBase {
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return Uni.createFrom().failure(failure);
+                return Uni.createFrom().failure(dbFailure);
               });
 
       DBLogicalExpression dbLogicalExpression =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
-      Throwable result =
+
+      var operationError =
           countCollectionOperation
               .execute(requestContext, queryExecutor)
               .subscribe()
@@ -225,8 +229,13 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // assert query execution
       assertThat(callCount.get()).isEqualTo(1);
 
-      // then result
-      assertThat(result).isEqualTo(failure);
+      assertThat(operationError)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              e -> {
+                JsonApiException je = (JsonApiException) e;
+                assertThat(je.getErrorCode()).isEqualTo(ErrorCodeV1.COUNT_READ_FAILED);
+              });
     }
   }
 
@@ -385,8 +394,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
     @Test
     public void error() {
 
-      // failures are propagated down
-      RuntimeException failure = new RuntimeException("Test failure message.");
+      // Failure from reading from the DB
+      RuntimeException dbFailure = new RuntimeException("Test failure message.");
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
@@ -397,7 +406,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return Uni.createFrom().failure(failure);
+                return Uni.createFrom().failure(dbFailure);
               });
 
       DBLogicalExpression dbLogicalExpression =
@@ -406,7 +415,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
 
-      Throwable result =
+      var operationError =
           countCollectionOperation
               .execute(requestContext, queryExecutor)
               .subscribe()
@@ -422,7 +431,14 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // but that would require that the error from the driver propergated out, the Operation has
       // code to remap
       // this error, so not sure how this ever worked.
-      assertThat(result).isEqualTo(failure);
+      assertThat(operationError)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              e -> {
+                JsonApiException je = (JsonApiException) e;
+                assertThat(je.getErrorCode()).isEqualTo(ErrorCodeV1.COUNT_READ_FAILED);
+              });
+
     }
   }
 }

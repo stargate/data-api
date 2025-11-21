@@ -403,10 +403,13 @@ public interface CollectionReadOperation extends CollectionOperation {
     return queryExecutor
         .executeCount(dataApiRequestInfo, simpleStatement)
         .onItemOrFailure()
-        .transform(
+        .transformToUni(
             (rs, failure) -> {
+              if (failure != null) {
+                return Uni.createFrom().failure(ErrorCodeV1.COUNT_READ_FAILED.toApiException());
+              }
               getCount(rs, failure, counter);
-              return new CountResponse(counter.get());
+              return Uni.createFrom().item(new CountResponse(counter.get()));
             });
   }
 
@@ -425,24 +428,27 @@ public interface CollectionReadOperation extends CollectionOperation {
 
     return queryExecutor
         .executeCount(dataApiRequestInfo, simpleStatement)
-        .onItem()
-        .transform(
-            rSet -> {
+        .onItemOrFailure()
+        .transformToUni(
+            (rSet, failure) -> {
+              if (failure != null) {
+                return Uni.createFrom().failure(ErrorCodeV1.COUNT_READ_FAILED.toApiException());
+              }
               Row row = rSet.one(); // For count there will be only one row
               long count = row.getLong(0); // Count value will be the first column value
-              return new CountResponse(count);
+              return Uni.createFrom().item(new CountResponse(count));
             });
   }
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
-    if (error != null) {
-      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException();
-    } else {
+//    if (error != null) {
+//      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException();
+//    } else {
       counter.addAndGet(rs.remaining());
       if (rs.hasMorePages()) {
         rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
       }
-    }
+//    }
   }
 
   /**
