@@ -186,7 +186,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.getTenantId().orElse(""),
+        requestContext.getTenantId().orElse(DEFAULT_TENANT),
         requestContext.getCassandraToken().orElse(""),
         requestContext.getUserAgent().orElse(""));
   }
@@ -203,7 +203,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.tenantId().orElse(""),
+        requestContext.tenantId().orElse(DEFAULT_TENANT),
         requestContext.authToken().orElse(""),
         requestContext.userAgent().orElse(""));
   }
