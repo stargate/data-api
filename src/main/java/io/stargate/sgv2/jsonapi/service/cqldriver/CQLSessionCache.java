@@ -43,14 +43,14 @@ import org.slf4j.LoggerFactory;
  *
  * <p><b>NOTE:</b> There is no method to get the size of the cache because it is not a reliable
  * measure, it's only an estimate. We can assume the size feature works. For testing use {@link
- * #peekSession(Tenant, String, UserAgent)}
+ * #peekSession(String, String, String)}
  */
 public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCacheKey, CqlSession> {
   private static final Logger LOGGER = LoggerFactory.getLogger(CQLSessionCache.class);
 
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
-   * request amornt; 17 Nov 2025 - will be removed soon
+   * request amorton; 17 Nov 2025 - will be removed soon, will refactor so we have a Tenant objext
    */
   public static final String DEFAULT_TENANT = "default_tenant";
 
@@ -90,8 +90,11 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
    *
    * <p>Use this ctor for testing only.
    *
-   * @param cacheTTL The time-to-live (TTL) duration for cache entries.
    * @param cacheMaxSize The maximum size of the cache.
+   * @param cacheTTL The time-to-live (TTL) duration for the session cache for non SLA users.
+   * @param slaUserAgent The user agent string used to identify SLA users, when present the
+   *     slaUserTTL will be used if the session is created for that SLA user agent.
+   * @param slaUserTTL The time-to-live (TTL) duration for SLA users, used if a s
    * @param credentialsFactory A factory for creating {@link CqlCredentials} based on authentication
    *     tokens.
    * @param sessionFactory A factory for creating new {@link CqlSession} instances when needed.
@@ -134,6 +137,10 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
         deactivatedTenantConsumer.size());
   }
 
+  /**
+   * Converts the list of {@link DeactivatedTenantListener} into {@link DynamicTTLCacheListener}
+   * used by the superclass, AND sets up a listener to close sessions when removed from the cache.
+   */
   private static List<DynamicTTLCacheListener<SessionCacheKey, CqlSession>> buildCacheListeners(
       List<DeactivatedTenantListener> consumers) {
 
@@ -171,7 +178,8 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
    * Gets or creates a {@link CqlSession} for the provided request context
    *
    * @param requestContext {@link RequestContext} to get the session for.
-   * @return {@link CqlSession} for this tenant and credentials.
+   * @return A Uni with the {@link CqlSession} for this tenant and credentials, the session maybe
+   *     newly created or reused from the cache.
    */
   public Uni<CqlSession> getSession(RequestContext requestContext) {
     Objects.requireNonNull(requestContext, "requestContext must not be null");
@@ -183,6 +191,13 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
         requestContext.getUserAgent().orElse(""));
   }
 
+  /**
+   * Gets or creates a {@link CqlSession} for the provided DB Request Context
+   *
+   * @param requestContext {@link CommandQueryExecutor.DBRequestContext} to get the session for.
+   * @return A Uni with the {@link CqlSession} for this tenant and credentials, the session maybe
+   *     newly created or reused from the cache.
+   */
   public Uni<CqlSession> getSession(CommandQueryExecutor.DBRequestContext requestContext) {
     Objects.requireNonNull(requestContext, "requestContext must not be null");
 
@@ -196,15 +211,12 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
   /**
    * Retrieves or creates a {@link CqlSession} for the specified tenant and authentication token.
    *
-   * <p>If the database type is OFFLINE_WRITER, this method will attempt to retrieve the session
-   * from the cache without creating a new session if it is not present. For other database types, a
-   * new session will be created if it is not already cached.
-   *
    * @param tenant the identifier for the tenant
    * @param authToken the authentication token for accessing the session
    * @param userAgent Nullable user agent, if matching the configured SLA checker user agent then
    *     the session will use the TTL for the SLA user.
-   * @return a {@link CqlSession} associated with the given tenant and authToken
+   * @return A Uni with the {@link CqlSession} for this tenant and credentials, the session maybe
+   *     newly created or reused from the cache.
    */
   public Uni<CqlSession> getSession(String tenant, String authToken, String userAgent) {
     return get(createCacheKey(tenant, authToken, userAgent));
@@ -313,7 +325,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
   /**
    * Listens for changes from the underlying dynamic TTL cache, and does things we need as a CQL
-   * Session Cache
+   * Session Cache such as close the session when removed from the cache.
    */
   static class SessionCacheListener
       implements DynamicTTLCacheListener<SessionCacheKey, CqlSession> {

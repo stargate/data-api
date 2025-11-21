@@ -138,6 +138,12 @@ public class CommandQueryExecutor {
     return executeAndWrap(statement);
   }
 
+  /**
+   * Get the Driver metadata using from the session.
+   *
+   * @param forceRefresh If true, forces an async refresh of the schema metadata from the cluster
+   * @return Uni of the {@link Metadata}
+   */
   public Uni<Metadata> getMetadata(boolean forceRefresh) {
 
     if (forceRefresh) {
@@ -149,10 +155,11 @@ public class CommandQueryExecutor {
   }
 
   /**
-   * Get the metadata for the given keyspace using session.
+   * Get the Keyspace Metadata for the given keyspace using session.
    *
    * @param keyspace The keyspace name.
-   * @return The keyspace metadata if it exists.
+   * @param forceRefresh If true, forces an async refresh of the schema metadata from the cluster
+   * @return The {@link KeyspaceMetadata} if it exists.
    */
   public Uni<Optional<KeyspaceMetadata>> getKeyspaceMetadata(
       CqlIdentifier keyspace, boolean forceRefresh) {
@@ -167,6 +174,17 @@ public class CommandQueryExecutor {
     return executeAndWrap(statement);
   }
 
+  /**
+   * Gets the {@link CqlSession} this executor is using.
+   *
+   * <p>Gets by pulling from the session cache, which may create or reuse a session so this is an
+   * async operation.
+   *
+   * <p>This should stay private, because the ides of this class is to wrap all the execution of CQL
+   * statements.
+   *
+   * @return Uni of the {@link CqlSession}
+   */
   private Uni<CqlSession> session() {
     return cqlSessionCache.getSession(dbRequestContext);
   }
