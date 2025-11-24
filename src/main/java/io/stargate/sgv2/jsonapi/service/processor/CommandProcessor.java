@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
+import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -141,6 +142,9 @@ public class CommandProcessor {
 
     return switch (throwable) {
       case APIException apiException -> {
+        // Check if session should be evicted before building the error response
+        maybeEvictSession(commandContext, apiException);
+
         // new error object V2
         var errorBuilder = new APIExceptionCommandErrorBuilder(errorObjectV2);
         yield () ->
@@ -164,6 +168,22 @@ public class CommandProcessor {
         yield new ThrowableCommandResultSupplier(throwable);
       }
     };
+  }
+
+  /**
+   * Evicts the CQL session when the {@link APIException} indicates the current session is
+   * unreliable (for example, when all cluster nodes have restarted).
+   *
+   * @param commandContext The command context.
+   * @param apiException The API exception that may contain exception flags.
+   * @param <SchemaT> The schema object type.
+   */
+  private <SchemaT extends SchemaObject> void maybeEvictSession(
+      CommandContext<SchemaT> commandContext, APIException apiException) {
+    // exceptionFlags is guaranteed to be non-null by ErrorInstance and APIException constructors
+    if (apiException.exceptionFlags.contains(ExceptionFlags.UNRELIABLE_DB_SESSION)) {
+      commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
+    }
   }
 
   /**
