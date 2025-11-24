@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,9 +176,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     // https://stackoverflow.com/questions/67994799/how-do-i-make-invalidate-an-entry-and-return-its-value-from-a-caffeine-cache
     boolean entryFound = cache.asMap().remove(key) != null;
     LOGGER.warn(
-        "Explicitly evicted session from cache. Cache Key: {} (entry found: {})",
-        key,
-        entryFound);
+        "Explicitly evicted session from cache. Cache Key: {} (entry found: {})", key, entryFound);
     return entryFound;
   }
 
