@@ -441,14 +441,12 @@ public interface CollectionReadOperation extends CollectionOperation {
   }
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
-//    if (error != null) {
-//      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException();
-//    } else {
+      // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to complete before returning
+      // and it cannot handle a failure on fetchNextPage - will fix after this PR
       counter.addAndGet(rs.remaining());
       if (rs.hasMorePages()) {
         rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
       }
-//    }
   }
 
   /**
