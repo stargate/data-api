@@ -438,7 +438,6 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 JsonApiException je = (JsonApiException) e;
                 assertThat(je.getErrorCode()).isEqualTo(ErrorCodeV1.COUNT_READ_FAILED);
               });
-
     }
   }
 }
