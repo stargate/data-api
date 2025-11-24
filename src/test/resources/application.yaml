@@ -19,3 +19,5 @@ quarkus:
       # production log level for this categoy is DEBUG, way too noisy for tests
       'io.stargate':
         level: WARN
+      'io.stargate.sgv2.jsonapi.service.cqldriver':
+        level: INFO

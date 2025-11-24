@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import java.util.EnumSet;
 import java.util.Optional;
 
 /**
@@ -18,7 +19,14 @@ public class MissingCtorException extends TestRequestException {
   public MissingCtorException() {
     super(
         new ErrorInstance(
-            null, ErrorFamily.REQUEST, SCOPE, "FAKE", "title", "body", Optional.empty()));
+            null,
+            ErrorFamily.REQUEST,
+            SCOPE,
+            "FAKE",
+            "title",
+            "body",
+            Optional.empty(),
+            EnumSet.noneOf(ExceptionFlags.class)));
   }
 
   // This is the CTOR that is missing, kept commented out to show what is missing

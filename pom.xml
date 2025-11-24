@@ -8,8 +8,9 @@
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <!-- 14-oct-2025 , aaron: Updated to latest Quarkus for security fixes in netty -->
-    <quarkus.platform.version>3.28.3</quarkus.platform.version>
+    <!-- 14-oct-2025, aaron: Updated to latest Quarkus for security fixes in netty -->
+    <!-- 10-nov-2025, tatu: Updated to latest Quarkus -->
+    <quarkus.platform.version>3.29.2</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <!-- 17-Oct-2025, tatu: Although quarkus-bom provides for Mockito version,
@@ -17,7 +18,10 @@
        But we need version for "maven-surefire-plugin" config! So we have no choice
        but duplicate this, unfortunately & need to keep things in sync manually
       -->
-    <mockito.version>5.19.0</mockito.version>
+    <!-- 10-Nov-2025, tatu: Looks like this is quite sensitive, must match what
+       Quarkus wants: ideally we should drop it but for now, sync
+      -->
+    <mockito.version>5.20.0</mockito.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Integration test props -->
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
@@ -28,7 +32,7 @@
     <!-- When updating please change defaults in the DseTestResource class -->
     <!-- 14-Mar-2025, tatu: default to DSE-6.9 (was "dse-next") -->
     <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-    <cassandra.version>6.9.14</cassandra.version>
+    <cassandra.version>6.9.15</cassandra.version>
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
     <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
@@ -193,6 +197,13 @@
           <groupId>org.hdrhistogram</groupId>
           <artifactId>HdrHistogram</artifactId>
         </exclusion>
+        <!-- 04-Nov-2025, tatu: [data-api#2241] SpotBugs annotations to be
+             excluded from Docker image so need to:
+          -->
+        <exclusion>
+          <groupId>com.github.spotbugs</groupId>
+          <artifactId>spotbugs-annotations</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -235,6 +246,12 @@
       <groupId>org.mongodb</groupId>
       <artifactId>bson</artifactId>
       <version>5.0.0</version>
+    </dependency>
+    <!-- Provided annotations -->
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.0</version>
     </dependency>
     <!-- Test dependencies -->
     <dependency>
@@ -292,6 +309,12 @@
       <artifactId>wiremock</artifactId>
       <scope>test</scope>
       <version>${wiremock.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>uk.org.webcompere</groupId>
+      <artifactId>system-stubs-jupiter</artifactId>
+      <version>2.1.8</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
@@ -430,7 +453,7 @@
       </activation>
       <properties>
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>6.9.14</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>6.9.15</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>

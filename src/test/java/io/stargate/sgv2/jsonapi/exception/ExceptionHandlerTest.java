@@ -165,6 +165,9 @@ public class ExceptionHandlerTest {
               var apiError = (APIException) e;
               assertThat(apiError.code)
                   .isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+              assertThat(apiError.exceptionFlags)
+                  .as("Default error should have empty exception flags")
+                  .isEmpty();
             });
   }
 }

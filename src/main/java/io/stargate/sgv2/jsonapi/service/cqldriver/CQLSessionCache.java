@@ -223,7 +223,41 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
   }
 
   /**
-   * For testing, peek into the cache to see if a session is present for the given tenant,
+   * Evicts a session from the cache based on the provided {@link RequestContext}.
+   *
+   * @see #evictSession(String, String, String) for details on eviction.
+   * @param requestContext The request context containing tenant, auth, and user agent info.
+   * @return {@code true} if a session was evicted, {@code false} otherwise.
+   */
+  public boolean evictSession(RequestContext requestContext) {
+    Objects.requireNonNull(requestContext, "requestContext must not be null for eviction");
+
+    // Validation happens when creating the credentials and session key
+    return evictSession(
+        requestContext.getTenantId().orElse(""),
+        requestContext.getCassandraToken().orElse(""),
+        requestContext.getUserAgent().orElse(null));
+  }
+
+  /**
+   * Evicts a session from the cache programmatically. This is intended for use in scenarios where a
+   * session is known to be in an unrecoverable state (e.g., after all cluster nodes restart) and
+   * needs to be forcibly removed to allow for a fresh connection on the next request.
+   *
+   * @param tenantId the identifier for the tenant
+   * @param authToken the authentication token for accessing the session
+   * @param userAgent Nullable user agent
+   * @return {@code true} if a session was evicted, {@code false} otherwise.
+   */
+  public boolean evictSession(String tenantId, String authToken, String userAgent) {
+
+    var cacheKey = createCacheKey(tenantId, authToken, userAgent);
+
+    return evict(cacheKey);
+  }
+
+  /**
+   * For testing, peek into the cache to see if a session is present for the given tenantId,
    * authToken, and userAgent.
    */
   @VisibleForTesting

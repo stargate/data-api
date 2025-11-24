@@ -170,12 +170,17 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     return Optional.ofNullable(future.join()).map(ValueHolder::value);
   }
 
-  protected void evict(KeyT key) {
-    cache.synchronous().invalidate(key);
-  }
-
-  protected void evictIf(Predicate<KeyT> predicate) {
-    cache.synchronous().asMap().keySet().removeIf(predicate);
+  protected boolean evict(KeyT key) {
+    // Invalidate the key. This will trigger the onKeyRemoved listener,
+    // which will close the CqlSession and run other cleanup.
+    // Use .asMap().remove() as the author suggested:
+    // https://stackoverflow.com/questions/67994799/how-do-i-make-invalidate-an-entry-and-return-its-value-from-a-caffeine-cache
+    boolean entryFound = cache.asMap().remove(key) != null;
+    LOGGER.warn(
+        "Explicitly evicted session from cache. Cache Key: {} (entry found: {})",
+        key,
+        entryFound);
+    return entryFound;
   }
 
   /**
