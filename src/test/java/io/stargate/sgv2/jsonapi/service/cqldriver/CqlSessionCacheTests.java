@@ -351,11 +351,7 @@ public class CqlSessionCacheTests {
         .isNotNull();
 
     var cachePutMetric =
-        fixture
-            .meterRegistry
-            .find("cache.gets")
-            .tag("cache", CQL_SESSION_CACHE_NAME_TAG)
-            .counter();
+        fixture.meterRegistry.find("cache.gets").tag("cache", CQL_SESSION_CACHE_NAME_TAG).counter();
     assertThat(cachePutMetric)
         .as("cache.gets metric added to registry with expected name")
         .isNotNull();
@@ -540,7 +536,8 @@ public class CqlSessionCacheTests {
         .isPresent();
 
     // Evict the session
-    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, UNRELIABLE_DB_SESSION);
+    boolean evicted =
+        fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, UNRELIABLE_DB_SESSION);
 
     // Verify eviction was successful
     assertThat(evicted).as("Eviction should return true when session exists").isTrue();
@@ -622,7 +619,8 @@ public class CqlSessionCacheTests {
         .isNotPresent();
 
     // Evict a non-existent session - should not throw
-    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, UNRELIABLE_DB_SESSION);
+    boolean evicted =
+        fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, UNRELIABLE_DB_SESSION);
 
     // Verify eviction returned false
     assertThat(evicted).as("Eviction returns false when no entry is removed").isFalse();
