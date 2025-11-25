@@ -280,9 +280,7 @@ public class CQLSessionCache {
      * It indicates that the DB session used is no longer reliable and should be terminated (e.g.
      * after all cluster nodes restart), so that a fresh connection is created on the next request.
      */
-    UNRELIABLE_DB_SESSION,
-
-    TEST
+    UNRELIABLE_DB_SESSION
   }
 
   /**
