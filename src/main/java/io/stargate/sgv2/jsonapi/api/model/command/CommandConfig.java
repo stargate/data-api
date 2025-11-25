@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
+import io.stargate.sgv2.jsonapi.config.constants.OfflineModeSupport;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +34,7 @@ public class CommandConfig {
   private final ConcurrentMap<Class<?>, Object> configCache = new ConcurrentHashMap<>();
 
   // use getConfigProvider()
-  private SmallRyeConfig _config_provider = null;
+  private SmallRyeConfig _configProvider = null;
 
   /**
    * Call to preload and log the config classes.
@@ -77,17 +77,17 @@ public class CommandConfig {
     // aaron - copied from JsonAPIException , not sure why we need to do this
     // TODO - cleanup how we get config, this seem unnecessary complicated
 
-    if (_config_provider == null) {
+    if (_configProvider == null) {
       synchronized (this) {
-        if (_config_provider == null) {
-          _config_provider =
-              ApiConstants.isOffline()
+        if (_configProvider == null) {
+          _configProvider =
+              OfflineModeSupport.isOffline()
                   ? new SmallRyeConfigBuilder().build()
                   : ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         }
       }
     }
-    return _config_provider;
+    return _configProvider;
   }
 
   /**

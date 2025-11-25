@@ -7,7 +7,7 @@ package io.stargate.sgv2.jsonapi.config.constants;
  * from <code> DebugModeConfig</code> via the SmallRye config library in <code>JsonApiException
  * </code> class. So, this property itself can not be loaded from SmallRye config.
  */
-public class ApiConstants {
+public class OfflineModeSupport {
   public static final String OFFLINE_WRITER_MODE_PROPERTY = "stargate.offline.sstablewriter";
 
   public static boolean isOffline() {
