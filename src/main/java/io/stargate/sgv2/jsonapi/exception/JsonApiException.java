@@ -146,7 +146,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   public CommandResult.Error getCommandResultError(String message, Response.Status status) {
     Map<String, Object> fieldsForMetricsTag =
         Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    final boolean debugEnabled = DebugConfigAccess.isDebugEnabled();
     Map<String, Object> fields =
         new HashMap<>(
             Map.of(
@@ -161,7 +160,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
                 "title",
                 title));
 
-    if (debugEnabled) {
+    if (DebugConfigAccess.isDebugEnabled()) {
       fields.put("exceptionClass", this.getClass().getSimpleName());
     }
 
