@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.EvictionSessionCause.UNRELIABLE_DB_SESSION;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -182,7 +184,9 @@ public class CommandProcessor {
       CommandContext<SchemaT> commandContext, APIException apiException) {
     // exceptionFlags is guaranteed to be non-null by ErrorInstance and APIException constructors
     if (apiException.exceptionFlags.contains(ExceptionFlags.UNRELIABLE_DB_SESSION)) {
-      commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
+      commandContext
+          .cqlSessionCache()
+          .evictSession(commandContext.requestContext(), UNRELIABLE_DB_SESSION);
     }
   }
 

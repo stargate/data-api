@@ -538,7 +538,7 @@ public class CqlSessionCacheTests {
         .isPresent();
 
     // Evict the session
-    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null);
+    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, null);
 
     // Verify eviction was successful
     assertThat(evicted).as("Eviction should return true when session exists").isTrue();
@@ -582,7 +582,7 @@ public class CqlSessionCacheTests {
         .isPresent();
 
     // Evict the session using RequestContext
-    boolean evicted = fixture.cache.evictSession(requestContext);
+    boolean evicted = fixture.cache.evictSession(requestContext, null);
 
     // Verify eviction was successful
     assertThat(evicted).as("Eviction should return true when session exists").isTrue();
@@ -620,7 +620,7 @@ public class CqlSessionCacheTests {
         .isNotPresent();
 
     // Evict a non-existent session - should not throw
-    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null);
+    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, null);
 
     // Verify eviction returned false
     assertThat(evicted).as("Eviction returns false when no entry is removed").isFalse();
