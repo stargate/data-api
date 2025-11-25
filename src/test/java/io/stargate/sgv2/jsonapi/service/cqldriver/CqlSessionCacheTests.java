@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.CQL_SESSION_CACHE_NAME_TAG;
+import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.EvictSessionCause.UNRELIABLE_DB_SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
@@ -343,7 +345,7 @@ public class CqlSessionCacheTests {
     fixture.cache.cleanUp();
 
     var cacheSizeMetric =
-        fixture.meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
+        fixture.meterRegistry.find("cache.size").tag("cache", CQL_SESSION_CACHE_NAME_TAG).gauge();
     assertThat(cacheSizeMetric)
         .as("cache.size metric added to registry with expected name")
         .isNotNull();
@@ -351,11 +353,11 @@ public class CqlSessionCacheTests {
     var cachePutMetric =
         fixture
             .meterRegistry
-            .find("cache.puts")
-            .tag("cache", "cql_sessions_cache")
-            .functionCounter();
+            .find("cache.gets")
+            .tag("cache", CQL_SESSION_CACHE_NAME_TAG)
+            .counter();
     assertThat(cachePutMetric)
-        .as("cache.puts metric added to registry with expected name")
+        .as("cache.gets metric added to registry with expected name")
         .isNotNull();
   }
 
@@ -538,7 +540,7 @@ public class CqlSessionCacheTests {
         .isPresent();
 
     // Evict the session
-    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, null);
+    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, UNRELIABLE_DB_SESSION);
 
     // Verify eviction was successful
     assertThat(evicted).as("Eviction should return true when session exists").isTrue();
@@ -582,7 +584,7 @@ public class CqlSessionCacheTests {
         .isPresent();
 
     // Evict the session using RequestContext
-    boolean evicted = fixture.cache.evictSession(requestContext, null);
+    boolean evicted = fixture.cache.evictSession(requestContext, UNRELIABLE_DB_SESSION);
 
     // Verify eviction was successful
     assertThat(evicted).as("Eviction should return true when session exists").isTrue();
@@ -620,7 +622,7 @@ public class CqlSessionCacheTests {
         .isNotPresent();
 
     // Evict a non-existent session - should not throw
-    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, null);
+    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, UNRELIABLE_DB_SESSION);
 
     // Verify eviction returned false
     assertThat(evicted).as("Eviction returns false when no entry is removed").isFalse();

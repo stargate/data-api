@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.CQL_SESSION_CACHE_NAME_TAG;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
@@ -254,7 +255,7 @@ public class CQLSessionCache {
     meterRegistry
         .summary(
             CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS,
-            "CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG",
+            CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG,
             cause.name())
         .record(1);
 
