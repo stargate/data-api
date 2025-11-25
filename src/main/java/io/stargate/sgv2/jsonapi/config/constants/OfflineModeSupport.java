@@ -1,11 +1,9 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
 /**
- * This configuration is maintained outside the Quarkus smallrye config system.
- *
- * <p>This is because, the `isOffline` function here is used to decide on how to load the properties
- * from <code> DebugModeConfig</code> via the SmallRye config library in <code>JsonApiException
- * </code> class. So, this property itself can not be loaded from SmallRye config.
+ * This class is used for determining "offline-mode" use of Data API (as a library) it does not use
+ * the Quarkus smallrye config system for detection, but is used by {@code CommandConfig} to
+ * determine need for alternate loading of Quarkus Smallrye configs.
  */
 public class OfflineModeSupport {
   public static final String OFFLINE_WRITER_MODE_PROPERTY = "stargate.offline.sstablewriter";
