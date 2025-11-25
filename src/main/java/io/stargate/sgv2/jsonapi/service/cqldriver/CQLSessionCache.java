@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.CQL_SESSION_CACHE_NAME_TAG;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -51,8 +53,6 @@ public class CQLSessionCache {
    * request
    */
   public static final String DEFAULT_TENANT = "default_tenant";
-
-  private static final String CACHE_NAME = "cql_sessions_cache";
 
   private final DatabaseType databaseType;
   private final Duration cacheTTL;
@@ -154,7 +154,8 @@ public class CQLSessionCache {
         slaUserTTL,
         deactivatedTenantConsumers.size());
 
-    CaffeineStatsCounter caffeineStatsCounter = new CaffeineStatsCounter(meterRegistry, CACHE_NAME);
+    CaffeineStatsCounter caffeineStatsCounter =
+        new CaffeineStatsCounter(meterRegistry, CQL_SESSION_CACHE_NAME_TAG);
 
     var builder =
         Caffeine.newBuilder()
@@ -222,11 +223,11 @@ public class CQLSessionCache {
   /**
    * Evicts a session from the cache based on the provided {@link RequestContext}.
    *
-   * @see #evictSession(String, String, String, EvictionSessionCause) for details on eviction.
+   * @see #evictSession(String, String, String, EvictSessionCause) for details on eviction.
    * @param requestContext The request context containing tenant, auth, and user agent info.
    * @return {@code true} if a session was evicted, {@code false} otherwise.
    */
-  public boolean evictSession(RequestContext requestContext, EvictionSessionCause cause) {
+  public boolean evictSession(RequestContext requestContext, EvictSessionCause cause) {
     Objects.requireNonNull(requestContext, "requestContext must not be null for eviction");
 
     // Validation happens when creating the credentials and session key
@@ -248,9 +249,14 @@ public class CQLSessionCache {
    * @return {@code true} if a session was evicted, {@code false} otherwise.
    */
   public boolean evictSession(
-      String tenantId, String authToken, String userAgent, EvictionSessionCause cause) {
+      String tenantId, String authToken, String userAgent, EvictSessionCause cause) {
 
-    meterRegistry.summary(CACHE_NAME, "explicitly.evict.session.cause", cause.name()).record(1);
+    meterRegistry
+        .summary(
+            CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS,
+            "CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG",
+            cause.name())
+        .record(1);
 
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
 
@@ -266,7 +272,7 @@ public class CQLSessionCache {
     return entryFound;
   }
 
-  public enum EvictionSessionCause {
+  public enum EvictSessionCause {
     /**
      * It indicates that the DB session used is no longer reliable and should be terminated (e.g.
      * after all cluster nodes restart), so that a fresh connection is created on the next request.

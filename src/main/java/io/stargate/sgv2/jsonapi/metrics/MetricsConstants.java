@@ -13,6 +13,8 @@ public interface MetricsConstants {
     String SESSION_TAG = "session";
     String TENANT_TAG = "tenant";
     String TABLE_TAG = "table";
+    String CQL_SESSION_CACHE_NAME_TAG = "cql.session.cache";
+    String CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG = "eviction.cause";
   }
 
   /** Defines metric names that used in the DataAPI */
@@ -23,5 +25,6 @@ public interface MetricsConstants {
     String RERANK_TENANT_CALL_DURATION_METRIC = "rerank.tenant.call.duration";
     String RERANK_TENANT_PASSAGE_COUNT_METRIC = "rerank.tenant.passage.count";
     String VECTORIZE_CALL_DURATION_METRIC = "vectorize.call.duration";
+    String CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS = "cql.session.cache.explicit.eviction";
   }
 }

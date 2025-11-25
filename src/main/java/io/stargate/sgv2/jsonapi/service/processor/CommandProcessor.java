@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.EvictionSessionCause.UNRELIABLE_DB_SESSION;
+import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.EvictSessionCause.UNRELIABLE_DB_SESSION;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
