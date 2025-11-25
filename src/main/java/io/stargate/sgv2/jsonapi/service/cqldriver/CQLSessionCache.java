@@ -177,6 +177,8 @@ public class CQLSessionCache {
 
     this.sessionCache = builder.build(this::onLoadSession);
 
+    // CaffeineStatsCounter doesn't instrument the cache's size by default. We need to register
+    // after the cache is built.
     caffeineStatsCounter.registerSizeMetric(sessionCache);
   }
 
