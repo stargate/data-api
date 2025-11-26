@@ -1,8 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
-
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -15,10 +12,12 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.EmptyAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.Task;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -57,11 +56,7 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
       CommandContext<SchemaT> commandContext, CommandQueryExecutor queryExecutor) {
 
     return new MetadataAsyncResultSetSupplier(
-        commandContext,
-        this,
-        null,
-        queryExecutor,
-        CqlIdentifier.fromInternal(schemaObject.name().keyspace()));
+        commandContext, this, null, queryExecutor, schemaObject.name().keyspace());
   }
 
   @Override
@@ -75,7 +70,7 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
 
     KeyspaceMetadata keyspaceMetadata;
 
-    private final CqlIdentifier keyspaceName;
+    private final String keyspaceName;
     private final CommandQueryExecutor queryExecutor;
 
     MetadataAsyncResultSetSupplier(
@@ -83,18 +78,19 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
         Task<?> task,
         SimpleStatement statement,
         CommandQueryExecutor queryExecutor,
-        CqlIdentifier keyspaceName) {
+        String keyspaceName) {
       super(commandContext, task, statement, null);
       this.queryExecutor = queryExecutor;
       this.keyspaceName = keyspaceName;
     }
 
     @Override
-    protected UniSupplier<AsyncResultSet> getSupplier() {
+    protected BaseTask.UniSupplier<AsyncResultSet> getSupplier() {
 
       return () ->
           queryExecutor
-              .getKeyspaceMetadata(keyspaceName, false)
+              .getKeyspaceMetadata(
+                  CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspaceName), false)
               .flatMap(
                   optMetadata -> {
                     this.keyspaceMetadata = optMetadata.orElse(null);
@@ -103,7 +99,7 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
                         ? Uni.createFrom()
                             .failure(
                                 SchemaException.Code.INVALID_KEYSPACE.get(
-                                    Map.of("keyspace", cqlIdentifierToMessageString(keyspaceName))))
+                                    Map.of("keyspace", keyspaceName)))
                         : Uni.createFrom().item(new EmptyAsyncResultSet());
                   });
     }

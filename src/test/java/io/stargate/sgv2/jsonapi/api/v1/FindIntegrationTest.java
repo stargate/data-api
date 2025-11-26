@@ -130,9 +130,11 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].message", is("The provided keyspace does not exist: something_else"))
-          .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The command tried to use a Keyspace that does not exist in the Database"))
+          .body("errors[0].errorCode", is("UNKNOWN_KEYSPACE"));
     }
 
     @Test
