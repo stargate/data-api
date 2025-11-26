@@ -34,7 +34,7 @@ public class CommandConfig {
   private final ConcurrentMap<Class<?>, Object> configCache = new ConcurrentHashMap<>();
 
   // use getConfigProvider()
-  private SmallRyeConfig _configProvider = null;
+  private SmallRyeConfig configProvider;
 
   /**
    * Call to preload and log the config classes.
@@ -77,17 +77,17 @@ public class CommandConfig {
     // aaron - copied from JsonAPIException , not sure why we need to do this
     // TODO - cleanup how we get config, this seem unnecessary complicated
 
-    if (_configProvider == null) {
+    if (configProvider == null) {
       synchronized (this) {
-        if (_configProvider == null) {
-          _configProvider =
+        if (configProvider == null) {
+          configProvider =
               OfflineModeSupport.isOffline()
                   ? new SmallRyeConfigBuilder().build()
                   : ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         }
       }
     }
-    return _configProvider;
+    return configProvider;
   }
 
   /**
