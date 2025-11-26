@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import java.util.Map;
 
-public class PoCTools {
+public class MCPPocTools {
   @Inject private ToolManager toolManager;
 
   @Inject private RequestContext requestContext;
@@ -25,7 +25,7 @@ public class PoCTools {
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
-  public PoCTools(
+  public MCPPocTools(
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
