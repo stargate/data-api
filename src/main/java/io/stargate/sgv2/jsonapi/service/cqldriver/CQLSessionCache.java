@@ -1,12 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.CQL_SESSION_CACHE_NAME_TAG;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
+import io.micrometer.core.instrument.binder.cache.CaffeineStatsCounter;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.time.Duration;
@@ -62,6 +65,8 @@ public class CQLSessionCache {
   private final SessionFactory sessionFactory;
 
   private List<DeactivatedTenantConsumer> deactivatedTenantConsumers;
+
+  private MeterRegistry meterRegistry;
 
   /**
    * Constructs a new instance of the {@link CQLSessionCache}.
@@ -139,6 +144,7 @@ public class CQLSessionCache {
     this.sessionFactory = Objects.requireNonNull(sessionFactory, "sessionFactory must not be null");
     this.deactivatedTenantConsumers =
         deactivatedTenantConsumer == null ? List.of() : List.copyOf(deactivatedTenantConsumer);
+    this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
 
     LOGGER.info(
         "Initializing CQLSessionCache with cacheTTL={}, cacheMaxSize={}, databaseType={}, slaUserAgent={}, slaUserTTL={}, deactivatedTenantConsumers.count={}",
@@ -149,12 +155,15 @@ public class CQLSessionCache {
         slaUserTTL,
         deactivatedTenantConsumers.size());
 
+    CaffeineStatsCounter caffeineStatsCounter =
+        new CaffeineStatsCounter(meterRegistry, CQL_SESSION_CACHE_NAME_TAG);
+
     var builder =
         Caffeine.newBuilder()
             .expireAfter(new SessionExpiry())
             .maximumSize(cacheMaxSize)
             .removalListener(this::onKeyRemoved)
-            .recordStats();
+            .recordStats(() -> caffeineStatsCounter);
 
     if (asyncTaskOnCaller) {
       LOGGER.warn(
@@ -165,11 +174,12 @@ public class CQLSessionCache {
       LOGGER.warn("CQLSessionCache CONFIGURED TO USE A CUSTOM TICKER, DO NOT USE IN PRODUCTION.");
       builder = builder.ticker(cacheTicker);
     }
-    LoadingCache<SessionCacheKey, SessionValueHolder> loadingCache =
-        builder.build(this::onLoadSession);
 
-    this.sessionCache =
-        CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
+    this.sessionCache = builder.build(this::onLoadSession);
+
+    // CaffeineStatsCounter doesn't instrument the cache's size by default. We need to register
+    // after the cache is built.
+    caffeineStatsCounter.registerSizeMetric(sessionCache);
   }
 
   /**
@@ -216,18 +226,19 @@ public class CQLSessionCache {
   /**
    * Evicts a session from the cache based on the provided {@link RequestContext}.
    *
-   * @see #evictSession(String, String, String) for details on eviction.
+   * @see #evictSession(String, String, String, EvictSessionCause) for details on eviction.
    * @param requestContext The request context containing tenant, auth, and user agent info.
    * @return {@code true} if a session was evicted, {@code false} otherwise.
    */
-  public boolean evictSession(RequestContext requestContext) {
+  public boolean evictSession(RequestContext requestContext, EvictSessionCause cause) {
     Objects.requireNonNull(requestContext, "requestContext must not be null for eviction");
 
     // Validation happens when creating the credentials and session key
     return evictSession(
         requestContext.getTenantId().orElse(""),
         requestContext.getCassandraToken().orElse(""),
-        requestContext.getUserAgent().orElse(null));
+        requestContext.getUserAgent().orElse(null),
+        cause);
   }
 
   /**
@@ -240,7 +251,15 @@ public class CQLSessionCache {
    * @param userAgent Nullable user agent
    * @return {@code true} if a session was evicted, {@code false} otherwise.
    */
-  public boolean evictSession(String tenantId, String authToken, String userAgent) {
+  public boolean evictSession(
+      String tenantId, String authToken, String userAgent, EvictSessionCause cause) {
+
+    meterRegistry
+        .summary(
+            CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS,
+            CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG,
+            cause.name())
+        .record(1);
 
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
 
@@ -254,6 +273,14 @@ public class CQLSessionCache {
         cacheKey,
         entryFound);
     return entryFound;
+  }
+
+  public enum EvictSessionCause {
+    /**
+     * It indicates that the DB session used is no longer reliable and should be terminated (e.g.
+     * after all cluster nodes restart), so that a fresh connection is created on the next request.
+     */
+    UNRELIABLE_DB_SESSION
   }
 
   /**

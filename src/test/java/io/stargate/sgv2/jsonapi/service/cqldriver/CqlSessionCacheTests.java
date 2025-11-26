@@ -1,5 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.CQL_SESSION_CACHE_NAME_TAG;
+import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.EvictSessionCause.UNRELIABLE_DB_SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
@@ -343,19 +347,15 @@ public class CqlSessionCacheTests {
     fixture.cache.cleanUp();
 
     var cacheSizeMetric =
-        fixture.meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
+        fixture.meterRegistry.find("cache.size").tag("cache", CQL_SESSION_CACHE_NAME_TAG).gauge();
     assertThat(cacheSizeMetric)
         .as("cache.size metric added to registry with expected name")
         .isNotNull();
 
     var cachePutMetric =
-        fixture
-            .meterRegistry
-            .find("cache.puts")
-            .tag("cache", "cql_sessions_cache")
-            .functionCounter();
+        fixture.meterRegistry.find("cache.gets").tag("cache", CQL_SESSION_CACHE_NAME_TAG).counter();
     assertThat(cachePutMetric)
-        .as("cache.puts metric added to registry with expected name")
+        .as("cache.gets metric added to registry with expected name")
         .isNotNull();
   }
 
@@ -538,7 +538,8 @@ public class CqlSessionCacheTests {
         .isPresent();
 
     // Evict the session
-    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null);
+    boolean evicted =
+        fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, UNRELIABLE_DB_SESSION);
 
     // Verify eviction was successful
     assertThat(evicted).as("Eviction should return true when session exists").isTrue();
@@ -554,6 +555,21 @@ public class CqlSessionCacheTests {
     assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
         .as("Session is removed from cache after explicit eviction")
         .isNotPresent();
+
+    // Verify the metric was recorded with correct tag
+    var evictionMetric =
+        fixture
+            .meterRegistry
+            .find(CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS)
+            .tag(CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG, UNRELIABLE_DB_SESSION.name())
+            .summary();
+
+    assertThat(evictionMetric)
+        .as("Explicit eviction metric should be recorded in registry")
+        .isNotNull();
+    assertThat(evictionMetric.count())
+        .as("Eviction metric should record exactly one event")
+        .isEqualTo(1);
   }
 
   @Test
@@ -582,7 +598,7 @@ public class CqlSessionCacheTests {
         .isPresent();
 
     // Evict the session using RequestContext
-    boolean evicted = fixture.cache.evictSession(requestContext);
+    boolean evicted = fixture.cache.evictSession(requestContext, UNRELIABLE_DB_SESSION);
 
     // Verify eviction was successful
     assertThat(evicted).as("Eviction should return true when session exists").isTrue();
@@ -620,7 +636,8 @@ public class CqlSessionCacheTests {
         .isNotPresent();
 
     // Evict a non-existent session - should not throw
-    boolean evicted = fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null);
+    boolean evicted =
+        fixture.cache.evictSession(TENANT_ID, AUTH_TOKEN, null, UNRELIABLE_DB_SESSION);
 
     // Verify eviction returned false
     assertThat(evicted).as("Eviction returns false when no entry is removed").isFalse();
@@ -632,6 +649,61 @@ public class CqlSessionCacheTests {
 
     // Verify no interactions with session factory
     verifyNoInteractions(fixture.sessionFactory);
+
+    // Verify the metric was still recorded even session not in the cache
+    var evictionMetric =
+        fixture
+            .meterRegistry
+            .find(CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS)
+            .tag(CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG, UNRELIABLE_DB_SESSION.name())
+            .summary();
+
+    assertThat(evictionMetric)
+        .as("Explicit eviction metric should be recorded in registry")
+        .isNotNull();
+    assertThat(evictionMetric.count())
+        .as("Eviction metric should record exactly one event")
+        .isEqualTo(1);
+  }
+
+  @Test
+  public void explicitEvictionMetricsAccumulateOnMultipleEvictions() {
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            false);
+
+    // Create multiple sessions with different credentials
+    for (int i = 0; i < 3; i++) {
+      var credentials = fixture.setTokenCredentials(thisAuthToken(i));
+      var session = mock(CqlSession.class);
+      when(fixture.sessionFactory.apply(thisTenantId(i), credentials)).thenReturn(session);
+      fixture.cache.getSession(thisTenantId(i), thisAuthToken(i), null);
+    }
+
+    // Evict all sessions with UNRELIABLE_DB_SESSION cause
+    for (int i = 0; i < 3; i++) {
+      fixture.setTokenCredentials(thisAuthToken(i));
+      fixture.cache.evictSession(thisTenantId(i), thisAuthToken(i), null, UNRELIABLE_DB_SESSION);
+    }
+
+    // Verify the explicit eviction metric count is 3
+    var evictionMetric =
+        fixture
+            .meterRegistry
+            .find(CQL_SESSION_CACHE_EXPLICIT_EVICTION_METRICS)
+            .tag(CQL_SESSION_CACHE_EXPLICIT_EVICTION_CAUSE_TAG, UNRELIABLE_DB_SESSION.name())
+            .summary();
+    assertThat(evictionMetric).as("Explicit eviction metric should be present").isNotNull();
+    assertThat(evictionMetric.count())
+        .as("Explicit eviction metric count should accumulate to 3")
+        .isEqualTo(3);
   }
 
   // =======================================================
