@@ -116,7 +116,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -136,7 +136,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
         .then(
             invocation -> {
               reReadQueryAssert.incrementAndGet();
@@ -158,7 +158,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
     final AtomicInteger failedUpdateQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt3)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt3)))
         .then(
             invocation -> {
               failedUpdateQueryAssert.incrementAndGet();
@@ -170,7 +170,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger updateQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt4)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt4)))
         .then(
             invocation -> {
               updateQueryAssert.incrementAndGet();
@@ -211,7 +211,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     Supplier<CommandResult> execute =
         operation
-            .execute(dataApiRequestInfo, queryExecutor)
+            .execute(requestContext, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -258,7 +258,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -279,7 +279,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
         .then(
             invocation -> {
               reReadQueryAssert.incrementAndGet();
@@ -301,7 +301,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
     final AtomicInteger updateFailedQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt3)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt3)))
         .then(
             invocation -> {
               updateFailedQueryAssert.incrementAndGet();
@@ -313,7 +313,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger updateRetryFailedQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt4)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt4)))
         .then(
             invocation -> {
               updateRetryFailedQueryAssert.incrementAndGet();
@@ -354,7 +354,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     Supplier<CommandResult> execute =
         operation
-            .execute(dataApiRequestInfo, queryExecutor)
+            .execute(requestContext, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -409,7 +409,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id1, doc1));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -430,7 +430,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
         .then(
             invocation -> {
               reReadQueryAssert.incrementAndGet();
@@ -452,7 +452,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
     final AtomicInteger updateFailedQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt3)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt3)))
         .then(
             invocation -> {
               updateFailedQueryAssert.incrementAndGet();
@@ -464,7 +464,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger updateRetryFailedQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt4)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt4)))
         .then(
             invocation -> {
               updateRetryFailedQueryAssert.incrementAndGet();
@@ -505,7 +505,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     Supplier<CommandResult> execute =
         operation
-            .execute(dataApiRequestInfo, queryExecutor)
+            .execute(requestContext, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -589,7 +589,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         Arrays.asList(resultRow(0, "doc1", tx_id1, doc1), resultRow(0, "doc2", tx_id3, doc2));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -608,7 +608,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger reReadFirstQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
         .then(
             invocation -> {
               reReadFirstQueryAssert.incrementAndGet();
@@ -621,7 +621,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
     final AtomicInteger failedUpdateFirstQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt3)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt3)))
         .then(
             invocation -> {
               failedUpdateFirstQueryAssert.incrementAndGet();
@@ -633,7 +633,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger failedUpdateRetryFirstQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt4)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt4)))
         .then(
             invocation -> {
               failedUpdateRetryFirstQueryAssert.incrementAndGet();
@@ -646,7 +646,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows5 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
     AsyncResultSet results5 = new MockAsyncResultSet(COLUMNS_APPLIED, rows5, null);
     final AtomicInteger updateSecondQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt5)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt5)))
         .then(
             invocation -> {
               updateSecondQueryAssert.incrementAndGet();
@@ -690,7 +690,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     Supplier<CommandResult> execute =
         operation
-            .execute(dataApiRequestInfo, queryExecutor)
+            .execute(requestContext, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -775,7 +775,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         Arrays.asList(resultRow(0, "doc1", tx_id1, doc1), resultRow(0, "doc2", tx_id3, doc2));
     AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
     final AtomicInteger selectQueryAssert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
         .then(
             invocation -> {
               selectQueryAssert.incrementAndGet();
@@ -792,7 +792,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows2 = Arrays.asList(resultRow(0, "doc1", tx_id2, doc1));
     AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
     final AtomicInteger retrySelectQueryDoc1Assert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
         .then(
             invocation -> {
               retrySelectQueryDoc1Assert.incrementAndGet();
@@ -807,7 +807,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows3 = Arrays.asList(resultRow(0, "doc2", tx_id4, doc2));
     AsyncResultSet results3 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows3, null);
     final AtomicInteger retrySelectQueryDoc2Assert = new AtomicInteger();
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt3), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt3), any(), anyInt()))
         .then(
             invocation -> {
               retrySelectQueryDoc2Assert.incrementAndGet();
@@ -820,7 +820,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger updateQueryDoc1Assert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt4)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt4)))
         .then(
             invocation -> {
               updateQueryDoc1Assert.incrementAndGet();
@@ -832,7 +832,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows5 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results5 = new MockAsyncResultSet(COLUMNS_APPLIED, rows5, null);
     final AtomicInteger updateRetryQueryDoc1Assert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt5)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt5)))
         .then(
             invocation -> {
               updateRetryQueryDoc1Assert.incrementAndGet();
@@ -846,7 +846,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows6 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results6 = new MockAsyncResultSet(COLUMNS_APPLIED, rows6, null);
     final AtomicInteger updateQueryDoc2Assert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt6)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt6)))
         .then(
             invocation -> {
               updateQueryDoc2Assert.incrementAndGet();
@@ -858,7 +858,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     List<Row> rows7 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results7 = new MockAsyncResultSet(COLUMNS_APPLIED, rows7, null);
     final AtomicInteger updateRetryQueryDoc2Assert = new AtomicInteger();
-    when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt7)))
+    when(queryExecutor.executeWrite(eq(requestContext), eq(stmt7)))
         .then(
             invocation -> {
               updateRetryQueryDoc2Assert.incrementAndGet();
@@ -901,7 +901,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     Supplier<CommandResult> execute =
         operation
-            .execute(dataApiRequestInfo, queryExecutor)
+            .execute(requestContext, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()

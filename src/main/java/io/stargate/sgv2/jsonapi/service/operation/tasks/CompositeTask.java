@@ -163,10 +163,12 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   }
 
   @Override
-  protected void onSuccess(CompositeTaskInnerPage<InnerTaskT, SchemaT> result) {
+  protected void onSuccess(
+      CompositeTask.CompositeTaskResultSupplier<InnerTaskT, SchemaT> resultSupplier,
+      CompositeTaskInnerPage<InnerTaskT, SchemaT> result) {
     // TODO: Aaron, - not sure we need to do this ?
     innerPage = result;
-    super.onSuccess(result);
+    super.onSuccess(resultSupplier, result);
   }
 
   @Override

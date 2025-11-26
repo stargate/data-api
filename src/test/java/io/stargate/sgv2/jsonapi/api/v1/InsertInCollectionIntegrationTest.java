@@ -1576,10 +1576,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsError())
           .body("status.insertedIds", is(nullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
-              startsWith("The provided keyspace does not exist: something_else"));
+              containsString(
+                  "The command tried to use a Keyspace that does not exist in the Database"));
     }
 
     @Test

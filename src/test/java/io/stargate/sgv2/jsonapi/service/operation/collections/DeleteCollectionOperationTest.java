@@ -94,7 +94,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -112,7 +112,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -137,7 +137,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
           DeleteCollectionOperation.delete(COMMAND_CONTEXT, findCollectionOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -175,7 +175,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
           new MockAsyncResultSet(SELECT_WITH_JSON_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -193,7 +193,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -221,7 +221,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
               commandContext, findCollectionOperation, 3, DocumentProjector.defaultProjector());
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -355,7 +355,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -373,7 +373,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -404,7 +404,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -476,7 +476,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -494,7 +494,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -525,7 +525,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -554,7 +554,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -579,7 +579,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
           DeleteCollectionOperation.delete(COMMAND_CONTEXT, findCollectionOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -615,7 +615,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -633,7 +633,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -658,7 +658,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -696,7 +696,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -721,7 +721,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue), byteBufferFrom(tx_id2))));
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -741,7 +741,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -754,7 +754,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       AsyncResultSet deleteResults2 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -779,7 +779,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -817,7 +817,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -842,7 +842,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue), byteBufferFrom(tx_id2))));
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -862,7 +862,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -876,7 +876,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       AsyncResultSet deleteResults2 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -900,7 +900,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -937,7 +937,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -957,7 +957,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       rows = Arrays.asList();
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -977,7 +977,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1002,7 +1002,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1044,7 +1044,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1062,7 +1062,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1075,7 +1075,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       AsyncResultSet deleteResults1 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1103,7 +1103,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1133,7 +1133,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1159,7 +1159,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1201,7 +1201,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1225,7 +1225,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue1), byteBufferFrom(tx_id3))));
 
       AsyncResultSet mockResults2 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1244,7 +1244,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1257,7 +1257,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       AsyncResultSet deleteResults1 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1271,7 +1271,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       AsyncResultSet deleteResults2 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1300,7 +1300,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1357,7 +1357,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet mockResults = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       final AtomicInteger selectCallCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1382,7 +1382,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue1), byteBufferFrom(tx_id3))));
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1403,7 +1403,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue2), byteBufferFrom(tx_id4))));
 
       AsyncResultSet mockResults2 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1422,7 +1422,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1436,7 +1436,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       AsyncResultSet deleteResults2 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1450,7 +1450,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       AsyncResultSet deleteResults3 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1465,7 +1465,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults4 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1494,7 +1494,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1552,8 +1552,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
           new MockAsyncResultSet(
               SELECT_RESULT_COLUMNS, rows, asyncResultSetCompletableFuture, executionInfo);
       final AtomicInteger selectCallCount = new AtomicInteger();
-      when(queryExecutor.executeRead(
-              eq(dataApiRequestInfo), eq(stmt), eq(Optional.empty()), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), eq(Optional.empty()), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1569,7 +1568,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       AsyncResultSet mockResults1 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       when(queryExecutor.executeRead(
-              eq(dataApiRequestInfo),
+              eq(requestContext),
               eq(stmt),
               eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB.array()))),
               anyInt()))
@@ -1591,7 +1590,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1605,7 +1604,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults2 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1633,7 +1632,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1683,8 +1682,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
           new MockAsyncResultSet(
               SELECT_RESULT_COLUMNS, rows, asyncResultSetCompletableFuture, executionInfo);
       final AtomicInteger selectCallCount = new AtomicInteger();
-      when(queryExecutor.executeRead(
-              eq(dataApiRequestInfo), eq(stmt), eq(Optional.empty()), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), eq(Optional.empty()), anyInt()))
           .then(
               invocation -> {
                 selectCallCount.incrementAndGet();
@@ -1703,7 +1701,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
           new MockAsyncResultSet(
               SELECT_RESULT_COLUMNS, rows, asyncResultSetCompletableFuture, executionInfo);
       when(queryExecutor.executeRead(
-              eq(dataApiRequestInfo),
+              eq(requestContext),
               eq(stmt),
               eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB.array()))),
               anyInt()))
@@ -1721,7 +1719,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
                   Arrays.asList(byteBufferFrom(keyValue3), byteBufferFrom(tx_id3))));
       AsyncResultSet mockResults2 = new MockAsyncResultSet(SELECT_RESULT_COLUMNS, rows, null);
       when(queryExecutor.executeRead(
-              eq(dataApiRequestInfo),
+              eq(requestContext),
               eq(stmt),
               eq(Optional.of(Base64.getEncoder().encodeToString(pagingStateBB2.array()))),
               anyInt()))
@@ -1743,7 +1741,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
       final AtomicInteger deleteCallCount = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1757,7 +1755,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
       AsyncResultSet deleteResults2 =
           new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 deleteCallCount.incrementAndGet();
@@ -1785,7 +1783,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

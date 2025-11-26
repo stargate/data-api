@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDefContainer;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +32,12 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
   }
 
   private Optional<ApiIndexDefContainer> indexesForTable() {
-    // TODO: better option checking
-    var tableMetadata =
-        keyspaceMetadata.get().getTable(schemaObject.tableMetadata().getName()).get();
+
+    // aaron - see the MetadataDBTask, need better control on when this is set
+    Objects.requireNonNull(
+        keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+
+    var tableMetadata = keyspaceMetadata.getTable(schemaObject.tableMetadata().getName()).get();
 
     // aaron - this should not happen ?
     if (!TABLE_MATCHER.test(tableMetadata)) {

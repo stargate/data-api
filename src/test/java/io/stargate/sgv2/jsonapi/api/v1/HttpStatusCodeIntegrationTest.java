@@ -228,11 +228,6 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               }
              }
              """;
-      AnyOf<String> anyOf =
-          AnyOf.anyOf(
-              endsWith("keyspace '%s' doesn't exist".formatted("badNamespace")),
-              endsWith(
-                  "Unknown keyspace '%s', you must create it first".formatted("badNamespace")));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -243,8 +238,11 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].message", anyOf)
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The command tried to use a Keyspace that does not exist in the Database"))
+          .body("errors[0].exceptionClass", is("SchemaException"));
     }
 
     @Test

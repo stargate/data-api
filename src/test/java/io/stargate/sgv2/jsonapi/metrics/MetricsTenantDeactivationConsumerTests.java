@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENAN
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
-import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
@@ -34,8 +33,7 @@ public class MetricsTenantDeactivationConsumerTests {
   void removeFromEmptyMeterRegistry() {
     assertThat(meterRegistry.getMeters()).isEmpty();
 
-    assertThatCode(() -> consumer.accept("any-tenant", RemovalCause.EXPIRED))
-        .doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept("any-tenant")).doesNotThrowAnyException();
   }
 
   @Test
@@ -74,7 +72,7 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 1: Removing with null tenantId should not remove any metrics
-    assertThatCode(() -> consumer.accept(null, RemovalCause.SIZE)).doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(null)).doesNotThrowAnyException();
     assertMetricExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricExists(timerMetrics, TENANT_TAG, tenant1);
@@ -86,8 +84,7 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 2: Removing a non-existent tenantId should not remove any metrics
-    assertThatCode(() -> consumer.accept("nonExistentTenant", RemovalCause.SIZE))
-        .doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept("nonExistentTenant")).doesNotThrowAnyException();
     assertMetricExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricExists(timerMetrics, TENANT_TAG, tenant1);
@@ -99,7 +96,7 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 3: Removing tenant1 should remove only tenant1's metrics; others remain
-    assertThatCode(() -> consumer.accept(tenant1, RemovalCause.EXPIRED)).doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(tenant1)).doesNotThrowAnyException();
     assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
@@ -111,8 +108,7 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 4: Removing tenant1 again (already removed) should not affect other metrics
-    assertThatCode(() -> consumer.accept(tenant1, RemovalCause.REPLACED))
-        .doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(tenant1)).doesNotThrowAnyException();
     assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
@@ -124,7 +120,7 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 5: Removing tenant2 should remove only tenant2's metrics; only tenant3's remain
-    assertThatCode(() -> consumer.accept(tenant2, RemovalCause.EXPIRED)).doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(tenant2)).doesNotThrowAnyException();
     assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
@@ -136,8 +132,7 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 6: Removing tenant3 should remove all remaining metrics (registry empty)
-    assertThatCode(() -> consumer.accept(tenant3, RemovalCause.EXPLICIT))
-        .doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(tenant3)).doesNotThrowAnyException();
     assertThat(meterRegistry.getMeters()).isEmpty();
   }
 
