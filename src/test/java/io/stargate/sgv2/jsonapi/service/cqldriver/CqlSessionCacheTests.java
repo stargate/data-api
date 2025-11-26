@@ -289,17 +289,26 @@ public class CqlSessionCacheTests extends CacheTestsBase {
 
     // Add a session to the cache and verify it is present
     var actualSession =
-        fixture.cache.getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null);
+        fixture
+            .cache
+            .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+            .await()
+            .indefinitely();
+
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null))
+
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is present in cache after adding")
         .isPresent();
 
     // Evict the session
     boolean evicted =
-        fixture.cache.evictSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null);
+        fixture.cache.evictSession(
+            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT);
 
     // Verify eviction was successful
     assertThat(evicted).as("Eviction should return true when session exists").isTrue();
@@ -312,7 +321,9 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     verifyNoMoreInteractions(listener);
 
     // Verify session is no longer in the cache
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null))
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is removed from cache after explicit eviction")
         .isNotPresent();
   }
@@ -325,14 +336,20 @@ public class CqlSessionCacheTests extends CacheTestsBase {
             List.of(listener), LONG_TTL, CACHE_MAX_SIZE, TEST_CONSTANTS.SLA_USER_AGENT, SHORT_TTL);
     var requestContext =
         new RequestContext(
-            Optional.of(TEST_CONSTANTS.TENANT), Optional.of(TEST_CONSTANTS.AUTH_TOKEN), null, null);
+            Optional.of(TEST_CONSTANTS.TENANT),
+            Optional.of(TEST_CONSTANTS.AUTH_TOKEN),
+            null,
+            TEST_CONSTANTS.USER_AGENT);
 
     // Add a session to the cache and verify it is present
-    var actualSession = fixture.cache.getSession(requestContext);
+    var actualSession = fixture.cache.getSession(requestContext).await().indefinitely();
+    ;
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null))
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is present in cache after adding")
         .isPresent();
 
@@ -350,7 +367,9 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     verifyNoMoreInteractions(listener);
 
     // Verify session is no longer in the cache
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null))
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is removed from cache after explicit eviction")
         .isNotPresent();
   }
@@ -363,19 +382,24 @@ public class CqlSessionCacheTests extends CacheTestsBase {
             List.of(listener), LONG_TTL, CACHE_MAX_SIZE, TEST_CONSTANTS.SLA_USER_AGENT, SHORT_TTL);
 
     // Verify cache is empty
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null))
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Cache is empty before eviction")
         .isNotPresent();
 
     // Evict a non-existent session - should not throw
     boolean evicted =
-        fixture.cache.evictSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null);
+        fixture.cache.evictSession(
+            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT);
 
     // Verify eviction returned false
     assertThat(evicted).as("Eviction returns false when no entry is removed").isFalse();
 
     // Verify cache is still empty
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, null))
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Cache is still empty after eviction")
         .isNotPresent();
 
