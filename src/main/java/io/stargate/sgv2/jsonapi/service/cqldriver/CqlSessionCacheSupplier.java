@@ -15,8 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 /**
  * Factory for creating a singleton {@link CQLSessionCache} instance that is configured via CDI.
  *
- * <p>We use this factory so the cache itself is not a CDI bean. For one so it does not have all
- * that extra overhead, and because there construction is a bit more complicated.
+ * <p>We use this factory so the cache itself is not a CDI bean. So it does not have all that extra
+ * overhead, and because there construction is a bit more complicated.
  */
 @ApplicationScoped
 public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
