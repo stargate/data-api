@@ -28,7 +28,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -398,21 +397,19 @@ public interface CollectionReadOperation extends CollectionOperation {
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    AtomicLong counter = new AtomicLong();
-    final CompletionStage<AsyncResultSet> async =
-        queryExecutor
-            .executeCount(dataApiRequestInfo, simpleStatement)
-            .whenComplete(
-                (rs, error) -> {
-                  getCount(rs, error, counter);
-                });
 
-    return Uni.createFrom()
-        .completionStage(async)
-        .onItem()
-        .transform(
-            rs -> {
-              return new CountResponse(counter.get());
+    AtomicLong counter = new AtomicLong();
+
+    return queryExecutor
+        .executeCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
+        .transformToUni(
+            (rs, failure) -> {
+              if (failure != null) {
+                return Uni.createFrom().failure(ErrorCodeV1.COUNT_READ_FAILED.toApiException());
+              }
+              getCount(rs, failure, counter);
+              return Uni.createFrom().item(new CountResponse(counter.get()));
             });
   }
 
@@ -428,25 +425,28 @@ public interface CollectionReadOperation extends CollectionOperation {
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    return Uni.createFrom()
-        .completionStage(queryExecutor.executeCount(dataApiRequestInfo, simpleStatement))
-        .onItem()
-        .transform(
-            rSet -> {
+
+    return queryExecutor
+        .executeCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
+        .transformToUni(
+            (rSet, failure) -> {
+              if (failure != null) {
+                return Uni.createFrom().failure(ErrorCodeV1.COUNT_READ_FAILED.toApiException());
+              }
               Row row = rSet.one(); // For count there will be only one row
               long count = row.getLong(0); // Count value will be the first column value
-              return new CountResponse(count);
+              return Uni.createFrom().item(new CountResponse(count));
             });
   }
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
-    if (error != null) {
-      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException();
-    } else {
-      counter.addAndGet(rs.remaining());
-      if (rs.hasMorePages()) {
-        rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
-      }
+    // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to complete before
+    // returning
+    // and it cannot handle a failure on fetchNextPage - will fix after this PR
+    counter.addAndGet(rs.remaining());
+    if (rs.hasMorePages()) {
+      rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
     }
   }
 
@@ -461,20 +461,15 @@ public interface CollectionReadOperation extends CollectionOperation {
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    AtomicLong counter = new AtomicLong();
-    final CompletionStage<AsyncResultSet> async =
-        queryExecutor
-            .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
-            .whenComplete(
-                (rs, error) -> {
-                  getEstimatedCount(rs, error, counter);
-                });
 
-    return Uni.createFrom()
-        .completionStage(async)
-        .onItem()
+    AtomicLong counter = new AtomicLong();
+
+    return queryExecutor
+        .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
         .transform(
-            rs -> {
+            (rs, failure) -> {
+              getEstimatedCount(rs, failure, counter);
               return new CountResponse(counter.get());
             });
   }

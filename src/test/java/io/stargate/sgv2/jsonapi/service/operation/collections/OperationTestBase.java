@@ -42,7 +42,7 @@ public class OperationTestBase {
   @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
   // this will work even though the base class is not managed by Quarkus
-  @InjectMock protected RequestContext dataApiRequestInfo;
+  @InjectMock protected RequestContext requestContext;
 
   private final TestConstants testConstants = new TestConstants();
 
@@ -77,13 +77,13 @@ public class OperationTestBase {
 
     COLLECTION_CONTEXT =
         testConstants.collectionContext(
-            testConstants.TEST_COMMAND_NAME,
+            testConstants.COMMAND_NAME,
             COLLECTION_SCHEMA_OBJECT,
             jsonProcessingMetricsReporter,
             null);
     KEYSPACE_CONTEXT =
         testConstants.keyspaceContext(
-            testConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+            testConstants.COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
   }
 
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(

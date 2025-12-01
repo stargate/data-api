@@ -16,6 +16,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,10 +153,9 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
 
     // these never change, and we do not have them in astra, so we can cache
     if (databaseType == DatabaseType.CASSANDRA) {
-      Objects.requireNonNull(cassandraEndPoints, "cassandraEndPoints must not be null");
-      if (cassandraEndPoints.isEmpty()) {
+      if (cassandraEndPoints == null || cassandraEndPoints.isEmpty()) {
         throw new IllegalArgumentException(
-            "Database type is %s but cassandraEndPoints is empty.".formatted(databaseType));
+            "Database type is %s but cassandraEndPoints is null or empty.".formatted(databaseType));
       }
       contactPoints =
           cassandraEndPoints.stream()
@@ -167,7 +167,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   }
 
   @Override
-  public CqlSession apply(String tenantId, CqlCredentials credentials) {
+  public CompletionStage<CqlSession> apply(String tenantId, CqlCredentials credentials) {
     Objects.requireNonNull(credentials, "credentials must not be null");
 
     if (LOGGER.isDebugEnabled()) {
@@ -218,6 +218,6 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     // aaron - this used to have an if / else that threw an exception if the database type was not
     // known, but we test that when creating the credentials for the cache key so no need to do it
     // here.
-    return builder.build();
+    return builder.buildAsync();
   }
 }

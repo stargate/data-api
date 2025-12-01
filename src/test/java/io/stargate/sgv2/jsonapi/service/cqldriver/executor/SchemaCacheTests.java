@@ -11,7 +11,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
@@ -41,7 +40,7 @@ public class SchemaCacheTests {
 
     var deactivatedListener = fixture.schemaCache.getDeactivatedTenantConsumer();
 
-    deactivatedListener.accept(TENANT_ID, RemovalCause.EXPLICIT);
+    deactivatedListener.accept(TENANT_ID);
 
     // all of TENANT_ID should be removed, and the non TENANT_ID can stay
     assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace1", "table1"))
