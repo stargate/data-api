@@ -274,10 +274,11 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
+          .body("errors[0].errorCode", is("UNKNOWN_KEYSPACE"))
           .body(
               "errors[0].message",
-              containsString("Unknown keyspace 'should_not_be_there', you must create it first"));
+              containsString(
+                  "The command tried to use a Keyspace that does not exist in the Database"));
     }
 
     @Test
