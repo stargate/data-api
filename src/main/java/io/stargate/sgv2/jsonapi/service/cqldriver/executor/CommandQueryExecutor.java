@@ -18,8 +18,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Configured to execute queries for a specific command that relies on drive profiles MORE TODO
- * WORDS
+ * Configured to execute queries for a specific command that relies on drive profiles
  *
  * <p><b>NOTE:</b> this is a WIP replacing the earlier QueryExecutor that was built with injection.
  * This is for use by a {@link io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask}

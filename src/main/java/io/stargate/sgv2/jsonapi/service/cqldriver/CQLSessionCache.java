@@ -50,7 +50,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
-   * request amorton; 17 Nov 2025 - will be removed soon, will refactor so we have a Tenant objext
+   * request amorton; 17 Nov 2025 - will be removed soon, will refactor so we have a Tenant object
    */
   public static final String DEFAULT_TENANT = "default_tenant";
 
@@ -94,7 +94,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
    * @param cacheTTL The time-to-live (TTL) duration for the session cache for non SLA users.
    * @param slaUserAgent The user agent string used to identify SLA users, when present the
    *     slaUserTTL will be used if the session is created for that SLA user agent.
-   * @param slaUserTTL The time-to-live (TTL) duration for SLA users, used if a s
+   * @param slaUserTTL The time-to-live (TTL) duration for SLA users
    * @param credentialsFactory A factory for creating {@link CqlCredentials} based on authentication
    *     tokens.
    * @param sessionFactory A factory for creating new {@link CqlSession} instances when needed.
@@ -149,7 +149,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     if (consumers != null) {
       consumers.forEach(
-          deactivedTenantListener -> {
+          deactivatedTenantListener -> {
             listeners.add(
                 (key, value, cause) -> {
                   if (LOGGER.isTraceEnabled()) {
@@ -160,12 +160,12 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
                   }
 
                   try {
-                    deactivedTenantListener.accept(key.tenant());
+                    deactivatedTenantListener.accept(key.tenant());
                   } catch (Exception e) {
                     LOGGER.warn(
                         "Error calling DeactivatedTenantListener for tenant={}, listener.class={}",
                         key.tenant(),
-                        classSimpleName(deactivedTenantListener.getClass()),
+                        classSimpleName(deactivatedTenantListener.getClass()),
                         e);
                   }
                 });
@@ -252,7 +252,6 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
   public boolean evictSession(String tenantId, String authToken, String userAgent) {
 
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
-
     return evict(cacheKey);
   }
 
@@ -282,7 +281,11 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
         tenant, credentials, ttlSupplier.ttlForUsageAgent(userAgent), userAgent);
   }
 
-  /** Key for CQLSession cache. */
+  /**
+   * Key for CQLSession cache.
+   *
+   * <p>
+   */
   static class SessionCacheKey implements DynamicTTLCache.CacheKey {
 
     private final String tenant;
@@ -347,7 +350,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
           .append(tenant)
           .append('\'')
           .append(", credentials=")
-          .append(credentials) // creds should make sure they dont include sensitive info
+          .append(credentials) // creds should make sure they don't include sensitive info
           .append(", ttl=")
           .append(ttl)
           .append(", userAgent='")
@@ -391,19 +394,31 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
     }
   }
 
-  /** Callback when a tenant is deactivated. */
+  /**
+   * Callback when a tenant is deactivated.
+   *
+   * <p>
+   */
   @FunctionalInterface
   public interface DeactivatedTenantListener extends Consumer<String> {
     void accept(String tenant);
   }
 
-  /** Called to create credentials used with the session and session cache key. */
+  /**
+   * Called to create credentials used with the session and session cache key.
+   *
+   * <p>
+   */
   @FunctionalInterface
   public interface CredentialsFactory extends Function<String, CqlCredentials> {
     CqlCredentials apply(String authToken);
   }
 
-  /** Called to create a new session when one is needed. */
+  /**
+   * Called to create a new session when one is needed.
+   *
+   * <p>
+   */
   @FunctionalInterface
   public interface SessionFactory
       extends BiFunction<String, CqlCredentials, CompletionStage<CqlSession>> {
