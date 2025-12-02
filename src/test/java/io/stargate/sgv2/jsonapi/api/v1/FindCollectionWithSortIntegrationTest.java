@@ -514,7 +514,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindCollectionOperationWithFailingSort {
     static final String biggerCollectionName =
-        "col_fail_" + RandomStringUtils.randomAlphanumeric(16);
+        "col_fail_" + RandomStringUtils.insecure().randomAlphanumeric(16);
 
     // Test limit is max 100, create couple more
     private static final List<Object> testDatas = getDocuments(110);

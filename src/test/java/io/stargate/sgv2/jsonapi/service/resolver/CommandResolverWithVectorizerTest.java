@@ -77,8 +77,8 @@ public class CommandResolverWithVectorizerTest {
   private final TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
   // TODO: do these need to be unique to this test ? Can we use TestConstants ?
-  protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
+  protected final String KEYSPACE_NAME = RandomStringUtils.insecure().randomAlphanumeric(16);
+  protected final String COLLECTION_NAME = RandomStringUtils.insecure().randomAlphanumeric(16);
   private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
 
   @BeforeEach

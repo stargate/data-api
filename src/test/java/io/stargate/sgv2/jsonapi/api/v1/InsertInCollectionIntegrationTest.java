@@ -832,7 +832,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       // Create random "words" of 7 characters each, and space
       StringBuilder sb = new StringBuilder(minLen + 8);
       do {
-        sb.append(RandomStringUtils.randomAlphanumeric(7)).append(' ');
+        sb.append(RandomStringUtils.insecure().randomAlphanumeric(7)).append(' ');
       } while (sb.length() < minLen);
       return sb.toString();
     }

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   @Nested
   class ClientErrors {
-    String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
+    String collectionName = "col" + RandomStringUtils.insecure().randomAlphanumeric(16);
 
     @Test
     public void tokenMissing() {
