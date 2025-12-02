@@ -242,7 +242,8 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
   /**
    * Evicts a session from the cache programmatically. This is intended for use in scenarios where a
    * session is known to be in an unrecoverable state (e.g., after all cluster nodes restart) and
-   * needs to be forcibly removed to allow for a fresh connection on the next request.
+   * needs to be forcibly removed to allow for a fresh connection on the next request. This eviction
+   * will be recorded as "EXPLICIT" in the metrics.
    *
    * @param tenantId the identifier for the tenant
    * @param authToken the authentication token for accessing the session

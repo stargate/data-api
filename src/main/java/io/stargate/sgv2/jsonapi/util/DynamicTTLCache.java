@@ -6,7 +6,7 @@ import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
+import io.micrometer.core.instrument.binder.cache.CaffeineStatsCounter;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
 import java.util.List;
@@ -90,12 +90,15 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
         cacheMaxSize,
         listeners.size());
 
+    CaffeineStatsCounter caffeineStatsCounter =
+        new CaffeineStatsCounter(meterRegistry, this.cacheName);
+
     var builder =
         Caffeine.newBuilder()
             .expireAfter(new DynamicExpiryPolicy<KeyT, ValueT>())
             .maximumSize(cacheMaxSize)
             .removalListener(this::onKeyRemoved)
-            .recordStats();
+            .recordStats(() -> caffeineStatsCounter);
 
     if (asyncTaskOnCaller) {
       LOGGER.warn(
@@ -109,10 +112,13 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
           this.cacheName);
       builder = builder.ticker(cacheTicker);
     }
-    AsyncLoadingCache<KeyT, ValueHolder<KeyT, ValueT>> loadingCache =
-        builder.buildAsync(this::onLoadValue);
+    this.cache = builder.buildAsync(this::onLoadValue);
 
-    this.cache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, this.cacheName);
+    // CaffeineStatsCounter doesn't instrument the cache's size by default. We need to register
+    // after the cache is built.
+    // From author, we can use .synchronous() to get stats:
+    // https://stackoverflow.com/questions/56660724/asynchronous-caffeine-cache-with-statistics
+    caffeineStatsCounter.registerSizeMetric(cache.synchronous());
   }
 
   /**
