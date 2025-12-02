@@ -175,7 +175,7 @@ public class EmbeddingGatewayClientTest {
     assertThat(response.modelUsage().modelProvider()).isEqualTo(ModelProvider.OPENAI);
     assertThat(response.modelUsage().modelType()).isEqualTo(ModelType.EMBEDDING);
     assertThat(response.modelUsage().modelName()).isEqualTo("test-model");
-    assertThat(response.modelUsage().tenantId()).isEqualTo("test-tenant");
+    assertThat(response.modelUsage().tenant()).isEqualTo("test-tenant");
     assertThat(response.modelUsage().inputType()).isEqualTo(ModelInputType.INDEX);
 
     assertThat(response.modelUsage().promptTokens()).isEqualTo(5);

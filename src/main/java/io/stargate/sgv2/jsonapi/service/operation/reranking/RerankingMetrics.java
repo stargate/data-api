@@ -8,6 +8,7 @@ import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
 import io.stargate.sgv2.jsonapi.metrics.MicrometerConfiguration;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -176,8 +177,8 @@ public class RerankingMetrics {
       this.tagsMap = new HashMap<>();
     }
 
-    public RerankingTagsBuilder withTenant(String tenantId) {
-      putOrThrow(TENANT_TAG, tenantId);
+    public RerankingTagsBuilder withTenant(Tenant tenant) {
+      putOrThrow(TENANT_TAG, tenant.toString());
       return this;
     }
 

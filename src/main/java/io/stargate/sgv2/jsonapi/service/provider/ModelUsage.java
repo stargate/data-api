@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
 import io.stargate.embedding.gateway.EmbeddingGateway;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
@@ -16,7 +18,7 @@ public final class ModelUsage implements Recordable {
   private final ModelProvider modelProvider;
   private final ModelType modelType;
   private final String modelName;
-  private final String tenantId;
+  private final Tenant tenant;
   private final ModelInputType inputType;
   private final int promptTokens;
   private final int totalTokens;
@@ -29,7 +31,7 @@ public final class ModelUsage implements Recordable {
       ModelProvider modelProvider,
       ModelType modelType,
       String modelName,
-      String tenantId,
+      Tenant tenant,
       ModelInputType inputType,
       int promptTokens,
       int totalTokens,
@@ -40,7 +42,7 @@ public final class ModelUsage implements Recordable {
         modelProvider,
         modelType,
         modelName,
-        tenantId,
+        tenant,
         inputType,
         promptTokens,
         totalTokens,
@@ -54,7 +56,7 @@ public final class ModelUsage implements Recordable {
       ModelProvider modelProvider,
       ModelType modelType,
       String modelName,
-      String tenantId,
+      Tenant tenant,
       ModelInputType inputType,
       int promptTokens,
       int totalTokens,
@@ -65,7 +67,7 @@ public final class ModelUsage implements Recordable {
     this.modelProvider = Objects.requireNonNull(modelProvider, "modelProvider must not be null");
     this.modelType = Objects.requireNonNull(modelType, "modelType must not be null");
     this.modelName = Objects.requireNonNull(modelName, "modelName must not be null");
-    this.tenantId = Objects.requireNonNull(tenantId, "tenantId must not be null");
+    this.tenant = Objects.requireNonNull(tenant, "tenant must not be null");
     this.inputType = Objects.requireNonNull(inputType, "inputType must not be null");
     if (promptTokens < 0) {
       throw new IllegalArgumentException("promptTokens must not be negative");
@@ -110,7 +112,7 @@ public final class ModelUsage implements Recordable {
                         "ModelUsage() - Unknown grpcModelUsage.getModelType(): '%s'"
                             .formatted(grpcModelUsage.getModelType()))),
         grpcModelUsage.getModelName(),
-        grpcModelUsage.getTenantId(),
+        TenantFactory.instance().create( grpcModelUsage.getTenantId()),
         ModelInputType.fromEmbeddingGateway(grpcModelUsage.getInputType())
             .orElseThrow(
                 () ->
@@ -129,7 +131,7 @@ public final class ModelUsage implements Recordable {
         .setModelProvider(modelProvider.apiName())
         .setModelType(modelType.toEmbeddingGateway())
         .setModelName(modelName)
-        .setTenantId(tenantId)
+        .setTenantId(tenant.toString())
         .setInputType(inputType.toEmbeddingGateway())
         .setPromptTokens(promptTokens)
         .setTotalTokens(totalTokens)
@@ -150,7 +152,7 @@ public final class ModelUsage implements Recordable {
     if (!this.modelProvider.equals(other.modelProvider)
         || !this.modelType.equals(other.modelType)
         || !this.modelName.equals(other.modelName)
-        || !this.tenantId.equals(other.tenantId)
+        || !this.tenant.equals(other.tenant)
         || !this.inputType.equals(other.inputType)) {
       throw new IllegalArgumentException(
           "Cannot merge ModelUsage with different properties, this: %s, other: %s"
@@ -161,7 +163,7 @@ public final class ModelUsage implements Recordable {
         this.modelProvider,
         this.modelType,
         this.modelName,
-        this.tenantId,
+        this.tenant,
         this.inputType,
         this.promptTokens + other.promptTokens,
         this.totalTokens + other.totalTokens,
@@ -183,8 +185,8 @@ public final class ModelUsage implements Recordable {
     return modelName;
   }
 
-  public String tenantId() {
-    return tenantId;
+  public Tenant tenant() {
+    return tenant;
   }
 
   public ModelInputType inputType() {
@@ -221,7 +223,7 @@ public final class ModelUsage implements Recordable {
         .append("modelProvider", modelProvider)
         .append("modelType", modelType)
         .append("modelName", modelName)
-        .append("tenantId", tenantId)
+        .append("tenant", tenant)
         .append("inputType", inputType)
         .append("promptTokens", promptTokens)
         .append("totalTokens", totalTokens)

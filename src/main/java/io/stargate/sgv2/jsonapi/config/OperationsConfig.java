@@ -220,6 +220,7 @@ public interface OperationsConfig {
     List<String> cassandraEndPoints();
 
     /** Cassandra port (when type is {@link DatabaseType#CASSANDRA}) */
+    @Nullable
     @WithDefault("9042")
     int cassandraPort();
 

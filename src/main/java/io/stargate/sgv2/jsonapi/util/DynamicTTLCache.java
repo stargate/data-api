@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlCredentials;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import java.time.Duration;
@@ -366,7 +367,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   protected static class DynamicTTLSupplier {
 
     private final Duration cacheTTL;
-    private final String slaUserAgent;
+    private final UserAgent slaUserAgent;
     private final Duration slaUserTTL;
 
     /**
@@ -378,7 +379,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
      * @param slaUserTTL The TTL to use for SLA users, must be non-null and positive if slaUserAgent
      *     is set.
      */
-    public DynamicTTLSupplier(Duration cacheTTL, String slaUserAgent, Duration slaUserTTL) {
+    public DynamicTTLSupplier(Duration cacheTTL, UserAgent slaUserAgent, Duration slaUserTTL) {
 
       this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
       if (cacheTTL.isNegative() || cacheTTL.isZero()) {
@@ -386,7 +387,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
       }
 
       this.slaUserAgent = slaUserAgent;
-      if (!Strings.isNullOrEmpty(slaUserAgent)) {
+      if (slaUserAgent != null) {
         this.slaUserTTL =
             Objects.requireNonNull(
                 slaUserTTL, "slaUserTTL must not be null is slaUserAgent is set");
@@ -398,7 +399,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
       }
     }
 
-    public Duration ttlForUsageAgent(String userAgent) {
+    public Duration ttlForUsageAgent(UserAgent userAgent) {
       // slaUserAgent can be null
       return slaUserAgent == null || !slaUserAgent.equals(userAgent) ? cacheTTL : slaUserTTL;
     }

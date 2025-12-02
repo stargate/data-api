@@ -1,14 +1,18 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
-import java.util.Optional;
+import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
+
+import jakarta.validation.constraints.NotNull;
 
 /**
  * This is the RerankingCredentials record that holds the API key for the reranking. String will be
  * resolved from the request header 'reranking-api-key', if it is not present, then we will use the
  * cassandra token as the reranking api key. Note, both cassandra token and reranking-api-key could
  * be absent in Data API request, although it is invalid for authentication.
- *
- * <p>Includes the tenantId, so we can fully identify the usage when creating the {@link
- * io.stargate.sgv2.jsonapi.service.provider.ModelUsage}
  */
-public record RerankingCredentials(String tenantId, Optional<String> apiKey) {}
+public record RerankingCredentials(@NotNull String apiKey) {
+
+  public RerankingCredentials {
+    apiKey = normalizeOptionalString(apiKey);
+  }
+}

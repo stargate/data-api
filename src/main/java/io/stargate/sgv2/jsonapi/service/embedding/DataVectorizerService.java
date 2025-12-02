@@ -90,10 +90,7 @@ public class DataVectorizerService {
         objectMapper.getNodeFactory(),
         commandContext
             .requestContext()
-            .getEmbeddingCredentialsSupplier()
-            .create(
-                commandContext.requestContext(),
-                embeddingProvider == null ? null : embeddingProvider.providerConfig()),
+            .getEmbeddingCredentials(),
         commandContext.schemaObject());
   }
 
