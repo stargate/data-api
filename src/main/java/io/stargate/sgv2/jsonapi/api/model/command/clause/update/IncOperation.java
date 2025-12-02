@@ -22,7 +22,7 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
   }
 
   public static IncOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
 
     List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {

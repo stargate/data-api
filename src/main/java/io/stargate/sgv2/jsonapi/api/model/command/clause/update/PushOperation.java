@@ -22,7 +22,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
   }
 
   public static PushOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
 
     List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
@@ -53,7 +53,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
     JsonNode eachArg = null;
     Integer position = null;
 
-    Iterator<Map.Entry<String, JsonNode>> it = actionDef.fields();
+    Iterator<Map.Entry<String, JsonNode>> it = actionDef.properties().iterator();
     while (it.hasNext()) {
       Map.Entry<String, JsonNode> entry = it.next();
       final String modifier = entry.getKey();

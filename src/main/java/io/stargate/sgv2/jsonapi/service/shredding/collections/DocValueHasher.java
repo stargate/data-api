@@ -152,7 +152,7 @@ public class DocValueHasher {
 
     // Actual implementation would actually use iterated over values;
     // we will traverse to exercise caching for tests but not really use:
-    Iterator<Map.Entry<String, JsonNode>> it = n.fields();
+    Iterator<Map.Entry<String, JsonNode>> it = n.properties().iterator();
     while (it.hasNext()) {
       Map.Entry<String, JsonNode> entry = it.next();
       sb.append(LINE_SEPARATOR).append(entry.getKey());

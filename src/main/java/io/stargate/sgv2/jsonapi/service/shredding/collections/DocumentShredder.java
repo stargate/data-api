@@ -301,7 +301,7 @@ public class DocumentShredder {
         }
       }
 
-      var it = objectValue.fields();
+      var it = objectValue.properties().iterator();
       while (it.hasNext()) {
         var entry = it.next();
         final String key = entry.getKey();
@@ -468,7 +468,7 @@ public class DocumentShredder {
 
     private void traverseObject(ObjectNode obj, JsonPath.Builder pathBuilder) {
 
-      Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
+      Iterator<Map.Entry<String, JsonNode>> it = obj.properties().iterator();
       while (it.hasNext()) {
         Map.Entry<String, JsonNode> entry = it.next();
         pathBuilder.property(DocumentPath.encodeSegment(entry.getKey()));
@@ -535,7 +535,7 @@ public class DocumentShredder {
       } else if (value.isObject()) {
         // e.g. "$vector": {"$binary": "c3VyZS4="}
         ObjectNode obj = (ObjectNode) value;
-        final Map.Entry<String, JsonNode> entry = obj.fields().next();
+        final Map.Entry<String, JsonNode> entry = obj.properties().iterator().next();
         JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
         if (keyType != BINARY) {
           throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(

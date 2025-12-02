@@ -27,7 +27,7 @@ class CreateKeyspaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateNamespaceCommandResolver resolver;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<DatabaseSchemaObject> commandContext;
 

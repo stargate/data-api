@@ -20,7 +20,7 @@ public class CurrentDateOperation extends UpdateOperation<CurrentDateOperation.A
 
   public static CurrentDateOperation construct(ObjectNode args) {
     List<Action> actions = new ArrayList<>();
-    var it = args.fields();
+    var it = args.properties().iterator();
     while (it.hasNext()) {
       var entry = it.next();
       String path = validateUpdatePath(UpdateOperator.CURRENT_DATE, entry.getKey());

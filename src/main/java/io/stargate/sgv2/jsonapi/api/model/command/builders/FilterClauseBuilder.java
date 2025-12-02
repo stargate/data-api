@@ -109,7 +109,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       return;
     }
     if (node.isObject()) {
-      Iterator<Map.Entry<String, JsonNode>> fieldsIterator = node.fields();
+      Iterator<Map.Entry<String, JsonNode>> fieldsIterator = node.properties().iterator();
       while (fieldsIterator.hasNext()) {
         Map.Entry<String, JsonNode> entry = fieldsIterator.next();
         populateExpression(logicalExpression, entry);
@@ -194,7 +194,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   protected List<ComparisonExpression> buildFromPathEntryCommon(Map.Entry<String, JsonNode> entry) {
 
     final List<ComparisonExpression> comparisonExpressionList = new ArrayList<>();
-    final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
+    final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().properties().iterator();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
       final String updateKey = updateField.getKey();
@@ -342,7 +342,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
           } else {
             ObjectNode objectNode = (ObjectNode) node;
             Map<String, Object> values = new LinkedHashMap<>(objectNode.size());
-            final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.properties().iterator();
             while (fields.hasNext()) {
               final Map.Entry<String, JsonNode> nextField = fields.next();
               values.put(nextField.getKey(), jsonNodeValue(nextField.getValue()));

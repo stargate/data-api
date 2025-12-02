@@ -29,7 +29,7 @@ class CreateCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateCollectionCommandResolver resolver;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<KeyspaceSchemaObject> commandContext;
 

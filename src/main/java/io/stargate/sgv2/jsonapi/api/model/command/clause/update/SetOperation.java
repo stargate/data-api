@@ -67,7 +67,7 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   private static SetOperation construct(
       ObjectNode args, boolean onlyOnInsert, UpdateOperator operator) {
     List<Action> additions = new ArrayList<>();
-    var it = args.fields();
+    var it = args.properties().iterator();
     while (it.hasNext()) {
       var entry = it.next();
       // 19-May-2023, tatu: As per [json-api#433] need to allow _id override on $setOnInsert

@@ -23,7 +23,7 @@ public class TypeFieldsContainerDeserializer extends JsonDeserializer<ColumnsDes
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
     var container = new ColumnsDescContainer();
-    var fieldsIter = deserializationContext.readTree(jsonParser).fields();
+    var fieldsIter = deserializationContext.readTree(jsonParser).properties().iterator();
 
     // cannot use forEach because want IOException to propagate
     while (fieldsIter.hasNext()) {

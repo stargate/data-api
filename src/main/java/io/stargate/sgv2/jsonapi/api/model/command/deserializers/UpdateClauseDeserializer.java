@@ -30,7 +30,7 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
           filterNode.getNodeType());
     }
     final EnumMap<UpdateOperator, ObjectNode> updateDefs = new EnumMap<>(UpdateOperator.class);
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.properties().iterator();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       final String operName = entry.getKey();

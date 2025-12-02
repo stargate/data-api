@@ -92,7 +92,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     // So let's validate the paths for the sort expressions
     validateSortExpressionPaths(sortNode);
 
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.properties().iterator();
     List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
 
     while (fieldIter.hasNext()) {

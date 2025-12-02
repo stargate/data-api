@@ -17,7 +17,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
   }
 
   public static PopOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
 
     List<Action> actions = new ArrayList<>();
     while (fieldIter.hasNext()) {

@@ -19,7 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     type = SchemaType.OBJECT,
     implementation = SortClause.class,
-    example =
+    examples =
         """
                   {"user.age" : -1, "user.name" : 1}
                   """)

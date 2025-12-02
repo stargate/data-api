@@ -23,7 +23,7 @@ public class MulOperation extends UpdateOperation<MulOperation.Action> {
   }
 
   public static MulOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
 
     List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {

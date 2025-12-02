@@ -16,7 +16,7 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
 
   public static RenameOperation construct(ObjectNode args) {
     List<Action> actions = new ArrayList<>();
-    var it = args.fields();
+    var it = args.properties().iterator();
     while (it.hasNext()) {
       var entry = it.next();
       String srcPath = validateUpdatePath(UpdateOperator.RENAME, entry.getKey());

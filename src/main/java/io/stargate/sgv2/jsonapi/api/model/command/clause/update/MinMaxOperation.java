@@ -33,7 +33,7 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
   }
 
   private static MinMaxOperation construct(ObjectNode args, UpdateOperator oper, boolean isMax) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
 
     List<Action> actions = new ArrayList<>();
     while (fieldIter.hasNext()) {
