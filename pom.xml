@@ -336,7 +336,8 @@
               leading to duplication of "mockito.version".
               See: https://github.com/stargate/data-api/pull/2233
             -->
-          <argLine>-Xmx4g -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+          <!-- 02-Dec-2025, tatu: [data-api#2270] Use @{argLine} to preserve JaCoCo agent config -->
+          <argLine>@{argLine} -Xmx4g -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <maven.home>${maven.home}</maven.home>
