@@ -298,7 +298,7 @@ public class DocValueHasherTest {
     public void testShortAndLongStrings() throws Exception {
       final DocValueHasher hasher = new DocValueHasher();
       for (int i = 1; i < 80; ++i) {
-        String value = RandomStringUtils.insecure().randomAlphanumeric(i);
+        String value = RandomStringUtils.insecure().nextAlphanumeric(i);
         JsonNode doc = objectMapper.readTree("\"" + value + "\"");
         DocValueHash hash = hasher.hash(doc);
         assertThat(hash).isNotNull();

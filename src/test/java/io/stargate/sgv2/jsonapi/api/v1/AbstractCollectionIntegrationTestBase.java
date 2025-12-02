@@ -28,7 +28,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   }
 
   protected AbstractCollectionIntegrationTestBase(String collectionNamePrefix) {
-    collectionName = collectionNamePrefix + RandomStringUtils.insecure().randomAlphanumeric(16);
+    collectionName = collectionNamePrefix + RandomStringUtils.insecure().nextAlphanumeric(16);
   }
 
   @BeforeAll

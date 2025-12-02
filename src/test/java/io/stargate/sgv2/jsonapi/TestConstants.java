@@ -89,7 +89,7 @@ public class TestConstants {
     // ============================================================
     // Names
     // ============================================================
-    CORRELATION_ID = "test-id-" + RandomStringUtils.insecure().randomAlphanumeric(16);
+    CORRELATION_ID = "test-id-" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
     COMMAND_NAME = "command-" + CORRELATION_ID;
     KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;

@@ -48,7 +48,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
   // keyspace automatically created in this test
-  protected static final String keyspaceName = "ks" + RandomStringUtils.insecure().randomAlphanumeric(16);
+  protected static final String keyspaceName = "ks" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
   /**
    * Access is protected via {@link #createDriverSession()} method and closed in {@link #cleanUp()}.
