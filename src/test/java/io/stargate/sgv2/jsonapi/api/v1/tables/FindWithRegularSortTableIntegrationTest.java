@@ -310,7 +310,8 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindSortFail {
-    static final String biggerTableName = "col_fail_" + RandomStringUtils.insecure().nextAlphanumeric(16);
+    static final String biggerTableName =
+        "col_fail_" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
     // Test limit is max 100, create couple more
     private static final List<Object> bigTestDatas = getDocuments(110);
