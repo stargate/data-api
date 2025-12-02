@@ -148,6 +148,14 @@ quarkus:
     # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
     additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
 
+  # Register CqlIdentifier for reflection (used by Jackson deserialization)
+  # Suppresses "Unable to properly register the hierarchy" warning
+  index-dependency:
+    driver-core:
+      group-id: com.datastax.oss
+      artifact-id: java-driver-core
+      classifier: ''
+
   # adapt path of the open api definitions
   smallrye-openapi:
     path: /api/json/openapi
