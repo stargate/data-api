@@ -1,5 +1,34 @@
 # Changelog
 
+## [v1.0.34](https://github.com/stargate/data-api/tree/v1.0.34) (2025-12-01)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.33...v1.0.34)
+
+**Merged pull requests:**
+
+- Cody tidy for the cache work [\#2268](https://github.com/stargate/data-api/pull/2268) ([amorton](https://github.com/amorton))
+- Fix \#2266: remove dynamic Quarkus Config access by JsonApiException [\#2267](https://github.com/stargate/data-api/pull/2267) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bump actions/checkout from 5 to 6 in the github-actions group [\#2264](https://github.com/stargate/data-api/pull/2264) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Evict session in cache when encountering AllNodesFailedException - for old exception [\#2263](https://github.com/stargate/data-api/pull/2263) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix \#2259 Make Session Creations and Cache Fully Async [\#2262](https://github.com/stargate/data-api/pull/2262) ([amorton](https://github.com/amorton))
+- Evict session in cache when encountering AllNodesFailedException [\#2260](https://github.com/stargate/data-api/pull/2260) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix \#2253; prevent AIOOBE for CqlCredentials [\#2255](https://github.com/stargate/data-api/pull/2255) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Try to upgrate to very latest Quarkus \(follow-up\) [\#2252](https://github.com/stargate/data-api/pull/2252) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Upgrade to latest public Quarkus version [\#2251](https://github.com/stargate/data-api/pull/2251) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add driver config `advanced.resolve-contact-points = false` [\#2250](https://github.com/stargate/data-api/pull/2250) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix service name for hcd first node in compose file [\#2249](https://github.com/stargate/data-api/pull/2249) ([sl-at-ibm](https://github.com/sl-at-ibm))
+- Fix \#1911: allow empty `options` for createIndex, ENTRY [\#2247](https://github.com/stargate/data-api/pull/2247) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2234: switch to JSpecify for `@NonNull` annotations to remove spotbugs-annotations usage [\#2245](https://github.com/stargate/data-api/pull/2245) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#2241: remove `spotbugs-annotations` from inclusion in Docker image [\#2242](https://github.com/stargate/data-api/pull/2242) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2231: handle missing 'udtName' gracefully [\#2240](https://github.com/stargate/data-api/pull/2240) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1883: enable Tables feature by default [\#2239](https://github.com/stargate/data-api/pull/2239) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#2220, update to DSE 6.9.15 \(from 6.9.14\) [\#2237](https://github.com/stargate/data-api/pull/2237) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- \[Issue 2132\] Can not vector sort on mis-matched dimension [\#2235](https://github.com/stargate/data-api/pull/2235) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- \[Issue 2112\]  do NOT allow create index for scalar column with index function [\#2234](https://github.com/stargate/data-api/pull/2234) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Update mockito version override \(old\) to let quarkus-bom bring right version [\#2233](https://github.com/stargate/data-api/pull/2233) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Enable use of ENV vars for Java Cassandra driver config [\#2232](https://github.com/stargate/data-api/pull/2232) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2229](https://github.com/stargate/data-api/pull/2229) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.33](https://github.com/stargate/data-api/tree/v1.0.33) (2025-10-16)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.32...v1.0.33)
