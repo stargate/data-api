@@ -173,7 +173,7 @@ public abstract class BaseTask<
       LOGGER.debug(
           "maybeAddFailure() - will not add failure for {}, because has existing failure={}, attempted new failure={}",
           taskDesc(),
-          Objects.toString(failure),
+          failure,
           Objects.toString(throwable));
     }
     return upcastToTask();
@@ -231,8 +231,8 @@ public abstract class BaseTask<
    * io.stargate.sgv2.jsonapi.exception.ExceptionHandler}.
    *
    * <p>Called after we have completed processing a task, on the first error passed to {@link
-   * Task#maybeAddFailure(RuntimeException)}. Note that any errors that resulted in a retry will not
-   * be tracked, only the final error.
+   * Task#maybeAddFailure}. Note that any errors that resulted in a retry will not be tracked, only
+   * the final error.
    *
    * @param resultSupplier The {@link ResultSupplierT} returned by the subclass from {@link
    *     #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did
@@ -352,7 +352,7 @@ public abstract class BaseTask<
    * Called when the operation has completed, could be successfully or error.
    *
    * <p>Subclasses should not normally override this method. If you want to do something like
-   * capture the result set on success (non error) then override {@link #onSuccess(ResultT)}.
+   * capture the result set on success (non error) then override {@link #onSuccess}.
    *
    * <p>NOTE: this has void return, it used to try to return a generic subtype, but it was too
    * fragile.
@@ -421,7 +421,6 @@ public abstract class BaseTask<
           throw new IllegalStateException(
               String.format("onCompletion() unsupported status=%s, %s", status(), taskDesc()));
     }
-    ;
   }
 
   /**
@@ -442,13 +441,13 @@ public abstract class BaseTask<
 
   /**
    * Check the status of the task, if it is the expected status then return this object, otherwise
-   * set a {@link IllegalStateException} via {@link Task#maybeAddFailure(RuntimeException)} to
-   * change the status to {@link TaskStatus#ERROR}.
+   * set a {@link IllegalStateException} via {@link Task#maybeAddFailure} to change the status to
+   * {@link TaskStatus#ERROR}.
    *
    * @param context short descriptive text about what is being checked, used in the exception
    * @param expectedStatus The status that is expected
    * @return True if the task is in the expected state, otherwise a {@link IllegalStateException} is
-   *     added to the task via {@link Task#maybeAddFailure(RuntimeException)} and false is returned.
+   *     added to the task via {@link Task#maybeAddFailure} and false is returned.
    */
   protected boolean checkStatus(String context, TaskStatus expectedStatus) {
 
@@ -508,7 +507,7 @@ public abstract class BaseTask<
 
   /**
    * Pretty printing to help with logging and tests to better format the details of a task, see
-   * {@link PrettyPrintable#toString(PrettyPrintableRecorder)}
+   * {@link PrettyPrintable.PrettyPrintableRecorder}
    */
   @Override
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {

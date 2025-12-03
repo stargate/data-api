@@ -242,7 +242,7 @@ public abstract class StargateTestResource
             "cassandra.sai.max_string_term_size_kb", DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB);
 
     GenericContainer<?> container =
-        (new GenericContainer(image))
+        new GenericContainer<>(image)
             .withEnv("JAVA_OPTS", javaOpts)
             .withEnv("CLUSTER_NAME", getClusterName())
             .withEnv("SIMPLE_SNITCH", "true")
@@ -255,7 +255,7 @@ public abstract class StargateTestResource
             .waitingFor(Wait.forHttp("/checker/readiness").forPort(8084).forStatusCode(200))
             .withStartupTimeout(this.getCoordinatorStartupTimeout())
             .withReuse(reuse);
-    if (this.isDse()) {
+    if (isDse()) {
       container.withEnv("DSE", "1");
     }
 
@@ -306,9 +306,7 @@ public abstract class StargateTestResource
   }
 
   /**
-   * Returns if coordinator should be started and used.
-   *
-   * @return
+   * @return {@code true} if coordinator should be started and used.
    */
   protected boolean useCoordinator() {
     return Boolean.getBoolean("testing.containers.use-coordinator");
