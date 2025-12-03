@@ -209,7 +209,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Order(5)
     public void emptyNamespace() {
       // create namespace first
-      String namespace = "nam" + RandomStringUtils.randomNumeric(16);
+      String namespace = "nam" + RandomStringUtils.insecure().nextNumeric(16);
       givenHeadersAndJson(
                   """
           {
