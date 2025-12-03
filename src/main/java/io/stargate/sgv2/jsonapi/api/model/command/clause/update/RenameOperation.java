@@ -16,9 +16,7 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
 
   public static RenameOperation construct(ObjectNode args) {
     List<Action> actions = new ArrayList<>();
-    var it = args.properties().iterator();
-    while (it.hasNext()) {
-      var entry = it.next();
+    for (var entry : args.properties()) {
       String srcPath = validateUpdatePath(UpdateOperator.RENAME, entry.getKey());
       JsonNode value = entry.getValue();
       if (!value.isTextual()) {

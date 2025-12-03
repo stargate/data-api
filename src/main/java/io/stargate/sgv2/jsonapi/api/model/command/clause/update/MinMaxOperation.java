@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -33,11 +32,8 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
   }
 
   private static MinMaxOperation construct(ObjectNode args, UpdateOperator oper, boolean isMax) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
-
     List<Action> actions = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : args.properties()) {
       // Verify we do not try to change doc id
       String path = validateUpdatePath(oper, entry.getKey());
       actions.add(new Action(PathMatchLocator.forPath(path), entry.getValue()));

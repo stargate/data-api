@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -22,11 +21,8 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
   }
 
   public static IncOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
-
     List<Action> updates = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : args.properties()) {
       // Verify we have neither operators...
       String name = validateNonModifierPath(UpdateOperator.INC, entry.getKey());
       // nor try to change doc id

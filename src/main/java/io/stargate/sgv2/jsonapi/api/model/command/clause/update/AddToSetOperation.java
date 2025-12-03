@@ -22,11 +22,8 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
   }
 
   public static AddToSetOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
-
     List<Action> updates = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : args.properties()) {
       final String name = validateUpdatePath(UpdateOperator.ADD_TO_SET, entry.getKey());
       // At main level we must have field name (no modifiers)
       if (looksLikeModifier(name)) {
@@ -50,9 +47,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
     // We really only support "$each" but traverse in case more added in future
     JsonNode eachArg = null;
 
-    Iterator<Map.Entry<String, JsonNode>> it = actionDef.properties().iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, JsonNode> entry = it.next();
+    for (Map.Entry<String, JsonNode> entry : actionDef.properties()) {
       final String modifier = entry.getKey();
       final JsonNode arg = entry.getValue();
 

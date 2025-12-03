@@ -22,11 +22,8 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
   }
 
   public static PushOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.properties().iterator();
-
     List<Action> updates = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : args.properties()) {
       // First verify update operation allowed for path (not for _id, $lexical/$vector/$vectorize)
       final String name = validateUpdatePath(UpdateOperator.PUSH, entry.getKey());
       // At main level we must have field name (no modifiers)
@@ -53,9 +50,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
     JsonNode eachArg = null;
     Integer position = null;
 
-    Iterator<Map.Entry<String, JsonNode>> it = actionDef.properties().iterator();
-    while (it.hasNext()) {
-      Map.Entry<String, JsonNode> entry = it.next();
+    for (Map.Entry<String, JsonNode> entry : actionDef.properties()) {
       final String modifier = entry.getKey();
       final JsonNode arg = entry.getValue();
 
