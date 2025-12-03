@@ -111,10 +111,18 @@ jobs:
           generate-branches-badge: true
           generate-summary: true
 
-      - name: Log coverage percentage
+      - name: Add coverage to Job Summary
         run: |
-          echo "coverage = ${{ steps.jacoco-badge.outputs.coverage }}"
-          echo "branch coverage = ${{ steps.jacoco-badge.outputs.branches }}"
+          echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Instructions** | ${{ steps.jacoco-badge.outputs.coverage }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branches** | ${{ steps.jacoco-badge.outputs.branches }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📥 [Download Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The complete JaCoCo HTML report is available as an artifact named \`jacoco-report\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload JaCoCo coverage report
         uses: actions/upload-artifact@v4
