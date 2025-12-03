@@ -56,7 +56,7 @@ public abstract class StargateTestResource
       return Collections.emptyMap();
     } else {
       boolean reuse = false;
-      ImmutableMap.Builder propsBuilder;
+      ImmutableMap.Builder<String, String> propsBuilder;
       if (this.containerNetworkId.isPresent()) {
         String networkId = this.containerNetworkId.get();
         propsBuilder = this.startWithContainerNetwork(networkId, reuse);
@@ -150,8 +150,7 @@ public abstract class StargateTestResource
       propsBuilder.put("quarkus.grpc.clients.bridge.host", stargateHost);
       return propsBuilder;
     } else {
-      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-      return propsBuilder;
+      return ImmutableMap.builder();
     }
   }
 
@@ -181,7 +180,7 @@ public abstract class StargateTestResource
     // Important: Start by checking if we are running HCD: default for local testing.
     // (for some reason looks like both "isHcd()" and "isDse()" may return true under
     // some conditions...)
-    if (this.isHcd()) {
+    if (isHcd()) {
       container =
           new GenericContainer<>(image)
               .withCopyFileToContainer(
@@ -193,7 +192,7 @@ public abstract class StargateTestResource
       // this MAY be needed too wrt ^^^
       // + " -Dcassandra.sai.jvector_version=4"
       ;
-    } else if (this.isDse()) {
+    } else if (isDse()) {
       container =
           new GenericContainer<>(image)
               .withCopyFileToContainer(
