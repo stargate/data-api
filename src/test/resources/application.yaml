@@ -21,9 +21,6 @@ quarkus:
         level: WARN
       'io.stargate.sgv2.jsonapi.service.cqldriver':
         level: INFO
-      # Suppress warnings about @Nested test classes and test profile mismatches
-      'io.quarkus.test.junit.buildchain.TestsAsBeansProcessor':
-        level: ERROR
       # Suppress reflection hierarchy warnings for external dependencies not in Jandex
       # Fine for JVM mode; if building native images, use index-dependency instead
       'io.quarkus.deployment.steps.ReflectiveHierarchyStep':
