@@ -55,15 +55,15 @@ public class MetadataDBTaskPage<TaskT extends MetadataDBTask<SchemaT>, SchemaT e
     addTaskWarningsToResult();
     addTaskErrorsToResult();
 
-    var metadataAttempts = tasks.completedTasks();
+    var metadataAttempts = taskGroup.completedTasks();
     if (metadataAttempts.size() > 1) {
       throw new IllegalArgumentException("Only one attempt is expected for metadata commands");
     }
     if (!metadataAttempts.isEmpty()) {
       if (showSchema) {
-        resultBuilder.addStatus(statusKey, tasks.getFirst().getSchema());
+        resultBuilder.addStatus(statusKey, taskGroup.tasks().getFirst().getSchema());
       } else {
-        resultBuilder.addStatus(statusKey, tasks.getFirst().getNames());
+        resultBuilder.addStatus(statusKey, taskGroup.tasks().getFirst().getNames());
       }
     }
   }

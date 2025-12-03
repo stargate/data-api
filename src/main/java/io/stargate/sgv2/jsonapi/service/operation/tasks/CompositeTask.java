@@ -67,7 +67,7 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
     super(position, schemaObject, retryPolicy);
 
     this.innerTaskGroup = Objects.requireNonNull(innerTaskGroup, "innerTaskGroup cannot be null");
-    if (innerTaskGroup.isEmpty()) {
+    if (innerTaskGroup.tasks().isEmpty()) {
       throw new IllegalArgumentException("innerTaskGroup cannot be empty");
     }
     // last task accumulator can be null, if this is an intermediate task
@@ -175,7 +175,7 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   public Task<SchemaT> setSkippedIfReady() {
     // make sure we pass this though to the inner tasks, the CompositeTask has been skipped
     // so all inner tasks are also skipped
-    innerTaskGroup.forEach(Task::setSkippedIfReady);
+    innerTaskGroup.tasks().forEach(Task::setSkippedIfReady);
     return super.setSkippedIfReady();
   }
 
@@ -191,7 +191,7 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
 
     var allWarnings = new ArrayList<>(super.allWarnings());
     allWarnings.addAll(
-        innerTaskGroup.stream().map(Task::allWarnings).flatMap(List::stream).toList());
+        innerTaskGroup.tasks().stream().map(Task::allWarnings).flatMap(List::stream).toList());
 
     return allWarnings;
   }
@@ -206,7 +206,7 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
 
     var allWarnings = new ArrayList<>(super.warningsExcludingSuppressed());
     allWarnings.addAll(
-        innerTaskGroup.stream()
+        innerTaskGroup.tasks().stream()
             .map(Task::warningsExcludingSuppressed)
             .flatMap(List::stream)
             .toList());

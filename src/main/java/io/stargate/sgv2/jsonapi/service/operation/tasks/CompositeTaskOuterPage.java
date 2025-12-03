@@ -34,7 +34,7 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
   @Override
   public CommandResult get() {
 
-    if (!tasks.errorTasks().isEmpty()) {
+    if (!taskGroup.errorTasks().isEmpty()) {
       // we have some failed tasks, they are failed CompositeTask's that have lifted errors
       // from their inner tasks
       // the superclass will build a basic response with errors and warnings, that is what we need
@@ -43,9 +43,7 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
 
     // the last composite task is the one that will build the results of running all the composite
     // tasks.
-    // TODO: AARON - need better guarantee the last task is the last task according to it's position
-    // etc
-    return tasks.getLast().lastTaskAccumulator().getResults().get();
+    return taskGroup.tasks().getLast().lastTaskAccumulator().getResults().get();
   }
 
   /**
