@@ -300,7 +300,7 @@ public abstract class StargateTestResource
 
   public static boolean isRunningUnderMaven() {
     // Running under Maven if surefire test class path is set
-    // (note: also set up by Failsafe plugin (integ tests))
+    // (note: also set up by Failsafe plugin (integration tests))
     return System.getProperty("surefire.test.class.path") != null;
   }
 
