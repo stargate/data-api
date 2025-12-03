@@ -42,7 +42,7 @@ public abstract class BaseTask<
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BaseTask.class);
 
-  // Keep this private, so subclasses set through setter incase we need to synchronize later
+  // Keep this private, so subclasses set through setter in case we need to synchronize later
   // use {@link #setStatus(TaskStatus)} to change the status.
   private TaskStatus status = TaskStatus.UNINITIALIZED;
 
@@ -111,6 +111,7 @@ public abstract class BaseTask<
         .transform(
             (result, throwable) -> {
               onCompletion(result, throwable);
+              //noinspection unchecked
               return (SubT) this; // TODO - downcast() does not work here
             })
         .invoke(
@@ -221,10 +222,6 @@ public abstract class BaseTask<
    */
   protected abstract ResultSupplierT buildResultSupplier(CommandContext<SchemaT> commandContext);
 
-  protected ResultSupplierT lastResultSupplier() {
-    return resultSupplier;
-  }
-
   /**
    * Subclasses must implement to handle an error they generated and potentially map it into an
    * error they want to return to the user such as via a {@link
@@ -292,7 +289,7 @@ public abstract class BaseTask<
 
     // First things first: did we already fail? If so we do not execute, we can just return self.
     // In practice this should not happen, because the execute() ensures the state is READY before
-    // starting it is here incase we hae missed something in the retry
+    // starting it is here in case we hae missed something in the retry
     if (status() == TaskStatus.ERROR) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("executeIfInProgress() - in ERROR state, will not execute {}", taskDesc());
