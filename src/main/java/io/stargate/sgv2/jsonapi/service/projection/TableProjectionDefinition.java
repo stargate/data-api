@@ -66,9 +66,7 @@ public class TableProjectionDefinition {
     List<String> columnNames = new ArrayList<>();
     boolean inclusionProjection = false;
 
-    var it = projectionDefinition.properties().iterator();
-    while (it.hasNext()) {
-      var entry = it.next();
+    for (var entry : projectionDefinition.properties()) {
       String path = entry.getKey();
 
       if (path.isEmpty()) {

@@ -263,9 +263,7 @@ public class DocumentProjector {
     }
 
     PathCollector collectFromObject(JsonNode ob, String parentPath) {
-      var it = ob.properties().iterator();
-      while (it.hasNext()) {
-        var entry = it.next();
+      for (var entry : ob.properties()) {
         String path = entry.getKey();
 
         if (path.isEmpty()) {
