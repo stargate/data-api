@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.util;
 
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -25,27 +24,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A cache for managing and reusing {@link CqlSession} instances based on tenant and authentication
- * credentials.
+ * A Caffeine based cache that supports dynamic TTLS based on the key used to access the cache.
  *
- * <p>Sessions are cached based on the tenantId and authentication token. So that a single tenant
- * may have multiple sessions, but a single session is used for the same tenant and auth token.
- *
- * <p>Create instances using the {@link CqlSessionCacheSupplier} class.
- *
- * <p>Call {@link #getSession(RequestContext)} and overloads to get a session for the current
- * request context.
- *
- * <p>The {@link DynamicTTLCacheListener} interface will be called when a session is removed from
- * the cache, so that schema cache and metrics can be updated to remove the tenant. NOTE: this is
- * called when the session expires, but a single tenant may have multiple sessions (based on key
- * above), so it is not a guarantee that the tenant is not active with another set of credentials.
- * If you take action to remove a deactivated tenant, there should be a path for the tenant to be
- * reactivated.
- *
- * <p><b>NOTE:</b> There is no method to get the size of the cache because it is not a reliable
- * measure, it's only an estimate. We can assume the size feature works. For testing use {@link
- * #peekSession(String, String, String)}
+ * <p>This is used so we can have different TTLs for different user agents accessing the same cache
+ * entry. The core of this is implemented in the {@link DynamicExpiryPolicy}, where we look at the
+ * TTL of the key used to load the item in the cache and the TTL of the current access to the cache.
+ * Which is why we have the {@link ValueHolder} so we can keep track of the key used to load the
+ * item.
  */
 public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, ValueT> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTTLCache.class);
@@ -75,14 +60,12 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
    *
    * <p>Use this ctor for testing only.
    *
-   * @param databaseType The type of database being used,
-   * @param cacheTTL The time-to-live (TTL) duration for cache entries.
+   * @param cacheName Name of the cache, used with caffine metrics.
    * @param cacheMaxSize The maximum size of the cache.
-   * @param credentialsFactory A factory for creating {@link CqlCredentials} based on authentication
-   *     tokens.
-   * @param sessionFactory A factory for creating new {@link CqlSession} instances when needed.
+   * @param valueFactory Factory function to call to generate a new value when needed.
+   * @param listeners Nullable, optional, list of listeners to call when a key is removed from the
+   *     cache.
    * @param meterRegistry The {@link MeterRegistry} for monitoring cache metrics.
-   * @param deactivatedTenantConsumer A list of consumers to handle tenant deactivation events.
    * @param asyncTaskOnCaller If true, asynchronous tasks (e.g., callbacks) will run on the caller
    *     thread. This is intended for testing purposes only. DO NOT USE in production.
    * @param cacheTicker If non-null, this is the ticker used by the cache to decide when to expire
@@ -158,7 +141,13 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
           .map(ValueHolder::value);
     }
 
-    return Uni.createFrom().completionStage(cache.get(key)).map(ValueHolder::value);
+    // Calling get() on the cache will return a CompletionStage
+    // which will not be null however it is
+    // technically possible for the value loader to return a completed stage that has a null value
+    // so extra check just in case.
+    return Uni.createFrom()
+        .completionStage(cache.get(key))
+        .map(valueHolder -> valueHolder != null ? valueHolder.value() : null);
   }
 
   @VisibleForTesting
@@ -208,7 +197,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   }
 
   /**
-   * Called to load a new value for the cache, either from caffine because of cache miss or when
+   * Called to load a new value for the cache, either from caffeine because of cache miss or when
    * force refresh is used.
    *
    * <p>
@@ -418,13 +407,21 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     }
   }
 
-  /** Function called when a value is removed from the cache. */
+  /**
+   * Function called when a value is removed from the cache.
+   *
+   * <p>
+   */
   @FunctionalInterface
   public interface DynamicTTLCacheListener<KeyT extends CacheKey, ValueT> {
     void onRemoved(KeyT key, ValueT value, RemovalCause cause);
   }
 
-  /** Function called to create a new value for the cache when none is needed. */
+  /**
+   * Function called to create a new value for the cache when none is needed.
+   *
+   * <p>
+   */
   @FunctionalInterface
   public interface ValueFactory<KeyT extends CacheKey, ValueT>
       extends Function<KeyT, CompletionStage<ValueT>> {
