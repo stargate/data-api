@@ -134,10 +134,8 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
     }
 
     List<ComparisonExpression> comparisonExpressions = new ArrayList<>();
-    var fieldsIter = pathValue.properties().iterator();
     // iterate through the filter fields.
-    while (fieldsIter.hasNext()) {
-      Map.Entry<String, JsonNode> jsonNodeEntry = fieldsIter.next();
+    for (Map.Entry<String, JsonNode> jsonNodeEntry : pathValue.properties()) {
       // nodeEntryKey can be mapComponent $keys/$values OR operator like $in/$nin/$all
       // so jsonNodeEntry like {$keys": {"$nin" : ["key1", "key2"]}}
       // or jsonNodeEntry like {"$in": [["key1", "value1"], ["key2", "value2"]]}
@@ -273,10 +271,8 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
       String columnName, JsonNode pathValue, ApiTypeName setOrList) {
 
     final List<ComparisonExpression> result = new ArrayList<>();
-    final Iterator<Map.Entry<String, JsonNode>> fields = pathValue.properties().iterator();
     // iterate through the filter fields.
-    while (fields.hasNext()) {
-      Map.Entry<String, JsonNode> expressionField = fields.next();
+    for (Map.Entry<String, JsonNode> expressionField : pathValue.properties()) {
 
       var operator = expressionField.getKey();
       var operatorValue = expressionField.getValue();
