@@ -449,6 +449,12 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.8.12</version>
+        <configuration>
+          <!-- 04-Dec-2025, tatu: Not part of data-api somehow included, exclude -->
+          <excludes>
+            <exclude>io/stargate/embedding/gateway/**</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <execution>
             <id>prepare-agent</id>
