@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
@@ -43,8 +44,11 @@ public class DataVectorizerTest {
   private final TestEmbeddingProvider testEmbeddingProvider =
       TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER;
   private final EmbeddingProvider testService = testEmbeddingProvider;
+  private static final TestConstants testConstants = new TestConstants();
+
   private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());
+      new EmbeddingCredentials(
+          testConstants.TENANT, Optional.empty(), Optional.empty(), Optional.empty());
 
   private CollectionSchemaObject collectionSettings = null;
 
@@ -210,7 +214,7 @@ public class DataVectorizerTest {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       0,
                       0,

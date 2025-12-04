@@ -117,7 +117,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
               // https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#response_body
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       total_tokens,
                       total_tokens,

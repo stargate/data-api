@@ -109,7 +109,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       nvidiaResponse.usage().prompt_tokens(),
                       nvidiaResponse.usage().total_tokens(),

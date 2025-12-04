@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.provider;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
@@ -299,7 +300,7 @@ public abstract class ProviderBase {
   }
 
   protected ModelUsage createModelUsage(
-      String tenantId,
+      Tenant tenant,
       ModelInputType modelInputType,
       int promptTokens,
       int totalTokens,
@@ -311,7 +312,7 @@ public abstract class ProviderBase {
         modelProvider,
         modelType,
         modelName(),
-        tenantId,
+        tenant,
         modelInputType,
         promptTokens,
         totalTokens,
@@ -321,7 +322,7 @@ public abstract class ProviderBase {
   }
 
   protected ModelUsage createModelUsage(
-      String tenantId,
+      Tenant tenant,
       ModelInputType modelInputType,
       int promptTokens,
       int totalTokens,
@@ -329,7 +330,7 @@ public abstract class ProviderBase {
       long durationNanos) {
 
     return createModelUsage(
-        tenantId,
+        tenant,
         modelInputType,
         promptTokens,
         totalTokens,

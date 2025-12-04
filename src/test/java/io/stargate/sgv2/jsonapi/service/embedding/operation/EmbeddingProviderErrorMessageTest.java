@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -33,9 +34,11 @@ public class EmbeddingProviderErrorMessageTest {
 
   private static final int DEFAULT_DIMENSIONS = 0;
 
+  private static final TestConstants testConstants = new TestConstants();
+
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(
-          "test-tenant", Optional.of("test"), Optional.empty(), Optional.empty());
+          testConstants.TENANT, Optional.of("test"), Optional.empty(), Optional.empty());
 
   private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(

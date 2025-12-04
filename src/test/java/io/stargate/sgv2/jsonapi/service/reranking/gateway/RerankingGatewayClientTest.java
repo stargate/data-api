@@ -11,6 +11,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -35,10 +36,12 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class RerankingGatewayClientTest {
 
+  private static final TestConstants testConstants = new TestConstants();
+
   public static final String TESTING_COMMAND_NAME = "test_command";
 
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials("test-tenant", Optional.of("mocked reranking api key"));
+      new RerankingCredentials(testConstants.TENANT, "mocked reranking api key");
 
   private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
           .RequestPropertiesImpl
@@ -96,8 +99,8 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
-            Optional.of("default"),
-            Optional.of("default"),
+            testConstants.TENANT,
+            "default",
             rerankService,
             Map.of(),
             TESTING_COMMAND_NAME);
@@ -150,8 +153,8 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
-            Optional.of("default"),
-            Optional.of("default"),
+            testConstants.TENANT,
+            "default",
             rerankService,
             Map.of(),
             TESTING_COMMAND_NAME);

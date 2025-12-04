@@ -6,6 +6,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -15,7 +16,6 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient extends EmbeddingProvider {
@@ -36,8 +36,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   private ServiceConfigStore.ServiceRequestProperties requestProperties;
 
-  private Optional<String> tenant;
-  private Optional<String> authToken;
+  private Tenant tenant;
+  private String authToken;
   private EmbeddingService grpcGatewayClient;
   Map<String, String> authentication;
   private String commandName;
@@ -50,8 +50,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters,
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       EmbeddingService grpcGatewayClient,
       Map<String, String> authentication,
       String commandName) {
@@ -141,8 +141,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     var contextBuilder =
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(modelProvider().apiName())
-            .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
-            .putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
+            .setTenantId(tenant.toString())
+            .putAuthTokens(DATA_API_TOKEN, authToken);
 
     embeddingCredentials
         .apiKey()

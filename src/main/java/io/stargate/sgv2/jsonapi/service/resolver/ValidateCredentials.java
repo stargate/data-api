@@ -31,9 +31,9 @@ public class ValidateCredentials {
     EmbeddingGateway.ValidateCredentialRequest.Builder validateCredentialRequest =
         EmbeddingGateway.ValidateCredentialRequest.newBuilder();
     validateCredentialRequest.setCredential(value);
-    validateCredentialRequest.setTenantId(dataApiRequestInfo.getTenantId().orElse("default"));
+    validateCredentialRequest.setTenantId(dataApiRequestInfo.tenant().toString());
     validateCredentialRequest.setProviderName(provider);
-    validateCredentialRequest.setToken(dataApiRequestInfo.getCassandraToken().orElse(""));
+    validateCredentialRequest.setToken(dataApiRequestInfo.authToken());
     EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingService =
         EmbeddingServiceGrpc.newBlockingStub(channel);
     final EmbeddingGateway.ValidateCredentialResponse validateCredentialResponse =

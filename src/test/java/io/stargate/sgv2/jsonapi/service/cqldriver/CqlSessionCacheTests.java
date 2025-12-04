@@ -8,11 +8,11 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.util.CacheTestsBase;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCacheTests;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 
@@ -336,10 +336,7 @@ public class CqlSessionCacheTests extends CacheTestsBase {
             List.of(listener), LONG_TTL, CACHE_MAX_SIZE, TEST_CONSTANTS.SLA_USER_AGENT, SHORT_TTL);
     var requestContext =
         new RequestContext(
-            Optional.of(TEST_CONSTANTS.TENANT),
-            Optional.of(TEST_CONSTANTS.AUTH_TOKEN),
-            null,
-            TEST_CONSTANTS.USER_AGENT);
+            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT);
 
     // Add a session to the cache and verify it is present
     var actualSession = fixture.cache.getSession(requestContext).await().indefinitely();
@@ -459,7 +456,7 @@ public class CqlSessionCacheTests extends CacheTestsBase {
       List<CQLSessionCache.DeactivatedTenantListener> listeners,
       Duration cacheTTL,
       int cacheSize,
-      String slaUserAgent,
+      UserAgent slaUserAgent,
       Duration slaUserTTL) {
 
     if (listeners == null) {

@@ -9,7 +9,6 @@ import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.DriverOption;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,9 +36,8 @@ public class CqlDriverConfigLoadEnvTests {
     // Important! CqlSessionFactory sets System property for considering
     // Env var overrides; must be called before tests. So just constructs
     // a factory instance to force classloading; not used for anything
-    CqlSessionFactory f =
-        new CqlSessionFactory(
-            "test", DatabaseType.CASSANDRA, "DC0", List.of("127.0.0.1"), 1111, () -> null);
+    CqlSessionFactory factory =
+        new CqlSessionFactory("test", "DC0", List.of("127.0.0.1"), 1111, () -> null);
   }
 
   @BeforeEach

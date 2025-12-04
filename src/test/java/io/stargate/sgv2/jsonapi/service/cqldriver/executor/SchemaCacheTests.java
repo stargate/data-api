@@ -12,7 +12,9 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -25,31 +27,29 @@ import org.junit.Test;
 
 public class SchemaCacheTests {
 
-  private static final String TENANT_ID = "tenant-id" + System.currentTimeMillis();
+  private final TestConstants testConstants = new TestConstants();
 
   @Test
   public void deactivatedTenantRemovesAllKeyspaces() {
-
-    var notTenantId = "not-tenant-id";
     var fixture = newFixture();
 
     // put two tables in from two keyspaces
-    var table1 = addTable(fixture, TENANT_ID, "keyspace1", "table1");
-    var table2 = addTable(fixture, TENANT_ID, "keyspace2", "table2");
-    var table3 = addTable(fixture, notTenantId, "keyspace3", "table3");
+    var table1 = addTable(fixture, testConstants.TENANT, "keyspace1", "table1");
+    var table2 = addTable(fixture, testConstants.TENANT, "keyspace2", "table2");
+    var table3 = addTable(fixture, testConstants.TENANT, "keyspace3", "table3");
 
     var deactivatedListener = fixture.schemaCache.getDeactivatedTenantConsumer();
 
-    deactivatedListener.accept(TENANT_ID);
+    deactivatedListener.accept(testConstants.TENANT);
 
     // all of TENANT_ID should be removed, and the non TENANT_ID can stay
-    assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace1", "table1"))
+    assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace1", "table1"))
         .as("TENANT_ID keyspace1 removed")
         .isEmpty();
-    assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace2", "table2"))
+    assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace2", "table2"))
         .as("TENANT_ID keyspace2 removed")
         .isEmpty();
-    assertThat(fixture.schemaCache.peekSchemaObject(notTenantId, "keyspace3", "table3"))
+    assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace3", "table3"))
         .as("notTenantId keyspace3 not removed")
         .contains(table3);
   }
@@ -58,7 +58,7 @@ public class SchemaCacheTests {
   public void schemasChangeListenerNotInitialized() {
 
     var fixture = newFixture();
-    var table1 = addTable(fixture, TENANT_ID, "keyspace1", "table1");
+    var table1 = addTable(fixture, testConstants.TENANT, "keyspace1", "table1");
 
     var listener = fixture.schemaCache.getSchemaChangeListener();
 
@@ -73,7 +73,7 @@ public class SchemaCacheTests {
 
     // table1 should still be in the cache even because listener does not know what tenant
     // the session was for
-    assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace1", "table1"))
+    assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace1", "table1"))
         .as("TENANT_ID keyspace1 not removed")
         .contains(table1);
   }
@@ -103,22 +103,22 @@ public class SchemaCacheTests {
       var fixture = newFixture();
 
       // put two tables in from two keyspaces for the tenant we are removing
-      var table1 = addTable(fixture, TENANT_ID, "keyspace1", "table1");
-      var table2 = addTable(fixture, TENANT_ID, "keyspace2", "table2");
-      var table3 = addTable(fixture, notTenantId, "keyspace3", "table3");
+      var table1 = addTable(fixture, testConstants.TENANT, "keyspace1", "table1");
+      var table2 = addTable(fixture, testConstants.TENANT, "keyspace2", "table2");
+      var table3 = addTable(fixture, testConstants.TENANT, "keyspace3", "table3");
 
       var listener = fixture.schemaCache.getSchemaChangeListener();
       listener.onSessionReady(fixture.session);
       var operation = cb.apply(listener);
 
       // all of TENANT_ID should be removed, and the non TENANT_ID can stay
-      assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace1", "table1"))
+      assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace1", "table1"))
           .as("TENANT_ID keyspace1 removed on table event operation=%s", operation)
           .isEmpty();
-      assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace2", "table2"))
+      assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace2", "table2"))
           .as("TENANT_ID keyspace2 not removed on table event operation=%s", operation)
           .contains(table2);
-      assertThat(fixture.schemaCache.peekSchemaObject(notTenantId, "keyspace3", "table3"))
+      assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace3", "table3"))
           .as("notTenantId keyspace3 not removed on table event operation=%s", operation)
           .contains(table3);
     }
@@ -130,28 +130,28 @@ public class SchemaCacheTests {
     var notTenantId = "not-tenant-id";
     var fixture = newFixture();
 
-    var table1 = addTable(fixture, TENANT_ID, "keyspace1", "table1");
-    var table2 = addTable(fixture, TENANT_ID, "keyspace2", "table2");
-    var table3 = addTable(fixture, notTenantId, "keyspace3", "table3");
+    var table1 = addTable(fixture, testConstants.TENANT, "keyspace1", "table1");
+    var table2 = addTable(fixture, testConstants.TENANT, "keyspace2", "table2");
+    var table3 = addTable(fixture, testConstants.TENANT, "keyspace3", "table3");
 
     var listener = fixture.schemaCache.getSchemaChangeListener();
     listener.onSessionReady(fixture.session);
     listener.onKeyspaceDropped(keyspaceMetadata("keyspace1"));
 
-    assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace1", "table1"))
+    assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace1", "table1"))
         .as("TENANT_ID keyspace1 removed")
         .isEmpty();
-    assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace2", "table2"))
+    assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace2", "table2"))
         .as("TENANT_ID keyspace2 not removed")
         .contains(table2);
-    assertThat(fixture.schemaCache.peekSchemaObject(notTenantId, "keyspace3", "table3"))
+    assertThat(fixture.schemaCache.peekSchemaObject(testConstants.TENANT, "keyspace3", "table3"))
         .as("notTenantId keyspace3 not removed")
         .contains(table3);
   }
 
   /** Add a keyspace and cache item to the schema cache. */
   private SchemaObject addTable(
-      Fixture fixture, String tenantId, String keyspaceName, String tableName) {
+      Fixture fixture, Tenant tenant, String keyspaceName, String tableName) {
 
     // setup to return a mocked table schema object
     var tableSchemaCache = mock(TableBasedSchemaCache.class);
@@ -176,7 +176,7 @@ public class SchemaCacheTests {
 
     // request context only needs the few things the SchemaCache uses
     var requestContext = mock(RequestContext.class);
-    when(requestContext.getTenantId()).thenReturn(Optional.of(tenantId));
+    when(requestContext.tenant()).thenReturn(testConstants.TENANT);
 
     // setup so we return the  TableBasedSchemaCache for the keyspace
     reset(fixture.tableCacheFactory);
@@ -192,7 +192,7 @@ public class SchemaCacheTests {
         .as("getSchemaObject returns the schema object from table cache")
         .isSameAs(expectedSchemaObject);
 
-    assertThat(fixture.schemaCache.peekSchemaObject(tenantId, keyspaceName, tableName))
+    assertThat(fixture.schemaCache.peekSchemaObject(tenant, keyspaceName, tableName))
         .as("peekSchemaObject returns the schema object from table cache")
         .contains(expectedSchemaObject);
 
@@ -235,7 +235,7 @@ public class SchemaCacheTests {
   private Fixture newFixture(DatabaseType databaseType) {
 
     var session = mock(Session.class);
-    when(session.getName()).thenReturn(TENANT_ID);
+    when(session.getName()).thenReturn(testConstants.TENANT.toString());
 
     var tableCacheFactory = mock(SchemaCache.TableCacheFactory.class);
 

@@ -19,18 +19,19 @@ package io.stargate.sgv2.jsonapi.api.request.tenant;
 
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-import java.util.Optional;
 
-/** Resolver of the tenant ID, in case multi-tenancy is used. */
-@FunctionalInterface
-public interface DataApiTenantResolver {
+/** The {@link RequestTenantResolver} that uses a fixed tenant ID supplied by the configuration. */
+public class FixedTenantResolver implements RequestTenantResolver {
 
-  /**
-   * Returns a tenant identifier given a {@link RoutingContext} and a {@link SecurityContext}.
-   *
-   * @param context the routing context
-   * @param securityContext the security context
-   * @return The tenant identifier. If empty, indicates that the multi-tenancy is disabled.
-   */
-  Optional<String> resolve(RoutingContext context, SecurityContext securityContext);
+  private final Tenant fixedTenantId;
+
+  public FixedTenantResolver(String fixedTenantId) {
+    this.fixedTenantId = TenantFactory.instance().create(fixedTenantId);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Tenant resolve(RoutingContext context, SecurityContext securityContext) {
+    return fixedTenantId;
+  }
 }

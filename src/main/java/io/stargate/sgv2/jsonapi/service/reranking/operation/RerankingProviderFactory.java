@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.reranking.operation;
 
 import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.RerankingService;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
@@ -10,7 +11,6 @@ import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +34,8 @@ public class RerankingProviderFactory {
       Map.ofEntries(Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new));
 
   public RerankingProvider create(
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       String serviceName,
       String modelName,
       Map<String, String> authentication,
@@ -60,8 +60,8 @@ public class RerankingProviderFactory {
   }
 
   private synchronized RerankingProvider create(
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       ModelProvider modelProvider,
       String modelName,
       Map<String, String> authentication,

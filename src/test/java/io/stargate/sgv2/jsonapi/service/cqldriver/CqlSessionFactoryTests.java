@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -10,7 +9,7 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import io.stargate.sgv2.jsonapi.TestConstants;
-import io.stargate.sgv2.jsonapi.config.DatabaseType;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -31,8 +30,7 @@ public class CqlSessionFactoryTests {
 
     var schemaListener = mock(SchemaChangeListener.class);
     var endpoints = List.<String>of();
-    var astraTenant = "astra-tenant-" + TEST_CONSTANTS.CORRELATION_ID;
-    var fixture = newFixture(astraTenant, DatabaseType.ASTRA, endpoints, schemaListener);
+    var fixture = newFixture(TEST_CONSTANTS.TENANT, endpoints, schemaListener);
 
     assertions(fixture, endpoints, schemaListener);
   }
@@ -41,32 +39,10 @@ public class CqlSessionFactoryTests {
   public void createCassandraDbSession() {
 
     var schemaListener = mock(SchemaChangeListener.class);
-    var endpoints = List.<String>of("127.0.0.1", "127.0.0.2");
-    String cassandraTenant = "SINGLE-TENANT";
-    var fixture = newFixture(cassandraTenant, DatabaseType.CASSANDRA, endpoints, schemaListener);
+    var endpoints = List.of("127.0.0.1", "127.0.0.2");
+    var fixture = newFixture(TEST_CONSTANTS.CASSANDRA_TENANT, endpoints, schemaListener);
 
     assertions(fixture, endpoints, schemaListener);
-  }
-
-  @Test
-  public void cassandraDBNeedsEndpoints() {
-
-    var schemaListener = mock(SchemaChangeListener.class);
-    String cassandraTenant = null;
-
-    var ex =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> {
-              // contact points are checked before the factory init's
-              var fixture =
-                  newFixture(cassandraTenant, DatabaseType.CASSANDRA, null, schemaListener);
-            });
-
-    assertThat(ex)
-        .as("Cassandra DB needs endpoints")
-        .hasMessageContaining(
-            "Database type is CASSANDRA but cassandraEndPoints is null or empty.");
   }
 
   private void assertions(
@@ -95,7 +71,7 @@ public class CqlSessionFactoryTests {
         .isTrue();
     assertThat(defaultDriverProfile.getString(DefaultDriverOption.SESSION_NAME))
         .as("sessionName set to tenantId")
-        .isEqualTo(fixture.tenant);
+        .isEqualTo(fixture.tenant.toString());
 
     verify(fixture.sessionBuilder).withApplicationName(TEST_CONSTANTS.APP_NAME);
     verify(fixture.sessionBuilder).addSchemaChangeListener(schemaListener);
@@ -120,17 +96,14 @@ public class CqlSessionFactoryTests {
   }
 
   record Fixture(
-      String tenant,
+      Tenant tenant,
       CqlSessionBuilder sessionBuilder,
       CqlCredentials credentials,
       CqlSession session,
       CqlSessionFactory factory) {}
 
   private Fixture newFixture(
-      String tenant,
-      DatabaseType databaseType, // aaron- this is wrapped into the Tenant class in later versions
-      List<String> endpoints,
-      SchemaChangeListener schemaChangeListener) {
+      Tenant tenant, List<String> endpoints, SchemaChangeListener schemaChangeListener) {
 
     // we are testing that the CqlSessionFactory calls the session builder correctly,
     // so we mock the session builder and verify that it is called correctly.
@@ -154,7 +127,6 @@ public class CqlSessionFactoryTests {
     var factory =
         new CqlSessionFactory(
             TEST_CONSTANTS.APP_NAME,
-            databaseType,
             DATACENTER,
             endpoints,
             CASSANDRA_PORT,

@@ -70,8 +70,7 @@ public class JsonProcessingMetricsReporter {
   }
 
   private Tags getCustomTags(String commandName) {
-    Tag tenantTag =
-        Tag.of(tenantConfig.tenantTag(), requestContext.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of(tenantConfig.tenantTag(), requestContext.tenant().toString());
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     return Tags.of(commandTag, tenantTag);
   }

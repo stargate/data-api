@@ -32,7 +32,7 @@ public class FilterClauseBuilderTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   @Nested
   class BuildWithRegularOperators {

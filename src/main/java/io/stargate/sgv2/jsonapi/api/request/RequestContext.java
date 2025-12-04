@@ -1,11 +1,14 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
+import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
+
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import com.google.common.annotations.VisibleForTesting;
-import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
-import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
+import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
@@ -13,108 +16,105 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
 import java.util.List;
-import java.util.Optional;
+import org.slf4j.MDC;
 
 /**
- * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey.
- * This is a replacement to StargateRequestInfo so bridge connection is removed.
+ * The context of the request to the API, this is the first set of information we extract from the
+ * request, such as the tenant, auth token, user agent, and request ID.
  *
- * <p><b>Note:</b> aaron feb 3 2025 - leaving with injection for now for the building, it may make
- * sense but moving it to be part of the CommandContext rather than handed around everywhere.
+ * <p>It needs to integrate with the Quarkus request lifecycle, so is keeping the CDI and {@link
+ * RequestScoped} scope for now.
+ *
+ * <p>See the method accessors for the invariants of things you can rely on if you have an instance
+ * of this class.
  */
 @RequestScoped
-public class RequestContext {
+public class RequestContext implements LoggingMDCContext {
 
   private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
 
-  private final Optional<String> tenantId;
-  private final Optional<String> cassandraToken;
-  private final EmbeddingCredentialsSupplier embeddingCredentialsSupplier;
-  private final RerankingCredentials rerankingCredentials;
-  private final HttpHeaderAccess httpHeaders;
+  private final String authToken;
   private final String requestId;
+  private final UserAgent userAgent;
+  private final Tenant tenant;
+  private final HttpHeaderAccess httpHeaders;
 
-  private final String userAgent;
+  private final EmbeddingCredentials embeddingCredentials;
+  private final RerankingCredentials rerankingCredentials;
 
-  /** FOR TESTING ONLY - so we can bypass pulling things the headers, still messy, getting better */
+  /** For testing purposes only. */
   @VisibleForTesting
-  public RequestContext(
-      Optional<String> tenantId,
-      Optional<String> cassandraToken,
-      RerankingCredentials rerankingCredentials,
-      String userAgent) {
-    this.tenantId = tenantId;
-    this.cassandraToken = cassandraToken;
-    embeddingCredentialsSupplier =
-        new EmbeddingCredentialsSupplier(
-            HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-            HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-            HttpConstants.EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
-            HttpConstants.EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME);
-    this.rerankingCredentials = rerankingCredentials;
+  public RequestContext(Tenant tenant, String authToken, UserAgent userAgent) {
+
+    this.authToken = authToken;
+    this.requestId = generateRequestId();
     this.userAgent = userAgent;
-    this.httpHeaders = new HttpHeaderAccess(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
-    requestId = generateRequestId();
+    this.tenant = tenant;
+    this.embeddingCredentials = null;
+    this.rerankingCredentials = null;
+    this.httpHeaders = null;
   }
 
   @Inject
   public RequestContext(
       RoutingContext routingContext,
       SecurityContext securityContext,
-      Instance<DataApiTenantResolver> tenantResolver,
-      Instance<DataApiTokenResolver> tokenResolver,
-      HttpConstants httpConstants) {
+      Instance<RequestTenantResolver> tenantResolver,
+      Instance<RequestAuthTokenResolver> tokenResolver,
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
 
-    tenantId = tenantResolver.get().resolve(routingContext, securityContext);
-    cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
-    httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
-    requestId = generateRequestId();
-    userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);
+    this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
 
-    embeddingCredentialsSupplier =
-        new EmbeddingCredentialsSupplier(
-            httpConstants.authToken(),
-            httpConstants.embeddingApiKey(),
-            httpConstants.embeddingAccessId(),
-            httpConstants.embeddingSecretId());
+    this.authToken =
+        normalizeOptionalString(tokenResolver.get().resolve(routingContext, securityContext));
+    this.requestId = generateRequestId();
+    this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
+    this.tenant = tenantResolver.get().resolve(routingContext, securityContext);
 
-    // if x-reranking-api-key is present, then use it, else use cassandraToken
-    Optional<String> rerankingApiKeyFromHeader =
-        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
-    rerankingCredentials =
-        rerankingApiKeyFromHeader
-            .map(apiKey -> new RerankingCredentials(this.tenantId.orElse(""), Optional.of(apiKey)))
-            .orElse(
-                this.cassandraToken
-                    .map(
-                        cassandraToken ->
-                            new RerankingCredentials(
-                                this.tenantId.orElse(""), Optional.of(cassandraToken)))
-                    .orElse(new RerankingCredentials(this.tenantId.orElse(""), Optional.empty())));
+    this.embeddingCredentials =
+        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(tenant, routingContext);
+
+    // user specified the reranking key in the request header, use that.
+    // fall back to whatever they provided as the auth token for the API
+    this.rerankingCredentials =
+        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext)
+            .map(s -> new RerankingCredentials(tenant, normalizeOptionalString(s)))
+            .orElseGet(() -> new RerankingCredentials(tenant, ""));
   }
 
   private static String generateRequestId() {
     return UUID_V7_GENERATOR.generate().toString();
   }
 
-  public String getRequestId() {
+  /**
+   * String correlation ID for the request, generated at the start of the request processing.
+   *
+   * <p>Implemented as a V7 UUID.
+   */
+  public String requestId() {
     return requestId;
   }
 
-  public Optional<String> getTenantId() {
-    return tenantId;
+  /** Non-null {@link Tenant} for the request, resolved from the request. */
+  public Tenant tenant() {
+    return tenant;
   }
 
-  public Optional<String> getCassandraToken() {
-    return cassandraToken;
+  /**
+   * Non-null authToken from the request processed with {@link
+   * io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
+   */
+  public String authToken() {
+    return authToken;
   }
 
-  public Optional<String> getUserAgent() {
-    return Optional.ofNullable(userAgent);
+  /** Non-null {@link UserAgent} for the request, resolved from the request. */
+  public UserAgent userAgent() {
+    return userAgent;
   }
 
-  public EmbeddingCredentialsSupplier getEmbeddingCredentialsSupplier() {
-    return embeddingCredentialsSupplier;
+  public EmbeddingCredentials getEmbeddingCredentials() {
+    return embeddingCredentials;
   }
 
   public RerankingCredentials getRerankingCredentials() {
@@ -123,6 +123,16 @@ public class RequestContext {
 
   public HttpHeaderAccess getHttpHeaders() {
     return this.httpHeaders;
+  }
+
+  @Override
+  public void addToMDC() {
+    MDC.put("tenantId", tenant.toString());
+  }
+
+  @Override
+  public void removeFromMDC() {
+    MDC.remove("tenantId");
   }
 
   /**

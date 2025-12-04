@@ -6,6 +6,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
@@ -17,16 +18,14 @@ import java.util.stream.Collectors;
 /** Grpc client to make reranking Grpc requests to reranking API inside EmbeddingGatewayService */
 public class RerankingEGWClient extends RerankingProvider {
 
-  private static final String DEFAULT_TENANT_ID = "default";
-
   /** Key of authTokens map, for passing Data API token to EGW in grpc request. */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
   /** Key in the authTokens map, for passing Reranking API key to EGW in grpc request. */
   private static final String RERANKING_API_KEY = "RERANKING_API_KEY";
 
-  private final Optional<String> tenant;
-  private final Optional<String> authToken;
+  private final Tenant tenant;
+  private final String authToken;
   private final RerankingService grpcGatewayService;
   Map<String, String> authentication;
   private final String commandName;
@@ -34,8 +33,8 @@ public class RerankingEGWClient extends RerankingProvider {
   public RerankingEGWClient(
       ModelProvider modelProvider,
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig,
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       RerankingService grpcGatewayService,
       Map<String, String> authentication,
       String commandName) {
@@ -70,12 +69,11 @@ public class RerankingEGWClient extends RerankingProvider {
     var contextBuilder =
         EmbeddingGateway.ProviderRerankingRequest.ProviderContext.newBuilder()
             .setProviderName(modelProvider().apiName())
-            .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
-            .putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
-    rerankingCredentials
-        .apiKey()
-        .ifPresent(v -> contextBuilder.putAuthTokens(RERANKING_API_KEY, v));
-
+            .setTenantId(tenant.toString())
+            .putAuthTokens(DATA_API_TOKEN, authToken);
+    if (!rerankingCredentials.apiKey().isEmpty()) {
+      contextBuilder.putAuthTokens(RERANKING_API_KEY, rerankingCredentials.apiKey());
+    }
     var gatewayRequest =
         EmbeddingGateway.ProviderRerankingRequest.newBuilder()
             .setRerankingRequest(gatewayReranking)

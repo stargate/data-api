@@ -122,7 +122,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
 
     var modelUsage =
         createModelUsage(
-            embeddingCredentials.tenantId(),
+            embeddingCredentials.tenant(),
             ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
             0,
             0,

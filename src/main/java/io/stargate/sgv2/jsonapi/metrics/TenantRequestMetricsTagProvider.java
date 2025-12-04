@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.metrics;
 
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
+
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
@@ -18,9 +20,6 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   // split pattern for the user agent, extract only first part of the agent
   private static final Pattern USER_AGENT_SPLIT = Pattern.compile("[\\s/]");
 
-  // same as V1 io.stargate.core.metrics.StargateMetricConstants#UNKNOWN
-  private static final String UNKNOWN_VALUE = "unknown";
-
   /** The configuration for metrics. */
   private final MetricsConfig.TenantRequestCounterConfig config;
 
@@ -33,9 +32,6 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   /** The tag for error being false, created only once. */
   private final Tag errorFalse;
 
-  /** The tag for tenant being unknown, created only once. */
-  private final Tag tenantUnknown;
-
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsTagProvider(
@@ -44,17 +40,12 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
     this.config = metricsConfig.tenantRequestCounter();
     errorTrue = Tag.of(config.errorTag(), "true");
     errorFalse = Tag.of(config.errorTag(), "false");
-    tenantUnknown = Tag.of(config.tenantTag(), UNKNOWN_VALUE);
   }
 
   @Override
   public Tags contribute(Context context) {
     // resolve tenant
-    Tag tenantTag =
-        requestContext
-            .getTenantId()
-            .map(id -> Tag.of(config.tenantTag(), id))
-            .orElse(tenantUnknown);
+    Tag tenantTag = Tag.of(config.tenantTag(), requestContext.tenant().toString());
 
     // check if we need user agent as well
     Tags tags = Tags.of(tenantTag);

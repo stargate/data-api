@@ -11,6 +11,8 @@ import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.util.Objects;
@@ -212,16 +214,13 @@ public class CommandQueryExecutor {
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext
   public record DBRequestContext(
-      Optional<String> tenantId,
-      Optional<String> authToken,
-      Optional<String> userAgent,
-      boolean tracingEnabled) {
+      Tenant tenant, String authToken, UserAgent userAgent, boolean tracingEnabled) {
 
     public DBRequestContext(CommandContext<?> commandContext) {
       this(
-          commandContext.requestContext().getTenantId(),
-          commandContext.requestContext().getCassandraToken(),
-          commandContext.requestContext().getUserAgent(),
+          commandContext.requestContext().tenant(),
+          commandContext.requestContext().authToken(),
+          commandContext.requestContext().userAgent(),
           commandContext.requestTracing().enabled());
     }
   }

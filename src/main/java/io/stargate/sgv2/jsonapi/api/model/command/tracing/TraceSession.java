@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import com.google.common.base.Stopwatch;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.time.Instant;
@@ -32,7 +33,7 @@ public class TraceSession implements Recordable {
               .formatted(ApiFeature.REQUEST_TRACING_FULL.httpHeaderName()));
 
   private final String requestId;
-  private final String tenantId;
+  private final Tenant tenant;
 
   private final Stopwatch watch;
   private final Instant startedAt;
@@ -40,9 +41,9 @@ public class TraceSession implements Recordable {
 
   private final boolean includeData;
 
-  TraceSession(String requestId, String tenantId, boolean includeData) {
+  TraceSession(String requestId, Tenant tenant, boolean includeData) {
     this.requestId = requestId;
-    this.tenantId = tenantId;
+    this.tenant = tenant;
     this.includeData = includeData;
 
     watch = Stopwatch.createStarted();
@@ -97,7 +98,7 @@ public class TraceSession implements Recordable {
     synchronized (events) {
       return dataRecorder
           .append("requestId", requestId)
-          .append("tenantId", tenantId)
+          .append("tenantId", tenant)
           .append("startedAt", ISO_FORMATTER.format(startedAt))
           .append("durationMicroseconds", elapsedMicroseconds())
           .append("events", events);

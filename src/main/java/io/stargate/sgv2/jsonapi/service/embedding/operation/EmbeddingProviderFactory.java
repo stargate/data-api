@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -56,8 +57,8 @@ public class EmbeddingProviderFactory {
           Map.entry(ModelProvider.VOYAGE_AI, VoyageAIEmbeddingProvider::new));
 
   public EmbeddingProvider create(
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       String serviceName,
       String modelName,
       int dimension,
@@ -98,8 +99,8 @@ public class EmbeddingProviderFactory {
   }
 
   public EmbeddingProvider create(
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       ModelProvider modelProvider,
       String modelName,
       int dimension,

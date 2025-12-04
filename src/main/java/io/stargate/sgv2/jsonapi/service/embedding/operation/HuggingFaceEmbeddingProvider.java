@@ -114,7 +114,7 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
               // https://huggingface.co/blog/getting-started-with-embeddings
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       0,
                       0,

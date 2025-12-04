@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
-import java.util.Optional;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * This is the RerankingCredentials record that holds the API key for the reranking. String will be
@@ -11,4 +12,4 @@ import java.util.Optional;
  * <p>Includes the tenantId, so we can fully identify the usage when creating the {@link
  * io.stargate.sgv2.jsonapi.service.provider.ModelUsage}
  */
-public record RerankingCredentials(String tenantId, Optional<String> apiKey) {}
+public record RerankingCredentials(@NotNull Tenant tenant, @NotNull String apiKey) {}

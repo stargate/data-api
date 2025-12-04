@@ -15,23 +15,22 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.request.tenant.impl;
+package io.stargate.sgv2.jsonapi.api.request.tenant;
 
-import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.config.MultiTenancyConfig;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * {@link TenantResolver} that finds the tenant ID in the left most domain part of the host name.
+ * {@link RequestTenantResolver} that finds the tenant ID in the left most domain part of the host
+ * name.
  *
  * <p>For example, having <code>tenant-id.domain.com</code> will resolve tenant identifier to the
  * <code>tenant-id</code>. In case of top-level domain, <code>domain.com</code> will resolve tenant
  * identifier to the <code>domain</code>.
  */
-public class SubdomainTenantResolver implements DataApiTenantResolver {
+public class SubdomainTenantResolver implements RequestTenantResolver {
 
   private final Pattern validationPattern;
   private final int maxChars;
@@ -54,7 +53,8 @@ public class SubdomainTenantResolver implements DataApiTenantResolver {
 
   /** {@inheritDoc} */
   @Override
-  public Optional<String> resolve(RoutingContext context, SecurityContext securityContext) {
+  public Tenant resolve(RoutingContext context, SecurityContext securityContext) {
+
     // get host and first index of the dot
     String host = context.request().host();
     int index = host.indexOf('.');
@@ -73,14 +73,18 @@ public class SubdomainTenantResolver implements DataApiTenantResolver {
       // if regex defined check
       if (null != validationPattern) {
         boolean matches = validationPattern.matcher(tenantId).matches();
-        if (!matches) {
-          return Optional.empty();
-        }
+
+        // TODO: this was returned as empty, but we cannot have a missing tenant
+        throw new RuntimeException("TODO XXX BANG!");
+        //        if (!matches) {
+        //          return Optional.empty();
+        //        }
       }
 
-      return Optional.of(tenantId);
+      return TenantFactory.instance().create(tenantId);
     } else {
-      return Optional.empty();
+      // it's up to the tenant factory to know what to do with null
+      return TenantFactory.instance().create(null);
     }
   }
 }

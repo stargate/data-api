@@ -126,7 +126,7 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       mistralResponse.usage().prompt_tokens(),
                       mistralResponse.usage().total_tokens(),

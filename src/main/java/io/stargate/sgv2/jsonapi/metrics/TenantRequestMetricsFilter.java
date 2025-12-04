@@ -58,9 +58,6 @@ public class TenantRequestMetricsFilter {
   /** The tag for error being false, created only once. */
   private final Tag errorFalse;
 
-  /** The tag for tenant being unknown, created only once. */
-  Tag tenantUnknown;
-
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsFilter(
@@ -70,7 +67,6 @@ public class TenantRequestMetricsFilter {
     this.config = metricsConfig.tenantRequestCounter();
     errorTrue = Tag.of(config.errorTag(), "true");
     errorFalse = Tag.of(config.errorTag(), "false");
-    tenantUnknown = Tag.of(config.tenantTag(), UNKNOWN_VALUE);
   }
 
   /**
@@ -87,11 +83,7 @@ public class TenantRequestMetricsFilter {
     if (config.enabled()) {
 
       // resolve tenant
-      Tag tenantTag =
-          this.requestContext
-              .getTenantId()
-              .map(id -> Tag.of(config.tenantTag(), id))
-              .orElse(tenantUnknown);
+      Tag tenantTag = Tag.of(config.tenantTag(), this.requestContext.tenant().toString());
 
       // resolve error
       boolean error = responseContext.getStatus() >= 500;

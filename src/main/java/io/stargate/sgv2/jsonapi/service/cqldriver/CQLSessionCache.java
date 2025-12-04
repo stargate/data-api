@@ -8,6 +8,8 @@ import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
 import java.time.Duration;
@@ -43,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p><b>NOTE:</b> There is no method to get the size of the cache because it is not a reliable
  * measure, it's only an estimate. We can assume the size feature works. For testing use {@link
- * #peekSession(String, String, String)}
+ * #peekSession(Tenant, String, UserAgent)}
  */
 public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCacheKey, CqlSession> {
   private static final Logger LOGGER = LoggerFactory.getLogger(CQLSessionCache.class);
@@ -66,7 +68,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
   public CQLSessionCache(
       long cacheMaxSize,
       Duration cacheTTL,
-      String slaUserAgent,
+      UserAgent slaUserAgent,
       Duration slaUserTTL,
       CqlCredentialsFactory credentialsFactory,
       SessionFactory sessionFactory,
@@ -108,7 +110,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
   CQLSessionCache(
       long cacheMaxSize,
       Duration cacheTTL,
-      String slaUserAgent,
+      UserAgent slaUserAgent,
       Duration slaUserTTL,
       CqlCredentialsFactory credentialsFactory,
       SessionFactory sessionFactory,
@@ -186,9 +188,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.getTenantId().orElse(DEFAULT_TENANT),
-        requestContext.getCassandraToken().orElse(""),
-        requestContext.getUserAgent().orElse(""));
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -203,9 +203,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.tenantId().orElse(DEFAULT_TENANT),
-        requestContext.authToken().orElse(""),
-        requestContext.userAgent().orElse(""));
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -218,14 +216,14 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
    * @return A Uni with the {@link CqlSession} for this tenant and credentials, the session maybe
    *     newly created or reused from the cache.
    */
-  public Uni<CqlSession> getSession(String tenant, String authToken, String userAgent) {
+  public Uni<CqlSession> getSession(Tenant tenant, String authToken, UserAgent userAgent) {
     return get(createCacheKey(tenant, authToken, userAgent));
   }
 
   /**
    * Evicts a session from the cache based on the provided {@link RequestContext}.
    *
-   * @see #evictSession(String, String, String) for details on eviction.
+   * @see #evictSession(Tenant, String, UserAgent) for details on eviction.
    * @param requestContext The request context containing tenant, auth, and user agent info.
    * @return {@code true} if a session was evicted, {@code false} otherwise.
    */
@@ -234,9 +232,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return evictSession(
-        requestContext.getTenantId().orElse(""),
-        requestContext.getCassandraToken().orElse(""),
-        requestContext.getUserAgent().orElse(null));
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -249,7 +245,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
    * @param userAgent Nullable user agent
    * @return {@code true} if a session was evicted, {@code false} otherwise.
    */
-  public boolean evictSession(String tenantId, String authToken, String userAgent) {
+  public boolean evictSession(Tenant tenantId, String authToken, UserAgent userAgent) {
 
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
     return evict(cacheKey);
@@ -260,12 +256,12 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
    * authToken, and userAgent.
    */
   @VisibleForTesting
-  protected Optional<CqlSession> peekSession(String tenant, String authToken, String userAgent) {
+  protected Optional<CqlSession> peekSession(Tenant tenant, String authToken, UserAgent userAgent) {
     return getIfPresent(createCacheKey(tenant, authToken, userAgent));
   }
 
   /** Builds the cache key to use for the supplied tenant and authentication token. */
-  private SessionCacheKey createCacheKey(String tenant, String authToken, String userAgent) {
+  private SessionCacheKey createCacheKey(Tenant tenant, String authToken, UserAgent userAgent) {
 
     Objects.requireNonNull(tenant, "tenant must not be null");
     Objects.requireNonNull(authToken, "authToken must not be null");
@@ -281,18 +277,14 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
         tenant, credentials, ttlSupplier.ttlForUsageAgent(userAgent), userAgent);
   }
 
-  /**
-   * Key for CQLSession cache.
-   *
-   * <p>
-   */
+  /** Key for CQLSession cache. */
   static class SessionCacheKey implements DynamicTTLCache.CacheKey {
 
-    private final String tenant;
+    private final Tenant tenant;
     private final CqlCredentials credentials;
     private final Duration ttl;
     // user agent only added for logging and debugging
-    private final String userAgent;
+    private final UserAgent userAgent;
 
     /**
      * Creates a new instance of {@link SessionCacheKey}.
@@ -304,7 +296,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
      * @param userAgent Optional user agent for the request, not used in the equality of the key
      *     just for logging.
      */
-    SessionCacheKey(String tenant, CqlCredentials credentials, Duration ttl, String userAgent) {
+    SessionCacheKey(Tenant tenant, CqlCredentials credentials, Duration ttl, UserAgent userAgent) {
 
       // tenant is only used to identify the session, not passed to backend db
       // normalising the unset value to null
@@ -314,7 +306,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
       this.userAgent = Objects.requireNonNull(userAgent, "userAgent must not be null");
     }
 
-    String tenant() {
+    Tenant tenant() {
       return tenant;
     }
 
@@ -394,34 +386,22 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
     }
   }
 
-  /**
-   * Callback when a tenant is deactivated.
-   *
-   * <p>
-   */
+  /** Callback when a tenant is deactivated. */
   @FunctionalInterface
-  public interface DeactivatedTenantListener extends Consumer<String> {
-    void accept(String tenant);
+  public interface DeactivatedTenantListener extends Consumer<Tenant> {
+    void accept(Tenant tenant);
   }
 
-  /**
-   * Called to create credentials used with the session and session cache key.
-   *
-   * <p>
-   */
+  /** Called to create credentials used with the session and session cache key. */
   @FunctionalInterface
   public interface CredentialsFactory extends Function<String, CqlCredentials> {
     CqlCredentials apply(String authToken);
   }
 
-  /**
-   * Called to create a new session when one is needed.
-   *
-   * <p>
-   */
+  /** Called to create a new session when one is needed. */
   @FunctionalInterface
   public interface SessionFactory
-      extends BiFunction<String, CqlCredentials, CompletionStage<CqlSession>> {
-    CompletionStage<CqlSession> apply(String tenant, CqlCredentials credentials);
+      extends BiFunction<Tenant, CqlCredentials, CompletionStage<CqlSession>> {
+    CompletionStage<CqlSession> apply(Tenant tenant, CqlCredentials credentials);
   }
 }

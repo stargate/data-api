@@ -55,7 +55,6 @@ public class MeteredCommandProcessor {
   // Pre-computed common tags for efficiency
   private final Tag errorTrue;
   private final Tag errorFalse;
-  private final Tag tenantUnknown;
   private final Tag defaultErrorCode;
   private final Tag defaultErrorClass;
 
@@ -75,7 +74,6 @@ public class MeteredCommandProcessor {
     // Pre-compute common tags for efficiency
     errorTrue = Tag.of(tenantConfig.errorTag(), "true");
     errorFalse = Tag.of(tenantConfig.errorTag(), "false");
-    tenantUnknown = Tag.of(tenantConfig.tenantTag(), UNKNOWN_VALUE);
     defaultErrorCode = Tag.of(jsonApiMetricsConfig.errorCode(), NA);
     defaultErrorClass = Tag.of(jsonApiMetricsConfig.errorClass(), NA);
   }
@@ -98,7 +96,7 @@ public class MeteredCommandProcessor {
     // Set up logging context (MDC)
     // use MDC to populate logs as needed(namespace,collection,tenantId)
     commandContext.schemaObject().name().addToMDC();
-    MDC.put("tenantId", commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE));
+    MDC.put("tenantId", commandContext.requestContext().tenant().toString());
 
     // --- Defer Command Processing (from PR2076) ---
     // We wrap the call to `commandProcessor.processCommand` in `Uni.createFrom().deferred()`
@@ -169,7 +167,7 @@ public class MeteredCommandProcessor {
     CommandLog commandLog =
         new CommandLog(
             command.getClass().getSimpleName(),
-            commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE),
+            commandContext.requestContext().tenant(),
             commandContext.schemaObject().name().keyspace(),
             commandContext.schemaObject().name().table(),
             commandContext.schemaObject().type().name(),
@@ -238,8 +236,7 @@ public class MeteredCommandProcessor {
     Set<String> allowedTenants =
         commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
     if (!allowedTenants.contains(ALL_TENANTS)
-        && !allowedTenants.contains(
-            commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE))) {
+        && !allowedTenants.contains(commandContext.requestContext().tenant().toString())) {
       // Logging disabled for this tenant
       return false;
     }
@@ -271,8 +268,8 @@ public class MeteredCommandProcessor {
     // --- Basic Tags ---
     // Identify the command being executed and the tenant associated with the request
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    String tenant = commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE);
-    Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
+    Tag tenantTag =
+        Tag.of(tenantConfig.tenantTag(), commandContext.requestContext().tenant().toString());
 
     // --- Error Tags ---
     // Determine if the command resulted in an error and capture details

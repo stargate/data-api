@@ -116,7 +116,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       azureResponse.usage().prompt_tokens(),
                       azureResponse.usage().total_tokens(),
