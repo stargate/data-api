@@ -234,9 +234,9 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return evictSession(
-        requestContext.getTenantId().orElse(""),
+        requestContext.getTenantId().orElse(DEFAULT_TENANT),
         requestContext.getCassandraToken().orElse(""),
-        requestContext.getUserAgent().orElse(null));
+        requestContext.getUserAgent().orElse(""));
   }
 
   /**
