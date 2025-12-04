@@ -103,6 +103,7 @@ jobs:
           title: 'Code Coverage Report'
           update-comment: true
 
+      # 04-Dec-2025, tatu: (from code review) Is this really needed?
       - name: Generate JaCoCo Badge
         id: jacoco-badge
         uses: cicirello/jacoco-badge-generator@v2
