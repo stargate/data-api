@@ -42,6 +42,7 @@ import org.bson.types.ObjectId;
  */
 @ApplicationScoped
 public class DocumentShredder {
+  // Test comment
   private static final NoArgGenerator UUID_V4_GENERATOR = Generators.randomBasedGenerator();
   private static final NoArgGenerator UUID_V6_GENERATOR = Generators.timeBasedReorderedGenerator();
   private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
