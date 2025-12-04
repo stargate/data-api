@@ -103,14 +103,6 @@ jobs:
           title: 'Code Coverage Report'
           update-comment: true
 
-      - name: Generate JaCoCo Badge
-        id: jacoco-badge
-        uses: cicirello/jacoco-badge-generator@v2
-        with:
-          badges-directory: .github/badges
-          generate-branches-badge: true
-          generate-summary: true
-
       - name: Add coverage to Job Summary
         run: |
           echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
