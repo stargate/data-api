@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListenerBase;
@@ -13,6 +12,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -148,14 +148,10 @@ public class SchemaCache {
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
-          "evictTable() - tenant: {}, keyspace: {}, tableName: {}",
-          tenant,
-          keyspace,
-          tableName);
+          "evictTable() - tenant: {}, keyspace: {}, tableName: {}", tenant, keyspace, tableName);
     }
 
-    var tableBasedSchemaCache =
-        keyspaceCache.getIfPresent(new KeyspaceCacheKey(tenant, keyspace));
+    var tableBasedSchemaCache = keyspaceCache.getIfPresent(new KeyspaceCacheKey(tenant, keyspace));
     if (tableBasedSchemaCache != null) {
       tableBasedSchemaCache.evictCollectionSettingCacheEntry(tableName);
     }
@@ -222,7 +218,7 @@ public class SchemaCache {
     }
 
     private boolean hasTenantId(String context) {
-      if (tenant == null || tenant.isBlank()) {
+      if (tenant == null) {
         LOGGER.error(
             "SchemaCacheSchemaChangeListener tenant is null or blank when expected to be set - {}",
             context);
@@ -234,9 +230,7 @@ public class SchemaCache {
     private void evictTable(String context, TableMetadata tableMetadata) {
       if (hasTenantId(context)) {
         schemaCache.evictTable(
-            tenant,
-            tableMetadata.getKeyspace().asInternal(),
-            tableMetadata.getName().asInternal());
+            tenant, tableMetadata.getKeyspace().asInternal(), tableMetadata.getName().asInternal());
       }
     }
 
@@ -244,7 +238,7 @@ public class SchemaCache {
     public void onSessionReady(@NonNull Session session) {
       // This is called when the session is ready, we can get the tenant from the session name
       // and set it in the listener so we can use it in the other methods.
-      tenant = session.getName();
+      tenant = TenantFactory.instance().create(session.getName());
       hasTenantId("onSessionReady called but sessionName() is null or blank");
     }
 

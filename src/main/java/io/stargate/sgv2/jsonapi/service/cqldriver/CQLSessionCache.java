@@ -188,9 +188,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.tenant(),
-        requestContext.authToken(),
-        requestContext.userAgent());
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -205,9 +203,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.tenant(),
-        requestContext.authToken(),
-        requestContext.userAgent());
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -236,9 +232,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return evictSession(
-        requestContext.tenant(),
-        requestContext.authToken(),
-        requestContext.userAgent());
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -283,9 +277,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
         tenant, credentials, ttlSupplier.ttlForUsageAgent(userAgent), userAgent);
   }
 
-  /**
-   * Key for CQLSession cache.
-   */
+  /** Key for CQLSession cache. */
   static class SessionCacheKey implements DynamicTTLCache.CacheKey {
 
     private final Tenant tenant;
@@ -394,25 +386,19 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
     }
   }
 
-  /**
-   * Callback when a tenant is deactivated.
-   */
+  /** Callback when a tenant is deactivated. */
   @FunctionalInterface
   public interface DeactivatedTenantListener extends Consumer<Tenant> {
     void accept(Tenant tenant);
   }
 
-  /**
-   * Called to create credentials used with the session and session cache key.
-   */
+  /** Called to create credentials used with the session and session cache key. */
   @FunctionalInterface
   public interface CredentialsFactory extends Function<String, CqlCredentials> {
     CqlCredentials apply(String authToken);
   }
 
-  /**
-   * Called to create a new session when one is needed.
-   */
+  /** Called to create a new session when one is needed. */
   @FunctionalInterface
   public interface SessionFactory
       extends BiFunction<Tenant, CqlCredentials, CompletionStage<CqlSession>> {

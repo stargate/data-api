@@ -11,6 +11,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -35,8 +36,11 @@ public class EmbeddingGatewayClientTest {
 
   public static final String TESTING_COMMAND_NAME = "test_command";
 
+  private static final TestConstants testConstants = new TestConstants();
+
   private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());
+      new EmbeddingCredentials(
+          testConstants.TENANT, Optional.empty(), Optional.empty(), Optional.empty());
 
   private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
@@ -120,7 +124,7 @@ public class EmbeddingGatewayClientTest {
             .setModelProvider(ModelProvider.OPENAI.apiName())
             .setModelType(EmbeddingGateway.ModelUsage.ModelType.EMBEDDING)
             .setModelName("test-model")
-            .setTenantId("test-tenant")
+            .setTenantId(testConstants.TENANT.toString())
             .setInputType(EmbeddingGateway.ModelUsage.InputType.INDEX)
             .setPromptTokens(5)
             .setTotalTokens(5)
@@ -146,8 +150,8 @@ public class EmbeddingGatewayClientTest {
             SERVICE_CONFIG,
             1536,
             Map.of(),
-            Optional.of("default"),
-            Optional.of("default"),
+            testConstants.TENANT,
+            "default",
             embeddingService,
             Map.of(),
             TESTING_COMMAND_NAME);
@@ -175,7 +179,7 @@ public class EmbeddingGatewayClientTest {
     assertThat(response.modelUsage().modelProvider()).isEqualTo(ModelProvider.OPENAI);
     assertThat(response.modelUsage().modelType()).isEqualTo(ModelType.EMBEDDING);
     assertThat(response.modelUsage().modelName()).isEqualTo("test-model");
-    assertThat(response.modelUsage().tenant()).isEqualTo("test-tenant");
+    assertThat(response.modelUsage().tenant()).isEqualTo(testConstants.TENANT);
     assertThat(response.modelUsage().inputType()).isEqualTo(ModelInputType.INDEX);
 
     assertThat(response.modelUsage().promptTokens()).isEqualTo(5);
@@ -211,8 +215,8 @@ public class EmbeddingGatewayClientTest {
             SERVICE_CONFIG,
             1536,
             Map.of(),
-            Optional.of("default"),
-            Optional.of("default"),
+            testConstants.TENANT,
+            "default",
             embeddingService,
             Map.of(),
             TESTING_COMMAND_NAME);

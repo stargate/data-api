@@ -148,9 +148,12 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     // these never change, so we can cache
     // we cannot test if we need these to be provided until we create the session, because we do not
     // know the DB type until we know the tenant.
-    contactPoints = cassandraEndPoints != null
-        ? cassandraEndPoints.stream().map(host -> new InetSocketAddress(host, cassandraPort)).toList()
-        : List.of();
+    contactPoints =
+        cassandraEndPoints != null
+            ? cassandraEndPoints.stream()
+                .map(host -> new InetSocketAddress(host, cassandraPort))
+                .toList()
+            : List.of();
   }
 
   @Override

@@ -214,10 +214,7 @@ public class CommandQueryExecutor {
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext
   public record DBRequestContext(
-      Tenant tenant,
-      String authToken,
-      UserAgent userAgent,
-      boolean tracingEnabled) {
+      Tenant tenant, String authToken, UserAgent userAgent, boolean tracingEnabled) {
 
     public DBRequestContext(CommandContext<?> commandContext) {
       this(

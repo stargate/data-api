@@ -112,7 +112,7 @@ public final class ModelUsage implements Recordable {
                         "ModelUsage() - Unknown grpcModelUsage.getModelType(): '%s'"
                             .formatted(grpcModelUsage.getModelType()))),
         grpcModelUsage.getModelName(),
-        TenantFactory.instance().create( grpcModelUsage.getTenantId()),
+        TenantFactory.instance().create(grpcModelUsage.getTenantId()),
         ModelInputType.fromEmbeddingGateway(grpcModelUsage.getInputType())
             .orElseThrow(
                 () ->

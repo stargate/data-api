@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.processor;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-
 import java.util.List;
 
 /**

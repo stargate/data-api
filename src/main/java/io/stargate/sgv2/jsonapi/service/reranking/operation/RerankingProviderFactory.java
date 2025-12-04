@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

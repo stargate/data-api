@@ -4,14 +4,10 @@ import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CqlCredentials;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;

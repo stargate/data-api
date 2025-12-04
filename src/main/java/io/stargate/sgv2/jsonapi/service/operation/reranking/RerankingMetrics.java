@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.*;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.*;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.micrometer.core.instrument.*;
@@ -87,7 +86,7 @@ public class RerankingMetrics {
     // Record the passage count for the specific tenant and table
     Tags tenantTags =
         new RerankingTagsBuilder()
-            .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
+            .withTenant(requestContext.tenant())
             .withKeyspace(schemaObject.name().keyspace())
             .withTable(schemaObject.name().table())
             .build();
@@ -139,7 +138,7 @@ public class RerankingMetrics {
     // Build tags for the tenant timer
     Tags tenantTags =
         new RerankingTagsBuilder()
-            .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
+            .withTenant(requestContext.tenant())
             .withKeyspace(schemaObject.name().keyspace())
             .withTable(schemaObject.name().table())
             .build();

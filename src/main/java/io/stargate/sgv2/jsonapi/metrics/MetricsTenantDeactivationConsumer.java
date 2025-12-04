@@ -29,8 +29,8 @@ public class MetricsTenantDeactivationConsumer
   /**
    * Called by {@link CQLSessionCache} when a tenant's session is removed. This method iterates
    * through all registered meters in the {@link MeterRegistry} and removes any that are tagged with
-   * the specified {@code tenant} using either the {@link MetricsConstants.MetricTags#TENANT_TAG}
-   * or {@link MetricsConstants.MetricTags#SESSION_TAG} key.
+   * the specified {@code tenant} using either the {@link MetricsConstants.MetricTags#TENANT_TAG} or
+   * {@link MetricsConstants.MetricTags#SESSION_TAG} key.
    *
    * @param tenant The ID of the tenant whose session was deactivated. This value will be used to
    *     find metrics with a matching tag.

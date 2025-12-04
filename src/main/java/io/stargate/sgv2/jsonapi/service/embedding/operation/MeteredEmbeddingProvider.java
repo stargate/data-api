@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.*;

@@ -96,7 +96,7 @@ public class GenericOperation<
             commandContext.cqlSessionCache(),
             new CommandQueryExecutor.DBRequestContext(
                 commandContext.requestContext().tenant(),
-                commandContext.requestContext().getCassandraToken(),
+                commandContext.requestContext().authToken(),
                 commandContext.requestContext().userAgent(),
                 commandContext.requestTracing().enabled()),
             CommandQueryExecutor.QueryTarget.TABLE);

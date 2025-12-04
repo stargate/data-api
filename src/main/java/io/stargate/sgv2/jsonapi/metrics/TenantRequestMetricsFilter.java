@@ -58,7 +58,6 @@ public class TenantRequestMetricsFilter {
   /** The tag for error being false, created only once. */
   private final Tag errorFalse;
 
-
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsFilter(
