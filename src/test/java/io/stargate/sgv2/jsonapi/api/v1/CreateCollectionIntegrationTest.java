@@ -75,7 +75,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyPath() {
-      final String collectionName = "col" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "col" + RandomStringUtils.insecure().nextNumeric(16);
       givenHeadersPostJsonThenOk(
                   """
                       {

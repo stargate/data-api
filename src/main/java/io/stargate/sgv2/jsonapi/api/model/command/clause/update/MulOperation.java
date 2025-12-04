@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -23,11 +22,8 @@ public class MulOperation extends UpdateOperation<MulOperation.Action> {
   }
 
   public static MulOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
-
     List<Action> updates = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : args.properties()) {
       // Verify we have neither operators...
       String name = validateNonModifierPath(UpdateOperator.MUL, entry.getKey());
       // nor try to change doc id

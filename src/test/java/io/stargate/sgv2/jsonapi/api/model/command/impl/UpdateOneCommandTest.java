@@ -14,7 +14,6 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.io.IOException;
 import java.util.Set;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -25,12 +24,10 @@ class UpdateOneCommandTest {
 
   @Inject Validator validator;
 
-  @Nested
-  class Validation {
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPath() throws Exception {
+    String json =
+        """
         {
           "updateOne": {
               "filter" : {"username" : "update_user5"},
@@ -41,27 +38,27 @@ class UpdateOneCommandTest {
         }
         """;
 
-      Command result = objectMapper.readValue(json, Command.class);
+    Command result = objectMapper.readValue(json, Command.class);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              UpdateOneCommand.class,
-              updateOneCommand -> {
-                assertThat(updateOneCommand.filterDefinition()).isNotNull();
-                final UpdateClause updateClause = updateOneCommand.updateClause();
-                assertThat(updateClause).isNotNull();
-                assertThat(updateClause.buildOperations()).hasSize(1);
-                assertThat(updateOneCommand.sortDefinition()).isNotNull();
-                assertThat(updateOneCommand.sortDefinition().json())
-                    .isEqualTo(readTree("{\"username\" : 1}"));
-                assertThat(updateOneCommand.options()).isNotNull();
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            UpdateOneCommand.class,
+            updateOneCommand -> {
+              assertThat(updateOneCommand.filterDefinition()).isNotNull();
+              final UpdateClause updateClause = updateOneCommand.updateClause();
+              assertThat(updateClause).isNotNull();
+              assertThat(updateClause.buildOperations()).hasSize(1);
+              assertThat(updateOneCommand.sortDefinition()).isNotNull();
+              assertThat(updateOneCommand.sortDefinition().json())
+                  .isEqualTo(readTree("{\"username\" : 1}"));
+              assertThat(updateOneCommand.options()).isNotNull();
+            });
+  }
 
-    @Test
-    public void noUpdateClause() throws Exception {
-      String json =
-          """
+  @Test
+  public void noUpdateClause() throws Exception {
+    String json =
+        """
           {
             "updateOne": {
               "filter": {"name": "Aaron"}
@@ -69,14 +66,13 @@ class UpdateOneCommandTest {
           }
           """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      Set<ConstraintViolation<UpdateOneCommand>> result = validator.validate(command);
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    Set<ConstraintViolation<UpdateOneCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("must not be null");
   }
 
   private JsonNode readTree(String json) {

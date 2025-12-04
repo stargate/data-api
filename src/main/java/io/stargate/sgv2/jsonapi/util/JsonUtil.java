@@ -69,8 +69,8 @@ public class JsonUtil {
         }
         ObjectNode ob1 = (ObjectNode) node1;
         ObjectNode ob2 = (ObjectNode) node2;
-        Iterator<Map.Entry<String, JsonNode>> it1 = ob1.fields();
-        Iterator<Map.Entry<String, JsonNode>> it2 = ob2.fields();
+        Iterator<Map.Entry<String, JsonNode>> it1 = ob1.properties().iterator();
+        Iterator<Map.Entry<String, JsonNode>> it2 = ob2.properties().iterator();
 
         while (it1.hasNext()) {
           Map.Entry<String, JsonNode> entry1 = it1.next();

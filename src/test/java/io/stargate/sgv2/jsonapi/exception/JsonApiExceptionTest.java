@@ -6,82 +6,76 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class JsonApiExceptionTest {
+  @Test
+  public void happyPath() {
+    JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN);
 
-  @Nested
-  class Get {
+    CommandResult result = ex.get();
 
-    @Test
-    public void happyPath() {
-      JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN);
+    assertThat(result.data()).isNull();
+    assertThat(result.status()).isEmpty();
+    assertThat(result.errors())
+        .singleElement()
+        .satisfies(
+            error -> {
+              assertThat(error.message()).isEqualTo("Provided command unknown");
+              assertThat(error.fields())
+                  .containsEntry("errorCode", "COMMAND_UNKNOWN")
+                  .containsEntry("exceptionClass", "JsonApiException");
+            });
+  }
 
-      CommandResult result = ex.get();
+  @Test
+  public void withCustomMessage() {
+    JsonApiException ex =
+        new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN, "Custom message is more important.");
 
-      assertThat(result.data()).isNull();
-      assertThat(result.status()).isEmpty();
-      assertThat(result.errors())
-          .singleElement()
-          .satisfies(
-              error -> {
-                assertThat(error.message()).isEqualTo("Provided command unknown");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "COMMAND_UNKNOWN")
-                    .containsEntry("exceptionClass", "JsonApiException");
-              });
-    }
+    CommandResult result = ex.get();
 
-    @Test
-    public void withCustomMessage() {
-      JsonApiException ex =
-          new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN, "Custom message is more important.");
+    assertThat(result.data()).isNull();
+    assertThat(result.status()).isEmpty();
+    assertThat(result.errors())
+        .singleElement()
+        .satisfies(
+            error -> {
+              assertThat(error.message()).isEqualTo("Custom message is more important.");
+              assertThat(error.fields())
+                  .containsEntry("errorCode", "COMMAND_UNKNOWN")
+                  .containsEntry("exceptionClass", "JsonApiException");
+            });
+  }
 
-      CommandResult result = ex.get();
+  @Test
+  public void withCause() {
+    Exception cause = new IllegalArgumentException("Cause message is important");
+    JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN, cause);
 
-      assertThat(result.data()).isNull();
-      assertThat(result.status()).isEmpty();
-      assertThat(result.errors())
-          .singleElement()
-          .satisfies(
-              error -> {
-                assertThat(error.message()).isEqualTo("Custom message is more important.");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "COMMAND_UNKNOWN")
-                    .containsEntry("exceptionClass", "JsonApiException");
-              });
-    }
+    CommandResult result = ex.get();
 
-    @Test
-    public void withCause() {
-      Exception cause = new IllegalArgumentException("Cause message is important");
-      JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN, cause);
-
-      CommandResult result = ex.get();
-
-      assertThat(result.data()).isNull();
-      assertThat(result.status()).isEmpty();
-      assertThat(result.errors())
-          .hasSize(2)
-          .anySatisfy(
-              error -> {
-                assertThat(error.message()).isEqualTo("Provided command unknown");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "COMMAND_UNKNOWN")
-                    .containsEntry("exceptionClass", "JsonApiException");
-              })
-          .anySatisfy(
-              error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Server failed: root cause: (java.lang.IllegalArgumentException) Cause message is important");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
-              });
-    }
+    assertThat(result.data()).isNull();
+    assertThat(result.status()).isEmpty();
+    assertThat(result.errors())
+        .hasSize(2)
+        .anySatisfy(
+            error -> {
+              assertThat(error.message()).isEqualTo("Provided command unknown");
+              assertThat(error.fields())
+                  .containsEntry("errorCode", "COMMAND_UNKNOWN")
+                  .containsEntry("exceptionClass", "JsonApiException");
+            })
+        .anySatisfy(
+            error -> {
+              assertThat(error.message())
+                  .isEqualTo(
+                      "Server failed: root cause: (java.lang.IllegalArgumentException) Cause message is important");
+              assertThat(error.fields())
+                  .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                  .containsEntry("exceptionClass", "JsonApiException");
+            });
   }
 }

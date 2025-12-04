@@ -30,9 +30,7 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
           filterNode.getNodeType());
     }
     final EnumMap<UpdateOperator, ObjectNode> updateDefs = new EnumMap<>(UpdateOperator.class);
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : filterNode.properties()) {
       final String operName = entry.getKey();
       if (!operName.startsWith("$")) {
         throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION.toApiException(

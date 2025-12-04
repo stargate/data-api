@@ -26,7 +26,6 @@ import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -301,9 +300,7 @@ public class DocumentShredder {
         }
       }
 
-      var it = objectValue.fields();
-      while (it.hasNext()) {
-        var entry = it.next();
+      for (var entry : objectValue.properties()) {
         final String key = entry.getKey();
 
         // Doc id validation done elsewhere, skip here to avoid failure for
@@ -467,10 +464,7 @@ public class DocumentShredder {
     }
 
     private void traverseObject(ObjectNode obj, JsonPath.Builder pathBuilder) {
-
-      Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
-      while (it.hasNext()) {
-        Map.Entry<String, JsonNode> entry = it.next();
+      for (Map.Entry<String, JsonNode> entry : obj.properties()) {
         pathBuilder.property(DocumentPath.encodeSegment(entry.getKey()));
         traverseValue(entry.getValue(), pathBuilder);
       }
@@ -535,7 +529,7 @@ public class DocumentShredder {
       } else if (value.isObject()) {
         // e.g. "$vector": {"$binary": "c3VyZS4="}
         ObjectNode obj = (ObjectNode) value;
-        final Map.Entry<String, JsonNode> entry = obj.fields().next();
+        final Map.Entry<String, JsonNode> entry = obj.properties().iterator().next();
         JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
         if (keyType != BINARY) {
           throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(

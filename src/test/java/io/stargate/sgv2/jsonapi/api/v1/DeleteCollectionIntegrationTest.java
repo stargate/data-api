@@ -25,7 +25,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyPath() {
-      String collection = RandomStringUtils.randomAlphabetic(16);
+      String collection = RandomStringUtils.insecure().nextAlphabetic(16);
 
       // first create
       givenHeadersAndJson(
@@ -64,7 +64,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void notExisting() {
-      String collection = RandomStringUtils.randomAlphabetic(16);
+      String collection = RandomStringUtils.insecure().nextAlphabetic(16);
 
       // delete not existing
       givenHeadersAndJson(

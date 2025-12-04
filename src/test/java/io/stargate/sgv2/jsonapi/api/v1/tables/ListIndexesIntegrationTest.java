@@ -512,7 +512,9 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
     }
 
     private ObjectNode addNamedAnalyzer(ObjectNode ob, String analyzerName) {
-      ob.with("definition").with("options").put("analyzer", analyzerName);
+      ob.withObjectProperty("definition")
+          .withObjectProperty("options")
+          .put("analyzer", analyzerName);
       return ob;
     }
   }

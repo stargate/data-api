@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -17,11 +16,8 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
   }
 
   public static PopOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
-
     List<Action> actions = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : args.properties()) {
       final String path = validateUpdatePath(UpdateOperator.POP, entry.getKey());
 
       final JsonNode arg = entry.getValue();

@@ -126,8 +126,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
   private int compareObjects(ObjectNode n1, ObjectNode n2) {
     // Object comparison is interesting: compares entries in order,
     // first by property name, then by value. If all else equal, "longer one wins"
-    Iterator<Map.Entry<String, JsonNode>> it1 = n1.fields();
-    Iterator<Map.Entry<String, JsonNode>> it2 = n2.fields();
+    Iterator<Map.Entry<String, JsonNode>> it1 = n1.properties().iterator();
+    Iterator<Map.Entry<String, JsonNode>> it2 = n2.properties().iterator();
 
     while (it1.hasNext() && it2.hasNext()) {
       Map.Entry<String, JsonNode> entry1 = it1.next();
