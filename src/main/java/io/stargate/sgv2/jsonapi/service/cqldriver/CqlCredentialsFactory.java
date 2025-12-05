@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,8 +69,8 @@ public class CqlCredentialsFactory implements CQLSessionCache.CredentialsFactory
     // Only the OFFLINE_WRITER allows anonymous access, because it is not connecting to an actual
     // database
     if (credentials.isAnonymous() && databaseType != DatabaseType.OFFLINE_WRITER) {
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-          "Missing/Invalid authentication credentials provided for type: %s", databaseType);
+      throw ServerException.internalServerError(
+          "Missing/Invalid authentication credentials provided for type: " + databaseType);
     }
     return credentials;
   }

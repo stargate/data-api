@@ -199,7 +199,6 @@ public enum ErrorCodeV1 {
    * Error code used for "should never happen" style problems. Suffix part needs to include details
    * of actual issue.
    */
-  SERVER_INTERNAL_ERROR("Server internal error"),
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),

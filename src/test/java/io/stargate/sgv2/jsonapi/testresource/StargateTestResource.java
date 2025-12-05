@@ -56,7 +56,7 @@ public abstract class StargateTestResource
       return Collections.emptyMap();
     } else {
       boolean reuse = false;
-      ImmutableMap.Builder propsBuilder;
+      ImmutableMap.Builder<String, String> propsBuilder;
       if (this.containerNetworkId.isPresent()) {
         String networkId = this.containerNetworkId.get();
         propsBuilder = this.startWithContainerNetwork(networkId, reuse);
@@ -150,8 +150,7 @@ public abstract class StargateTestResource
       propsBuilder.put("quarkus.grpc.clients.bridge.host", stargateHost);
       return propsBuilder;
     } else {
-      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-      return propsBuilder;
+      return ImmutableMap.builder();
     }
   }
 
@@ -181,7 +180,7 @@ public abstract class StargateTestResource
     // Important: Start by checking if we are running HCD: default for local testing.
     // (for some reason looks like both "isHcd()" and "isDse()" may return true under
     // some conditions...)
-    if (this.isHcd()) {
+    if (isHcd()) {
       container =
           new GenericContainer<>(image)
               .withCopyFileToContainer(
@@ -193,7 +192,7 @@ public abstract class StargateTestResource
       // this MAY be needed too wrt ^^^
       // + " -Dcassandra.sai.jvector_version=4"
       ;
-    } else if (this.isDse()) {
+    } else if (isDse()) {
       container =
           new GenericContainer<>(image)
               .withCopyFileToContainer(
@@ -242,7 +241,7 @@ public abstract class StargateTestResource
             "cassandra.sai.max_string_term_size_kb", DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB);
 
     GenericContainer<?> container =
-        (new GenericContainer(image))
+        new GenericContainer<>(image)
             .withEnv("JAVA_OPTS", javaOpts)
             .withEnv("CLUSTER_NAME", getClusterName())
             .withEnv("SIMPLE_SNITCH", "true")
@@ -255,7 +254,7 @@ public abstract class StargateTestResource
             .waitingFor(Wait.forHttp("/checker/readiness").forPort(8084).forStatusCode(200))
             .withStartupTimeout(this.getCoordinatorStartupTimeout())
             .withReuse(reuse);
-    if (this.isDse()) {
+    if (isDse()) {
       container.withEnv("DSE", "1");
     }
 
@@ -301,14 +300,12 @@ public abstract class StargateTestResource
 
   public static boolean isRunningUnderMaven() {
     // Running under Maven if surefire test class path is set
-    // (note: also set up by Failsafe plugin (integ tests))
+    // (note: also set up by Failsafe plugin (integration tests))
     return System.getProperty("surefire.test.class.path") != null;
   }
 
   /**
-   * Returns if coordinator should be started and used.
-   *
-   * @return
+   * @return {@code true} if coordinator should be started and used.
    */
   protected boolean useCoordinator() {
     return Boolean.getBoolean("testing.containers.use-coordinator");

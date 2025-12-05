@@ -82,7 +82,7 @@ public class DocumentShredderDocLimitsTest {
       for (int ix1 = 0; ix1 < mainProps; ++ix1) {
         ObjectNode mainProp = bigDoc.putObject("prop" + ix1);
         for (int ix2 = 0; ix2 < subProps; ++ix2) {
-          mainProp.put("sub" + ix2, RandomStringUtils.randomAscii(7_500));
+          mainProp.put("sub" + ix2, RandomStringUtils.insecure().nextAscii(7_500));
         }
       }
       return bigDoc;
@@ -308,7 +308,8 @@ public class DocumentShredderDocLimitsTest {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       // Use ASCII to keep chars == bytes, use length of just slight below max allowed
-      doc.put("text", RandomStringUtils.randomAscii(docLimits.maxStringLengthInBytes() - 100));
+      doc.put(
+          "text", RandomStringUtils.insecure().nextAscii(docLimits.maxStringLengthInBytes() - 100));
       assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
 
@@ -319,7 +320,7 @@ public class DocumentShredderDocLimitsTest {
       ArrayNode arr = doc.putArray("arr");
       // Use ASCII to keep chars == bytes, use length of just above max allowed
       final int tooLongLength = docLimits.maxStringLengthInBytes() + 100;
-      String str = RandomStringUtils.randomAscii(tooLongLength);
+      String str = RandomStringUtils.insecure().nextAscii(tooLongLength);
       arr.add(str);
 
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));

@@ -12,7 +12,6 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -22,12 +21,10 @@ public class FindOneAndReplaceCommandTest {
 
   @Inject Validator validator;
 
-  @Nested
-  class Validation {
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPath() throws Exception {
+    String json =
+        """
                   {
                     "findOneAndReplace": {
                         "filter" : {"username" : "update_user5"},
@@ -37,24 +34,24 @@ public class FindOneAndReplaceCommandTest {
                   }
                 """;
 
-      Command result = objectMapper.readValue(json, Command.class);
+    Command result = objectMapper.readValue(json, Command.class);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              FindOneAndReplaceCommand.class,
-              findOneAndReplaceCommand -> {
-                assertThat(findOneAndReplaceCommand.filterDefinition()).isNotNull();
-                final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
-                assertThat(replacementDocument).isNotNull();
-                final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();
-                assertThat(options).isNotNull();
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            FindOneAndReplaceCommand.class,
+            findOneAndReplaceCommand -> {
+              assertThat(findOneAndReplaceCommand.filterDefinition()).isNotNull();
+              final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
+              assertThat(replacementDocument).isNotNull();
+              final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();
+              assertThat(options).isNotNull();
+            });
+  }
 
-    @Test
-    public void withSortAndOptions() throws Exception {
-      String json =
-          """
+  @Test
+  public void withSortAndOptions() throws Exception {
+    String json =
+        """
                   {
                     "findOneAndReplace": {
                         "filter" : {"username" : "update_user5"},
@@ -65,26 +62,26 @@ public class FindOneAndReplaceCommandTest {
                   }
                   """;
 
-      Command result = objectMapper.readValue(json, Command.class);
+    Command result = objectMapper.readValue(json, Command.class);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              FindOneAndReplaceCommand.class,
-              findOneAndReplaceCommand -> {
-                assertThat(findOneAndReplaceCommand.filterDefinition()).isNotNull();
-                final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
-                assertThat(replacementDocument).isNotNull();
-                final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();
-                assertThat(options).isNotNull();
-                assertThat(options.returnDocument()).isNotNull();
-                assertThat(options.returnDocument()).isEqualTo("after");
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            FindOneAndReplaceCommand.class,
+            findOneAndReplaceCommand -> {
+              assertThat(findOneAndReplaceCommand.filterDefinition()).isNotNull();
+              final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
+              assertThat(replacementDocument).isNotNull();
+              final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();
+              assertThat(options).isNotNull();
+              assertThat(options.returnDocument()).isNotNull();
+              assertThat(options.returnDocument()).isEqualTo("after");
+            });
+  }
 
-    @Test
-    public void invalidReturnDocumentOption() throws Exception {
-      String json =
-          """
+  @Test
+  public void invalidReturnDocumentOption() throws Exception {
+    String json =
+        """
                 {
                   "findOneAndReplace": {
                     "filter": {"name": "Aaron"},
@@ -96,14 +93,12 @@ public class FindOneAndReplaceCommandTest {
                 }
                 """;
 
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Set<ConstraintViolation<FindOneAndReplaceCommand>> result = validator.validate(command);
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Set<ConstraintViolation<FindOneAndReplaceCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("returnDocument value can only be 'before' or 'after'");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("returnDocument value can only be 'before' or 'after'");
   }
 }

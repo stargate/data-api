@@ -38,7 +38,7 @@ public class FindCommandResolverTest {
   @Inject FindCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
 

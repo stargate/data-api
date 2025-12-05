@@ -26,7 +26,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleEnabledMinimal() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_minimal" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_minimal" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": true}");
 
       givenHeadersPostJsonThenOkNoErrors(json)
@@ -39,7 +40,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleEnabledStandard() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_simple" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_simple" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -61,7 +63,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleEnabledEmptyObject() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_emptyob" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_emptyob" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -82,7 +85,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleEnabledCustom() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_cust_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_cust_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -107,7 +111,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalAdvancedCustom() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_advanced_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_advanced_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -136,7 +141,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleDisabled() {
       // Fine regardless of whether Lexical available for DB or not
 
-      final String collectionName = "coll_lexical_disabled" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_disabled" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": false}");
 
       givenHeadersPostJsonThenOkNoErrors(json)
@@ -150,7 +156,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
       // Fine regardless of whether Lexical available for DB or not
 
       final String collectionName =
-          "coll_lexical_disabled_empty" + RandomStringUtils.randomNumeric(16);
+          "coll_lexical_disabled_empty" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(collectionName, "{\"enabled\": false, \"analyzer\": {}}");
 
@@ -166,7 +172,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
   class CreateLexicalFail {
     @Test
     void failCreateLexicalWithDisabledAndAnalyzerString() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -188,7 +194,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalWithDisabledAndArrayInAnalyzer() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -210,7 +216,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalWithDisabledAndNumberInAnalyzer() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -232,7 +238,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalWithDisabledAndAnalyzerObject() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -258,7 +264,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalMissingEnabled() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithLexical(collectionName, "{ }");
 
       givenHeadersPostJsonThenOk(json)
@@ -272,7 +278,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalUnknownAnalyzer() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -300,7 +306,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalWrongJsonType() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -333,7 +339,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void failCreateLexicalMisspelledTokenizer() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -367,7 +373,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void failCreateLexicalNonObjectForTokenizer() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -394,7 +400,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void failCreateLexicalNonArrayForFilters() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,

@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -29,7 +28,7 @@ public class InsertManyCommandResolverTest {
   @Inject InsertManyCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
 
@@ -38,13 +37,10 @@ public class InsertManyCommandResolverTest {
     commandContext = testConstants.collectionContext();
   }
 
-  @Nested
-  class ResolveCommand {
-
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPath() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
               "documents": [
@@ -61,23 +57,23 @@ public class InsertManyCommandResolverTest {
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              InsertCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isFalse();
-                assertThat(op.insertions()).hasSize(2);
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            InsertCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.ordered()).isFalse();
+              assertThat(op.insertions()).hasSize(2);
+            });
+  }
 
-    @Test
-    public void happyPathVectorSearch() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPathVectorSearch() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
               "documents": [
@@ -96,23 +92,23 @@ public class InsertManyCommandResolverTest {
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              InsertCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isFalse();
-                assertThat(op.insertions()).hasSize(2);
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            InsertCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.ordered()).isFalse();
+              assertThat(op.insertions()).hasSize(2);
+            });
+  }
 
-    @Test
-    public void optionsEmpty() throws Exception {
-      String json =
-          """
+  @Test
+  public void optionsEmpty() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
               "documents": [
@@ -131,23 +127,23 @@ public class InsertManyCommandResolverTest {
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              InsertCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isFalse();
-                assertThat(op.insertions()).hasSize(2);
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            InsertCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.ordered()).isFalse();
+              assertThat(op.insertions()).hasSize(2);
+            });
+  }
 
-    @Test
-    public void optionsNotOrdered() throws Exception {
-      String json =
-          """
+  @Test
+  public void optionsNotOrdered() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
               "documents": [
@@ -167,17 +163,16 @@ public class InsertManyCommandResolverTest {
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              InsertCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isTrue();
-                assertThat(op.insertions()).hasSize(2);
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            InsertCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.ordered()).isTrue();
+              assertThat(op.insertions()).hasSize(2);
+            });
   }
 }

@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding.collections;
 
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import java.util.Objects;
 
 /**
@@ -145,9 +145,9 @@ public final class JsonPath implements Comparable<JsonPath> {
     public Builder nestedArrayBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            "Shredder path being built does not point to a property or element (basePath: '%s')",
-            basePath);
+        throw ServerException.internalServerError(
+            "Shredder path being built does not point to a property or element (basePath: '%s')"
+                .formatted(basePath));
       }
       return new Builder(childPath, true);
     }
@@ -156,9 +156,9 @@ public final class JsonPath implements Comparable<JsonPath> {
     public Builder nestedObjectBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            "Shredder path being built does not point to a property or element (basePath: '%s')",
-            basePath);
+        throw ServerException.internalServerError(
+            "Shredder path being built does not point to a property or element (basePath: '%s')"
+                .formatted(basePath));
       }
       return new Builder(childPath, false);
     }
@@ -176,8 +176,8 @@ public final class JsonPath implements Comparable<JsonPath> {
 
     public Builder property(String propName) {
       if (inArray) {
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            "Cannot add property '%s' when in array context: %s", propName, build());
+        throw ServerException.internalServerError(
+            "Cannot add property '%s' when in array context: %s".formatted(propName, build()));
       }
       childPath = (basePath == null) ? propName : (basePath + '.' + propName);
       return this;
@@ -185,8 +185,8 @@ public final class JsonPath implements Comparable<JsonPath> {
 
     public Builder index(int index) {
       if (!inArray) {
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            "Cannot add index (%d) when not in array context: %s", index, build());
+        throw ServerException.internalServerError(
+            "Cannot add index (%d) when not in array context: %s".formatted(index, build()));
       }
       StringBuilder sb;
       if (basePath == null) { // root

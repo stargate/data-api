@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.34-SNAPSHOT</version>
+  <version>1.0.35-SNAPSHOT</version>
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -336,7 +336,8 @@
               leading to duplication of "mockito.version".
               See: https://github.com/stargate/data-api/pull/2233
             -->
-          <argLine>-Xmx4g -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+          <!-- 02-Dec-2025, tatu: [data-api#2270] Use @{argLine} to preserve JaCoCo agent config -->
+          <argLine>@{argLine} -Xmx4g -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <maven.home>${maven.home}</maven.home>
@@ -438,6 +439,36 @@
                 <include>**/*IntegrationTest.*</include>
               </includes>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- 02-Dec-2025, tatu: [data-api#2270] Enable Code Coverage generation
+             (for Unit Tests)
+        -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.12</version>
+        <configuration>
+          <!-- 04-Dec-2025, tatu: Not part of data-api somehow included, exclude -->
+          <excludes>
+            <exclude>io/stargate/embedding/gateway/**</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
