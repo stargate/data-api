@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
