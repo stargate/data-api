@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
@@ -133,8 +134,7 @@ public class DocumentShredder {
       // (to use configuration we specify wrt serialization)
       docJson = objectMapper.writeValueAsString(docWithId);
     } catch (JacksonException e) { // should never happen but signature exposes it
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-          e, "Failed to serialize document: %s", e.getMessage());
+      throw ServerException.internalServerError("Failed to serialize document: " + e.getMessage());
     }
 
     // And then we can validate the document size
@@ -507,8 +507,8 @@ public class DocumentShredder {
         } else if (value.isNull()) {
           shredder.shredNull(path);
         } else {
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
+          throw ServerException.internalServerError(
+              "Unsupported `JsonNodeType` in input document, `%s`".formatted(value.getNodeType()));
         }
       }
     }

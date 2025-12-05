@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -45,8 +46,8 @@ public class DocValueHasher {
       case STRING -> stringValue(value.textValue()).hash();
 
       default -> // case BINARY, MISSING, POJO -- should these ever occur?
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
+          throw ServerException.internalServerError(
+              "Unsupported `JsonNodeType` in input document, `%s`".formatted(value.getNodeType()));
     };
   }
 
