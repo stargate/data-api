@@ -1751,6 +1751,16 @@ request-errors:
 server-errors:
   # UNSCOPED server errors
   - scope:
+    code: INTERNAL_SERVER_ERROR
+    title: Internal server error
+    body: |-
+      An unexpected internal server error occurred while processing the request. 
+      
+      Error Message: ${errorMessage}
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope:
     code: UNEXPECTED_SERVER_ERROR
     title: Unexpected server error
     body: |-

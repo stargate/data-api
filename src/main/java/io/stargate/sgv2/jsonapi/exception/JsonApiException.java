@@ -193,10 +193,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   }
 
   private ErrorScope getErrorScope(ErrorFamily family) {
-    // first handle special cases
-    if (errorCode == SERVER_INTERNAL_ERROR) {
-      return ErrorScope.EMPTY;
-    }
     for (Map.Entry<Set<ErrorCodeV1>, ErrorScope> entry : errorCodeScopeMap.entrySet()) {
       if (entry.getKey().contains(errorCode)) {
         return entry.getValue();
