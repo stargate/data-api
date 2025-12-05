@@ -8,6 +8,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.*;
@@ -164,8 +165,8 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
       Object value = parameters.get(key);
       if (value == null) {
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            "Missing URL parameter '%s' (available: %s)", key, parameters.keySet());
+        throw ServerException.internalServerError(
+            "Missing URL parameter '%s' (available: %s)".formatted(key, parameters.keySet()));
       }
       baseUrl.append(value);
     }

@@ -8,12 +8,12 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.Map;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -22,66 +22,59 @@ class ErrorSerializerTest {
 
   @Inject ObjectMapper objectMapper;
 
-  @Nested
-  class Serialize {
+  @Test
+  public void happyPath() throws Exception {
+    CommandResult.Error error =
+        new CommandResult.Error(
+            "My message.", Map.of("field", "value"), Map.of("field", "value"), Response.Status.OK);
 
-    @Test
-    public void happyPath() throws Exception {
-      CommandResult.Error error =
-          new CommandResult.Error(
-              "My message.",
-              Map.of("field", "value"),
-              Map.of("field", "value"),
-              Response.Status.OK);
+    String result = objectMapper.writeValueAsString(error);
 
-      String result = objectMapper.writeValueAsString(error);
-
-      assertThat(result)
-          .isEqualTo(
-              """
+    assertThat(result)
+        .isEqualTo(
+            """
                     {"message":"My message.","field":"value"}""");
-    }
+  }
 
-    @Test
-    public void withoutProps() throws Exception {
-      CommandResult.Error error =
-          new CommandResult.Error(
-              "My message.", Collections.emptyMap(), Collections.emptyMap(), Response.Status.OK);
+  @Test
+  public void withoutProps() throws Exception {
+    CommandResult.Error error =
+        new CommandResult.Error(
+            "My message.", Collections.emptyMap(), Collections.emptyMap(), Response.Status.OK);
 
-      String result = objectMapper.writeValueAsString(error);
+    String result = objectMapper.writeValueAsString(error);
 
-      assertThat(result)
-          .isEqualTo(
-              """
+    assertThat(result)
+        .isEqualTo(
+            """
                     {"message":"My message."}""");
-    }
+  }
 
-    @Test
-    public void messageFieldNotAllowed() throws Exception {
-      Throwable throwable =
-          catchThrowable(
-              () ->
-                  new CommandResult.Error(
-                      "My message.",
-                      Map.of("message", "value"),
-                      Map.of("message", "value"),
-                      Response.Status.OK));
+  @Test
+  public void messageFieldNotAllowed() throws Exception {
+    Throwable throwable =
+        catchThrowable(
+            () ->
+                new CommandResult.Error(
+                    "My message.",
+                    Map.of("message", "value"),
+                    Map.of("message", "value"),
+                    Response.Status.OK));
 
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .hasMessageContaining("Error fields can not contain the reserved key 'message'");
-    }
+    assertThat(throwable)
+        .isInstanceOf(ServerException.class)
+        .hasMessageContaining("Error fields can not contain the reserved key 'message'");
+  }
 
-    @Test
-    public void withNulls() throws Exception {
-      CommandResult.Error error = new CommandResult.Error(null, null, null, Response.Status.OK);
+  @Test
+  public void withNulls() throws Exception {
+    CommandResult.Error error = new CommandResult.Error(null, null, null, Response.Status.OK);
 
-      String result = objectMapper.writeValueAsString(error);
+    String result = objectMapper.writeValueAsString(error);
 
-      assertThat(result)
-          .isEqualTo(
-              """
+    assertThat(result)
+        .isEqualTo(
+            """
                     {"message":null}""");
-    }
   }
 }
