@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import java.util.Map;
 
 /**
  * Base for any errors that are from the {@link ErrorFamily#SERVER} family, these are server side
@@ -46,5 +47,10 @@ public class ServerException extends APIException {
     public ErrorTemplate<ServerException> template() {
       return template;
     }
+  }
+
+  public static ServerException internalServerError(String message) {
+    return Code.INTERNAL_SERVER_ERROR.get(
+        Map.of(ErrorObjectV2Constants.TemplateVars.ERROR_MESSAGE, message));
   }
 }
