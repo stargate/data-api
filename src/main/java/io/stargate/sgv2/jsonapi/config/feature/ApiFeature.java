@@ -26,15 +26,6 @@ public enum ApiFeature {
   LEXICAL("lexical", true),
 
   /**
-   * API Tables feature flag: if enabled, the API will expose table-specific Namespace resource
-   * commands, and support commands on Tables. If disabled, those operations will fail with {@link
-   * ErrorCodeV1#TABLE_FEATURE_NOT_ENABLED}.
-   *
-   * <p>Enabled by default.
-   */
-  TABLES("tables", true),
-
-  /**
    * API Reranking feature flag: if enabled, the API will expose:
    *
    * <ul>
