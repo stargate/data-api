@@ -1,9 +1,6 @@
 stargate:
   debug:
     enabled: true
-  feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig
-    flags:  # Ok to leave out features that have no default value (enabled or disabled)
-      tables:
 
 # change test port from 8081 (used by other SG services)
 quarkus:
