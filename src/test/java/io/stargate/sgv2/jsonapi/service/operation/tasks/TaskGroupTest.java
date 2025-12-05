@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;

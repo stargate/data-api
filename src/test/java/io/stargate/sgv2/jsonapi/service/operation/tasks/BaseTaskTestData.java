@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import static org.mockito.Mockito.*;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.time.Duration;
 
 public class BaseTaskTestData {

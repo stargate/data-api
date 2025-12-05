@@ -5,7 +5,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
  *
  * <p>Example: creteTable runs against the Keyspace , so target is the Keyspace aaron 13 - nove -
  * 2024 - not using the {@link
- * io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject.SchemaObjectType} because this
+ * io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectType} because this
  * also needs the SYSTEM value, and the schema object design prob needs improvement
  */
 public enum CommandTarget {

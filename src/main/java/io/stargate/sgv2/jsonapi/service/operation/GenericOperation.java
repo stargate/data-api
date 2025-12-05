@@ -7,6 +7,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import java.util.Objects;
 import java.util.function.Supplier;
+
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +98,7 @@ public class GenericOperation<
             commandContext.cqlSessionCache(),
             new CommandQueryExecutor.DBRequestContext(
                 commandContext.requestContext().tenant(),
-                commandContext.requestContext().getCassandraToken(),
+                commandContext.requestContext().authToken(),
                 commandContext.requestContext().userAgent(),
                 commandContext.requestTracing().enabled()),
             CommandQueryExecutor.QueryTarget.TABLE);

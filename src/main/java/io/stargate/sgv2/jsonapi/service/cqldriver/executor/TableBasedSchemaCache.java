@@ -7,12 +7,16 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
 import java.util.Optional;
 
-/** Caches the vector enabled status for the namespace */
+/**
+ * TODO: @YUQI - DELETE WHEN SCHMEA OBJECT CACHE IS READY
+ *
+ * Caches the vector enabled status for the namespace */
 // TODO: what is the vector status of a namespace ? vectors are per collection
 // TODO: clarify the name of this class, it is a cache of the collections/ tables not a cache of
 // namespaces ??

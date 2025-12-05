@@ -2,7 +2,9 @@ package io.stargate.sgv2.jsonapi.service.schema.naming;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
+
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -23,9 +25,9 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
 
   private static final int MAX_NAME_LENGTH = 48;
   private static final Pattern PATTERN_WORD_CHARS = Pattern.compile("\\w+");
-  private final SchemaObject.SchemaObjectType schemaType;
+  private final SchemaObjectType schemaType;
 
-  public SchemaObjectNamingRule(SchemaObject.SchemaObjectType schemaType) {
+  public SchemaObjectNamingRule(SchemaObjectType schemaType) {
     super(schemaType.name());
     this.schemaType = schemaType;
   }
@@ -33,7 +35,7 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
   /**
    * @return the type of schema object that this rule is applied to
    */
-  public SchemaObject.SchemaObjectType schemaType() {
+  public SchemaObjectType schemaType() {
     return schemaType;
   }
 

@@ -41,7 +41,8 @@ public class CommandQueryExecutor {
 
   public enum QueryTarget {
     TABLE,
-    COLLECTION;
+    COLLECTION,
+    SCHEMA;
 
     final String profilePrefix;
 

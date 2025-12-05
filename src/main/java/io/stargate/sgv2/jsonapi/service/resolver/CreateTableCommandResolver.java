@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;

@@ -27,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * TODO: @YUQI - DELETE WHEN SCHMEA OBJECT CACHE IS READY
+ *
  * Top level entry for caching the keyspaces and tables from the backend db
  *
  * <p>IMPORTANT: use {@link #getSchemaChangeListener()} and {@link #getDeactivatedTenantConsumer()}

@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import io.smallrye.mutiny.Multi;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 
 /**
  * TODO: aaron 19 march 2025 - remove OperationAttempt and related code once Tasks are solid

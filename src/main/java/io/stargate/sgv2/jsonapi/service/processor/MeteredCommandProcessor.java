@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Collections;
@@ -93,11 +93,6 @@ public class MeteredCommandProcessor {
 
     Timer.Sample sample = Timer.start(meterRegistry);
 
-    // Set up logging context (MDC)
-    // use MDC to populate logs as needed(namespace,collection,tenantId)
-    commandContext.schemaObject().name().addToMDC();
-    MDC.put("tenantId", commandContext.requestContext().tenant().toString());
-
     // --- Defer Command Processing (from PR2076) ---
     // We wrap the call to `commandProcessor.processCommand` in `Uni.createFrom().deferred()`
     // for two main reasons:
@@ -144,13 +139,6 @@ public class MeteredCommandProcessor {
                     buildCommandLog(commandContext, command, null),
                     throwable);
               }
-            })
-        .eventually(
-            () -> {
-              // Cleanup MDC after processing completes (success or failure) to prevent data from
-              // leaking into the next request handled by the same thread.
-              commandContext.schemaObject().name().removeFromMDC();
-              MDC.remove("tenantId");
             });
   }
 
@@ -168,8 +156,8 @@ public class MeteredCommandProcessor {
         new CommandLog(
             command.getClass().getSimpleName(),
             commandContext.requestContext().tenant(),
-            commandContext.schemaObject().name().keyspace(),
-            commandContext.schemaObject().name().table(),
+            commandContext.schemaObject().identifier().keyspace().asInternal(),
+            commandContext.schemaObject().identifier().table() == null ? "" : commandContext.schemaObject().identifier().table().asInternal(),
             commandContext.schemaObject().type().name(),
             getIncomingDocumentsCount(command),
             getOutgoingDocumentsCount(result),
