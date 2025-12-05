@@ -78,6 +78,9 @@ public class TestConstants {
   /** the DS SLA USer Agent */
   public final UserAgent SLA_USER_AGENT;
 
+  /** Embedding credentials */
+  public final EmbeddingCredentials EMBEDDING_CREDENTIALS;
+
   // ============================================================
   // Schema Objects
   // ============================================================
@@ -124,6 +127,10 @@ public class TestConstants {
 
     var slaUserAgentString = SLA_USER_AGENT_NAME + "/" + CORRELATION_ID;
     SLA_USER_AGENT = new UserAgent(slaUserAgentString);
+
+    EMBEDDING_CREDENTIALS =
+        new EmbeddingCredentials(
+            TENANT, Optional.of("test-api-key"), Optional.empty(), Optional.empty());
 
     // ============================================================
     // Schema Objects
@@ -188,6 +195,7 @@ public class TestConstants {
 
     var requestContext = mock(RequestContext.class);
     when(requestContext.tenant()).thenReturn(TENANT);
+    when(requestContext.getEmbeddingCredentials()).thenReturn(EMBEDDING_CREDENTIALS);
 
     var embeddingCredentials = mock(EmbeddingCredentials.class);
     when(embeddingCredentials.tenant()).thenReturn(TENANT);

@@ -59,27 +59,20 @@ public class CommandResolverWithVectorizerTest {
   @Inject OperationsConfig operationsConfig;
   @Inject DocumentShredder documentShredder;
 
+  private final TestConstants testConstants = new TestConstants();
+  private final TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
+
+  @Inject DataVectorizerService dataVectorizerService;
+
   @InjectMock protected RequestContext dataApiRequestInfo;
 
   @Inject FindCommandResolver findCommandResolver;
-
   @Inject FindOneCommandResolver findOneCommandResolver;
   @Inject UpdateOneCommandResolver updateOneCommandResolver;
   @Inject DeleteOneCommandResolver deleteOneCommandResolver;
-
   @Inject FindOneAndDeleteCommandResolver findOneAndDeleteCommandResolver;
-
-  @Inject FindOneAndReplaceCommandResolver findOneAndReplaceCommandResolver;
-
-  @Inject FindOneAndUpdateCommandResolver findOneAndUpdateCommandResolver;
-
   @Inject InsertManyCommandResolver insertManyCommandResolver;
-
   @Inject InsertOneCommandResolver insertOneCommandResolver;
-
-  @Inject DataVectorizerService dataVectorizerService;
-  private final TestConstants testConstants = new TestConstants();
-  private final TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
   @Nested
   class Resolve {

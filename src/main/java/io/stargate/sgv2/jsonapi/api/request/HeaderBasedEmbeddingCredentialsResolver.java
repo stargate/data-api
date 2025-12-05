@@ -4,11 +4,13 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Optional;
 
 /**
  * Implementation to resolve the embedding api key, access id and secret id from the request header.
  */
+@ApplicationScoped
 public class HeaderBasedEmbeddingCredentialsResolver implements EmbeddingCredentialsResolver {
 
   /**
