@@ -169,7 +169,7 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
     var fixture = newFixture();
     var actualValue = fixture.cache.getValue(CACHE_KEY);
 
-    // give ethe cache time to bookkeep
+    // give the cache time to bookkeep
     fixture.cache.cleanUp();
 
     var cacheSizeMetric = fixture.meterRegistry.find("cache.size").tag("cache", CACHE_NAME).gauge();
@@ -177,10 +177,10 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
         .as("cache.size metric added to registry with cache name - {}", CACHE_NAME)
         .isNotNull();
 
-    var cachePutMetric =
-        fixture.meterRegistry.find("cache.puts").tag("cache", CACHE_NAME).functionCounter();
-    assertThat(cachePutMetric)
-        .as("cache.puts metric added to registry with expected name - {}", CACHE_NAME)
+    var cacheGetMetric =
+        fixture.meterRegistry.find("cache.gets").tag("cache", CACHE_NAME).counter();
+    assertThat(cacheGetMetric)
+        .as("cache.gets metric added to registry with expected name - {}", CACHE_NAME)
         .isNotNull();
   }
 

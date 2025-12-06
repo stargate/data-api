@@ -326,6 +326,20 @@ public class CqlSessionCacheTests extends CacheTestsBase {
                 TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is removed from cache after explicit eviction")
         .isNotPresent();
+
+    // give the cache time to bookkeep
+    fixture.cache.cleanUp();
+
+    // Verify the metric was recorded with correct tag
+    var evictionMetric =
+        fixture.meterRegistry.find("cache.evictions").tag("cache", "cql_sessions_cache").summary();
+
+    assertThat(evictionMetric)
+        .as("Explicit eviction metric should be recorded in registry")
+        .isNotNull();
+    assertThat(evictionMetric.count())
+        .as("Eviction metric should record exactly one event")
+        .isEqualTo(1);
   }
 
   @Test
