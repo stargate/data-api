@@ -43,6 +43,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
+  // For $match on $lexical
+  private static final Object MATCH_GROUP = new Object();
 
   public CollectionFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -156,7 +158,11 @@ public class CollectionFilterResolver<T extends Command & Filterable>
         .compareValues(
             "*",
             EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
-            JsonType.SUB_DOC);
+            JsonType.SUB_DOC)
+        .capture(MATCH_GROUP)
+        .compareValues(
+            // Should be "$lexical" but validated elsewhere
+            "*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING);
 
     return matchRules;
   }
@@ -497,6 +503,19 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                   expression.operator().equals(ValueComparisonOperator.EQ)
                                       ? MapCollectionFilter.Operator.MAP_EQUALS
                                       : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(MATCH_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> matchGroup = (CaptureGroup<Object>) captureGroup;
+                    matchGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new MatchCollectionFilter(
+                                  expression.path(), (String) expression.value()));
                         });
                   });
         };

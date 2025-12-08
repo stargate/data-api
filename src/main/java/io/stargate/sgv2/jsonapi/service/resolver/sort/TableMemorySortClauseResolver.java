@@ -100,12 +100,6 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
   /** Resolves the sort for sorting table rows in memory */
   private WithWarnings<RowSorter> resolveToTableInMemorySort(
       List<SortExpression> sortExpressions, TableSchemaObject tableSchemaObject) {
-
-    // check all the columns are know
-    checkUnknownSortColumns(
-        tableSchemaObject,
-        sortExpressions.stream().map(SortExpression::pathAsCqlIdentifier).toList());
-
     var apiTableDef = tableSchemaObject.apiTableDef();
     List<InMemorySortComparator.SortByTerm> sortByList = new ArrayList<>(sortExpressions.size());
 
@@ -119,7 +113,7 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
                     + sortExpression.pathAsCqlIdentifier());
           }
           sortByList.add(
-              new InMemorySortComparator.SortByTerm(apiColumnDef, sortExpression.ascending()));
+              new InMemorySortComparator.SortByTerm(apiColumnDef, sortExpression.isAscending()));
         });
 
     var sorter =

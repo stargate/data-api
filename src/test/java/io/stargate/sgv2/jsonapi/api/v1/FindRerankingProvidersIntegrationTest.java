@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.stream.Stream;
@@ -17,7 +15,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   @Nested
@@ -27,19 +25,13 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
     @Test
     public final void defaultSupportModels() {
       // without option specified, only return supported models
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                     {
                       "findRerankingProviders": {
                       }
                     }
-                    """;
-
-      given()
-          .port(getTestPort())
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                    """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -66,23 +58,17 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
     @ParameterizedTest()
     @MethodSource("returnedAllStatus")
     public final void returnModelsWithAllStatus(String filterModelStatus) {
-      String json =
+      givenHeadersAndJson(
+                  """
+              {
+                "findRerankingProviders": {
+                  "options": {
+                    "filterModelStatus": %s
+                  }
+                }
+              }
               """
-                            {
-                              "findRerankingProviders": {
-                                "options": {
-                                  "filterModelStatus": %s
-                                }
-                              }
-                            }
-                            """
-              .formatted(filterModelStatus);
-
-      given()
-          .port(getTestPort())
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(filterModelStatus))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -112,22 +98,16 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
 
     @Test
     public final void returnModelsWithSpecifiedStatus() {
-      String json =
-          """
-                                    {
-                                      "findRerankingProviders": {
-                                        "options": {
-                                          "filterModelStatus": "deprecated"
-                                        }
-                                      }
-                                    }
-                                    """;
-
-      given()
-          .port(getTestPort())
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+      givenHeadersAndJson(
+              """
+                  {
+                    "findRerankingProviders": {
+                      "options": {
+                        "filterModelStatus": "deprecated"
+                      }
+                    }
+                  }
+                  """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -145,8 +125,8 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
 
     @Test
     public final void failedWithRandomStatus() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findRerankingProviders": {
                           "options": {
@@ -154,13 +134,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
                           }
                         }
                       }
-                      """;
-
-      given()
-          .port(getTestPort())
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()

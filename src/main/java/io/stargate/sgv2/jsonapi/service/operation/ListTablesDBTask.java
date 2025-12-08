@@ -2,12 +2,14 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import java.util.List;
+import java.util.Objects;
 
 /** Attempt to list tables in a keyspace. */
 public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
@@ -33,9 +35,11 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
   @Override
   protected List<String> getNames() {
 
-    // TODO: BETTER CONTROL on KEYSPACE OPTIONAL
+    // aaron - see the MetadataDBTask, need better control on when this is set
+    Objects.requireNonNull(
+        keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+
     return keyspaceMetadata
-        .get()
         // get all tables
         .getTables()
         .values()
@@ -52,16 +56,23 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
    */
   @Override
   protected Object getSchema() {
-    // TODO: BETTER CONTROL on KEYSPACE OPTIONAL
+
+    // aaron - see the MetadataDBTask, need better control on when this is set
+    Objects.requireNonNull(
+        keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+
     return keyspaceMetadata
-        .get()
         // get all tables
         .getTables()
         .values()
         .stream()
         .filter(TABLE_MATCHER)
         .map(tableMetadata -> TableSchemaObject.from(tableMetadata, OBJECT_MAPPER))
-        .map(tableSchemaObject -> tableSchemaObject.apiTableDef().toTableDesc())
+        .map(
+            tableSchemaObject ->
+                tableSchemaObject
+                    .apiTableDef()
+                    .getSchemaDescription(SchemaDescSource.DDL_SCHEMA_OBJECT))
         .toList();
   }
 }

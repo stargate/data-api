@@ -129,9 +129,10 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected void onSuccess(RerankingTaskResult result) {
+  protected void onSuccess(
+      RerankingTask.RerankingResultSupplier resultSupplier, RerankingTaskResult result) {
     this.rerankingTaskResult = result;
-    super.onSuccess(result);
+    super.onSuccess(resultSupplier, result);
   }
 
   @Override
@@ -275,7 +276,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                 RerankingTaskResult.create(
                     requestTracing,
                     rerankingProvider,
-                    new RerankingProvider.RerankingResponse(List.of()),
+                    new RerankingProvider.RerankingResponse(
+                        List.of(), rerankingProvider.createEmptyModelUsage(credentials)),
                     unrankedDocs,
                     limit));
       }

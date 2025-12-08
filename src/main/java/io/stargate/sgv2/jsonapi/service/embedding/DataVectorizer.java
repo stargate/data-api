@@ -52,7 +52,8 @@ public class DataVectorizer {
       SchemaObject schemaObject) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
-    this.embeddingCredentials = embeddingCredentials;
+    this.embeddingCredentials =
+        Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
     this.schemaObject = schemaObject;
   }
 
@@ -175,7 +176,7 @@ public class DataVectorizer {
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
-            .map(EmbeddingProvider.Response::embeddings);
+            .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings);
     return vectors
         .onItem()
         .transform(
@@ -208,13 +209,13 @@ public class DataVectorizer {
       if (sortClause == null || sortClause.sortExpressions().isEmpty())
         return Uni.createFrom().item(true);
       if (sortClause.hasVectorizeSearchClause()) {
-        final List<SortExpression> sortExpressions = sortClause.sortExpressions();
-        SortExpression expression = sortExpressions.get(0);
-        String text = expression.vectorize();
         if (embeddingProvider == null) {
           throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
               schemaObject.name().table());
         }
+        final List<SortExpression> sortExpressions = sortClause.sortExpressions();
+        SortExpression expression = sortExpressions.getFirst();
+        String text = expression.getVectorize();
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
@@ -227,7 +228,7 @@ public class DataVectorizer {
             .onItem()
             .transform(
                 vectorData -> {
-                  float[] vector = vectorData.get(0);
+                  float[] vector = vectorData.getFirst();
                   final VectorConfig vectorConfig = schemaObject.vectorConfig();
                   // This will be the first element for collection
                   // TODO: AARON - this code had no null projection, now throws if not present
@@ -241,8 +242,10 @@ public class DataVectorizer {
                         collectionVectorDefinition.vectorSize(),
                         vector.length);
                   }
+                  // 12-Jun-2025, tatu: Important! Due to original bad design, we need to allow
+                  //   replacing of vectorize sort with resolved vector sort:
                   sortExpressions.clear();
-                  sortExpressions.add(SortExpression.vsearch(vector));
+                  sortExpressions.add(SortExpression.collectionVectorSort(vector));
                   return true;
                 });
       }
@@ -301,7 +304,7 @@ public class DataVectorizer {
 
     return embeddingProvider
         .vectorize(1, textsToVectorize, embeddingCredentials, requestType)
-        .map(EmbeddingProvider.Response::embeddings)
+        .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings)
         .onItem()
         .transform(
             vectorData -> {
@@ -406,7 +409,7 @@ public class DataVectorizer {
 
     @Override
     public String getVectorizeText() {
-      return sortExpression.vectorize();
+      return sortExpression.getVectorize();
     }
 
     @Override
@@ -417,7 +420,7 @@ public class DataVectorizer {
       var i = sortClause.sortExpressions().indexOf(sortExpression);
       sortClause
           .sortExpressions()
-          .set(i, SortExpression.tableVectorSort(sortExpression.path(), vector));
+          .set(i, SortExpression.tableVectorSort(sortExpression.getPath(), vector));
     }
   }
 

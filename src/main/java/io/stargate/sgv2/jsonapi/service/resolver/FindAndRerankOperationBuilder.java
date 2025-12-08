@@ -7,13 +7,12 @@ import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
@@ -157,11 +156,8 @@ class FindAndRerankOperationBuilder {
 
     if (isLexicalSort()) {
       if (!commandContext.schemaObject().lexicalConfig().enabled()) {
-        // NOTE: using V1 error to be compatible with how we handle lexical for non findAndRerank
-        // See SortClause.validate()
-        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-            "Lexical search is not enabled for collection '%s'",
-            commandContext.schemaObject().name().table());
+        throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
+            errVars(commandContext.schemaObject()));
       }
     }
 
@@ -198,7 +194,7 @@ class FindAndRerankOperationBuilder {
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
-            .getConfiguration(
+            .create(
                 commandContext.requestContext().getTenantId(),
                 commandContext.requestContext().getCassandraToken(),
                 providerConfig.provider(),
@@ -296,12 +292,13 @@ class FindAndRerankOperationBuilder {
     }
 
     var bm25SortTerm = command.sortClause().lexicalSort();
-    var bm25SortClause = new SortClause(List.of(SortExpression.bm25Search(bm25SortTerm)));
+    var bm25SortClause =
+        new SortClause(List.of(SortExpression.collectionLexicalSort(bm25SortTerm)));
     var bm25ReadCommand =
         new FindCommand(
-            command.filterSpec(),
+            command.filterDefinition(),
             INCLUDE_ALL_PROJECTION,
-            SortSpec.wrap(bm25SortClause),
+            SortDefinition.wrap(bm25SortClause),
             buildFindOptions(false));
 
     return new IntermediateCollectionReadTask(
@@ -339,17 +336,19 @@ class FindAndRerankOperationBuilder {
               vectorDef.vectorizeDefinition(),
               sortClause);
     } else if (isVectorSort()) {
-      sortClause.sortExpressions().add(SortExpression.vsearch(command.sortClause().vectorSort()));
+      sortClause
+          .sortExpressions()
+          .add(SortExpression.collectionVectorSort(command.sortClause().vectorSort()));
     } else {
-      throw new IllegalArgumentException("buildVectorRead() - XXX TODO - no vector or vectorize");
+      throw new IllegalArgumentException("buildVectorRead() - no vector or vectorize");
     }
 
     // The intermediate task will set the sort when we give it the deferred vectorize
     var vectorReadCommand =
         new FindCommand(
-            command.filterSpec(),
+            command.filterDefinition(),
             INCLUDE_ALL_PROJECTION,
-            SortSpec.wrap(sortClause),
+            SortDefinition.wrap(sortClause),
             buildFindOptions(true));
     var readTask =
         new IntermediateCollectionReadTask(
@@ -399,8 +398,7 @@ class FindAndRerankOperationBuilder {
       finalRerankField = rerankOn;
 
     } else {
-      throw new IllegalArgumentException(
-          "TODO XXX rerankOn() - rerankOn required and not specified");
+      throw new IllegalArgumentException("rerankOn() - rerankOn required and not specified");
     }
 
     return PathMatchLocator.forPath(finalRerankField);

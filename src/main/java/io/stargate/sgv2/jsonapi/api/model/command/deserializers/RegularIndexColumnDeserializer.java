@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
@@ -47,12 +47,12 @@ public class RegularIndexColumnDeserializer
       // E.G. {"column": "mapColumn"}, default to entries for map
       return new RegularIndexDefinitionDesc.RegularIndexColumn(columnNode.textValue(), null);
     } else if (columnNode.isObject() && columnNode.size() == 1) {
-      Map.Entry<String, JsonNode> entry = columnNode.fields().next();
+      Map.Entry<String, JsonNode> entry = columnNode.properties().iterator().next();
       if (entry.getValue().isTextual()) {
         // E.G. {"column": {"mapColumn" : "$keys"}}
         // E.G. {"column": {"mapColumn" : "$values"}}
         var apiMapComponent =
-            ApiMapComponent.fromApiName(entry.getValue().textValue())
+            MapComponentDesc.fromApiName(entry.getValue().textValue())
                 .orElseThrow(SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN::get);
         return new RegularIndexDefinitionDesc.RegularIndexColumn(entry.getKey(), apiMapComponent);
       }

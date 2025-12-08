@@ -1,5 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
@@ -9,14 +13,33 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
+import java.util.*;
 import java.util.List;
 import java.util.Map;
 
 public class CollectionFilterClauseBuilder extends FilterClauseBuilder<CollectionSchemaObject> {
   public CollectionFilterClauseBuilder(CollectionSchemaObject schema) {
     super(schema);
+  }
+
+  /**
+   * Create the list of ComparisonExpression from a single path entry. A single path entry has key
+   * as the path String, and the value as a JsonNode. E.G.
+   *
+   * <ul>
+   *   <li><code>{"name" : {"$eq" : "value"}}</code>
+   *   <li><code>{"name" : {"$gt" : 10, "$lt" : 50}}</code>
+   * </ul>
+   */
+  @Override
+  protected List<ComparisonExpression> buildFromPathEntry(Map.Entry<String, JsonNode> entry) {
+    // the shared logic for both Collection and Table.
+    return buildFromPathEntryCommon(entry);
   }
 
   // Collections have fixed "_id" as THE document id
@@ -28,6 +51,54 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
   @Override
   protected FilterClause validateAndBuild(LogicalExpression rootExpr) {
     return new FilterClause(validateWithSchema(rootExpr));
+  }
+
+  @Override
+  protected String validateFilterClausePath(String path, FilterOperator operator) {
+    if (!NamingRules.FIELD.apply(path)) {
+      if (path.isEmpty()) {
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            "filter clause path cannot be empty String");
+      }
+      // 3 special fields with $ prefix, skip here
+      switch (path) {
+        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD -> {
+          return path;
+        }
+        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD -> {
+          if (!schema.lexicalConfig().enabled()) {
+            throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
+          }
+          // Only $match valid on $lexical field
+          if (operator != ValueComparisonOperator.MATCH) {
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                "Cannot filter on '%s' field using operator %s: only $match is supported",
+                path, operator.getOperator());
+          }
+          return path;
+        }
+      }
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          "filter clause path ('%s') cannot start with `$`", path);
+    } else {
+      // and one special-case operator
+      // $match only valid on $lexical field (ok case handled above)
+      if (operator == ValueComparisonOperator.MATCH) {
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            "%s operator can only be used with the '%s' field, not '%s'",
+            operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, path);
+      }
+    }
+
+    try {
+      path = DocumentPath.verifyEncodedPath(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          "filter clause path ('%s') is not a valid path: %s", path, e.getMessage());
+    }
+
+    return path;
   }
 
   private LogicalExpression validateWithSchema(LogicalExpression rootExpr) {

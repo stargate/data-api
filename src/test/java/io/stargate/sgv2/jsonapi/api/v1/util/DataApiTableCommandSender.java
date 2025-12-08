@@ -52,6 +52,11 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(CommandName.FIND, jsonClause);
   }
 
+  public DataApiResponseValidator postFindWithFilter(String filter) {
+    var jsonClause = "{ \"filter\": " + filter + " } ";
+    return postCommand(CommandName.FIND, jsonClause);
+  }
+
   public DataApiResponseValidator postInsertOne(String jsonClause) {
     return postCommand(CommandName.INSERT_ONE, jsonClause);
   }
@@ -66,6 +71,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
 
   public DataApiResponseValidator postListIndexes(String jsonClause) {
     return postCommand(CommandName.LIST_INDEXES, jsonClause);
+  }
+
+  public DataApiResponseValidator postCreateTextIndex(String jsonClause) {
+    return postCommand(CommandName.CREATE_TEXT_INDEX, jsonClause);
   }
 
   public DataApiResponseValidator postCreateVectorIndex(String jsonClause) {

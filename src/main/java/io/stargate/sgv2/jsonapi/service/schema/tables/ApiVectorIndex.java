@@ -7,6 +7,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
@@ -15,14 +16,14 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromCql;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromIndexDesc;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** An index of type {@link ApiIndexType#VECTOR} on vector column */
 public class ApiVectorIndex extends ApiSupportedIndex {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ApiVectorIndex.class);
-
   public static final IndexFactoryFromIndexDesc<ApiVectorIndex, VectorIndexDefinitionDesc>
       FROM_DESC_FACTORY = new UserDescFactory();
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
@@ -48,7 +49,9 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<VectorIndexDefinitionDesc> indexDesc() {
+  public IndexDesc<VectorIndexDefinitionDesc> getSchemaDescription(
+      SchemaDescSource schemaDescSource) {
+    // Index is always has same representation
 
     var definitionOptions =
         new VectorIndexDefinitionDesc.VectorIndexDescOptions(

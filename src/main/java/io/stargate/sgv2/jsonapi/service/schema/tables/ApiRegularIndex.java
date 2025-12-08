@@ -6,14 +6,17 @@ import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromCql;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromIndexDesc;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,17 +46,23 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<RegularIndexDefinitionDesc> indexDesc() {
+  public IndexDesc<RegularIndexDefinitionDesc> getSchemaDescription(
+      SchemaDescSource schemaDescSource) {
+    // Index is always has same representation
 
     // Only the text indexes has the properties, we rely on the factories to create the options
     // map in indexOptions with the correct values, so just use get() and return a null if not
     // found.
     // Then rely on the RegularIndexDescOptions to exclude nulls in its serialisation
+
+    // indexOptions can be null or empty for indexes without explicit analyzer options
     var definitionOptions =
-        new RegularIndexDefinitionDesc.RegularIndexDescOptions(
-            getBooleanIfPresent(indexOptions, CQLOptions.ASCII),
-            getBooleanIfPresent(indexOptions, CQLOptions.CASE_SENSITIVE),
-            getBooleanIfPresent(indexOptions, CQLOptions.NORMALIZE));
+        (indexOptions == null || indexOptions.isEmpty())
+            ? new RegularIndexDefinitionDesc.RegularIndexDescOptions(null, null, null)
+            : new RegularIndexDefinitionDesc.RegularIndexDescOptions(
+                getBooleanIfPresent(indexOptions, CQLOptions.ASCII),
+                getBooleanIfPresent(indexOptions, CQLOptions.CASE_SENSITIVE),
+                getBooleanIfPresent(indexOptions, CQLOptions.NORMALIZE));
 
     var definition =
         new RegularIndexDefinitionDesc(
@@ -111,12 +120,16 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       // specified userNameToIdentifier will throw an exception if the values are not specified
       var indexIdentifier = userNameToIdentifier(indexName, "indexName");
       var targetIdentifier = userNameToIdentifier(indexDesc.column().columnName(), "targetColumn");
-      var indexFunctionUserInput = indexDesc.column().mapComponent();
+      var mapComponentDesc = indexDesc.column().mapComponent();
 
       var apiColumnDef = checkIndexColumnExists(tableSchemaObject, targetIdentifier);
 
       // create ApiRegularIndex for the target primitive column
       if (apiColumnDef.type().isPrimitive()) {
+        if (mapComponentDesc != null) {
+          // if user specified $keys/$values for a scalar primitive column, error out
+          throw SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN.get();
+        }
         return createApiIndexForPrimitive(
             tableSchemaObject, apiColumnDef, indexIdentifier, targetIdentifier, indexDesc);
       }
@@ -129,7 +142,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
             apiColumnDef,
             indexIdentifier,
             targetIdentifier,
-            indexFunctionUserInput,
+            mapComponentDesc,
             indexDesc);
       }
 
@@ -194,7 +207,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         ApiColumnDef apiColumnDef,
         CqlIdentifier indexIdentifier,
         CqlIdentifier targetIdentifier,
-        ApiMapComponent apiMapComponent,
+        MapComponentDesc mapComponentDesc,
         RegularIndexDefinitionDesc indexDesc) {
       var optionsDesc = indexDesc.options();
 
@@ -216,7 +229,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       // Default index function for set and list is values
       var indexFunction =
           apiColumnDef.type().typeName() == ApiTypeName.MAP
-              ? ApiIndexFunction.fromApiMapComponent(apiMapComponent)
+              ? ApiIndexFunction.fromMapComponentDesc(mapComponentDesc)
               : ApiIndexFunction.VALUES;
 
       // resolve the analyzer options
@@ -268,18 +281,25 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                 switch (indexFunction) {
                   case KEYS -> apiMapType.getKeyType().typeName();
                   case VALUES -> apiMapType.getValueType().typeName();
-                  case ENTRIES ->
-                      throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
-                          errVars(
-                              tableSchemaObject,
-                              map -> {
-                                map.put(
-                                    "allColumns",
-                                    errFmtApiColumnDef(
-                                        tableSchemaObject.apiTableDef().allColumns()));
-                                map.put("targetColumn", errFmt(apiColumnDef.name()));
-                                map.put("analyzedOptions", optionsDesc.toString());
-                              }));
+                  case ENTRIES -> {
+                    // Check if any analyze options are actually specified
+                    if (optionsDesc.isEmpty()) {
+                      // Empty options object - no analyze options, return null to skip type
+                      // checking
+                      yield null;
+                    }
+                    // If any are, tho, fail:
+                    throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
+                        errVars(
+                            tableSchemaObject,
+                            map -> {
+                              map.put(
+                                  "allColumns",
+                                  errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                              map.put("targetColumn", errFmt(apiColumnDef.name()));
+                              map.put("analyzedOptions", optionsDesc.toString());
+                            }));
+                  }
                   case null ->
                       throw new IllegalStateException(
                           "Unexpected indexFunction for ApiMapType: " + indexFunction);
@@ -289,6 +309,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
               // Primitive type
             default -> apiColumnDef.type().typeName();
           };
+
+      // Handle ENTRIES index with empty options - return empty options map
+      if (targetTypeName == null) {
+        return new HashMap<>();
+      }
 
       if (targetTypeName != ApiTypeName.TEXT && targetTypeName != ApiTypeName.ASCII) {
         // Only text and ascii fields can have the text analysis options specified

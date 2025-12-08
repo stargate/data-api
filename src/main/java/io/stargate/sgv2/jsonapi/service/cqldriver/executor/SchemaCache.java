@@ -10,9 +10,7 @@ import com.datastax.oss.driver.api.core.session.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.google.common.annotations.VisibleForTesting;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
@@ -24,6 +22,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +98,7 @@ public class SchemaCache {
    * Gets a consumer to use with the {@link CQLSessionCache} to remove the schema cache entries when
    * a tenant is deactivated.
    */
-  public CQLSessionCache.DeactivatedTenantConsumer getDeactivatedTenantConsumer() {
+  public CQLSessionCache.DeactivatedTenantListener getDeactivatedTenantConsumer() {
     return new SchemaCacheDeactivatedTenantConsumer(this);
   }
 
@@ -293,7 +292,7 @@ public class SchemaCache {
    * tenant is deactivated.
    */
   private static class SchemaCacheDeactivatedTenantConsumer
-      implements CQLSessionCache.DeactivatedTenantConsumer {
+      implements CQLSessionCache.DeactivatedTenantListener {
 
     private final SchemaCache schemaCache;
 
@@ -302,7 +301,7 @@ public class SchemaCache {
     }
 
     @Override
-    public void accept(String tenantId, RemovalCause cause) {
+    public void accept(String tenantId) {
       // the sessions are keyed on the tenantID and the credentials, and one session can work with
       // multiple keyspaces. So we need to evict all the keyspaces for the tenantId
       schemaCache.evictAllKeyspaces(tenantId);

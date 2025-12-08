@@ -20,8 +20,6 @@ import org.junit.jupiter.api.BeforeAll;
  */
 public abstract class AbstractCollectionIntegrationTestBase
     extends AbstractKeyspaceIntegrationTestBase {
-  protected static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
-
   // Base collection name automatically created in this test
   protected final String collectionName;
 
@@ -30,7 +28,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   }
 
   protected AbstractCollectionIntegrationTestBase(String collectionNamePrefix) {
-    collectionName = collectionNamePrefix + RandomStringUtils.randomAlphanumeric(16);
+    collectionName = collectionNamePrefix + RandomStringUtils.insecure().nextAlphanumeric(16);
   }
 
   @BeforeAll

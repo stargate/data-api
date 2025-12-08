@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
@@ -27,7 +27,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyPath() {
-      String collection = RandomStringUtils.randomAlphabetic(16);
+      String collection = RandomStringUtils.insecure().nextAlphabetic(16);
 
       // first create
       givenHeadersAndJson(
@@ -66,7 +66,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void notExisting() {
-      String collection = RandomStringUtils.randomAlphabetic(16);
+      String collection = RandomStringUtils.insecure().nextAlphabetic(16);
 
       // delete not existing
       givenHeadersAndJson(

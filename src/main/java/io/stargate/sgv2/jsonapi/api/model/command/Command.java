@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
 
 /**
@@ -35,4 +36,6 @@ public interface Command {
    * publicCommandName -> createCollection
    */
   CommandName commandName();
+
+  default void addCommandFeatures(CommandFeatures commandFeatures) {}
 }

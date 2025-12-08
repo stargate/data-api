@@ -32,12 +32,28 @@ public class DataApiKeyspaceCommandSender
     return postCommand(CommandName.CREATE_TABLE, jsonClause);
   }
 
+  public DataApiResponseValidator postCreateType(String jsonClause) {
+    return postCommand(CommandName.CREATE_TYPE, jsonClause);
+  }
+
   public DataApiResponseValidator postDropTable(String jsonClause) {
     return postCommand(CommandName.DROP_TABLE, jsonClause);
   }
 
+  public DataApiResponseValidator postDropType(String jsonClause) {
+    return postCommand(CommandName.DROP_TYPE, jsonClause);
+  }
+
   public DataApiResponseValidator postDropIndex(String jsonClause) {
     return postCommand(CommandName.DROP_INDEX, jsonClause);
+  }
+
+  public DataApiResponseValidator postAlterType(String jsonClause) {
+    return postCommand(CommandName.ALTER_TYPE, jsonClause);
+  }
+
+  public DataApiResponseValidator postListTypes(String jsonClause) {
+    return postCommand(CommandName.LIST_TYPES, jsonClause);
   }
 
   public DataApiResponseValidator postListTables(String jsonClause) {

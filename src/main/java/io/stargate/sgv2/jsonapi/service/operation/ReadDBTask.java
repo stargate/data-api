@@ -10,6 +10,7 @@ import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
+import com.datastax.oss.driver.internal.querybuilder.select.DefaultSelect;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
@@ -102,11 +103,11 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
   /** {@inheritDoc} */
   @Override
-  public void onSuccess(AsyncResultSet result) {
+  public void onSuccess(AsyncResultSetSupplier resultSetSupplier, AsyncResultSet result) {
     readResult = new ReadResult(rowSorter, result);
 
     // call to make sure status is set
-    super.onSuccess(result);
+    super.onSuccess(resultSetSupplier, result);
   }
 
   /** {@inheritDoc} */
@@ -171,7 +172,9 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
     List<Object> positionalValues = new ArrayList<>();
 
-    var selectFrom = selectFrom(schemaObject.keyspaceName(), schemaObject.tableName());
+    // Note, use ExtendedSelect to support AND/OR in where clause, see details in
+    // ExtendedSelect.java.
+    var selectFrom = new DefaultSelect(schemaObject.keyspaceName(), schemaObject.tableName());
     var select = applySelect(selectFrom, positionalValues);
     // these are options that go on the query builder, such as limit or allow filtering
     var bindableQuery = applyOptions(select);
@@ -194,6 +197,9 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
     // Add the where clause
     select = whereCQLClause.apply(select, positionalValues);
     // and finally order by
+    // 14-Jul-2025, tatu: NOTE! ORDER BY _MUST_ be added after the where clause,
+    // otherwise we will get UnsupportedOperationException (if different ordering
+    // of construction needed, must change "LexicalSortSelect" to allow that).
     select = orderByCqlClause.apply(select);
 
     return select;

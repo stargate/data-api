@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import java.util.*;
 import java.util.stream.Collectors;
 
+// TODO: SOME DOCUMENTATION FOR WHAT THIS IS MEANT TO DO!!!
 public record EmbeddingProvidersConfigImpl(
     Map<String, EmbeddingProviderConfig> providers, CustomConfig custom)
     implements EmbeddingProvidersConfig {
@@ -13,6 +14,7 @@ public record EmbeddingProvidersConfigImpl(
       String displayName,
       boolean enabled,
       Optional<String> url,
+      boolean authTokenPassThroughForNoneAuth,
       Map<AuthenticationType, AuthenticationConfig> supportedAuthentications,
       List<ParameterConfig> parameters,
       RequestProperties properties,

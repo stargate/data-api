@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
@@ -14,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
@@ -30,6 +32,8 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
   private static final Object DYNAMIC_BOOL_GROUP = new Object();
   private static final Object DYNAMIC_EJSON_GROUP = new Object();
   private static final Object DYNAMIC_GROUP_IN = new Object();
+  private static final Object DYNAMIC_MAP_SET_LIST_GROUP = new Object();
+  private static final Object DYNAMIC_MATCH_GROUP = new Object();
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -100,7 +104,20 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
         .compareValues(
             "*",
             EnumSet.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN),
-            JsonType.ARRAY);
+            JsonType.ARRAY)
+        // Four filter operators are allowed for map/set/list, value type must be ARRAY.
+        .capture(DYNAMIC_MAP_SET_LIST_GROUP)
+        .compareMapSetListFilterValues(
+            "*",
+            Set.of(
+                ValueComparisonOperator.IN,
+                ValueComparisonOperator.NIN,
+                ArrayComparisonOperator.ALL,
+                // NOTANY is not public exposed in API, only be negated by ALL.
+                ArrayComparisonOperator.NOTANY),
+            JsonType.ARRAY)
+        .capture(DYNAMIC_MATCH_GROUP) // For $match operator
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING);
     return matchRules;
   }
 
@@ -127,7 +144,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
                                       (ValueComparisonOperator) expression.operator()),
-                                  (String) expression.value()));
+                                  expression.value()));
                         });
                   });
 
@@ -224,6 +241,39 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                       (ValueComparisonOperator) expression.operator()),
                                   expression.path(),
                                   (List<Object>) expression.value()));
+                        });
+                  });
+
+          // consume captures for map/set/list and convert to MapSetListTableFilter
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_MAP_SET_LIST_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> mapSetListGroup = (CaptureGroup<Object>) captureGroup;
+                    mapSetListGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new MapSetListTableFilter(
+                                  MapSetListTableFilter.Operator.from(expression.operator()),
+                                  expression.path(),
+                                  (List<Object>) expression.value(),
+                                  expression.filterComponent()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_MATCH_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<String> dynamicMatchGroup = (CaptureGroup<String>) captureGroup;
+                    dynamicMatchGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new TextTableFilter(
+                                  expression.path(),
+                                  NativeTypeTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  expression.value()));
                         });
                   });
         };

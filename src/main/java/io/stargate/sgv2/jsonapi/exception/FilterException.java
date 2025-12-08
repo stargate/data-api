@@ -14,7 +14,9 @@ public class FilterException extends RequestException {
   }
 
   public enum Code implements ErrorCode<FilterException> {
+    CANNOT_LEXICAL_FILTER_NON_INDEXED_COLUMNS,
     INVALID_FILTER_COLUMN_VALUES,
+    INVALID_MAP_SET_LIST_FILTER,
     INVALID_PRIMARY_KEY_FILTER,
     MISSING_FILTER_FOR_UPDATE_DELETE,
     MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,

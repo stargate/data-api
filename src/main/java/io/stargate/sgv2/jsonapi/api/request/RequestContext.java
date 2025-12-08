@@ -2,8 +2,10 @@ package io.stargate.sgv2.jsonapi.api.request;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
@@ -27,27 +29,32 @@ public class RequestContext {
 
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
-  private final EmbeddingCredentials embeddingCredentials;
+  private final EmbeddingCredentialsSupplier embeddingCredentialsSupplier;
   private final RerankingCredentials rerankingCredentials;
   private final HttpHeaderAccess httpHeaders;
   private final String requestId;
 
   private final String userAgent;
 
-  /**
-   * Constructor that will be useful in the offline library mode, where only the tenant will be set
-   * and accessed.
-   *
-   * @param tenantId Tenant Id
-   */
-  public RequestContext(Optional<String> tenantId) {
+  /** FOR TESTING ONLY - so we can bypass pulling things the headers, still messy, getting better */
+  @VisibleForTesting
+  public RequestContext(
+      Optional<String> tenantId,
+      Optional<String> cassandraToken,
+      RerankingCredentials rerankingCredentials,
+      String userAgent) {
     this.tenantId = tenantId;
-    this.cassandraToken = Optional.empty();
-    this.embeddingCredentials = null;
-    this.rerankingCredentials = null;
-    httpHeaders = null;
+    this.cassandraToken = cassandraToken;
+    embeddingCredentialsSupplier =
+        new EmbeddingCredentialsSupplier(
+            HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+            HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+            HttpConstants.EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
+            HttpConstants.EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME);
+    this.rerankingCredentials = rerankingCredentials;
+    this.userAgent = userAgent;
+    this.httpHeaders = new HttpHeaderAccess(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
     requestId = generateRequestId();
-    userAgent = null;
   }
 
   @Inject
@@ -56,27 +63,34 @@ public class RequestContext {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
+      HttpConstants httpConstants) {
 
-    this.embeddingCredentials =
-        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
-    this.tenantId = tenantResolver.get().resolve(routingContext, securityContext);
-    this.cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
-
+    tenantId = tenantResolver.get().resolve(routingContext, securityContext);
+    cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
     requestId = generateRequestId();
     userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);
 
+    embeddingCredentialsSupplier =
+        new EmbeddingCredentialsSupplier(
+            httpConstants.authToken(),
+            httpConstants.embeddingApiKey(),
+            httpConstants.embeddingAccessId(),
+            httpConstants.embeddingSecretId());
+
+    // if x-reranking-api-key is present, then use it, else use cassandraToken
     Optional<String> rerankingApiKeyFromHeader =
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
-
-    this.rerankingCredentials =
+    rerankingCredentials =
         rerankingApiKeyFromHeader
-            .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
+            .map(apiKey -> new RerankingCredentials(this.tenantId.orElse(""), Optional.of(apiKey)))
             .orElse(
                 this.cassandraToken
-                    .map(cassandraToken -> new RerankingCredentials(Optional.of(cassandraToken)))
-                    .orElse(new RerankingCredentials(Optional.empty())));
+                    .map(
+                        cassandraToken ->
+                            new RerankingCredentials(
+                                this.tenantId.orElse(""), Optional.of(cassandraToken)))
+                    .orElse(new RerankingCredentials(this.tenantId.orElse(""), Optional.empty())));
   }
 
   private static String generateRequestId() {
@@ -99,8 +113,8 @@ public class RequestContext {
     return Optional.ofNullable(userAgent);
   }
 
-  public EmbeddingCredentials getEmbeddingCredentials() {
-    return embeddingCredentials;
+  public EmbeddingCredentialsSupplier getEmbeddingCredentialsSupplier() {
+    return embeddingCredentialsSupplier;
   }
 
   public RerankingCredentials getRerankingCredentials() {

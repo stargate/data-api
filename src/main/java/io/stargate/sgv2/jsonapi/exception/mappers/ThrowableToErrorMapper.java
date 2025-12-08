@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -44,7 +45,7 @@ public final class ThrowableToErrorMapper {
 
         // V2 error, normally handled in the Task processing but can be in other places
         if (throwable instanceof APIException apiException) {
-          return CommandResult.statusOnlyBuilder(true, false, RequestTracing.NO_OP)
+          return CommandResult.statusOnlyBuilder(true, RequestTracing.NO_OP)
               .throwableToCommandError(apiException);
         }
 
@@ -270,6 +271,13 @@ public final class ThrowableToErrorMapper {
 
     // Unrecognized property? (note: CommandObjectMapperHandler handles some cases)
     if (e instanceof UnrecognizedPropertyException upe) {
+      // 09-Oct-2025, tatu: Retain custom exception message, if set by us:
+      if (ColumnDesc.class.equals(upe.getReferringClass())) {
+        return ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD
+            .toApiException(upe.getOriginalMessage())
+            .getCommandResultError();
+      }
+      // otherwise rewrite to avoid Jackson-isms:
       final Collection<Object> knownIds =
           Optional.ofNullable(upe.getKnownPropertyIds()).orElse(Collections.emptyList());
       final String knownDesc =

@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,7 +12,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -23,6 +21,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -38,7 +37,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private final ObjectMapper MAPPER = new ObjectMapper();
@@ -502,10 +501,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                         }
                       """;
       Response response =
-          given()
-              .headers(getHeaders())
-              .contentType(ContentType.JSON)
-              .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          givenHeadersAndJson("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
               .when()
               .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_WITH_AUTO_OBJECTID)
               .then()
@@ -517,6 +513,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
               .response();
       Object insertedIdRaw = response.path("status.insertedIds[0]");
       assertThat(insertedIdRaw).isInstanceOf(Map.class);
+      @SuppressWarnings("unchecked")
       Map<String, Object> insertedId = (Map<String, Object>) insertedIdRaw;
       assertThat(insertedId).hasSize(1);
       assertThat(insertedId).containsKey("$objectId");
@@ -525,10 +522,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       assertThat(objectId).isNotNull();
 
       // And with that, we should be able to find the document
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
                   .formatted(objectId.toString()))
           .when()
@@ -840,13 +834,13 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       // Create random "words" of 7 characters each, and space
       StringBuilder sb = new StringBuilder(minLen + 8);
       do {
-        sb.append(RandomStringUtils.randomAlphanumeric(7)).append(' ');
+        sb.append(RandomStringUtils.insecure().nextAlphanumeric(7)).append(' ');
       } while (sb.length() < minLen);
       return sb.toString();
     }
 
     @Test
-    public void insertLongButNotTooLongDoc() throws Exception {
+    public void insertLongButNotTooLongDoc() {
       JsonNode bigDoc =
           createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE - 20_000);
       _verifyInsert("bigValidDoc", bigDoc);
@@ -865,7 +859,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
     }
 
     @Test
-    public void tryInsertTooLongDoc() throws Exception {
+    public void tryInsertTooLongDoc() {
       JsonNode bigDoc =
           createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE + 100_000);
 
@@ -1386,7 +1380,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
   @Order(9)
   class InsertManyFails {
     @Test
-    public void orderedFailOnDups() {
+    public void orderedFailOnDuplicates() {
       givenHeadersPostJsonThenOk(
               """
               {
@@ -1402,7 +1396,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
               }
               """)
           .body("$", responseIsWritePartialSuccess())
-          .body("status.insertedIds", is(Arrays.asList("doc4")))
+          .body("status.insertedIds", is(List.of("doc4")))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1576,10 +1570,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
               }
               """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+      givenHeadersAndJson(json)
           .when()
           .post(CollectionResource.BASE_PATH, "something_else", collectionName)
           .then()
@@ -1587,10 +1578,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsError())
           .body("status.insertedIds", is(nullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
-              startsWith("The provided keyspace does not exist: something_else"));
+              containsString(
+                  "The command tried to use a Keyspace that does not exist in the Database"));
     }
 
     @Test
@@ -1642,13 +1634,13 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
   class Metrics {
     @Test
     public void checkInsertOneMetrics() {
-      InsertInCollectionIntegrationTest.super.checkMetrics("InsertOneCommand");
-      InsertInCollectionIntegrationTest.super.checkDriverMetricsTenantId();
+      checkMetrics("InsertOneCommand");
+      checkDriverMetricsTenantId();
     }
 
     @Test
     public void checkInsertManyMetrics() {
-      InsertInCollectionIntegrationTest.super.checkMetrics("InsertManyCommand");
+      checkMetrics("InsertManyCommand");
     }
   }
 

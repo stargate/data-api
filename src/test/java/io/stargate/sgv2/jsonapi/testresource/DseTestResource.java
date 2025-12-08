@@ -44,8 +44,8 @@ public class DseTestResource extends StargateTestResource {
     // 21-Apr-2025, tatu: formerly referenced hard-coded images; left here for reference:
     //   to be removed in near future
     // "stargateio/dse-next:4.0.11-591d171ac9c9"
-    // "datastax/dse-server:6.9.8"
-    // "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview";
+    // "datastax/dse-server:6.9.15"
+    // "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd:1.2.3";
 
     // 21-Apr-2025, tatu: [data-api#1952] Load definition from "./docker-compose/.env"
     final File inputFile = new File("docker-compose/.env").getAbsoluteFile();

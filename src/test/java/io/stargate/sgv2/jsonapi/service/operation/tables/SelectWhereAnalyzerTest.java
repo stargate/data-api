@@ -7,6 +7,8 @@ import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.LogicalExpressionTestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -342,7 +344,7 @@ public class SelectWhereAnalyzerTest {
                 "oneUnknownColumn()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
-        .expression
+        .rootImplicitAnd
         .addFilter(
             LogicalExpressionTestData.ExpressionBuilder.filter(
                 names().COL_UNKNOWN_1, DataTypes.TEXT, NativeTypeTableFilter.Operator.EQ, "value"));
@@ -363,7 +365,7 @@ public class SelectWhereAnalyzerTest {
                 "unknownAndFullPk()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
-        .expression
+        .rootImplicitAnd
         .addFilter(
             LogicalExpressionTestData.ExpressionBuilder.filter(
                 names().COL_UNKNOWN_1, DataTypes.TEXT, NativeTypeTableFilter.Operator.EQ, "value"));
@@ -824,34 +826,96 @@ public class SelectWhereAnalyzerTest {
           .assertOneWarning(WarningException.Code.MISSING_INDEX)
           .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
     }
-  }
-
-  @Nested
-  class ComplexDataType {
 
     // ==================================================================================================================
-    // Currently, only PrimitiveApiDataType(Scalar) is supported for table filter
+    // map/set/list filtering analyzer.
+    // currently only one warning rule: if missing index on the target map/set/list component, add
+    // allow_filtering warning
     // ==================================================================================================================
 
-    private static Stream<Arguments> complexDataTypes() {
-      return names().ALL_COLLECTION_DATATYPE_COLUMNS.stream().map((Arguments::of));
+    private static Stream<Arguments> mapSetListWithoutIndex() {
+      return Stream.of(
+          Arguments.of(
+              names().CQL_MAP_COLUMN,
+              MapSetListTableFilter.Operator.IN,
+              MapSetListFilterComponent.MAP_KEY),
+          Arguments.of(
+              names().CQL_MAP_COLUMN,
+              MapSetListTableFilter.Operator.ALL,
+              MapSetListFilterComponent.MAP_VALUE),
+          Arguments.of(
+              names().CQL_MAP_COLUMN,
+              MapSetListTableFilter.Operator.NIN,
+              MapSetListFilterComponent.MAP_ENTRY),
+          Arguments.of(
+              names().CQL_LIST_COLUMN,
+              MapSetListTableFilter.Operator.NOT_ANY,
+              MapSetListFilterComponent.LIST_VALUE),
+          Arguments.of(
+              names().CQL_SET_COLUMN,
+              MapSetListTableFilter.Operator.IN,
+              MapSetListFilterComponent.SET_VALUE));
     }
 
+    /** This test is to check the warning for map/set/list filtering without index at all. */
     @ParameterizedTest
-    @MethodSource("complexDataTypes")
-    public void eq_complex_column(CqlIdentifier complexColumnIdentifier) {
+    @MethodSource("mapSetListWithoutIndex")
+    public void mapSetListWithoutIndex(
+        CqlIdentifier cqlDatatypeColumn,
+        MapSetListTableFilter.Operator operator,
+        MapSetListFilterComponent component) {
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesNotIndexed(
+                  "map/set/list without index" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture
+          .expression()
+          .mapListSetTableFilter(cqlDatatypeColumn, operator, component)
+          .analyze()
+          .assertAllowFilteringEnabled()
+          .assertOneWarning(WarningException.Code.MISSING_INDEX)
+          .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
+    }
+
+    private static Stream<Arguments> mapSetListWithoutCorrectIndex() {
+      return Stream.of(
+          Arguments.of(
+              names().CQL_MAP_COLUMN,
+              MapSetListTableFilter.Operator.IN,
+              MapSetListFilterComponent.MAP_KEY),
+          Arguments.of(
+              names().CQL_MAP_COLUMN,
+              MapSetListTableFilter.Operator.ALL,
+              MapSetListFilterComponent.MAP_VALUE));
+      // In the test table schema, only map entries are indexed.
+      // so, filter on map entries will succeed.
+    }
+
+    /**
+     * This test is to check the warning for map/set/list filtering without correct index on the
+     * component.
+     */
+    @ParameterizedTest
+    @MethodSource("mapSetListWithoutCorrectIndex")
+    public void mapSetListWithoutCorrectIndex(
+        CqlIdentifier cqlDatatypeColumn,
+        MapSetListTableFilter.Operator operator,
+        MapSetListFilterComponent component) {
       var fixture =
           TEST_DATA
               .whereAnalyzer()
               .tableAllColumnDatatypesIndexed(
-                  "$eq_on_%s".formatted(complexColumnIdentifier.asInternal()),
+                  "map/set/list without correct index" + cqlDatatypeColumn.asInternal(),
                   WhereCQLClauseAnalyzer.StatementType.SELECT);
       fixture
           .expression()
-          .eqOn(complexColumnIdentifier)
-          .analyzeThrows(FilterException.class)
-          .assertFilterExceptionCode(FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES)
-          .assertExceptionOnComplexColumns(complexColumnIdentifier);
+          .mapListSetTableFilter(cqlDatatypeColumn, operator, component)
+          .analyze()
+          .assertAllowFilteringEnabled()
+          .assertOneWarning(WarningException.Code.MISSING_INDEX)
+          .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
     }
   }
 }

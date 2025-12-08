@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
  * collection.
  */
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   // used to cleanup the collection from a previous test, if non-null
@@ -50,7 +50,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         }
         """,
         "UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION",
-        "The Collection %s.%s does not have vectors enabled.");
+        "The collection %s.%s does not have vectors enabled.");
   }
 
   @Test
@@ -69,7 +69,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         }
         """,
         "UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION",
-        "The Collection %s.%s does not have vectorize enabled.");
+        "The collection %s.%s does not have vectorize enabled.");
   }
 
   @Test
@@ -95,7 +95,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         }
         """,
         "LEXICAL_NOT_ENABLED_FOR_COLLECTION",
-        "Lexical search is not enabled for collection");
+        "only be used on collections for which Lexical feature is enabled");
   }
 
   // https://github.com/stargate/data-api/issues/2057

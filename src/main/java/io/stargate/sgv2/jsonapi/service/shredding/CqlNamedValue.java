@@ -19,8 +19,6 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A value that can be sent to the CQL Driver or has come from it.
@@ -30,9 +28,6 @@ import org.slf4j.LoggerFactory;
  * method.
  */
 public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedValue> {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(CqlNamedValue.class);
-
   public static final Comparator<CqlNamedValue> NAME_COMPARATOR =
       Comparator.comparing(CqlNamedValue::name, CQL_IDENTIFIER_COMPARATOR);
 
@@ -77,7 +72,6 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
         return maybeVectorize(vectorType, rawValue);
       }
     }
-
     // not deferring, so we need to push the value through the codecs to get what to send to CQL
     return decodeToCQL(rawValue.value().value());
   }

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.Date;
@@ -76,8 +76,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
         return compareBooleans(o1.booleanValue(), o2.booleanValue());
       default:
         // Should never happen:
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            "Unsupported JsonNodeType for comparison: %s", type1);
+        throw ServerException.internalServerError(
+            "Unsupported JsonNodeType for comparison: " + type1);
     }
   }
 
@@ -88,8 +88,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
       return ((Date) pojo1).compareTo((Date) pojo2);
     }
     // should never happen.
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unsupported POJO type for comparison: %s", pojo1.getClass().getName());
+    throw ServerException.internalServerError(
+        "Unsupported POJO type for comparison: " + pojo1.getClass().getName());
   }
 
   private int compareBooleans(boolean b1, boolean b2) {
@@ -126,8 +126,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
   private int compareObjects(ObjectNode n1, ObjectNode n2) {
     // Object comparison is interesting: compares entries in order,
     // first by property name, then by value. If all else equal, "longer one wins"
-    Iterator<Map.Entry<String, JsonNode>> it1 = n1.fields();
-    Iterator<Map.Entry<String, JsonNode>> it2 = n2.fields();
+    Iterator<Map.Entry<String, JsonNode>> it1 = n1.properties().iterator();
+    Iterator<Map.Entry<String, JsonNode>> it2 = n2.properties().iterator();
 
     while (it1.hasNext() && it2.hasNext()) {
       Map.Entry<String, JsonNode> entry1 = it1.next();

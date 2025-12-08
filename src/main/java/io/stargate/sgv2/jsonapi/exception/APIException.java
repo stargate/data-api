@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Base for all exceptions returned from the API for external use (as opposed to ones only used
@@ -30,6 +30,8 @@ import java.util.UUID;
  *       it does not then use {@link ErrorScope#NONE}.
  *   <li>Decide on the {@link ErrorCode}, it should be unique within the Family and Scope
  *       combination.
+ *   <li>Decide on the {@link ExceptionFlags}, describe the condition that was observed so the API
+ *       layer can decide which remediation to perform (for example recycle a session).
  *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body
  *       body.
  *   <li>Add the error code to the Code enum for the Exception class, such as {@link
@@ -86,22 +88,46 @@ public abstract class APIException extends RuntimeException implements Recordabl
    */
   public final String body;
 
+  /**
+   * Flags describing the conditions observed while building this exception. May contain multiple
+   * entries and is exposed as an immutable set.
+   */
+  public final Set<ExceptionFlags> exceptionFlags;
+
   public APIException(ErrorInstance errorInstance) {
     Objects.requireNonNull(errorInstance, "ErrorInstance cannot be null");
 
+    // ErrorInstance's compact canonical constructor ensures all fields are non-null and valid
     this.errorId = errorInstance.errorId();
     this.family = errorInstance.family();
     this.scope = errorInstance.scope().scope();
     this.code = errorInstance.code();
     this.title = errorInstance.title();
     this.body = errorInstance.body();
-    Objects.requireNonNull(errorInstance.httpStatusOverride(), "httpStatusOverride cannot be null");
     this.httpStatus = errorInstance.httpStatusOverride().orElse(DEFAULT_HTTP_STATUS);
+    this.exceptionFlags = Sets.immutableEnumSet(errorInstance.exceptionFlags());
   }
 
+  /** Constructor for testing purposes. Allows creating an exception with all parameters. */
+  @VisibleForTesting
   public APIException(
-      ErrorFamily family, ErrorScope scope, String code, String title, String body) {
-    this(new ErrorInstance(UUID.randomUUID(), family, scope, code, title, body, Optional.empty()));
+      ErrorFamily family,
+      ErrorScope scope,
+      String code,
+      String title,
+      String body,
+      Optional<Integer> httpStatusOverride,
+      EnumSet<ExceptionFlags> exceptionFlags) {
+    this(
+        new ErrorInstance(
+            UUID.randomUUID(),
+            family,
+            scope,
+            code,
+            title,
+            body,
+            httpStatusOverride,
+            exceptionFlags));
   }
 
   /**
@@ -145,6 +171,8 @@ public abstract class APIException extends RuntimeException implements Recordabl
         .append("scope", scope)
         .append("code", code)
         .append("title", title)
-        .append("body", body);
+        .append("body", body)
+        .append("httpStatus", httpStatus)
+        .append("exceptionFlags", exceptionFlags);
   }
 }

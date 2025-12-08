@@ -39,23 +39,17 @@ public class FindKeyspacesOperation implements Operation {
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext requestContext, QueryExecutor queryExecutor) {
 
-    return Uni.createFrom()
-        .item(
-            () -> {
-              // get all existing keyspaces
-              List<String> keyspacesList =
-                  queryExecutor
-                      .getCqlSessionCache()
-                      .getSession(dataApiRequestInfo)
-                      .getMetadata()
-                      .getKeyspaces()
-                      .keySet()
-                      .stream()
+    return queryExecutor
+        .getDriverMetadata(requestContext)
+        .map(
+            driverMetadata -> {
+              var keyspaces =
+                  driverMetadata.getKeyspaces().keySet().stream()
                       .map(CqlIdentifier::asInternal)
                       .toList();
-              return new Result(keyspacesList, useKeyspaceNaming);
+              return new Result(keyspaces, useKeyspaceNaming);
             });
   }
 
@@ -69,7 +63,7 @@ public class FindKeyspacesOperation implements Operation {
       var statusKey =
           useKeyspaceNaming ? CommandStatus.EXISTING_KEYSPACES : CommandStatus.EXISTING_NAMESPACES;
 
-      return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+      return CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
           .addStatus(statusKey, keyspaces)
           .build();
     }

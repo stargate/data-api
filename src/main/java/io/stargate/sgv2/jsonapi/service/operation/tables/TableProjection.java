@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
@@ -71,8 +72,9 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
    * schema.
    */
   public static <CmdT extends Projectable> TableProjection fromDefinition(
-      ObjectMapper objectMapper, CmdT command, TableSchemaObject table) {
+      CommandContext<TableSchemaObject> ctx, ObjectMapper objectMapper, CmdT command) {
 
+    TableSchemaObject table = ctx.schemaObject();
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
     table
@@ -119,8 +121,8 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         objectMapper,
         table,
         columns,
-        readApiColumns.toColumnsDesc(),
-        TableSimilarityFunction.from(command, table));
+        readApiColumns.getSchemaDescription(SchemaDescSource.DML_USAGE),
+        TableSimilarityFunction.from(ctx, command));
   }
 
   @Override
@@ -170,7 +172,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
           }
           default -> {
             nonNullCount++;
-            result.put(columnName, codec.toJSON(objectMapper, columnValue));
+            result.set(columnName, codec.toJSON(objectMapper, columnValue));
           }
         }
 

@@ -1,5 +1,9 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public interface TableDescConstants {
 
   interface TableDesc {
@@ -20,6 +24,36 @@ public interface TableDescConstants {
     String DIMENSION = "dimension";
     String SERVICE = "service";
     String API_SUPPORT = "apiSupport";
+    String UDT_NAME = "udtName";
+    String DEFINITION = "definition";
+    String FIELDS = "fields";
+
+    /**
+     * Helper method for checked whether given field name refers to valid column definition input
+     * field or not.
+     *
+     * @param fname Given field name
+     * @return true If given field name is a valid main-level column definition input field; false
+     *     if not
+     */
+    static boolean isKnownDefinitionInputField(String fname) {
+      return KNOWN_DEFINITION_INPUT_FIELDS_SET.contains(fname);
+    }
+
+    /**
+     * Accessor for a set of known fields for which {@link #isKnownDefinitionInputField(String)}
+     * would return true.
+     */
+    static List<String> getKnownDefinitionInputFields() {
+      return KNOWN_DEFINITION_INPUT_FIELDS_LIST;
+    }
+
+    /** List of known main-level input fields for Column Definitions */
+    List<String> KNOWN_DEFINITION_INPUT_FIELDS_LIST =
+        List.of(TYPE, KEY_TYPE, VALUE_TYPE, UDT_NAME, DIMENSION, SERVICE);
+
+    Set<String> KNOWN_DEFINITION_INPUT_FIELDS_SET =
+        new HashSet<>(KNOWN_DEFINITION_INPUT_FIELDS_LIST);
   }
 
   interface PrimaryKey {
@@ -44,6 +78,15 @@ public interface TableDescConstants {
     String ASCII = "ascii";
     String CASE_SENSITIVE = "caseSensitive";
     String NORMALIZE = "normalize";
+  }
+
+  interface TextIndexDefinitionDescOptions {
+    String ANALYZER = "analyzer";
+  }
+
+  /** Options for the creating text index via CQL. */
+  interface TextIndexCQLOptions {
+    String OPTION_ANALYZER = "index_analyzer";
   }
 
   interface VectorIndexDefinitionDescOptions {

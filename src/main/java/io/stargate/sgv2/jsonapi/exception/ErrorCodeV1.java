@@ -88,7 +88,7 @@ public enum ErrorCodeV1 {
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
   EXISTING_COLLECTION_DIFFERENT_SETTINGS("Collection already exists"),
-  EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table not valid Data API Collection"),
+  EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
@@ -165,7 +165,6 @@ public enum ErrorCodeV1 {
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
   LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
-  LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
   LEXICAL_CONTENT_TOO_BIG(
       "Lexical content is too big, please use a smaller value for the $lexical field"),
 
@@ -200,7 +199,6 @@ public enum ErrorCodeV1 {
    * Error code used for "should never happen" style problems. Suffix part needs to include details
    * of actual issue.
    */
-  SERVER_INTERNAL_ERROR("Server internal error"),
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
@@ -212,17 +210,9 @@ public enum ErrorCodeV1 {
   EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request"),
   // TODO, add this section so we don't have to throw RuntimeExceptions for table work, and it is
   // easy to track, should be improved along with error refactor work
-  // Table related
-  // TODO: AARON - remove this unused error code, we would not want to return this error to the user
-  ERROR_APPLYING_CODEC("Error applying codec"),
 
-  // API Table Error Codes
-  TABLE_FEATURE_NOT_ENABLED("API Table feature is not enabled"),
-
-  TABLE_COLUMN_TYPE_NOT_PROVIDED("Column data type not provided as part of definition"),
-
-  TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types"),
-  TABLE_COLUMN_UNKNOWN("Column unknown");
+  // API table error codes
+  TABLE_FEATURE_NOT_ENABLED("API table feature is not enabled");
 
   private final String message;
 

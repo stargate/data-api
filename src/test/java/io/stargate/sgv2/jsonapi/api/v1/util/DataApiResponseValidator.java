@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.List;
 import java.util.Map;
+import net.javacrumbs.jsonunit.core.Option;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
@@ -30,7 +31,18 @@ public class DataApiResponseValidator {
 
     this.responseIsError =
         switch (commandName) {
-          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE, FIND_ONE, FIND ->
+          case DROP_TABLE,
+                  DROP_INDEX,
+                  DROP_TYPE,
+                  CREATE_INDEX,
+                  CREATE_TEXT_INDEX,
+                  CREATE_VECTOR_INDEX,
+                  CREATE_TABLE,
+                  CREATE_TYPE,
+                  ALTER_TABLE,
+                  ALTER_TYPE,
+                  FIND_ONE,
+                  FIND ->
               responseIsErrorWithOptionalStatus();
           default -> responseIsError();
         };
@@ -41,11 +53,16 @@ public class DataApiResponseValidator {
               responseIsWriteSuccess();
           case ALTER_TABLE,
                   CREATE_TABLE,
+                  CREATE_TYPE,
                   DROP_TABLE,
+                  DROP_TYPE,
+                  ALTER_TYPE,
                   CREATE_INDEX,
-                  DROP_INDEX,
+                  CREATE_TEXT_INDEX,
                   CREATE_VECTOR_INDEX,
+                  DROP_INDEX,
                   LIST_TABLES,
+                  LIST_TYPES,
                   LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
@@ -105,10 +122,19 @@ public class DataApiResponseValidator {
       case DELETE_ONE, DELETE_MANY -> {
         return hasNoErrors();
       }
-      case ALTER_TABLE, CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
+      case ALTER_TABLE,
+          CREATE_TABLE,
+          CREATE_TYPE,
+          DROP_TABLE,
+          DROP_TYPE,
+          ALTER_TYPE,
+          CREATE_INDEX,
+          CREATE_TEXT_INDEX,
+          CREATE_VECTOR_INDEX,
+          DROP_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
-      case LIST_TABLES, LIST_INDEXES -> {
+      case LIST_TABLES, LIST_INDEXES, LIST_TYPES -> {
         return hasNoErrors();
       }
       case CREATE_COLLECTION -> {
@@ -196,7 +222,7 @@ public class DataApiResponseValidator {
 
   public <T extends APIException> DataApiResponseValidator hasSingleApiException(T expected) {
 
-    // TODO: aaron 19-oct-2024 this is a bit of a hack, will build ticket to refector the matchers
+    // TODO: aaron 19-oct-2024 this is a bit of a hack, will build ticket to refactor the matchers
     // for errors
     return body("$", responseIsError)
         .body("errors", hasSize(1))
@@ -350,7 +376,17 @@ public class DataApiResponseValidator {
   }
 
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
-    return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
+    return body(
+        "data.documents[%s]".formatted(position),
+        jsonEquals(documentJSON).when(Option.IGNORING_ARRAY_ORDER));
+  }
+
+  public DataApiResponseValidator hasDocumentsMatchedByIds(List<Object> ids) {
+    return body("data.documents.id", containsInAnyOrder(ids.toArray()));
+  }
+
+  public DataApiResponseValidator hasDocumentUnknowingPosition(String documentJSON) {
+    return body("data.documents", hasItem(jsonEquals(documentJSON)));
   }
 
   public DataApiResponseValidator mayFoundSingleDocumentIdByFindOne(

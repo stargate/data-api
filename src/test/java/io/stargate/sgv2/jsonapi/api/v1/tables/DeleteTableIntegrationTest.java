@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
@@ -598,7 +598,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
   private void insertDefaultRows() {
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
-        .insertMany(DEFAULT_ROWS)
+        .insertMany(DEFAULT_ROWS, false)
         .wasSuccessful();
   }
 

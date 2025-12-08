@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
-import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
@@ -25,7 +24,8 @@ import java.util.List;
  * defined in the CQL specification.
  *
  * <pre>
- *   <native-type> ::= ascii
+ *   native-types:
+ *                 | ascii
  *                 | bigint
  *                 | blob
  *                 | boolean
@@ -65,7 +65,9 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
     LT(BuiltConditionPredicate.LT, new FilterBehaviour.Behaviour(false, true)),
     GT(BuiltConditionPredicate.GT, new FilterBehaviour.Behaviour(false, true)),
     LTE(BuiltConditionPredicate.LTE, new FilterBehaviour.Behaviour(false, true)),
-    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true));
+    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true)),
+    // ":" operator (text search)
+    TEXT_SEARCH(BuiltConditionPredicate.TEXT_SEARCH, new FilterBehaviour.Behaviour(false, false));
 
     public final BuiltConditionPredicate predicate;
     public final FilterBehaviour filterBehaviour;
@@ -83,6 +85,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
         case GTE -> GTE;
         case LT -> LT;
         case LTE -> LTE;
+        case MATCH -> TEXT_SEARCH;
         default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
       };
     }
@@ -104,10 +107,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
   }
 
   @Override
-  public <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
-      TableSchemaObject tableSchemaObject,
-      StmtT ongoingWhereClause,
-      List<Object> positionalValues) {
+  public Relation apply(TableSchemaObject tableSchemaObject, List<Object> positionalValues) {
 
     try {
       var codec =
@@ -149,8 +149,8 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
               }));
     }
 
-    return ongoingWhereClause.where(
-        Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()));
+    return Relation.column(getPathAsCqlIdentifier())
+        .build(operator.predicate.getCql(), bindMarker());
   }
 
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {

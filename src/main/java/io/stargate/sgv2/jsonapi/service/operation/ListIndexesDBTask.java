@@ -2,13 +2,14 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDefContainer;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +32,12 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
   }
 
   private Optional<ApiIndexDefContainer> indexesForTable() {
-    // TODO: better option checking
-    var tableMetadata =
-        keyspaceMetadata.get().getTable(schemaObject.tableMetadata().getName()).get();
+
+    // aaron - see the MetadataDBTask, need better control on when this is set
+    Objects.requireNonNull(
+        keyspaceMetadata, "keyspaceMetadata must be set before calling getNames");
+
+    var tableMetadata = keyspaceMetadata.getTable(schemaObject.tableMetadata().getName()).get();
 
     // aaron - this should not happen ?
     if (!TABLE_MATCHER.test(tableMetadata)) {
@@ -77,7 +81,13 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
   @Override
   protected Object getSchema() {
     return indexesForTable()
-        .map(indexes -> indexes.allIndexes().stream().map(ApiIndexDef::indexDesc).toList())
+        .map(
+            indexes ->
+                indexes.allIndexes().stream()
+                    .map(
+                        apiIndexDef ->
+                            apiIndexDef.getSchemaDescription(SchemaDescSource.DDL_SCHEMA_OBJECT))
+                    .toList())
         .orElse(List.of());
   }
 }

@@ -2,18 +2,13 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.*;
 
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
+import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
 import java.util.function.Supplier;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Our own {@link RuntimeException} that uses {@link ErrorCodeV1} to describe the exception cause.
@@ -136,7 +131,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       message = errorCode.getMessage();
     }
 
-    var builder = CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP);
+    var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
 
     // construct and return
     builder.addCommandResultError(getCommandResultError(message, httpStatus));
@@ -151,41 +146,21 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   public CommandResult.Error getCommandResultError(String message, Response.Status status) {
     Map<String, Object> fieldsForMetricsTag =
         Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    // enable debug mode for unit tests, since it can not be injected
-    SmallRyeConfig config;
-    if (ApiConstants.isOffline()) {
-      config =
-          new SmallRyeConfigBuilder()
-              .withMapping(DebugModeConfig.class)
-              .withMapping(OperationsConfig.class)
-              .build();
-    } else {
-      config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-    }
-    DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
-    final boolean debugEnabled = debugModeConfig.enabled();
-    final boolean extendError = config.getConfigMapping(OperationsConfig.class).extendError();
-    Map<String, Object> fields;
+    Map<String, Object> fields =
+        new HashMap<>(
+            Map.of(
+                "id",
+                id,
+                "errorCode",
+                errorCode.name(),
+                "family",
+                errorFamily,
+                "scope",
+                errorScope,
+                "title",
+                title));
 
-    if (extendError) {
-      fields =
-          new HashMap<>(
-              Map.of(
-                  "id",
-                  id,
-                  "errorCode",
-                  errorCode.name(),
-                  "family",
-                  errorFamily,
-                  "scope",
-                  errorScope,
-                  "title",
-                  title));
-    } else {
-      fields = new HashMap<>(Map.of("errorCode", errorCode.name()));
-    }
-
-    if (debugEnabled) {
+    if (DebugConfigAccess.isDebugEnabled()) {
       fields.put("exceptionClass", this.getClass().getSimpleName());
     }
 
@@ -218,10 +193,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   }
 
   private ErrorScope getErrorScope(ErrorFamily family) {
-    // first handle special cases
-    if (errorCode == SERVER_INTERNAL_ERROR) {
-      return ErrorScope.EMPTY;
-    }
     for (Map.Entry<Set<ErrorCodeV1>, ErrorScope> entry : errorCodeScopeMap.entrySet()) {
       if (entry.getKey().contains(errorCode)) {
         return entry.getValue();

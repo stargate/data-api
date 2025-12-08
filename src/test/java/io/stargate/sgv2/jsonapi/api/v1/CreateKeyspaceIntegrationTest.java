@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
@@ -23,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
@@ -36,20 +34,15 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
   @AfterEach
   public void deleteKeyspace() {
-    String json =
-            """
+    givenHeadersAndJson(
+                """
         {
           "dropKeyspace": {
             "name": "%s"
           }
         }
         """
-            .formatted(DB_NAME);
-
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(json)
+                .formatted(DB_NAME))
         .when()
         .post(GeneralResource.BASE_PATH)
         .then()
@@ -64,20 +57,15 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
     @Test
     public final void happyPath() {
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "createKeyspace": {
               "name": "%s"
             }
           }
           """
-              .formatted(DB_NAME);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(DB_NAME))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -88,20 +76,15 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
     @Test
     public final void alreadyExists() {
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "createKeyspace": {
               "name": "%s"
             }
           }
           """
-              .formatted(keyspaceName);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(keyspaceName))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -112,8 +95,8 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
     @Test
     public final void withReplicationFactor() {
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "createKeyspace": {
               "name": "%s",
@@ -126,12 +109,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
             }
           }
           """
-              .formatted(DB_NAME);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(DB_NAME))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -142,18 +120,13 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
     @Test
     public void invalidCommand() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "createKeyspace": {
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -174,20 +147,15 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
     @Test
     public final void happyPath() {
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "createNamespace": {
               "name": "%s"
             }
           }
           """
-              .formatted(DB_NAME);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(DB_NAME))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -217,20 +185,15 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
     @Test
     public final void alreadyExists() {
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "createNamespace": {
               "name": "%s"
             }
           }
           """
-              .formatted(keyspaceName);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(keyspaceName))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -259,8 +222,8 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
     @Test
     public final void withReplicationFactor() {
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "createNamespace": {
               "name": "%s",
@@ -273,12 +236,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
             }
           }
           """
-              .formatted(DB_NAME);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(DB_NAME))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -308,18 +266,13 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
 
     @Test
     public void invalidCommand() {
-      String json =
-          """
-                          {
-                            "createNamespace": {
-                            }
-                          }
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+      givenHeadersAndJson(
+              """
+          {
+            "createNamespace": {
+            }
+          }
+          """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()

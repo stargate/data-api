@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.stream.Stream;
 import net.javacrumbs.jsonunit.ConfigurableJsonMatcher;
@@ -17,20 +15,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private void insert(String json) {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsWriteSuccess());
+    givenHeadersPostJsonThenOkNoErrors(json).body("$", responseIsWriteSuccess());
   }
 
   private ConfigurableJsonMatcher[] getJsonEquals(int... docs) {
@@ -84,89 +74,89 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
   public void setUp() {
     insert(
         """
-                              {
-                                "insertOne": {
-                                  "document": {
-                                    "_id": "doc1",
-                                    "username": "user1",
-                                    "active_user" : true,
-                                    "date" : {"$date": 1672531200000},
-                                    "age" : 20,
-                                    "null_column": null
-                                  }
-                                }
-                              }
-                            """);
+        {
+          "insertOne": {
+            "document": {
+              "_id": "doc1",
+              "username": "user1",
+              "active_user" : true,
+              "date" : {"$date": 1672531200000},
+              "age" : 20,
+              "null_column": null
+            }
+          }
+        }
+      """);
 
     insert(
         """
-                              {
-                                "insertOne": {
-                                  "document": {
-                                    "_id": "doc2",
-                                    "username": "user2",
-                                    "subdoc" : {
-                                       "id" : "abc"
-                                    },
-                                    "array" : [
-                                        "value1"
-                                    ]
-                                  }
-                                }
-                              }
-                            """);
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc2",
+                    "username": "user2",
+                    "subdoc" : {
+                       "id" : "abc"
+                    },
+                    "array" : [
+                        "value1"
+                    ]
+                  }
+                }
+              }
+            """);
 
     insert(
         """
-                              {
-                                "insertOne": {
-                                  "document": {
-                                    "_id": "doc3",
-                                    "username": "user3",
-                                    "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
-                                    "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
-                                  }
-                                }
-                              }
-                            """);
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc3",
+                    "username": "user3",
+                    "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
+                    "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
+                  }
+                }
+              }
+            """);
 
     insert(
         """
-                              {
-                                "insertOne": {
-                                  "document": {
-                                    "_id": "doc4",
-                                    "username" : "user4",
-                                    "indexedObject" : { "0": "value_0", "1": "value_1" }
-                                  }
-                                }
-                              }
-                            """);
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc4",
+                    "username" : "user4",
+                    "indexedObject" : { "0": "value_0", "1": "value_1" }
+                  }
+                }
+              }
+            """);
 
     insert(
         """
-                              {
-                                "insertOne": {
-                                  "document": {
-                                    "_id": "doc5",
-                                    "username": "user5",
-                                    "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-                                  }
-                                }
-                              }
-                            """);
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": "doc5",
+                    "username": "user5",
+                    "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                  }
+                }
+              }
+            """);
 
     insert(
         """
-                              {
-                                "insertOne": {
-                                  "document": {
-                                    "_id": {"$date": 6},
-                                    "username": "user6"
-                                  }
-                                }
-                              }
-                            """);
+              {
+                "insertOne": {
+                  "document": {
+                    "_id": {"$date": 6},
+                    "username": "user6"
+                  }
+                }
+              }
+            """);
   }
 
   @Nested
@@ -176,37 +166,29 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void inCondition() {
-      String json =
-          """
+      // findOne resolves any one of the resolved documents. So the order of the documents in the
+      // $in clause is not guaranteed.
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                               "filter" : {"_id" : {"$in": ["doc1", "doc4"]}}
                             }
                           }
-                          """;
-
-      // findOne resolves any one of the resolved documents. So the order of the documents in the
-      // $in clause is not guaranteed.
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      String expected2 =
-          """
-                          {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
-          .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  jsonEquals(
+                      """
+                  {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                  """),
+                  jsonEquals(
+                      """
+                  {"_id":"doc4", "username":"user4", "indexedObject":{"0":"value_0","1":"value_1"}}
+                  """)));
     }
 
     private static Stream<Arguments> IN_FOR_ID_WITH_LIMIT() {
@@ -221,137 +203,102 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @ParameterizedTest
     @MethodSource("IN_FOR_ID_WITH_LIMIT")
     public void inForIdWithLimit(String filter, int limit, int expected) {
-      String json =
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
+              {
+                "find": {
+                  "filter" : %s,
+                  "options": {"limit": %s}
+                }
+              }
               """
-                              {
-                                "find": {
-                                  "filter" : %s,
-                                  "options": {"limit": %s}
-                                }
-                              }
-                              """
-              .formatted(filter, limit);
-      givenHeadersPostJsonThenOkNoErrors(json)
+                  .formatted(filter, limit))
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(expected));
     }
 
     @Test
     public void inConditionWithSubDoc() {
-      String json =
-          """
-                              {
-                                "find": {
-                                  "filter" : {"sub_doc" : {"$in" : [{ "a": 5, "b": { "c": "v1", "d": false }}]} }
-                                }
-                              }
-                  """;
-
-      String expected5 =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+        {
+          "find": {
+            "filter" : {"sub_doc" : {"$in" : [{ "a": 5, "b": { "c": "v1", "d": false }}]} }
+          }
+        }
+        """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
                       {
                         "_id": "doc5",
                         "username": "user5",
                         "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
                       }
-                     """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected5));
+                     """));
     }
 
     @Test
     public void inConditionWithArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                               {
                                 "find": {
                                   "filter" : {"array" : {"$in" : [["value1"]] } }
                                 }
                               }
-                  """;
-
-      String expected =
-          """
-                          {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                          {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
+                          """));
     }
 
     @Test
     public void inConditionWithOtherCondition() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                               "filter" : {"_id" : {"$in": ["doc1", "doc4"]}, "username" : "user1" }
                             }
                           }
-                          """;
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected1));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                          """));
     }
 
     @Test
     public void idInConditionEmptyArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                               "filter" : {"_id" : {"$in": []}}
                             }
                           }
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
     @Test
     public void nonIDInConditionEmptyArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                             {
                               "find": {
                                   "filter" : {
@@ -359,23 +306,15 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                 }
                             }
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
     @Test
     public void nonIDInConditionEmptyArrayAnd() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                             {
                               "find": {
                                   "filter" : {
@@ -392,23 +331,15 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                 }
                             }
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
     @Test
     public void nonIDInConditionEmptyArrayOr() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                             {
                               "find": {
                                   "filter" : {
@@ -425,66 +356,41 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                 }
                             }
-                          """;
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected1));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+          """));
     }
 
     @Test
     public void inOperatorEmptyArrayWithAdditionalFilters() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                               "filter" : {"username": "user1", "_id" : {"$in": []}}
                             }
                           }
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
     @Test
     public void inConditionNonArrayArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                           {
                             "find": {
                               "filter" : {"_id" : {"$in": true}}
                             }
                           }
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -494,8 +400,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void inConditionNonIdField() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                                 "filter" : {
@@ -503,28 +409,21 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                 }
                               }
                           }
-                          """;
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected1));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+          """));
     }
 
     @Test
     public void inConditionNonIdFieldMulti() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                                 "filter" : {
@@ -532,16 +431,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                 }
                               }
                           }
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 4)));
@@ -549,93 +439,72 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void inConditionNonIdFieldIdField() {
-      String json =
-          """
-                            {
-                              "find": {
-                                  "filter" : {
-                                       "username" : {"$in" : ["user1", "user10"]},
-                                       "_id" : {"$in" : ["doc1", "???"]}
-                                  }
-                                }
-                            }
-                          """;
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+              "find": {
+                  "filter" : {
+                       "username" : {"$in" : ["user1", "user10"]},
+                       "_id" : {"$in" : ["doc1", "???"]}
+                  }
+                }
+            }
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected1));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+          """));
     }
 
     @Test
     public void inConditionNonIdFieldIdFieldSort() {
-      String json =
-          """
-                            {
-                              "find": {
-                                  "filter" : {
-                                       "username" : {"$in" : ["user1", "user10"]},
-                                       "_id" : {"$in" : ["doc1", "???"]}
-                                  },
-                                  "sort": { "username": -1 }
-                                }
-                            }
-                          """;
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+              "find": {
+                  "filter" : {
+                       "username" : {"$in" : ["user1", "user10"]},
+                       "_id" : {"$in" : ["doc1", "???"]}
+                  },
+                  "sort": { "username": -1 }
+                }
+            }
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected1));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+          """));
     }
 
     @Test
     public void inConditionWithDuplicateValues() {
-      String json =
-          """
-                            {
-                              "find": {
-                                  "filter" : {
-                                       "username" : {"$in" : ["user1", "user1"]},
-                                       "_id" : {"$in" : ["doc1", "???"]}
-                                  }
-                                }
-                            }
-                          """;
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+              "find": {
+                  "filter" : {
+                       "username" : {"$in" : ["user1", "user1"]},
+                       "_id" : {"$in" : ["doc1", "???"]}
+                  }
+                }
+            }
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected1));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+          """));
     }
   }
 
@@ -646,52 +515,34 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void nonIdSimpleNinCondition() {
-      String json =
-          """
-                          {
-                            "find": {
-                              "filter" : {"username" : {"$nin": ["user2", "user3","user4","user5","user6"]}}
-                            }
-                          }
-                          """;
-
-      String expected1 =
-          """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "find": {
+              "filter" : {"username" : {"$nin": ["user2", "user3","user4","user5","user6"]}}
+            }
+          }
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals(expected1));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+        {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+        """));
     }
 
     @Test
     public void ninConditionWithSubDoc() {
-      String json =
-          """
-                              {
-                                "find": {
-                                  "filter" : {"sub_doc" : {"$nin": [{ "a": 5, "b": { "c": "v1", "d": false } }]}}
-                                }
-                              }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+        {
+          "find": {
+            "filter" : {"sub_doc" : {"$nin": [{ "a": 5, "b": { "c": "v1", "d": false } }]}}
+          }
+        }
+        """)
           .body("$", responseIsFindSuccess())
           // except doc 5
           .body("data.documents", hasSize(5))
@@ -701,23 +552,14 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void ninConditionWithArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                               {
                                 "find": {
                                   "filter" : {"array" : {"$nin" : [["value1"]] } }
                                 }
                               }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  """)
           .body("$", responseIsFindSuccess())
           // except doc 2
           .body("data.documents", hasSize(5))
@@ -727,50 +569,31 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void nonIdNinEmptyArray() {
-      String json =
-          """
+      // should find everything
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                               "filter" : {"username" : {"$nin": []}}
                             }
                           }
-                          """;
-
-      // should find everything
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(6))
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
-      ;
     }
 
     @Test
     public void idNinEmptyArray() {
-      String json =
-          """
+      // should find everything
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                               {
                                 "find": {
                                   "filter" : {"_id" : {"$nin": []}}
                                 }
                               }
-                              """;
-
-      // should find everything
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                              """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(6))
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
@@ -784,32 +607,24 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void nonIdInEmptyAndNonIdNinEmptyAnd() {
-      String json =
-          """
+      // should find nothing
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                               "filter" : {"username" : {"$in": []}, "age": {"$nin" : []}}
                             }
                           }
-                          """;
-
-      // should find nothing
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
     @Test
     public void nonIdInEmptyOrNonIdNinEmptyOr() {
-      String json =
-          """
+      // should find everything
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                               "filter" :{
@@ -821,17 +636,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                               }
                             }
                           }
-                          """;
-
-      // should find everything
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(6))
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
@@ -839,24 +644,15 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void nonIdInEmptyAndIdNinEmptyAnd() {
-      String json =
-          """
+      // should find nothing
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                               {
                                 "find": {
                                   "filter" : {"username" : {"$in": []}, "_id": {"$nin" : []}}
                                 }
                               }
-                              """;
-
-      // should find nothing
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                              """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }

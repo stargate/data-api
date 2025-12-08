@@ -67,6 +67,10 @@ public class TableTemplates extends TemplateRunner {
     };
   }
 
+  public DataApiResponseValidator findOne(String field, String value, List<String> columns) {
+    return findOne(Map.of(field, value), columns, null, null);
+  }
+
   public DataApiResponseValidator findOne(Map<String, Object> filter, List<String> columns) {
     return findOne(filter, columns, null, null);
   }
@@ -104,10 +108,10 @@ public class TableTemplates extends TemplateRunner {
   public DataApiResponseValidator find(String filter) {
     var json =
             """
-         {
-          "filter": %s
-         }
-      """
+               {
+                "filter": %s
+               }
+            """
             .formatted(filter);
     return sender.postFind(json);
   }
@@ -187,21 +191,23 @@ public class TableTemplates extends TemplateRunner {
   }
 
   public DataApiResponseValidator insertManyMap(List<Map<String, Object>> documents) {
-    return insertMany(documents.stream().map(TemplateRunner::asJSON).collect(Collectors.toList()));
+    return insertMany(
+        documents.stream().map(TemplateRunner::asJSON).collect(Collectors.toList()), false);
   }
 
   public DataApiResponseValidator insertMany(String... documents) {
-    return insertMany(List.of(documents));
+    return insertMany(List.of(documents), false);
   }
 
-  public DataApiResponseValidator insertMany(List<String> documents) {
+  public DataApiResponseValidator insertMany(List<String> documents, boolean ordered) {
     var json =
             """
          {
-          "documents": [%s]
+          "documents": [%s],
+          "options": { "ordered": %s }
          }
         """
-            .formatted(String.join(",", documents));
+            .formatted(String.join(",", documents), ordered);
     return sender.postInsertMany(json);
   }
 
@@ -218,6 +224,34 @@ public class TableTemplates extends TemplateRunner {
               }
         """
             .formatted(indexName, column);
+    return sender.postCreateIndex(json);
+  }
+
+  public DataApiResponseValidator createIndexOnMapKeys(String indexName, String columnName) {
+    var json =
+            """
+            {
+                "name": "%s",
+                "definition": {
+                    "column": {"$keys":"%s"}
+                }
+            }
+            """
+            .formatted(indexName, columnName);
+    return sender.postCreateIndex(json);
+  }
+
+  public DataApiResponseValidator createIndexOnMapValues(String indexName, String columnName) {
+    var json =
+            """
+            {
+                "name": "%s",
+                "definition": {
+                    "column": {"$values":"%s"}
+                }
+            }
+            """
+            .formatted(indexName, columnName);
     return sender.postCreateIndex(json);
   }
 

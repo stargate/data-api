@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import jakarta.ws.rs.core.Response;
 import java.util.HashMap;
@@ -23,14 +24,11 @@ public class APIExceptionCommandErrorBuilder {
   /**
    * Create a new instance that will create a {@link CommandResult.Error} with the given options.
    *
-   * @param debugEnabled if <code>true</code> the {@link CommandResult.Error} will include the
-   *     {@link ErrorObjectV2Constants.Fields#EXCEPTION_CLASS} field.
    * @param returnErrorObjectV2 if <code>true</code> will include the fields for the V2 error object
    *     such as family etc
    */
-  public APIExceptionCommandErrorBuilder(boolean debugEnabled, boolean returnErrorObjectV2) {
-
-    this.debugEnabled = debugEnabled;
+  public APIExceptionCommandErrorBuilder(boolean returnErrorObjectV2) {
+    this.debugEnabled = DebugConfigAccess.isDebugEnabled();
     this.returnErrorObjectV2 = returnErrorObjectV2;
   }
 

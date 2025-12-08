@@ -157,7 +157,7 @@ stargate:
           # see https://huggingface.co/blog/getting-started-with-embeddings
           display-name: Hugging Face - Serverless
           enabled: true
-          url: https://api-inference.huggingface.co/pipeline/feature-extraction/
+          url: https://router.huggingface.co/hf-inference/models/{modelId}/pipeline/feature-extraction
           supported-authentications:
             NONE:
               enabled: false
@@ -272,7 +272,7 @@ stargate:
                   required: false
                   default-value: true
                   help: "If set to false, text that exceeds the token limit causes the request to fail. The default value is true."
-        # OUT OF SCOPE FOR INITIAL PREVIEW
+        # COHERE was OUT OF SCOPE FOR INITIAL PREVIEW, TODO: decide if we want to enable, drop if not.
         cohere:
           # see https://docs.cohere.com/reference/embed
           display-name: Cohere
@@ -302,7 +302,8 @@ stargate:
           # see https://docs.api.nvidia.com/nim/reference/nvidia-embedding-2b-infer
           display-name: Nvidia
           enabled: true
-          url: https://ai.api.nvidia.com/v1/retrieval/nvidia/embeddings
+          url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/embeddings/nv-embed-qa-v4
+          auth-token-pass-through-for-none-auth: true
           supported-authentications:
             NONE:
               enabled: true

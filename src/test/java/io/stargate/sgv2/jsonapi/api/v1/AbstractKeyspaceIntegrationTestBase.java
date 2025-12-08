@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -43,9 +44,17 @@ import org.junit.jupiter.api.TestInstance;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
+  // Property to disable lexical search tests when lexical/BM25 functionality not available
+  public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
   // keyspace automatically created in this test
-  protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
+  protected static final String keyspaceName =
+      "ks" + RandomStringUtils.insecure().nextAlphanumeric(16);
+
+  /**
+   * Access is protected via {@link #createDriverSession()} method and closed in {@link #cleanUp()}.
+   */
+  private CqlSession cqlSession;
 
   @BeforeAll
   public static void enableLog() {
@@ -54,7 +63,36 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   @BeforeAll
   public void createKeyspace() {
+    waitForRestEndpoint(GeneralResource.BASE_PATH, 60); // Wait max 60 seconds
     createKeyspace(keyspaceName);
+  }
+
+  @AfterAll
+  public void cleanUp() {
+    if (cqlSession != null) {
+      cqlSession.close();
+    }
+  }
+
+  /** Tentative to let the system start before creating the keyspace. */
+  private void waitForRestEndpoint(String baseUrl, int timeoutSeconds) {
+    long startTime = System.currentTimeMillis();
+    while ((System.currentTimeMillis() - startTime) < timeoutSeconds * 1000) {
+      try {
+        int statusCode =
+            RestAssured.given().port(getTestPort()).when().get(baseUrl).getStatusCode();
+        if (statusCode >= 200 && statusCode < 500) {
+          return; // ready
+        }
+      } catch (Exception e) {
+        // Ignore and retry
+      }
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException ignored) {
+      }
+    }
+    throw new RuntimeException("REST endpoint not available at " + baseUrl + " after timeout");
   }
 
   protected void createKeyspace(String nsToCreate) {
@@ -244,7 +282,15 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 line ->
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-    assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
+    if (!sessionLevelDriverMetricTenantId.isPresent()) {
+      List<String> lines = metrics.lines().toList();
+      long buckets =
+          lines.stream().filter(line -> line.startsWith("session_cql_requests_seconds")).count();
+      fail(
+          String.format(
+              "No tenant id found in any of 'session_cql_requests_seconds' entries (%d buckets; %d log lines)",
+              buckets, lines.size()));
+    }
   }
 
   public static void checkVectorMetrics(String commandName, String sortType) {
@@ -282,11 +328,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     assertThat(countMetrics.size()).isGreaterThan(0);
   }
 
-  /** Utility method for reducing boilerplate code for sending JSON commands */
-  protected RequestSpecification givenHeadersAndJson(String json) {
-    return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
-  }
-
   protected String generateBase64EncodedBinaryVector(float[] vector) {
     {
       final byte[] byteArray = CqlVectorUtil.floatsToBytes(vector);
@@ -306,40 +347,63 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     }
   }
 
+  protected boolean executeCqlStatement(String... statements) {
+    var cqlStatements = new SimpleStatement[statements.length];
+    for (int i = 0; i < statements.length; i++) {
+      cqlStatements[i] = SimpleStatement.newInstance(statements[i]);
+    }
+    return executeCqlStatement(cqlStatements);
+  }
+
   protected boolean executeCqlStatement(SimpleStatement... statements) {
     var cqlSession = createDriverSession();
     for (SimpleStatement statement : statements) {
       if (!cqlSession.execute(statement).wasApplied()) {
-        cqlSession.close();
         return false;
       }
     }
-    cqlSession.close();
     return true;
   }
 
-  private CqlSession createDriverSession() {
-    int port =
-        useCoordinator()
-            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
-            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-    String dc;
-    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
-      dc = "dc1";
-    } else {
-      dc = "datacenter1";
+  /**
+   * Synchronized to avoid creating multiple sessions, performance is not a concern. Session is
+   * closed in {@link #cleanUp()} method.
+   */
+  private synchronized CqlSession createDriverSession() {
+    if (cqlSession == null) {
+      int port =
+          useCoordinator()
+              ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
+              : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+      String dc;
+      if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
+        dc = "dc1";
+      } else {
+        dc = "datacenter1";
+      }
+      var builder =
+          new CqlSessionBuilder()
+              .withLocalDatacenter(dc)
+              .addContactPoint(new InetSocketAddress("localhost", port))
+              .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
+      cqlSession = builder.build();
     }
-    var builder =
-        new CqlSessionBuilder()
-            .withLocalDatacenter(dc)
-            .addContactPoint(new InetSocketAddress("localhost", port))
-            .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
-    return builder.build();
+    return cqlSession;
   }
 
   /** Helper method for determining if lexical search is available for the database backend */
   protected boolean isLexicalAvailableForDB() {
     return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeaders() {
+    return given().headers(getHeaders()).contentType(ContentType.JSON);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeadersAndJson(String json) {
+    return givenHeaders().body(json);
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */

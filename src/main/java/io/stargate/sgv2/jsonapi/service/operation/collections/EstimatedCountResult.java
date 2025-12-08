@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 public record EstimatedCountResult(long count) implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
-    return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+    return CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
         .addStatus(CommandStatus.COUNTED_DOCUMENT, count)
         .build();
   }

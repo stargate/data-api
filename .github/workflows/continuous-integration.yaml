@@ -42,10 +42,10 @@ jobs:
     timeout-minutes: 12
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -89,6 +89,46 @@ jobs:
       - name: Build & Test
         run: |
           ./mvnw -B -ntp clean test
+
+      - name: Add coverage to PR
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.7.2
+        if: github.event_name == 'pull_request'
+        with:
+          paths: |
+            ${{ github.workspace }}/target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+          title: 'Code Coverage Report'
+          update-comment: true
+
+      - name: Generate JaCoCo Badge
+        id: jacoco-badge
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          badges-directory: .github/badges
+          generate-branches-badge: true
+          generate-summary: true
+
+      - name: Add coverage to Job Summary
+        run: |
+          echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Instructions** | ${{ steps.jacoco-badge.outputs.coverage }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branches** | ${{ steps.jacoco-badge.outputs.branches }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📥 [Download Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The complete JaCoCo HTML report is available as an artifact named \`jacoco-report\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload JaCoCo coverage report
+        uses: actions/upload-artifact@v5
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
   
 
   # runs int tests
@@ -116,10 +156,10 @@ jobs:
           - type: docker
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -162,7 +202,7 @@ jobs:
 
       # login to ECR to we can pull HCD image.
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ secrets.HCD_ECR_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.HCD_ECR_SECRET_KEY }}

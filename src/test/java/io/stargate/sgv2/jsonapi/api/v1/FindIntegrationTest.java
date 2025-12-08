@@ -1,19 +1,17 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
@@ -117,8 +115,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void wrongKeyspace() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              "something_else",
+              collectionName,
+              """
           {
             "find": {
               "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
@@ -127,19 +127,14 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               }
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, "something_else", collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsError())
-          .body("errors[0].message", is("The provided keyspace does not exist: something_else"))
-          .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors", hasSize(1))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The command tried to use a Keyspace that does not exist in the Database"))
+          .body("errors[0].errorCode", is("UNKNOWN_KEYSPACE"));
     }
 
     @Test
@@ -274,10 +269,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     // https://github.com/stargate/jsonapi/issues/572 -- is passing empty Object for "sort" ok?
     @Test
     public void byIdEmptySort() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                 {
                   "find": {
@@ -288,10 +280,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   }
                 }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body(
               "data.documents[0]",

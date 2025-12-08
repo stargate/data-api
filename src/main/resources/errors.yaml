@@ -24,7 +24,7 @@
 # ===========
 #
 # "snippets" is a list of text snippets than can be included in any error body, the snippets are included in the
-# variables when running the tempalte for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
+# variables when running the template for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
 # where <NAME> is the name of the snippet key.
 # Each snippet has:
 # - name: UPPER_SNAKE_CASE_1
@@ -76,19 +76,30 @@ snippets:
     body: |-
       Resend the command using only defined columns.
 
+  - name: REGULAR_SORT_EXPLANATION
+    body: |-
+      A regular sort expression in the sort clause identifies the column by name and then provides either:  
+      - `1` for ascending
+      - `-1` for descending
+
+  - name: LEXICAL_SORT_EXPLANATION
+    body: |-
+      A lexical sort expression in the sort clause identifies the column by name and then provides:
+      - String to use for lexical matching to sort by (most similar first)
+
   - name: VECTOR_SORT_EXPLANATION
     body: |-
       A vector sort in the sort clause identifies the vector column by name and then provides either:  
       - The vector as an array of decimal numbers.
-      - The vector as a base64 encoded `{"$binary": "base64-encoded-vector"}` object.
+      - The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
       - A string to be vectorized if enabled for the column.
 
   - name: CURRENTLY_UNSUPPORTED
     body: |-
-      Currently API Tables has limited support for: 
+      Currently API tables have limited support for: 
       
       - Cassandra `timeuuid`, `counter` types.
-      - Cassandra User Defined Types (UDT) and Tuple types.
+      - Tuple types.
       - Filtering and indexing on Cassandra collection types `list`, `map`, `set`.
       - Defining `maps`, `list`, or `set` columns using any key type other than `text` or `ascii`.
       
@@ -100,7 +111,7 @@ snippets:
 
   - name: EXPLAIN_PARTITIONING
     body: |-
-      Rows in API Tables are partitioned by the partition key, which can be one or more columns. All rows in the same partition share the same partition key values and can be very quickly read in the order of the partition sorting.
+      Rows in API tables are partitioned by the partition key, which can be one or more columns. All rows in the same partition share the same partition key values and can be very quickly read in the order of the partition sorting.
 
 
 
@@ -120,11 +131,11 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND
-    title: Command is not supported by Tables
+    title: Command is not supported by tables
     body: |-
-      The command is not supported by Tables in the API.  
+      The command is not supported by tables in the API.  
       
-      While many commands operate on both Tables and Collections, some commands can only be run against Tables or Collections. 
+      While many commands operate on both tables and collections, some commands can only be run against tables or collections. 
       
       The commands supported by tables are: ${tableCommands}.
       The commands supported by collections are: ${collectionCommands}.
@@ -136,11 +147,11 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_COLLECTION_COMMAND
-    title: Command is not supported by Collections
+    title: Command is not supported by collections
     body: |-
-      The command is not supported by Collections in the API.  
+      The command is not supported by collections in the API.  
       
-      While many commands operate on both Tables and Collections, some commands can only be run against Tables or Collections. 
+      While many commands operate on both tables and collections, some commands can only be run against tables or collections. 
       
       The commands supported by collections are: ${collectionCommands}.
       The commands supported by tables are: ${tableCommands}.
@@ -152,13 +163,13 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_RERANKING_COMMAND
-    title: Reranking not enabled for Collection
+    title: Reranking not enabled for collection
     body: |-
-      The `findAndRerank` is not enabled for the Collection.
+      The `findAndRerank` is not enabled for the collection.
       
-      The Command is only supported for Collections that are configured with `vector`, `lexical`, and `rerank` configurations. They additionally require a vectorize configuration if `$vectorize` is used.
+      The Command is only supported for collections that have `vector`, `lexical`, and `rerank` configured. They additionally require a vectorize configuration if `$vectorize` is used.
       
-      Resend using a supported Collection. 
+      Resend using a supported collection. 
 
   # unscoped because this touches both the sort and the options
   - scope:
@@ -258,6 +269,19 @@ request-errors:
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
 
+  - scope: FILTER
+    code: CANNOT_LEXICAL_FILTER_NON_INDEXED_COLUMNS
+    title: Lexical filter cannot be used for non-indexed columns
+    body: |-
+      The command attempted to lexical filter on column that is not text-indexed.
+      
+      Lexical filtering is only supported on columns that have been text-indexed.
+      
+      The table ${keyspace}.${table} has text indexes on columns: ${indexedColumns}.
+      The command attempted to filter column(s): ${filterColumns}.
+      
+      Resend the command using indexed column(s).
+
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the DOCUMENT scope
   - scope: FILTER
     code: UNKNOWN_TABLE_COLUMNS
@@ -280,6 +304,24 @@ request-errors:
       The command included the column ${invalidColumn} that has ${columnType} type defined.
       
       Resend the command using only supported column values.
+
+  - scope: FILTER
+    code: INVALID_MAP_SET_LIST_FILTER
+    title: Command has invalid filter against a map, set, or list column
+    body: |-
+      Command has an invalid filter, ${detailedReason}.
+      
+      Supported filter operators for map, set, list are '$in', '$nin', '$all'.
+      Filter examples for map column:
+      - filter on map keys {"mapColumn": {"$keys": {"$in": ["key1", "key2"]}}}
+      - filter on map values {"mapColumn": {"$values": {"$nin": ["value1", "value2"]}}}
+      - filter on map entries {"mapColumn": {"$all": [["key1", "value1"], ["key2", "value2"]]}}
+      Filter examples for list column:
+      - filter on list {"listColumn": {"$in": ["value1", "value2"]}}}
+      Filter examples for set column:
+      - filter on set {"setColumn": {"$nin": ["value1", "value2"]}}}
+      
+      Resend the command using correct filter.
 
   - scope: FILTER
     code: UNSUPPORTED_COLUMN_TYPES
@@ -322,7 +364,7 @@ request-errors:
     code: MISSING_FILTER_FOR_UPDATE_DELETE
     title: Update and delete commands require a filter
     body: |-
-      Update and delete commands for Tables require a filter.
+      Update and delete commands for tables require a filter.
       
       These commands require a filter that identifies a either a single row (for `updateOne` and `deleteOne`) or a partition and a sequence of rows (for `deleteMany`). 
       
@@ -370,7 +412,7 @@ request-errors:
     body: |-
       The command requires a filter on the primary key that specifies all of the partitioning keys, and the partition sort keys in order.
       
-      If a partititon sort key is excluded, then all following partition sort keys must be excluded. 
+      If a partition sort key is excluded, then all following partition sort keys must be excluded. 
       
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
       
@@ -501,11 +543,11 @@ request-errors:
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE
-    title: Update operation not supported by Tables
+    title: Update operation not supported by tables
     body: |-
-      The command included update operations that are not supported by Tables.
+      The command included update operations that are not supported by tables.
       
-      API Tables supports the update operations: ${supportedUpdateOperations}.
+      API tables support the update operations: ${supportedUpdateOperations}.
       The update included the unsupported operations: ${usedUnsupportedUpdateOperations}.
       
       Resend the command using only supported update operations.
@@ -746,7 +788,16 @@ request-errors:
   # Family: REQUEST         Scope: SCHEMA
   # ================================================================================================================
 
-  # aaron errors
+  - scope: SCHEMA
+    code: UNKNOWN_KEYSPACE
+    title: Keyspace does not exist in the Database
+    body: |-
+      The command tried to use a Keyspace that does not exist in the Database.
+
+      The keyspace used by the command: ${keyspace}.
+
+      Resend the command using a Keyspace that exists.
+
   - scope: SCHEMA
     code: UNKNOWN_PARTITION_SORT_COLUMNS
     title: Partition sort columns are not defined in the table schema
@@ -771,7 +822,7 @@ request-errors:
 
   - scope: SCHEMA
     code: MISSING_PARTITION_COLUMNS
-    title: Partitioning keys are required for Tables
+    title: Partitioning keys are required for tables
     body: |-
         The table definition must have at least one partition key.
       
@@ -792,6 +843,14 @@ request-errors:
       Resend the command including changes to the table.
 
   - scope: SCHEMA
+    code: MISSING_ALTER_TYPE_OPERATIONS
+    title: Alter type command must include operations
+    body: |-
+      The `alterType` command must contain at least one operation to alter the type schema, such as adding or renaming fields.
+      
+      Resend the command including changes to the type.
+
+  - scope: SCHEMA
     code: MISSING_DIMENSION_IN_VECTOR_COLUMN
     title: Dimension is required for vector column if embedding service is not specified
     body: |-
@@ -800,6 +859,14 @@ request-errors:
         The command attempted to create the vector column without a dimension.
         
         Resend the command using a dimension for the vector columns.
+
+  - scope: SCHEMA
+    code: MISSING_FIELDS_FOR_TYPE_CREATION
+    title: At least one field is required for type creation
+    body: |-
+      The type definition must have at least one field.
+      
+      Resend the command providing at least one field. 
 
   - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
@@ -811,6 +878,17 @@ request-errors:
       The request included the following duplicate columns: ${duplicateColumns}.
       
       Resend the command using only new columns.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_FIELD
+    title: Field with the same name are defined in the type definition
+    body: |-
+      The command attempted to add a field with a name that already exists in the type definition.
+      
+      The command altered the type: ${typeName}.
+      The existing field name was: ${existingField}.
+      
+      Resend the command using only new field names.
 
   - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
@@ -834,6 +912,18 @@ request-errors:
       The command attempted to drop the primary key columns: ${droppedColumns}. 
       
       Resend the command without dropping the primary key columns.
+      
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_TYPE_USED_BY_TABLE
+    title: Type cannot be dropped if used by tables
+    body: |-
+      The command attempted to drop a type that is used by tables.
+      
+      The command attempted to drop the type: ${usedType}.
+      The command is used by the tables: ${tableNames}.
+      
+      Resend the command using a type that is not used by a table.
 
   - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_COLUMNS
@@ -862,7 +952,7 @@ request-errors:
     code: DEPRECATED_AI_MODEL
     title: Cannot use deprecated model.
     body: |-
-      The command attempted to create or alter a Collection or Table to use a AI Model that has been marked as deprecated. Deprecated models are only supported by the API for existing use and will later be removed.
+      The command attempted to create or alter a collection or table to use a AI Model that has been marked as deprecated. Deprecated models are only supported by the API for existing use and will later be removed.
 
       The model is: ${model}. It is at ${modelStatus} status.
       ${message}
@@ -873,7 +963,7 @@ request-errors:
     code: END_OF_LIFE_AI_MODEL
     title: Cannot use end of life model.
     body: |-
-      The command attempted to use an AI Model that has been marked as end of life. End of life models cannot be used in any way. Collections or Tables that use the model must be recreated as data such as embeddings is not transferrable.
+      The command attempted to use an AI Model that has been marked as end of life. End of life models cannot be used in any way. Collections or tables that use the model must be recreated as data such as embeddings is not transferrable.
       
       The model is: ${model}. It is at ${modelStatus} status.
       ${message}
@@ -916,6 +1006,17 @@ request-errors:
       Resend the command using only columns defined in the table schema.
 
   - scope: SCHEMA
+    code: CANNOT_RENAME_UNKNOWN_TYPE_FIELD
+    title: Field cannot be renamed if it is not defined in the type
+    body: |-
+      The command attempted to rename a field that is not defined in the named type.
+      
+      The command altered the type: ${typeName}.
+      The unknown field was: ${unknownField}.
+      
+      Resend the command using only fields defined in the type.
+
+  - scope: SCHEMA
     code: CANNOT_DROP_VECTORIZE_FROM_NON_VECTOR_COLUMNS
     title: Vectorize configuration cannot be dropped from columns if they are not `vector` type
     body: |-
@@ -926,6 +1027,13 @@ request-errors:
       The command attempted to drop vectorize config from the non-vector columns: ${nonVectorColumns}.  
       
       Resend the command using only columns that use the `vector` type.
+
+  - scope: SCHEMA
+    code: LEXICAL_NOT_ENABLED_FOR_COLLECTION
+    title: Lexical search is not enabled for the collection
+    body: |-
+      Lexical content can only be added and filtering and sort only be used on collections for which Lexical feature is enabled.
+      The collection ${keyspace}.${table} does not have Lexical feature enabled.
 
   - scope: SCHEMA
     code: UNKNOWN_DATA_TYPE
@@ -939,6 +1047,16 @@ request-errors:
       The command used the unsupported data type: ${unsupportedType}.
       
       Resend the command using a known data types.
+
+  - scope: SCHEMA
+    code: UNKNOWN_USER_DEFINED_TYPE
+    title: User defined type is unknown
+    body: |-
+      The column uses a user defined type that is not known.
+      
+      ${driverMessage}
+      
+      Resend the command using a known user defined type.
 
   - scope: SCHEMA
     code: UNKNOWN_PRIMITIVE_DATA_TYPE
@@ -968,11 +1086,11 @@ request-errors:
     body: |-
       The command attempted to create a map column that used unsupported types for either the key or value.
       
-      Maps can only use primitive type for the key and value with following exceptions:
-      1. The key can't be duration, counter, timeuuid.
-      2. The value can't be counter, timeuuid.
+      Maps can use most primitive types for the key and value, and userDefined types for the value.
       
-      The primitive data types are: ${supportedTypes}.
+      The supported key types are: ${supportedKeyTypes}.
+      The supported value types are: ${supportedValueTypes}.
+      
       The command used the key type: ${unsupportedKeyType}.
       The command used the value type: ${unsupportedValueType}.
       
@@ -984,7 +1102,8 @@ request-errors:
     body: |-
       The command attempted to create a list column that used an unsupported type for the value.
       
-      Lists can only use primitive type for the value, except for counter and timeuuid.
+      Lists can use primitive type for the value, except for counter and timeuuid.
+      Lists can use userDefined type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
@@ -1009,12 +1128,24 @@ request-errors:
     body: |-
       The command attempted to create a set column that used an unsupported type for the value.
       
-      Sets can only use primitive type for the value, except for counter and timeuuid.
+      Sets can use primitive type for the value, except for counter and timeuuid.
+      Sets can use userDefined type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
       
       Resend the command using a supported value type.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_TYPE_FIELDS
+    title: Type definition contains unsupported fields.
+    body: |-
+      The command attempted to create a user defined type with field definitions that use unsupported types.
+      
+      The supported field data types are: ${supportedTypes}.
+      The command used the unsupported types: ${unsupportedFields}.
+      
+      Resend the command using only supported field data types.
 
   - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_DIMENSION
@@ -1093,6 +1224,17 @@ request-errors:
       Resend the command using a supported index type.    
 
   - scope: SCHEMA
+    code: UNSUPPORTED_JSON_TYPE_FOR_TEXT_INDEX
+    title: JSON value type is not supported for creating text index
+    body: |-
+      The command attempted to create a text index using an unsupported JSON value type.
+      
+      The supported JSON value types are: String, Object.
+      The command used the unsupported JSON value type: ${unsupportedType}.
+      
+      Resend the command using a supported JSON value type.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
     title: Analysed text index not supported by data types
     body: |-
@@ -1110,10 +1252,24 @@ request-errors:
       Resend the command using columns that support text analysis.
 
   - scope: SCHEMA
+    code: UNSUPPORTED_TEXT_INDEX_FOR_DATA_TYPES
+    title: Text index not supported by data types
+    body: |-
+      The command attempted to create a text index on a column that is not a `text` or `ascii` type.
+      
+      Text indexes can only be created on columns of type `text` or `ascii`.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to text index the unsupported columns: ${unsupportedColumns}.
+      
+      Resend the command using columns of `text` type.
+  
+
+  - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES
     title: Vector index not supported by data types
     body: |-
-      The command attempted to create an vector index on a column that is not a `vector` type.
+      The command attempted to create a vector index on a column that is not a `vector` type.
       
       Vector indexes can only be created on columns of type `vector`, regular indexes can only be created on primitive data types such as `text` and `int` using the createIndex command.
       
@@ -1171,6 +1327,16 @@ request-errors:
       Resend the command using a table that exists in the keyspace.
 
   - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_TYPE
+    title: Dropped type is not defined in the keyspace schema
+    body: |-
+      The command attempted to drop a type that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown type: ${unknownType}.
+      
+      Resend the command using a type that exists in the keyspace.
+
+  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_TABLE
     title: Table with the same name exists in the keyspace schema
     body: |-
@@ -1179,6 +1345,17 @@ request-errors:
       The command attempted to add the existing table: ${existingTable}.
       
       Resend the command using a table name that does not exist in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_TYPE
+    title: Type with the same name exists in the keyspace schema
+    body: |-
+      The command attempted to add a type that already exists in the keyspace schema.
+      
+      The command attempted to add the existing type: ${existingType}.
+      
+      Resend the command using a type name that does not exist in the keyspace.
+
 
   - scope: SCHEMA
     code: CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS
@@ -1274,6 +1451,16 @@ request-errors:
       Resend the command using a valid format for index creation column.
 
   - scope: SCHEMA
+    code: INVALID_USER_DEFINED_TYPE_NAME
+    title: User defined type name is not valid.
+    body: |-
+        User defined type name is not valid: ${udtName}.
+        
+        The user defined type name "udtName" must not be empty.
+        
+        Resend the command using a valid user defined type name.
+
+  - scope: SCHEMA
     code: INVALID_VECTORIZE_CONFIGURATION
     title: Unable to parse vectorize configuration, schema invalid.
     body: |-
@@ -1288,6 +1475,31 @@ request-errors:
 # ================================================================================================================
 # Family: REQUEST         Scope: SORT
 # ================================================================================================================
+
+  - scope: SORT
+    code: CANNOT_LEXICAL_SORT_NON_INDEXED_COLUMNS
+    title: Lexical sort cannot be used for non-indexed columns
+    body: |-
+      The command attempted to lexical sort on column that is not indexed.
+      
+      Lexical sorting is only supported on columns that have been indexed.
+      
+      ${SNIPPET.LEXICAL_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} has indexes on columns: ${indexedColumns}.
+      The command attempted to sort columns: ${sortColumn}.
+      
+      Resend the command using indexed column.
+
+  - scope: SORT
+    code: CANNOT_LEXICAL_SORT_WITH_SKIP_OPTION
+    title: Skip option cannot be used with lexical sort
+    body: |-
+      The command attempted to lexical sort column along with skip option set.
+      
+      ${SNIPPET.LEXICAL_SORT_EXPLANATION}
+      
+      Resend the command without the skip option.
 
   - scope: SORT
     code: CANNOT_SORT_ON_MULTIPLE_VECTORS
@@ -1316,6 +1528,19 @@ request-errors:
       Resend the command with only one vectorize sort.
 
   - scope: SORT
+    code: CANNOT_SORT_ON_SPECIAL_WITH_OTHERS
+    title: Special sort combined with other sort expressions
+    body: |-
+      The command used a sort clause with a special (lexical/vector/vectorize) sort combined with one or more other sort expressions:
+      Special sorts can only be used on their own, and cannot be combined with other sort expressions.
+      
+      The command attempted to use lexical sort on columns: ${lexicalSorts}.
+      The command attempted to use vector/vectorize sort on columns: ${vectorSorts}.
+      The command attempted to use regular sort on columns: ${regularSorts}.
+      
+      Resend the command with only one special sort expression.
+
+  - scope: SORT
     code: CANNOT_SORT_UNKNOWN_COLUMNS
     title: Sorted columns are not defined in the table schema
     body: |-
@@ -1340,12 +1565,12 @@ request-errors:
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort columns are not `vector` type
     body: |-
-      The command attempted to vectorize sort on a column that is not of `vector` type.
+      The command attempted to vector sort on a column that is not of `vector` type.
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
       Resend the command using only `vector` columns.
 
@@ -1357,10 +1582,10 @@ request-errors:
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
-      Resend the command using only `vector` columns wth vectorize enabled.
+      Resend the command using only `vector` columns with vectorize enabled.
 
   - scope: SORT
     code: CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION
@@ -1429,8 +1654,42 @@ request-errors:
       Resend the command using either vector or non-vector sorting.
 
   - scope: SORT
+    code: CANNOT_VECTOR_SORT_ON_MISMATCHED_VECTOR_DIMENSIONS
+    title: Vector sort cannot be used with mismatched vector dimensions
+    body: |-
+      The command attempted to vector sort vector columns with a mismatched vector dimension.
+      Target vector column is `${targetVectorColumn}`, which has a dimension of `${actualDimension}`.
+      The command provided a vector with a dimension of `${providedDimension}`.
+
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      
+      Resend the command providing vector that have the same dimension as target vector column.
+
+  - scope: SORT
+    code: INVALID_REGULAR_SORT_EXPRESSION
+    title: Sort expression is not valid for regular sort
+    body: |-
+      The command attempted to use unsupported JSON expression `${jsonExpr}` (type ${jsonType}) for sort clause.
+      
+      ${SNIPPET.REGULAR_SORT_EXPLANATION}
+      
+      Resend the command with only valid sort expressions.
+
+  - scope: SORT
+    code: INVALID_VECTOR_SORT_EXPRESSION
+    title: Sort expression is not valid for vector/vectorize sort
+    body: |-
+      The command attempted to use unsupported JSON type (${jsonType}) for vector or vectorize sort.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      Resend the command with valid vector/vectorize sort expression.
+
+  - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND
-    title: Sorting not supported by delete command on Tables
+    title: Sorting not supported by delete command on tables
     body: |-
       The command attempted to sort a delete command running against a table. 
 
@@ -1440,7 +1699,7 @@ request-errors:
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_UPDATE_COMMAND
-    title: Sorting not supported by update command on Tables
+    title: Sorting not supported by update command on tables
     body: |-
       The command attempted to sort a update command running against a table. 
 
@@ -1461,28 +1720,28 @@ request-errors:
 
   - scope: SORT
     code: UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION
-    title: Vector sorting not supported by the Collection
+    title: Vector sorting not supported by the collection
     body: |-
-      The command attempted to vector sort against a Collection that does not have vectors enabled. 
+      The command attempted to vector sort against a collection that does not have vectors enabled. 
 
       Vector sorting is enabled when creating a collection via the `vector` configuration option. It must be defined at creation time as all vectors have the same dimension.
       
-      The Collection ${keyspace}.${table} does not have vectors enabled.
+      The collection ${keyspace}.${table} does not have vectors enabled.
       
-      Resend the command using a Collection with vectors enabled, or create a new Collection.
+      Resend the command using a collection with vectors enabled, or create a new collection.
 
 
   - scope: SORT
     code: UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION
-    title: Vectorize sorting not supported by the Collection
+    title: Vectorize sorting not supported by the collection
     body: |-
-      The command attempted to vectorize sort against a Collection that does not have vectorize enabled. 
+      The command attempted to vectorize sort against a collection that does not have vectorize enabled. 
 
-      Vectorize allows the Collection to calculate the sort vector for a text value server side. Vectorize is enabled when creating a collection via the `vector` configuration option, it must be defined at creation time as all vectors have the same dimension and model.
+      Vectorize allows the collection to calculate the sort vector for a text value server side. Vectorize is enabled when creating a collection via the `vector` configuration option, and it must be defined at creation time as all vectors have the same dimension and model.
       
-      The Collection ${keyspace}.${table} does not have vectorize enabled.
+      The collection ${keyspace}.${table} does not have vectorize enabled.
       
-      Resend the command using a Collection with vectorize enabled, or create a new Collection.
+      Resend the command using a collection with vectorize enabled, or create a new collection.
 # ================================================================================================================
 # ================================================================================================================
 #                                           Server Errors
@@ -1491,6 +1750,16 @@ request-errors:
 
 server-errors:
   # UNSCOPED server errors
+  - scope:
+    code: INTERNAL_SERVER_ERROR
+    title: Internal server error
+    body: |-
+      An unexpected internal server error occurred while processing the request. 
+      
+      Error Message: ${errorMessage}
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
   - scope:
     code: UNEXPECTED_SERVER_ERROR
     title: Unexpected server error
@@ -1594,7 +1863,7 @@ server-errors:
     body: |-
       The Data API command generated a database query that used the Compare and Set feature, and the database was unable to determine if the operation was successful.    
       
-      This should be a rare error, and may be due to a temporary capacity issue with the database. The API uses idempotent operations when modifying Documents in Collections which removes the possibility of data corruption.
+      This should be a rare error, and may be due to a temporary capacity issue with the database. The API uses idempotent operations when modifying documents in collections which removes the possibility of data corruption.
       
       The command used the keyspace and table or collection: ${keyspace}.${table}.
       The command generated the CQL query: ${cql}.
@@ -1609,7 +1878,7 @@ server-errors:
     body: |-
       The Data API command generated a database query to truncate the table, and the database was either unable to start or complete the operation.     
       
-      Truncating a Collection or Table requires that all worker nodes in the Keyspace are available, and complete the operation in the required time. Completing the operation includes flushing memory to disk, and snapshotting on disk files. 
+      Truncating a collection or table requires all worker nodes in the keyspace to be available and complete the operation in the required time. Completing the operation includes flushing memory to disk and snapshotting on disk files. 
       
       This is operation has the lowest level of availability as all nodes must be involved. And so it may fail while other read and write operations success, as they do not require all nodes to be available. 
       
@@ -1667,7 +1936,7 @@ server-errors:
       
       This error indicates an issue processing the request, not that the request timed out before completing. 
       
-      When working with Collections the data will be consistent, even when failing to write data. When working with Tables the data may be in an Eventually Consistent state, as the operation may have completed on some replicas, but not all.
+      When working with collections, the data will be consistent, even when failing to write data. When working with tables, the data may be in an Eventually Consistent state, as the operation may have completed on some replicas, but not all.
       
       This may be due to a temporary capacity issue with the database, or a wider outage. 
       
@@ -1710,7 +1979,7 @@ server-errors:
       
       The query was most likely correct, but not enough nodes confirmed the operation had completed before the timeout.
       
-      For Collections that data will be consistent. When working with Tables the data may be in an Eventually Consistent state, as the operation may have completed on some replicas but not all, which can result in inconsistent reads.
+      For collections, that data will be consistent. When working with tables, the data may be in an Eventually Consistent state, as the operation may have completed on some replicas but not all, which can result in inconsistent reads.
       
       This may be due to a temporary capacity issue with the database, or a wider outage.
       

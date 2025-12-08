@@ -10,7 +10,6 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -21,13 +20,10 @@ class UpdateManyCommandTest {
 
   @Inject Validator validator;
 
-  @Nested
-  class Validation {
-
-    @Test
-    public void noUpdateClause() throws Exception {
-      String json =
-          """
+  @Test
+  public void noUpdateClause() throws Exception {
+    String json =
+        """
           {
             "updateMany": {
               "filter": {"name": "Aaron"}
@@ -35,13 +31,12 @@ class UpdateManyCommandTest {
           }
           """;
 
-      UpdateManyCommand command = objectMapper.readValue(json, UpdateManyCommand.class);
-      Set<ConstraintViolation<UpdateManyCommand>> result = validator.validate(command);
+    UpdateManyCommand command = objectMapper.readValue(json, UpdateManyCommand.class);
+    Set<ConstraintViolation<UpdateManyCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("must not be null");
   }
 }

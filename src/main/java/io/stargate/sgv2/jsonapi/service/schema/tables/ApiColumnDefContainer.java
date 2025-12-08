@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
@@ -15,14 +17,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** A {@link ApiColumnDefContainer} that maintains the order of the columns as they were added. */
 public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef>
-    implements Recordable {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ApiColumnDefContainer.class);
+    implements SchemaDescribable<ColumnsDescContainer>, Recordable {
 
   private static final ApiColumnDefContainer IMMUTABLE_EMPTY =
       new ApiColumnDefContainer(0).toUnmodifiable();
@@ -144,9 +142,13 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
                 columnDef -> ((ApiVectorType) columnDef.type()).getVectorizeDefinition()));
   }
 
-  public ColumnsDescContainer toColumnsDesc() {
+  @Override
+  public ColumnsDescContainer getSchemaDescription(SchemaDescSource schemaDescSource) {
+
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
-    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.columnDesc()));
+    forEach(
+        (name, columnDef) ->
+            columnsDesc.put(name, columnDef.getSchemaDescription(schemaDescSource)));
     return columnsDesc;
   }
 
@@ -156,18 +158,35 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return dataRecorder.append("columns", this.values());
   }
 
+  /**
+   * Factory for creating {@link ApiColumnDefContainer} from the driver / cql metadata.
+   *
+   * <p>...
+   */
   public static class CqlColumnFactory {
 
     CqlColumnFactory() {}
 
     public ApiColumnDefContainer create(
-        Collection<ColumnMetadata> columns, VectorConfig vectorConfig) {
+        TypeBindingPoint bindingPoint,
+        Collection<ColumnMetadata> columns,
+        VectorConfig vectorConfig) {
+
       Objects.requireNonNull(columns, "columns cannot be null");
+
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw new IllegalArgumentException(
+            "CqlColumnFactory only supports binding point %s or %s, bindingPoint: %s"
+                .formatted(
+                    TypeBindingPoint.TABLE_COLUMN, TypeBindingPoint.UDT_FIELD, bindingPoint));
+      }
 
       var container = new ApiColumnDefContainer(columns.size());
       for (ColumnMetadata columnMetadata : columns) {
         try {
-          container.put(ApiColumnDef.FROM_CQL_FACTORY.create(columnMetadata, vectorConfig));
+          container.put(
+              ApiColumnDef.FROM_CQL_FACTORY.create(bindingPoint, columnMetadata, vectorConfig));
         } catch (UnsupportedCqlColumn e) {
           container.put(ApiColumnDef.FROM_CQL_FACTORY.createUnsupported(columnMetadata));
         }
@@ -176,20 +195,30 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     }
   }
 
+  /**
+   * Factory for creating {@link ApiColumnDefContainer} from the user provided descriptions in the
+   * API.
+   *
+   * <p>..
+   */
   public static class ColumnDescFactory {
 
     ColumnDescFactory() {}
 
     public ApiColumnDefContainer create(
-        ColumnsDescContainer columnDescContainer, VectorizeConfigValidator validateVectorize) {
+        TypeBindingPoint bindingPoint,
+        ColumnsDescContainer columnDescContainer,
+        VectorizeConfigValidator validateVectorize) {
+
       Objects.requireNonNull(columnDescContainer, "columnDescContainer cannot be null");
+      checkBindingPoint(bindingPoint, "create");
 
       var container = new ApiColumnDefContainer(columnDescContainer.size());
       for (Map.Entry<String, ColumnDesc> entry : columnDescContainer.entrySet()) {
         try {
           container.put(
               ApiColumnDef.FROM_COLUMN_DESC_FACTORY.create(
-                  entry.getKey(), entry.getValue(), validateVectorize));
+                  bindingPoint, entry.getKey(), entry.getValue(), validateVectorize));
         } catch (UnsupportedUserColumn e) {
           container.put(
               ApiColumnDef.FROM_COLUMN_DESC_FACTORY.createUnsupported(
@@ -198,8 +227,36 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
       }
       return container.toUnmodifiable();
     }
+
+    public List<ColumnDesc> unbindableColumnDesc(
+        TypeBindingPoint bindingPoint,
+        ColumnsDescContainer columnDescContainer,
+        VectorizeConfigValidator validateVectorize) {
+
+      List<ColumnDesc> unbindable = new ArrayList<>();
+
+      for (Map.Entry<String, ColumnDesc> entry : columnDescContainer.entrySet()) {
+        if (!ApiColumnDef.FROM_COLUMN_DESC_FACTORY.isTypeBindable(
+            bindingPoint, entry.getKey(), entry.getValue(), validateVectorize)) {
+          unbindable.add(entry.getValue());
+        }
+      }
+      return unbindable;
+    }
+
+    private static void checkBindingPoint(TypeBindingPoint bindingPoint, String methodName) {
+      if (bindingPoint != TypeBindingPoint.TABLE_COLUMN
+          && bindingPoint != TypeBindingPoint.UDT_FIELD) {
+        throw bindingPoint.unsupportedException("ApiColumnDef.ColumnDescFactory." + methodName);
+      }
+    }
   }
 
+  /**
+   * An unmodifiable version of {@link ApiColumnDefContainer}
+   *
+   * <p>...
+   */
   public static class UnmodifiableApiColumnDefContainer extends ApiColumnDefContainer {
 
     UnmodifiableApiColumnDefContainer(ApiColumnDefContainer container) {

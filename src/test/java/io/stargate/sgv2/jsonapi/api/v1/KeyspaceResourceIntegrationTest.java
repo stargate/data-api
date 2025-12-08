@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @Nested
@@ -20,7 +20,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void tokenMissing() {
-      given()
+      given() // Headers omitted on purpose
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
@@ -36,10 +36,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void malformedBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{wrong}")
+      givenHeadersAndJson("{wrong}")
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
@@ -51,18 +48,13 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void unknownCommand() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "unknownCommand": {
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
@@ -72,14 +64,12 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"KeyspaceCommand\"s: known commands are [createCollection"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"KeyspaceCommand\"s: known commands are ["));
     }
 
     @Test
     public void emptyBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
+      givenHeaders()
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()

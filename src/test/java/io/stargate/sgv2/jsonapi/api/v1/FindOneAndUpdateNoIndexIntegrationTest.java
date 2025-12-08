@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsString;
@@ -12,7 +11,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -22,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   private static final String collectionName = "no_index_collection";
@@ -34,8 +32,8 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
   class CreateCollection {
     @Test
     public void createBaseCollection() {
-      String json =
-              """
+      givenHeadersPostJsonThenOk(
+                  """
                  {
                    "createCollection": {
                      "name": "%s",
@@ -51,15 +49,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                    }
                  }
                   """
-              .formatted(collectionName);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                  .formatted(collectionName))
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
@@ -70,10 +60,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
   class FindAndUpdateWithSet {
     @Test
     public void byIdAfterUpdate() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
                       {
                         "insertOne": {
@@ -93,10 +80,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .statusCode(200)
           .body("$", responseIsWriteSuccess());
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
               {
                 "findOneAndUpdate": {
@@ -147,10 +131,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
               }
               """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
                   """
                               {
                                 "insertOne": {
@@ -165,10 +146,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .statusCode(200)
           .body("$", responseIsWriteSuccess());
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
                       {
                         "findOneAndUpdate": {
@@ -205,10 +183,8 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
     public void allowNonIndexedBigArray() {
       insertEmptyDoc("array_size_big_noindex_doc");
       final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+
+      givenHeadersAndJson(
                   """
                     {
                       "findOneAndUpdate": {
@@ -236,10 +212,8 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
     public void failOnIndexedTooBigArray() {
       insertEmptyDoc("array_size_too_big_doc");
       final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+
+      givenHeadersAndJson(
                   """
                             {
                               "findOneAndUpdate": {
@@ -275,10 +249,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
         insertEmptyDoc("object_size_big_noindex_doc");
         final String objectJson =
             bigObject(DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES + 10);
-        given()
-            .headers(getHeaders())
-            .contentType(ContentType.JSON)
-            .body(
+        givenHeadersAndJson(
                     """
                                 {
                                   "findOneAndUpdate": {
@@ -307,10 +278,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
         insertEmptyDoc("object_size_too_big_doc");
         final String objectJson =
             bigObject(DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES + 10);
-        given()
-            .headers(getHeaders())
-            .contentType(ContentType.JSON)
-            .body(
+        givenHeadersAndJson(
                     """
                                 {
                                   "findOneAndUpdate": {
@@ -338,10 +306,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
     }
 
     private void insertEmptyDoc(String docId) {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
                   """
                         {
                           "insertOne": {
@@ -361,7 +326,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .body("status.insertedIds[0]", is(docId));
     }
 
-    private final String bigArray(int elementCount) {
+    private String bigArray(int elementCount) {
       final ArrayNode array = MAPPER.createArrayNode();
       for (int i = 0; i < elementCount; i++) {
         array.add(i);
@@ -369,7 +334,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
       return array.toString();
     }
 
-    private final String bigObject(int propertyCount) {
+    private String bigObject(int propertyCount) {
       final ObjectNode ob = MAPPER.createObjectNode();
       for (int i = 0; i < propertyCount; i++) {
         ob.put("prop" + i, i);

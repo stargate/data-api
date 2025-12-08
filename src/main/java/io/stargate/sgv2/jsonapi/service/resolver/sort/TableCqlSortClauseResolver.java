@@ -16,16 +16,19 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
+import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByClusteringCqlClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByLexicalCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
@@ -69,24 +72,32 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       return WithWarnings.of(OrderByCqlClause.NO_OP);
     }
 
-    // All sorting can only be on columns in the table definition
-    var sortColumns = sortClause.sortColumnIdentifiers();
-    checkUnknownSortColumns(commandContext.schemaObject(), sortColumns);
+    // NOTE: existence of the columns is checked in the SortClauseBuilder, no need to re-check
+
+    // First: Lexical sort? Must be alone, if it exists (already validated)
+    var lexicalSortExpr = sortClause.lexicalSortExpression();
+    if (lexicalSortExpr != null) {
+      return resolveLexicalSort(commandContext, lexicalSortExpr, command.skip(), command.limit());
+    }
 
     var vectorAndVectorizeSorts = sortClause.tableVectorSorts();
-    var whereCQLClause =
-        TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
-
-    return vectorAndVectorizeSorts.isEmpty()
-        ? resolveNonVectorSort(
-            commandContext, whereCQLClause.target(), sortClause, sortColumns, command.skip())
-        : resolveVectorSort(
-            commandContext, sortClause, vectorAndVectorizeSorts, command.skip(), command.limit());
+    if (vectorAndVectorizeSorts.isEmpty()) {
+      var whereCQLClause =
+          TableWhereCQLClause.forSelect(
+              commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
+      return resolveNonVectorSort(
+          commandContext,
+          whereCQLClause.target(),
+          sortClause,
+          sortClause.sortColumnIdentifiers(),
+          command.skip());
+    }
+    return resolveVectorSort(
+        commandContext, sortClause, vectorAndVectorizeSorts, command.skip(), command.limit());
   }
 
   /**
-   * We have atleast one sort expression, and none of them are vector sorts.
+   * We have at least one sort expression, and none of them are vector sorts.
    *
    * <p>If the sort uses the clustering keys in the correct way according to CQL, then we can use
    * the CQL Order By to push the sorting to the database. See {@link
@@ -126,7 +137,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
     }
 
-    // We know all of the order keys are partition sorting keys
+    // We know all the order keys are partition sorting keys
     // if the order of the sort columns is not the same as the clustering keys, we cannot use CQL
     // this covers two cases: if the clustering is [a,b,c] covers
     // -  [a,c] where b is missed
@@ -176,7 +187,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 sortExpression ->
                     new TableOrderByClusteringCqlClause.OrderByTerm(
                         apiTableDef.allColumns().get(sortExpression.pathAsCqlIdentifier()),
-                        sortExpression.ascending()
+                        sortExpression.isAscending()
                             ? TableOrderByClusteringCqlClause.Order.ASC
                             : TableOrderByClusteringCqlClause.Order.DESC))
             .toList();
@@ -186,6 +197,69 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
           "Sort covered by clustering keys, using CQL ORDER BY. cqlOrderBy: {}", cqlOrderBy);
     }
     return WithWarnings.of(cqlOrderBy);
+  }
+
+  /**
+   * We have (only) lexical sort in the sort clause.
+   *
+   * <p>This is always implemented by using a CQL Order By BM25 OF to push the search to the
+   * database. See {@link TableOrderByLexicalCqlClause}
+   */
+  private WithWarnings<OrderByCqlClause> resolveLexicalSort(
+      CommandContext<TableSchemaObject> commandContext,
+      SortExpression lexicalSortExpr,
+      Optional<Integer> skip,
+      Optional<Integer> limit) {
+    if (skip.isPresent()) {
+      throw SortException.Code.CANNOT_LEXICAL_SORT_WITH_SKIP_OPTION.get();
+    }
+    Integer actualLimit = limit.orElse(QueryBuilder.DEFAULT_BM25_LIMIT);
+    actualLimit = Math.min(actualLimit, QueryBuilder.MAX_BM25_LIMIT);
+
+    final ApiTableDef apiTableDef = commandContext.schemaObject().apiTableDef();
+    final CqlIdentifier lexicalSortIdentifier = lexicalSortExpr.pathAsCqlIdentifier();
+    final ApiColumnDef lexicalSortColumn = apiTableDef.allColumns().get(lexicalSortIdentifier);
+
+    // Column type already validated, no need to check again
+    // But we do want to check it has lexical index.
+    var maybeIndex = apiTableDef.indexes().firstIndexFor(lexicalSortIdentifier);
+    if (maybeIndex.isEmpty()) {
+      throw SortException.Code.CANNOT_LEXICAL_SORT_NON_INDEXED_COLUMNS.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
+                map.put(
+                    "indexedColumns", errFmtJoin(indexedColumns(commandContext.schemaObject())));
+                map.put("sortColumn", errFmt(lexicalSortIdentifier));
+              }));
+    }
+
+    // HACK - Tatu, 08-Jul-2025 - copied from Aaron's hack for Vector search
+    // (the better solution would be to parse the sort JSON node through the JsonNamedValueFactory
+    // with a
+    // decoder that understands sorting, but the sort clause is terrible and needs to be refactored)
+
+    var jsonNamedValue =
+        new JsonNamedValue(JsonPath.from(lexicalSortExpr.getPath()), JsonNodeDecoder.DEFAULT);
+    if (jsonNamedValue.bind(commandContext.schemaObject())) {
+      // ok, this is a terrible hack, but it needs a JSON node
+      jsonNamedValue.prepare(JsonNodeFactory.instance.textNode(lexicalSortExpr.getLexicalQuery()));
+    } else {
+      throw new IllegalStateException(
+          "jsonNamedValue failed to bind for the sorting on column " + lexicalSortColumn.name());
+    }
+
+    var lexicalNamedValue =
+        new CqlNamedValueContainerFactory(
+                CqlNamedValue::new,
+                commandContext.schemaObject(),
+                JSONCodecRegistries.DEFAULT_REGISTRY,
+                SORTING_NAMED_VALUE_ERROR_STRATEGY)
+            .create(new JsonNamedValueContainer(List.of(jsonNamedValue))).values().stream()
+                .findFirst()
+                .get();
+
+    return WithWarnings.of(new TableOrderByLexicalCqlClause(lexicalNamedValue, actualLimit));
   }
 
   /**
@@ -217,7 +291,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 map.put(
                     "sortColumn",
                     errFmtJoin(
-                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
+                        vectorAndVectorizeSorts.stream().map(SortExpression::getPath).toList()));
                 map.put("limit", String.valueOf(limit.get()));
                 map.put(
                     "maxLimit",
@@ -229,12 +303,11 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
               }));
     }
 
-    var apiTableDef = commandContext.schemaObject().apiTableDef();
-
     if (skip.isPresent()) {
       throw SortException.Code.CANNOT_VECTOR_SORT_WITH_SKIP_OPTION.get();
     }
 
+    var apiTableDef = commandContext.schemaObject().apiTableDef();
     if (vectorAndVectorizeSorts.size() > 1) {
       var errorCode =
           isVectorize
@@ -250,7 +323,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 map.put(
                     "sortColumns",
                     errFmtJoin(
-                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
+                        vectorAndVectorizeSorts.stream().map(SortExpression::getPath).toList()));
               }));
     }
 
@@ -267,10 +340,10 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 map.put(
                     "sortVectorColumns",
                     errFmtJoin(
-                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
+                        vectorAndVectorizeSorts.stream().map(SortExpression::getPath).toList()));
                 map.put(
                     "sortNonVectorColumns",
-                    errFmtJoin(nonVectorSorts.stream().map(SortExpression::path).toList()));
+                    errFmtJoin(nonVectorSorts.stream().map(SortExpression::getPath).toList()));
               }));
     }
 
@@ -293,6 +366,15 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 map.put("sortColumns", errFmt(vectorSortIdentifier));
               }));
     }
+
+    // already validated the column is a vector type
+    // the optional get won't fail
+    var vectorColumnDefinition =
+        commandContext
+            .schemaObject()
+            .vectorConfig()
+            .getColumnDefinition(vectorSortIdentifier)
+            .get();
 
     // see if Table has vector index on the target sort vector column
     var optionalVectorIndex = apiTableDef.indexes().firstIndexFor(vectorSortIdentifier);
@@ -324,15 +406,33 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     // decoder that understands sorting, but the sort clause is terrible and needs to be refactored
 
     var jsonNamedValue =
-        new JsonNamedValue(JsonPath.from(vectorSortExpression.path()), JsonNodeDecoder.DEFAULT);
+        new JsonNamedValue(JsonPath.from(vectorSortExpression.getPath()), JsonNodeDecoder.DEFAULT);
     if (jsonNamedValue.bind(commandContext.schemaObject())) {
       // ok, this is a terrible hack, but it needs a JSON node
-      JsonNode jsonNode = null;
-      if (vectorSortExpression.vectorize() != null) {
-        jsonNode = JsonNodeFactory.instance.textNode(vectorSortExpression.vectorize());
-      } else if (vectorSortExpression.vector() != null) {
+      JsonNode jsonNode;
+      if (vectorSortExpression.hasVectorize()) {
+        jsonNode = JsonNodeFactory.instance.textNode(vectorSortExpression.getVectorize());
+      } else if (vectorSortExpression.hasVector()) {
+
+        // check if provided vector dimension matches column definition
+        if (vectorSortExpression.getVector().length != vectorColumnDefinition.vectorSize()) {
+          throw SortException.Code.CANNOT_VECTOR_SORT_ON_MISMATCHED_VECTOR_DIMENSIONS.get(
+              errVars(
+                  commandContext.schemaObject(),
+                  map -> {
+                    map.put(
+                        "vectorColumns",
+                        errFmtApiColumnDef(apiTableDef.allColumns().filterVectorColumnsToList()));
+                    map.put("targetVectorColumn", errFmt(vectorSortIdentifier));
+                    map.put("actualDimension", String.valueOf(vectorColumnDefinition.vectorSize()));
+                    map.put(
+                        "providedDimension",
+                        String.valueOf(vectorSortExpression.getVector().length));
+                  }));
+        }
+
         var arrayNode = JsonNodeFactory.instance.arrayNode();
-        for (var f : vectorSortExpression.vector()) {
+        for (float f : vectorSortExpression.getVector()) {
           arrayNode.add(f);
         }
         jsonNode = arrayNode;
@@ -371,6 +471,15 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     return schemaObject.tableMetadata().getIndexes().values().stream()
         .filter(index -> index.getTarget().equals(targetColumn.name().asInternal()))
         .findFirst();
+  }
+
+  private List<String> indexedColumns(TableSchemaObject schemaObject) {
+    var columns = schemaObject.apiTableDef().allColumns();
+    return schemaObject.tableMetadata().getIndexes().values().stream()
+        .map(IndexMetadata::getTarget)
+        .filter(target -> columns.containsKey(CqlIdentifier.fromInternal(target)))
+        .sorted()
+        .toList();
   }
 
   private List<String> indexedVectorColumns(TableSchemaObject schemaObject) {

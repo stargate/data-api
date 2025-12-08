@@ -29,17 +29,18 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
   public static final FromJsonFactory FROM_JSON_FACTORY = new FromJsonFactory();
 
   private static final Map<ApiDataType, PrimitiveColumnDesc> BY_API_TYPE = new HashMap<>();
-  private static final Map<String, PrimitiveColumnDesc> BY_API_TYPE_NAME = new HashMap<>();
+  // Used from the {@link FromJsonFactory}, so this is a desc from user input
+  private static final Map<ApiTypeName, PrimitiveColumnDesc> BY_API_TYPE_NAME = new HashMap<>();
 
-  private static final List<PrimitiveColumnDesc> allPrimitives;
   private static final List<ColumnDesc> allColumnDescs;
 
   static {
-    allPrimitives = List.of(values());
-    allColumnDescs = new ArrayList<>(allPrimitives);
+    allColumnDescs = List.of(values());
+
+    // need to create two instances, so they have different schema desc sources
     for (PrimitiveColumnDesc type : PrimitiveColumnDesc.values()) {
       BY_API_TYPE.put(type.apiDataType, type);
-      BY_API_TYPE_NAME.put(type.apiDataType.typeName().apiName(), type);
+      BY_API_TYPE_NAME.put(type.apiDataType.typeName(), type);
     }
   }
 
@@ -61,10 +62,6 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
     return apiSupportDesc;
   }
 
-  public static List<PrimitiveColumnDesc> allPrimitives() {
-    return allPrimitives;
-  }
-
   public static List<ColumnDesc> allColumnDescs() {
     return allColumnDescs;
   }
@@ -80,8 +77,15 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
     return BY_API_TYPE.get(apiDataType);
   }
 
+  /**
+   * Factory to create a {@link PrimitiveColumnDesc} from JSON nodes representing type.
+   *
+   * <p>This {@link ColumnDesc} will always have {@link
+   * io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource#USER_SCHEMA_USAGE}
+   */
   public static class FromJsonFactory {
-    public Optional<ColumnDesc> create(String apiTypeName) {
+
+    public Optional<ColumnDesc> create(ApiTypeName apiTypeName) {
       return Optional.ofNullable(BY_API_TYPE_NAME.get(apiTypeName));
     }
   }

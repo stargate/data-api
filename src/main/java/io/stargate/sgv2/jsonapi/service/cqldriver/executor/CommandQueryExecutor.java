@@ -1,23 +1,24 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.AsyncPagingIterable;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Configured to execute queries for a specific command that relies on drive profiles MORE TODO
- * WORDS
+ * Configured to execute queries for a specific command that relies on drive profiles
  *
  * <p><b>NOTE:</b> this is a WIP replacing the earlier QueryExecutor that was built with injection.
  * This is for use by a {@link io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask}
@@ -74,7 +75,6 @@ public class CommandQueryExecutor {
 
   public Uni<AsyncResultSet> executeRead(SimpleStatement statement) {
     Objects.requireNonNull(statement, "statement must not be null");
-
     statement = withExecutionProfile(statement, QueryType.READ);
     return executeAndWrap(statement);
   }
@@ -138,29 +138,54 @@ public class CommandQueryExecutor {
   }
 
   /**
-   * Get the metadata for the given keyspace using session.
+   * Get the Driver metadata using from the session.
+   *
+   * @param forceRefresh If true, forces an async refresh of the schema metadata from the cluster
+   * @return Uni of the {@link Metadata}
+   */
+  public Uni<Metadata> getMetadata(boolean forceRefresh) {
+
+    if (forceRefresh) {
+      return session()
+          .flatMap(session -> Uni.createFrom().completionStage(session.refreshSchemaAsync()));
+    }
+
+    return session().map(CqlSession::getMetadata);
+  }
+
+  /**
+   * Get the Keyspace Metadata for the given keyspace using session.
    *
    * @param keyspace The keyspace name.
-   * @return The keyspace metadata if it exists.
+   * @param forceRefresh If true, forces an async refresh of the schema metadata from the cluster
+   * @return The {@link KeyspaceMetadata} if it exists.
    */
-  public Optional<KeyspaceMetadata> getKeyspaceMetadata(String keyspace) {
-    return session()
-        .getMetadata()
-        .getKeyspace(CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspace));
+  public Uni<Optional<KeyspaceMetadata>> getKeyspaceMetadata(
+      CqlIdentifier keyspace, boolean forceRefresh) {
+
+    return getMetadata(forceRefresh).map(metadata -> metadata.getKeyspace(keyspace));
   }
 
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
-    Objects.requireNonNull(statement, "statement must not be null");
 
+    Objects.requireNonNull(statement, "statement must not be null");
     statement = withExecutionProfile(statement, QueryType.CREATE_SCHEMA);
     return executeAndWrap(statement);
   }
 
-  private CqlSession session() {
-    return cqlSessionCache.getSession(
-        dbRequestContext.tenantId().orElse(""),
-        dbRequestContext.authToken().orElse(""),
-        dbRequestContext.userAgent().orElse(null));
+  /**
+   * Gets the {@link CqlSession} this executor is using.
+   *
+   * <p>Gets by pulling from the session cache, which may create or reuse a session so this is an
+   * async operation.
+   *
+   * <p>This should stay private, because the ides of this class is to wrap all the execution of CQL
+   * statements.
+   *
+   * @return Uni of the {@link CqlSession}
+   */
+  private Uni<CqlSession> session() {
+    return cqlSessionCache.getSession(dbRequestContext);
   }
 
   private String getExecutionProfile(QueryType queryType) {
@@ -179,7 +204,10 @@ public class CommandQueryExecutor {
         dbRequestContext.tracingEnabled() != statement.isTracing()
             ? statement.setTracing(dbRequestContext.tracingEnabled())
             : statement;
-    return Uni.createFrom().completionStage(session().executeAsync(execStatement));
+
+    return session()
+        .flatMap(
+            session -> Uni.createFrom().completionStage(() -> session.executeAsync(execStatement)));
   }
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext
@@ -187,5 +215,14 @@ public class CommandQueryExecutor {
       Optional<String> tenantId,
       Optional<String> authToken,
       Optional<String> userAgent,
-      boolean tracingEnabled) {}
+      boolean tracingEnabled) {
+
+    public DBRequestContext(CommandContext<?> commandContext) {
+      this(
+          commandContext.requestContext().getTenantId(),
+          commandContext.requestContext().getCassandraToken(),
+          commandContext.requestContext().getUserAgent(),
+          commandContext.requestTracing().enabled());
+    }
+  }
 }

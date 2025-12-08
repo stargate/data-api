@@ -88,7 +88,17 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       this.commandContext = commandContext;
       this.task = task;
       this.statement = statement;
-      this.supplier = Objects.requireNonNull(supplier, "supplier must not be null");
+      this.supplier = supplier;
+    }
+
+    protected BaseTask.UniSupplier<AsyncResultSet> getSupplier() {
+      // to support subclasses building supplier on demand
+      Objects.requireNonNull(supplier, "supplier must not be null");
+      return supplier;
+    }
+
+    public CommandContext<?> commandContext() {
+      return commandContext;
     }
 
     @Override
@@ -96,7 +106,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
 
       DBTraceMessages.executingStatement(commandContext.requestTracing(), statement, task);
 
-      return supplier
+      return getSupplier()
           .get()
           .onItem()
           .call(
@@ -176,11 +186,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     // , improve later
     return new CommandQueryExecutor(
         commandContext.cqlSessionCache(),
-        new CommandQueryExecutor.DBRequestContext(
-            commandContext.requestContext().getTenantId(),
-            commandContext.requestContext().getCassandraToken(),
-            commandContext.requestContext().getUserAgent(),
-            commandContext.requestTracing().enabled()),
+        new CommandQueryExecutor.DBRequestContext(commandContext),
         CommandQueryExecutor.QueryTarget.TABLE);
   }
 

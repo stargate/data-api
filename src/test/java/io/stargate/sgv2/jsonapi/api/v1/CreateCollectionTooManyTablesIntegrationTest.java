@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.is;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Test;
@@ -18,7 +16,7 @@ import org.junit.jupiter.api.TestClassOrder;
  * Collections per DB being created.
  */
 @QuarkusIntegrationTest
-@WithTestResource(
+@QuarkusTestResource(
     value = CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class,
     restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
@@ -57,11 +55,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
 
     // First create maximum number of collections
     for (int i = 1; i <= COLLECTIONS_TO_CREATE; ++i) {
-      String json = createTemplate.formatted(i);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+      givenHeadersAndJson(createTemplate.formatted(i))
           .when()
           .post(KeyspaceResource.BASE_PATH, NS)
           .then()
@@ -70,11 +64,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
           .body("status.ok", is(1));
     }
     // And then failure
-    String json = createTemplate.formatted(99);
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(json)
+    givenHeadersAndJson(createTemplate.formatted(99))
         .when()
         .post(KeyspaceResource.BASE_PATH, NS)
         .then()
@@ -92,10 +82,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
 
     // But then verify that re-creating an existing one should still succeed
     // (if using same settings)
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(createTemplate.formatted(1))
+    givenHeadersAndJson(createTemplate.formatted(1))
         .when()
         .post(KeyspaceResource.BASE_PATH, NS)
         .then()

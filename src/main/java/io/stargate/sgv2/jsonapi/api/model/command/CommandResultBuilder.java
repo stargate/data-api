@@ -36,12 +36,6 @@ public class CommandResultBuilder {
 
   private final ResponseType responseType;
 
-  // If the debug mode is enabled, errors include the errorclass
-  private final boolean debugMode;
-
-  // Flagged true to include the new error object v2
-  private final boolean useErrorObjectV2;
-
   private final RequestTracing requestTracing;
   // Created in the Ctor
   private final APIExceptionCommandErrorBuilder apiExceptionToError;
@@ -51,19 +45,14 @@ public class CommandResultBuilder {
   private final APIExceptionCommandErrorBuilder apiWarningToError;
 
   CommandResultBuilder(
-      ResponseType responseType,
-      boolean useErrorObjectV2,
-      boolean debugMode,
-      RequestTracing requestTracing) {
+      ResponseType responseType, boolean useErrorObjectV2, RequestTracing requestTracing) {
     this.responseType = responseType;
-    this.useErrorObjectV2 = useErrorObjectV2;
-    this.debugMode = debugMode;
 
     // There is a no op implementation for tracing that is used when tracing is disabled
     this.requestTracing = Objects.requireNonNull(requestTracing, "requestTracing must not be null");
 
-    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
-    this.apiWarningToError = new APIExceptionCommandErrorBuilder(debugMode, true);
+    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(useErrorObjectV2);
+    this.apiWarningToError = new APIExceptionCommandErrorBuilder(true);
   }
 
   public CommandResultBuilder addStatus(CommandStatus status, Object value) {
@@ -113,9 +102,7 @@ public class CommandResultBuilder {
     return this;
   }
 
-  /**
-   * Gets the appropriately formatted error given {@link #useErrorObjectV2} and {@link #debugMode}.
-   */
+  /** Gets the appropriately formatted error. */
   public CommandResult.Error throwableToCommandError(Throwable throwable) {
 
     if (throwable instanceof APIException apiException) {
@@ -173,7 +160,11 @@ public class CommandResultBuilder {
                   ? new ResponseData.SingleResponseData(
                       documents.isEmpty() ? null : documents.getFirst())
                   : null;
-          case MULTI_DOCUMENT -> new ResponseData.MultiResponseData(documents, nextPageState);
+          case MULTI_DOCUMENT ->
+              // if there are any errors we do not return the response data for multi doc either
+              finalErrors == null
+                  ? new ResponseData.MultiResponseData(documents, nextPageState)
+                  : null;
           case STATUS_ONLY -> null;
         };
 

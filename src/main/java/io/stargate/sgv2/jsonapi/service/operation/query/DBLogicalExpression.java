@@ -65,14 +65,21 @@ public class DBLogicalExpression implements Recordable {
   }
 
   /**
-   * Add a sub dbLogicalExpression as subExpression to current caller dbLogicalExpression
-   *
-   * @param DBLogicalExpression subExpression
-   * @return subExpression
+   * Add a sub dbLogicalExpression as subExpression to current caller dbLogicalExpression. Return
+   * the passing sub dbLogicalExpression.
    */
-  public DBLogicalExpression addSubExpression(DBLogicalExpression subExpression) {
+  public DBLogicalExpression addSubExpressionReturnSub(DBLogicalExpression subExpression) {
     subExpressions.add(Objects.requireNonNull(subExpression, "subExpressions cannot be null"));
     return subExpression;
+  }
+
+  /**
+   * Add a sub dbLogicalExpression as subExpression to current caller dbLogicalExpression. Return
+   * the current caller dbLogicalExpression.
+   */
+  public DBLogicalExpression addSubExpressionReturnCurrent(DBLogicalExpression subExpression) {
+    subExpressions.add(Objects.requireNonNull(subExpression, "subExpressions cannot be null"));
+    return this;
   }
 
   /**

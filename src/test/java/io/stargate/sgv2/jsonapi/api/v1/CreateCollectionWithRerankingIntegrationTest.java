@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class CreateCollectionWithRerankingIntegrationTest
     extends AbstractKeyspaceIntegrationTestBase {
@@ -26,7 +26,8 @@ public class CreateCollectionWithRerankingIntegrationTest
   class CreateRerankingHappyPath {
     @Test
     void createNoRerankingConfigAndUseDefault() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
               """
                           {
@@ -79,7 +80,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void createRerankingSimpleEnabledMinimal() {
-      final String collectionName = "coll_rerank_minimal" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_rerank_minimal" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithReranking(collectionName, "{\"enabled\": true}");
 
       givenHeadersPostJsonThenOkNoErrors(json)
@@ -124,7 +126,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void createRerankingSimpleEnabledStandard() {
-      final String collectionName = "coll_Reranking_simple" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_simple" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -180,7 +183,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void createRerankingSimpleDisabled() {
-      final String collectionName = "coll_Reranking_disabled" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_disabled" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithReranking(collectionName, "{\"enabled\": false}");
 
       givenHeadersPostJsonThenOkNoErrors(json)
@@ -221,7 +225,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void createRerankingDisabledWithEmptyService() {
-      final String collectionName = "coll_Reranking_disabled" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_disabled" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -274,7 +279,8 @@ public class CreateCollectionWithRerankingIntegrationTest
   class CreateRerankingFail {
     @Test
     void failCreateRerankingWithDisabledAndModel() {
-      final String collectionName = "coll_Reranking_disabled" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_disabled" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -299,7 +305,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void failCreateRerankingMissingEnabled() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithReranking(collectionName, "{ }");
 
       givenHeadersPostJsonThenOk(json)
@@ -313,7 +320,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void failMissingServiceProvider() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -335,7 +343,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void failUnknownServiceProvider() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -359,7 +368,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void failMissingServiceModel() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -383,7 +393,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void failUnknownServiceModel() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -408,7 +419,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void failUnsupportedAuthentication() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -436,7 +448,8 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @Test
     void failUnsupportedParameters() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
@@ -478,7 +491,8 @@ public class CreateCollectionWithRerankingIntegrationTest
     @MethodSource("deprecatedRerankingModelSource")
     public void failDeprecatedEOLRerankModel(
         String status, String modelName, SchemaException.Code errorCode) {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_Reranking_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,

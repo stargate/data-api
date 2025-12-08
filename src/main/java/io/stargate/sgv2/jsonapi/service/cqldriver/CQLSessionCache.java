@@ -6,17 +6,19 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.config.DatabaseType;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
+import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiConsumer;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * <p>Call {@link #getSession(RequestContext)} and overloads to get a session for the current
  * request context.
  *
- * <p>The {@link DeactivatedTenantConsumer} interface will be called when a session is removed from
+ * <p>The {@link DeactivatedTenantListener} interface will be called when a session is removed from
  * the cache, so that schema cache and metrics can be updated to remove the tenant. NOTE: this is
  * called when the session expires, but a single tenant may have multiple sessions (based on key
  * above), so it is not a guarantee that the tenant is not active with another set of credentials.
@@ -43,25 +45,18 @@ import org.slf4j.LoggerFactory;
  * measure, it's only an estimate. We can assume the size feature works. For testing use {@link
  * #peekSession(String, String, String)}
  */
-public class CQLSessionCache {
+public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCacheKey, CqlSession> {
   private static final Logger LOGGER = LoggerFactory.getLogger(CQLSessionCache.class);
 
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
-   * request
+   * request amorton; 17 Nov 2025 - will be removed soon, will refactor so we have a Tenant object
    */
   public static final String DEFAULT_TENANT = "default_tenant";
 
-  private final DatabaseType databaseType;
-  private final Duration cacheTTL;
-  private final String slaUserAgent;
-  private final Duration slaUserTTL;
+  private final DynamicTTLSupplier ttlSupplier;
 
-  private final LoadingCache<SessionCacheKey, SessionValueHolder> sessionCache;
   private final CqlCredentialsFactory credentialsFactory;
-  private final SessionFactory sessionFactory;
-
-  private List<DeactivatedTenantConsumer> deactivatedTenantConsumers;
 
   /**
    * Constructs a new instance of the {@link CQLSessionCache}.
@@ -69,19 +64,17 @@ public class CQLSessionCache {
    * <p>Use this overload in production code, see other for detailed description of the parameters.
    */
   public CQLSessionCache(
-      DatabaseType databaseType,
-      Duration cacheTTL,
       long cacheMaxSize,
+      Duration cacheTTL,
       String slaUserAgent,
       Duration slaUserTTL,
       CqlCredentialsFactory credentialsFactory,
       SessionFactory sessionFactory,
       MeterRegistry meterRegistry,
-      List<DeactivatedTenantConsumer> deactivatedTenantConsumer) {
+      List<DeactivatedTenantListener> deactivatedTenantConsumer) {
     this(
-        databaseType,
-        cacheTTL,
         cacheMaxSize,
+        cacheTTL,
         slaUserAgent,
         slaUserTTL,
         credentialsFactory,
@@ -97,9 +90,11 @@ public class CQLSessionCache {
    *
    * <p>Use this ctor for testing only.
    *
-   * @param databaseType The type of database being used,
-   * @param cacheTTL The time-to-live (TTL) duration for cache entries.
    * @param cacheMaxSize The maximum size of the cache.
+   * @param cacheTTL The time-to-live (TTL) duration for the session cache for non SLA users.
+   * @param slaUserAgent The user agent string used to identify SLA users, when present the
+   *     slaUserTTL will be used if the session is created for that SLA user agent.
+   * @param slaUserTTL The time-to-live (TTL) duration for SLA users
    * @param credentialsFactory A factory for creating {@link CqlCredentials} based on authentication
    *     tokens.
    * @param sessionFactory A factory for creating new {@link CqlSession} instances when needed.
@@ -111,106 +106,153 @@ public class CQLSessionCache {
    *     entries. If null, the default ticker is used. DO NOT USE in production.
    */
   CQLSessionCache(
-      DatabaseType databaseType,
-      Duration cacheTTL,
       long cacheMaxSize,
+      Duration cacheTTL,
       String slaUserAgent,
       Duration slaUserTTL,
       CqlCredentialsFactory credentialsFactory,
       SessionFactory sessionFactory,
       MeterRegistry meterRegistry,
-      List<DeactivatedTenantConsumer> deactivatedTenantConsumer,
+      List<DeactivatedTenantListener> deactivatedTenantConsumer,
       boolean asyncTaskOnCaller,
       Ticker cacheTicker) {
+    super(
+        "cql_sessions_cache",
+        cacheMaxSize,
+        cacheKey -> sessionFactory.apply(cacheKey.tenant(), cacheKey.credentials()),
+        buildCacheListeners(deactivatedTenantConsumer),
+        meterRegistry,
+        asyncTaskOnCaller,
+        cacheTicker);
 
-    this.databaseType = Objects.requireNonNull(databaseType, "databaseType must not be null");
-    this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
-    // we use case-insensitive compare
-    this.slaUserAgent = slaUserAgent == null || slaUserAgent.isBlank() ? null : slaUserAgent;
-    if (slaUserAgent != null) {
-      this.slaUserTTL =
-          Objects.requireNonNull(slaUserTTL, "slaUserTTL must not be null is slaUserAgent is set");
-    } else {
-      this.slaUserTTL = null;
-    }
-
+    Objects.requireNonNull(sessionFactory, "sessionFactory must not be null");
     this.credentialsFactory =
         Objects.requireNonNull(credentialsFactory, "credentialsFactory must not be null");
-    this.sessionFactory = Objects.requireNonNull(sessionFactory, "sessionFactory must not be null");
-    this.deactivatedTenantConsumers =
-        deactivatedTenantConsumer == null ? List.of() : List.copyOf(deactivatedTenantConsumer);
+    this.ttlSupplier = new DynamicTTLSupplier(cacheTTL, slaUserAgent, slaUserTTL);
 
     LOGGER.info(
-        "Initializing CQLSessionCache with cacheTTL={}, cacheMaxSize={}, databaseType={}, slaUserAgent={}, slaUserTTL={}, deactivatedTenantConsumers.count={}",
-        cacheTTL,
+        "Initializing CQLSessionCache with cacheMaxSize={}, ttlSupplier={}, deactivatedTenantConsumers.count={}",
         cacheMaxSize,
-        databaseType,
-        slaUserAgent,
-        slaUserTTL,
-        deactivatedTenantConsumers.size());
+        ttlSupplier,
+        deactivatedTenantConsumer.size());
+  }
 
-    var builder =
-        Caffeine.newBuilder()
-            .expireAfter(new SessionExpiry())
-            .maximumSize(cacheMaxSize)
-            .removalListener(this::onKeyRemoved)
-            .recordStats();
+  /**
+   * Converts the list of {@link DeactivatedTenantListener} into {@link DynamicTTLCacheListener}
+   * used by the superclass, AND sets up a listener to close sessions when removed from the cache.
+   */
+  private static List<DynamicTTLCacheListener<SessionCacheKey, CqlSession>> buildCacheListeners(
+      List<DeactivatedTenantListener> consumers) {
 
-    if (asyncTaskOnCaller) {
-      LOGGER.warn(
-          "CQLSessionCache CONFIGURED TO RUN ASYNC TASKS SUCH AS CALLBACKS ON THE CALLER THREAD, DO NOT USE IN PRODUCTION.");
-      builder = builder.executor(Runnable::run);
+    List<DynamicTTLCacheListener<SessionCacheKey, CqlSession>> listeners = new ArrayList<>();
+    listeners.add(new SessionCacheListener());
+
+    if (consumers != null) {
+      consumers.forEach(
+          deactivatedTenantListener -> {
+            listeners.add(
+                (key, value, cause) -> {
+                  if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace(
+                        "Tenant deactivated, notifying consumer. tenantId={}, cause={}",
+                        key.tenant(),
+                        cause);
+                  }
+
+                  try {
+                    deactivatedTenantListener.accept(key.tenant());
+                  } catch (Exception e) {
+                    LOGGER.warn(
+                        "Error calling DeactivatedTenantListener for tenant={}, listener.class={}",
+                        key.tenant(),
+                        classSimpleName(deactivatedTenantListener.getClass()),
+                        e);
+                  }
+                });
+          });
     }
-    if (cacheTicker != null) {
-      LOGGER.warn("CQLSessionCache CONFIGURED TO USE A CUSTOM TICKER, DO NOT USE IN PRODUCTION.");
-      builder = builder.ticker(cacheTicker);
-    }
-    LoadingCache<SessionCacheKey, SessionValueHolder> loadingCache =
-        builder.build(this::onLoadSession);
-
-    this.sessionCache =
-        CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
+    return listeners;
   }
 
   /**
    * Gets or creates a {@link CqlSession} for the provided request context
    *
    * @param requestContext {@link RequestContext} to get the session for.
-   * @return {@link CqlSession} for this tenant and credentials.
+   * @return A Uni with the {@link CqlSession} for this tenant and credentials, the session maybe
+   *     newly created or reused from the cache.
    */
-  public CqlSession getSession(RequestContext requestContext) {
+  public Uni<CqlSession> getSession(RequestContext requestContext) {
     Objects.requireNonNull(requestContext, "requestContext must not be null");
 
     // Validation happens when creating the credentials and session key
     return getSession(
+        requestContext.getTenantId().orElse(DEFAULT_TENANT),
+        requestContext.getCassandraToken().orElse(""),
+        requestContext.getUserAgent().orElse(""));
+  }
+
+  /**
+   * Gets or creates a {@link CqlSession} for the provided DB Request Context
+   *
+   * @param requestContext {@link CommandQueryExecutor.DBRequestContext} to get the session for.
+   * @return A Uni with the {@link CqlSession} for this tenant and credentials, the session maybe
+   *     newly created or reused from the cache.
+   */
+  public Uni<CqlSession> getSession(CommandQueryExecutor.DBRequestContext requestContext) {
+    Objects.requireNonNull(requestContext, "requestContext must not be null");
+
+    // Validation happens when creating the credentials and session key
+    return getSession(
+        requestContext.tenantId().orElse(DEFAULT_TENANT),
+        requestContext.authToken().orElse(""),
+        requestContext.userAgent().orElse(""));
+  }
+
+  /**
+   * Retrieves or creates a {@link CqlSession} for the specified tenant and authentication token.
+   *
+   * @param tenant the identifier for the tenant
+   * @param authToken the authentication token for accessing the session
+   * @param userAgent Nullable user agent, if matching the configured SLA checker user agent then
+   *     the session will use the TTL for the SLA user.
+   * @return A Uni with the {@link CqlSession} for this tenant and credentials, the session maybe
+   *     newly created or reused from the cache.
+   */
+  public Uni<CqlSession> getSession(String tenant, String authToken, String userAgent) {
+    return get(createCacheKey(tenant, authToken, userAgent));
+  }
+
+  /**
+   * Evicts a session from the cache based on the provided {@link RequestContext}.
+   *
+   * @see #evictSession(String, String, String) for details on eviction.
+   * @param requestContext The request context containing tenant, auth, and user agent info.
+   * @return {@code true} if a session was evicted, {@code false} otherwise.
+   */
+  public boolean evictSession(RequestContext requestContext) {
+    Objects.requireNonNull(requestContext, "requestContext must not be null for eviction");
+
+    // Validation happens when creating the credentials and session key
+    return evictSession(
         requestContext.getTenantId().orElse(""),
         requestContext.getCassandraToken().orElse(""),
         requestContext.getUserAgent().orElse(null));
   }
 
   /**
-   * Retrieves or creates a {@link CqlSession} for the specified tenant and authentication token.
-   *
-   * <p>If the database type is OFFLINE_WRITER, this method will attempt to retrieve the session
-   * from the cache without creating a new session if it is not present. For other database types, a
-   * new session will be created if it is not already cached.
+   * Evicts a session from the cache programmatically. This is intended for use in scenarios where a
+   * session is known to be in an unrecoverable state (e.g., after all cluster nodes restart) and
+   * needs to be forcibly removed to allow for a fresh connection on the next request.
    *
    * @param tenantId the identifier for the tenant
    * @param authToken the authentication token for accessing the session
-   * @param userAgent Nullable user agent, if matching the configured SLA checker user agent then
-   *     the session will use the TTL for the SLA user.
-   * @return a {@link CqlSession} associated with the given tenantId and authToken
+   * @param userAgent Nullable user agent
+   * @return {@code true} if a session was evicted, {@code false} otherwise.
    */
-  public CqlSession getSession(String tenantId, String authToken, String userAgent) {
+  public boolean evictSession(String tenantId, String authToken, String userAgent) {
 
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
-    // TODO: why is this different for OFFLINE ?
-    var holder =
-        switch (databaseType) {
-          case OFFLINE_WRITER -> sessionCache.getIfPresent(cacheKey);
-          default -> sessionCache.get(cacheKey);
-        };
-    return holder == null ? null : holder.session();
+    return evict(cacheKey);
   }
 
   /**
@@ -218,70 +260,16 @@ public class CQLSessionCache {
    * authToken, and userAgent.
    */
   @VisibleForTesting
-  protected Optional<CqlSession> peekSession(String tenantId, String authToken, String userAgent) {
-    var cacheKey = createCacheKey(tenantId, authToken, userAgent);
-    return Optional.ofNullable(sessionCache.getIfPresent(cacheKey))
-        .map(SessionValueHolder::session);
-  }
-
-  /** Process a key being removed from the cache for any reason. */
-  private void onKeyRemoved(
-      SessionCacheKey cacheKey, SessionValueHolder sessionHolder, RemovalCause cause) {
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("onKeyRemoved for sessionHolder={}, cause={}", sessionHolder, cause);
-    }
-
-    deactivatedTenantConsumers.forEach(
-        consumer -> {
-          try {
-            consumer.accept(cacheKey.tenantId(), cause);
-          } catch (Exception e) {
-            LOGGER.warn(
-                "Error calling deactivated tenant consumer: sessionHolder={}, cause={}, consumer.class={}",
-                sessionHolder,
-                cause,
-                classSimpleName(consumer.getClass()),
-                e);
-          }
-        });
-
-    // we need to manually close the session, the cache will not close it for us.
-    if (sessionHolder != null) {
-      // This will be running on a cache tread, any error will not make it to the user
-      // So we log it and swallow
-      try {
-        sessionHolder.session.close();
-      } catch (Exception e) {
-        LOGGER.error("Error closing CQLSession sessionHolder={}", sessionHolder, e);
-      }
-
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Closed CQL Session sessionHolder={}", sessionHolder);
-      }
-
-    } else if (LOGGER.isWarnEnabled()) {
-      LOGGER.warn("CQL Session was null when removing from cache, cacheKey={}", cacheKey);
-    }
-  }
-
-  /** Callback to create a new session when one is needed for the cache */
-  private SessionValueHolder onLoadSession(SessionCacheKey cacheKey) {
-
-    // factory will do some logging
-    var holder =
-        new SessionValueHolder(
-            sessionFactory.apply(cacheKey.tenantId(), cacheKey.credentials()), cacheKey);
-
-    if (LOGGER.isDebugEnabled()) {
-      // so we get the identity hash code of the session holder
-      LOGGER.debug("Loaded CQLSession into cache, holder={}", holder);
-    }
-    return holder;
+  protected Optional<CqlSession> peekSession(String tenant, String authToken, String userAgent) {
+    return getIfPresent(createCacheKey(tenant, authToken, userAgent));
   }
 
   /** Builds the cache key to use for the supplied tenant and authentication token. */
-  private SessionCacheKey createCacheKey(String tenantId, String authToken, String userAgent) {
+  private SessionCacheKey createCacheKey(String tenant, String authToken, String userAgent) {
+
+    Objects.requireNonNull(tenant, "tenant must not be null");
+    Objects.requireNonNull(authToken, "authToken must not be null");
+    Objects.requireNonNull(userAgent, "userAgent must not be null");
 
     var credentials = credentialsFactory.apply(authToken);
     if (credentials == null) {
@@ -289,81 +277,52 @@ public class CQLSessionCache {
       throw new IllegalStateException("credentialsFactory returned null");
     }
 
-    // userAgent arg can be null
-    // slaUserAgent forced to lower case in the ctor
-    var keyTTL =
-        slaUserAgent == null || !slaUserAgent.equalsIgnoreCase(userAgent) ? cacheTTL : slaUserTTL;
-
-    return switch (databaseType) {
-      case CASSANDRA, OFFLINE_WRITER ->
-          new SessionCacheKey(
-              tenantId == null || tenantId.isBlank() ? DEFAULT_TENANT : tenantId,
-              credentials,
-              keyTTL,
-              userAgent);
-      case ASTRA -> new SessionCacheKey(tenantId, credentials, keyTTL, userAgent);
-    };
+    return new SessionCacheKey(
+        tenant, credentials, ttlSupplier.ttlForUsageAgent(userAgent), userAgent);
   }
 
   /**
-   * Invalidate all entries and cleanup, for testing when items are invalidated.
+   * Key for CQLSession cache.
    *
-   * <p>Note: Removal cause will be {@link RemovalCause#EXPLICIT} for items.
+   * <p>
    */
-  @VisibleForTesting
-  void clearCache() {
-    LOGGER.info("Manually clearing CQLSession cache");
-    sessionCache.invalidateAll();
-    sessionCache.cleanUp();
-  }
+  static class SessionCacheKey implements DynamicTTLCache.CacheKey {
 
-  /**
-   * Clean up the cache, for testing when items are invalidated. The cache will try to be lazy, so
-   * things like evictions may not happen exactly at the TTL, this is a way to force it.
-   */
-  @VisibleForTesting
-  void cleanUp() {
-    sessionCache.cleanUp();
-  }
-
-  /** Key for CQLSession cache. */
-  static class SessionCacheKey {
-
-    private final String tenantId;
+    private final String tenant;
     private final CqlCredentials credentials;
     private final Duration ttl;
     // user agent only added for logging and debugging
-    @Nullable private final String userAgent;
+    private final String userAgent;
 
     /**
      * Creates a new instance of {@link SessionCacheKey}.
      *
-     * @param tenantId The identifier for the tenant.
+     * @param tenant The identifier for the tenant.
      * @param credentials The credentials used for authentication.
      * @param ttl The time-to-live (TTL) duration for the cache entry. Note: This is NOT used in the
      *     value quality of the cache key, it is set so dynamic TTL can be used per key.
      * @param userAgent Optional user agent for the request, not used in the equality of the key
      *     just for logging.
      */
-    SessionCacheKey(
-        String tenantId, CqlCredentials credentials, Duration ttl, @Nullable String userAgent) {
-      if (tenantId == null || tenantId.isBlank()) {
-        tenantId = "";
-      }
-      this.tenantId = tenantId;
+    SessionCacheKey(String tenant, CqlCredentials credentials, Duration ttl, String userAgent) {
+
+      // tenant is only used to identify the session, not passed to backend db
+      // normalising the unset value to null
+      this.tenant = Objects.requireNonNull(tenant, "tenant must not be null");
       this.credentials = Objects.requireNonNull(credentials, "credentials must not be null");
       this.ttl = Objects.requireNonNull(ttl, "ttl must not be null");
-      this.userAgent = userAgent;
+      this.userAgent = Objects.requireNonNull(userAgent, "userAgent must not be null");
     }
 
-    public String tenantId() {
-      return tenantId;
+    String tenant() {
+      return tenant;
     }
 
-    public CqlCredentials credentials() {
+    CqlCredentials credentials() {
       return credentials;
     }
 
+    @Override
     public Duration ttl() {
       return ttl;
     }
@@ -373,26 +332,25 @@ public class CQLSessionCache {
       if (this == o) {
         return true;
       }
-      if (!(o instanceof SessionCacheKey)) {
+      if (!(o instanceof SessionCacheKey that)) {
         return false;
       }
-      SessionCacheKey that = (SessionCacheKey) o;
-      return tenantId.equals(that.tenantId) && credentials.equals(that.credentials);
+      return tenant.equals(that.tenant) && credentials.equals(that.credentials);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(tenantId, credentials);
+      return Objects.hash(tenant, credentials);
     }
 
     @Override
     public String toString() {
       return new StringBuilder("SessionCacheKey{")
-          .append("tenantId='")
-          .append(tenantId)
+          .append("tenant='")
+          .append(tenant)
           .append('\'')
           .append(", credentials=")
-          .append(credentials) // creds should make sure they dont include sensitive info
+          .append(credentials) // creds should make sure they don't include sensitive info
           .append(", ttl=")
           .append(ttl)
           .append(", userAgent='")
@@ -403,92 +361,67 @@ public class CQLSessionCache {
   }
 
   /**
-   * Holder for the value added to the cache to make it very clear what key was used when it was
-   * added so we can get the TTL used when it was loaded. Used for dynamic TTL in the Expiry class
+   * Listens for changes from the underlying dynamic TTL cache, and does things we need as a CQL
+   * Session Cache such as close the session when removed from the cache.
    */
-  record SessionValueHolder(CqlSession session, SessionCacheKey loadingKey) {
+  static class SessionCacheListener
+      implements DynamicTTLCacheListener<SessionCacheKey, CqlSession> {
 
-    SessionValueHolder {
-      Objects.requireNonNull(session, "session must not be null");
-      Objects.requireNonNull(loadingKey, "loadingKey must not be null");
-    }
-
-    /**
-     * Note that the cache can decide when it wants to actually remove an expired key, so we may be
-     * closing a session for a tenant at the same time we are opening one. The {@link #toString()}
-     * includes the identity hash code to help with debugging.
-     */
     @Override
-    public String toString() {
-      return new StringBuilder("SessionValueHolder{")
-          .append("identityHashCode=")
-          .append(System.identityHashCode(this))
-          .append(", loadingKey=")
-          .append(loadingKey)
-          .append('}')
-          .toString();
+    public void onRemoved(SessionCacheKey key, CqlSession value, RemovalCause cause) {
+      // we need to manually close the session, the cache will not close it for us.
+
+      if (value == null) {
+        if (LOGGER.isWarnEnabled()) {
+          LOGGER.warn("CQL Session was null when removing from cache, key={}", key);
+        }
+        return;
+      }
+
+      // This will be running on a cache tread, any error will not make it to the user
+      // So we log errors and swallow
+      // getting name from the session now so we don't touch it after closing it, may not be
+      // reliable
+      var sessionName = value.getName();
+      try {
+        value.close();
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Closed CQL Session session.name={}", sessionName);
+        }
+      } catch (Exception e) {
+        LOGGER.error("Error closing CQLSession session.name={}", sessionName, e);
+      }
     }
   }
 
   /**
-   * Dynamic cache TTL for the session cache.
+   * Callback when a tenant is deactivated.
    *
-   * <p>We use the maximum TTL between either the key that was used the load the session, or the
-   * current key being used to access it. The TTL is set when the key is created based on the user
-   * agent coming in. So if a SLA user agent adds it, then a non SLA uses it the non SLA user agent
-   * TTL will be used.
-   *
-   * <p>The laster user who access the session will set the TTL for the session if their TTL is
-   * higher.
+   * <p>
    */
-  static class SessionExpiry implements Expiry<SessionCacheKey, SessionValueHolder> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SessionExpiry.class);
-
-    @Override
-    public long expireAfterCreate(SessionCacheKey key, SessionValueHolder value, long currentTime) {
-      return value.loadingKey().ttl().toNanos();
-    }
-
-    @Override
-    public long expireAfterUpdate(
-        SessionCacheKey key, SessionValueHolder value, long currentTime, long currentDuration) {
-      return currentDuration;
-    }
-
-    @Override
-    public long expireAfterRead(
-        SessionCacheKey key, SessionValueHolder value, long currentTime, long currentDuration) {
-      long accessTTL = key.ttl().toNanos();
-      long loadTTL = value.loadingKey().ttl().toNanos();
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace(
-            "expireAfterRead() - key.tenant={}, key.ttl={}, key.identityHashCode={}, value.loadingKey.ttl={}, value.loadingKey.identityHashCode={}",
-            key.tenantId(),
-            key.ttl(),
-            System.identityHashCode(key),
-            value.loadingKey.ttl(),
-            System.identityHashCode(value.loadingKey));
-      }
-      return Math.max(accessTTL, loadTTL);
-    }
-  }
-
-  /** Callback when a tenant is deactivated. */
   @FunctionalInterface
-  public interface DeactivatedTenantConsumer extends BiConsumer<String, RemovalCause> {
-    void accept(String tenantId, RemovalCause cause);
+  public interface DeactivatedTenantListener extends Consumer<String> {
+    void accept(String tenant);
   }
 
-  /** Called to create credentials used with the session and session cache key. */
+  /**
+   * Called to create credentials used with the session and session cache key.
+   *
+   * <p>
+   */
   @FunctionalInterface
   public interface CredentialsFactory extends Function<String, CqlCredentials> {
     CqlCredentials apply(String authToken);
   }
 
-  /** Called to create a new session when one is needed. */
+  /**
+   * Called to create a new session when one is needed.
+   *
+   * <p>
+   */
   @FunctionalInterface
-  public interface SessionFactory extends BiFunction<String, CqlCredentials, CqlSession> {
-    CqlSession apply(String tenantId, CqlCredentials credentials);
+  public interface SessionFactory
+      extends BiFunction<String, CqlCredentials, CompletionStage<CqlSession>> {
+    CompletionStage<CqlSession> apply(String tenant, CqlCredentials credentials);
   }
 }

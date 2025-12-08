@@ -13,7 +13,15 @@ quarkus:
       enabled: false
     test-port: 9080
   log:
+    console:
+      format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
     category:
-      # production log level for this categoy is DEBUG, way too noisy for tests
+      # production log level for this category is DEBUG, way too noisy for tests
       'io.stargate':
         level: WARN
+      'io.stargate.sgv2.jsonapi.service.cqldriver':
+        level: INFO
+      # Suppress reflection hierarchy warnings for external dependencies not in Jandex
+      # Fine for JVM mode; if building native images, use index-dependency instead
+      'io.quarkus.deployment.steps.ReflectiveHierarchyStep':
+        level: ERROR

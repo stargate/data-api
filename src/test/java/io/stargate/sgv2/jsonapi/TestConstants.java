@@ -1,11 +1,17 @@
 package io.stargate.sgv2.jsonapi;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -31,13 +37,47 @@ import org.apache.commons.lang3.RandomStringUtils;
  */
 public class TestConstants {
 
+  public final DatabaseType DATABASE_TYPE = DatabaseType.ASTRA;
+  public final String APP_NAME;
+
+  // ============================================================
   // Names
-  public final String TEST_COMMAND_NAME = "testCommand";
+  // ============================================================
+
+  /**
+   * A unique identifier for the test run, append to names to ensure uniqueness and stable ID for
+   * the test class instance.
+   */
+  public final String CORRELATION_ID;
+
+  public final String COMMAND_NAME;
   public final String KEYSPACE_NAME;
   public final String COLLECTION_NAME;
+  public final String TABLE_NAME;
+
   public final SchemaObjectName SCHEMA_OBJECT_NAME;
 
-  // Schema objects for testing
+  /** Raw SLA user agent, Use {@link #SLA_USER_AGENT} */
+  public final String SLA_USER_AGENT_NAME = "Datastax-SLA-Checker";
+
+  // ============================================================
+  // Request Context
+  // ============================================================
+
+  public final String TENANT;
+
+  public final String AUTH_TOKEN;
+
+  /** A non SLA user agent for the test run */
+  public final String USER_AGENT;
+
+  /** the DS SLA USer Agent */
+  public final String SLA_USER_AGENT;
+
+  // ============================================================
+  // Schema Objects
+  // ============================================================
+
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
@@ -46,11 +86,33 @@ public class TestConstants {
 
   public TestConstants() {
 
-    KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-    COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
+    // ============================================================
+    // Names
+    // ============================================================
+    CORRELATION_ID = "test-id-" + RandomStringUtils.insecure().nextAlphanumeric(16);
+
+    COMMAND_NAME = "command-" + CORRELATION_ID;
+    KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;
+    COLLECTION_NAME = "collection-" + CORRELATION_ID;
+    TABLE_NAME = "table-" + CORRELATION_ID;
+
+    APP_NAME = "Stargate DATA API -" + CORRELATION_ID;
+
     SCHEMA_OBJECT_NAME = new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
 
-    // Schema objects for testing
+    // ============================================================
+    // Request Context
+    // ============================================================
+
+    TENANT = "tenant-" + CORRELATION_ID;
+    AUTH_TOKEN = "auth-token-" + CORRELATION_ID;
+    USER_AGENT = "user-agent/" + CORRELATION_ID;
+    SLA_USER_AGENT = SLA_USER_AGENT_NAME + "/" + CORRELATION_ID;
+
+    // ============================================================
+    // Schema Objects
+    // ============================================================
+
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
             SCHEMA_OBJECT_NAME,
@@ -99,7 +161,7 @@ public class TestConstants {
 
   // CommandContext for working on the schema objects above
   public CommandContext<CollectionSchemaObject> collectionContext() {
-    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
+    return collectionContext(COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
   }
 
   public CommandContext<CollectionSchemaObject> collectionContext(
@@ -107,6 +169,19 @@ public class TestConstants {
       CollectionSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
+
+    var embeddingCredentials = mock(EmbeddingCredentials.class);
+    when(embeddingCredentials.tenantId()).thenReturn("test-tenant");
+    when(embeddingCredentials.apiKey()).thenReturn(Optional.of("test-apiKey"));
+    when(embeddingCredentials.accessId()).thenReturn(Optional.of("test-accessId"));
+    when(embeddingCredentials.secretId()).thenReturn(Optional.of("test-secretId"));
+
+    var embeddingCredentialsSupplier = mock(EmbeddingCredentialsSupplier.class);
+    when(embeddingCredentialsSupplier.create(any(), any())).thenReturn(embeddingCredentials);
+
+    var requestContext = mock(RequestContext.class);
+    when(requestContext.getEmbeddingCredentialsSupplier()).thenReturn(embeddingCredentialsSupplier);
+    when(requestContext.getTenantId()).thenReturn(Optional.of("test-tenant"));
 
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(
@@ -119,13 +194,21 @@ public class TestConstants {
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
-        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .withRequestContext(requestContext)
         .build();
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext() {
     return keyspaceContext(
-        TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
+        COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
+  }
+
+  public RequestContext requestContext() {
+    return new RequestContext(
+        Optional.of("test-tenant"),
+        Optional.empty(),
+        new RerankingCredentials("test-tenant", Optional.empty()),
+        "test-user-agent");
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(
@@ -143,7 +226,7 @@ public class TestConstants {
         .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(schema)
         .withCommandName(commandName)
-        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .withRequestContext(requestContext())
         .build();
   }
 
@@ -156,8 +239,8 @@ public class TestConstants {
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
-        .withCommandName(TEST_COMMAND_NAME)
-        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .withCommandName(COMMAND_NAME)
+        .withRequestContext(requestContext())
         .build();
   }
 }
