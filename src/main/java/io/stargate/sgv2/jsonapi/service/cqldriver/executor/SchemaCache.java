@@ -218,7 +218,8 @@ public class SchemaCache {
     }
 
     private boolean hasTenantId(String context) {
-      if (tenant == null) {
+
+      if (tenant == null || tenant.toString().isBlank()) {
         LOGGER.error(
             "SchemaCacheSchemaChangeListener tenant is null or blank when expected to be set - {}",
             context);
@@ -228,6 +229,7 @@ public class SchemaCache {
     }
 
     private void evictTable(String context, TableMetadata tableMetadata) {
+
       if (hasTenantId(context)) {
         schemaCache.evictTable(
             tenant, tableMetadata.getKeyspace().asInternal(), tableMetadata.getName().asInternal());

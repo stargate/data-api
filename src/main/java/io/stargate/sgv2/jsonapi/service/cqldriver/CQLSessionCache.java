@@ -50,12 +50,6 @@ import org.slf4j.LoggerFactory;
 public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCacheKey, CqlSession> {
   private static final Logger LOGGER = LoggerFactory.getLogger(CQLSessionCache.class);
 
-  /**
-   * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
-   * request amorton; 17 Nov 2025 - will be removed soon, will refactor so we have a Tenant object
-   */
-  public static final String DEFAULT_TENANT = "default_tenant";
-
   private final DynamicTTLSupplier ttlSupplier;
 
   private final CqlCredentialsFactory credentialsFactory;

@@ -37,8 +37,8 @@ public class MetricsTenantDeactivationConsumer
    */
   @Override
   public void accept(Tenant tenant) {
-    if (tenant == null) {
-      LOGGER.warn("Received null tenant for deactivation");
+    if (tenant == null || tenant.toString() == null) {
+      LOGGER.warn("Received null or blank tenant for deactivation");
       return;
     }
 
