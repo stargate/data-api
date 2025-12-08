@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
@@ -229,5 +230,26 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
             "The command attempted to sort the vector column: %s with a limit of %s."
                 .formatted(
                     SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL), limit));
+  }
+
+  @Test
+  public void sortMismatchedDimension() {
+
+    var arrayNode = JsonNodeFactory.instance.arrayNode(1);
+    for (int i = 0; i < 1; i++) {
+      arrayNode.add(0.1f);
+    }
+    var sort =
+        ImmutableMap.of(
+            SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+            (Object) arrayNode);
+
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .find(null, null, sort, null)
+        .hasSingleApiError(
+            SortException.Code.CANNOT_VECTOR_SORT_ON_MISMATCHED_VECTOR_DIMENSIONS,
+            SortException.class,
+            "The command attempted to vector sort vector columns with a mismatched vector dimension");
   }
 }

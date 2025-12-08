@@ -58,6 +58,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
     return _this();
   }
 
+  @SuppressWarnings("unchecked")
   protected T _this() {
     return (T) this;
   }

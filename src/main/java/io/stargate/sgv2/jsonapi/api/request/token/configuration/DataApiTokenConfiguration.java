@@ -27,7 +27,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import java.util.Optional;
 
-/** Configuration for activating a correct {@link CassandraTokenResolver}. */
+/** Configuration for activating a correct {@link DataApiTokenResolver}. */
 public class DataApiTokenConfiguration {
 
   @Produces

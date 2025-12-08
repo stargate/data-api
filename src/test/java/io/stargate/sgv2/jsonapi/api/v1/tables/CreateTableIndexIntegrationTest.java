@@ -865,6 +865,28 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               "Request invalid, mismatching JSON structure: underlying problem");
     }
 
+    @MethodSource("invalidIndexFunction")
+    @ParameterizedTest
+    public void invalidIndexFunctionForScalar(Object indexFunction) {
+      // Try to create an index on a scalar column with an index function
+      // Should just use the column name as a string
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                      {
+                        "name": "text_field_3_invalid_idx",
+                        "definition": {
+                          "column": {"text_field_3" : %s}
+                        }
+                      }
+                      """
+                  .formatted(indexFunction))
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN,
+              SchemaException.class,
+              "Command has an invalid format for index creation column.");
+    }
+
     private static Stream<Arguments> invalidIndexFunction() {
       return Stream.of(
           Arguments.of("\"$keyss\""),
@@ -927,6 +949,29 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS,
               SchemaException.class,
               "Index function `entries` can not apply to map column when analyze options are specified.");
+    }
+
+    @Test
+    public void emptyOptionsForEntriesIndexOnMap() {
+      // Test for issue #1911: empty options object should be treated same as omitting options
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                  {
+                                    "name": "idx_map_type_entries_empty_options",
+                                    "definition": {
+                                      "column": "map_type",
+                                      "options": {}
+                                    }
+                                  }
+                                  """)
+          .wasSuccessful();
+
+      verifyCreatedIndex("idx_map_type_entries_empty_options");
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("idx_map_type_entries_empty_options", false)
+          .wasSuccessful();
     }
   }
 

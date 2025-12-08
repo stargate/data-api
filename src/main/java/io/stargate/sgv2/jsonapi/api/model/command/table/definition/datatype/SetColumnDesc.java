@@ -58,7 +58,10 @@ public class SetColumnDesc extends ComplexColumnDesc {
 
     /** Create a {@link SetColumnDesc} from a JSON node representing the value type. */
     public SetColumnDesc create(
-        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode)
+        String columnName,
+        SchemaDescSource schemaDescSource,
+        JsonParser jsonParser,
+        JsonNode columnDescNode)
         throws JsonProcessingException {
 
       // Cascade deserialization to get the value type, validation is done when we
@@ -67,7 +70,8 @@ public class SetColumnDesc extends ComplexColumnDesc {
       var valueType =
           valueTypeNode.isMissingNode()
               ? null
-              : ColumnDescDeserializer.deserialize(valueTypeNode, jsonParser, schemaDescSource);
+              : ColumnDescDeserializer.deserialize(
+                  columnName, valueTypeNode, jsonParser, schemaDescSource);
 
       return new SetColumnDesc(schemaDescSource, valueType);
     }

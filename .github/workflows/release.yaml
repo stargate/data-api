@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -153,7 +153,7 @@ jobs:
             profile: ''
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -197,7 +197,7 @@ jobs:
             profile: ''
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -231,7 +231,7 @@ jobs:
       - name: Download branding assets
         if: ${{ !inputs.skipPublish }}
         run : |
-          curl https://www.datastax.com/favicon.ico -o ./src/main/resources/META-INF/branding/favicon.ico
+          curl https://www.ibm.com/favicon.ico -o ./src/main/resources/META-INF/branding/favicon.ico
           curl https://cdn.sanity.io/files/bbnkhnhl/production/cf8b48832cfd43cdb24aec0e0d1c656e9234b620.zip -o icons.zip
           unzip -j icons.zip 'Brand\ Icons/astra-square.png' -d ./src/main/resources/META-INF/branding/
           mv ./src/main/resources/META-INF/branding/astra-square.png ./src/main/resources/META-INF/branding/logo.png
@@ -242,9 +242,9 @@ jobs:
         env:
           QUARKUS_APPLICATION_NAME: 'Astra DB Serverless Data API'
           QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB Serverless Data API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra/astra-db-vector/api-reference/data-api.html) for additional information.'
-          QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.datastax.com/legal'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.ibm.com/legal'
           QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_NAME: 'DataStax'
-          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_URL: 'https://www.datastax.com/contact-us'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_URL: 'https://www.ibm.com/products/datastax'
           QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_NAME: ''
           QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_URL: ''
         run: |
@@ -310,7 +310,7 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -351,7 +351,7 @@ jobs:
 
     steps:
       - name: Repository dispatch
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.STARGATE_GH_RELEASE }}
           repository: riptano/embedding-gateway

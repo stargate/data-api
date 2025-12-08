@@ -172,7 +172,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
           }
           default -> {
             nonNullCount++;
-            result.put(columnName, codec.toJSON(objectMapper, columnValue));
+            result.set(columnName, codec.toJSON(objectMapper, columnValue));
           }
         }
 

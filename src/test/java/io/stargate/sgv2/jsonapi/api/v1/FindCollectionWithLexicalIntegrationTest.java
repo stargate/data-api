@@ -36,10 +36,10 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class FindCollectionWithLexicalIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
   static final String COLLECTION_WITH_LEXICAL =
-      "coll_lexical_sort_" + RandomStringUtils.randomNumeric(16);
+      "coll_lexical_sort_" + RandomStringUtils.insecure().nextNumeric(16);
 
   static final String COLLECTION_WITHOUT_LEXICAL =
-      "coll_no_lexical_sort_" + RandomStringUtils.randomNumeric(16);
+      "coll_no_lexical_sort_" + RandomStringUtils.insecure().nextNumeric(16);
 
   static final String DOC1_JSON = lexicalDoc(1, "monkey banana", "value1", "top");
   static final String DOC2_JSON = lexicalDoc(2, "monkey", "value2", "top");
@@ -239,7 +239,7 @@ public class FindCollectionWithLexicalIntegrationTest
           .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
           .body(
               "errors[0].message",
-              containsString("only be used on Collections for which Lexical feature is enabled"));
+              containsString("only be used on collections for which Lexical feature is enabled"));
     }
 
     @Test
@@ -258,7 +258,7 @@ public class FindCollectionWithLexicalIntegrationTest
           .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
           .body(
               "errors[0].message",
-              containsString("only be used on Collections for which Lexical feature is enabled"));
+              containsString("only be used on collections for which Lexical feature is enabled"));
     }
 
     @Test

@@ -25,7 +25,6 @@ import org.junit.jupiter.params.provider.MethodSource;
  * cql where statement after applying the filters. For table filter deserialization related tests,
  * go to {@link TableFilterClauseBuilderTest}
  */
-@Nested
 class TableFilterTest {
 
   private static final TestData TEST_DATA = new TestData();

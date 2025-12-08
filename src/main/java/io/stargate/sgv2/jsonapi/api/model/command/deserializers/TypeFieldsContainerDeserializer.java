@@ -23,17 +23,14 @@ public class TypeFieldsContainerDeserializer extends JsonDeserializer<ColumnsDes
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
     var container = new ColumnsDescContainer();
-    var fieldsIter = deserializationContext.readTree(jsonParser).fields();
+    var json = deserializationContext.readTree(jsonParser);
 
-    // cannot use forEach because want IOException to propagate
-    while (fieldsIter.hasNext()) {
-
-      // we aare deserializing from the user, so using USER_SCHEMA_OBJECT
-      Map.Entry<String, JsonNode> entry = fieldsIter.next();
+    for (Map.Entry<String, JsonNode> entry : json.properties()) {
+      // we are deserializing from the user, so using USER_SCHEMA_OBJECT
       container.put(
           entry.getKey(),
           ColumnDescDeserializer.deserialize(
-              entry.getValue(), jsonParser, SchemaDescSource.USER_SCHEMA_OBJECT));
+              entry.getKey(), entry.getValue(), jsonParser, SchemaDescSource.USER_SCHEMA_OBJECT));
     }
     return container;
   }

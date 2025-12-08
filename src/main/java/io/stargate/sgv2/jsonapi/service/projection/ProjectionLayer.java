@@ -254,7 +254,7 @@ class ProjectionLayer {
     // 2. Match, non-terminal -> continue checking recursively
     // 3. No match, prune (remove)
 
-    var it = subtree.fields();
+    var it = subtree.properties().iterator();
     while (it.hasNext()) {
       var entry = it.next();
       ProjectionLayer nextLayer = nextLayers.get(entry.getKey());

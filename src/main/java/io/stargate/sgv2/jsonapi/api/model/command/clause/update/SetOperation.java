@@ -67,9 +67,7 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   private static SetOperation construct(
       ObjectNode args, boolean onlyOnInsert, UpdateOperator operator) {
     List<Action> additions = new ArrayList<>();
-    var it = args.fields();
-    while (it.hasNext()) {
-      var entry = it.next();
+    for (var entry : args.properties()) {
       // 19-May-2023, tatu: As per [json-api#433] need to allow _id override on $setOnInsert
       String path = entry.getKey();
       if (!onlyOnInsert || !DocumentConstants.Fields.DOC_ID.equals(path)) {

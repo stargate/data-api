@@ -23,7 +23,6 @@ import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -32,7 +31,7 @@ public class FindOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject FindOneCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
 
@@ -41,13 +40,10 @@ public class FindOneCommandResolverTest {
     commandContext = testConstants.collectionContext();
   }
 
-  @Nested
-  class Resolve {
-
-    @Test
-    public void idFilterCondition() throws Exception {
-      String json =
-          """
+  @Test
+  public void idFilterCondition() throws Exception {
+    String json =
+        """
                           {
                             "findOne": {
                               "filter" : {"_id" : "id"}
@@ -55,33 +51,33 @@ public class FindOneCommandResolverTest {
                           }
                           """;
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              op -> {
-                IDCollectionFilter filter =
-                    new IDCollectionFilter(
-                        IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            op -> {
+              IDCollectionFilter filter =
+                  new IDCollectionFilter(
+                      IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
-                assertThat(op.objectMapper()).isEqualTo(objectMapper);
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.limit()).isEqualTo(1);
-                assertThat(op.pageSize()).isEqualTo(1);
-                assertThat(op.pageState()).isNull();
-                assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                assertThat(op.orderBy()).isNull();
-                assertThat(op.singleResponse()).isTrue();
-              });
-    }
+              assertThat(op.objectMapper()).isEqualTo(objectMapper);
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.limit()).isEqualTo(1);
+              assertThat(op.pageSize()).isEqualTo(1);
+              assertThat(op.pageState()).isNull();
+              assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+              assertThat(op.orderBy()).isNull();
+              assertThat(op.singleResponse()).isTrue();
+            });
+  }
 
-    @Test
-    public void filterConditionAndSort() throws Exception {
-      String json =
-          """
+  @Test
+  public void filterConditionAndSort() throws Exception {
+    String json =
+        """
                           {
                             "findOne": {
                               "sort" : {"user.name" : 1, "user.age" : -1},
@@ -90,37 +86,37 @@ public class FindOneCommandResolverTest {
                           }
                           """;
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              op -> {
-                TextCollectionFilter filter =
-                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            op -> {
+              TextCollectionFilter filter =
+                  new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
-                assertThat(op.objectMapper()).isEqualTo(objectMapper);
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.limit()).isEqualTo(1);
-                assertThat(op.pageSize()).isEqualTo(100);
-                assertThat(op.pageState()).isNull();
-                assertThat(op.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                assertThat(op.orderBy()).hasSize(2);
-                assertThat(op.orderBy())
-                    .isEqualTo(
-                        List.of(
-                            new FindCollectionOperation.OrderBy("user.name", true),
-                            new FindCollectionOperation.OrderBy("user.age", false)));
-                assertThat(op.singleResponse()).isTrue();
-              });
-    }
+              assertThat(op.objectMapper()).isEqualTo(objectMapper);
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.limit()).isEqualTo(1);
+              assertThat(op.pageSize()).isEqualTo(100);
+              assertThat(op.pageState()).isNull();
+              assertThat(op.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
+              assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+              assertThat(op.orderBy()).hasSize(2);
+              assertThat(op.orderBy())
+                  .isEqualTo(
+                      List.of(
+                          new FindCollectionOperation.OrderBy("user.name", true),
+                          new FindCollectionOperation.OrderBy("user.age", false)));
+              assertThat(op.singleResponse()).isTrue();
+            });
+  }
 
-    @Test
-    public void filterConditionAndVectorSearch() throws Exception {
-      String json =
-          """
+  @Test
+  public void filterConditionAndVectorSearch() throws Exception {
+    String json =
+        """
               {
                 "findOne": {
                   "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
@@ -129,36 +125,36 @@ public class FindOneCommandResolverTest {
               }
               """;
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              find -> {
-                TextCollectionFilter filter =
-                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            find -> {
+              TextCollectionFilter filter =
+                  new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
-                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
-                assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
-                assertThat(find.pageSize()).isEqualTo(1);
-                assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(find.skip()).isZero();
-                assertThat(find.maxSortReadLimit()).isZero();
-                assertThat(find.singleResponse()).isTrue();
-                assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-              });
-    }
+              float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
+              assertThat(find.objectMapper()).isEqualTo(objectMapper);
+              assertThat(find.commandContext()).isEqualTo(commandContext);
+              assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
+              assertThat(find.pageSize()).isEqualTo(1);
+              assertThat(find.limit()).isEqualTo(1);
+              assertThat(find.pageState()).isNull();
+              assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(find.skip()).isZero();
+              assertThat(find.maxSortReadLimit()).isZero();
+              assertThat(find.singleResponse()).isTrue();
+              assertThat(find.vector()).containsExactly(vector);
+              assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+            });
+  }
 
-    @Test
-    public void filterConditionAndVectorSearchWithOptionSimilarity() throws Exception {
-      String json =
-          """
+  @Test
+  public void filterConditionAndVectorSearchWithOptionSimilarity() throws Exception {
+    String json =
+        """
                       {
                         "findOne": {
                           "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
@@ -168,39 +164,39 @@ public class FindOneCommandResolverTest {
                       }
                       """;
 
-      final DocumentProjector projector = DocumentProjector.createFromDefinition(null, true);
+    final DocumentProjector projector = DocumentProjector.createFromDefinition(null, true);
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              find -> {
-                TextCollectionFilter filter =
-                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            find -> {
+              TextCollectionFilter filter =
+                  new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
-                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
-                assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(projector);
-                assertThat(find.pageSize()).isEqualTo(1);
-                assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(find.skip()).isZero();
-                assertThat(find.maxSortReadLimit()).isZero();
-                assertThat(find.singleResponse()).isTrue();
-                assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                assertThat(find.includeSortVector()).isFalse();
-              });
-    }
+              float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
+              assertThat(find.objectMapper()).isEqualTo(objectMapper);
+              assertThat(find.commandContext()).isEqualTo(commandContext);
+              assertThat(find.projection()).isEqualTo(projector);
+              assertThat(find.pageSize()).isEqualTo(1);
+              assertThat(find.limit()).isEqualTo(1);
+              assertThat(find.pageState()).isNull();
+              assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(find.skip()).isZero();
+              assertThat(find.maxSortReadLimit()).isZero();
+              assertThat(find.singleResponse()).isTrue();
+              assertThat(find.vector()).containsExactly(vector);
+              assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+              assertThat(find.includeSortVector()).isFalse();
+            });
+  }
 
-    @Test
-    public void filterConditionAndVectorSearchWithIncludeSortVector() throws Exception {
-      String json =
-          """
+  @Test
+  public void filterConditionAndVectorSearchWithIncludeSortVector() throws Exception {
+    String json =
+        """
           {
             "findOne": {
               "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
@@ -210,39 +206,39 @@ public class FindOneCommandResolverTest {
           }
           """;
 
-      final DocumentProjector projector = DocumentProjector.defaultProjector();
+    final DocumentProjector projector = DocumentProjector.defaultProjector();
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              find -> {
-                TextCollectionFilter filter =
-                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            find -> {
+              TextCollectionFilter filter =
+                  new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
-                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
-                assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(projector);
-                assertThat(find.pageSize()).isEqualTo(1);
-                assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(find.skip()).isZero();
-                assertThat(find.maxSortReadLimit()).isZero();
-                assertThat(find.singleResponse()).isTrue();
-                assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                assertThat(find.includeSortVector()).isTrue();
-              });
-    }
+              float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
+              assertThat(find.objectMapper()).isEqualTo(objectMapper);
+              assertThat(find.commandContext()).isEqualTo(commandContext);
+              assertThat(find.projection()).isEqualTo(projector);
+              assertThat(find.pageSize()).isEqualTo(1);
+              assertThat(find.limit()).isEqualTo(1);
+              assertThat(find.pageState()).isNull();
+              assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(find.skip()).isZero();
+              assertThat(find.maxSortReadLimit()).isZero();
+              assertThat(find.singleResponse()).isTrue();
+              assertThat(find.vector()).containsExactly(vector);
+              assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+              assertThat(find.includeSortVector()).isTrue();
+            });
+  }
 
-    @Test
-    public void filterConditionWithIncludeSortVector() throws Exception {
-      String json =
-          """
+  @Test
+  public void filterConditionWithIncludeSortVector() throws Exception {
+    String json =
+        """
               {
                 "findOne": {
                   "filter" : {"status" : "active"},
@@ -251,38 +247,38 @@ public class FindOneCommandResolverTest {
               }
               """;
 
-      final DocumentProjector projector = DocumentProjector.defaultProjector();
+    final DocumentProjector projector = DocumentProjector.defaultProjector();
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              find -> {
-                TextCollectionFilter filter =
-                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            find -> {
+              TextCollectionFilter filter =
+                  new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
-                assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(projector);
-                assertThat(find.pageSize()).isEqualTo(1);
-                assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(find.skip()).isZero();
-                assertThat(find.maxSortReadLimit()).isZero();
-                assertThat(find.singleResponse()).isTrue();
-                assertThat(find.vector()).isNull();
-                assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                assertThat(find.includeSortVector()).isTrue();
-              });
-    }
+              assertThat(find.objectMapper()).isEqualTo(objectMapper);
+              assertThat(find.commandContext()).isEqualTo(commandContext);
+              assertThat(find.projection()).isEqualTo(projector);
+              assertThat(find.pageSize()).isEqualTo(1);
+              assertThat(find.limit()).isEqualTo(1);
+              assertThat(find.pageState()).isNull();
+              assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(find.skip()).isZero();
+              assertThat(find.maxSortReadLimit()).isZero();
+              assertThat(find.singleResponse()).isTrue();
+              assertThat(find.vector()).isNull();
+              assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+              assertThat(find.includeSortVector()).isTrue();
+            });
+  }
 
-    @Test
-    public void noFilterCondition() throws Exception {
-      String json =
-          """
+  @Test
+  public void noFilterCondition() throws Exception {
+    String json =
+        """
                           {
                             "findOne": {
 
@@ -290,28 +286,28 @@ public class FindOneCommandResolverTest {
                           }
                           """;
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              op -> {
-                assertThat(op.objectMapper()).isEqualTo(objectMapper);
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.limit()).isEqualTo(1);
-                assertThat(op.pageSize()).isEqualTo(1);
-                assertThat(op.pageState()).isNull();
-                assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(op.dbLogicalExpression().filters()).isEmpty();
-                assertThat(op.singleResponse()).isTrue();
-              });
-    }
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            op -> {
+              assertThat(op.objectMapper()).isEqualTo(objectMapper);
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.limit()).isEqualTo(1);
+              assertThat(op.pageSize()).isEqualTo(1);
+              assertThat(op.pageState()).isNull();
+              assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(op.dbLogicalExpression().filters()).isEmpty();
+              assertThat(op.singleResponse()).isTrue();
+            });
+  }
 
-    @Test
-    public void noFilterConditionEmptyOptions() throws Exception {
-      String json =
-          """
+  @Test
+  public void noFilterConditionEmptyOptions() throws Exception {
+    String json =
+        """
                           {
                             "findOne": {
                                 "options": { }
@@ -319,28 +315,28 @@ public class FindOneCommandResolverTest {
                           }
                             """;
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              op -> {
-                assertThat(op.objectMapper()).isEqualTo(objectMapper);
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.limit()).isEqualTo(1);
-                assertThat(op.pageSize()).isEqualTo(1);
-                assertThat(op.pageState()).isNull();
-                assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(op.dbLogicalExpression().filters()).isEmpty();
-                assertThat(op.singleResponse()).isTrue();
-              });
-    }
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            op -> {
+              assertThat(op.objectMapper()).isEqualTo(objectMapper);
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.limit()).isEqualTo(1);
+              assertThat(op.pageSize()).isEqualTo(1);
+              assertThat(op.pageState()).isNull();
+              assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(op.dbLogicalExpression().filters()).isEmpty();
+              assertThat(op.singleResponse()).isTrue();
+            });
+  }
 
-    @Test
-    public void dynamicFilterCondition() throws Exception {
-      String json =
-          """
+  @Test
+  public void dynamicFilterCondition() throws Exception {
+    String json =
+        """
                           {
                             "findOne": {
                               "filter" : {"col" : "val"}
@@ -348,25 +344,24 @@ public class FindOneCommandResolverTest {
                           }
                           """;
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              op -> {
-                TextCollectionFilter filter =
-                    new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            op -> {
+              TextCollectionFilter filter =
+                  new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
-                assertThat(op.objectMapper()).isEqualTo(objectMapper);
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.limit()).isEqualTo(1);
-                assertThat(op.pageSize()).isEqualTo(1);
-                assertThat(op.pageState()).isNull();
-                assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                assertThat(op.singleResponse()).isTrue();
-              });
-    }
+              assertThat(op.objectMapper()).isEqualTo(objectMapper);
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.limit()).isEqualTo(1);
+              assertThat(op.pageSize()).isEqualTo(1);
+              assertThat(op.pageState()).isNull();
+              assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+              assertThat(op.singleResponse()).isTrue();
+            });
   }
 }

@@ -81,7 +81,10 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
      * @return
      */
     public UdtRefColumnDesc create(
-        SchemaDescSource schemaDescSource, JsonParser jsonParser, JsonNode columnDescNode) {
+        String columnName,
+        SchemaDescSource schemaDescSource,
+        JsonParser jsonParser,
+        JsonNode columnDescNode) {
 
       Objects.requireNonNull(columnDescNode, "columnDescNode must not be null");
 
@@ -92,6 +95,12 @@ public class UdtRefColumnDesc extends ComplexColumnDesc {
       }
       // the Missing node will return an empty text
       var udtName = columnDescNode.path(TableDescConstants.ColumnDesc.UDT_NAME).asText();
+
+      // Validate that udtName is not empty or blank to avoid StringIndexOutOfBoundsException
+      if (udtName == null || udtName.isBlank()) {
+        throw SchemaException.Code.INVALID_USER_DEFINED_TYPE_NAME.get(
+            TableDescConstants.ColumnDesc.UDT_NAME, udtName);
+      }
 
       return new UdtRefColumnDesc(schemaDescSource, cqlIdentifierFromUserInput(udtName));
     }

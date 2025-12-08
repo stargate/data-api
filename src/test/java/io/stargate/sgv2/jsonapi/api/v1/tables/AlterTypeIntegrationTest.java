@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory;
 @WithTestResource(value = DseTestResource.class)
 class AlterTypeIntegrationTest extends TypeIntegrationTestBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(AlterTypeIntegrationTest.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private void createTypeAndTable(String typeName) {
     var fields =

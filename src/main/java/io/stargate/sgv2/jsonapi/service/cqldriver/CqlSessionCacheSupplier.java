@@ -15,8 +15,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 /**
  * Factory for creating a singleton {@link CQLSessionCache} instance that is configured via CDI.
  *
- * <p>We use this factory so the cache itself is not a CDI bean. For one so it does not have all
- * that extra overhead, and because there construction is a bit more complicated.
+ * <p>We use this factory so the cache itself is not a CDI bean. So it does not have all that extra
+ * overhead, and because there construction is a bit more complicated.
  */
 @ApplicationScoped
 public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
@@ -28,7 +28,8 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
       @ConfigProperty(name = "quarkus.application.name") String applicationName,
       OperationsConfig operationsConfig,
       MeterRegistry meterRegistry,
-      SchemaCache schemaCache) {
+      SchemaCache schemaCache // aaron - later changes remove this dependency
+      ) {
 
     Objects.requireNonNull(applicationName, "applicationName must not be null");
     Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
@@ -55,9 +56,8 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
 
     singleton =
         new CQLSessionCache(
-            dbConfig.type(),
-            Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
             dbConfig.sessionCacheMaxSize(),
+            Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
             operationsConfig.slaUserAgent().orElse(null),
             Duration.ofSeconds(dbConfig.slaSessionCacheTtlSeconds()),
             credentialsFactory,

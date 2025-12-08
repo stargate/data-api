@@ -11,9 +11,12 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
@@ -24,7 +27,6 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Nested;
@@ -51,19 +53,22 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void countWithNoFilter() {
+
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+
       List<Row> rows =
           Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(5L))));
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
+
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
+                return Uni.createFrom().item(mockResults);
               });
 
       DBLogicalExpression implicitAnd =
@@ -73,7 +78,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, implicitAnd, 100, -1);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -94,21 +99,24 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void countWithDynamic() {
+
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user1").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+
       List<Row> rows =
           Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(2))));
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
+
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
+                return Uni.createFrom().item(mockResults);
               });
 
       DBLogicalExpression dbLogicalExpression =
@@ -119,7 +127,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -140,21 +148,24 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void countWithDynamicNoMatch() {
+
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+
       List<Row> rows =
           Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(0L))));
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
+
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
+                return Uni.createFrom().item(mockResults);
               });
 
       DBLogicalExpression dbLogicalExpression =
@@ -165,7 +176,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -186,27 +197,30 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void error() {
+
       // failures are propagated down
-      RuntimeException failure = new RuntimeException("Test failure message.");
+      RuntimeException dbFailure = new RuntimeException("Test failure message.");
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return CompletableFuture.failedFuture(failure).minimalCompletionStage();
+                return Uni.createFrom().failure(dbFailure);
               });
 
       DBLogicalExpression dbLogicalExpression =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
-      Throwable result =
+
+      var operationError =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -215,8 +229,13 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // assert query execution
       assertThat(callCount.get()).isEqualTo(1);
 
-      // then result
-      assertThat(result).isEqualTo(failure);
+      assertThat(operationError)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              e -> {
+                JsonApiException je = (JsonApiException) e;
+                assertThat(je.getErrorCode()).isEqualTo(ErrorCodeV1.COUNT_READ_FAILED);
+              });
     }
   }
 
@@ -227,9 +246,11 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void countWithNoFilter() {
+
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+
       List<Row> rows =
           Arrays.asList(
               resultRow(0, "key1"),
@@ -238,21 +259,23 @@ public class CountCollectionOperationTest extends OperationTestBase {
               resultRow(3, "key4"),
               resultRow(4, "key5"));
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
+
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
+                return Uni.createFrom().item(mockResults);
               });
+
       DBLogicalExpression dbLogicalExpression =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -273,20 +296,23 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void countWithDynamic() {
+
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 11"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user2").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+
       List<Row> rows = Arrays.asList(resultRow(0, "key1"), resultRow(1, "key2"));
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
+
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
+                return Uni.createFrom().item(mockResults);
               });
 
       DBLogicalExpression dbLogicalExpression =
@@ -297,7 +323,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -318,20 +344,23 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void countWithDynamicNoMatch() {
+
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 11"
               .formatted(KEYSPACE_NAME, COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+
       List<Row> rows = Arrays.asList();
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
+
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
+                return Uni.createFrom().item(mockResults);
               });
 
       DBLogicalExpression implicitAnd =
@@ -343,7 +372,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
           new CountCollectionOperation(COLLECTION_CONTEXT, implicitAnd, 100, 10);
       Supplier<CommandResult> execute =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -364,18 +393,20 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void error() {
-      // failures are propagated down
-      RuntimeException failure = new RuntimeException("Test failure message.");
+
+      // Failure from reading from the DB
+      RuntimeException dbFailure = new RuntimeException("Test failure message.");
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCount(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
-                return CompletableFuture.failedFuture(failure).minimalCompletionStage();
+                return Uni.createFrom().failure(dbFailure);
               });
 
       DBLogicalExpression dbLogicalExpression =
@@ -383,9 +414,10 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
-      Throwable result =
+
+      var operationError =
           countCollectionOperation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -394,8 +426,18 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // assert query execution
       assertThat(callCount.get()).isEqualTo(1);
 
-      // then result
-      assertThat(result).isEqualTo(failure);
+      // aaron - 21 nov - 2025, this code use to have
+      // assertThat(result).isEqualTo(failure);
+      // but that would require that the error from the driver propergated out, the Operation has
+      // code to remap
+      // this error, so not sure how this ever worked.
+      assertThat(operationError)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              e -> {
+                JsonApiException je = (JsonApiException) e;
+                assertThat(je.getErrorCode()).isEqualTo(ErrorCodeV1.COUNT_READ_FAILED);
+              });
     }
   }
 }

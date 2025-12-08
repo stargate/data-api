@@ -3,21 +3,25 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.33-SNAPSHOT</version>
+  <version>1.0.35-SNAPSHOT</version>
   <properties>
-    <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
-    <!-- 23-Oct-2024, tatu: For latest FP optimizations let's get 2.18 -->
-    <jackson.version>2.18.4</jackson.version>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <!-- 27-Mar-2025, tatu: Updated to later but not Latest available Quarkus -->
-    <!-- 29-Jul-2025, cedrick: Updated to latest Quarkus -->
-    <!-- 10-Sep-2025, tatu: Updated to latest Quarkus -->
-    <quarkus.platform.version>3.25.4</quarkus.platform.version>
+    <!-- 14-oct-2025, aaron: Updated to latest Quarkus for security fixes in netty -->
+    <!-- 10-nov-2025, tatu: Updated to latest Quarkus -->
+    <quarkus.platform.version>3.29.2</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
-    <mockito.version>5.12.0</mockito.version>
+    <!-- 17-Oct-2025, tatu: Although quarkus-bom provides for Mockito version,
+       matching property is NOT available when we import it (instead of using as parent pom.
+       But we need version for "maven-surefire-plugin" config! So we have no choice
+       but duplicate this, unfortunately & need to keep things in sync manually
+      -->
+    <!-- 10-Nov-2025, tatu: Looks like this is quite sensitive, must match what
+       Quarkus wants: ideally we should drop it but for now, sync
+      -->
+    <mockito.version>5.20.0</mockito.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Integration test props -->
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
@@ -28,7 +32,7 @@
     <!-- When updating please change defaults in the DseTestResource class -->
     <!-- 14-Mar-2025, tatu: default to DSE-6.9 (was "dse-next") -->
     <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-    <cassandra.version>6.9.14</cassandra.version>
+    <cassandra.version>6.9.15</cassandra.version>
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
     <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
@@ -51,20 +55,15 @@
     <!-- Testing -->
     <skipTests>false</skipTests>
     <skipUnitTests>${skipTests}</skipUnitTests>
-    <surefire-plugin.version>3.5.3</surefire-plugin.version>
+    <surefire-plugin.version>3.5.4</surefire-plugin.version>
     <skipITs>false</skipITs>
   </properties>
   <dependencyManagement>
     <dependencies>
-      <!-- 17-May-2023, tatu: [json-api#172] Need Jackson 2.15.x -->
-      <!-- NOTE: MUST come before Quarkus bom to have precedence -->
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+      <!-- 14-Oct-2025, tatu: No more jackson-bom; we rely on Quarkus
+           to select compatible and recent Jackson version
+        -->
+      <!-- Use Quarkus BOM for version alignment -->
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>${quarkus.platform.artifact-id}</artifactId>
@@ -72,6 +71,7 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- And AWS SDK BOM as secondary (lower precedence) -->
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>bom</artifactId>
@@ -156,12 +156,12 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.18.0</version>
+      <version>3.19.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.12.0</version>
+      <version>1.14.0</version>
     </dependency>
     <dependency>
       <groupId>com.bpodgursky</groupId>
@@ -196,6 +196,13 @@
         <exclusion>
           <groupId>org.hdrhistogram</groupId>
           <artifactId>HdrHistogram</artifactId>
+        </exclusion>
+        <!-- 04-Nov-2025, tatu: [data-api#2241] SpotBugs annotations to be
+             excluded from Docker image so need to:
+          -->
+        <exclusion>
+          <groupId>com.github.spotbugs</groupId>
+          <artifactId>spotbugs-annotations</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -232,13 +239,19 @@
       <!-- for generating UUIDs of versions not supported by JDK -->
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
-      <version>5.1.0</version>
+      <version>5.1.1</version>
     </dependency>
     <dependency>
       <!-- for ObjectId handling -->
       <groupId>org.mongodb</groupId>
       <artifactId>bson</artifactId>
       <version>5.0.0</version>
+    </dependency>
+    <!-- Provided annotations -->
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.0</version>
     </dependency>
     <!-- Test dependencies -->
     <dependency>
@@ -297,6 +310,12 @@
       <scope>test</scope>
       <version>${wiremock.version}</version>
     </dependency>
+    <dependency>
+      <groupId>uk.org.webcompere</groupId>
+      <artifactId>system-stubs-jupiter</artifactId>
+      <version>2.1.8</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -313,7 +332,12 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
         <configuration>
-          <argLine>-Xmx4g</argLine>
+          <!-- 17-Oct-2025, tatu: agent settings needed to get rid of "inline mock" warning by Mockito;
+              leading to duplication of "mockito.version".
+              See: https://github.com/stargate/data-api/pull/2233
+            -->
+          <!-- 02-Dec-2025, tatu: [data-api#2270] Use @{argLine} to preserve JaCoCo agent config -->
+          <argLine>@{argLine} -Xmx4g -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <maven.home>${maven.home}</maven.home>
@@ -418,6 +442,36 @@
           </execution>
         </executions>
       </plugin>
+      <!-- 02-Dec-2025, tatu: [data-api#2270] Enable Code Coverage generation
+             (for Unit Tests)
+        -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.12</version>
+        <configuration>
+          <!-- 04-Dec-2025, tatu: Not part of data-api somehow included, exclude -->
+          <excludes>
+            <exclude>io/stargate/embedding/gateway/**</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <profiles>
@@ -430,7 +484,7 @@
       </activation>
       <properties>
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>6.9.14</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>6.9.15</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
