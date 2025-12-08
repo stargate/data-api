@@ -148,6 +148,18 @@ public class TableTemplates extends TemplateRunner {
     return asJSON(clause);
   }
 
+  public DataApiResponseValidator updateMany(String filter, String update) {
+    var json =
+            """
+                 {
+                  "filter": %s ,
+                  "update": %s
+                 }
+              """
+            .formatted(filter, update);
+    return sender.postUpdateMany(json);
+  }
+
   public DataApiResponseValidator deleteMany(String filter) {
     var json =
             """
