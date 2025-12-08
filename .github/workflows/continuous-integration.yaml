@@ -92,7 +92,7 @@ jobs:
 
       - name: Add coverage to PR
         id: jacoco
-        uses: madrapps/jacoco-report@v1.7.1
+        uses: madrapps/jacoco-report@v1.7.2
         if: github.event_name == 'pull_request'
         with:
           paths: |
@@ -125,7 +125,7 @@ jobs:
           echo "The complete JaCoCo HTML report is available as an artifact named \`jacoco-report\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload JaCoCo coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: jacoco-report
           path: target/site/jacoco/
