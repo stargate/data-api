@@ -61,8 +61,6 @@ public enum ErrorCodeV1 {
 
   ID_NOT_INDEXED("_id is not indexed"),
 
-  KEYSPACE_DOES_NOT_EXIST("The provided keyspace does not exist"),
-
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
@@ -142,8 +140,6 @@ public enum ErrorCodeV1 {
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
-
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
@@ -178,11 +174,8 @@ public enum ErrorCodeV1 {
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
-  OFFLINE_WRITER_SESSION_NOT_FOUND("Offline writer session not found"),
-  UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION("Unable to create offline writer session"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
-  INVALID_ID_TYPE("Invalid Id type"),
   INVALID_QUERY("Invalid query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
   MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
@@ -206,6 +199,8 @@ public enum ErrorCodeV1 {
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
+
+  // NOTE: used/referenced by `embedding-gateway`, cannot remove:
   EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
   EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
 
