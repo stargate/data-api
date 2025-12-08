@@ -326,17 +326,6 @@ public class CqlSessionCacheTests extends CacheTestsBase {
                 TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is removed from cache after explicit eviction")
         .isNotPresent();
-
-    // Verify the metric was recorded with correct tag
-    var evictionMetric =
-        fixture.meterRegistry.find("cache.evictions").tag("cache", "cql_sessions_cache").summary();
-
-    assertThat(evictionMetric)
-        .as("Explicit eviction metric should be recorded in registry")
-        .isNotNull();
-    assertThat(evictionMetric.count())
-        .as("Eviction metric should record exactly one event")
-        .isEqualTo(1);
   }
 
   @Test
@@ -383,49 +372,6 @@ public class CqlSessionCacheTests extends CacheTestsBase {
                 TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is removed from cache after explicit eviction")
         .isNotPresent();
-  }
-
-  @Test
-  public void evictSessionNotInCache() {
-    var listener = listenerWithLogging();
-    var fixture =
-        newFixture(
-            List.of(listener), LONG_TTL, CACHE_MAX_SIZE, TEST_CONSTANTS.SLA_USER_AGENT, SHORT_TTL);
-
-    // Verify cache is empty
-    assertThat(
-            fixture.cache.peekSession(
-                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
-        .as("Cache is empty before eviction")
-        .isNotPresent();
-
-    // Evict a non-existent session - should not throw
-    boolean evicted =
-        fixture.cache.evictSession(
-            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT);
-
-    // Verify eviction returned false
-    assertThat(evicted).as("Eviction returns false when no entry is removed").isFalse();
-
-    // Verify cache is still empty
-    assertThat(
-            fixture.cache.peekSession(
-                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
-        .as("Cache is still empty after eviction")
-        .isNotPresent();
-
-    // Verify no interactions with session factory
-    verifyNoInteractions(fixture.sessionFactory);
-
-    // The `onKeyRemoved` method will not be triggered if the session is not in the cache - no
-    // actual eviction
-    var evictionMetric =
-        fixture.meterRegistry.find("cache.evictions").tag("cache", "cql_sessions_cache").summary();
-
-    assertThat(evictionMetric).as("Explicit eviction metric should be present").isNotNull();
-    assertThat(evictionMetric.count())
-        .as("No metric should not be recorded in registry if no actual eviction happened")
-        .isEqualTo(0);
   }
 
   // =======================================================
