@@ -62,8 +62,10 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
     @Test
     public final void withExistingCollection() {
-      String keyspace = "k%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
-      String collection = "c%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
+      String keyspace =
+          "k%s".formatted(RandomStringUtils.insecure().nextAlphanumeric(8)).toLowerCase();
+      String collection =
+          "c%s".formatted(RandomStringUtils.insecure().nextAlphanumeric(8)).toLowerCase();
 
       givenHeadersAndJson(
                   """
@@ -210,8 +212,10 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
     @Test
     public final void withExistingCollection() {
-      String keyspace = "k%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
-      String collection = "c%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
+      String keyspace =
+          "k%s".formatted(RandomStringUtils.insecure().nextAlphanumeric(8)).toLowerCase();
+      String collection =
+          "c%s".formatted(RandomStringUtils.insecure().nextAlphanumeric(8)).toLowerCase();
 
       givenHeadersAndJson(
                   """

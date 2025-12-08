@@ -11,7 +11,6 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -22,13 +21,10 @@ class FindOneAndUpdateCommandTest {
 
   @Inject Validator validator;
 
-  @Nested
-  class Validation {
-
-    @Test
-    public void noUpdateClause() throws Exception {
-      String json =
-          """
+  @Test
+  public void noUpdateClause() throws Exception {
+    String json =
+        """
           {
             "findOneAndUpdate": {
               "filter": {"name": "Aaron"}
@@ -36,19 +32,19 @@ class FindOneAndUpdateCommandTest {
           }
           """;
 
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      Set<ConstraintViolation<FindOneAndUpdateCommand>> result = validator.validate(command);
+    FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+    Set<ConstraintViolation<FindOneAndUpdateCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("must not be null");
+  }
 
-    @Test
-    public void invalidReturnDocumentOption() throws Exception {
-      String json =
-          """
+  @Test
+  public void invalidReturnDocumentOption() throws Exception {
+    String json =
+        """
           {
             "findOneAndUpdate": {
               "filter": {"name": "Aaron"},
@@ -60,19 +56,19 @@ class FindOneAndUpdateCommandTest {
           }
           """;
 
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      Set<ConstraintViolation<FindOneAndUpdateCommand>> result = validator.validate(command);
+    FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+    Set<ConstraintViolation<FindOneAndUpdateCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("returnDocument value can only be 'before' or 'after'");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("returnDocument value can only be 'before' or 'after'");
+  }
 
-    @Test
-    public void validReturnDocumentOption() throws Exception {
-      String json =
-          """
+  @Test
+  public void validReturnDocumentOption() throws Exception {
+    String json =
+        """
           {
             "findOneAndUpdate": {
               "filter": {"name": "Aaron"},
@@ -84,10 +80,9 @@ class FindOneAndUpdateCommandTest {
           }
           """;
 
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      Set<ConstraintViolation<FindOneAndUpdateCommand>> result = validator.validate(command);
+    FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+    Set<ConstraintViolation<FindOneAndUpdateCommand>> result = validator.validate(command);
 
-      assertThat(result).isEmpty();
-    }
+    assertThat(result).isEmpty();
   }
 }

@@ -28,7 +28,6 @@ import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -40,7 +39,7 @@ public class UpdateOneCommandResolverTest {
   @Inject DocumentShredder documentShredder;
   @Inject UpdateOneCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
 
@@ -49,13 +48,10 @@ public class UpdateOneCommandResolverTest {
     commandContext = testConstants.collectionContext();
   }
 
-  @Nested
-  class Resolve {
-
-    @Test
-    public void idFilterCondition() throws Exception {
-      String json =
-          """
+  @Test
+  public void idFilterCondition() throws Exception {
+    String json =
+        """
           {
             "updateOne": {
               "filter" : {"_id" : "id"},
@@ -64,56 +60,56 @@ public class UpdateOneCommandResolverTest {
           }
           """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isFalse();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        updater -> {
-                          UpdateClause updateClause =
-                              DocumentUpdaterUtils.updateClause(
-                                  UpdateOperator.SET,
-                                  objectMapper.createObjectNode().put("location", "New York"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isFalse();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      updater -> {
+                        UpdateClause updateClause =
+                            DocumentUpdaterUtils.updateClause(
+                                UpdateOperator.SET,
+                                objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          IDCollectionFilter filter =
-                              new IDCollectionFilter(
-                                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+                        assertThat(updater.updateOperations())
+                            .isEqualTo(updateClause.buildOperations());
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        IDCollectionFilter filter =
+                            new IDCollectionFilter(
+                                IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void noFilterCondition() throws Exception {
-      String json =
-          """
+  @Test
+  public void noFilterCondition() throws Exception {
+    String json =
+        """
           {
             "updateOne": {
               "update" : {"$set" : {"location" : "New York"}}
@@ -121,52 +117,52 @@ public class UpdateOneCommandResolverTest {
           }
           """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isFalse();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        updater -> {
-                          UpdateClause updateClause =
-                              DocumentUpdaterUtils.updateClause(
-                                  UpdateOperator.SET,
-                                  objectMapper.createObjectNode().put("location", "New York"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isFalse();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      updater -> {
+                        UpdateClause updateClause =
+                            DocumentUpdaterUtils.updateClause(
+                                UpdateOperator.SET,
+                                objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters()).isEmpty();
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(updater.updateOperations())
+                            .isEqualTo(updateClause.buildOperations());
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters()).isEmpty();
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void dynamicFilterCondition() throws Exception {
-      String json =
-          """
+  @Test
+  public void dynamicFilterCondition() throws Exception {
+    String json =
+        """
           {
             "updateOne": {
               "filter" : {"col" : "val"},
@@ -175,56 +171,55 @@ public class UpdateOneCommandResolverTest {
             }
           """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isFalse();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        updater -> {
-                          UpdateClause updateClause =
-                              DocumentUpdaterUtils.updateClause(
-                                  UpdateOperator.SET,
-                                  objectMapper.createObjectNode().put("location", "New York"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isFalse();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      updater -> {
+                        UpdateClause updateClause =
+                            DocumentUpdaterUtils.updateClause(
+                                UpdateOperator.SET,
+                                objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "col", MapCollectionFilter.Operator.EQ, "val");
+                        assertThat(updater.updateOperations())
+                            .isEqualTo(updateClause.buildOperations());
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void dynamicFilterConditionWithSort() throws Exception {
-      String json =
-          """
+  @Test
+  public void dynamicFilterConditionWithSort() throws Exception {
+    String json =
+        """
                   {
                     "updateOne": {
                       "filter" : {"col" : "val"},
@@ -234,61 +229,60 @@ public class UpdateOneCommandResolverTest {
                     }
                   """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isFalse();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        updater -> {
-                          UpdateClause updateClause =
-                              DocumentUpdaterUtils.updateClause(
-                                  UpdateOperator.SET,
-                                  objectMapper.createObjectNode().put("location", "New York"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isFalse();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      updater -> {
+                        UpdateClause updateClause =
+                            DocumentUpdaterUtils.updateClause(
+                                UpdateOperator.SET,
+                                objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "col", MapCollectionFilter.Operator.EQ, "val");
+                        assertThat(updater.updateOperations())
+                            .isEqualTo(updateClause.buildOperations());
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(100);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.orderBy()).hasSize(1);
-                          assertThat(find.orderBy().get(0))
-                              .isEqualTo(new FindCollectionOperation.OrderBy("sort_col", true));
-                          assertThat(find.maxSortReadLimit())
-                              .isEqualTo(operationsConfig.maxDocumentSortCount());
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(100);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.orderBy()).hasSize(1);
+                        assertThat(find.orderBy().get(0))
+                            .isEqualTo(new FindCollectionOperation.OrderBy("sort_col", true));
+                        assertThat(find.maxSortReadLimit())
+                            .isEqualTo(operationsConfig.maxDocumentSortCount());
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void dynamicFilterConditionWithVectorSearch() throws Exception {
-      String json =
-          """
+  @Test
+  public void dynamicFilterConditionWithVectorSearch() throws Exception {
+    String json =
+        """
           {
             "updateOne": {
               "filter" : {"col" : "val"},
@@ -298,58 +292,57 @@ public class UpdateOneCommandResolverTest {
           }
           """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isFalse();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        updater -> {
-                          UpdateClause updateClause =
-                              DocumentUpdaterUtils.updateClause(
-                                  UpdateOperator.SET,
-                                  objectMapper.createObjectNode().put("location", "New York"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isFalse();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      updater -> {
+                        UpdateClause updateClause =
+                            DocumentUpdaterUtils.updateClause(
+                                UpdateOperator.SET,
+                                objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "col", MapCollectionFilter.Operator.EQ, "val");
+                        assertThat(updater.updateOperations())
+                            .isEqualTo(updateClause.buildOperations());
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.vector()).isNotNull();
-                          assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.vector()).isNotNull();
+                        assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void withUpsert() throws Exception {
-      String json =
-          """
+  @Test
+  public void withUpsert() throws Exception {
+    String json =
+        """
           {
             "updateOne": {
               "update" : {"$set" : {"location" : "New York"}},
@@ -358,46 +351,45 @@ public class UpdateOneCommandResolverTest {
           }
           """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isFalse();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isTrue();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        updater -> {
-                          UpdateClause updateClause =
-                              DocumentUpdaterUtils.updateClause(
-                                  UpdateOperator.SET,
-                                  objectMapper.createObjectNode().put("location", "New York"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isFalse();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isTrue();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      updater -> {
+                        UpdateClause updateClause =
+                            DocumentUpdaterUtils.updateClause(
+                                UpdateOperator.SET,
+                                objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters()).isEmpty();
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(updater.updateOperations())
+                            .isEqualTo(updateClause.buildOperations());
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters()).isEmpty();
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
   }
 }

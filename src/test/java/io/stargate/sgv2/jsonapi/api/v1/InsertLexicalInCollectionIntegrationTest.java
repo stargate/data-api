@@ -193,7 +193,7 @@ public class InsertLexicalInCollectionIntegrationTest
     @Test
     public void failInsertDocWithLexicalIfNotEnabled() {
       final String COLLECTION_WITHOUT_LEXICAL =
-          "coll_insert_no_lexical_" + RandomStringUtils.randomNumeric(16);
+          "coll_insert_no_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       createComplexCollection(
               """
                     {

@@ -57,7 +57,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertCollectionOperationTest extends OperationTestBase {
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_VECTOR;

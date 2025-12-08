@@ -343,7 +343,7 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
   private ArrayNode mapEntryToTuple(TableSchemaObject table, ObjectNode mapEntry) {
     checkMapEntryFormat(table, mapEntry);
     // format check makes sure we only have 1
-    var keyValue = mapEntry.fields().next();
+    var keyValue = mapEntry.properties().iterator().next();
     return JsonNodeFactory.instance.arrayNode(2).add(keyValue.getKey()).add(keyValue.getValue());
   }
 }

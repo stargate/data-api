@@ -89,7 +89,7 @@ public class DocumentProjector {
     }
     // Special cases: "star-include/exclude"
     if (projectionDefinition.size() == 1) {
-      Map.Entry<String, JsonNode> entry = projectionDefinition.fields().next();
+      Map.Entry<String, JsonNode> entry = projectionDefinition.properties().iterator().next();
       if ("*".equals(entry.getKey())) {
         boolean includeAll = extractIncludeOrExclude(entry.getKey(), entry.getValue());
         if (includeAll) {
@@ -263,9 +263,7 @@ public class DocumentProjector {
     }
 
     PathCollector collectFromObject(JsonNode ob, String parentPath) {
-      var it = ob.fields();
-      while (it.hasNext()) {
-        var entry = it.next();
+      for (var entry : ob.properties()) {
         String path = entry.getKey();
 
         if (path.isEmpty()) {
