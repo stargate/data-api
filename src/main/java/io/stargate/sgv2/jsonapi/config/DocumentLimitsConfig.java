@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Positive;
  * providers so has to be declared as {@link StaticInitSafe}.
  */
 @StaticInitSafe
-@ConfigMapping(prefix = "stargate.jsonapi.document.limits")
+@ConfigMapping(prefix = "data-api.document.limits")
 public interface DocumentLimitsConfig {
   /** Defines the default maximum document size. */
   int DEFAULT_MAX_DOCUMENT_SIZE = 4_000_000;

@@ -76,9 +76,9 @@ To run local non-Docker instance of Data API, use `-d` with the script: it will 
 To run locally built Data API in Quarkus Development mode, you will use:
 
 ```
-/mvnw compile quarkus:dev -Dstargate.data-store.ignore-bridge=true \
-  -Dstargate.jsonapi.operations.vectorize-enabled=true \
-  -Dstargate.jsonapi.operations.database-config.local-datacenter=dc1
+/mvnw compile quarkus:dev -Ddata-api.data-store.ignore-bridge=true \
+  -Ddata-api.operations.vectorize-enabled=true \
+  -Ddata-api.operations.database-config.local-datacenter=dc1
 ```
 
 ## Script options

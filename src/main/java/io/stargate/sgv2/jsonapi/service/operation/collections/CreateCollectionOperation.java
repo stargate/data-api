@@ -289,7 +289,7 @@ public record CreateCollectionOperation(
                             collectionExisted);
                     Multi<AsyncResultSet> indexResultMulti;
                     /*
-                    CI will override ddlDelayMillis to 0 using `-Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0`
+                    CI will override ddlDelayMillis to 0 using `-Ddata-api.operations.database-config.ddl-delay-millis=0`
                        to speed up the test execution
                        This is ok because CI is run as single cassandra instance and there is no need to wait for the schema changes to propagate
                     */

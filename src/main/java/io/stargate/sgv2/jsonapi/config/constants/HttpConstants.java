@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.config.constants;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "stargate.jsonapi.http")
+@ConfigMapping(prefix = "data-api.http")
 public interface HttpConstants {
 
   /** Data API Authentication token header name. */

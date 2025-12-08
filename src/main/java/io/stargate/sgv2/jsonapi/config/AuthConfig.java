@@ -25,7 +25,7 @@ import jakarta.validation.constraints.Pattern;
 import java.util.Optional;
 
 /** Authentication configuration. */
-@ConfigMapping(prefix = "stargate.auth")
+@ConfigMapping(prefix = "data-api.auth")
 public interface AuthConfig {
 
   /**
@@ -54,7 +54,7 @@ public interface AuthConfig {
     /**
      * @return If the customization of the challenge sending should be done.
      */
-    @WithDefault("${stargate.exception-mappers.enabled:true}")
+    @WithDefault("${data-api.exception-mappers.enabled:true}")
     boolean customChallengeEnabled();
   }
 

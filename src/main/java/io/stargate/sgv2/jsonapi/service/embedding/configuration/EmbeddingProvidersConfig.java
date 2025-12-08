@@ -294,7 +294,7 @@ public interface EmbeddingProvidersConfig {
     }
   }
 
-  @ConfigMapping(prefix = "stargate.jsonapi.custom.embedding")
+  @ConfigMapping(prefix = "data-api.custom.embedding")
   interface CustomConfig {
     @WithDefault("false")
     boolean enabled();
