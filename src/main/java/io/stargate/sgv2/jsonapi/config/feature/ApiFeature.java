@@ -7,8 +7,8 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
  * Set of "Feature Flags" that can be used to enable/disable certain features in the Data API.
  * Enumeration defines the key used to introspect state of feature.
  *
- * <p>NOTE: although flag names are in upper case (like {@code TABLES}), the actual configuration
- * uses lower-case names (like {@code tables}) (with proper prefix).
+ * <p>NOTE: although flag names are in upper case (like {@code LEXICAL}), the actual configuration
+ * uses lower-case names (like {@code lexical}) (with proper prefix).
  *
  * <p>Usage: Features may be enabled via configuration: see {@link FeaturesConfig}; if defined at
  * that level, they are either enabled or disabled for all requests. If not defined (left as empty
@@ -24,6 +24,15 @@ public enum ApiFeature {
    * <p>Enabled by default.
    */
   LEXICAL("lexical", true),
+
+  /**
+   * API Tables feature flag: if enabled, the API will expose table-specific Namespace resource
+   * commands, and support commands on Tables. Deprecated -- no longer used.
+   *
+   * @deprecated since 1.0.35 -- but exists in Helm charts; remove once those removed
+   */
+  @Deprecated // since 1.0.35
+  TABLES("tables", true),
 
   /**
    * API Reranking feature flag: if enabled, the API will expose:
@@ -53,8 +62,8 @@ public enum ApiFeature {
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before
-   * {@link #featureName()}, so f.ex for {@link #TABLES} flag, the header name would be {@code
-   * Feature-Flag-tables}.
+   * {@link #featureName()}, so f.ex for {@link #LEXICAL} flag, the header name would be {@code
+   * Feature-Flag-lexical}.
    */
   public static final String HTTP_HEADER_PREFIX = "Feature-Flag-";
 
