@@ -374,6 +374,39 @@ public class CqlSessionCacheTests extends CacheTestsBase {
         .isNotPresent();
   }
 
+  @Test
+  public void evictSessionNotInCache() {
+    var listener = listenerWithLogging();
+    var fixture =
+        newFixture(
+            List.of(listener), LONG_TTL, CACHE_MAX_SIZE, TEST_CONSTANTS.SLA_USER_AGENT, SHORT_TTL);
+
+    // Verify cache is empty
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
+        .as("Cache is empty before eviction")
+        .isNotPresent();
+
+    // Evict a non-existent session - should not throw
+    boolean evicted =
+        fixture.cache.evictSession(
+            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT);
+
+    // Verify eviction returned false
+    assertThat(evicted).as("Eviction returns false when no entry is removed").isFalse();
+
+    // Verify cache is still empty
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
+        .as("Cache is still empty after eviction")
+        .isNotPresent();
+
+    // Verify no interactions with session factory
+    verifyNoInteractions(fixture.sessionFactory);
+  }
+
   // =======================================================
   // Helpers / no more tests below
   // =======================================================
