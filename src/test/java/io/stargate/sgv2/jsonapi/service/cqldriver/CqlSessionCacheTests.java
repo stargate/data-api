@@ -327,9 +327,6 @@ public class CqlSessionCacheTests extends CacheTestsBase {
         .as("Session is removed from cache after explicit eviction")
         .isNotPresent();
 
-    // give the cache time to bookkeep
-    fixture.cache.cleanUp();
-
     // Verify the metric was recorded with correct tag
     var evictionMetric =
         fixture.meterRegistry.find("cache.evictions").tag("cache", "cql_sessions_cache").summary();
@@ -419,6 +416,16 @@ public class CqlSessionCacheTests extends CacheTestsBase {
 
     // Verify no interactions with session factory
     verifyNoInteractions(fixture.sessionFactory);
+
+    // The `onKeyRemoved` method will not be triggered if the session is not in the cache - no
+    // actual eviction
+    var evictionMetric =
+        fixture.meterRegistry.find("cache.evictions").tag("cache", "cql_sessions_cache").summary();
+
+    assertThat(evictionMetric).as("Explicit eviction metric should be present").isNotNull();
+    assertThat(evictionMetric.count())
+        .as("No metric should not be recorded in registry if no actual eviction happened")
+        .isEqualTo(0);
   }
 
   // =======================================================
