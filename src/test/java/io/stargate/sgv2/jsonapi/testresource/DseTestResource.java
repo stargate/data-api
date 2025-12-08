@@ -108,11 +108,6 @@ public class DseTestResource extends StargateTestResource {
     return isHcd() ? "true" : "false";
   }
 
-  // By default, we enable the feature flag for tables
-  public String getFeatureFlagTables() {
-    return "true";
-  }
-
   // By default, we enable the feature flag for reranking
   public String getFeatureFlagReranking() {
     return "true";
@@ -137,12 +132,6 @@ public class DseTestResource extends StargateTestResource {
     String lexicalFeatureSetting = getFeatureFlagLexical();
     if (lexicalFeatureSetting != null) {
       propsBuilder.put("stargate.feature.flags.lexical", lexicalFeatureSetting);
-    }
-
-    // 04-Sep-2024, tatu: [data-api#1335] Enable Tables using new Feature Flag:
-    String tableFeatureSetting = getFeatureFlagTables();
-    if (tableFeatureSetting != null) {
-      propsBuilder.put("stargate.feature.flags.tables", tableFeatureSetting);
     }
 
     // 31-Mar-2025, yuqi: [data-api#1904] Reranking feature flag:
