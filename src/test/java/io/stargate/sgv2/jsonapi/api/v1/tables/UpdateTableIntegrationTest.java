@@ -7,6 +7,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.stream.Stream;
@@ -441,6 +442,26 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     var expectedUpdatedRowWithNull = DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(null, null);
     checkUpdatedData(
         FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRowWithNull));
+  }
+
+  // ==================================================================================================================
+  // UpdateMany not (yet?) supported
+  // ==================================================================================================================
+
+  @Test
+  public void updateManyNotSupported() {
+    String updateClauseJSON = "{ \"$set\": { \"not_indexed_column\": \"def\"}}";
+
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateMany(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(
+            RequestException.Code.UNSUPPORTED_TABLE_COMMAND,
+            RequestException.class,
+            "The command is not supported by tables in the API",
+            "While many commands operate on both tables and collections",
+            "The commands supported by tables are: ")
+        .hasNoWarnings();
   }
 
   @Nested
