@@ -86,6 +86,7 @@ public class RerankingGatewayClientTest {
         EmbeddingGateway.ModelUsage.newBuilder()
             .setModelType(EmbeddingGateway.ModelUsage.ModelType.RERANKING)
             .setModelProvider(ModelProvider.NVIDIA.apiName())
+                .setTenantId(testConstants.TENANT.toString())
             .setModelName("llama-3.2-nv-rerankqa-1b-v2")
             .setPromptTokens(10)
             .setTotalTokens(20)
