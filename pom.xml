@@ -266,6 +266,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jacoco</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
@@ -444,6 +449,7 @@
       </plugin>
       <!-- 02-Dec-2025, tatu: [data-api#2270] Enable Code Coverage generation
              (for Unit Tests)
+           08-Dec-2025, tatu: [data-api#2287] Add Integration Test coverage
         -->
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -468,6 +474,19 @@
             <phase>test</phase>
             <goals>
               <goal>report</goal>
+            </goals>
+          </execution>
+          <!-- Integration test coverage -->
+          <execution>
+            <id>prepare-agent-integration</id>
+            <goals>
+              <goal>prepare-agent-integration</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report-integration</id>
+            <goals>
+              <goal>report-integration</goal>
             </goals>
           </execution>
         </executions>
