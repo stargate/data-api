@@ -9,11 +9,9 @@ quarkus:
     access-log:
       enabled: false
     test-port: 9080
-  # Enable transformed bytecode for @QuarkusIntegrationTest code coverage
-  # See: https://quarkus.io/guides/tests-with-coverage
-  package:
-    write-transformed-bytecode-to-build-output: true
   # Configure JaCoCo to use same data file as Maven plugin (append mode)
+  # For @QuarkusIntegrationTest coverage, also need -Dquarkus.package.write-transformed-bytecode-to-build-output=true during build
+  # See: https://quarkus.io/guides/tests-with-coverage
   jacoco:
     data-file: target/jacoco-quarkus.exec
   log:
