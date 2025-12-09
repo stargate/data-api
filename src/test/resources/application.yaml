@@ -9,11 +9,6 @@ quarkus:
     access-log:
       enabled: false
     test-port: 9080
-  # Configure JaCoCo to use same data file as Maven plugin (append mode)
-  # For @QuarkusIntegrationTest coverage, also need -Dquarkus.package.write-transformed-bytecode-to-build-output=true during build
-  # See: https://quarkus.io/guides/tests-with-coverage
-  jacoco:
-    data-file: target/jacoco-quarkus.exec
   log:
     console:
       format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"

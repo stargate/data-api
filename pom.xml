@@ -266,11 +266,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jacoco</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
@@ -429,8 +424,10 @@
             </goals>
             <configuration>
               <!-- Use JaCoCo agent for integration test coverage -->
-              <argLine>@{argLine}</argLine>
+              <argLine>${jacocoArgLine}</argLine>
               <systemPropertyVariables>
+                <!-- Pass JaCoCo args to Quarkus for @QuarkusIntegrationTest -->
+                <quarkus.test.arg-line>${jacocoArgLine}</quarkus.test.arg-line>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
@@ -488,6 +485,8 @@
               <!-- Use same file as quarkus.jacoco.data-file with append mode -->
               <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
               <append>true</append>
+              <!-- Use custom property name to avoid conflicts -->
+              <propertyName>jacocoArgLine</propertyName>
             </configuration>
           </execution>
           <execution>
