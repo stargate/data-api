@@ -9,6 +9,10 @@ quarkus:
     access-log:
       enabled: false
     test-port: 9080
+  # Enable transformed bytecode for @QuarkusIntegrationTest code coverage
+  # See: https://quarkus.io/guides/tests-with-coverage
+  package:
+    write-transformed-bytecode-to-build-output: true
   log:
     console:
       format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"

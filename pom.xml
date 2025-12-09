@@ -428,6 +428,8 @@
               <goal>verify</goal>
             </goals>
             <configuration>
+              <!-- Use JaCoCo agent for integration test coverage -->
+              <argLine>@{argLine}</argLine>
               <systemPropertyVariables>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
@@ -482,12 +484,21 @@
             <goals>
               <goal>prepare-agent-integration</goal>
             </goals>
+            <configuration>
+              <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+              <append>true</append>
+            </configuration>
           </execution>
           <execution>
             <id>report-integration</id>
+            <phase>post-integration-test</phase>
             <goals>
               <goal>report-integration</goal>
             </goals>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
+              <outputDirectory>${project.build.directory}/site/jacoco-it</outputDirectory>
+            </configuration>
           </execution>
         </executions>
       </plugin>
