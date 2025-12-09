@@ -22,7 +22,7 @@
 - Fixes \#2241: remove `spotbugs-annotations` from inclusion in Docker image [\#2242](https://github.com/stargate/data-api/pull/2242) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix \#2231: handle missing 'udtName' gracefully [\#2240](https://github.com/stargate/data-api/pull/2240) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix \#1883: enable Tables feature by default [\#2239](https://github.com/stargate/data-api/pull/2239) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Fixes \#2220, update to DSE 6.9.16 \(from 6.9.14\) [\#2237](https://github.com/stargate/data-api/pull/2237) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#2220, update to DSE 6.9.15 \(from 6.9.14\) [\#2237](https://github.com/stargate/data-api/pull/2237) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - \[Issue 2132\] Can not vector sort on mis-matched dimension [\#2235](https://github.com/stargate/data-api/pull/2235) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - \[Issue 2112\]  do NOT allow create index for scalar column with index function [\#2234](https://github.com/stargate/data-api/pull/2234) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Update mockito version override \(old\) to let quarkus-bom bring right version [\#2233](https://github.com/stargate/data-api/pull/2233) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
