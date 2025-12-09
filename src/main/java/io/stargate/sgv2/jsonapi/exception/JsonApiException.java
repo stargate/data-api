@@ -11,8 +11,8 @@ import java.util.*;
 import java.util.function.Supplier;
 
 /**
- * Our own {@link RuntimeException} that uses {@link ErrorCodeV1} to describe the exception cause.
- * Supports specification of the custom message.
+ * Our older {@link RuntimeException} that uses {@link ErrorCodeV1} to describe the exception cause.
+ * Supports specification of the custom message. Replaced by {@link APIException}.
  *
  * <p>Implements {@link Supplier< CommandResult >} so this exception can be mapped to command result
  * directly.
@@ -37,7 +37,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           add(COUNT_READ_FAILED);
           add(CONCURRENCY_FAILURE);
           add(TOO_MANY_COLLECTIONS);
-          add(VECTOR_SEARCH_NOT_AVAILABLE);
           add(VECTOR_SEARCH_NOT_SUPPORTED);
           add(VECTORIZE_FEATURE_NOT_AVAILABLE);
           add(VECTORIZE_SERVICE_NOT_REGISTERED);
@@ -62,7 +61,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
               add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
               add(VECTOR_SEARCH_TOO_BIG_VALUE);
               add(INVALID_PARAMETER_VALIDATION_TYPE);
-              add(INVALID_ID_TYPE);
               add(INVALID_INDEXING_DEFINITION);
             }
           },
