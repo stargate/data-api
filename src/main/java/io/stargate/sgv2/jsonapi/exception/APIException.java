@@ -32,8 +32,7 @@ import java.util.*;
  *       combination.
  *   <li>Decide on the {@link ExceptionFlags}, describe the condition that was observed so the API
  *       layer can decide which remediation to perform (for example recycle a session).
- *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body
- *       body.
+ *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body.
  *   <li>Add the error code to the Code enum for the Exception class, such as {@link
  *       FilterException.Code} or {@link RequestException.Code} with the same name. When the enum is
  *       instantiated at JVM start the error template is loaded.
