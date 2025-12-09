@@ -1195,7 +1195,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
         Arrays.asList(
             "embedding_provider=\"CustomITEmbeddingProvider\"",
             "module=\"sgv2-jsonapi\"",
-            "tenant=\"unknown\""));
+            "tenant=\"SINGLE-TENANT\""));
   }
 
   private static double findCountFromMetrics(List<String> metrics, List<String> matches) {
