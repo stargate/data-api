@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.*;
 
 import com.github.benmanes.caffeine.cache.RemovalCause;
@@ -357,17 +358,17 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
   public void metricsCacheLoadFailure() {
     var fixture = newFixture();
 
-    // Make the value factory fail
-    var failingKey = thisCacheKey(99, LONG_TTL);
+    // Create a key that will cause the value factory to fail
+    var failingKey = new TestDynamicTTLCache.TestKey("FAIL-" + KEY, LONG_TTL);
     when(fixture.valueFactory.apply(failingKey))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("test failure")));
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Load failed")));
 
-    // Attempt to load value - should fail
-    try {
-      fixture.cache.getValue(failingKey);
-    } catch (Exception e) {
-      // Expected
-    }
+    // Attempt to load value - should fail and assert the loading failure happened
+    Throwable thrown = catchThrowable(() -> fixture.cache.getValue(failingKey));
+    assertThat(thrown)
+        .as("Should throw exception on load failure")
+        .hasMessageContaining("Load failed");
+
     fixture.cache.cleanUp();
 
     var loadFailureTimer =
