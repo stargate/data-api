@@ -318,11 +318,17 @@
     </dependency>
   </dependencies>
   <build>
-    <!-- Enable resource filtering for test resources to replace @jacocoArgLine@ -->
+    <!-- Enable resource filtering ONLY for application.yaml to replace @jacocoArgLine@ -->
     <testResources>
       <testResource>
         <directory>src/test/resources</directory>
         <filtering>true</filtering>
+        <includes>
+          <include>application.yaml</include>
+        </includes>
+      </testResource>
+      <testResource>
+        <directory>src/test/resources</directory>
       </testResource>
     </testResources>
     <plugins>
