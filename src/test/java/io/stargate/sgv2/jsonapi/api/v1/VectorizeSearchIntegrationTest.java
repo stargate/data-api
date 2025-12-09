@@ -286,7 +286,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                     line -> {
                       assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line).contains("tenant=\"SINGLE-TENANT\"");
 
                       if (line.contains("_count")) {
                         String[] parts = line.split(" ");
@@ -315,7 +315,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                     line -> {
                       assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line).contains("tenant=\"SINGLE-TENANT\"");
 
                       if (line.contains("_count")) {
                         String[] parts = line.split(" ");

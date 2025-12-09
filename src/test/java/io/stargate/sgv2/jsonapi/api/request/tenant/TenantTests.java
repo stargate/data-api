@@ -42,12 +42,11 @@ public class TenantTests {
   }
 
   @Test
-  public void cassandraDbRejectsTenantId() {
+  public void cassandraDbUseSingleTenant() {
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> Tenant.create(DatabaseType.CASSANDRA, "aa"),
-        "Cassandra DB throws on non blank tenant ID");
+    var lowercase = Tenant.create(DatabaseType.CASSANDRA, "doesNotMatter");
+    assertThat(lowercase.databaseType()).isEqualTo(DatabaseType.CASSANDRA);
+    assertThat(lowercase.toString()).isEqualTo("SINGLE-TENANT");
   }
 
   @Test
