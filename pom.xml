@@ -432,6 +432,8 @@
               <argLine>@{argLine}</argLine>
               <systemPropertyVariables>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                <!-- Pass JaCoCo agent to Quarkus application JVM for @QuarkusIntegrationTest -->
+                <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
                 <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
