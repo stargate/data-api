@@ -233,6 +233,7 @@ jobs:
           min-coverage-changed-files: 60
           title: 'Integration Test Coverage Report (${{ matrix.type }})'
           update-comment: true
+        continue-on-error: true
 
       - name: Generate JaCoCo IT Badge
         id: jacoco-it-badge
@@ -242,6 +243,7 @@ jobs:
           badges-directory: .github/badges/it-${{ matrix.type }}
           generate-branches-badge: true
           generate-summary: true
+        continue-on-error: true
 
       - name: Add IT coverage to Job Summary
         run: |

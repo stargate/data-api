@@ -432,8 +432,6 @@
               <argLine>@{argLine}</argLine>
               <systemPropertyVariables>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                <!-- Pass JaCoCo agent to Quarkus application JVM for @QuarkusIntegrationTest -->
-                <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
                 <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
@@ -487,7 +485,8 @@
               <goal>prepare-agent-integration</goal>
             </goals>
             <configuration>
-              <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+              <!-- Use same file as quarkus.jacoco.data-file with append mode -->
+              <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
               <append>true</append>
             </configuration>
           </execution>
@@ -498,7 +497,7 @@
               <goal>report-integration</goal>
             </goals>
             <configuration>
-              <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
+              <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
               <outputDirectory>${project.build.directory}/site/jacoco-it</outputDirectory>
             </configuration>
           </execution>
