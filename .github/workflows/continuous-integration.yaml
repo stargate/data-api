@@ -200,13 +200,11 @@ jobs:
           </settings>
           EOF
 
-      # login to ECR to we can pull HCD image.
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          aws-access-key-id: ${{ secrets.HCD_ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.HCD_ECR_SECRET_KEY }}
-          aws-region: us-west-2
+          role-to-assume: ${{ secrets.ECR_FEDERATED_ROLE }}
+          aws-region: us-east-1
 
       - name: Login to Amazon ECR
         id: login-ecr
