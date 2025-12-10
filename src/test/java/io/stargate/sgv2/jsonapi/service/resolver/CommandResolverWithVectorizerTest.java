@@ -54,32 +54,29 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CommandResolverWithVectorizerTest {
+
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
   @Inject DocumentShredder documentShredder;
-
   @InjectMock protected RequestContext dataApiRequestInfo;
+  private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
 
   @Inject FindCommandResolver findCommandResolver;
-
   @Inject FindOneCommandResolver findOneCommandResolver;
   @Inject UpdateOneCommandResolver updateOneCommandResolver;
   @Inject DeleteOneCommandResolver deleteOneCommandResolver;
-
   @Inject FindOneAndDeleteCommandResolver findOneAndDeleteCommandResolver;
-
   @Inject InsertManyCommandResolver insertManyCommandResolver;
-
   @Inject InsertOneCommandResolver insertOneCommandResolver;
 
   @Inject DataVectorizerService dataVectorizerService;
+
   private final TestConstants testConstants = new TestConstants();
   private final TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
   // TODO: do these need to be unique to this test ? Can we use TestConstants ?
   protected final String KEYSPACE_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
-  private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
 
   @BeforeEach
   public void beforeEach() {
