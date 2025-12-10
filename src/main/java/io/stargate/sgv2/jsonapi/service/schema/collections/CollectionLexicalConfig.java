@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Arrays;
 import java.util.Map;
@@ -116,7 +117,7 @@ public record CollectionLexicalConfig(
 
     // Case 4: Can only enable if feature is available
     if (enabled && !lexicalAvailableForDB) {
-      throw ErrorCodeV1.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.toApiException();
+      throw SchemaException.Code.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.get();
     }
 
     // Case 5: Enabled and analyzer provided - validate and use

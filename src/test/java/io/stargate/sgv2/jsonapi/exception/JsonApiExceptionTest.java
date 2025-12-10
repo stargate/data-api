@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 class JsonApiExceptionTest {
   @Test
   public void happyPath() {
-    JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN);
+    JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_FIELD_INVALID);
 
     CommandResult result = ex.get();
 
@@ -23,9 +23,9 @@ class JsonApiExceptionTest {
         .singleElement()
         .satisfies(
             error -> {
-              assertThat(error.message()).isEqualTo("Provided command unknown");
+              assertThat(error.message()).isEqualTo("Request invalid");
               assertThat(error.fields())
-                  .containsEntry("errorCode", "COMMAND_UNKNOWN")
+                  .containsEntry("errorCode", "COMMAND_FIELD_INVALID")
                   .containsEntry("exceptionClass", "JsonApiException");
             });
   }
@@ -33,7 +33,8 @@ class JsonApiExceptionTest {
   @Test
   public void withCustomMessage() {
     JsonApiException ex =
-        new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN, "Custom message is more important.");
+        new JsonApiException(
+            ErrorCodeV1.COMMAND_FIELD_INVALID, "Custom message is more important.");
 
     CommandResult result = ex.get();
 
@@ -45,7 +46,7 @@ class JsonApiExceptionTest {
             error -> {
               assertThat(error.message()).isEqualTo("Custom message is more important.");
               assertThat(error.fields())
-                  .containsEntry("errorCode", "COMMAND_UNKNOWN")
+                  .containsEntry("errorCode", "COMMAND_FIELD_INVALID")
                   .containsEntry("exceptionClass", "JsonApiException");
             });
   }
@@ -53,7 +54,7 @@ class JsonApiExceptionTest {
   @Test
   public void withCause() {
     Exception cause = new IllegalArgumentException("Cause message is important");
-    JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN, cause);
+    JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_FIELD_INVALID, cause);
 
     CommandResult result = ex.get();
 
@@ -63,9 +64,9 @@ class JsonApiExceptionTest {
         .hasSize(2)
         .anySatisfy(
             error -> {
-              assertThat(error.message()).isEqualTo("Provided command unknown");
+              assertThat(error.message()).isEqualTo("Request invalid");
               assertThat(error.fields())
-                  .containsEntry("errorCode", "COMMAND_UNKNOWN")
+                  .containsEntry("errorCode", "COMMAND_FIELD_INVALID")
                   .containsEntry("exceptionClass", "JsonApiException");
             })
         .anySatisfy(
