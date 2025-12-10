@@ -1029,6 +1029,12 @@ request-errors:
       Resend the command using only columns that use the `vector` type.
 
   - scope: SCHEMA
+    code: LEXICAL_NOT_AVAILABLE_FOR_DATABASE
+    title: Lexical search is not available on this database
+    body: |-
+      Lexical search is not supported by all databases and in particular not by the current one.
+
+  - scope: SCHEMA
     code: LEXICAL_NOT_ENABLED_FOR_COLLECTION
     title: Lexical search is not enabled for the collection
     body: |-
@@ -1263,7 +1269,6 @@ request-errors:
       The command attempted to text index the unsupported columns: ${unsupportedColumns}.
       
       Resend the command using columns of `text` type.
-  
 
   - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES
