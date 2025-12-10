@@ -9,9 +9,9 @@ quarkus:
     access-log:
       enabled: false
     test-port: 9080
-  test:
-    # JaCoCo agent args for @QuarkusIntegrationTest (will be empty if not set)
-    arg-line: "@jacocoArgLine@"
+  # Configure JaCoCo for code coverage (works with quarkus-jacoco extension)
+  jacoco:
+    data-file: target/jacoco-quarkus.exec
   log:
     console:
       format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
