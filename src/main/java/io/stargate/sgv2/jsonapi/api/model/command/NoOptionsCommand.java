@@ -3,8 +3,9 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
+import java.util.Map;
 
 /**
  * Interface that Commands that only take "empty" Command (that is, do not expose options but should
@@ -20,6 +21,7 @@ public interface NoOptionsCommand {
     if (value.isNull() || (value.isObject() && value.isEmpty())) {
       return;
     }
-    throw ErrorCodeV1.COMMAND_ACCEPTS_NO_OPTIONS.toApiException("`%s`", getClass().getSimpleName());
+    throw RequestException.Code.COMMAND_ACCEPTS_NO_OPTIONS.get(
+        Map.of("command", getClass().getSimpleName()));
   }
 }
