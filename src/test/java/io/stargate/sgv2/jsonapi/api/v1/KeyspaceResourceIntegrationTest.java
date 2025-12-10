@@ -60,11 +60,16 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is("UNKNOWN_COMMAND"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"KeyspaceCommand\"s: known commands are ["));
+                  "Command 'unknownCommand' is not a Keyspace Command recognized by Data API."))
+          .body(
+              "errors[0].message",
+              containsString("Data API supports following Keyspace Commands: [alterType,"));
     }
 
     @Test

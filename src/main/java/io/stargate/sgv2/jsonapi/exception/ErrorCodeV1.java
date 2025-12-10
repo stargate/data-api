@@ -6,7 +6,6 @@ import jakarta.ws.rs.core.Response;
 public enum ErrorCodeV1 {
   /** Command error codes. */
   COUNT_READ_FAILED("Unable to count documents"),
-  COMMAND_UNKNOWN("Provided command unknown"),
   INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
@@ -41,11 +40,7 @@ public enum ErrorCodeV1 {
 
   FILTER_MULTIPLE_ID_FILTER(
       "Cannot have more than one _id equals filter clause: use $in operator instead"),
-
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
-
-  /** note: Only used by EmbeddingGateway */
-  INVALID_REQUEST("Request not supported by the data store"),
 
   INVALID_REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
 
@@ -199,7 +194,10 @@ public enum ErrorCodeV1 {
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
 
-  // NOTE: used/referenced by `embedding-gateway`, cannot remove:
+  // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
+
+  INVALID_REQUEST("Request not supported by the data store"),
+
   EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
   EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
 

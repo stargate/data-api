@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
+import java.util.Map;
 
 public class CommandObjectMapperHandler extends DeserializationProblemHandler {
 
@@ -56,10 +58,21 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       String failureMsg)
       throws JsonApiException {
     final String rawCommandClassString = baseType.getRawClass().getName();
-    final String baseCommand =
+    String baseCommand =
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
-    throw ErrorCodeV1.COMMAND_UNKNOWN.toApiException(
-        "\"%s\" not one of \"%s\"s: known commands are %s",
-        subTypeId, baseCommand, idResolver.getDescForKnownTypeIds());
+    // Massage "GeneralCommand" into "General Command" (and so forth)
+    int ix = baseCommand.indexOf("Command");
+    if (ix > 0) {
+      baseCommand = baseCommand.substring(0, ix) + " " + "Command";
+    }
+
+    throw RequestException.Code.UNKNOWN_COMMAND.get(
+        Map.of(
+            "commandType",
+            baseCommand,
+            "command",
+            subTypeId,
+            "knownCommands",
+            idResolver.getDescForKnownTypeIds()));
   }
 }

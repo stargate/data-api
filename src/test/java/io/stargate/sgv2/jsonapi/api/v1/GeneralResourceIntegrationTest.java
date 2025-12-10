@@ -68,11 +68,16 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is("UNKNOWN_COMMAND"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"GeneralCommand\"s: known commands are [createKeyspace,"));
+                  "Command 'unknownCommand' is not a General Command recognized by Data API."))
+          .body(
+              "errors[0].message",
+              containsString("Data API supports following General Commands: [createKeyspace,"));
     }
 
     @Test

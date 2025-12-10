@@ -128,6 +128,15 @@ snippets:
 
 request-errors:
   # UNSCOPED request errors
+  - scope:
+    code: UNKNOWN_COMMAND
+    title: Command is not recognized by Data API
+    body: |-
+      Command '${command}' is not a ${commandType} recognized by Data API.
+      
+      Data API supports following ${commandType}s: ${knownCommands}.
+      
+      Resend using one of the supported commands.
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND
