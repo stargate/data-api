@@ -93,14 +93,11 @@ public class NvidiaRerankingProvider extends RerankingProvider {
       int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials) {
 
     // TODO: Move error to v2
-    var accessToken =
-        rerankingCredentials
-            .apiKey()
-            .map(apiKey -> HttpConstants.BEARER_PREFIX_FOR_API_KEY + apiKey)
-            .orElseThrow(
-                () ->
-                    ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-                        "In order to rerank, please provide the reranking API key."));
+    if (rerankingCredentials.apiKey().isEmpty()) {
+      throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "In order to rerank, please provide the reranking API key.");
+    }
+    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey();
 
     var nvidiaRequest =
         new NvidiaRerankingRequest(
@@ -125,7 +122,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      rerankingCredentials.tenantId(),
+                      rerankingCredentials.tenant(),
                       ModelInputType.INPUT_TYPE_UNSPECIFIED,
                       nvidiaResponse.usage().prompt_tokens,
                       nvidiaResponse.usage().total_tokens,

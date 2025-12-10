@@ -158,7 +158,7 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       upstageResponse.usage().prompt_tokens(),
                       upstageResponse.usage().total_tokens(),

@@ -130,7 +130,7 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       cohereResponse.meta().billed_units().input_tokens(),
                       cohereResponse.meta().billed_units().input_tokens(),

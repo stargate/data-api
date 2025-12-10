@@ -139,7 +139,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
                     var modelUsage =
                         createModelUsage(
-                            embeddingCredentials.tenantId(),
+                            embeddingCredentials.tenant(),
                             ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                             bedrockResponse.inputTextTokenCount(),
                             bedrockResponse.inputTextTokenCount(),

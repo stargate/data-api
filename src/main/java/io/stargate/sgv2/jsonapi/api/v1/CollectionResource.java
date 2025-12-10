@@ -244,18 +244,14 @@ public class CollectionResource {
                 if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
                   embeddingProvider =
                       embeddingProviderFactory.create(
-                          requestContext.getTenantId(),
-                          requestContext.getCassandraToken(),
+                          requestContext.tenant(),
+                          requestContext.authToken(),
                           vectorColDef.vectorizeDefinition().provider(),
                           vectorColDef.vectorizeDefinition().modelName(),
                           vectorColDef.vectorSize(),
                           vectorColDef.vectorizeDefinition().parameters(),
                           vectorColDef.vectorizeDefinition().authentication(),
                           command.getClass().getSimpleName());
-                  requestContext
-                      .getEmbeddingCredentialsSupplier()
-                      .withAuthConfigFromCollection(
-                          vectorColDef.vectorizeDefinition().authentication());
                 }
 
                 var commandContext =

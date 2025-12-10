@@ -98,8 +98,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.requestTracing =
         anyTracing
             ? new DefaultRequestTracing(
-                requestContext.getRequestId(),
-                requestContext.getTenantId().orElse(""),
+                requestContext.requestId(),
+                requestContext.tenant(),
                 apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
             : RequestTracing.NO_OP;
 
