@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.config.feature;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 
 /**
  * Set of "Feature Flags" that can be used to enable/disable certain features in the Data API.
@@ -19,7 +20,7 @@ public enum ApiFeature {
   /**
    * Lexical search/sort feature flag: if enabled, the API will allow construction of
    * "$lexical"-enabled Collections. If disabled, those operations will fail with {@link
-   * ErrorCodeV1#LEXICAL_NOT_AVAILABLE_FOR_DATABASE}).
+   * SchemaException.Code#LEXICAL_NOT_AVAILABLE_FOR_DATABASE}).
    *
    * <p>Enabled by default.
    */
