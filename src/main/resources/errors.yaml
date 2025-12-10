@@ -1041,7 +1041,7 @@ request-errors:
     code: LEXICAL_NOT_AVAILABLE_FOR_DATABASE
     title: Lexical search is not available on this database
     body: |-
-      Lexical search is not supported by all databases and in particular not by the current one.
+      The command attempted to enable lexical search functionality but lexical search is not supported by this database.
 
   - scope: SCHEMA
     code: LEXICAL_NOT_ENABLED_FOR_COLLECTION
