@@ -7,6 +7,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.Test;
 public class MetricsTenantDeactivationConsumerTests {
   MeterRegistry meterRegistry;
   MetricsTenantDeactivationConsumer consumer;
+
+  private final TestConstants testConstants = new TestConstants();
 
   @BeforeEach
   public void setUp() {
@@ -32,15 +35,16 @@ public class MetricsTenantDeactivationConsumerTests {
   @Test
   void removeFromEmptyMeterRegistry() {
     assertThat(meterRegistry.getMeters()).isEmpty();
-
-    assertThatCode(() -> consumer.accept("any-tenant")).doesNotThrowAnyException();
+    assertThatCode(
+            () -> consumer.accept(testConstants.SINGLETON_TENANT_FACTORY.create("any-tenant")))
+        .doesNotThrowAnyException();
   }
 
   @Test
   void testTenantMetricRemovalLifecycle() {
-    final String tenant1 = "tenant1";
-    final String tenant2 = "tenant2";
-    final String tenant3 = "tenant3";
+    final String tenant1 = "TENANT1";
+    final String tenant2 = "TENANT2";
+    final String tenant3 = "TENANT3";
     final String counterMetrics = "counterMetrics";
     final String summaryMetrics = "summaryMetrics";
     final String timerMetrics = "timerMetrics";
@@ -84,7 +88,10 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 2: Removing a non-existent tenantId should not remove any metrics
-    assertThatCode(() -> consumer.accept("nonExistentTenant")).doesNotThrowAnyException();
+    assertThatCode(
+            () ->
+                consumer.accept(testConstants.SINGLETON_TENANT_FACTORY.create("nonExistentTenant")))
+        .doesNotThrowAnyException();
     assertMetricExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricExists(timerMetrics, TENANT_TAG, tenant1);
@@ -96,7 +103,8 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 3: Removing tenant1 should remove only tenant1's metrics; others remain
-    assertThatCode(() -> consumer.accept(tenant1)).doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(testConstants.SINGLETON_TENANT_FACTORY.create(tenant1)))
+        .doesNotThrowAnyException();
     assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
@@ -108,7 +116,8 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 4: Removing tenant1 again (already removed) should not affect other metrics
-    assertThatCode(() -> consumer.accept(tenant1)).doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(testConstants.SINGLETON_TENANT_FACTORY.create(tenant1)))
+        .doesNotThrowAnyException();
     assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
@@ -120,7 +129,8 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 5: Removing tenant2 should remove only tenant2's metrics; only tenant3's remain
-    assertThatCode(() -> consumer.accept(tenant2)).doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(testConstants.SINGLETON_TENANT_FACTORY.create(tenant2)))
+        .doesNotThrowAnyException();
     assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
     assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
@@ -132,7 +142,8 @@ public class MetricsTenantDeactivationConsumerTests {
     assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
     // Case 6: Removing tenant3 should remove all remaining metrics (registry empty)
-    assertThatCode(() -> consumer.accept(tenant3)).doesNotThrowAnyException();
+    assertThatCode(() -> consumer.accept(testConstants.SINGLETON_TENANT_FACTORY.create(tenant3)))
+        .doesNotThrowAnyException();
     assertThat(meterRegistry.getMeters()).isEmpty();
   }
 

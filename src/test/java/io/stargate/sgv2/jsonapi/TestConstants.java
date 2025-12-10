@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -8,9 +7,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
@@ -37,8 +37,8 @@ import org.apache.commons.lang3.RandomStringUtils;
  */
 public class TestConstants {
 
-  public final DatabaseType DATABASE_TYPE = DatabaseType.ASTRA;
   public final String APP_NAME;
+  public final TenantFactory SINGLETON_TENANT_FACTORY;
 
   // ============================================================
   // Names
@@ -64,15 +64,22 @@ public class TestConstants {
   // Request Context
   // ============================================================
 
-  public final String TENANT;
+  /** An astra database type TENANT used for test */
+  public final Tenant TENANT;
+
+  /** A cassandra database type TENANT used for test */
+  public final Tenant CASSANDRA_TENANT;
 
   public final String AUTH_TOKEN;
 
   /** A non SLA user agent for the test run */
-  public final String USER_AGENT;
+  public final UserAgent USER_AGENT;
 
   /** the DS SLA USer Agent */
-  public final String SLA_USER_AGENT;
+  public final UserAgent SLA_USER_AGENT;
+
+  /** Embedding credentials */
+  public final EmbeddingCredentials EMBEDDING_CREDENTIALS;
 
   // ============================================================
   // Schema Objects
@@ -85,7 +92,6 @@ public class TestConstants {
   public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
 
   public TestConstants() {
-
     // ============================================================
     // Names
     // ============================================================
@@ -104,10 +110,27 @@ public class TestConstants {
     // Request Context
     // ============================================================
 
-    TENANT = "tenant-" + CORRELATION_ID;
+    var tenantId = "tenant-" + CORRELATION_ID;
+    TenantFactory.reset();
+    TenantFactory.initialize(DatabaseType.ASTRA);
+    TENANT = TenantFactory.instance().create(tenantId);
+
+    SINGLETON_TENANT_FACTORY = TenantFactory.instance();
+
+    // will be defaulted to SINGLE-TENANT, so passing null as tenantId
+    CASSANDRA_TENANT = Tenant.create(DatabaseType.CASSANDRA, null);
+
     AUTH_TOKEN = "auth-token-" + CORRELATION_ID;
-    USER_AGENT = "user-agent/" + CORRELATION_ID;
-    SLA_USER_AGENT = SLA_USER_AGENT_NAME + "/" + CORRELATION_ID;
+
+    var userAgentString = "user-agent/" + CORRELATION_ID;
+    USER_AGENT = new UserAgent(userAgentString);
+
+    var slaUserAgentString = SLA_USER_AGENT_NAME + "/" + CORRELATION_ID;
+    SLA_USER_AGENT = new UserAgent(slaUserAgentString);
+
+    EMBEDDING_CREDENTIALS =
+        new EmbeddingCredentials(
+            TENANT, Optional.of("test-api-key"), Optional.empty(), Optional.empty());
 
     // ============================================================
     // Schema Objects
@@ -170,18 +193,15 @@ public class TestConstants {
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
 
+    var requestContext = mock(RequestContext.class);
+    when(requestContext.tenant()).thenReturn(TENANT);
+    when(requestContext.getEmbeddingCredentials()).thenReturn(EMBEDDING_CREDENTIALS);
+
     var embeddingCredentials = mock(EmbeddingCredentials.class);
-    when(embeddingCredentials.tenantId()).thenReturn("test-tenant");
+    when(embeddingCredentials.tenant()).thenReturn(TENANT);
     when(embeddingCredentials.apiKey()).thenReturn(Optional.of("test-apiKey"));
     when(embeddingCredentials.accessId()).thenReturn(Optional.of("test-accessId"));
     when(embeddingCredentials.secretId()).thenReturn(Optional.of("test-secretId"));
-
-    var embeddingCredentialsSupplier = mock(EmbeddingCredentialsSupplier.class);
-    when(embeddingCredentialsSupplier.create(any(), any())).thenReturn(embeddingCredentials);
-
-    var requestContext = mock(RequestContext.class);
-    when(requestContext.getEmbeddingCredentialsSupplier()).thenReturn(embeddingCredentialsSupplier);
-    when(requestContext.getTenantId()).thenReturn(Optional.of("test-tenant"));
 
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(
@@ -204,11 +224,7 @@ public class TestConstants {
   }
 
   public RequestContext requestContext() {
-    return new RequestContext(
-        Optional.of("test-tenant"),
-        Optional.empty(),
-        new RerankingCredentials("test-tenant", Optional.empty()),
-        "test-user-agent");
+    return new RequestContext(TENANT, AUTH_TOKEN, USER_AGENT);
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(

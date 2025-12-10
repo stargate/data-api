@@ -116,7 +116,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       jinaResponse.usage().prompt_tokens(),
                       jinaResponse.usage().total_tokens(),

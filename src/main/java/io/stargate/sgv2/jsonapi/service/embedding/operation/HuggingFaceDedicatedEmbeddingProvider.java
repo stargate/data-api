@@ -113,7 +113,7 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       huggingFaceResponse.usage().prompt_tokens(),
                       huggingFaceResponse.usage().total_tokens(),
