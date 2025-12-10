@@ -15,50 +15,34 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.request.token.configuration;
+package io.stargate.sgv2.jsonapi.api.request.token;
 
 import io.quarkus.arc.lookup.LookupIfProperty;
-import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
-import io.stargate.sgv2.jsonapi.api.request.token.impl.FixedTokenResolver;
-import io.stargate.sgv2.jsonapi.api.request.token.impl.HeaderTokenResolver;
-import io.stargate.sgv2.jsonapi.api.request.token.impl.PrincipalTokenResolver;
 import io.stargate.sgv2.jsonapi.config.AuthConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
-import java.util.Optional;
 
-/** Configuration for activating a correct {@link DataApiTokenResolver}. */
-public class DataApiTokenConfiguration {
+/** Configuration for activating a correct {@link RequestAuthTokenResolver}. */
+public class RequestAuthTokenResolverProducer {
 
   @Produces
   @ApplicationScoped
   @LookupIfProperty(name = "stargate.auth.token-resolver.type", stringValue = "header")
-  DataApiTokenResolver headerTokenResolver(AuthConfig config) {
-    String headerName = config.tokenResolver().header().headerName();
-    return new HeaderTokenResolver(headerName);
+  RequestAuthTokenResolver headerTokenResolver(AuthConfig config) {
+    return new HeaderTokenResolver(config.tokenResolver().header().headerName());
   }
 
   @Produces
   @ApplicationScoped
   @LookupIfProperty(name = "stargate.auth.token-resolver.type", stringValue = "principal")
-  DataApiTokenResolver principalTokenResolver() {
+  RequestAuthTokenResolver principalTokenResolver() {
     return new PrincipalTokenResolver();
   }
 
   @Produces
   @ApplicationScoped
   @LookupIfProperty(name = "stargate.auth.token-resolver.type", stringValue = "fixed")
-  DataApiTokenResolver fixedTokenResolver(AuthConfig config) {
-    return new FixedTokenResolver(config.tokenResolver().fixed());
-  }
-
-  @Produces
-  @ApplicationScoped
-  @LookupIfProperty(
-      name = "stargate.auth.token-resolver.type",
-      stringValue = "noop",
-      lookupIfMissing = true)
-  DataApiTokenResolver noopCassandraTokenResolver() {
-    return (context, securityContext) -> Optional.empty();
+  RequestAuthTokenResolver fixedTokenResolver(AuthConfig config) {
+    return new FixedTokenResolver(config.tokenResolver().fixed().token().orElse(null));
   }
 }

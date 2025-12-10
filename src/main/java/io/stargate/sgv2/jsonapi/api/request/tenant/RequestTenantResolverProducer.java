@@ -15,25 +15,21 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.request.tenant.configuration;
+package io.stargate.sgv2.jsonapi.api.request.tenant;
 
 import io.quarkus.arc.lookup.LookupIfProperty;
-import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
-import io.stargate.sgv2.jsonapi.api.request.tenant.impl.FixedTenantResolver;
-import io.stargate.sgv2.jsonapi.api.request.tenant.impl.SubdomainTenantResolver;
 import io.stargate.sgv2.jsonapi.config.MultiTenancyConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
-import java.util.Optional;
 
-/** Configuration for activating a correct {@link TenantResolver}. */
-public class TenantConfiguration {
+/** Configuration for activating a correct {@link RequestTenantResolver}. */
+public class RequestTenantResolverProducer {
 
   @Produces
   @ApplicationScoped
   @LookupIfProperty(name = "stargate.multi-tenancy.tenant-resolver.type", stringValue = "subdomain")
   @LookupIfProperty(name = "stargate.multi-tenancy.enabled", stringValue = "true")
-  DataApiTenantResolver subdomainTenantResolver(MultiTenancyConfig config) {
+  RequestTenantResolver subdomainTenantResolver(MultiTenancyConfig config) {
     return new SubdomainTenantResolver(config.tenantResolver().subdomain());
   }
 
@@ -41,21 +37,19 @@ public class TenantConfiguration {
   @ApplicationScoped
   @LookupIfProperty(name = "stargate.multi-tenancy.tenant-resolver.type", stringValue = "fixed")
   @LookupIfProperty(name = "stargate.multi-tenancy.enabled", stringValue = "true")
-  DataApiTenantResolver fixedTenantResolver(MultiTenancyConfig config) {
-    return new FixedTenantResolver(config.tenantResolver().fixed());
+  RequestTenantResolver fixedTenantResolver(MultiTenancyConfig config) {
+    return new FixedTenantResolver(config.tenantResolver().fixed().tenantId().orElse(""));
   }
 
   @Produces
   @ApplicationScoped
   @LookupIfProperty(
-      name = "stargate.multi-tenancy.tenant-resolver.type",
-      stringValue = "noop",
-      lookupIfMissing = true)
-  @LookupIfProperty(
       name = "stargate.multi-tenancy.enabled",
       stringValue = "false",
       lookupIfMissing = true)
-  DataApiTenantResolver noopTenantResolver() {
-    return (context, securityContext) -> Optional.empty();
+  RequestTenantResolver noopTenantResolver() {
+    var none = TenantFactory.instance().create(null);
+
+    return (context, securityContext) -> none;
   }
 }

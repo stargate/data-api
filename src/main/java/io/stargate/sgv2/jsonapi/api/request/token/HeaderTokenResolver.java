@@ -15,26 +15,24 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.request.token.impl;
+package io.stargate.sgv2.jsonapi.api.request.token;
 
-import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
-import io.stargate.sgv2.jsonapi.config.AuthConfig;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-import java.util.Optional;
 
-/** The {@link DataApiTokenResolver} that uses a fixed token supplied by the configuration. */
-public class FixedTokenResolver implements DataApiTokenResolver {
+/** The {@link RequestAuthTokenResolver} that resolves a token from the HTTP header. */
+public class HeaderTokenResolver implements RequestAuthTokenResolver {
 
-  private final AuthConfig.TokenResolverConfig.FixedTokenResolverConfig config;
+  /** The name of the header to extract the token from. */
+  private final String headerName;
 
-  public FixedTokenResolver(AuthConfig.TokenResolverConfig.FixedTokenResolverConfig config) {
-    this.config = config;
+  public HeaderTokenResolver(String headerName) {
+    this.headerName = headerName;
   }
 
   /** {@inheritDoc} */
   @Override
-  public Optional<String> resolve(RoutingContext context, SecurityContext securityContext) {
-    return config.token();
+  public String resolve(RoutingContext context, SecurityContext securityContext) {
+    return context.request().getHeader(headerName);
   }
 }

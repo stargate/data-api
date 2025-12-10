@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -210,7 +209,7 @@ public interface CommandResolver<C extends Command> {
     // that
     // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.tenant().toString());
     Tags tags = Tags.of(commandTag, tenantTag);
 
     getIndexUsageTags(dbLogicalExpression, baseIndexUsage);

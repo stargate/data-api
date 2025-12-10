@@ -15,20 +15,21 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.request.token.impl;
+package io.stargate.sgv2.jsonapi.api.request.tenant;
 
-import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-import java.security.Principal;
-import java.util.Optional;
 
-/** {@link DataApiTokenResolver} that reads the token from the {@link Principal#getName()}. */
-public class PrincipalTokenResolver implements DataApiTokenResolver {
+/** Resolver of the tenant ID, in case multi-tenancy is used. */
+@FunctionalInterface
+public interface RequestTenantResolver {
 
-  /** {@inheritDoc} */
-  @Override
-  public Optional<String> resolve(RoutingContext context, SecurityContext securityContext) {
-    return Optional.ofNullable(securityContext.getUserPrincipal()).map(Principal::getName);
-  }
+  /**
+   * Returns a tenant identifier given a {@link RoutingContext} and a {@link SecurityContext}.
+   *
+   * @param context the routing context
+   * @param securityContext the security context
+   * @return The tenant identifier. If empty, indicates that the multi-tenancy is disabled.
+   */
+  Tenant resolve(RoutingContext context, SecurityContext securityContext);
 }
