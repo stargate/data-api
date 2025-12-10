@@ -266,11 +266,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jacoco</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
@@ -485,9 +480,8 @@
               <goal>prepare-agent-integration</goal>
             </goals>
             <configuration>
-              <!-- Use same file as quarkus.jacoco.data-file with append mode -->
-              <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
-              <append>true</append>
+              <!-- Integration tests write to separate file -->
+              <destFile>${project.build.directory}/jacoco-it.exec</destFile>
               <!-- Use custom property name to avoid conflicts -->
               <propertyName>jacocoArgLine</propertyName>
             </configuration>
@@ -499,7 +493,7 @@
               <goal>report-integration</goal>
             </goals>
             <configuration>
-              <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
+              <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
               <outputDirectory>${project.build.directory}/site/jacoco-it</outputDirectory>
             </configuration>
           </execution>
