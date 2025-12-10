@@ -111,14 +111,16 @@ jobs:
           generate-branches-badge: true
           generate-summary: true
 
-      - name: Add coverage to Job Summary
+      - name: Add unit test coverage to Job Summary
         run: |
-          echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+          COVERAGE=$(printf "%.2f" $(echo "${{ steps.jacoco-badge.outputs.coverage }} * 100" | bc -l))
+          BRANCHES=$(printf "%.2f" $(echo "${{ steps.jacoco-badge.outputs.branches }} * 100" | bc -l))
+          echo "## 📊 Unit Test Code Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Instructions** | ${{ steps.jacoco-badge.outputs.coverage }}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Branches** | ${{ steps.jacoco-badge.outputs.branches }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Instructions** | ${COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branches** | ${BRANCHES}% |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📥 [Download Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -248,18 +250,20 @@ jobs:
 
       - name: Add IT coverage to Job Summary
         run: |
-          echo "## 📊 Integration Test Coverage Report (${{ matrix.type }})" >> $GITHUB_STEP_SUMMARY
+          COVERAGE=$(printf "%.2f" $(echo "${{ steps.jacoco-it-badge.outputs.coverage }} * 100" | bc -l))
+          BRANCHES=$(printf "%.2f" $(echo "${{ steps.jacoco-it-badge.outputs.branches }} * 100" | bc -l))
+          echo "## 📊 Integration Test Code Coverage Report (${{ matrix.type }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Instructions** | ${{ steps.jacoco-it-badge.outputs.coverage }}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Branches** | ${{ steps.jacoco-it-badge.outputs.branches }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Instructions** | ${COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branches** | ${BRANCHES}% |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📥 [Download Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The complete JaCoCo HTML report is available as an artifact named \`jacoco-it-report-${{ matrix.type }}\`" >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload JaCoCo integration test coverage report
+      - name: Upload JaCoCo integration test code coverage report
         uses: actions/upload-artifact@v5
         with:
           name: jacoco-it-report-${{ matrix.type }}
