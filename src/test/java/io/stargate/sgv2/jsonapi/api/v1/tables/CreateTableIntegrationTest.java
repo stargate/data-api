@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertN
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
@@ -950,8 +951,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                      }
                   }
                   """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: Service provider 'invalid_service' is not supported")));
+                  RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: Service provider 'invalid_service' is not supported")));
 
       // vector type with invalid model name config
       testCases.add(
@@ -982,8 +983,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                      }
                   }
                   """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
+                  RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
 
       // vector type with deprecated model
       testCases.add(
@@ -1072,8 +1073,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                        }
                     }
                     """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
+                  RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
 
       // unspecified dimension with unspecified vectorize
       testCases.add(

@@ -138,6 +138,14 @@ request-errors:
       Resend command without options.
 
   - scope:
+    code: INVALID_CREATE_COLLECTION_OPTIONS
+    title: Invalid options for createCollection
+    body: |-
+      'createCollection' command option(s) invalid: ${message}
+      
+      Resend 'createCollection' with valid options.
+
+  - scope:
     code: UNKNOWN_COMMAND
     title: Command is not recognized by Data API
     body: |-
