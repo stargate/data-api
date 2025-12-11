@@ -319,7 +319,7 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
-          .hasMessageStartingWith("Command 'InsertOneCommand' does not accept options");
+          .hasMessageStartingWith("Command 'insertOne' does not accept options");
     }
 
     @Test
@@ -406,7 +406,7 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
-          .hasMessageStartingWith("Command 'DeleteOneCommand' does not accept options");
+          .hasMessageStartingWith("Command 'deleteOne' does not accept options");
     }
   }
 

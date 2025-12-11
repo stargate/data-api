@@ -21,7 +21,14 @@ public interface NoOptionsCommand {
     if (value.isNull() || (value.isObject() && value.isEmpty())) {
       return;
     }
+    StringBuilder commandName = new StringBuilder(getClass().getSimpleName());
+    // Above gives "FindOneCommand" and we want "findOne"
+    int ix = commandName.indexOf("Command");
+    if (ix > 0) {
+      commandName.setLength(ix);
+    }
+    commandName.setCharAt(0, Character.toLowerCase(commandName.charAt(0)));
     throw RequestException.Code.COMMAND_ACCEPTS_NO_OPTIONS.get(
-        Map.of("command", getClass().getSimpleName()));
+        Map.of("command", commandName.toString()));
   }
 }
