@@ -109,9 +109,9 @@ public record CollectionLexicalConfig(
         String nodeType = JsonUtil.nodeTypeAsString(analyzerDef);
         throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
             "message",
-            "'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: %s. "
-                + "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or an empty Object {}."
-                    .formatted(nodeType));
+            ("'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: %s. "
+                    + "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or an empty Object '{ }'.")
+                .formatted(nodeType));
       }
       return configForDisabled();
     }
