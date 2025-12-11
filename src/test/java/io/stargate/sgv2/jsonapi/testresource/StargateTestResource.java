@@ -1,8 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
 package io.stargate.sgv2.jsonapi.testresource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,9 +32,12 @@ public abstract class StargateTestResource
   protected static final int DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB = 8;
   private Map<String, String> initArgs;
   protected Optional<String> containerNetworkId;
+
+  /** Shared network for containers to communicate. */
   private Network network;
+
+  /** The backend database container (Cassandra, DSE, or HCD). */
   private GenericContainer<?> cassandraContainer;
-  private GenericContainer<?> stargateContainer;
 
   public StargateTestResource() {}
 
@@ -62,15 +60,6 @@ public abstract class StargateTestResource
         propsBuilder = this.startWithContainerNetwork(networkId, reuse);
       } else {
         propsBuilder = this.startWithoutContainerNetwork(reuse);
-      }
-
-      if (useCoordinator()) {
-        Integer authPort = this.stargateContainer.getMappedPort(8081);
-        String token = this.getAuthToken(this.stargateContainer.getHost(), authPort);
-        LOG.info("Using auth token %s for integration tests.".formatted(token));
-        propsBuilder.put("stargate.int-test.auth-token", token);
-        String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
-        propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
       }
 
       propsBuilder.put(
@@ -116,18 +105,9 @@ public abstract class StargateTestResource
     this.cassandraContainer = this.baseCassandraContainer(reuse);
     this.cassandraContainer.withNetwork(network);
     this.cassandraContainer.start();
-    if (useCoordinator()) {
-      this.stargateContainer = this.baseCoordinatorContainer(reuse);
-      this.stargateContainer.withNetwork(network).withEnv("SEED", "cassandra");
-      this.stargateContainer.start();
-      Integer bridgePort = this.stargateContainer.getMappedPort(8091);
-      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-      propsBuilder.put("quarkus.grpc.clients.bridge.port", String.valueOf(bridgePort));
-      return propsBuilder;
-    } else {
-      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-      return propsBuilder;
-    }
+
+    ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+    return propsBuilder;
   }
 
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
@@ -137,30 +117,13 @@ public abstract class StargateTestResource
     this.cassandraContainer.start();
     String cassandraHost =
         this.cassandraContainer.getCurrentContainerInfo().getConfig().getHostName();
-    if (useCoordinator()) {
-      this.stargateContainer = this.baseCoordinatorContainer(reuse);
-      this.stargateContainer
-          .withNetworkMode(networkId)
-          .withEnv("BIND_TO_LISTEN_ADDRESS", "true")
-          .withEnv("SEED", cassandraHost);
-      this.stargateContainer.start();
-      String stargateHost =
-          this.stargateContainer.getCurrentContainerInfo().getConfig().getHostName();
-      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-      propsBuilder.put("quarkus.grpc.clients.bridge.host", stargateHost);
-      return propsBuilder;
-    } else {
-      return ImmutableMap.builder();
-    }
+
+    return ImmutableMap.builder();
   }
 
   public void stop() {
     if (null != this.cassandraContainer && !this.cassandraContainer.isShouldBeReused()) {
       this.cassandraContainer.stop();
-    }
-
-    if (null != this.stargateContainer && !this.stargateContainer.isShouldBeReused()) {
-      this.stargateContainer.stop();
     }
   }
 
@@ -302,13 +265,6 @@ public abstract class StargateTestResource
     // Running under Maven if surefire test class path is set
     // (note: also set up by Failsafe plugin (integration tests))
     return System.getProperty("surefire.test.class.path") != null;
-  }
-
-  /**
-   * @return {@code true} if coordinator should be started and used.
-   */
-  protected boolean useCoordinator() {
-    return Boolean.getBoolean("testing.containers.use-coordinator");
   }
 
   private Duration getCassandraStartupTimeout() {
