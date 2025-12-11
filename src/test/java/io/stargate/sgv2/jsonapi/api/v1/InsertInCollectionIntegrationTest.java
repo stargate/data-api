@@ -319,8 +319,10 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", startsWith("Command accepts no options: `InsertOneCommand`"));
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body(
+              "errors[0].message",
+              startsWith("Command 'insertOne' does not accept options but some were included."));
     }
 
     @Test
