@@ -177,12 +177,12 @@ public abstract class APIException extends RuntimeException implements Recordabl
         .append("exceptionFlags", exceptionFlags);
   }
 
-  // Support for legacy ErrorCodeV1 usage
+  // Support for converting legacy ErrorCodeV1 usage
   public CommandResult.Error getCommandResultError() {
     return getCommandResultError(Response.Status.OK);
   }
 
-  // Support for legacy ErrorCodeV1 usage
+  // Support for converting legacy ErrorCodeV1 usage
   public CommandResult.Error getCommandResultError(Response.Status status) {
     Map<String, Object> fieldsForMetricsTag =
         Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName());
