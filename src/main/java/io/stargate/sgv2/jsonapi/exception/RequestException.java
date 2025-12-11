@@ -41,11 +41,12 @@ public class RequestException extends APIException {
   }
 
   public enum Code implements ErrorCode<RequestException> {
+    COMMAND_ACCEPTS_NO_OPTIONS,
     MISSING_RERANK_QUERY_TEXT,
     UNKNOWN_COMMAND,
-    UNSUPPORTED_TABLE_COMMAND,
     UNSUPPORTED_COLLECTION_COMMAND,
-    UNSUPPORTED_RERANKING_COMMAND;
+    UNSUPPORTED_RERANKING_COMMAND,
+    UNSUPPORTED_TABLE_COMMAND;
 
     private final ErrorTemplate<RequestException> template;
 

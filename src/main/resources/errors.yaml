@@ -128,6 +128,15 @@ snippets:
 
 request-errors:
   # UNSCOPED request errors
+
+  - scope:
+    code: COMMAND_ACCEPTS_NO_OPTIONS
+    title: Command accepts no options
+    body: |-
+      Command '${command}' does not accept options but some were included.
+      
+      Resend command without options.
+
   - scope:
     code: UNKNOWN_COMMAND
     title: Command is not recognized by Data API
