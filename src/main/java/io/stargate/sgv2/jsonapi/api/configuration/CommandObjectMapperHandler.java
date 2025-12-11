@@ -43,7 +43,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     if (typeStr.endsWith("CreateCollectionCommand$Options$VectorSearchConfig")) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message",
-          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\",)"
+          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\")"
               .formatted(propertyName));
     }
 

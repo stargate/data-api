@@ -5,7 +5,6 @@ import jakarta.ws.rs.core.Response;
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
   /** Command error codes. */
-  INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
 
   /**
    * Error code used for {@code ConstraintViolationException} failures mapped to {@code
