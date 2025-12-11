@@ -423,11 +423,9 @@
               <goal>verify</goal>
             </goals>
             <configuration>
-              <!-- Use JaCoCo agent for integration test coverage -->
-              <argLine>${jacocoArgLine}</argLine>
               <systemPropertyVariables>
                 <!-- Pass JaCoCo agent args to Quarkus application JVM for @QuarkusIntegrationTest coverage -->
-                <quarkus.test.arg-line>${jacocoArgLine}</quarkus.test.arg-line>
+                <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
@@ -484,8 +482,6 @@
             <configuration>
               <!-- Integration tests write to separate file -->
               <destFile>${project.build.directory}/jacoco-it.exec</destFile>
-              <!-- Use custom property name to avoid conflicts -->
-              <propertyName>jacocoArgLine</propertyName>
             </configuration>
           </execution>
           <execution>
