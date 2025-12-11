@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.HuggingFaceDedicatedEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.validation.Valid;
@@ -51,8 +51,8 @@ public record VectorizeConfig(
       Map<String, Object> parameters) {
 
     if (provider == null) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'provider' in required property for 'vector.service' Object value");
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          "message", "'provider' in required property for 'vector.service' Object value");
     }
 
     this.provider = provider;
@@ -66,10 +66,13 @@ public record VectorizeConfig(
             HuggingFaceDedicatedEmbeddingProvider.HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL;
       } else if (!modelName.equals(
           HuggingFaceDedicatedEmbeddingProvider.HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL)) {
-        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "'modelName' is not needed for embedding provider %s explicitly, only '%s' is accepted",
-            ModelProvider.HUGGINGFACE_DEDICATED,
-            HuggingFaceDedicatedEmbeddingProvider.HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL);
+        throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+            "message",
+            "'modelName' is not needed for embedding provider '%s' explicitly, only '%s' is accepted"
+                .formatted(
+                    ModelProvider.HUGGINGFACE_DEDICATED,
+                    HuggingFaceDedicatedEmbeddingProvider
+                        .HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL));
       }
     }
 
