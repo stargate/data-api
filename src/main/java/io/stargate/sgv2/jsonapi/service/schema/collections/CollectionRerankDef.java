@@ -379,12 +379,12 @@ public class CollectionRerankDef {
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
     if (providerConfig == null) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
-          "message", "Reranking provider '%s' is not supported", provider);
+          "message", "Reranking provider '%s' is not supported".formatted(provider));
     }
 
     if (!providerConfig.enabled()) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
-          "message", "Reranking provider '%s' is disabled", provider);
+          "message", "Reranking provider '%s' is disabled".formatted(provider));
     }
     return providerConfig;
   }
