@@ -19,8 +19,6 @@ public abstract class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
 
-  // Astra will have 8kB limit some time around or after 1.0.0-BETA-6:
-  protected static final int DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB = 8;
   private Map<String, String> initArgs;
   protected Optional<String> containerNetworkId;
 
@@ -102,8 +100,7 @@ public abstract class StargateTestResource
     this.cassandraContainer.withNetwork(network);
     this.cassandraContainer.start();
 
-    ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-    return propsBuilder;
+      return ImmutableMap.builder();
   }
 
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
@@ -111,8 +108,6 @@ public abstract class StargateTestResource
     this.cassandraContainer = this.baseCassandraContainer(reuse);
     this.cassandraContainer.withNetworkMode(networkId);
     this.cassandraContainer.start();
-    String cassandraHost =
-        this.cassandraContainer.getCurrentContainerInfo().getConfig().getHostName();
 
     return ImmutableMap.builder();
   }
@@ -243,6 +238,4 @@ public abstract class StargateTestResource
   public abstract int getCountPageSize();
 
   public abstract Long getMaxDocumentSortCount();
-
-  record AuthResponse(String authToken) {}
 }
