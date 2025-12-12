@@ -20,9 +20,16 @@ public abstract class StargateTestResource
 
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
 
+  /**
+   * Network ID injected by Quarkus when running tests inside a container (e.g., CI/CD). Used to
+   * connect the database container to the same network as the test runner.
+   */
   protected Optional<String> containerNetworkId;
 
-  /** Shared network for containers to communicate. */
+  /**
+   * Dedicated Docker network created by Testcontainers for local development. Used to isolate
+   * containers when running tests from the host machine.
+   */
   private Network network;
 
   /** The backend database container (Cassandra, DSE, or HCD). */
@@ -39,25 +46,25 @@ public abstract class StargateTestResource
 
   @Override
   public Map<String, String> start() {
-    if (this.shouldSkip()) {
+    if (shouldSkip()) {
       return Collections.emptyMap();
     } else {
       boolean reuse = false;
       ImmutableMap.Builder<String, String> propsBuilder;
 
-      if (this.containerNetworkId.isPresent()) {
-        String networkId = this.containerNetworkId.get();
-        propsBuilder = this.startWithContainerNetwork(networkId, reuse);
+      if (containerNetworkId.isPresent()) {
+        String networkId = containerNetworkId.get();
+        propsBuilder = startWithContainerNetwork(networkId, reuse);
       } else {
-        propsBuilder = this.startWithoutContainerNetwork(reuse);
+        propsBuilder = startWithoutContainerNetwork(reuse);
       }
 
       propsBuilder.put(
           "stargate.int-test.cassandra.host",
-          this.cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
+          cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
       propsBuilder.put(
           "stargate.int-test.cassandra.cql-port",
-          this.cassandraContainer.getMappedPort(9042).toString());
+          cassandraContainer.getMappedPort(9042).toString());
 
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
       // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
@@ -88,8 +95,8 @@ public abstract class StargateTestResource
 
   @Override
   public void stop() {
-    if (null != this.cassandraContainer && !this.cassandraContainer.isShouldBeReused()) {
-      this.cassandraContainer.stop();
+    if (null != cassandraContainer && !cassandraContainer.isShouldBeReused()) {
+      cassandraContainer.stop();
     }
   }
 
@@ -129,25 +136,25 @@ public abstract class StargateTestResource
   }
 
   private ImmutableMap.Builder<String, String> startWithoutContainerNetwork(boolean reuse) {
-    Network network = this.network();
-    this.cassandraContainer = this.baseCassandraContainer(reuse);
-    this.cassandraContainer.withNetwork(network);
-    this.cassandraContainer.start();
+    Network network = network();
+    cassandraContainer = baseCassandraContainer(reuse);
+    cassandraContainer.withNetwork(network);
+    cassandraContainer.start();
 
     return ImmutableMap.builder();
   }
 
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
       String networkId, boolean reuse) {
-    this.cassandraContainer = this.baseCassandraContainer(reuse);
-    this.cassandraContainer.withNetworkMode(networkId);
-    this.cassandraContainer.start();
+    cassandraContainer = baseCassandraContainer(reuse);
+    cassandraContainer.withNetworkMode(networkId);
+    cassandraContainer.start();
 
     return ImmutableMap.builder();
   }
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
-    String image = this.getCassandraImage();
+    String image = getCassandraImage();
     GenericContainer<?> container;
 
     // Some JVM options are same for all backends, start with those:
@@ -210,16 +217,16 @@ public abstract class StargateTestResource
           .waitingFor(Wait.forLogMessage(".*Created default superuser role.*\\n", 1))
           .withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
     }
-    container.withStartupTimeout(this.getCassandraStartupTimeout()).withReuse(reuse);
+    container.withStartupTimeout(getCassandraStartupTimeout()).withReuse(reuse);
     return container;
   }
 
   private Network network() {
-    if (null == this.network) {
-      this.network = Network.newNetwork();
+    if (null == network) {
+      network = Network.newNetwork();
     }
 
-    return this.network;
+    return network;
   }
 
   private String getCassandraImage() {
