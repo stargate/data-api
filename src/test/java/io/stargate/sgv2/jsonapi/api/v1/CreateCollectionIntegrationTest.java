@@ -466,8 +466,8 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("SchemaException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_FIELD"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
