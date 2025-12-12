@@ -138,12 +138,12 @@ request-errors:
       Resend command without options.
 
   - scope:
-    code: INVALID_CREATE_COLLECTION_OPTIONS
-    title: Invalid options for createCollection
+    code: INVALID_CREATE_COLLECTION_FIELD
+    title: Invalid field(s) for createCollection
     body: |-
-      'createCollection' command option(s) invalid: ${message}
+      'createCollection' command referenced unrecognized field(s): ${message}
       
-      Resend 'createCollection' with valid options.
+      Resend 'createCollection' with only valid fields.
 
   - scope:
     code: UNKNOWN_COMMAND
@@ -845,6 +845,14 @@ request-errors:
       The partition includes the unknown columns: ${unknownColumns}.
       
       Resend the command using only columns included in the table definition.
+
+  - scope: SCHEMA
+    code: INVALID_CREATE_COLLECTION_OPTIONS
+    title: Invalid options for createCollection
+    body: |-
+      'createCollection' command option(s) invalid: ${message}
+      
+      Resend 'createCollection' with valid options.
 
   - scope: SCHEMA
     code: MISSING_PARTITION_COLUMNS
