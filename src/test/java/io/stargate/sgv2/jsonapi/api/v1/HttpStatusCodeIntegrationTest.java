@@ -49,7 +49,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(401)
           .body("$", responseIsError())
-          .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
+          .body(
+              "errors[0].message",
+              startsWith("Authentication failed for request due to invalid token"));
     }
 
     @Test
@@ -72,7 +74,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(401)
           .body("$", responseIsErrorWithStatus())
-          .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"))
+          .body(
+              "errors[0].message",
+              startsWith("Authentication failed for request due to invalid token"))
           .body(
               "status.warnings[0]",
               hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
@@ -141,9 +145,11 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(415)
           .body("$", responseIsError())
-          .body("errors[0].message", is("Invalid Content-Type header"))
-          .body("errors[0].errorCode", is("INVALID_CONTENT_TYPE_HEADER"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is("UNSUPPORTED_CONTENT_TYPE"))
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body(
+              "errors[0].message",
+              startsWith("Request sent with unsupported 'Content-Type' header"));
     }
 
     @Test
@@ -215,7 +221,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(401)
           .body("$", responseIsError())
-          .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
+          .body(
+              "errors[0].message",
+              startsWith("Authentication failed for request due to invalid token"));
     }
 
     @Test
@@ -310,7 +318,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(401)
           .body("$", responseIsErrorWithStatus())
-          .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"))
+          .body(
+              "errors[0].message",
+              startsWith("Authentication failed for request due to invalid token"))
           .body(
               "status.warnings[0]",
               hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
@@ -328,7 +338,6 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .body(
               "status.warnings[0].message",
               containsString("The new command to use is: createKeyspace."));
-      ;
     }
 
     @Test

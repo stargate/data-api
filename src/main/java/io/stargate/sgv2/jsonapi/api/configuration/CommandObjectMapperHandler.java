@@ -23,25 +23,25 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
 
     final String typeStr = (deserializer == null) ? "N/A" : deserializer.handledType().toString();
     if (typeStr.endsWith("CreateCollectionCommand$Options")) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")"
               .formatted(propertyName));
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$IdConfig")) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.defaultId` (known fields: \"type\")"
               .formatted(propertyName));
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$IndexingConfig")) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")"
               .formatted(propertyName));
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$VectorSearchConfig")) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\")"
               .formatted(propertyName));
