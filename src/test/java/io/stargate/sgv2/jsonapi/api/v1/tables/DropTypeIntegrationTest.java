@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertN
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.AbstractKeyspaceIntegrationTestBase;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
@@ -83,7 +83,9 @@ public class DropTypeIntegrationTest extends TypeIntegrationTestBase {
         .templated()
         .dropType("", false)
         .hasSingleApiError(
-            ErrorCodeV1.COMMAND_FIELD_INVALID,
-            "field 'command.name' value \"\" not valid. Problem: must not be empty.");
+            RequestException.Code.COMMAND_FIELD_INVALID,
+            RequestException.class,
+            "field 'command.name' value \"\" not valid.",
+            "Problem: must not be empty.");
   }
 }

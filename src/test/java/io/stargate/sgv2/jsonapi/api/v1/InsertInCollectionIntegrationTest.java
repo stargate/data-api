@@ -403,11 +403,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command.document' value `null` not valid. Problem: must not be null"));
+                  "Command field 'command.document' value `null` not valid: must not be null"));
     }
   }
 
@@ -1618,11 +1618,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               endsWith(
-                  "not valid. Problem: amount of documents to insert is over the max limit ("
+                  "not valid: amount of documents to insert is over the max limit ("
                       + docs.size()
                       + " vs "
                       + MAX_DOCS

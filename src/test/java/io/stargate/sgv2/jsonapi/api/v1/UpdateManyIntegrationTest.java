@@ -556,11 +556,10 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              is(
-                  "Request invalid: field 'command.updateClause' value `null` not valid. Problem: must not be null."));
+              is("Command field 'command.updateClause' value `null` not valid: must not be null."));
     }
   }
 

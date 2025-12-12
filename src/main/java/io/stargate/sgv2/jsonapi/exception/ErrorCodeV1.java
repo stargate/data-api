@@ -5,13 +5,6 @@ import jakarta.ws.rs.core.Response;
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
   /** Command error codes. */
-
-  /**
-   * Error code used for {@code ConstraintViolationException} failures mapped to {@code
-   * JsonApiException}
-   */
-  COMMAND_FIELD_INVALID("Request invalid"),
-
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
   COLLECTION_NOT_EXIST("Collection does not exist, collection name"),
   COUNT_READ_FAILED("Unable to count documents"),

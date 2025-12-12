@@ -138,6 +138,14 @@ request-errors:
       Resend command without options.
 
   - scope:
+    code: COMMAND_FIELD_INVALID
+    title: Command field invalid
+    body: |-
+      Command field '${field}' value ${value} not valid: ${message}.
+      
+      Resend command with valid value.
+
+  - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
     title: Invalid field(s) for createCollection
     body: |-

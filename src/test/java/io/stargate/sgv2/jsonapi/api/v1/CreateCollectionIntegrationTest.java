@@ -1606,12 +1606,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       }
                       """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
+                  "Command field 'command.options.vector.sourceModel' value \"invalidName\" not valid"));
     }
 
     @Test
@@ -1635,12 +1635,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                               """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
+                  "Command field 'command.options.vector.sourceModel' value \"invalidName\" not valid:"));
     }
   }
 
