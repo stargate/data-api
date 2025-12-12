@@ -8,9 +8,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc;
 import io.stargate.sgv2.jsonapi.config.constants.SchemaConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorFormatters;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.slf4j.Logger;
@@ -116,7 +116,12 @@ public record VectorizeDefinition(
               e);
 
           throw SchemaException.Code.INVALID_VECTORIZE_FIELD_CONFIGURATION.get(
-              errVars(tableMetadata, Map.of("field", entry.getKey(), "message", e.toString())));
+              ErrorFormatters.errVars(
+                  tableMetadata,
+                  m -> {
+                    m.put("field", entry.getKey());
+                    m.put("message", e.toString());
+                  }));
         }
         defs.put(entry.getKey(), vectorizeDef);
       }
@@ -126,17 +131,9 @@ public record VectorizeDefinition(
               .formatted(tableMetadata.getKeyspace(), tableMetadata.getName(), vectorizeJson),
           e);
       throw SchemaException.Code.INVALID_VECTORIZE_TABLE_CONFIGURATION.get(
-          errVars(tableMetadata, Map.of("message", e.toString())));
+          ErrorFormatters.errVars(tableMetadata, m -> m.put("message", e.toString())));
     }
     return defs;
-  }
-
-  private static Map<String, String> errVars(TableMetadata table, Map<String, String> extra) {
-    Map<String, String> vars = new HashMap<>();
-    vars.putAll(extra);
-    vars.put("keyspace", CqlIdentifierUtil.cqlIdentifierToMessageString(table.getKeyspace()));
-    vars.put("table", CqlIdentifierUtil.cqlIdentifierToMessageString(table.getName()));
-    return vars;
   }
 
   @Override

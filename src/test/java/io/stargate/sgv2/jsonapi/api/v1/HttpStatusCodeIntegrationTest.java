@@ -145,7 +145,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(415)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CONTENT_TYPE_HEADER"))
+          .body("errors[0].errorCode", is("UNSUPPORTED_CONTENT_TYPE"))
           .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",

@@ -138,14 +138,6 @@ request-errors:
       Resend command without options.
 
   - scope:
-    code: INVALID_CONTENT_TYPE_HEADER
-    title: Invalid Content-Type header
-    body: |-
-      Request sent with unsupported 'Content-Type' header: ${message}
-      
-      Resend with supported 'Content-Type'.
-
-  - scope:
     code: INVALID_CREATE_COLLECTION_OPTIONS
     title: Invalid options for createCollection
     body: |-
@@ -170,6 +162,15 @@ request-errors:
       Data API supports following ${commandType}s: ${knownCommands}.
       
       Resend using one of the supported commands.
+
+  - scope:
+    code: UNSUPPORTED_CONTENT_TYPE
+    title: Unsupported Content-Type
+    body: |-
+      Request sent with unsupported 'Content-Type' header: ${message}
+      
+      Resend with supported 'Content-Type' header.
+
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND
