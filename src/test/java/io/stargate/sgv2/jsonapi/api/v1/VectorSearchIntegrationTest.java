@@ -989,7 +989,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              contains("limit options should not be greater than 1000 for vector search."));
+              containsString("limit options should not be greater than 1000 for vector search."));
     }
 
     @Test
@@ -1015,7 +1015,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("RequestException"))
           .body(
-              "errors[0].message", contains("skip options should not be used with vector search."));
+              "errors[0].message",
+              containsString("skip options should not be used with vector search."));
     }
   }
 
