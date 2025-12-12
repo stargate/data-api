@@ -42,7 +42,7 @@ public class RequestException extends APIException {
 
   public enum Code implements ErrorCode<RequestException> {
     COMMAND_ACCEPTS_NO_OPTIONS,
-    INVALID_CREATE_COLLECTION_OPTIONS,
+    INVALID_CREATE_COLLECTION_FIELD,
     MISSING_RERANK_QUERY_TEXT,
     UNAUTHENTICATED_REQUEST,
     UNKNOWN_COMMAND,

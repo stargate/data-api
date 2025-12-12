@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Arrays;
@@ -89,7 +88,7 @@ public record CollectionLexicalConfig(
     // Case 2: Validate 'enabled' flag is present
     Boolean enabled = lexicalConfig.enabled();
     if (enabled == null) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message", "'enabled' is required property for 'lexical' Object value");
     }
 
@@ -107,7 +106,7 @@ public record CollectionLexicalConfig(
     if (!enabled) {
       if (!analyzerNotDefined) {
         String nodeType = JsonUtil.nodeTypeAsString(analyzerDef);
-        throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
             "message",
             ("'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: %s. "
                     + "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or an empty Object '{ }'.")
@@ -136,7 +135,7 @@ public record CollectionLexicalConfig(
       // First: check for any invalid (misspelled etc) fields
       foundNames.removeAll(VALID_ANALYZER_FIELDS);
       if (!foundNames.isEmpty()) {
-        throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
             "message",
             "Invalid field%s for 'lexical.analyzer'. Valid fields are: %s, found: %s"
                 .formatted(
@@ -164,7 +163,7 @@ public record CollectionLexicalConfig(
               }
             };
         if (!valueOk) {
-          throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
               "message",
               "'%s' property of 'lexical.analyzer' must be JSON %s, is: %s"
                   .formatted(entry.getKey(), expectedType, JsonUtil.nodeTypeAsString(fieldValue)));
@@ -172,7 +171,7 @@ public record CollectionLexicalConfig(
       }
     } else {
       // Otherwise, invalid definition
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message",
           "'analyzer' property of 'lexical' must be either JSON Object or String, is: %s"
               .formatted(JsonUtil.nodeTypeAsString(analyzerDef)));

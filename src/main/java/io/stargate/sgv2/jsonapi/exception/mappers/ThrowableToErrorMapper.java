@@ -16,10 +16,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.core.Response;
 import java.util.Collection;
@@ -190,7 +187,7 @@ public final class ThrowableToErrorMapper {
     }
     // [data-api#1900]: Need to convert Lexical-index creation failure to something more meaningful
     if (message.contains("Invalid analyzer config")) {
-      return RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS
+      return SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS
           .get("message", message)
           .getCommandResultError(Response.Status.OK);
     }
