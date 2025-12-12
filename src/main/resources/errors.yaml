@@ -146,6 +146,14 @@ request-errors:
       Resend 'createCollection' with only valid fields.
 
   - scope:
+    code: UNAUTHENTICATED_REQUEST
+    title: Authentication failed
+    body: |-
+      Authentication failed for request due to invalid token.
+      
+      Resend with valid authentication token.
+
+  - scope:
     code: UNKNOWN_COMMAND
     title: Command is not recognized by Data API
     body: |-
@@ -154,6 +162,15 @@ request-errors:
       Data API supports following ${commandType}s: ${knownCommands}.
       
       Resend using one of the supported commands.
+
+  - scope:
+    code: UNSUPPORTED_CONTENT_TYPE
+    title: Unsupported Content-Type
+    body: |-
+      Request sent with unsupported 'Content-Type' header: ${message}
+      
+      Resend with supported 'Content-Type' header.
+
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND
@@ -1467,12 +1484,6 @@ request-errors:
           d. partitionSort values should be either `1` for ascending or `-1` for descending.
 
   - scope: SCHEMA
-    code: INVALID_CONFIGURATION
-    title: Unable to parse configuration, schema invalid.
-    body: |-
-      Unable to parse configuration, schema invalid.
-
-  - scope: SCHEMA
     code: INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN
     title: Unable to create index, format for index creation column is invalid.
     body: |-
@@ -1500,10 +1511,18 @@ request-errors:
         Resend the command using a valid user defined type name.
 
   - scope: SCHEMA
-    code: INVALID_VECTORIZE_CONFIGURATION
-    title: Unable to parse vectorize configuration, schema invalid.
+    code: INVALID_VECTORIZE_FIELD_CONFIGURATION
+    title: Unable to parse vectorize configuration for table, field schema invalid.
     body: |-
-      Unable to parse vectorize configuration, schema invalid for field ${field}.
+      Unable to parse vectorize configuration, schema invalid for field '${field}' (of table '${keyspace}.${table}').
+      Underlying problem: ${message}
+
+  - scope: SCHEMA
+    code: INVALID_VECTORIZE_TABLE_CONFIGURATION
+    title: Unable to parse vectorize configuration for table.
+    body: |-
+      Unable to parse vectorize configuration, schema invalid for table '${keyspace}.${table}'.
+      Underlying problem: ${message}
 
   - scope: SCHEMA
     code: COLUMN_NOT_FOUND
