@@ -49,7 +49,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(401)
           .body("$", responseIsError())
-          .body("errors[0].message", startsWith("Authentication failed for request due to invalid token"));
+          .body(
+              "errors[0].message",
+              startsWith("Authentication failed for request due to invalid token"));
     }
 
     @Test
@@ -72,7 +74,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(401)
           .body("$", responseIsErrorWithStatus())
-          .body("errors[0].message", startsWith("Authentication failed for request due to invalid token"))
+          .body(
+              "errors[0].message",
+              startsWith("Authentication failed for request due to invalid token"))
           .body(
               "status.warnings[0]",
               hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
@@ -169,7 +173,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
     }
 
     // GET instead of POST to test method not found
-    //@Disabled("Fails with 404, but should be 405, with Quarkus 3.24.x")
+    // @Disabled("Fails with 404, but should be 405, with Quarkus 3.24.x")
     @Test
     public void methodNotFound() {
       String json =
@@ -215,7 +219,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(401)
           .body("$", responseIsError())
-          .body("errors[0].message", startsWith("Authentication failed for request due to invalid token"));
+          .body(
+              "errors[0].message",
+              startsWith("Authentication failed for request due to invalid token"));
     }
 
     @Test
@@ -310,7 +316,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(401)
           .body("$", responseIsErrorWithStatus())
-          .body("errors[0].message", startsWith("Authentication failed for request due to invalid token"))
+          .body(
+              "errors[0].message",
+              startsWith("Authentication failed for request due to invalid token"))
           .body(
               "status.warnings[0]",
               hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
