@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.config.constants.SchemaConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.slf4j.Logger;
@@ -114,9 +115,8 @@ public record VectorizeDefinition(
                       entry.getValue().toString()),
               e);
 
-          // TODO: Update this error so it says the keyspace and table name !
-          throw SchemaException.Code.INVALID_VECTORIZE_CONFIGURATION.get(
-              Map.of("field", entry.getKey()));
+          throw SchemaException.Code.INVALID_VECTORIZE_FIELD_CONFIGURATION.get(
+              errVars(tableMetadata, Map.of("field", entry.getKey(), "message", e.toString())));
         }
         defs.put(entry.getKey(), vectorizeDef);
       }
@@ -125,10 +125,18 @@ public record VectorizeDefinition(
           "Error parsing vectorize JSON configuration for table: %s.%s, json: %s"
               .formatted(tableMetadata.getKeyspace(), tableMetadata.getName(), vectorizeJson),
           e);
-      // TODO: THIS ERROR NEEDS WORK !!!! Update this error so it says the keyspace and table name !
-      throw SchemaException.Code.INVALID_CONFIGURATION.get();
+      throw SchemaException.Code.INVALID_VECTORIZE_TABLE_CONFIGURATION.get(
+          errVars(tableMetadata, Map.of("message", e.toString())));
     }
     return defs;
+  }
+
+  private static Map<String, String> errVars(TableMetadata table, Map<String, String> extra) {
+    Map<String, String> vars = new HashMap<>();
+    vars.putAll(extra);
+    vars.put("keyspace", CqlIdentifierUtil.cqlIdentifierToMessageString(table.getKeyspace()));
+    vars.put("table", CqlIdentifierUtil.cqlIdentifierToMessageString(table.getName()));
+    return vars;
   }
 
   @Override
