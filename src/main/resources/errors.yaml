@@ -143,7 +143,7 @@ request-errors:
     body: |-
       Request sent with unsupported 'Content-Type' header: ${message}
       
-      Resend with supported 'Content-Type.
+      Resend with supported 'Content-Type'.
 
   - scope:
     code: INVALID_CREATE_COLLECTION_OPTIONS
@@ -159,7 +159,7 @@ request-errors:
     body: |-
       Authentication failed for request due to invalid token.
       
-      Resend using valid authentication token.
+      Resend with valid authentication token.
 
   - scope:
     code: UNKNOWN_COMMAND
