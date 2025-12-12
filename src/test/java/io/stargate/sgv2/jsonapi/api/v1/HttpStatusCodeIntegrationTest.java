@@ -173,7 +173,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
     }
 
     // GET instead of POST to test method not found
-    // @Disabled("Fails with 404, but should be 405, with Quarkus 3.24.x")
+    @Disabled("Fails with 404, but should be 405, with Quarkus 3.24.x")
     @Test
     public void methodNotFound() {
       String json =
