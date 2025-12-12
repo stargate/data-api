@@ -1,17 +1,8 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
@@ -41,6 +32,10 @@ public abstract class StargateTestResource
 
   public StargateTestResource() {}
 
+  /**
+   * Called by Quarkus to inject the DevServicesContext, allowing us to detect if we are running
+   * inside a container network.
+   */
   public void setIntegrationTestContext(DevServicesContext context) {
     this.containerNetworkId = context.containerNetworkId();
   }
@@ -55,6 +50,7 @@ public abstract class StargateTestResource
     } else {
       boolean reuse = false;
       ImmutableMap.Builder<String, String> propsBuilder;
+
       if (this.containerNetworkId.isPresent()) {
         String networkId = this.containerNetworkId.get();
         propsBuilder = this.startWithContainerNetwork(networkId, reuse);
@@ -195,35 +191,6 @@ public abstract class StargateTestResource
     return container;
   }
 
-  private GenericContainer<?> baseCoordinatorContainer(boolean reuse) {
-    String image = this.getStargateImage();
-
-    String javaOpts =
-        String.format(
-            "-Xmx1G -D%s=%d",
-            "cassandra.sai.max_string_term_size_kb", DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB);
-
-    GenericContainer<?> container =
-        new GenericContainer<>(image)
-            .withEnv("JAVA_OPTS", javaOpts)
-            .withEnv("CLUSTER_NAME", getClusterName())
-            .withEnv("SIMPLE_SNITCH", "true")
-            .withEnv("ENABLE_AUTH", "true")
-            .withNetworkAliases(new String[] {"coordinator"})
-            .withExposedPorts(new Integer[] {8091, 8081, 8084, 9042})
-            .withLogConsumer(
-                (new Slf4jLogConsumer(LoggerFactory.getLogger("coordinator-docker")))
-                    .withPrefix("COORDINATOR"))
-            .waitingFor(Wait.forHttp("/checker/readiness").forPort(8084).forStatusCode(200))
-            .withStartupTimeout(this.getCoordinatorStartupTimeout())
-            .withReuse(reuse);
-    if (isDse()) {
-      container.withEnv("DSE", "1");
-    }
-
-    return container;
-  }
-
   private Network network() {
     if (null == this.network) {
       this.network = Network.newNetwork();
@@ -235,11 +202,6 @@ public abstract class StargateTestResource
   private String getCassandraImage() {
     String image = System.getProperty("testing.containers.cassandra-image");
     return null == image ? "cassandra:4.0.10" : image;
-  }
-
-  private String getStargateImage() {
-    String image = System.getProperty("testing.containers.stargate-image");
-    return null == image ? "stargateio/coordinator-4_0:v2.1" : image;
   }
 
   private static String getClusterName() {
@@ -270,32 +232,6 @@ public abstract class StargateTestResource
   private Duration getCassandraStartupTimeout() {
     long cassandraStartupTimeout = Long.getLong("testing.containers.cassandra-startup-timeout", 5L);
     return Duration.ofMinutes(cassandraStartupTimeout);
-  }
-
-  private Duration getCoordinatorStartupTimeout() {
-    long coordinatorStartupTimeout =
-        Long.getLong("testing.containers.coordinator-startup-timeout", 3L);
-    return Duration.ofMinutes(coordinatorStartupTimeout);
-  }
-
-  private String getAuthToken(String host, int authPort) {
-    try {
-      String json = "{\n  \"username\":\"cassandra\",\n  \"password\":\"cassandra\"\n}\n";
-      URI authUri = new URI("http://%s:%d/v1/auth".formatted(host, authPort));
-      HttpRequest request =
-          HttpRequest.newBuilder()
-              .uri(authUri)
-              .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-              .POST(BodyPublishers.ofString(json))
-              .build();
-      HttpResponse<String> response =
-          HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
-      ObjectMapper objectMapper = new ObjectMapper();
-      AuthResponse authResponse = objectMapper.readValue(response.body(), AuthResponse.class);
-      return authResponse.authToken;
-    } catch (Exception var9) {
-      throw new RuntimeException("Failed to get Cassandra token for integration tests.", var9);
-    }
   }
 
   public abstract int getMaxCollectionsPerDBOverride();
