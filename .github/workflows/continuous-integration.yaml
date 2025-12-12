@@ -102,13 +102,18 @@ jobs:
       # Download baseline coverage from main branch for PR comparison
       - name: Download baseline coverage
         if: github.event_name == 'pull_request'
-        uses: dawidd6/action-download-artifact@v9
         continue-on-error: true
-        with:
-          workflow: continuous-integration.yaml
-          branch: main
-          name: baseline-coverage
-          path: baseline-coverage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the latest successful run on main that has the baseline-coverage artifact
+          run_id=$(gh run list --workflow=continuous-integration.yaml --branch=main --status=success --limit=1 --json databaseId --jq='.[0].databaseId')
+          if [ -n "$run_id" ]; then
+            echo "Downloading baseline coverage from run $run_id"
+            gh run download $run_id --name baseline-coverage --dir baseline-coverage
+          else
+            echo "No successful workflow run found on main branch with coverage artifact"
+          fi
 
       - name: Calculate coverage delta
         if: github.event_name == 'pull_request'
