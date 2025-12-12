@@ -113,8 +113,6 @@ public enum ErrorCodeV1 {
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
-  INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
-
   UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),

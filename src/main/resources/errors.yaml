@@ -138,6 +138,14 @@ request-errors:
       Resend command without options.
 
   - scope:
+    code: INVALID_CONTENT_TYPE_HEADER
+    title: Invalid Content-Type header
+    body: |-
+      Request sent with unsupported 'Content-Type' header: ${message}
+      
+      Resend with supported 'Content-Type.
+
+  - scope:
     code: INVALID_CREATE_COLLECTION_OPTIONS
     title: Invalid options for createCollection
     body: |-

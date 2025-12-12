@@ -84,10 +84,10 @@ public final class ThrowableToErrorMapper {
         }
 
         // handle an invalid Content-Type header
-        if (throwable instanceof NotSupportedException) {
+        if (throwable instanceof NotSupportedException nse) {
           // validate the Content-Type header, 415 if failed
-          return ErrorCodeV1.INVALID_CONTENT_TYPE_HEADER
-              .toApiException()
+          return RequestException.Code.INVALID_CONTENT_TYPE_HEADER
+              .get("message", nse.getMessage())
               .getCommandResultError(Response.Status.UNSUPPORTED_MEDIA_TYPE);
         }
 
