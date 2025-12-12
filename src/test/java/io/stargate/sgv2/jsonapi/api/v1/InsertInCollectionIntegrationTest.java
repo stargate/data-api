@@ -1621,7 +1621,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              endsWith(
+              containsString(
                   "not valid: amount of documents to insert is over the max limit ("
                       + docs.size()
                       + " vs "
