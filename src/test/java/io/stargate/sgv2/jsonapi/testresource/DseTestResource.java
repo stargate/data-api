@@ -19,8 +19,6 @@ public class DseTestResource extends StargateTestResource {
 
   // Need some additional pre-configuration when NOT running under Maven
   public DseTestResource() {
-    super();
-
     if (isRunningUnderMaven()) {
       LOG.info("Running under Maven, no need to overwrite integration test properties");
       return;

@@ -17,6 +17,7 @@ import org.testcontainers.utility.MountableFile;
 
 public abstract class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
+
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
 
   protected Optional<String> containerNetworkId;
@@ -27,16 +28,16 @@ public abstract class StargateTestResource
   /** The backend database container (Cassandra, DSE, or HCD). */
   private GenericContainer<?> cassandraContainer;
 
-  public StargateTestResource() {}
-
   /**
    * Called by Quarkus to inject the DevServicesContext, allowing us to detect if we are running
    * inside a container network.
    */
+  @Override
   public void setIntegrationTestContext(DevServicesContext context) {
     this.containerNetworkId = context.containerNetworkId();
   }
 
+  @Override
   public Map<String, String> start() {
     if (this.shouldSkip()) {
       return Collections.emptyMap();
@@ -85,11 +86,49 @@ public abstract class StargateTestResource
     }
   }
 
+  @Override
+  public void stop() {
+    if (null != this.cassandraContainer && !this.cassandraContainer.isShouldBeReused()) {
+      this.cassandraContainer.stop();
+    }
+  }
+
+  public abstract int getMaxCollectionsPerDBOverride();
+
+  public abstract int getIndexesPerDBOverride();
+
+  public abstract int getMaxCountLimit();
+
+  public abstract int getCountPageSize();
+
+  public abstract Long getMaxDocumentSortCount();
+
+  public static String getPersistenceModule() {
+    return System.getProperty(
+        "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
+  }
+
+  public static boolean isDse() {
+    String dse = System.getProperty("testing.containers.cluster-dse", null);
+    return "true".equals(dse);
+  }
+
+  public static boolean isHcd() {
+    String hcd = System.getProperty("testing.containers.cluster-hcd", null);
+    return "true".equals(hcd);
+  }
+
+  public static boolean isRunningUnderMaven() {
+    // Running under Maven if surefire test class path is set
+    // (note: also set up by Failsafe plugin (integration tests))
+    return System.getProperty("surefire.test.class.path") != null;
+  }
+
   private boolean shouldSkip() {
     return System.getProperty("quarkus.http.test-host") != null;
   }
 
-  public ImmutableMap.Builder<String, String> startWithoutContainerNetwork(boolean reuse) {
+  private ImmutableMap.Builder<String, String> startWithoutContainerNetwork(boolean reuse) {
     Network network = this.network();
     this.cassandraContainer = this.baseCassandraContainer(reuse);
     this.cassandraContainer.withNetwork(network);
@@ -105,12 +144,6 @@ public abstract class StargateTestResource
     this.cassandraContainer.start();
 
     return ImmutableMap.builder();
-  }
-
-  public void stop() {
-    if (null != this.cassandraContainer && !this.cassandraContainer.isShouldBeReused()) {
-      this.cassandraContainer.stop();
-    }
   }
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
@@ -198,39 +231,8 @@ public abstract class StargateTestResource
     return System.getProperty("testing.containers.cluster-name", "int-test-cluster");
   }
 
-  public static String getPersistenceModule() {
-    return System.getProperty(
-        "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
-  }
-
-  public static boolean isDse() {
-    String dse = System.getProperty("testing.containers.cluster-dse", null);
-    return "true".equals(dse);
-  }
-
-  public static boolean isHcd() {
-    String hcd = System.getProperty("testing.containers.cluster-hcd", null);
-    return "true".equals(hcd);
-  }
-
-  public static boolean isRunningUnderMaven() {
-    // Running under Maven if surefire test class path is set
-    // (note: also set up by Failsafe plugin (integration tests))
-    return System.getProperty("surefire.test.class.path") != null;
-  }
-
   private Duration getCassandraStartupTimeout() {
     long cassandraStartupTimeout = Long.getLong("testing.containers.cassandra-startup-timeout", 5L);
     return Duration.ofMinutes(cassandraStartupTimeout);
   }
-
-  public abstract int getMaxCollectionsPerDBOverride();
-
-  public abstract int getIndexesPerDBOverride();
-
-  public abstract int getMaxCountLimit();
-
-  public abstract int getCountPageSize();
-
-  public abstract Long getMaxDocumentSortCount();
 }
