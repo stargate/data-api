@@ -146,6 +146,14 @@ request-errors:
       Resend 'createCollection' with valid options.
 
   - scope:
+    code: UNAUTHENTICATED_REQUEST
+    title: Authentication failed
+    body: |-
+      Authentication failed for request due to invalid token.
+      
+      Resend using valid authentication token.
+
+  - scope:
     code: UNKNOWN_COMMAND
     title: Command is not recognized by Data API
     body: |-
