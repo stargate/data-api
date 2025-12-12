@@ -85,7 +85,6 @@ public class DropTypeIntegrationTest extends TypeIntegrationTestBase {
         .hasSingleApiError(
             RequestException.Code.COMMAND_FIELD_INVALID,
             RequestException.class,
-            "field 'command.name' value \"\" not valid.",
-            "Problem: must not be empty.");
+            "field 'command.name' value \"\" not valid: must not be empty.");
   }
 }
