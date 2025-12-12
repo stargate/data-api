@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -50,7 +49,7 @@ public class CqlCredentialsFactory implements CQLSessionCache.CredentialsFactory
       // the provided authToken matches the configured fixedToken.
       // (Previously part of CqlSessionCache.getSession())
       if (!fixedToken.equals(authToken)) {
-        throw new UnauthorizedException(ErrorCodeV1.UNAUTHENTICATED_REQUEST.getMessage());
+        throw new UnauthorizedException("UNAUTHENTICATED: Invalid token");
       }
       // If a fixedToken is configured, always use the fallback username and password.
       // (Logic originally from CqlSessionCache.getNewSession())

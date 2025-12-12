@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.HuggingFaceDedicatedEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.validation.Valid;
@@ -51,7 +51,7 @@ public record VectorizeConfig(
       Map<String, Object> parameters) {
 
     if (provider == null) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message", "'provider' in required property for 'vector.service' Object value");
     }
 
@@ -66,7 +66,7 @@ public record VectorizeConfig(
             HuggingFaceDedicatedEmbeddingProvider.HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL;
       } else if (!modelName.equals(
           HuggingFaceDedicatedEmbeddingProvider.HUGGINGFACE_DEDICATED_ENDPOINT_DEFINED_MODEL)) {
-        throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
             "message",
             "'modelName' is not needed for embedding provider '%s' explicitly, only '%s' is accepted"
                 .formatted(
