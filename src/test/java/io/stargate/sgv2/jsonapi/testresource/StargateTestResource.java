@@ -19,7 +19,6 @@ public abstract class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
 
-  private Map<String, String> initArgs;
   protected Optional<String> containerNetworkId;
 
   /** Shared network for containers to communicate. */
@@ -36,10 +35,6 @@ public abstract class StargateTestResource
    */
   public void setIntegrationTestContext(DevServicesContext context) {
     this.containerNetworkId = context.containerNetworkId();
-  }
-
-  public void init(Map<String, String> initArgs) {
-    this.initArgs = initArgs;
   }
 
   public Map<String, String> start() {
@@ -100,7 +95,7 @@ public abstract class StargateTestResource
     this.cassandraContainer.withNetwork(network);
     this.cassandraContainer.start();
 
-      return ImmutableMap.builder();
+    return ImmutableMap.builder();
   }
 
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
