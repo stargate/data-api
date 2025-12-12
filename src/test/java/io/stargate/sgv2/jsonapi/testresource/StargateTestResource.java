@@ -48,49 +48,42 @@ public abstract class StargateTestResource
   public Map<String, String> start() {
     if (shouldSkip()) {
       return Collections.emptyMap();
-    } else {
-      boolean reuse = false;
-      ImmutableMap.Builder<String, String> propsBuilder;
-
-      if (containerNetworkId.isPresent()) {
-        String networkId = containerNetworkId.get();
-        propsBuilder = startWithContainerNetwork(networkId, reuse);
-      } else {
-        propsBuilder = startWithoutContainerNetwork(reuse);
-      }
-
-      propsBuilder.put(
-          "stargate.int-test.cassandra.host",
-          cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
-      propsBuilder.put(
-          "stargate.int-test.cassandra.cql-port",
-          cassandraContainer.getMappedPort(9042).toString());
-
-      propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
-      // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
-      propsBuilder.put(
-          "stargate.database.limits.max-collections",
-          String.valueOf(getMaxCollectionsPerDBOverride()));
-      propsBuilder.put(
-          "stargate.database.limits.indexes-available-per-database",
-          String.valueOf(getIndexesPerDBOverride()));
-      propsBuilder.put(
-          "stargate.jsonapi.operations.max-count-limit", String.valueOf(getMaxCountLimit()));
-      propsBuilder.put(
-          "stargate.jsonapi.operations.default-count-page-size",
-          String.valueOf(getCountPageSize()));
-      Long maxToSort = getMaxDocumentSortCount();
-      if (maxToSort != null) {
-        propsBuilder.put(
-            "stargate.jsonapi.operations.max-document-sort-count", String.valueOf(maxToSort));
-      }
-      propsBuilder.put("stargate.jsonapi.operations.vectorize-enabled", "true");
-
-      ImmutableMap<String, String> props = propsBuilder.build();
-      props.forEach(System::setProperty);
-      LOG.info("Using props map for the integration tests: %s".formatted(props));
-      return props;
     }
+
+    ImmutableMap.Builder<String, String> propsBuilder =
+        containerNetworkId
+            .map(id -> startWithContainerNetwork(id, false))
+            .orElseGet(() -> startWithoutContainerNetwork(false));
+
+    propsBuilder.put(
+        "stargate.int-test.cassandra.host",
+        cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
+    propsBuilder.put(
+        "stargate.int-test.cassandra.cql-port", cassandraContainer.getMappedPort(9042).toString());
+
+    propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
+    // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
+    propsBuilder.put(
+        "stargate.database.limits.max-collections",
+        String.valueOf(getMaxCollectionsPerDBOverride()));
+    propsBuilder.put(
+        "stargate.database.limits.indexes-available-per-database",
+        String.valueOf(getIndexesPerDBOverride()));
+    propsBuilder.put(
+        "stargate.jsonapi.operations.max-count-limit", String.valueOf(getMaxCountLimit()));
+    propsBuilder.put(
+        "stargate.jsonapi.operations.default-count-page-size", String.valueOf(getCountPageSize()));
+    Long maxToSort = getMaxDocumentSortCount();
+    if (maxToSort != null) {
+      propsBuilder.put(
+          "stargate.jsonapi.operations.max-document-sort-count", String.valueOf(maxToSort));
+    }
+    propsBuilder.put("stargate.jsonapi.operations.vectorize-enabled", "true");
+
+    ImmutableMap<String, String> props = propsBuilder.build();
+    props.forEach(System::setProperty);
+    LOG.info("Using props map for the integration tests: %s".formatted(props));
+    return props;
   }
 
   @Override
