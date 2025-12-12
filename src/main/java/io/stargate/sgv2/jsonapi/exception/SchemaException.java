@@ -69,10 +69,10 @@ public class SchemaException extends RequestException {
     UNSUPPORTED_VECTOR_DIMENSION,
     UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES,
 
-    // older below - seperated because they need to be confirmed
-    INVALID_CONFIGURATION,
+    // older below - separated because they need to be confirmed
     INVALID_KEYSPACE,
-    INVALID_VECTORIZE_CONFIGURATION;
+    INVALID_VECTORIZE_FIELD_CONFIGURATION,
+    INVALID_VECTORIZE_TABLE_CONFIGURATION;
 
     private final ErrorTemplate<SchemaException> template;
 
