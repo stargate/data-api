@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProviderConfigProducer;
@@ -303,14 +302,14 @@ public class CollectionRerankDef {
     Boolean enabled = rerankingDesc.enabled();
     var serviceConfig = rerankingDesc.rerankServiceDesc();
     if (enabled == null) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message", "'enabled' is required property for 'rerank' Object value");
     }
 
     // Case 3: Reranking disabled - ensure no service configuration is provided
     if (!enabled) {
       if (serviceConfig != null && !serviceConfig.isEmpty()) {
-        throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
             "message", "'rerank' is disabled, but 'rerank.service' configuration is provided");
       }
       return DISABLED;
@@ -370,7 +369,7 @@ public class CollectionRerankDef {
       String provider, RerankingProvidersConfig rerankingProvidersConfig) {
     // 1. Ensures the provider name is specified (not null)
     if (provider == null) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message", "Provider name is required for reranking service configuration");
     }
 
@@ -378,12 +377,12 @@ public class CollectionRerankDef {
     // check)
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
     if (providerConfig == null) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message", "Reranking provider '%s' is not supported".formatted(provider));
     }
 
     if (!providerConfig.enabled()) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message", "Reranking provider '%s' is disabled".formatted(provider));
     }
     return providerConfig;
@@ -407,7 +406,7 @@ public class CollectionRerankDef {
       String modelName,
       RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig) {
     if (modelName == null) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message", "Model name is required for reranking provider '%s'".formatted(provider));
     }
 
@@ -417,7 +416,7 @@ public class CollectionRerankDef {
             .findFirst();
 
     if (rerankModel.isEmpty()) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message",
           "Model '%s' is not supported by reranking provider '%s'".formatted(modelName, provider));
     }
@@ -471,7 +470,7 @@ public class CollectionRerankDef {
               RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.NONE)
           || supportedAuth.containsKey(
               RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.HEADER)) {
-        throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
             "message",
             "Reranking provider '%s' currently only supports 'NONE' or 'HEADER' authentication types. No authentication parameters should be provided."
                 .formatted(provider));
@@ -498,7 +497,7 @@ public class CollectionRerankDef {
     // Currently, all supported reranking providers don't accept any parameters,
     // so the parameters map must be null or empty
     if (parameters != null && !parameters.isEmpty()) {
-      throw RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message",
           "Reranking provider '%s' currently doesn't support any parameters. No parameters should be provided."
               .formatted(provider));
