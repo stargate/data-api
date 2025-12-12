@@ -145,9 +145,11 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(415)
           .body("$", responseIsError())
-          .body("errors[0].message", is("Invalid Content-Type header"))
           .body("errors[0].errorCode", is("INVALID_CONTENT_TYPE_HEADER"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body(
+              "errors[0].message",
+              startsWith("Request sent with unsupported 'Content-Type' header"));
     }
 
     @Test
