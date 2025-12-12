@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.core.Response;
 import java.util.Collection;
@@ -190,9 +191,9 @@ public final class ThrowableToErrorMapper {
     }
     // [data-api#1900]: Need to convert Lexical-index creation failure to something more meaningful
     if (message.contains("Invalid analyzer config")) {
-      return ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS
-          .toApiException()
-          .getCommandResultError(message, Response.Status.OK);
+      return RequestException.Code.INVALID_CREATE_COLLECTION_OPTIONS
+          .get("message", message)
+          .getCommandResultError(Response.Status.OK);
     }
     // [data-api#2068]: Need to convert Lexical-value-too-big failure to something more meaningful
     if (message.contains(

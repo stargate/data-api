@@ -2,11 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -95,8 +91,10 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is("Command accepts no options: `DeleteOneCommand`"));
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body(
+              "errors[0].message",
+              startsWith("Command 'deleteOne' does not accept options but some were included."));
     }
 
     @Test

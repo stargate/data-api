@@ -56,7 +56,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       Map.of(
           new HashSet<>() {
             {
-              add(INVALID_CREATE_COLLECTION_OPTIONS);
               add(INVALID_USAGE_OF_VECTORIZE);
               add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
               add(VECTOR_SEARCH_TOO_BIG_VALUE);
