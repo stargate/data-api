@@ -55,13 +55,15 @@ public abstract class StargateTestResource
             .map(id -> startWithContainerNetwork(id, false))
             .orElseGet(() -> startWithoutContainerNetwork(false));
 
+    // 1. Connection Config: Tell the app how to connect to the backend database
     propsBuilder.put(
         "stargate.int-test.cassandra.host",
         cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
     propsBuilder.put(
         "stargate.int-test.cassandra.cql-port", cassandraContainer.getMappedPort(9042).toString());
-
     propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
+
+    // 2. Runtime Limits Config: Override default limits for testing purposes
     // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
     propsBuilder.put(
         "stargate.database.limits.max-collections",
@@ -129,20 +131,19 @@ public abstract class StargateTestResource
   }
 
   private ImmutableMap.Builder<String, String> startWithoutContainerNetwork(boolean reuse) {
-    Network network = network();
-    cassandraContainer = baseCassandraContainer(reuse);
-    cassandraContainer.withNetwork(network);
-    cassandraContainer.start();
-
-    return ImmutableMap.builder();
+    return startContainer(reuse, container -> container.withNetwork(network()));
   }
 
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
       String networkId, boolean reuse) {
-    cassandraContainer = baseCassandraContainer(reuse);
-    cassandraContainer.withNetworkMode(networkId);
-    cassandraContainer.start();
+    return startContainer(reuse, container -> container.withNetworkMode(networkId));
+  }
 
+  private ImmutableMap.Builder<String, String> startContainer(
+      boolean reuse, java.util.function.Consumer<GenericContainer<?>> networkConfig) {
+    cassandraContainer = baseCassandraContainer(reuse);
+    networkConfig.accept(cassandraContainer);
+    cassandraContainer.start();
     return ImmutableMap.builder();
   }
 
@@ -218,13 +219,11 @@ public abstract class StargateTestResource
     if (null == network) {
       network = Network.newNetwork();
     }
-
     return network;
   }
 
   private String getCassandraImage() {
-    String image = System.getProperty("testing.containers.cassandra-image");
-    return null == image ? "cassandra:4.0.10" : image;
+    return System.getProperty("testing.containers.cassandra-image", "cassandra:4.0.10");
   }
 
   private static String getClusterName() {
