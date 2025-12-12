@@ -66,9 +66,9 @@ public final class ThrowableToErrorMapper {
 
         // UnauthorizedException from quarkus
         if (throwable instanceof UnauthorizedException) {
-          return ErrorCodeV1.UNAUTHENTICATED_REQUEST
-              .toApiException()
-              .getCommandResultError(message, Response.Status.UNAUTHORIZED);
+          return RequestException.Code.UNAUTHENTICATED_REQUEST
+              .get()
+              .getCommandResultError(Response.Status.UNAUTHORIZED);
         }
 
         // TimeoutException from quarkus
@@ -84,10 +84,10 @@ public final class ThrowableToErrorMapper {
         }
 
         // handle an invalid Content-Type header
-        if (throwable instanceof NotSupportedException) {
+        if (throwable instanceof NotSupportedException nse) {
           // validate the Content-Type header, 415 if failed
-          return ErrorCodeV1.INVALID_CONTENT_TYPE_HEADER
-              .toApiException()
+          return RequestException.Code.UNSUPPORTED_CONTENT_TYPE
+              .get("message", nse.getMessage())
               .getCommandResultError(Response.Status.UNSUPPORTED_MEDIA_TYPE);
         }
 
@@ -172,10 +172,9 @@ public final class ThrowableToErrorMapper {
   private static CommandResult.Error handleQueryValidationException(
       QueryValidationException throwable, String message) {
     if (throwable instanceof com.datastax.oss.driver.api.core.servererrors.UnauthorizedException) {
-      return ErrorCodeV1.UNAUTHENTICATED_REQUEST
-          .toApiException()
-          .getCommandResultError(
-              ErrorCodeV1.UNAUTHENTICATED_REQUEST.getMessage(), Response.Status.UNAUTHORIZED);
+      return RequestException.Code.UNAUTHENTICATED_REQUEST
+          .get()
+          .getCommandResultError(Response.Status.UNAUTHORIZED);
     } else if (message.contains(
             "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
         || message.contains("ANN ordering by vector requires the column to be indexed")) {
@@ -232,10 +231,9 @@ public final class ThrowableToErrorMapper {
                     || error
                         .getMessage()
                         .contains("Provided username token and/or password are incorrect")))) {
-          return ErrorCodeV1.UNAUTHENTICATED_REQUEST
-              .toApiException()
-              .getCommandResultError(
-                  ErrorCodeV1.UNAUTHENTICATED_REQUEST.getMessage(), Response.Status.UNAUTHORIZED);
+          return RequestException.Code.UNAUTHENTICATED_REQUEST
+              .get()
+              .getCommandResultError(Response.Status.UNAUTHORIZED);
           // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
         } else if (error instanceof NoNodeAvailableException) {
           return ErrorCodeV1.SERVER_NO_NODE_AVAILABLE

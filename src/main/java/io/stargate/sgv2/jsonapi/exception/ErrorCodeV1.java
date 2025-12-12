@@ -113,8 +113,6 @@ public enum ErrorCodeV1 {
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
-  INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
-
   UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
@@ -163,7 +161,6 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
-  UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   INVALID_SCHEMA_VERSION(
