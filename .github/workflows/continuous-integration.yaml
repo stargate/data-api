@@ -174,16 +174,15 @@ jobs:
                   sign = '+' if delta > 0 else ''
                   msg = '⚠️ Coverage decreased' if delta < 0 else '✅ Coverage improved!' if delta > 0 else 'ℹ️ Coverage unchanged'
 
-                  comment_body = f"""
-                      ## {emoji} Coverage Delta vs Main Branch
+                  comment_body = f"""## {emoji} Coverage Delta vs Main Branch
  
-                      | Metric | Value |
-                      |--------|-------|
-                      | **Main Branch** | {baseline:.2f}% |
-                      | **This PR** | {current:.2f}% |
-                      | **Delta** | {color} {sign}{delta:.2f}% |
-                      {msg}
-                      """
+| Metric | Value |
+|--------|-------|
+| **Main Branch** | {baseline:.2f}% |
+| **This PR** | {current:.2f}% |
+| **Delta** | {color} {sign}{delta:.2f}% |
+{msg}
+"""
 
                   # Find and update existing comment or create new one
                   pr_number = os.environ['PR_NUMBER']
