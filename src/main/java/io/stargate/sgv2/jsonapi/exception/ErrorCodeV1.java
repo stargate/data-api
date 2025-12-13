@@ -7,7 +7,6 @@ public enum ErrorCodeV1 {
   // 12-Dec-2025, tatu: Cannot be converted, used as marker with LWTException
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
 
-  COUNT_READ_FAILED("Unable to count documents"),
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
   DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),

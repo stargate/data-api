@@ -1846,6 +1846,17 @@ server-errors:
       ${SNIPPET.RETRY_UNKNOWN}
 
   # DATABASE scope server errors
+
+  - scope: DATABASE
+    code: COUNT_READ_FAILED
+    title: Count read failed
+    body: |-
+      The Data API read from the database failed.
+      The database error: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
+
+
   - scope: DATABASE
     code: UNEXPECTED_DRIVER_ERROR
     title: Unexpected driver error
