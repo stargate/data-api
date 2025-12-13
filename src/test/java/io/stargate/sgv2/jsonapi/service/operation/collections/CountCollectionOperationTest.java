@@ -15,8 +15,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
@@ -228,13 +227,12 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       // assert query execution
       assertThat(callCount.get()).isEqualTo(1);
-
       assertThat(operationError)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DatabaseException.class)
           .satisfies(
               e -> {
-                JsonApiException je = (JsonApiException) e;
-                assertThat(je.getErrorCode()).isEqualTo(ErrorCodeV1.COUNT_READ_FAILED);
+                DatabaseException je = (DatabaseException) e;
+                assertThat(je.code).isEqualTo(DatabaseException.Code.COUNT_READ_FAILED.name());
               });
     }
   }
@@ -428,15 +426,14 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       // aaron - 21 nov - 2025, this code use to have
       // assertThat(result).isEqualTo(failure);
-      // but that would require that the error from the driver propergated out, the Operation has
-      // code to remap
-      // this error, so not sure how this ever worked.
+      // but that would require that the error from the driver propagated out, the Operation has
+      // code to remap this error, so not sure how this ever worked.
       assertThat(operationError)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DatabaseException.class)
           .satisfies(
               e -> {
-                JsonApiException je = (JsonApiException) e;
-                assertThat(je.getErrorCode()).isEqualTo(ErrorCodeV1.COUNT_READ_FAILED);
+                DatabaseException je = (DatabaseException) e;
+                assertThat(je.code).isEqualTo(DatabaseException.Code.COUNT_READ_FAILED.name());
               });
     }
   }

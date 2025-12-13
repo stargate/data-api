@@ -788,10 +788,10 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COLLECTION_NOT_EXIST"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
-              is("Collection does not exist, collection name: no_such_collection"));
+              containsString("No collection or table with name 'no_such_collection' exists."));
     }
 
     @Test

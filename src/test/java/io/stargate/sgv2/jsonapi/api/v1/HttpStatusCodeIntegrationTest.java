@@ -113,8 +113,8 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           AnyOf.anyOf(
               endsWith("table %s.%s does not exist".formatted(keyspaceName, "badCollection")),
               endsWith("table %s does not exist".formatted("badCollection")),
-              endsWith(
-                  "Collection does not exist, collection name: %s".formatted("badCollection")));
+              containsString(
+                  "No collection or table with name '%s' exists".formatted("badCollection")));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -126,7 +126,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .body("$", responseIsError())
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].message", anyOf)
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].exceptionClass", is("SchemaException"));
     }
 
     @Test
