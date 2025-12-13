@@ -19,8 +19,6 @@ public class DseTestResource extends StargateTestResource {
 
   // Need some additional pre-configuration when NOT running under Maven
   public DseTestResource() {
-    super();
-
     if (isRunningUnderMaven()) {
       LOG.info("Running under Maven, no need to overwrite integration test properties");
       return;
@@ -153,24 +151,12 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.embedding.providers.vertexai.models[0].parameters[0].required", "true");
     if (this.containerNetworkId.isPresent()) {
-      String host =
-          useCoordinator()
-              ? System.getProperty("quarkus.grpc.clients.bridge.host")
-              : System.getProperty("stargate.int-test.cassandra.host");
+      String host = System.getProperty("stargate.int-test.cassandra.host");
       propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
     } else {
-      int port =
-          useCoordinator()
-              ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
-              : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+      int port = Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
       propsBuilder.put(
           "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
-    }
-    if (useCoordinator()) {
-      String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
-      if (defaultToken != null) {
-        propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
-      }
     }
     if (isDse() || isHcd()) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.local-datacenter", "dc1");
