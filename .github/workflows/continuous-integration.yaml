@@ -135,7 +135,9 @@ jobs:
                   return 0
               try:
                   tree = ET.parse(xml_file)
-                  counters = tree.findall('.//counter[@type="INSTRUCTION"]')
+                  root = tree.getroot()
+                  # Only get top-level counters (direct children of <report>), not nested ones
+                  counters = root.findall("./counter[@type='INSTRUCTION']")
                   covered = sum(int(c.get('covered', 0)) for c in counters)
                   missed = sum(int(c.get('missed', 0)) for c in counters)
                   total = covered + missed
@@ -399,7 +401,9 @@ jobs:
                   return 0
               try:
                   tree = ET.parse(xml_file)
-                  counters = tree.findall('.//counter[@type="INSTRUCTION"]')
+                  root = tree.getroot()
+                  # Only get top-level counters (direct children of <report>), not nested ones
+                  counters = root.findall("./counter[@type='INSTRUCTION']")
                   covered = sum(int(c.get('covered', 0)) for c in counters)
                   missed = sum(int(c.get('missed', 0)) for c in counters)
                   total = covered + missed
