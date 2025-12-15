@@ -222,7 +222,7 @@ jobs:
           generate-branches-badge: true
           generate-summary: true
 
-      - name: Add coverage to Job Summary
+      - name: Add unit test coverage to Job Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << EOF
           ## 📊 Code Coverage Report
@@ -345,5 +345,53 @@ jobs:
       - name: Integration Test
         # -DRERANKING_CONFIG_RESOURCE=test-reranking-providers-config.yaml is to override the reranking config to customized one
         # -DEMBEDDING_CONFIG_RESOURCE=test-embedding-providers-config.yaml is to override the embedding config to customized one
+        # -Pjacoco-it enables the quarkus-jacoco extension for IT coverage
+        # -Dquarkus.package.write-transformed-bytecode-to-build-output=true is required for JaCoCo IT coverage
+        # Note: Container image build is disabled for coverage (JaCoCo only works with JAR artifacts)
         run: |
-          ./mvnw -B -ntp clean verify -DskipUnitTests -DRERANKING_CONFIG_RESOURCE=test-reranking-providers-config.yaml -DEMBEDDING_CONFIG_RESOURCE=test-embedding-providers-config.yaml -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Drun-create-index-parallel=true ${{ matrix.profile }}
+          ./mvnw -B -ntp clean verify -DskipUnitTests -DRERANKING_CONFIG_RESOURCE=test-reranking-providers-config.yaml -DEMBEDDING_CONFIG_RESOURCE=test-embedding-providers-config.yaml -Drun-create-index-parallel=true -Pjacoco-it -Dquarkus.package.write-transformed-bytecode-to-build-output=true ${{ matrix.profile }}
+
+      - name: Add integration test coverage to PR
+        id: jacoco-it
+        uses: madrapps/jacoco-report@v1.7.2
+        if: github.event_name == 'pull_request'
+        with:
+          paths: |
+            ${{ github.workspace }}/target/site/jacoco-it/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+          title: 'Integration Test Coverage Report (${{ matrix.type }})'
+          update-comment: true
+        continue-on-error: true
+
+      - name: Generate JaCoCo IT Badge
+        id: jacoco-it-badge
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: target/site/jacoco-it/jacoco.csv
+          badges-directory: .github/badges/it-${{ matrix.type }}
+          generate-branches-badge: true
+          generate-summary: true
+        continue-on-error: true
+
+      - name: Add IT coverage to Job Summary
+        run: |
+          COVERAGE=$(printf "%.2f" $(echo "${{ steps.jacoco-it-badge.outputs.coverage }} * 100" | bc -l))
+          BRANCHES=$(printf "%.2f" $(echo "${{ steps.jacoco-it-badge.outputs.branches }} * 100" | bc -l))
+          echo "## 📊 Integration Test Code Coverage Report (${{ matrix.type }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Instructions** | ${COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branches** | ${BRANCHES}% |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📥 [Download Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The complete JaCoCo HTML report is available as an artifact named \`jacoco-it-report-${{ matrix.type }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload JaCoCo integration test code coverage report
+        uses: actions/upload-artifact@v5
+        with:
+          name: jacoco-it-report-${{ matrix.type }}
+          path: target/site/jacoco-it/
