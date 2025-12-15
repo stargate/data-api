@@ -136,13 +136,19 @@ jobs:
               try:
                   tree = ET.parse(xml_file)
                   root = tree.getroot()
-                  # Only get top-level counters (direct children of <report>), not nested ones
-                  counters = root.findall("./counter[@type='INSTRUCTION']")
-                  covered = sum(int(c.get('covered', 0)) for c in counters)
-                  missed = sum(int(c.get('missed', 0)) for c in counters)
+                  # Get only the INSTRUCTION counter that is a direct child of <report>
+                  # (not nested in package/class/method elements)
+                  covered = 0
+                  missed = 0
+                  for child in root:
+                      if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
+                          covered = int(child.get('covered', 0))
+                          missed = int(child.get('missed', 0))
+                          break
                   total = covered + missed
                   return (covered / total * 100) if total > 0 else 0
-              except:
+              except Exception as e:
+                  print(f"Error parsing coverage: {e}")
                   return 0
 
           def github_api(method, endpoint, data=None):
@@ -402,13 +408,19 @@ jobs:
               try:
                   tree = ET.parse(xml_file)
                   root = tree.getroot()
-                  # Only get top-level counters (direct children of <report>), not nested ones
-                  counters = root.findall("./counter[@type='INSTRUCTION']")
-                  covered = sum(int(c.get('covered', 0)) for c in counters)
-                  missed = sum(int(c.get('missed', 0)) for c in counters)
+                  # Get only the INSTRUCTION counter that is a direct child of <report>
+                  # (not nested in package/class/method elements)
+                  covered = 0
+                  missed = 0
+                  for child in root:
+                      if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
+                          covered = int(child.get('covered', 0))
+                          missed = int(child.get('missed', 0))
+                          break
                   total = covered + missed
                   return (covered / total * 100) if total > 0 else 0
-              except:
+              except Exception as e:
+                  print(f"Error parsing coverage: {e}")
                   return 0
 
           def github_api(method, endpoint, data=None):
