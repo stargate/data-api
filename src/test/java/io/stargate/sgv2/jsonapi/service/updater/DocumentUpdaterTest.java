@@ -497,8 +497,8 @@ public class DocumentUpdaterTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
-          .withFailMessage(ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID.getMessage())
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID);
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID)
+          .withFailMessage(ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID.getMessage());
     }
 
     @Test

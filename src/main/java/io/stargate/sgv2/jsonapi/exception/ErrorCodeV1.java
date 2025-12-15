@@ -9,8 +9,6 @@ public enum ErrorCodeV1 {
 
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
-  DOCUMENT_UNPARSEABLE("Unable to parse the document"),
-
   DOCUMENT_REPLACE_DIFFERENT_DOCID(
       "The replace document and document resolved using filter have different _id"),
 

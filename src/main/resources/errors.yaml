@@ -252,6 +252,16 @@ request-errors:
 
       Either resend the command with distinct '_id', or use an update command instead.
 
+  # Internal error: does it belong here?
+  - scope: DOCUMENT
+    code: DOCUMENT_FROM_DB_UNPARSEABLE
+    title: Unable to parse fetched JSON document
+    body: |-
+      Unable to parse a JSON document fetched from the database; document not valid JSON.
+      Underlying problem: ${message}
+
+      Report the problem to database administrators.
+
   - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
     title: Primary key columns missing
