@@ -123,12 +123,11 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                 """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              containsString(
-                  "Problem: function name can only be 'dot_product', 'cosine' or 'euclidean'"));
+              containsString("function name can only be 'dot_product', 'cosine' or 'euclidean'"));
     }
   }
 
@@ -987,10 +986,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              endsWith("limit options should not be greater than 1000 for vector search."));
+              containsString("limit options should not be greater than 1000 for vector search."));
     }
 
     @Test
@@ -1014,9 +1013,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
-              "errors[0].message", endsWith("skip options should not be used with vector search."));
+              "errors[0].message",
+              containsString("skip options should not be used with vector search."));
     }
   }
 

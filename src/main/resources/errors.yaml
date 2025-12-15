@@ -138,6 +138,14 @@ request-errors:
       Resend command without options.
 
   - scope:
+    code: COMMAND_FIELD_INVALID
+    title: Command field invalid
+    body: |-
+      Command field '${field}' value ${value} not valid: ${message}.
+      
+      Resend command with valid value.
+
+  - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
     title: Invalid field(s) for createCollection
     body: |-
@@ -1000,6 +1008,12 @@ request-errors:
       Resend the command without dropping the indexed columns.
 
   - scope: SCHEMA
+    code: COLLECTION_NOT_EXIST
+    title: Collection or table does not exist
+    body: |-
+      No collection or table with name '${collection}' exists.
+
+  - scope: SCHEMA
     code: DEPRECATED_AI_MODEL
     title: Cannot use deprecated model.
     body: |-
@@ -1832,6 +1846,17 @@ server-errors:
       ${SNIPPET.RETRY_UNKNOWN}
 
   # DATABASE scope server errors
+
+  - scope: DATABASE
+    code: COUNT_READ_FAILED
+    title: Count read failed
+    body: |-
+      The Data API read from the database failed.
+      The database error: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
+
+
   - scope: DATABASE
     code: UNEXPECTED_DRIVER_ERROR
     title: Unexpected driver error

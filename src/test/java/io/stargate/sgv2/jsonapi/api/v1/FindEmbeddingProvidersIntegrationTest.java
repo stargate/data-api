@@ -140,8 +140,8 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
-              containsString(
-                  "field 'command.options.filterModelStatus' value \"random\" not valid"));
+              startsWith(
+                  "Command field 'command.options.filterModelStatus' value \"random\" not valid: "));
     }
   }
 

@@ -4,17 +4,9 @@ import jakarta.ws.rs.core.Response;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
-  /** Command error codes. */
-
-  /**
-   * Error code used for {@code ConstraintViolationException} failures mapped to {@code
-   * JsonApiException}
-   */
-  COMMAND_FIELD_INVALID("Request invalid"),
-
+  // 12-Dec-2025, tatu: Cannot be converted, used as marker with LWTException
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
-  COLLECTION_NOT_EXIST("Collection does not exist, collection name"),
-  COUNT_READ_FAILED("Unable to count documents"),
+
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
   DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
