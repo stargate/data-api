@@ -27,10 +27,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
@@ -235,17 +232,6 @@ public class CollectionResource {
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
-                // TODO No need for the else clause here, simplify
-                if (schemaObject.type() == SchemaObjectType.TABLE) {
-                  var apiFeatures =
-                      ApiFeatures.fromConfigAndRequest(
-                          apiFeatureConfig, requestContext.getHttpHeaders());
-                  if (!apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
-                    return Uni.createFrom()
-                        .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
-                  }
-                }
-
                 // TODO: This needs to change, currently it is only checking if there is vectorize
                 // for the $vector column in a collection
 
@@ -277,10 +263,6 @@ public class CollectionResource {
                           vectorColDef.vectorizeDefinition().parameters(),
                           vectorColDef.vectorizeDefinition().authentication(),
                           command.getClass().getSimpleName());
-                  requestContext
-                      .getEmbeddingCredentialsSupplier()
-                      .withAuthConfigFromCollection(
-                          vectorColDef.vectorizeDefinition().authentication());
                 }
 
                 var commandContext =

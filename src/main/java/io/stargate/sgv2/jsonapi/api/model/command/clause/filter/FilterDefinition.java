@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     type = SchemaType.OBJECT,
     implementation = FilterClause.class,
-    example =
+    examples =
         """
        {"name": "Aaron", "country": {"$eq": "NZ"}, "age": {"$gt": 40}}
         """)

@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.operation.keyspaces.DropKeyspaceOperatio
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -24,7 +23,7 @@ class DropKeyspaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DropNamespaceCommandResolver resolver;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
   CommandContext<DatabaseSchemaObject> commandContext;
 
   @BeforeEach
@@ -32,13 +31,10 @@ class DropKeyspaceCommandResolverTest {
     commandContext = testConstants.databaseContext();
   }
 
-  @Nested
-  class ResolveCommand {
-
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPath() throws Exception {
+    String json =
+        """
           {
             "dropNamespace": {
               "name" : "red_star_belgrade"
@@ -46,13 +42,12 @@ class DropKeyspaceCommandResolverTest {
           }
           """;
 
-      DropNamespaceCommand command = objectMapper.readValue(json, DropNamespaceCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    DropNamespaceCommand command = objectMapper.readValue(json, DropNamespaceCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              DropKeyspaceOperation.class,
-              op -> assertThat(op.name()).isEqualTo("red_star_belgrade"));
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            DropKeyspaceOperation.class,
+            op -> assertThat(op.name()).isEqualTo("red_star_belgrade"));
   }
 }

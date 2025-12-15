@@ -2,18 +2,18 @@ package io.stargate.sgv2.jsonapi.util;
 
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
+import io.micrometer.core.instrument.binder.cache.CaffeineStatsCounter;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlCredentials;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,27 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A cache for managing and reusing {@link CqlSession} instances based on tenant and authentication
- * credentials.
+ * A Caffeine based cache that supports dynamic TTLS based on the key used to access the cache.
  *
- * <p>Sessions are cached based on the tenantId and authentication token. So that a single tenant
- * may have multiple sessions, but a single session is used for the same tenant and auth token.
- *
- * <p>Create instances using the {@link CqlSessionCacheSupplier} class.
- *
- * <p>Call {@link #getSession(RequestContext)} and overloads to get a session for the current
- * request context.
- *
- * <p>The {@link DynamicTTLCacheListener} interface will be called when a session is removed from
- * the cache, so that schema cache and metrics can be updated to remove the tenant. NOTE: this is
- * called when the session expires, but a single tenant may have multiple sessions (based on key
- * above), so it is not a guarantee that the tenant is not active with another set of credentials.
- * If you take action to remove a deactivated tenant, there should be a path for the tenant to be
- * reactivated.
- *
- * <p><b>NOTE:</b> There is no method to get the size of the cache because it is not a reliable
- * measure, it's only an estimate. We can assume the size feature works. For testing use {@link
- * #peekSession(String, String, String)}
+ * <p>This is used so we can have different TTLs for different user agents accessing the same cache
+ * entry. The core of this is implemented in the {@link DynamicExpiryPolicy}, where we look at the
+ * TTL of the key used to load the item in the cache and the TTL of the current access to the cache.
+ * Which is why we have the {@link ValueHolder} so we can keep track of the key used to load the
+ * item.
  */
 public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, ValueT> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTTLCache.class);
@@ -76,14 +62,12 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
    *
    * <p>Use this ctor for testing only.
    *
-   * @param databaseType The type of database being used,
-   * @param cacheTTL The time-to-live (TTL) duration for cache entries.
+   * @param cacheName Name of the cache, used with caffine metrics.
    * @param cacheMaxSize The maximum size of the cache.
-   * @param credentialsFactory A factory for creating {@link CqlCredentials} based on authentication
-   *     tokens.
-   * @param sessionFactory A factory for creating new {@link CqlSession} instances when needed.
+   * @param valueFactory Factory function to call to generate a new value when needed.
+   * @param listeners Nullable, optional, list of listeners to call when a key is removed from the
+   *     cache.
    * @param meterRegistry The {@link MeterRegistry} for monitoring cache metrics.
-   * @param deactivatedTenantConsumer A list of consumers to handle tenant deactivation events.
    * @param asyncTaskOnCaller If true, asynchronous tasks (e.g., callbacks) will run on the caller
    *     thread. This is intended for testing purposes only. DO NOT USE in production.
    * @param cacheTicker If non-null, this is the ticker used by the cache to decide when to expire
@@ -104,7 +88,12 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     }
 
     this.valueFactory = Objects.requireNonNull(valueFactory, "valueFactory must not be null");
-    this.listeners = listeners == null ? List.of() : List.copyOf(listeners);
+
+    List<DynamicTTLCacheListener<KeyT, ValueT>> combinedListeners =
+        listeners == null ? new ArrayList<>() : new ArrayList<>(listeners);
+    // Add metrics listener to record cache invalidation, see the class JavaDoc for more details
+    combinedListeners.add(new CacheInvalidationMetricsListener<>(meterRegistry, cacheName));
+    this.listeners = List.copyOf(combinedListeners);
 
     LOGGER.info(
         "Initializing DynamicTTLCache with cacheName={}, cacheMaxSize={}, deactivatedTenantConsumers.count={}",
@@ -112,12 +101,15 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
         cacheMaxSize,
         listeners.size());
 
+    CaffeineStatsCounter caffeineStatsCounter =
+        new CaffeineStatsCounter(meterRegistry, this.cacheName);
+
     var builder =
         Caffeine.newBuilder()
             .expireAfter(new DynamicExpiryPolicy<KeyT, ValueT>())
             .maximumSize(cacheMaxSize)
             .removalListener(this::onKeyRemoved)
-            .recordStats();
+            .recordStats(() -> caffeineStatsCounter);
 
     if (asyncTaskOnCaller) {
       LOGGER.warn(
@@ -131,10 +123,13 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
           this.cacheName);
       builder = builder.ticker(cacheTicker);
     }
-    AsyncLoadingCache<KeyT, ValueHolder<KeyT, ValueT>> loadingCache =
-        builder.buildAsync(this::onLoadValue);
+    this.cache = builder.buildAsync(this::onLoadValue);
 
-    this.cache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, this.cacheName);
+    // CaffeineStatsCounter doesn't instrument the cache's size by default. We need to register
+    // after the cache is built.
+    // From author, we can use .synchronous() to get stats:
+    // https://stackoverflow.com/questions/56660724/asynchronous-caffeine-cache-with-statistics
+    caffeineStatsCounter.registerSizeMetric(cache.synchronous());
   }
 
   /**
@@ -159,7 +154,13 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
           .map(ValueHolder::value);
     }
 
-    return Uni.createFrom().completionStage(cache.get(key)).map(ValueHolder::value);
+    // Calling get() on the cache will return a CompletionStage
+    // which will not be null however it is
+    // technically possible for the value loader to return a completed stage that has a null value
+    // so extra check just in case.
+    return Uni.createFrom()
+        .completionStage(cache.get(key))
+        .map(valueHolder -> valueHolder != null ? valueHolder.value() : null);
   }
 
   @VisibleForTesting
@@ -213,7 +214,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   }
 
   /**
-   * Called to load a new value for the cache, either from caffine because of cache miss or when
+   * Called to load a new value for the cache, either from caffeine because of cache miss or when
    * force refresh is used.
    *
    * <p>
@@ -423,13 +424,80 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     }
   }
 
-  /** Function called when a value is removed from the cache. */
+  /**
+   * Listener to record metrics for cache invalidations.
+   *
+   * <p>We record a custom metric here because Caffeine's native {@code cache.evictions} metric
+   * strictly follows the library's distinction between "Eviction" and "Invalidation".
+   *
+   * <ol>
+   *   <li><b>Concepts:</b> Caffeine defines <b>Eviction</b> (policy-driven removal like
+   *       size/time/reference) vs <b>Invalidation</b> (manual removal). See <a
+   *       href="https://github.com/ben-manes/caffeine/wiki/Removal">Caffeine Wiki: Removal</a> and
+   *       <a * href="https://github.com/ben-manes/caffeine/wiki/Eviction">Caffeine Wiki:
+   *       Eviction</a>.
+   *   <li><b>Code Evidence:</b> In {@code CacheStats}, the documentation states: <i>"No stats are
+   *       modified when a cache entry is invalidated or manually removed."</i> Additionally, {@code
+   *       BoundedLocalCache} only calls {@code recordEviction} when {@code cause.wasEvicted()} is
+   *       true, which returns false for {@code EXPLICIT} and {@code REPLACED} removals.
+   * </ol>
+   *
+   * <p>Therefore, to monitor cache invalidation, we must manually record them via this listener.
+   *
+   * <p>We reuse the {@code cache.evictions} metric name with {@code cause} tag (e.g., {@code
+   * EXPLICIT}, {@code REPLACED}) and {@code cache} cache name tag that generated by {@code
+   * CaffeineStatsCounter}. This is safe and has no conflicts because Caffeine registers these tags
+   * but <b>never updates them</b> (the values remain 0). By manually recording them, we populate
+   * the existing "dead" metrics rather than creating duplicates.
+   *
+   * <p>Sample metrics generated by {@code CaffeineStatsCounter}):
+   *
+   * <pre>{@code
+   * cache_evictions{cache="cql_sessions_cache",cause="EXPLICIT",module="sgv2-jsonapi",quantile="0.5",} 0.0
+   * cache_evictions_count{cache="cql_sessions_cache",cause="EXPLICIT",module="sgv2-jsonapi",} 0.0
+   * cache_evictions_sum{cache="cql_sessions_cache",cause="EXPLICIT",module="sgv2-jsonapi",} 0.0
+   * }</pre>
+   */
+  private static class CacheInvalidationMetricsListener<KeyT extends CacheKey, ValueT>
+      implements DynamicTTLCacheListener<KeyT, ValueT> {
+
+    private final MeterRegistry meterRegistry;
+    private final String cacheName;
+
+    CacheInvalidationMetricsListener(MeterRegistry meterRegistry, String cacheName) {
+      this.meterRegistry = meterRegistry;
+      this.cacheName = cacheName;
+    }
+
+    @Override
+    public void onRemoved(KeyT key, ValueT value, RemovalCause cause) {
+      if (cause == RemovalCause.EXPLICIT || cause == RemovalCause.REPLACED) {
+        // Use summary() to match existing metric type from CaffeineStatsCounter.
+        // We record 1.0 because we currently use size-based eviction (weight=1).
+        // If we switch to weight-based eviction, this must be updated to record the entry's actual
+        // weight.
+        meterRegistry
+            .summary("cache.evictions", "cache", cacheName, "cause", cause.name())
+            .record(1.0);
+      }
+    }
+  }
+
+  /**
+   * Function called when a value is removed from the cache.
+   *
+   * <p>
+   */
   @FunctionalInterface
   public interface DynamicTTLCacheListener<KeyT extends CacheKey, ValueT> {
     void onRemoved(KeyT key, ValueT value, RemovalCause cause);
   }
 
-  /** Function called to create a new value for the cache when none is needed. */
+  /**
+   * Function called to create a new value for the cache when none is needed.
+   *
+   * <p>
+   */
   @FunctionalInterface
   public interface ValueFactory<KeyT extends CacheKey, ValueT>
       extends Function<KeyT, CompletionStage<ValueT>> {

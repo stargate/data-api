@@ -21,7 +21,7 @@ public class ErrorTemplateTest extends ConfiguredErrorTest {
   }
 
   /**
-   * Stnadard way to create an exception from template, that expects the name and value params
+   * Standard way to create an exception from template, that expects the name and value params
    *
    * @param errorCode
    * @return

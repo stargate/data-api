@@ -90,7 +90,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
    * @param cacheTTL The time-to-live (TTL) duration for the session cache for non SLA users.
    * @param slaUserAgent The user agent string used to identify SLA users, when present the
    *     slaUserTTL will be used if the session is created for that SLA user agent.
-   * @param slaUserTTL The time-to-live (TTL) duration for SLA users, used if a s
+   * @param slaUserTTL The time-to-live (TTL) duration for SLA users
    * @param credentialsFactory A factory for creating {@link CqlCredentials} based on authentication
    *     tokens.
    * @param sessionFactory A factory for creating new {@link CqlSession} instances when needed.
@@ -145,7 +145,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     if (consumers != null) {
       consumers.forEach(
-          deactivedTenantListener -> {
+          deactivatedTenantListener -> {
             listeners.add(
                 (key, value, cause) -> {
                   if (LOGGER.isTraceEnabled()) {
@@ -156,12 +156,12 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
                   }
 
                   try {
-                    deactivedTenantListener.accept(key.tenant());
+                    deactivatedTenantListener.accept(key.tenant());
                   } catch (Exception e) {
                     LOGGER.warn(
                         "Error calling DeactivatedTenantListener for tenant={}, listener.class={}",
                         key.tenant(),
-                        classSimpleName(deactivedTenantListener.getClass()),
+                        classSimpleName(deactivatedTenantListener.getClass()),
                         e);
                   }
                 });
@@ -182,9 +182,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.tenant(),
-        requestContext.authToken(),
-        requestContext.userAgent());
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -199,9 +197,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.tenant(),
-        requestContext.authToken(),
-        requestContext.userAgent());
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -230,9 +226,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return evictSession(
-        requestContext.tenant(),
-        requestContext.authToken(),
-        requestContext.userAgent());
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -248,7 +242,6 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
   public boolean evictSession(Tenant tenantId, String authToken, UserAgent userAgent) {
 
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
-
     return evict(cacheKey);
   }
 
@@ -343,7 +336,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
           .append(tenant)
           .append('\'')
           .append(", credentials=")
-          .append(credentials) // creds should make sure they dont include sensitive info
+          .append(credentials) // creds should make sure they don't include sensitive info
           .append(", ttl=")
           .append(ttl)
           .append(", userAgent='")

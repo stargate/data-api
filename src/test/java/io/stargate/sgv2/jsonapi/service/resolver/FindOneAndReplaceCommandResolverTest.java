@@ -32,7 +32,6 @@ import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -43,7 +42,7 @@ public class FindOneAndReplaceCommandResolverTest {
   @Inject DocumentShredder documentShredder;
   @Inject FindOneAndReplaceCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
 
@@ -52,14 +51,11 @@ public class FindOneAndReplaceCommandResolverTest {
     commandContext = testConstants.collectionContext();
   }
 
-  @Nested
-  class Resolve {
+  @Test
+  public void invalidVectorizeUsage() throws Exception {
 
-    @Test
-    public void invalidVectorizeUsage() throws Exception {
-
-      String json =
-          """
+    String json =
+        """
                 {
                   "findOneAndReplace": {
                     "filter" : {"_id" : "id"},
@@ -67,18 +63,17 @@ public class FindOneAndReplaceCommandResolverTest {
                   }
                 }
                 """;
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Exception e = catchException(() -> resolver.resolveCommand(commandContext, command));
-      assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasMessageContaining("$vectorize` and `$vector` can't be used together");
-    }
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Exception e = catchException(() -> resolver.resolveCommand(commandContext, command));
+    assertThat(e)
+        .isInstanceOf(JsonApiException.class)
+        .hasMessageContaining("$vectorize` and `$vector` can't be used together");
+  }
 
-    @Test
-    public void idFilterCondition() throws Exception {
-      String json =
-          """
+  @Test
+  public void idFilterCondition() throws Exception {
+    String json =
+        """
         {
           "findOneAndReplace": {
             "filter" : {"_id" : "id"},
@@ -86,61 +81,60 @@ public class FindOneAndReplaceCommandResolverTest {
           }
         }
         """;
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
+    String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        replacer -> {
-                          try {
-                            ObjectNode replacement =
-                                (ObjectNode)
-                                    objectMapper.readTree(
-                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
-                          } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                          }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
-                          assertThat(replacer.replaceDocumentId()).isNull();
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          IDCollectionFilter filter =
-                              new IDCollectionFilter(
-                                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      replacer -> {
+                        try {
+                          ObjectNode replacement =
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                        } catch (JsonProcessingException e) {
+                          e.printStackTrace();
+                        }
+                        assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                        assertThat(replacer.replaceDocumentId()).isNull();
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        IDCollectionFilter filter =
+                            new IDCollectionFilter(
+                                IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void idFilterConditionWithId() throws Exception {
-      String json =
-          """
+  @Test
+  public void idFilterConditionWithId() throws Exception {
+    String json =
+        """
         {
           "findOneAndReplace": {
             "filter" : {"_id" : "id"},
@@ -149,60 +143,59 @@ public class FindOneAndReplaceCommandResolverTest {
         }
         """;
 
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        replacer -> {
-                          try {
-                            ObjectNode replacement =
-                                (ObjectNode)
-                                    objectMapper.readTree(
-                                        "{\"_id\": \"id\", \"col1\" : \"val1\", \"col2\" : \"val2\"}");
-                          } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                          }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
-                          assertThat(replacer.replaceDocumentId()).isNotNull();
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          IDCollectionFilter filter =
-                              new IDCollectionFilter(
-                                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
+    String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      replacer -> {
+                        try {
+                          ObjectNode replacement =
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      "{\"_id\": \"id\", \"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                        } catch (JsonProcessingException e) {
+                          e.printStackTrace();
+                        }
+                        assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                        assertThat(replacer.replaceDocumentId()).isNotNull();
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        IDCollectionFilter filter =
+                            new IDCollectionFilter(
+                                IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void filterConditionSort() throws Exception {
-      String json =
-          """
+  @Test
+  public void filterConditionSort() throws Exception {
+    String json =
+        """
         {
           "findOneAndReplace": {
             "filter" : {"status" : "active"},
@@ -212,64 +205,62 @@ public class FindOneAndReplaceCommandResolverTest {
         }
         """;
 
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        replacer -> {
-                          try {
-                            ObjectNode replacement =
-                                (ObjectNode)
-                                    objectMapper.readTree(
-                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
-                          } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                          }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
-                          assertThat(replacer.replaceDocumentId()).isNull();
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "status", MapCollectionFilter.Operator.EQ, "active");
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
+    String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      replacer -> {
+                        try {
+                          ObjectNode replacement =
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                        } catch (JsonProcessingException e) {
+                          e.printStackTrace();
+                        }
+                        assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                        assertThat(replacer.replaceDocumentId()).isNull();
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter(
+                                "status", MapCollectionFilter.Operator.EQ, "active");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(100);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.orderBy()).hasSize(1);
-                          assertThat(find.orderBy())
-                              .isEqualTo(
-                                  List.of(new FindCollectionOperation.OrderBy("user", true)));
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(100);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.orderBy()).hasSize(1);
+                        assertThat(find.orderBy())
+                            .isEqualTo(List.of(new FindCollectionOperation.OrderBy("user", true)));
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void filterConditionVectorSearch() throws Exception {
-      String json =
-          """
+  @Test
+  public void filterConditionVectorSearch() throws Exception {
+    String json =
+        """
                 {
                   "findOneAndReplace": {
                     "filter" : {"status" : "active"},
@@ -279,62 +270,61 @@ public class FindOneAndReplaceCommandResolverTest {
                 }
                 """;
 
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        replacer -> {
-                          try {
-                            ObjectNode replacement =
-                                (ObjectNode)
-                                    objectMapper.readTree(
-                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
-                          } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                          }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
-                          assertThat(replacer.replaceDocumentId()).isNull();
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "status", MapCollectionFilter.Operator.EQ, "active");
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
+    String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      replacer -> {
+                        try {
+                          ObjectNode replacement =
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                        } catch (JsonProcessingException e) {
+                          e.printStackTrace();
+                        }
+                        assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                        assertThat(replacer.replaceDocumentId()).isNull();
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter(
+                                "status", MapCollectionFilter.Operator.EQ, "active");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.vector()).isNotNull();
-                          assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.vector()).isNotNull();
+                        assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void idFilterConditionWithOptions() throws Exception {
-      String json =
-          """
+  @Test
+  public void idFilterConditionWithOptions() throws Exception {
+    String json =
+        """
         {
           "findOneAndReplace": {
             "filter" : {"_id" : "id"},
@@ -344,60 +334,59 @@ public class FindOneAndReplaceCommandResolverTest {
         }
         """;
 
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
+    String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.returnUpdatedDocument()).isTrue();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        replacer -> {
-                          try {
-                            ObjectNode replacement =
-                                (ObjectNode)
-                                    objectMapper.readTree(
-                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
-                          } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                          }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
-                          assertThat(replacer.replaceDocumentId()).isNull();
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          IDCollectionFilter filter =
-                              new IDCollectionFilter(
-                                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.returnUpdatedDocument()).isTrue();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      replacer -> {
+                        try {
+                          ObjectNode replacement =
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                        } catch (JsonProcessingException e) {
+                          e.printStackTrace();
+                        }
+                        assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                        assertThat(replacer.replaceDocumentId()).isNull();
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        IDCollectionFilter filter =
+                            new IDCollectionFilter(
+                                IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void idFilterConditionWithOptionsUpsert() throws Exception {
-      String json =
-          """
+  @Test
+  public void idFilterConditionWithOptionsUpsert() throws Exception {
+    String json =
+        """
             {
               "findOneAndReplace": {
                 "filter" : {"_id" : "id"},
@@ -407,61 +396,60 @@ public class FindOneAndReplaceCommandResolverTest {
             }
             """;
 
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
+    String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.upsert()).isTrue();
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.returnUpdatedDocument()).isTrue();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        replacer -> {
-                          try {
-                            ObjectNode replacement =
-                                (ObjectNode)
-                                    objectMapper.readTree(
-                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
-                          } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                          }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
-                          assertThat(replacer.replaceDocumentId()).isNull();
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          IDCollectionFilter filter =
-                              new IDCollectionFilter(
-                                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.upsert()).isTrue();
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.returnUpdatedDocument()).isTrue();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      replacer -> {
+                        try {
+                          ObjectNode replacement =
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                        } catch (JsonProcessingException e) {
+                          e.printStackTrace();
+                        }
+                        assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                        assertThat(replacer.replaceDocumentId()).isNull();
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        IDCollectionFilter filter =
+                            new IDCollectionFilter(
+                                IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void filterConditionWithOptionsSort() throws Exception {
-      String json =
-          """
+  @Test
+  public void filterConditionWithOptionsSort() throws Exception {
+    String json =
+        """
         {
           "findOneAndReplace": {
             "filter" : {"age" : 35},
@@ -472,66 +460,65 @@ public class FindOneAndReplaceCommandResolverTest {
         }
         """;
 
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
+    String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.returnUpdatedDocument()).isTrue();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        replacer -> {
-                          try {
-                            ObjectNode replacement =
-                                (ObjectNode)
-                                    objectMapper.readTree(
-                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
-                          } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                          }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
-                          assertThat(replacer.replaceDocumentId()).isNull();
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          NumberCollectionFilter filter =
-                              new NumberCollectionFilter(
-                                  "age", MapCollectionFilter.Operator.EQ, new BigDecimal(35));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.returnUpdatedDocument()).isTrue();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      replacer -> {
+                        try {
+                          ObjectNode replacement =
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                        } catch (JsonProcessingException e) {
+                          e.printStackTrace();
+                        }
+                        assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                        assertThat(replacer.replaceDocumentId()).isNull();
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        NumberCollectionFilter filter =
+                            new NumberCollectionFilter(
+                                "age", MapCollectionFilter.Operator.EQ, new BigDecimal(35));
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageSize()).isEqualTo(100);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.orderBy()).hasSize(2);
-                          assertThat(find.orderBy())
-                              .isEqualTo(
-                                  List.of(
-                                      new FindCollectionOperation.OrderBy("user.name", true),
-                                      new FindCollectionOperation.OrderBy("user.age", false)));
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageSize()).isEqualTo(100);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.orderBy()).hasSize(2);
+                        assertThat(find.orderBy())
+                            .isEqualTo(
+                                List.of(
+                                    new FindCollectionOperation.OrderBy("user.name", true),
+                                    new FindCollectionOperation.OrderBy("user.age", false)));
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void dynamicFilterCondition() throws Exception {
-      String json =
-          """
+  @Test
+  public void dynamicFilterCondition() throws Exception {
+    String json =
+        """
         {
           "findOneAndReplace": {
             "filter" : {"col" : "val"},
@@ -540,55 +527,52 @@ public class FindOneAndReplaceCommandResolverTest {
         }
         """;
 
-      FindOneAndReplaceCommand command =
-          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, command);
-      String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
+    FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, command);
+    String expected = "{\"col1\":\"val1\",\"col2\":\"val2\"}";
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        replacer -> {
-                          try {
-                            ObjectNode replacement =
-                                (ObjectNode)
-                                    objectMapper.readTree(
-                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
-                          } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                          }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
-                          assertThat(replacer.replaceDocumentId()).isNull();
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "col", MapCollectionFilter.Operator.EQ, "val");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      replacer -> {
+                        try {
+                          ObjectNode replacement =
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                        } catch (JsonProcessingException e) {
+                          e.printStackTrace();
+                        }
+                        assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                        assertThat(replacer.replaceDocumentId()).isNull();
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
   }
 }

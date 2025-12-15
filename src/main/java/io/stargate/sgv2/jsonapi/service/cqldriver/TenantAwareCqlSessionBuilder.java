@@ -7,7 +7,6 @@ import com.datastax.oss.driver.api.core.session.ProgrammaticArguments;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import com.datastax.oss.protocol.internal.util.collection.NullAllowingImmutableMap;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.Map;
 import java.util.Objects;
 

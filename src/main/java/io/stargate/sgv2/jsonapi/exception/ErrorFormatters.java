@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
@@ -210,6 +211,20 @@ public abstract class ErrorFormatters {
       map.put(TemplateVars.ERROR_CLASS, exception.getClass().getSimpleName());
       map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage());
     }
+    if (consumer != null) {
+      consumer.accept(map);
+    }
+
+    return map;
+  }
+
+  public static Map<String, String> errVars(
+      TableMetadata table, Consumer<Map<String, String>> consumer) {
+
+    Map<String, String> map = new HashMap<>();
+    map.put(
+        TemplateVars.KEYSPACE, CqlIdentifierUtil.cqlIdentifierToMessageString(table.getKeyspace()));
+    map.put(TemplateVars.TABLE, CqlIdentifierUtil.cqlIdentifierToMessageString(table.getName()));
     if (consumer != null) {
       consumer.accept(map);
     }

@@ -48,7 +48,8 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
   // keyspace automatically created in this test
-  protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
+  protected static final String keyspaceName =
+      "ks" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
   /**
    * Access is protected via {@link #createDriverSession()} method and closed in {@link #cleanUp()}.
@@ -195,49 +196,30 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   protected Map<String, ?> getHeaders() {
-    if (useCoordinator()) {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          getAuthToken(),
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      String credential =
-          "Cassandra:"
-              + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
-              + ":"
-              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          credential,
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    }
+    String credential =
+        "Cassandra:"
+            + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
+            + ":"
+            + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
+    return Map.of(
+        HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+        credential,
+        HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+        CustomITEmbeddingProvider.TEST_API_KEY);
   }
 
   protected Map<String, ?> getInvalidHeaders() {
-    if (useCoordinator()) {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          "invalid",
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      String credential =
-          "Cassandra:"
-              + Base64.getEncoder().encodeToString("invalid".getBytes())
-              + ":"
-              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          credential,
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    }
-  }
 
-  protected boolean useCoordinator() {
-    return Boolean.getBoolean("testing.containers.use-coordinator");
+    String credential =
+        "Cassandra:"
+            + Base64.getEncoder().encodeToString("invalid".getBytes())
+            + ":"
+            + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
+    return Map.of(
+        HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+        credential,
+        HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+        CustomITEmbeddingProvider.TEST_API_KEY);
   }
 
   public static void checkMetrics(String commandName) {
@@ -370,10 +352,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
    */
   private synchronized CqlSession createDriverSession() {
     if (cqlSession == null) {
-      int port =
-          useCoordinator()
-              ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
-              : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+      int port = Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
       String dc;
       if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
         dc = "dc1";

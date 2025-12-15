@@ -2,18 +2,16 @@ package io.stargate.sgv2.jsonapi.api.request.tenant;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
-
-import java.lang.reflect.Field;
 import java.util.Objects;
 
 /**
- * Singleton instance factory for creating {@link Tenant} instances. It must be initialized
- * at application startup by calling {@link #initialize(DatabaseType)} with the
- * database type from the configuration.
- * <p>
- * Then call {@link #create(String)} on the {@link #instance()} to create tenant instances.
- * <p>
- * Safe for multi threading.
+ * Singleton instance factory for creating {@link Tenant} instances. It must be initialized at
+ * application startup by calling {@link #initialize(DatabaseType)} with the database type from the
+ * configuration.
+ *
+ * <p>Then call {@link #create(String)} on the {@link #instance()} to create tenant instances.
+ *
+ * <p>Safe for multi threading.
  */
 public class TenantFactory {
 
@@ -30,8 +28,7 @@ public class TenantFactory {
 
     if (singleton == null) {
       singleton = new TenantFactory(databaseType);
-    }
-    else{
+    } else {
       throw new IllegalStateException("TenantFactory already initialized");
     }
   }
@@ -47,12 +44,9 @@ public class TenantFactory {
     return Tenant.create(databaseType, tenantId);
   }
 
-  /**
-   * FOR TEST ONLY: Resets the singleton instance to allow re-initialization.
-   */
+  /** FOR TEST ONLY: Resets the singleton instance to allow re-initialization. */
   @VisibleForTesting
-  public static void reset(){
+  public static void reset() {
     singleton = null;
-
   }
 }

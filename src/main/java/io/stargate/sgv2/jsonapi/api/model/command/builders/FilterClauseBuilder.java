@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.builders;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -109,9 +108,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       return;
     }
     if (node.isObject()) {
-      Iterator<Map.Entry<String, JsonNode>> fieldsIterator = node.fields();
-      while (fieldsIterator.hasNext()) {
-        Map.Entry<String, JsonNode> entry = fieldsIterator.next();
+      for (Map.Entry<String, JsonNode> entry : node.properties()) {
         populateExpression(logicalExpression, entry);
       }
     } else if (node.isArray()) {
@@ -194,9 +191,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   protected List<ComparisonExpression> buildFromPathEntryCommon(Map.Entry<String, JsonNode> entry) {
 
     final List<ComparisonExpression> comparisonExpressionList = new ArrayList<>();
-    final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
-    while (fields.hasNext()) {
-      Map.Entry<String, JsonNode> updateField = fields.next();
+    for (Map.Entry<String, JsonNode> updateField : entry.getValue().properties()) {
       final String updateKey = updateField.getKey();
       FilterOperator operator = FilterOperators.findComparisonOperator(updateKey);
 
@@ -340,11 +335,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
                   "Invalid use of %s operator", node.fieldNames().next());
             }
           } else {
-            ObjectNode objectNode = (ObjectNode) node;
-            Map<String, Object> values = new LinkedHashMap<>(objectNode.size());
-            final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
-            while (fields.hasNext()) {
-              final Map.Entry<String, JsonNode> nextField = fields.next();
+            Map<String, Object> values = new LinkedHashMap<>(node.size());
+            for (Map.Entry<String, JsonNode> nextField : node.properties()) {
               values.put(nextField.getKey(), jsonNodeValue(nextField.getValue()));
             }
             return values;

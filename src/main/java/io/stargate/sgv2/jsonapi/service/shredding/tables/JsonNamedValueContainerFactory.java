@@ -43,7 +43,8 @@ public class JsonNamedValueContainerFactory {
 
     var container = new JsonNamedValueContainer();
     document
-        .fields()
+        .properties()
+        .iterator()
         .forEachRemaining(
             entry -> {
               var namedValue =

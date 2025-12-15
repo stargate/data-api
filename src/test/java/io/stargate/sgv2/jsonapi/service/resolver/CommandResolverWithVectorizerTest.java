@@ -49,73 +49,63 @@ import jakarta.inject.Inject;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CommandResolverWithVectorizerTest {
+
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
   @Inject DocumentShredder documentShredder;
-
   @InjectMock protected RequestContext dataApiRequestInfo;
+  private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
 
   @Inject FindCommandResolver findCommandResolver;
-
   @Inject FindOneCommandResolver findOneCommandResolver;
   @Inject UpdateOneCommandResolver updateOneCommandResolver;
   @Inject DeleteOneCommandResolver deleteOneCommandResolver;
-
   @Inject FindOneAndDeleteCommandResolver findOneAndDeleteCommandResolver;
-
-  @Inject FindOneAndReplaceCommandResolver findOneAndReplaceCommandResolver;
-
-  @Inject FindOneAndUpdateCommandResolver findOneAndUpdateCommandResolver;
-
   @Inject InsertManyCommandResolver insertManyCommandResolver;
-
   @Inject InsertOneCommandResolver insertOneCommandResolver;
 
   @Inject DataVectorizerService dataVectorizerService;
+
   private final TestConstants testConstants = new TestConstants();
   private final TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
-  @Nested
-  class Resolve {
-    // TODO: do these need to be unique to this test ? Can we use TestConstants ?
-    protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-    protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-    private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
+  // TODO: do these need to be unique to this test ? Can we use TestConstants ?
+  protected final String KEYSPACE_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
+  protected final String COLLECTION_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
 
-    @BeforeEach
-    public void beforeEach() {
-      VECTOR_COMMAND_CONTEXT =
-          testConstants.collectionContext(
-              "testCommand",
-              new CollectionSchemaObject(
-                  new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
-                  null,
-                  IdConfig.defaultIdConfig(),
-                  VectorConfig.fromColumnDefinitions(
-                      List.of(
-                          new VectorColumnDefinition(
-                              DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                              -1,
-                              SimilarityFunction.COSINE,
-                              EmbeddingSourceModel.OTHER,
-                              null))),
-                  null,
-                  CollectionLexicalConfig.configForDisabled(),
-                  CollectionRerankDef.configForPreRerankingCollection()),
-              null,
-              null);
-    }
+  @BeforeEach
+  public void beforeEach() {
+    VECTOR_COMMAND_CONTEXT =
+        testConstants.collectionContext(
+            "testCommand",
+            new CollectionSchemaObject(
+                new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
+                null,
+                IdConfig.defaultIdConfig(),
+                VectorConfig.fromColumnDefinitions(
+                    List.of(
+                        new VectorColumnDefinition(
+                            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                            -1,
+                            SimilarityFunction.COSINE,
+                            EmbeddingSourceModel.OTHER,
+                            null))),
+                null,
+                CollectionLexicalConfig.configForDisabled(),
+                CollectionRerankDef.configForPreRerankingCollection()),
+            null,
+            null);
+  }
 
-    @Test
-    public void find() throws Exception {
-      String json =
-          """
+  @Test
+  public void find() throws Exception {
+    String json =
+        """
           {
             "find": {
               "sort" : {"$vectorize" : "test data"}
@@ -123,42 +113,42 @@ public class CommandResolverWithVectorizerTest {
           }
           """;
 
-      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
-      final FindCommand vectorizedCommand =
-          (FindCommand)
-              dataVectorizerService
-                  .vectorize(commandContext, findOneCommand)
-                  .subscribe()
-                  .withSubscriber(UniAssertSubscriber.create())
-                  .awaitItem()
-                  .getItem();
-      Operation operation = findCommandResolver.resolveCommand(commandContext, vectorizedCommand);
+    FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+    var commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    final FindCommand vectorizedCommand =
+        (FindCommand)
+            dataVectorizerService
+                .vectorize(commandContext, findOneCommand)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitItem()
+                .getItem();
+    Operation operation = findCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              find -> {
-                float[] vector = new float[] {0.25f, 0.25f, 0.25f};
-                assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
-                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
-                assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
-                assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(find.skip()).isZero();
-                assertThat(find.maxSortReadLimit()).isZero();
-                assertThat(find.singleResponse()).isFalse();
-                assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.dbLogicalExpression().filters()).isEmpty();
-              });
-    }
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            find -> {
+              float[] vector = new float[] {0.25f, 0.25f, 0.25f};
+              assertThat(find.objectMapper()).isEqualTo(objectMapper);
+              assertThat(find.commandContext()).isEqualTo(commandContext);
+              assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
+              assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+              assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+              assertThat(find.pageState()).isNull();
+              assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(find.skip()).isZero();
+              assertThat(find.maxSortReadLimit()).isZero();
+              assertThat(find.singleResponse()).isFalse();
+              assertThat(find.vector()).containsExactly(vector);
+              assertThat(find.dbLogicalExpression().filters()).isEmpty();
+            });
+  }
 
-    @Test
-    public void findNonVectorize() throws Exception {
-      String json =
-          """
+  @Test
+  public void findNonVectorize() throws Exception {
+    String json =
+        """
           {
             "find": {
               "sort" : {"$vectorize" : "test data"}
@@ -166,33 +156,33 @@ public class CommandResolverWithVectorizerTest {
           }
           """;
 
-      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+    FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
 
-      Throwable throwable =
-          dataVectorizerService
-              .vectorize(VECTOR_COMMAND_CONTEXT, findOneCommand)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .getFailure();
+    Throwable throwable =
+        dataVectorizerService
+            .vectorize(VECTOR_COMMAND_CONTEXT, findOneCommand)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .getFailure();
 
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              e -> {
-                JsonApiException exception = (JsonApiException) e;
-                assertThat(exception.getMessage())
-                    .isEqualTo(
-                        "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
-                assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
-              });
-    }
+    assertThat(throwable)
+        .isInstanceOf(JsonApiException.class)
+        .satisfies(
+            e -> {
+              JsonApiException exception = (JsonApiException) e;
+              assertThat(exception.getMessage())
+                  .isEqualTo(
+                      "Unable to vectorize data, embedding service not configured for the collection : "
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+              assertThat(exception.getErrorCode())
+                  .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
+            });
+  }
 
-    @Test
-    public void deleteOne() throws Exception {
-      String json =
-          """
+  @Test
+  public void deleteOne() throws Exception {
+    String json =
+        """
           {
             "deleteOne": {
               "filter" : {"col" : "val"},
@@ -201,53 +191,52 @@ public class CommandResolverWithVectorizerTest {
           }
           """;
 
-      DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
-      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
-      final DeleteOneCommand vectorizedCommand =
-          (DeleteOneCommand)
-              dataVectorizerService
-                  .vectorize(commandContext, deleteOneCommand)
-                  .subscribe()
-                  .withSubscriber(UniAssertSubscriber.create())
-                  .awaitItem()
-                  .getItem();
-      Operation operation =
-          deleteOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
+    DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
+    var commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    final DeleteOneCommand vectorizedCommand =
+        (DeleteOneCommand)
+            dataVectorizerService
+                .vectorize(commandContext, deleteOneCommand)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitItem()
+                .getItem();
+    Operation operation =
+        deleteOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              DeleteCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.deleteLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "col", MapCollectionFilter.Operator.EQ, "val");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            DeleteCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.deleteLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.orderBy()).isNull();
-                          assertThat(find.vector()).isNotNull();
-                          assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.orderBy()).isNull();
+                        assertThat(find.vector()).isNotNull();
+                        assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void updateOne() throws Exception {
-      String json =
-          """
+  @Test
+  public void updateOne() throws Exception {
+    String json =
+        """
             {
               "updateOne": {
                 "filter" : {"col" : "val"},
@@ -257,69 +246,68 @@ public class CommandResolverWithVectorizerTest {
             }
             """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
-      final UpdateOneCommand vectorizedCommand =
-          (UpdateOneCommand)
-              dataVectorizerService
-                  .vectorize(commandContext, command)
-                  .subscribe()
-                  .withSubscriber(UniAssertSubscriber.create())
-                  .awaitItem()
-                  .getItem();
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    var commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    final UpdateOneCommand vectorizedCommand =
+        (UpdateOneCommand)
+            dataVectorizerService
+                .vectorize(commandContext, command)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitItem()
+                .getItem();
 
-      Operation operation =
-          updateOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
+    Operation operation =
+        updateOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              ReadAndUpdateCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isFalse();
-                assertThat(op.returnUpdatedDocument()).isFalse();
-                assertThat(op.upsert()).isFalse();
-                assertThat(op.documentShredder()).isEqualTo(documentShredder);
-                assertThat(op.updateLimit()).isEqualTo(1);
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.documentUpdater())
-                    .isInstanceOfSatisfying(
-                        DocumentUpdater.class,
-                        updater -> {
-                          UpdateClause updateClause =
-                              DocumentUpdaterUtils.updateClause(
-                                  UpdateOperator.SET,
-                                  objectMapper.createObjectNode().put("location", "New York"));
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            ReadAndUpdateCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isFalse();
+              assertThat(op.returnUpdatedDocument()).isFalse();
+              assertThat(op.upsert()).isFalse();
+              assertThat(op.documentShredder()).isEqualTo(documentShredder);
+              assertThat(op.updateLimit()).isEqualTo(1);
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.documentUpdater())
+                  .isInstanceOfSatisfying(
+                      DocumentUpdater.class,
+                      updater -> {
+                        UpdateClause updateClause =
+                            DocumentUpdaterUtils.updateClause(
+                                UpdateOperator.SET,
+                                objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
-                        });
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "col", MapCollectionFilter.Operator.EQ, "val");
+                        assertThat(updater.updateOperations())
+                            .isEqualTo(updateClause.buildOperations());
+                      });
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.vector()).isNotNull();
-                          assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.vector()).isNotNull();
+                        assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void updateNonVectorize() throws Exception {
-      String json =
-          """
+  @Test
+  public void updateNonVectorize() throws Exception {
+    String json =
+        """
                     {
                       "updateOne": {
                         "filter" : {"col" : "val"},
@@ -329,31 +317,31 @@ public class CommandResolverWithVectorizerTest {
                     }
                     """;
 
-      UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
-      Throwable throwable =
-          dataVectorizerService
-              .vectorize(VECTOR_COMMAND_CONTEXT, command)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .getFailure();
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              e -> {
-                JsonApiException exception = (JsonApiException) e;
-                assertThat(exception.getMessage())
-                    .isEqualTo(
-                        "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
-                assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
-              });
-    }
+    UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+    Throwable throwable =
+        dataVectorizerService
+            .vectorize(VECTOR_COMMAND_CONTEXT, command)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .getFailure();
+    assertThat(throwable)
+        .isInstanceOf(JsonApiException.class)
+        .satisfies(
+            e -> {
+              JsonApiException exception = (JsonApiException) e;
+              assertThat(exception.getMessage())
+                  .isEqualTo(
+                      "Unable to vectorize data, embedding service not configured for the collection : "
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+              assertThat(exception.getErrorCode())
+                  .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
+            });
+  }
 
-    @Test
-    public void findOneAndDelete() throws Exception {
-      String json =
-          """
+  @Test
+  public void findOneAndDelete() throws Exception {
+    String json =
+        """
         {
           "findOneAndDelete": {
             "filter" : {"status" : "active"},
@@ -362,51 +350,51 @@ public class CommandResolverWithVectorizerTest {
         }
         """;
 
-      FindOneAndDeleteCommand command = objectMapper.readValue(json, FindOneAndDeleteCommand.class);
-      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
-      final FindOneAndDeleteCommand vectorizedCommand =
-          (FindOneAndDeleteCommand)
-              dataVectorizerService
-                  .vectorize(commandContext, command)
-                  .subscribe()
-                  .withSubscriber(UniAssertSubscriber.create())
-                  .awaitItem()
-                  .getItem();
-      Operation operation =
-          findOneAndDeleteCommandResolver.resolveCommand(commandContext, vectorizedCommand);
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              DeleteCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.returnDocumentInResponse()).isTrue();
-                assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
-                assertThat(op.findCollectionOperation())
-                    .isInstanceOfSatisfying(
-                        FindCollectionOperation.class,
-                        find -> {
-                          TextCollectionFilter filter =
-                              new TextCollectionFilter(
-                                  "status", MapCollectionFilter.Operator.EQ, "active");
+    FindOneAndDeleteCommand command = objectMapper.readValue(json, FindOneAndDeleteCommand.class);
+    var commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    final FindOneAndDeleteCommand vectorizedCommand =
+        (FindOneAndDeleteCommand)
+            dataVectorizerService
+                .vectorize(commandContext, command)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitItem()
+                .getItem();
+    Operation operation =
+        findOneAndDeleteCommandResolver.resolveCommand(commandContext, vectorizedCommand);
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            DeleteCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.returnDocumentInResponse()).isTrue();
+              assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+              assertThat(op.findCollectionOperation())
+                  .isInstanceOfSatisfying(
+                      FindCollectionOperation.class,
+                      find -> {
+                        TextCollectionFilter filter =
+                            new TextCollectionFilter(
+                                "status", MapCollectionFilter.Operator.EQ, "active");
 
-                          assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext()).isEqualTo(commandContext);
-                          assertThat(find.pageSize()).isEqualTo(1);
-                          assertThat(find.limit()).isEqualTo(1);
-                          assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-                          assertThat(find.vector()).isNotNull();
-                          assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
-                          assertThat(find.singleResponse()).isTrue();
-                        });
-              });
-    }
+                        assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                        assertThat(find.commandContext()).isEqualTo(commandContext);
+                        assertThat(find.pageSize()).isEqualTo(1);
+                        assertThat(find.limit()).isEqualTo(1);
+                        assertThat(find.pageState()).isNull();
+                        assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                        assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+                        assertThat(find.vector()).isNotNull();
+                        assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
+                        assertThat(find.singleResponse()).isTrue();
+                      });
+            });
+  }
 
-    @Test
-    public void findOne() throws Exception {
-      String json =
-          """
+  @Test
+  public void findOne() throws Exception {
+    String json =
+        """
           {
             "findOne": {
               "sort" : {"$vectorize" : "test data"},
@@ -415,46 +403,45 @@ public class CommandResolverWithVectorizerTest {
           }
           """;
 
-      FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
-      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
-      final FindOneCommand vectorizedCommand =
-          (FindOneCommand)
-              dataVectorizerService
-                  .vectorize(commandContext, command)
-                  .subscribe()
-                  .withSubscriber(UniAssertSubscriber.create())
-                  .awaitItem()
-                  .getItem();
-      Operation operation =
-          findOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    var commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    final FindOneCommand vectorizedCommand =
+        (FindOneCommand)
+            dataVectorizerService
+                .vectorize(commandContext, command)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitItem()
+                .getItem();
+    Operation operation = findOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              find -> {
-                TextCollectionFilter filter =
-                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            find -> {
+              TextCollectionFilter filter =
+                  new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
-                float[] vector = new float[] {0.25f, 0.25f, 0.25f};
-                assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
-                assertThat(find.pageSize()).isEqualTo(1);
-                assertThat(find.limit()).isEqualTo(1);
-                assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(find.skip()).isZero();
-                assertThat(find.maxSortReadLimit()).isZero();
-                assertThat(find.singleResponse()).isTrue();
-                assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
-              });
-    }
+              float[] vector = new float[] {0.25f, 0.25f, 0.25f};
+              assertThat(find.objectMapper()).isEqualTo(objectMapper);
+              assertThat(find.commandContext()).isEqualTo(commandContext);
+              assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
+              assertThat(find.pageSize()).isEqualTo(1);
+              assertThat(find.limit()).isEqualTo(1);
+              assertThat(find.pageState()).isNull();
+              assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(find.skip()).isZero();
+              assertThat(find.maxSortReadLimit()).isZero();
+              assertThat(find.singleResponse()).isTrue();
+              assertThat(find.vector()).containsExactly(vector);
+              assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+            });
+  }
 
-    @Test
-    public void insertMany() throws Exception {
-      String json =
-          """
+  @Test
+  public void insertMany() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
               "documents": [
@@ -473,42 +460,39 @@ public class CommandResolverWithVectorizerTest {
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
-      final InsertManyCommand vectorizedCommand =
-          (InsertManyCommand)
-              dataVectorizerService
-                  .vectorize(commandContext, command)
-                  .subscribe()
-                  .withSubscriber(UniAssertSubscriber.create())
-                  .awaitItem()
-                  .getItem();
-      Operation result =
-          insertManyCommandResolver.resolveCommand(commandContext, vectorizedCommand);
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              InsertCollectionOperation.class,
-              op -> {
-                WritableShreddedDocument first =
-                    documentShredder.shred(
-                        VECTOR_COMMAND_CONTEXT, command.documents().get(0), null);
-                WritableShreddedDocument second =
-                    documentShredder.shred(
-                        VECTOR_COMMAND_CONTEXT, command.documents().get(1), null);
-                assertThat(first.queryVectorValues().length).isEqualTo(3);
-                assertThat(first.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
-                assertThat(second.queryVectorValues().length).isEqualTo(3);
-                assertThat(second.queryVectorValues()).containsExactly(1.0f, 1.0f, 1.0f);
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isFalse();
-                assertThat(op.insertions()).hasSize(2);
-              });
-    }
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    var commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    final InsertManyCommand vectorizedCommand =
+        (InsertManyCommand)
+            dataVectorizerService
+                .vectorize(commandContext, command)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitItem()
+                .getItem();
+    Operation result = insertManyCommandResolver.resolveCommand(commandContext, vectorizedCommand);
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            InsertCollectionOperation.class,
+            op -> {
+              WritableShreddedDocument first =
+                  documentShredder.shred(VECTOR_COMMAND_CONTEXT, command.documents().get(0), null);
+              WritableShreddedDocument second =
+                  documentShredder.shred(VECTOR_COMMAND_CONTEXT, command.documents().get(1), null);
+              assertThat(first.queryVectorValues().length).isEqualTo(3);
+              assertThat(first.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
+              assertThat(second.queryVectorValues().length).isEqualTo(3);
+              assertThat(second.queryVectorValues()).containsExactly(1.0f, 1.0f, 1.0f);
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.ordered()).isFalse();
+              assertThat(op.insertions()).hasSize(2);
+            });
+  }
 
-    @Test
-    public void insertManyNonVectorize() throws Exception {
-      String json =
-          """
+  @Test
+  public void insertManyNonVectorize() throws Exception {
+    String json =
+        """
                   {
                     "insertMany": {
                       "documents": [
@@ -527,32 +511,32 @@ public class CommandResolverWithVectorizerTest {
                   }
                   """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      final Throwable throwable =
-          dataVectorizerService
-              .vectorize(VECTOR_COMMAND_CONTEXT, command)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .getFailure();
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    final Throwable throwable =
+        dataVectorizerService
+            .vectorize(VECTOR_COMMAND_CONTEXT, command)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .getFailure();
 
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              e -> {
-                JsonApiException exception = (JsonApiException) e;
-                assertThat(exception.getMessage())
-                    .isEqualTo(
-                        "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
-                assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
-              });
-    }
+    assertThat(throwable)
+        .isInstanceOf(JsonApiException.class)
+        .satisfies(
+            e -> {
+              JsonApiException exception = (JsonApiException) e;
+              assertThat(exception.getMessage())
+                  .isEqualTo(
+                      "Unable to vectorize data, embedding service not configured for the collection : "
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+              assertThat(exception.getErrorCode())
+                  .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
+            });
+  }
 
-    @Test
-    public void insertOne() throws Exception {
-      String json =
-          """
+  @Test
+  public void insertOne() throws Exception {
+    String json =
+        """
         {
           "insertOne": {
             "document" : {
@@ -563,30 +547,29 @@ public class CommandResolverWithVectorizerTest {
         }
         """;
 
-      InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
-      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
-      final InsertOneCommand vectorizedCommand =
-          (InsertOneCommand)
-              dataVectorizerService
-                  .vectorize(commandContext, command)
-                  .subscribe()
-                  .withSubscriber(UniAssertSubscriber.create())
-                  .awaitItem()
-                  .getItem();
-      Operation result = insertOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
+    InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
+    var commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    final InsertOneCommand vectorizedCommand =
+        (InsertOneCommand)
+            dataVectorizerService
+                .vectorize(commandContext, command)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitItem()
+                .getItem();
+    Operation result = insertOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              InsertCollectionOperation.class,
-              op -> {
-                WritableShreddedDocument expected =
-                    documentShredder.shred(VECTOR_COMMAND_CONTEXT, command.document(), null);
-                assertThat(expected.queryVectorValues().length).isEqualTo(3);
-                assertThat(expected.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isFalse();
-                assertThat(op.insertions()).hasSize(1);
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            InsertCollectionOperation.class,
+            op -> {
+              WritableShreddedDocument expected =
+                  documentShredder.shred(VECTOR_COMMAND_CONTEXT, command.document(), null);
+              assertThat(expected.queryVectorValues().length).isEqualTo(3);
+              assertThat(expected.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.ordered()).isFalse();
+              assertThat(op.insertions()).hasSize(1);
+            });
   }
 }

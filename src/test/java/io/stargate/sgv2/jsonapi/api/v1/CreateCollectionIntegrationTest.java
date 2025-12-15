@@ -75,7 +75,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyPath() {
-      final String collectionName = "col" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "col" + RandomStringUtils.insecure().nextNumeric(16);
       givenHeadersPostJsonThenOk(
                   """
                       {
@@ -466,12 +466,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_FIELD"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: No option \"InDex\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")"));
+                  "'createCollection' command referenced unrecognized field(s): No option \"InDex\" exists"));
     }
 
     @Test
@@ -491,12 +491,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_FIELD"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unrecognized field \"unknown\" for `createCollection.options.defaultId`"));
+                  "'createCollection' command referenced unrecognized field(s): Unrecognized field \"unknown\""));
     }
 
     @Test
@@ -516,12 +516,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_FIELD"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unrecognized field \"unknown\" for `createCollection.options.indexing` (known fields"));
+                  "'createCollection' command referenced unrecognized field(s): Unrecognized field \"unknown\""));
     }
 
     @Test
@@ -541,12 +541,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_FIELD"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unrecognized field \"unknown\" for `createCollection.options.vector` (known fields"));
+                  "'createCollection' command referenced unrecognized field(s): Unrecognized field \"unknown\""));
     }
   }
 
@@ -619,12 +619,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                           }
                           """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'test' is not supported"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: Service provider 'test' is not supported"));
     }
 
     @Test
@@ -653,12 +653,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Model name 'testModel' for provider 'azureOpenAI' is not supported"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: Model name 'testModel' for provider 'azureOpenAI' is not supported"));
     }
   }
 
@@ -786,12 +786,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The 'dimension' can not be null if 'service' is not provided"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: The 'dimension' can not be null if 'service' is not provided"));
     }
 
     @Test
@@ -814,14 +814,14 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                 }
                             }
-                                    """)
+                            """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided dimension value '123' doesn't match the model's supported dimension value '1024'"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: The provided dimension value '123' doesn't match the model's supported dimension value '1024'"));
     }
 
     @Test
@@ -934,12 +934,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided dimension value (1) is not within the supported numeric range [2, 1536]"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: The provided dimension value (1) is not within the supported numeric range [2, 1536]"));
 
       // create a collection with a dimension higher than the min
       givenHeadersPostJsonThenOk(
@@ -961,12 +961,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided dimension value (2000) is not within the supported numeric range [2, 1536]"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: The provided dimension value (2000) is not within the supported numeric range [2, 1536]"));
     }
   }
 
@@ -1024,12 +1024,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'nvidia' does not support authentication key 'providerKey'"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: Service provider 'nvidia' does not support authentication key 'providerKey'"));
     }
 
     @Test
@@ -1053,12 +1053,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                     """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'huggingface' does not support either 'NONE' or 'HEADER' authentication types."))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: Service provider 'huggingface' does not support either 'NONE' or 'HEADER' authentication types."));
     }
 
     @Test
@@ -1085,12 +1085,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                     """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'openai' does not support authentication key 'test'"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "'createCollection' command option(s) invalid: Service provider 'openai' does not support authentication key 'test'"));
     }
 
     @Test
@@ -1200,12 +1200,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'resourceName' for the provider 'azureOpenAI' missing"));
+                  "'createCollection' command option(s) invalid: Required parameter 'resourceName' for the provider 'azureOpenAI' missing"));
     }
 
     @Test
@@ -1233,12 +1233,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'azureOpenAI' provided"));
+                  "'createCollection' command option(s) invalid: Unexpected parameter 'test' for the provider 'azureOpenAI' provided"));
     }
 
     @Test
@@ -1265,12 +1265,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'openai' provided"));
+                  "'createCollection' command option(s) invalid: Unexpected parameter 'test' for the provider 'openai' provided"));
     }
 
     @Test
@@ -1299,12 +1299,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'resourceName' type is incorrect. Expected: 'string'"));
+                  "'createCollection' command option(s) invalid: The provided parameter 'resourceName' type is incorrect. Expected: 'string'"));
     }
 
     @Test
@@ -1331,12 +1331,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'autoTruncate' for the provider 'vertexai' missing"));
+                  "'createCollection' command option(s) invalid: Required parameter 'autoTruncate' for the provider 'vertexai' missing"));
     }
 
     @Test
@@ -1366,12 +1366,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unexpected parameter 'vectorDimension' for the provider 'azureOpenAI' provided"));
+                  "'createCollection' command option(s) invalid: Unexpected parameter 'vectorDimension' for the provider 'azureOpenAI' provided"));
     }
 
     @Test
@@ -1400,12 +1400,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'deploymentId' type is incorrect. Expected: 'string'"));
+                  "'createCollection' command option(s) invalid: The provided parameter 'deploymentId' type is incorrect. Expected: 'string'"));
     }
   }
 
@@ -1606,12 +1606,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       }
                       """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
+                  "Command field 'command.options.vector.sourceModel' value \"invalidName\" not valid"));
     }
 
     @Test
@@ -1635,12 +1635,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                               """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
+                  "Command field 'command.options.vector.sourceModel' value \"invalidName\" not valid:"));
     }
   }
 

@@ -19,8 +19,6 @@ public class DseTestResource extends StargateTestResource {
 
   // Need some additional pre-configuration when NOT running under Maven
   public DseTestResource() {
-    super();
-
     if (isRunningUnderMaven()) {
       LOG.info("Running under Maven, no need to overwrite integration test properties");
       return;
@@ -44,7 +42,7 @@ public class DseTestResource extends StargateTestResource {
     // 21-Apr-2025, tatu: formerly referenced hard-coded images; left here for reference:
     //   to be removed in near future
     // "stargateio/dse-next:4.0.11-591d171ac9c9"
-    // "datastax/dse-server:6.9.15"
+    // "datastax/dse-server:6.9.16"
     // "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd:1.2.3";
 
     // 21-Apr-2025, tatu: [data-api#1952] Load definition from "./docker-compose/.env"
@@ -108,11 +106,6 @@ public class DseTestResource extends StargateTestResource {
     return isHcd() ? "true" : "false";
   }
 
-  // By default, we enable the feature flag for tables
-  public String getFeatureFlagTables() {
-    return "true";
-  }
-
   // By default, we enable the feature flag for reranking
   public String getFeatureFlagReranking() {
     return "true";
@@ -139,12 +132,6 @@ public class DseTestResource extends StargateTestResource {
       propsBuilder.put("stargate.feature.flags.lexical", lexicalFeatureSetting);
     }
 
-    // 04-Sep-2024, tatu: [data-api#1335] Enable Tables using new Feature Flag:
-    String tableFeatureSetting = getFeatureFlagTables();
-    if (tableFeatureSetting != null) {
-      propsBuilder.put("stargate.feature.flags.tables", tableFeatureSetting);
-    }
-
     // 31-Mar-2025, yuqi: [data-api#1904] Reranking feature flag:
     String featureFlagReranking = getFeatureFlagReranking();
     if (featureFlagReranking != null) {
@@ -164,24 +151,12 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.embedding.providers.vertexai.models[0].parameters[0].required", "true");
     if (this.containerNetworkId.isPresent()) {
-      String host =
-          useCoordinator()
-              ? System.getProperty("quarkus.grpc.clients.bridge.host")
-              : System.getProperty("stargate.int-test.cassandra.host");
+      String host = System.getProperty("stargate.int-test.cassandra.host");
       propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
     } else {
-      int port =
-          useCoordinator()
-              ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
-              : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+      int port = Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
       propsBuilder.put(
           "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
-    }
-    if (useCoordinator()) {
-      String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
-      if (defaultToken != null) {
-        propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
-      }
     }
     if (isDse() || isHcd()) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.local-datacenter", "dc1");

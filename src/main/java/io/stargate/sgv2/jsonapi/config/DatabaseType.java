@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.config;
 
+import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
+
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlCredentialsFactory;
 import java.util.Objects;
 import org.eclipse.microprofile.config.spi.Converter;
-
-import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
 
 /**
  * The back end database the API is running against.
@@ -30,21 +30,14 @@ public enum DatabaseType {
   public String normalizeValidateTenantId(String tenantId) {
 
     var normalized = normalizeOptionalString(tenantId).toUpperCase();
-    if (isSingleTenant()) {
-      if (!normalized.isEmpty()){
-        throw new IllegalArgumentException(
-            "DatabaseType %s is singleTenant, tenantId must be empty, but was: '%s'"
-                .formatted(this.name(), normalized));
-      }
-      return normalized;
-    }
 
-    // For multi-tenant databases, must not be
-    if (normalized.isEmpty()){
+    // For multi-tenant databases, must not be empty
+    if (!singleTenant && normalized.isEmpty()) {
       throw new IllegalArgumentException(
           "DatabaseType %s is multi-tenant, tenantId must not be empty".formatted(this.name()));
     }
-    return normalized;
+
+    return normalizeOptionalString(tenantId).toUpperCase();
   }
 
   /**

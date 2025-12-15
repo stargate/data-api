@@ -51,7 +51,7 @@ public abstract class RerankingProvider extends ProviderBase {
 
   public ModelUsage createEmptyModelUsage(RerankingCredentials rerankingCredentials) {
     return createModelUsage(
-        rerankingCredentials.tenantId(), ModelInputType.INPUT_TYPE_UNSPECIFIED, 0, 0, 0, 0, 0);
+        rerankingCredentials.tenant(), ModelInputType.INPUT_TYPE_UNSPECIFIED, 0, 0, 0, 0, 0);
   }
 
   /**

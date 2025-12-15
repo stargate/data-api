@@ -8,7 +8,7 @@ import static org.mockito.Mockito.*;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -72,18 +72,18 @@ public class CqlCredentialsFactoryTests {
       for (var token : tokens) {
         var fixture = newFixture(null, null, null, dbType);
 
-        JsonApiException ex =
+        ServerException ex =
             assertThrows(
-                JsonApiException.class,
+                ServerException.class,
                 () -> {
                   fixture.factory.apply(token);
                 });
 
         assertThat(ex)
             .as("Exception message for dbType=%s, token='%s'", dbType, token)
+            .hasMessageContaining("An unexpected internal server error")
             .hasMessageContaining(
-                "Server internal error: Missing/Invalid authentication credentials provided for type: "
-                    + dbType);
+                "Missing/Invalid authentication credentials provided for type: " + dbType);
       }
     }
   }

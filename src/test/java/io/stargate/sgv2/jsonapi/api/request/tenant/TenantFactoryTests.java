@@ -7,8 +7,6 @@ import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
-
 public class TenantFactoryTests {
 
   @AfterEach

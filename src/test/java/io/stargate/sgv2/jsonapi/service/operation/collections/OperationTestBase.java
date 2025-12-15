@@ -45,8 +45,8 @@ public class OperationTestBase {
 
   private final TestConstants testConstants = new TestConstants();
 
-  protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
+  protected final String KEYSPACE_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
+  protected final String COLLECTION_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
   protected final SchemaObjectName SCHEMA_OBJECT_NAME =
       new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
 

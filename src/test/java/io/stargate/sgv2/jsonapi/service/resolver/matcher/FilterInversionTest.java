@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
@@ -34,7 +33,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class FilterInversionTest {
 
   @Inject ObjectMapper objectMapper;
-  @Inject OperationsConfig operationsConfig;
 
   private TestConstants testConstants = new TestConstants();
 

@@ -6,8 +6,9 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
+import java.util.Map;
 
 public class CommandObjectMapperHandler extends DeserializationProblemHandler {
 
@@ -22,24 +23,28 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
 
     final String typeStr = (deserializer == null) ? "N/A" : deserializer.handledType().toString();
     if (typeStr.endsWith("CreateCollectionCommand$Options")) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")",
-          propertyName);
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
+          "message",
+          "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")"
+              .formatted(propertyName));
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$IdConfig")) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "Unrecognized field \"%s\" for `createCollection.options.defaultId` (known fields: \"type\")",
-          propertyName);
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
+          "message",
+          "Unrecognized field \"%s\" for `createCollection.options.defaultId` (known fields: \"type\")"
+              .formatted(propertyName));
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$IndexingConfig")) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")",
-          propertyName);
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
+          "message",
+          "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")"
+              .formatted(propertyName));
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$VectorSearchConfig")) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\",)",
-          propertyName);
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
+          "message",
+          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\")"
+              .formatted(propertyName));
     }
 
     // false means if not matched by above handle logic, object mapper will
@@ -56,10 +61,21 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       String failureMsg)
       throws JsonApiException {
     final String rawCommandClassString = baseType.getRawClass().getName();
-    final String baseCommand =
+    String baseCommand =
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
-    throw ErrorCodeV1.COMMAND_UNKNOWN.toApiException(
-        "\"%s\" not one of \"%s\"s: known commands are %s",
-        subTypeId, baseCommand, idResolver.getDescForKnownTypeIds());
+    // Massage "GeneralCommand" into "General Command" (and so forth)
+    int ix = baseCommand.indexOf("Command");
+    if (ix > 0) {
+      baseCommand = baseCommand.substring(0, ix) + " " + "Command";
+    }
+
+    throw RequestException.Code.UNKNOWN_COMMAND.get(
+        Map.of(
+            "commandType",
+            baseCommand,
+            "command",
+            subTypeId,
+            "knownCommands",
+            idResolver.getDescForKnownTypeIds()));
   }
 }

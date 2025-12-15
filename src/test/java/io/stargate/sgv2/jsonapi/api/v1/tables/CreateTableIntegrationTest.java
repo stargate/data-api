@@ -950,8 +950,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                      }
                   }
                   """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: Service provider 'invalid_service' is not supported")));
+                  SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: Service provider 'invalid_service' is not supported")));
 
       // vector type with invalid model name config
       testCases.add(
@@ -982,8 +982,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                      }
                   }
                   """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
+                  SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
 
       // vector type with deprecated model
       testCases.add(
@@ -1072,8 +1072,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                        }
                     }
                     """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
+                  SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
 
       // unspecified dimension with unspecified vectorize
       testCases.add(

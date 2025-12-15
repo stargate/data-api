@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -14,7 +14,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 
 /**
  * Use the {@link CommandResultBuilder} to create a {@link CommandResult} for a command response,
- * for creation see {@link #singleDocumentBuilder(boolean, boolean)} and the other factory methods.
+ * for creation see {@link #singleDocumentBuilder} and the other factory methods.
  *
  * <p>Comments on {@link CommandResultBuilder} explain future work here.
  */
@@ -111,7 +111,7 @@ public record CommandResult(
     // ensure message is not set in the fields key
     public Error {
       if (null != fields && fields.containsKey("message")) {
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+        throw ServerException.internalServerError(
             "Error fields can not contain the reserved key 'message'");
       }
     }

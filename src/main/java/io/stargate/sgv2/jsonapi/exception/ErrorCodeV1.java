@@ -4,20 +4,9 @@ import jakarta.ws.rs.core.Response;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
-  /** Command error codes. */
-  COUNT_READ_FAILED("Unable to count documents"),
-  COMMAND_UNKNOWN("Provided command unknown"),
-  INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
-  COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
-
-  /**
-   * Error code used for {@code ConstraintViolationException} failures mapped to {@code
-   * JsonApiException}
-   */
-  COMMAND_FIELD_INVALID("Request invalid"),
-
+  // 12-Dec-2025, tatu: Cannot be converted, used as marker with LWTException
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
-  COLLECTION_NOT_EXIST("Collection does not exist, collection name"),
+
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
   DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
@@ -41,11 +30,7 @@ public enum ErrorCodeV1 {
 
   FILTER_MULTIPLE_ID_FILTER(
       "Cannot have more than one _id equals filter clause: use $in operator instead"),
-
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
-
-  /** note: Only used by EmbeddingGateway */
-  INVALID_REQUEST("Request not supported by the data store"),
 
   INVALID_REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
 
@@ -60,8 +45,6 @@ public enum ErrorCodeV1 {
   UNINDEXED_SORT_PATH("Unindexed sort path"),
 
   ID_NOT_INDEXED("_id is not indexed"),
-
-  KEYSPACE_DOES_NOT_EXIST("The provided keyspace does not exist"),
 
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
@@ -122,8 +105,6 @@ public enum ErrorCodeV1 {
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
-  INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
-
   UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
@@ -141,8 +122,6 @@ public enum ErrorCodeV1 {
   UNSUPPORTED_UPDATE_OPERATION_PATH("Unsupported update operation path"),
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
-
-  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
@@ -164,7 +143,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
-  LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
   LEXICAL_CONTENT_TOO_BIG(
       "Lexical content is too big, please use a smaller value for the $lexical field"),
 
@@ -175,14 +153,10 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
-  UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
-  OFFLINE_WRITER_SESSION_NOT_FOUND("Offline writer session not found"),
-  UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION("Unable to create offline writer session"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
-  INVALID_ID_TYPE("Invalid Id type"),
   INVALID_QUERY("Invalid query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
   MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
@@ -199,7 +173,6 @@ public enum ErrorCodeV1 {
    * Error code used for "should never happen" style problems. Suffix part needs to include details
    * of actual issue.
    */
-  SERVER_INTERNAL_ERROR("Server internal error"),
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
@@ -207,13 +180,13 @@ public enum ErrorCodeV1 {
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
-  EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
-  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request"),
-  // TODO, add this section so we don't have to throw RuntimeExceptions for table work, and it is
-  // easy to track, should be improved along with error refactor work
 
-  // API table error codes
-  TABLE_FEATURE_NOT_ENABLED("API table feature is not enabled");
+  // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
+
+  INVALID_REQUEST("Request not supported by the data store"),
+
+  EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
+  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
 
   private final String message;
 

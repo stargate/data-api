@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
@@ -32,8 +34,7 @@ import java.util.*;
  *       combination.
  *   <li>Decide on the {@link ExceptionFlags}, describe the condition that was observed so the API
  *       layer can decide which remediation to perform (for example recycle a session).
- *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body
- *       body.
+ *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body.
  *   <li>Add the error code to the Code enum for the Exception class, such as {@link
  *       FilterException.Code} or {@link RequestException.Code} with the same name. When the enum is
  *       instantiated at JVM start the error template is loaded.
@@ -174,5 +175,35 @@ public abstract class APIException extends RuntimeException implements Recordabl
         .append("body", body)
         .append("httpStatus", httpStatus)
         .append("exceptionFlags", exceptionFlags);
+  }
+
+  // Support for converting legacy ErrorCodeV1 usage
+  public CommandResult.Error getCommandResultError() {
+    return getCommandResultError(Response.Status.OK);
+  }
+
+  // Support for converting legacy ErrorCodeV1 usage
+  public CommandResult.Error getCommandResultError(Response.Status status) {
+    Map<String, Object> fieldsForMetricsTag =
+        Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName());
+    Map<String, Object> fields =
+        new HashMap<>(
+            Map.of(
+                "id",
+                errorId,
+                "errorCode",
+                code,
+                "family",
+                String.valueOf(family),
+                "scope",
+                scope,
+                "title",
+                title));
+
+    if (DebugConfigAccess.isDebugEnabled()) {
+      fields.put("exceptionClass", this.getClass().getSimpleName());
+    }
+
+    return new CommandResult.Error(getMessage(), fieldsForMetricsTag, fields, status);
   }
 }

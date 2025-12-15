@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import java.util.Optional;
 
 /**
@@ -11,4 +12,4 @@ import java.util.Optional;
  * @param secretId - Secret Id used for AWS Bedrock embedding service
  */
 public record EmbeddingCredentials(
-    Optional<String> apiKey, Optional<String> accessId, Optional<String> secretId) {}
+    Tenant tenant, Optional<String> apiKey, Optional<String> accessId, Optional<String> secretId) {}

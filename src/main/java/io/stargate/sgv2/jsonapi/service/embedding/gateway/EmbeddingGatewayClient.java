@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient extends EmbeddingProvider {

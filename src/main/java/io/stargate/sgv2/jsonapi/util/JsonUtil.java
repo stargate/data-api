@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Utf8;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import java.io.IOException;
@@ -69,8 +70,8 @@ public class JsonUtil {
         }
         ObjectNode ob1 = (ObjectNode) node1;
         ObjectNode ob2 = (ObjectNode) node2;
-        Iterator<Map.Entry<String, JsonNode>> it1 = ob1.fields();
-        Iterator<Map.Entry<String, JsonNode>> it2 = ob2.fields();
+        Iterator<Map.Entry<String, JsonNode>> it1 = ob1.properties().iterator();
+        Iterator<Map.Entry<String, JsonNode>> it2 = ob2.properties().iterator();
 
         while (it1.hasNext()) {
           Map.Entry<String, JsonNode> entry1 = it1.next();
@@ -272,8 +273,7 @@ public class JsonUtil {
             etype.encodedName(), value);
     }
     // should never happen
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unrecognized JsonExtensionType: %s", etype);
+    throw ServerException.internalServerError("Unrecognized JsonExtensionType: " + etype);
   }
 
   /**

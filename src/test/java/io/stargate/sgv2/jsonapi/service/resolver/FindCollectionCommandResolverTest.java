@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionsCol
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -22,7 +21,7 @@ public class FindCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject FindCollectionsCommandResolver resolver;
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<KeyspaceSchemaObject> commandContext;
 
@@ -31,13 +30,10 @@ public class FindCollectionCommandResolverTest {
     commandContext = testConstants.keyspaceContext();
   }
 
-  @Nested
-  class FindCollectionCommandResolveCommand {
-
-    @Test
-    public void findCollection() throws Exception {
-      String json =
-          """
+  @Test
+  public void findCollection() throws Exception {
+    String json =
+        """
           {
             "findCollections": {
 
@@ -45,24 +41,23 @@ public class FindCollectionCommandResolverTest {
           }
           """;
 
-      FindCollectionsCommand findCommand =
-          objectMapper.readValue(json, FindCollectionsCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+    FindCollectionsCommand findCommand = objectMapper.readValue(json, FindCollectionsCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, findCommand);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionsCollectionOperation.class,
-              findCollection -> {
-                assertThat(findCollection.objectMapper()).isEqualTo(objectMapper);
-                assertThat(findCollection.commandContext()).isEqualTo(commandContext);
-                assertThat(findCollection.explain()).isEqualTo(false);
-              });
-    }
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionsCollectionOperation.class,
+            findCollection -> {
+              assertThat(findCollection.objectMapper()).isEqualTo(objectMapper);
+              assertThat(findCollection.commandContext()).isEqualTo(commandContext);
+              assertThat(findCollection.explain()).isEqualTo(false);
+            });
+  }
 
-    @Test
-    public void findCollectionWithExplain() throws Exception {
-      String json =
-          """
+  @Test
+  public void findCollectionWithExplain() throws Exception {
+    String json =
+        """
                   {
                     "findCollections": {
                       "options" : {
@@ -72,18 +67,16 @@ public class FindCollectionCommandResolverTest {
                   }
                   """;
 
-      FindCollectionsCommand findCommand =
-          objectMapper.readValue(json, FindCollectionsCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+    FindCollectionsCommand findCommand = objectMapper.readValue(json, FindCollectionsCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, findCommand);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionsCollectionOperation.class,
-              findCollection -> {
-                assertThat(findCollection.objectMapper()).isEqualTo(objectMapper);
-                assertThat(findCollection.commandContext()).isEqualTo(commandContext);
-                assertThat(findCollection.explain()).isEqualTo(true);
-              });
-    }
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionsCollectionOperation.class,
+            findCollection -> {
+              assertThat(findCollection.objectMapper()).isEqualTo(objectMapper);
+              assertThat(findCollection.commandContext()).isEqualTo(commandContext);
+              assertThat(findCollection.explain()).isEqualTo(true);
+            });
   }
 }

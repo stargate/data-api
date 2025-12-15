@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   @Nested
   class ClientErrors {
-    String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
+    String collectionName = "col" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
     @Test
     public void tokenMissing() {
@@ -70,12 +70,15 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is("UNKNOWN_COMMAND"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are ["));
+                  "Command 'unknownCommand' is not a Collection Command recognized by Data API."))
+          .body(
+              "errors[0].message",
+              containsString("Data API supports following Collection Commands: [alterTable,"));
     }
 
     @Test
@@ -113,11 +116,11 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              startsWith("Request invalid: field 'command' value `null` not valid"));
+              startsWith("Command field 'command' value `null` not valid: must not be null."));
     }
   }
 }

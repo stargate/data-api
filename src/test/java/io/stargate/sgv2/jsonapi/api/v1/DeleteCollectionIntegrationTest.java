@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -25,7 +25,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyPath() {
-      String collection = RandomStringUtils.randomAlphabetic(16);
+      String collection = RandomStringUtils.insecure().nextAlphabetic(16);
 
       // first create
       givenHeadersAndJson(
@@ -64,7 +64,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void notExisting() {
-      String collection = RandomStringUtils.randomAlphabetic(16);
+      String collection = RandomStringUtils.insecure().nextAlphabetic(16);
 
       // delete not existing
       givenHeadersAndJson(
@@ -99,11 +99,11 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              is(
-                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be empty."));
+              startsWith(
+                  "Command field 'command.name' value `null` not valid: must not be empty."));
     }
   }
 

@@ -218,8 +218,7 @@ public record DeleteCollectionOperation(
                             // In case of successful document delete
                             return Tuple2.of(true, document);
                           } else {
-                            // In case of successful document delete
-
+                            // In case of failed document delete
                             throw new LWTException(ErrorCodeV1.CONCURRENCY_FAILURE);
                           }
                         });

@@ -93,6 +93,11 @@ public class MeteredCommandProcessor {
 
     Timer.Sample sample = Timer.start(meterRegistry);
 
+    // Set up logging context (MDC)
+    // use MDC to populate logs as needed(namespace,collection,tenantId)
+    commandContext.schemaObject().name().addToMDC();
+    MDC.put("tenantId", commandContext.requestContext().tenant().toString());
+
     // --- Defer Command Processing (from PR2076) ---
     // We wrap the call to `commandProcessor.processCommand` in `Uni.createFrom().deferred()`
     // for two main reasons:
@@ -139,6 +144,13 @@ public class MeteredCommandProcessor {
                     buildCommandLog(commandContext, command, null),
                     throwable);
               }
+            })
+        .eventually(
+            () -> {
+              // Cleanup MDC after processing completes (success or failure) to prevent data from
+              // leaking into the next request handled by the same thread.
+              commandContext.schemaObject().name().removeFromMDC();
+              MDC.remove("tenantId");
             });
   }
 
@@ -224,8 +236,7 @@ public class MeteredCommandProcessor {
     Set<String> allowedTenants =
         commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
     if (!allowedTenants.contains(ALL_TENANTS)
-        && !allowedTenants.contains(
-            commandContext.requestContext().tenant().toString())) {
+        && !allowedTenants.contains(commandContext.requestContext().tenant().toString())) {
       // Logging disabled for this tenant
       return false;
     }
@@ -257,7 +268,8 @@ public class MeteredCommandProcessor {
     // --- Basic Tags ---
     // Identify the command being executed and the tenant associated with the request
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    Tag tenantTag = Tag.of(tenantConfig.tenantTag(), commandContext.requestContext().tenant().toString());
+    Tag tenantTag =
+        Tag.of(tenantConfig.tenantTag(), commandContext.requestContext().tenant().toString());
 
     // --- Error Tags ---
     // Determine if the command resulted in an error and capture details
