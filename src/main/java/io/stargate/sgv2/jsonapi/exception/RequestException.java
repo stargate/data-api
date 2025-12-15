@@ -4,7 +4,7 @@ package io.stargate.sgv2.jsonapi.exception;
  * Base for any errors that are from the {@link ErrorFamily#REQUEST} family, these are errors
  * related to the structure of the request.
  *
- * <p>Scope are defined in {@lnk Scope} and each represents a subclass of this class.
+ * <p>Scope are defined in {@link Scope} and each represents a subclass of this class.
  *
  * <p>The {@link Code} in this class is for error codes that do not have a scope.
  *
