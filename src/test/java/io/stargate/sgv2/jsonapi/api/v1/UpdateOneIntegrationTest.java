@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -1646,11 +1643,11 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              is(
-                  "Request invalid: field 'command.updateClause' value `null` not valid. Problem: must not be null."));
+              startsWith(
+                  "Command field 'command.updateClause' value `null` not valid: must not be null."));
     }
 
     @Test

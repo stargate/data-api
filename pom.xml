@@ -41,7 +41,6 @@
     <!-- Defaults are for DSE which does not support (full) lexical feature set so: -->
     <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
-    <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
     <driver.version>4.17.0</driver.version>
     <!-- Compiler -->
@@ -351,7 +350,6 @@
             <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
             <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
             <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
-            <testing.containers.use-coordinator>false</testing.containers.use-coordinator>
           </systemPropertyVariables>
           <excludes>
             <exclude>**/*IntegrationTest.*</exclude>
@@ -440,7 +438,6 @@
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
                 <maven.home>${maven.home}</maven.home>
-                <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>
@@ -566,7 +563,6 @@
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
         <stargate.int-test.cassandra.image-tag>6.9.16</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
-        <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
         <!-- No lexical-sort on DSE: -->
@@ -586,7 +582,6 @@
         <stargate.int-test.cassandra.image>559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd</stargate.int-test.cassandra.image>
         <stargate.int-test.cassandra.image-tag>1.2.3</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
-        <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
         <!-- HCD does have lexical-sort: -->
