@@ -1651,13 +1651,13 @@ request-errors:
 
   - scope: SORT
     code: OVERLOADED_SORT_ROW_LIMIT
-    title: Sort aborted due to in memory sort restriction
+    title: Sort aborted due to in-memory sort restriction
     body: |-
-      The command used in memory sorting which has a limit of 10,000 rows. 
+      The command used in-memory sorting which has a limit of ${maxLimit} ${unit}s. 
       
       Consult any warnings included in the response for how to improve the sort performance.
       
-      Resend the command using a more specific filter to reduce the number of rows sorted.
+      Resend the command using a more specific filter to reduce the number of ${unit}s sorted.
 
   - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS

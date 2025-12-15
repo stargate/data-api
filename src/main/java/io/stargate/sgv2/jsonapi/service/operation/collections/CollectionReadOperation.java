@@ -249,9 +249,9 @@ public interface CollectionReadOperation extends CollectionOperation {
               Iterator<Row> rowIterator = resultSet.currentPage().iterator();
               int remaining = resultSet.remaining();
               int count = documentCounter.addAndGet(remaining);
-              if (count == errorLimit) {
-                throw ErrorCodeV1.DATASET_TOO_BIG.toApiException(
-                    "maximum sortable count = %d", errorLimit);
+              if (count >= errorLimit) {
+                throw SortException.Code.OVERLOADED_SORT_ROW_LIMIT.get(
+                    Map.of("maxLimit", String.valueOf(errorLimit), "unit", "document"));
               }
               List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {

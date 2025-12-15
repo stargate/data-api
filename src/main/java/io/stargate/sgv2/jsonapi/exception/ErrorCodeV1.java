@@ -7,8 +7,6 @@ public enum ErrorCodeV1 {
   // 12-Dec-2025, tatu: Cannot be converted, used as marker with LWTException
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
 
-  DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
-
   /** Embedding provider service error codes. */
   EMBEDDING_REQUEST_ENCODING_ERROR("Unable to create embedding provider request message"),
   EMBEDDING_RESPONSE_DECODING_ERROR("Unable to parse embedding provider response message"),
