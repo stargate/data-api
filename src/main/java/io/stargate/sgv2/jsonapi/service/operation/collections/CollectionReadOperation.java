@@ -12,6 +12,7 @@ import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
@@ -21,13 +22,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -406,7 +401,10 @@ public interface CollectionReadOperation extends CollectionOperation {
         .transformToUni(
             (rs, failure) -> {
               if (failure != null) {
-                return Uni.createFrom().failure(ErrorCodeV1.COUNT_READ_FAILED.toApiException());
+                return Uni.createFrom()
+                    .failure(
+                        DatabaseException.Code.COUNT_READ_FAILED.get(
+                            Map.of("errorMessage", failure.toString())));
               }
               getCount(rs, failure, counter);
               return Uni.createFrom().item(new CountResponse(counter.get()));
@@ -432,7 +430,10 @@ public interface CollectionReadOperation extends CollectionOperation {
         .transformToUni(
             (rSet, failure) -> {
               if (failure != null) {
-                return Uni.createFrom().failure(ErrorCodeV1.COUNT_READ_FAILED.toApiException());
+                return Uni.createFrom()
+                    .failure(
+                        DatabaseException.Code.COUNT_READ_FAILED.get(
+                            Map.of("errorMessage", failure.toString())));
               }
               Row row = rSet.one(); // For count there will be only one row
               long count = row.getLong(0); // Count value will be the first column value
@@ -476,7 +477,7 @@ public interface CollectionReadOperation extends CollectionOperation {
 
   private void getEstimatedCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
     if (error != null) {
-      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException("root cause: %s", error.getMessage());
+      throw DatabaseException.Code.COUNT_READ_FAILED.get(Map.of("errorMessage", error.toString()));
     } else {
 
       // calculate the total range size and total partitions count for each range

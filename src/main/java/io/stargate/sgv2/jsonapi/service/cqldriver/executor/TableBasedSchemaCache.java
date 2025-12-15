@@ -7,9 +7,11 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 
 /** Caches the vector enabled status for the namespace */
@@ -70,18 +72,18 @@ public class TableBasedSchemaCache {
                   // collection does not exist
                   // TODO: DO NOT do a string starts with, use proper error structures
                   // again, why is this here, looks like it returns the same error code ?
+                  // Guess: this a driver exception, not Data API's internal one
                   if (error instanceof RuntimeException rte
-                      && rte.getMessage()
-                          .startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
+                      && rte.getMessage().startsWith("Collection does not exist")) {
                     return Uni.createFrom()
                         .failure(
-                            ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+                            SchemaException.Code.COLLECTION_NOT_EXIST.get(
+                                Map.of("collection", collectionName)));
                   }
                   return Uni.createFrom().failure(error);
-                } else {
-                  schemaObjectCache.put(collectionName, result);
-                  return Uni.createFrom().item(result);
                 }
+                schemaObjectCache.put(collectionName, result);
+                return Uni.createFrom().item(result);
               });
     }
   }
@@ -101,7 +103,9 @@ public class TableBasedSchemaCache {
               // TODO: error code here needs to be for collections and tables
               var table =
                   optionalTable.orElseThrow(
-                      () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+                      () ->
+                          SchemaException.Code.COLLECTION_NOT_EXIST.get(
+                              Map.of("collection", collectionName)));
 
               // check if its a valid json API Table
               // TODO: re-use the table matcher this is on the request hot path

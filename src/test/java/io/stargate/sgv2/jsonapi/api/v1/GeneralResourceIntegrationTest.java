@@ -89,11 +89,10 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'command' value `null` not valid. Problem: must not be null"));
+              startsWith("Command field 'command' value `null` not valid: must not be null"));
     }
   }
 }
