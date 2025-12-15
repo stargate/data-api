@@ -245,6 +245,14 @@ request-errors:
 
  # DOCUMENT request errors
   - scope: DOCUMENT
+    code: DOCUMENT_ALREADY_EXISTS
+    title: Document the given _id already exists
+    body: |-
+      Cannot insert the document: a document already exists with given '_id' (${id}). 
+
+      Either resend the command with distinct '_id', or use an update command instead.
+
+  - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
     title: Primary key columns missing
     body: |-

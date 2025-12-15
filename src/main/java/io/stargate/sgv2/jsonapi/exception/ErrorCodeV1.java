@@ -9,8 +9,6 @@ public enum ErrorCodeV1 {
 
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
-  DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
-
   DOCUMENT_UNPARSEABLE("Unable to parse the document"),
 
   DOCUMENT_REPLACE_DIFFERENT_DOCID(

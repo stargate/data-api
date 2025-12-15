@@ -230,10 +230,12 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message()).isEqualTo("Document already exists with the given _id");
                 assertThat(error.fields())
-                    .containsEntry("exceptionClass", "JsonApiException")
+                    .containsEntry("exceptionClass", "DocumentException")
                     .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
+                assertThat(error.message())
+                    .startsWith(
+                        "Cannot insert the document: a document already exists with given '_id' ('doc1')");
               });
     }
 
