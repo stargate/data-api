@@ -9,9 +9,6 @@ public enum ErrorCodeV1 {
 
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
-  DOCUMENT_REPLACE_DIFFERENT_DOCID(
-      "The replace document and document resolved using filter have different _id"),
-
   /** Embedding provider service error codes. */
   EMBEDDING_REQUEST_ENCODING_ERROR("Unable to create embedding provider request message"),
   EMBEDDING_RESPONSE_DECODING_ERROR("Unable to parse embedding provider response message"),

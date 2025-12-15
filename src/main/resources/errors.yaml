@@ -263,6 +263,14 @@ request-errors:
       Report the problem to database administrators.
 
   - scope: DOCUMENT
+    code: DOCUMENT_REPLACE_DIFFERENT_DOCID
+    title: Document the given _id already exists
+    body: |-
+      The replace document and document resolved using filter have different '_id's: ${replaceId} (replace document) vs. ${matchedId} (document that filter matches). 
+
+      Resend the update command with a document that has same '_id' as document being replaced.
+
+  - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
     title: Primary key columns missing
     body: |-
