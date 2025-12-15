@@ -93,7 +93,7 @@ jobs:
       # Publish baseline coverage for main branch (for future PR comparisons)
       - name: Publish baseline coverage
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: baseline-coverage
           path: target/site/jacoco/jacoco.xml
@@ -254,7 +254,7 @@ jobs:
           EOF
 
       - name: Upload JaCoCo coverage report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: jacoco-report
           path: target/site/jacoco/
