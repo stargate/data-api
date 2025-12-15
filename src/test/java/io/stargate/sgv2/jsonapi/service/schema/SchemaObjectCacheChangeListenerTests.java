@@ -17,25 +17,22 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CacheTestsBase;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
-
 /**
  * Tests for the {@link SchemaObjectCache.SchemaCacheSchemaChangeListener} to evict and clear items
  * see XXX for tests on the cache directly.
  */
 public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SchemaObjectCacheChangeListenerTests.class);
-
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(SchemaObjectCacheChangeListenerTests.class);
 
   private final UserAgent SLA_USER_AGENT =
       new UserAgent("user-agent/" + TEST_CONSTANTS.CORRELATION_ID);
@@ -73,13 +70,13 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
     TenantFactory.reset();
   }
 
-
   @Test
   public void silentFailWhenOnSessionReadyNotCalled() {
 
     var fixture = newFixture();
     var expectedTable =
-        fixture.mockTable(fixture.tenantFixture, TEST_CONSTANTS.TABLE_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+        fixture.mockTable(
+            fixture.tenantFixture, TEST_CONSTANTS.TABLE_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
     var tableMetadata = fixture.tableMetadataForIdentifier(TEST_CONSTANTS.TABLE_IDENTIFIER);
     var keyspaceMetadata = fixture.keyspaceMetadataForIdentifier(TEST_CONSTANTS.TABLE_IDENTIFIER);
@@ -98,7 +95,9 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
         fixture
             .cache()
             .getIfPresent(
-                fixture.tenantFixture.requestContext, TEST_CONSTANTS.TABLE_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+                fixture.tenantFixture.requestContext,
+                TEST_CONSTANTS.TABLE_IDENTIFIER,
+                TEST_CONSTANTS.USER_AGENT);
 
     assertThat(actualTableAfter)
         .as("Table is still in schema cache after listener called before onSessionReady")
@@ -133,17 +132,27 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
       // put two tables in from two keyspaces for the tenantFixture we are removing
       // and one from a different tenantFixture
       // table 1 is the one we remove
-      var expectedTable1 = fixture.mockTable(fixture.tenantFixture, TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-      var expectedTable2 = fixture.mockTable(fixture.tenantFixture, TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-      var expectedTableOther = fixture.mockTable(fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+      var expectedTable1 =
+          fixture.mockTable(fixture.tenantFixture, TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+      var expectedTable2 =
+          fixture.mockTable(fixture.tenantFixture, TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+      var expectedTableOther =
+          fixture.mockTable(
+              fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
       fixture.listener.onSessionReady(fixture.tenantFixture().cqlSession);
       var operation = cb.apply(fixture.listener);
 
       // only table1 should be removed, the others should still be there
-      assertSchemaObjectRemoved(operation,fixture.tenantFixture, fixture, TABLE_1_IDENTIFIER);
-      assertSchemaObjectPresent(operation, fixture.tenantFixture, fixture, TABLE_2_IDENTIFIER, expectedTable2);
-      assertSchemaObjectPresent(operation,fixture.otherTenantFixture,  fixture, TABLE_OTHER_IDENTIFIER, expectedTableOther);
+      assertSchemaObjectRemoved(operation, fixture.tenantFixture, fixture, TABLE_1_IDENTIFIER);
+      assertSchemaObjectPresent(
+          operation, fixture.tenantFixture, fixture, TABLE_2_IDENTIFIER, expectedTable2);
+      assertSchemaObjectPresent(
+          operation,
+          fixture.otherTenantFixture,
+          fixture,
+          TABLE_OTHER_IDENTIFIER,
+          expectedTableOther);
     }
   }
 
@@ -155,13 +164,20 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
     // put two tables in from two keyspaces for the tenantFixture we are removing
     // and one from a different tenantFixture
     // table 1 and 2 is the ones we remove
-    var expectedTable1 = fixture.mockTable(fixture.tenantFixture,TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-    var expectedTable2 = fixture.mockTable(fixture.tenantFixture,TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-    var expectedTableOther = fixture.mockTable(fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedTable1 =
+        fixture.mockTable(fixture.tenantFixture, TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedTable2 =
+        fixture.mockTable(fixture.tenantFixture, TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedTableOther =
+        fixture.mockTable(
+            fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
-    var expectedKS = fixture.mockKeyspace(fixture.tenantFixture, KEYSPACE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedKS =
+        fixture.mockKeyspace(
+            fixture.tenantFixture, KEYSPACE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
     var expectedKSOther =
-        fixture.mockKeyspace(fixture.otherTenantFixture, KEYSPACE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+        fixture.mockKeyspace(
+            fixture.otherTenantFixture, KEYSPACE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
     var ksMetadata1 = fixture.keyspaceMetadataForIdentifier(KEYSPACE_1_IDENTIFIER);
 
@@ -170,15 +186,18 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
     // drop keyspace 1, from the TENANT
     fixture.listener.onKeyspaceDropped(ksMetadata1);
 
-    // table1 and 2 should be removed because from same keyspace + tenantFixture, table other still there
+    // table1 and 2 should be removed because from same keyspace + tenantFixture, table other still
+    // there
     // keyspace 1 should be removed, but not the other keyspace
     var operation = "onKeyspaceDropped";
-    assertSchemaObjectRemoved(operation,fixture.tenantFixture, fixture, TABLE_1_IDENTIFIER);
-    assertSchemaObjectRemoved(operation,fixture.tenantFixture, fixture, TABLE_2_IDENTIFIER);
-    assertSchemaObjectPresent(operation,fixture.otherTenantFixture, fixture, TABLE_OTHER_IDENTIFIER, expectedTableOther);
+    assertSchemaObjectRemoved(operation, fixture.tenantFixture, fixture, TABLE_1_IDENTIFIER);
+    assertSchemaObjectRemoved(operation, fixture.tenantFixture, fixture, TABLE_2_IDENTIFIER);
+    assertSchemaObjectPresent(
+        operation, fixture.otherTenantFixture, fixture, TABLE_OTHER_IDENTIFIER, expectedTableOther);
 
-    assertSchemaObjectRemoved(operation,fixture.tenantFixture, fixture, KEYSPACE_1_IDENTIFIER);
-    assertSchemaObjectPresent(operation, fixture.otherTenantFixture, fixture, KEYSPACE_OTHER_IDENTIFIER, expectedKSOther);
+    assertSchemaObjectRemoved(operation, fixture.tenantFixture, fixture, KEYSPACE_1_IDENTIFIER);
+    assertSchemaObjectPresent(
+        operation, fixture.otherTenantFixture, fixture, KEYSPACE_OTHER_IDENTIFIER, expectedKSOther);
   }
 
   @Test
@@ -188,13 +207,20 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
 
     // put two tables in from two keyspaces for the tenantFixture we are removing
     // and one from a different tenantFixture
-    var expectedTable1 = fixture.mockTable(fixture.tenantFixture,TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-    var expectedTable2 = fixture.mockTable(fixture.tenantFixture,TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-    var expectedTableOther = fixture.mockTable(fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedTable1 =
+        fixture.mockTable(fixture.tenantFixture, TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedTable2 =
+        fixture.mockTable(fixture.tenantFixture, TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedTableOther =
+        fixture.mockTable(
+            fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
-    var expectedKS = fixture.mockKeyspace(fixture.tenantFixture, KEYSPACE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedKS =
+        fixture.mockKeyspace(
+            fixture.tenantFixture, KEYSPACE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
     var expectedKSOther =
-        fixture.mockKeyspace(fixture.otherTenantFixture, KEYSPACE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+        fixture.mockKeyspace(
+            fixture.otherTenantFixture, KEYSPACE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
     var ksMetadata1 = fixture.keyspaceMetadataForIdentifier(KEYSPACE_1_IDENTIFIER);
 
@@ -205,12 +231,16 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
 
     // only ks for the tenant should be removed, other tables and ks should still be there
     var operation = "onKeyspaceUpdated";
-    assertSchemaObjectPresent(operation,fixture.tenantFixture, fixture, TABLE_1_IDENTIFIER, expectedTable1);
-    assertSchemaObjectPresent(operation,fixture.tenantFixture, fixture, TABLE_2_IDENTIFIER, expectedTable2);
-    assertSchemaObjectPresent(operation,fixture.otherTenantFixture, fixture, TABLE_OTHER_IDENTIFIER, expectedTableOther);
+    assertSchemaObjectPresent(
+        operation, fixture.tenantFixture, fixture, TABLE_1_IDENTIFIER, expectedTable1);
+    assertSchemaObjectPresent(
+        operation, fixture.tenantFixture, fixture, TABLE_2_IDENTIFIER, expectedTable2);
+    assertSchemaObjectPresent(
+        operation, fixture.otherTenantFixture, fixture, TABLE_OTHER_IDENTIFIER, expectedTableOther);
 
-    assertSchemaObjectRemoved(operation,fixture.tenantFixture, fixture, KEYSPACE_1_IDENTIFIER);
-    assertSchemaObjectPresent(operation, fixture.otherTenantFixture, fixture, KEYSPACE_OTHER_IDENTIFIER, expectedKSOther);
+    assertSchemaObjectRemoved(operation, fixture.tenantFixture, fixture, KEYSPACE_1_IDENTIFIER);
+    assertSchemaObjectPresent(
+        operation, fixture.otherTenantFixture, fixture, KEYSPACE_OTHER_IDENTIFIER, expectedKSOther);
   }
 
   @Test
@@ -218,14 +248,20 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
 
     var fixture = newFixture();
 
+    var expectedTable1 =
+        fixture.mockTable(fixture.tenantFixture, TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedTable2 =
+        fixture.mockTable(fixture.tenantFixture, TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedTableOther =
+        fixture.mockTable(
+            fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
-    var expectedTable1 = fixture.mockTable(fixture.tenantFixture,TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-    var expectedTable2 = fixture.mockTable(fixture.tenantFixture,TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-    var expectedTableOther = fixture.mockTable(fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
-
-    var expectedKS = fixture.mockKeyspace(fixture.tenantFixture, KEYSPACE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+    var expectedKS =
+        fixture.mockKeyspace(
+            fixture.tenantFixture, KEYSPACE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
     var expectedKSOther =
-        fixture.mockKeyspace(fixture.otherTenantFixture, KEYSPACE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
+        fixture.mockKeyspace(
+            fixture.otherTenantFixture, KEYSPACE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
     var ksMetadata1 = fixture.keyspaceMetadataForIdentifier(KEYSPACE_1_IDENTIFIER);
 
@@ -236,12 +272,14 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
 
     // only ks for the tenant should be removed, other tables and ks should still be there
     var operation = "onKeyspaceCreated";
-    assertSchemaObjectRemoved(operation,fixture.tenantFixture, fixture, TABLE_1_IDENTIFIER);
-    assertSchemaObjectRemoved(operation,fixture.tenantFixture, fixture, TABLE_2_IDENTIFIER);
-    assertSchemaObjectPresent(operation,fixture.otherTenantFixture, fixture, TABLE_OTHER_IDENTIFIER, expectedTableOther);
+    assertSchemaObjectRemoved(operation, fixture.tenantFixture, fixture, TABLE_1_IDENTIFIER);
+    assertSchemaObjectRemoved(operation, fixture.tenantFixture, fixture, TABLE_2_IDENTIFIER);
+    assertSchemaObjectPresent(
+        operation, fixture.otherTenantFixture, fixture, TABLE_OTHER_IDENTIFIER, expectedTableOther);
 
-    assertSchemaObjectRemoved(operation,fixture.tenantFixture, fixture, KEYSPACE_1_IDENTIFIER);
-    assertSchemaObjectPresent(operation, fixture.otherTenantFixture, fixture, KEYSPACE_OTHER_IDENTIFIER, expectedKSOther);
+    assertSchemaObjectRemoved(operation, fixture.tenantFixture, fixture, KEYSPACE_1_IDENTIFIER);
+    assertSchemaObjectPresent(
+        operation, fixture.otherTenantFixture, fixture, KEYSPACE_OTHER_IDENTIFIER, expectedKSOther);
   }
 
   // =========================================================================================================
@@ -249,7 +287,10 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
   // =========================================================================================================
 
   private void assertSchemaObjectRemoved(
-      String operation, FixtureTenant thisFixtureTenant, Fixture fixture, SchemaObjectIdentifier identifier) {
+      String operation,
+      FixtureTenant thisFixtureTenant,
+      Fixture fixture,
+      SchemaObjectIdentifier identifier) {
 
     assertThat(
             fixture.cache.getIfPresent(
@@ -334,6 +375,7 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
 
     return new FixtureTenant(tenant, requestContext, cqlSession);
   }
+
   record Fixture(
       SchemaObjectCache.SchemaObjectFactory factory,
       SchemaChangeListener listener,
@@ -342,7 +384,8 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
       FixtureTenant tenantFixture,
       FixtureTenant otherTenantFixture) {
 
-    public TableSchemaObject mockTable(FixtureTenant thisFixtureTenant, SchemaObjectIdentifier identifier, UserAgent userAgent) {
+    public TableSchemaObject mockTable(
+        FixtureTenant thisFixtureTenant, SchemaObjectIdentifier identifier, UserAgent userAgent) {
 
       var tableSchemaObject = mock(TableSchemaObject.class);
       when(tableSchemaObject.identifier()).thenReturn(identifier);
@@ -368,7 +411,10 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
         UserAgent userAgent,
         TableSchemaObject tableSchemaObject) {
 
-      LOGGER.info("Setting up factories for identifier: {}, thisFixtureTenant: {}", identifier, thisFixtureTenant);
+      LOGGER.info(
+          "Setting up factories for identifier: {}, thisFixtureTenant: {}",
+          identifier,
+          thisFixtureTenant);
 
       // the getTableBased function may need to make two calls to get the schema object, the first
       // is to try if it is a collection, the second is to get it as a table
@@ -382,9 +428,9 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
       var otherIdentifier =
           identifier.type() == SchemaObjectType.COLLECTION
               ? SchemaObjectIdentifier.forTable(
-              identifier.tenant(), identifier.keyspace(), identifier.table())
+                  identifier.tenant(), identifier.keyspace(), identifier.table())
               : SchemaObjectIdentifier.forCollection(
-              identifier.tenant(), identifier.keyspace(), identifier.table());
+                  identifier.tenant(), identifier.keyspace(), identifier.table());
       when(factory.apply(any(), eq(otherIdentifier), anyBoolean()))
           .thenReturn(
               CompletableFuture.failedFuture(
@@ -416,7 +462,8 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
           .thenReturn(CompletableFuture.completedFuture(keyspaceSchemaObject));
 
       var actual =
-          cache().getKeyspace(thisFixtureTenant.requestContext, identifier, userAgent, false)
+          cache()
+              .getKeyspace(thisFixtureTenant.requestContext, identifier, userAgent, false)
               .await()
               .indefinitely();
 
@@ -441,9 +488,5 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
     }
   }
 
-  record FixtureTenant(
-      Tenant tenant,
-      RequestContext requestContext,
-      CqlSession cqlSession
-  ){}
+  record FixtureTenant(Tenant tenant, RequestContext requestContext, CqlSession cqlSession) {}
 }

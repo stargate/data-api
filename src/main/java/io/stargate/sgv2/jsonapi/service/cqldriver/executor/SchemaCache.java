@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * TODO: @YUQI - DELETE WHEN SCHMEA OBJECT CACHE IS READY
  *
- * Top level entry for caching the keyspaces and tables from the backend db
+ * <p>Top level entry for caching the keyspaces and tables from the backend db
  *
  * <p>IMPORTANT: use {@link #getSchemaChangeListener()} and {@link #getDeactivatedTenantConsumer()}
  * to get callbacks to evict the cache when the schema changes or a tenant is deactivated. This

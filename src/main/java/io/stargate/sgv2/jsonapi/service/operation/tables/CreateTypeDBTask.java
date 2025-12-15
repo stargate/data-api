@@ -6,8 +6,9 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.schema.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiUdtType;
 
 public class CreateTypeDBTask extends SchemaDBTask<KeyspaceSchemaObject> {

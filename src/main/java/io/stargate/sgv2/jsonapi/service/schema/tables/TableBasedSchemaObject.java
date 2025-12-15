@@ -7,12 +7,9 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
-
 import java.util.Objects;
 
-/**
- * Common base for a Collection and Table, which are both a CQL Table.
- */
+/** Common base for a Collection and Table, which are both a CQL Table. */
 public abstract class TableBasedSchemaObject extends SchemaObject {
 
   private final TableMetadata tableMetadata;
@@ -24,13 +21,10 @@ public abstract class TableBasedSchemaObject extends SchemaObject {
     this.tableMetadata = Objects.requireNonNull(tableMetadata, "tableMetadata must not be null");
   }
 
-  /**
-   * For old tests that do not have the table metadata
-   */
+  /** For old tests that do not have the table metadata */
   @VisibleForTesting
   protected TableBasedSchemaObject(
-      SchemaObjectType expectedType,
-      SchemaObjectIdentifier schemaObjectIdentifier) {
+      SchemaObjectType expectedType, SchemaObjectIdentifier schemaObjectIdentifier) {
     super(expectedType, schemaObjectIdentifier);
 
     this.tableMetadata = null;

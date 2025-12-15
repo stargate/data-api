@@ -5,17 +5,16 @@ import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-
 import java.util.Objects;
 
 /**
  * A Keyspace in the API.
- * <p>
- * We currently do not hang things like Tables and Views of the KeyspaceSchemaObject,
- * they can all be retrieved from {@link SchemaObjectCache}
- * <p>
- * We hae commands like list collections, list tables, etc. that run against
- * as Keyspace so we have an object to represent that Keyspace.
+ *
+ * <p>We currently do not hang things like Tables and Views of the KeyspaceSchemaObject, they can
+ * all be retrieved from {@link SchemaObjectCache}
+ *
+ * <p>We hae commands like list collections, list tables, etc. that run against as Keyspace so we
+ * have an object to represent that Keyspace.
  */
 public class KeyspaceSchemaObject extends SchemaObject {
 

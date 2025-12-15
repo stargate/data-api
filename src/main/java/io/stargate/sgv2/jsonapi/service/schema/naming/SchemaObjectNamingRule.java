@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.naming;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
-
 import java.util.Map;
 import java.util.regex.Pattern;
 

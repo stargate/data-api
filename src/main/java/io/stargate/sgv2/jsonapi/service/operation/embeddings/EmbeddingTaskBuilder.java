@@ -1,10 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import java.util.List;
 import java.util.Objects;
 

@@ -169,7 +169,9 @@ public class MeteredCommandProcessor {
             command.getClass().getSimpleName(),
             commandContext.requestContext().tenant(),
             commandContext.schemaObject().identifier().keyspace().asInternal(),
-            commandContext.schemaObject().identifier().table() == null ? "" : commandContext.schemaObject().identifier().table().asInternal(),
+            commandContext.schemaObject().identifier().table() == null
+                ? ""
+                : commandContext.schemaObject().identifier().table().asInternal(),
             commandContext.schemaObject().type().name(),
             getIncomingDocumentsCount(command),
             getOutgoingDocumentsCount(result),

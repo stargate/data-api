@@ -5,10 +5,9 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.Objects;
 import java.util.function.Supplier;
-
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

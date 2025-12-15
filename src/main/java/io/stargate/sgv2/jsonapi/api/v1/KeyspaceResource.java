@@ -181,23 +181,23 @@ public class KeyspaceResource {
                     .map(commandResult -> commandResult.toRestResponse());
               }
 
-    // call processor
-    return meteredCommandProcessor
-        .processCommand(commandContext, command)
-        // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.toRestResponse())
-        .onTermination()
-        .invoke(
-            () -> {
-              try {
-                commandContext.close();
-              } catch (Exception e) {
-                LOGGER.error(
-                    "Error closing the command context for requestContext={}",
-                    requestContext,
-                    e);
-              }
-            });
+              // call processor
+              return meteredCommandProcessor
+                  .processCommand(commandContext, command)
+                  // map to 2xx unless overridden by error
+                  .map(commandResult -> commandResult.toRestResponse())
+                  .onTermination()
+                  .invoke(
+                      () -> {
+                        try {
+                          commandContext.close();
+                        } catch (Exception e) {
+                          LOGGER.error(
+                              "Error closing the command context for requestContext={}",
+                              requestContext,
+                              e);
+                        }
+                      });
             });
   }
 }

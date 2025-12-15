@@ -18,9 +18,7 @@ import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-/**
- * Creates
- */
+/** Creates */
 public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactory {
 
   private static final CollectionTableMatcher IS_COLLECTION_PREDICATE =
@@ -42,9 +40,10 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
     Objects.requireNonNull(identifier, "identifier must not be null");
 
     // sanity check
-    if (! requestContext.tenant().equals(identifier.tenant())){
-      throw new IllegalArgumentException("requestContext and identifier tenant mismatch, requestContext: %s, identifier: %s"
-          .formatted(requestContext, identifier.tenant()));
+    if (!requestContext.tenant().equals(identifier.tenant())) {
+      throw new IllegalArgumentException(
+          "requestContext and identifier tenant mismatch, requestContext: %s, identifier: %s"
+              .formatted(requestContext, identifier.tenant()));
     }
 
     Uni<? extends SchemaObject> uni =
@@ -94,7 +93,9 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
   }
 
   private Uni<TableBasedSchemaObject> createTableBasedSchemaObject(
-      RequestContext requestContext, UnscopedSchemaObjectIdentifier scopedName, boolean forceRefresh) {
+      RequestContext requestContext,
+      UnscopedSchemaObjectIdentifier scopedName,
+      boolean forceRefresh) {
 
     return getKeyspaceMetadata(requestContext, scopedName, forceRefresh)
         .map(
@@ -117,13 +118,14 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
               return IS_COLLECTION_PREDICATE.test(tableMetadata)
                   ? CollectionSchemaObject.getCollectionSettings(
                       requestContext.tenant(), tableMetadata, OBJECT_MAPPER)
-                  : TableSchemaObject.from(
-                      requestContext.tenant(), tableMetadata, OBJECT_MAPPER);
+                  : TableSchemaObject.from(requestContext.tenant(), tableMetadata, OBJECT_MAPPER);
             });
   }
 
   private Uni<KeyspaceMetadata> getKeyspaceMetadata(
-      RequestContext requestContext, UnscopedSchemaObjectIdentifier scopedName, boolean forceRefresh) {
+      RequestContext requestContext,
+      UnscopedSchemaObjectIdentifier scopedName,
+      boolean forceRefresh) {
 
     var queryExecutor =
         new CommandQueryExecutor(

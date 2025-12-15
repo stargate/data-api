@@ -8,7 +8,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
-import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -16,22 +15,21 @@ import org.slf4j.MDC;
 
 /**
  * Identifies a {@link SchemaObject} in the API, which can be a database, keyspace, collection, etc.
- * <p>
- * Schema objects are identified by their type, name, and importantly, the tenant they belong to. So an identifier
- * is unique and stable for all tenants in a single instance of the API.
- * </p>
- * <p>
- *  Create using the factory methods, such as {@link #forDatabase(Tenant)} which validate the data that is needed.
- * </p><p>
- * use {@link #fullName()} or {@link #toString()} to get a human-readable representation of the identifier, such as
- * <code>keyspace_name.table_name</code>
- *</p>
- * <b>Note:</b> You should compare and manages the identifiers as objects using
- * the {@link #equals(Object)} and {@link #hashCode()} methods, which include the tenant etc in the logic.
- * Avoid comparing the individual fields, such as {@link #tenant()}, {@link #keyspace()} or {@link #table()}.
  *
+ * <p>Schema objects are identified by their type, name, and importantly, the tenant they belong to.
+ * So an identifier is unique and stable for all tenants in a single instance of the API.
+ *
+ * <p>Create using the factory methods, such as {@link #forDatabase(Tenant)} which validate the data
+ * that is needed.
+ *
+ * <p>use {@link #fullName()} or {@link #toString()} to get a human-readable representation of the
+ * identifier, such as <code>keyspace_name.table_name</code> <b>Note:</b> You should compare and
+ * manages the identifiers as objects using the {@link #equals(Object)} and {@link #hashCode()}
+ * methods, which include the tenant etc in the logic. Avoid comparing the individual fields, such
+ * as {@link #tenant()}, {@link #keyspace()} or {@link #table()}.
  */
-public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, Recordable, LoggingMDCContext {
+public class SchemaObjectIdentifier
+    implements UnscopedSchemaObjectIdentifier, Recordable, LoggingMDCContext {
 
   private final SchemaObjectType type;
   private final Tenant tenant;
@@ -57,18 +55,14 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
         };
   }
 
-  /**
-   * Creates a {@link SchemaObjectIdentifier} for a database.
-   */
+  /** Creates a {@link SchemaObjectIdentifier} for a database. */
   public static SchemaObjectIdentifier forDatabase(Tenant tenant) {
 
     checkTenantId(tenant);
     return new SchemaObjectIdentifier(SchemaObjectType.DATABASE, tenant, null, null);
   }
 
-  /**
-   * Creates a {@link SchemaObjectIdentifier} for a keyspace.
-   */
+  /** Creates a {@link SchemaObjectIdentifier} for a keyspace. */
   public static SchemaObjectIdentifier forKeyspace(Tenant tenant, CqlIdentifier keyspace) {
 
     checkTenantId(tenant);
@@ -76,9 +70,7 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
     return new SchemaObjectIdentifier(SchemaObjectType.KEYSPACE, tenant, keyspace, null);
   }
 
-  /**
-   * Creates a {@link SchemaObjectIdentifier} for a collection.
-   */
+  /** Creates a {@link SchemaObjectIdentifier} for a collection. */
   public static SchemaObjectIdentifier forCollection(
       Tenant tenant, CqlIdentifier keyspace, CqlIdentifier collection) {
 
@@ -88,9 +80,7 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
     return new SchemaObjectIdentifier(SchemaObjectType.COLLECTION, tenant, keyspace, collection);
   }
 
-  /**
-   * Creates a {@link SchemaObjectIdentifier} for a table.
-   */
+  /** Creates a {@link SchemaObjectIdentifier} for a table. */
   public static SchemaObjectIdentifier forTable(
       Tenant tenant, CqlIdentifier keyspace, CqlIdentifier table) {
 
@@ -100,9 +90,7 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
     return new SchemaObjectIdentifier(SchemaObjectType.TABLE, tenant, keyspace, table);
   }
 
-  /**
-   * Creates a {@link SchemaObjectIdentifier} using CQL TableMetadata to get the name parts.
-   */
+  /** Creates a {@link SchemaObjectIdentifier} using CQL TableMetadata to get the name parts. */
   public static SchemaObjectIdentifier fromTableMetadata(
       SchemaObjectType type, Tenant tenant, TableMetadata tableMetadata) {
 
@@ -113,7 +101,9 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
       case TABLE -> forTable(tenant, tableMetadata.getKeyspace(), tableMetadata.getName());
       case COLLECTION ->
           forCollection(tenant, tableMetadata.getKeyspace(), tableMetadata.getName());
-      default -> throw new IllegalArgumentException("fromTableMetadata() - Unsupported object type: " + type);
+      default ->
+          throw new IllegalArgumentException(
+              "fromTableMetadata() - Unsupported object type: " + type);
     };
   }
 
@@ -123,10 +113,11 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
 
   /**
    * The full name of the schema object, this is also returned from {@link #toString()}.:
+   *
    * <ul>
-   *   <li>For a database: <code>db:tenant</code></li>
-   *   <li>For a keyspace: <code>keyspace</code></li>
-   *   <li>For a collection, table, or index: <code>keyspace.collection</code></li>
+   *   <li>For a database: <code>db:tenant</code>
+   *   <li>For a keyspace: <code>keyspace</code>
+   *   <li>For a collection, table, or index: <code>keyspace.collection</code>
    * </ul>
    */
   public String fullName() {
@@ -137,9 +128,7 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
     return tenant;
   }
 
-  /**
-   * Gets the {@link SchemaObjectIdentifier} for the keyspace that contains this schema object.
-   */
+  /** Gets the {@link SchemaObjectIdentifier} for the keyspace that contains this schema object. */
   public SchemaObjectIdentifier keyspaceIdentifier() {
     return forKeyspace(tenant, keyspace);
   }
@@ -154,17 +143,13 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
     return table;
   }
 
-  /**
-   * Same as {@link #table()} , part of the {@link UnscopedSchemaObjectIdentifier} interface.
-   */
+  /** Same as {@link #table()} , part of the {@link UnscopedSchemaObjectIdentifier} interface. */
   @Override
   public CqlIdentifier objectName() {
     return table;
   }
 
-  /**
-   * Tests if this identifier is from the same tenant AND keyspace as another identifier.
-   */
+  /** Tests if this identifier is from the same tenant AND keyspace as another identifier. */
   public boolean isSameKeyspace(SchemaObjectIdentifier other) {
     return Objects.equals(tenant, other.tenant) && Objects.equals(keyspace, other.keyspace);
   }
@@ -218,9 +203,7 @@ public class SchemaObjectIdentifier implements UnscopedSchemaObjectIdentifier, R
     return Objects.hash(type, tenant, keyspace, table);
   }
 
-  /**
-   * Gets the {@link #fullName()}
-   */
+  /** Gets the {@link #fullName()} */
   @Override
   public String toString() {
     return fullName();

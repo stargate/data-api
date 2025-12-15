@@ -3,9 +3,9 @@ package io.stargate.sgv2.jsonapi.service.resolver.update;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 
 /**
  * A {@link ClauseResolver} for the update clause in a command and creates a {@link

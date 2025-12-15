@@ -4,11 +4,11 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.ReadDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 
 /**
  * A test the mocks reading from the database, using the {@link ReadDBTask} to read from the

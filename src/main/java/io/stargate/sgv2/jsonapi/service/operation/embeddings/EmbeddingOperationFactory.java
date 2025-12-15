@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import org.slf4j.Logger;

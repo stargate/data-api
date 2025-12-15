@@ -33,7 +33,6 @@ import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
@@ -273,7 +272,8 @@ public class CollectionResource {
                         .withRequestContext(requestContext)
                         .build();
 
-                return meteredCommandProcessor.processCommand(commandContext, command)
+                return meteredCommandProcessor
+                    .processCommand(commandContext, command)
                     .onTermination()
                     .invoke(
                         () -> {

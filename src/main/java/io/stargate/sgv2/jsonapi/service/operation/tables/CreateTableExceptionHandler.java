@@ -7,7 +7,8 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.AlreadyExistsException;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;import java.util.Map;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
+import java.util.Map;
 import java.util.Objects;
 
 /** Exception handler for the {@link CreateTableDBTask} */

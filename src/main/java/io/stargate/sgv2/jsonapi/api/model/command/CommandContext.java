@@ -23,7 +23,6 @@ import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -36,11 +35,11 @@ import java.util.Objects;
  * BuilderSupplier}, configure this with application wide config, then when ready to build the
  * context for a specific request call {@link BuilderSupplier#getBuilder(SchemaObject)} to get a
  * {@link BuilderSupplier.Builder} to configure the context for the request.
- * <p>
- *<b>NOTE:</b> When {@link BuilderSupplier.Builder#build()} is called it will call
- * {@link #addToMDC()} so that the context is added to the logging MDC for the duration of the request. The
- * context must be closed via {@link #close()} to remove it from the MDC, this should be done at the last possible
- * time in the resource handler so all log messages have the context.
+ *
+ * <p><b>NOTE:</b> When {@link BuilderSupplier.Builder#build()} is called it will call {@link
+ * #addToMDC()} so that the context is added to the logging MDC for the duration of the request. The
+ * context must be closed via {@link #close()} to remove it from the MDC, this should be done at the
+ * last possible time in the resource handler so all log messages have the context.
  *
  * @param <SchemaT> The schema object type that this context is for. There are times we need to lock
  *     this down to the specific type, if so use the "as" methods such as {@link
@@ -378,18 +377,19 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
         Objects.requireNonNull(commandName, "commandName must not be null");
         Objects.requireNonNull(requestContext, "requestContext must not be null");
 
-        var context = new CommandContext<>(
-            schemaObject,
-            embeddingProvider,
-            commandName,
-            requestContext,
-            jsonProcessingMetricsReporter,
-            cqlSessionCache,
-            commandConfig,
-            apiFeatures,
-            embeddingProviderFactory,
-            rerankingProviderFactory,
-            meterRegistry);
+        var context =
+            new CommandContext<>(
+                schemaObject,
+                embeddingProvider,
+                commandName,
+                requestContext,
+                jsonProcessingMetricsReporter,
+                cqlSessionCache,
+                commandConfig,
+                apiFeatures,
+                embeddingProviderFactory,
+                rerankingProviderFactory,
+                meterRegistry);
         context.addToMDC();
         return context;
       }

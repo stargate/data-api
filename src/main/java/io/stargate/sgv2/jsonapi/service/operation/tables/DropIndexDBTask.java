@@ -5,8 +5,9 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import java.util.Objects;
 
 /*

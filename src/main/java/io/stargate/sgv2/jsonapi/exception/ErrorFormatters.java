@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -17,8 +19,6 @@ import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
 /**
  * Static helper functions to consistently format objects into strings when building error messages.

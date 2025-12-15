@@ -6,11 +6,10 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 
 /**
- * Base for all Schema objects the API works with, such as Database, Keyspace,
- * Table, Collection.
- * <p>
- * Schema Object are identified by a {@link SchemaObjectIdentifier} which is globally unique
- * for all tenants.
+ * Base for all Schema objects the API works with, such as Database, Keyspace, Table, Collection.
+ *
+ * <p>Schema Object are identified by a {@link SchemaObjectIdentifier} which is globally unique for
+ * all tenants.
  */
 public abstract class SchemaObject implements Recordable {
 
@@ -39,16 +38,15 @@ public abstract class SchemaObject implements Recordable {
   /**
    * Subclasses must always return VectorConfig, if there is no vector config they should return
    * VectorConfig.notEnabledVectorConfig().
-   *<p>
-   * aaron - 30 may 2025 - this is legacy from old code and should be moved in the future.
+   *
+   * <p>aaron - 30 may 2025 - this is legacy from old code and should be moved in the future.
    */
   public abstract VectorConfig vectorConfig();
 
   /**
    * Call to get an instance of the appropriate {@link IndexUsage} for this schema object
    *
-   *<p>
-   * aaron - 30 may 2025 - this is legacy from old code and should be moved in the future.
+   * <p>aaron - 30 may 2025 - this is legacy from old code and should be moved in the future.
    */
   public abstract IndexUsage newIndexUsage();
 

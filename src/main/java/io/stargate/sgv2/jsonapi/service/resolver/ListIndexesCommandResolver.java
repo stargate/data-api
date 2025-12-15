@@ -3,11 +3,11 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /** Command resolver for the {@link ListIndexesCommand}. */

@@ -272,7 +272,7 @@ public class SchemaObjectCache
 
     // sanity check
     // requestContext may be null when we are doing evictions
-    if (requestContext!= null && (!requestContext.tenant().equals(schemaIdentifier.tenant()))){
+    if (requestContext != null && (!requestContext.tenant().equals(schemaIdentifier.tenant()))) {
       throw new IllegalArgumentException(
           "RequestContext tenant does not match schemaIdentifier requestContext.tenant: "
               + requestContext.tenant()

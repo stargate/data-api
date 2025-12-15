@@ -8,10 +8,10 @@ import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
 import com.datastax.oss.driver.api.querybuilder.schema.AlterTableStart;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.List;
 import java.util.Map;
 

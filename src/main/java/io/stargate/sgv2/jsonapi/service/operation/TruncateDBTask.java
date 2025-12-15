@@ -5,9 +5,10 @@ import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

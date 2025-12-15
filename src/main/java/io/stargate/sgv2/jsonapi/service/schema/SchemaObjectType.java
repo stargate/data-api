@@ -2,11 +2,8 @@ package io.stargate.sgv2.jsonapi.service.schema;
 
 import java.util.Objects;
 
-/**
- * The types of schema object that are used in the API
- */
+/** The types of schema object that are used in the API */
 public enum SchemaObjectType {
-
   COLLECTION(Constants.COLLECTION),
   DATABASE(Constants.DATABASE),
   INDEX(Constants.INDEX),

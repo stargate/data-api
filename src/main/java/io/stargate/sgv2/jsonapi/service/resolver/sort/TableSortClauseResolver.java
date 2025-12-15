@@ -5,8 +5,8 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 
 /**
  * Common base for common code when resolving the sort clause for either CQL or in memory sorting

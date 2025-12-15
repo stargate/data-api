@@ -19,13 +19,12 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

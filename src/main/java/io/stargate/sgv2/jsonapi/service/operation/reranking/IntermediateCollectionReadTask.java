@@ -82,7 +82,8 @@ public class IntermediateCollectionReadTask
                       new TraceMessage(
                           "Executing inner '%s' command for schema object '%s' "
                               .formatted(
-                                  findCommand.commandName().getApiName(), schemaObject.identifier()),
+                                  findCommand.commandName().getApiName(),
+                                  schemaObject.identifier()),
                           Recordable.copyOf(Map.of("command", findCommand))));
           return findOperation.execute(commandContext);
         },

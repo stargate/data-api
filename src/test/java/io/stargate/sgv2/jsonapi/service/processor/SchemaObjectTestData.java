@@ -5,8 +5,8 @@ import static org.mockito.Mockito.when;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectType;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 
 /** Tests data and mocks for working with {@link SchemaObject} */
 public class SchemaObjectTestData {

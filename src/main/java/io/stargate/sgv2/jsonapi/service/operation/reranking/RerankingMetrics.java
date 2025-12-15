@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.*;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.*;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
@@ -13,8 +12,8 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
 import io.stargate.sgv2.jsonapi.metrics.MicrometerConfiguration;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
