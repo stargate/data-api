@@ -93,7 +93,7 @@ jobs:
       # Publish baseline coverage for main branch (for future PR comparisons)
       - name: Publish baseline coverage
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: baseline-coverage
           path: target/site/jacoco/jacoco.xml
@@ -174,16 +174,15 @@ jobs:
                   sign = '+' if delta > 0 else ''
                   msg = '⚠️ Coverage decreased' if delta < 0 else '✅ Coverage improved!' if delta > 0 else 'ℹ️ Coverage unchanged'
 
-                  comment_body = f"""
-                      ## {emoji} Coverage Delta vs Main Branch
- 
-                      | Metric | Value |
-                      |--------|-------|
-                      | **Main Branch** | {baseline:.2f}% |
-                      | **This PR** | {current:.2f}% |
-                      | **Delta** | {color} {sign}{delta:.2f}% |
-                      {msg}
-                      """
+                  comment_body = (
+                      f"## {emoji} Coverage Delta vs Main Branch\n\n"
+                      f"| Metric | Value |\n"
+                      f"|--------|-------|\n"
+                      f"| **Main Branch** | {baseline:.2f}% |\n"
+                      f"| **This PR** | {current:.2f}% |\n"
+                      f"| **Delta** | {color} {sign}{delta:.2f}% |\n"
+                      f"{msg}\n"
+                  )
 
                   # Find and update existing comment or create new one
                   pr_number = os.environ['PR_NUMBER']
@@ -254,11 +253,10 @@ jobs:
           EOF
 
       - name: Upload JaCoCo coverage report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: jacoco-report
           path: target/site/jacoco/
-  
 
   # runs int tests
   int-tests:
