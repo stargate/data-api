@@ -175,7 +175,7 @@ jobs:
                   msg = '⚠️ Coverage decreased' if delta < 0 else '✅ Coverage improved!' if delta > 0 else 'ℹ️ Coverage unchanged'
 
                   comment_body = (
-                      f"## {emoji} Coverage Delta vs Main Branch\n\n"
+                      f"## {emoji} Unit Test Coverage Delta vs Main Branch\n\n"
                       f"| Metric | Value |\n"
                       f"|--------|-------|\n"
                       f"| **Main Branch** | {baseline:.2f}% |\n"
@@ -188,7 +188,7 @@ jobs:
                   pr_number = os.environ['PR_NUMBER']
                   comments = github_api('GET', f'issues/{pr_number}/comments')
                   existing = next((c for c in comments if c.get('user', {}).get('login') == 'github-actions[bot]'
-                                   and 'Coverage Delta vs Main Branch' in c.get('body', '')), None)
+                                   and 'Unit Test Coverage Delta vs Main Branch' in c.get('body', '')), None)
 
                   if existing:
                       github_api('PATCH', f"issues/comments/{existing['id']}", {'body': comment_body})
@@ -211,7 +211,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
-          title: 'Code Coverage Report'
+          title: 'Unit Test Coverage Report'
           update-comment: true
 
       - name: Generate JaCoCo Badge
