@@ -106,16 +106,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get recent successful runs on main and find one with the baseline-coverage artifact
-          echo "Searching for a workflow run with baseline-coverage artifact..."
-          for run_id in $(gh run list --workflow=continuous-integration.yaml --branch=main --status=success --limit=10 --json databaseId --jq='.[].databaseId'); do
-            echo "Checking run $run_id for baseline-coverage artifact..."
-            if gh run download $run_id --name baseline-coverage --dir baseline-coverage 2>/dev/null; then
-              echo "✅ Successfully downloaded baseline coverage from run $run_id"
-              exit 0
-            fi
-          done
-          echo "⚠️  No baseline coverage artifact found in recent runs (this is expected on first PR after coverage setup)"
+          # Get the latest successful run on main that has the baseline-coverage artifact
+          run_id=$(gh run list --workflow=continuous-integration.yaml --branch=main --status=success --limit=1 --json databaseId --jq='.[0].databaseId')
+          if [ -n "$run_id" ]; then
+            echo "Downloading baseline coverage from run $run_id"
+            gh run download $run_id --name baseline-coverage --dir baseline-coverage
+          else
+            echo "No successful workflow run found on main branch with coverage artifact"
+          fi
 
       - name: Calculate and report coverage delta
         if: github.event_name == 'pull_request'
@@ -176,16 +174,16 @@ jobs:
                   sign = '+' if delta > 0 else ''
                   msg = '⚠️ Coverage decreased' if delta < 0 else '✅ Coverage improved!' if delta > 0 else 'ℹ️ Coverage unchanged'
 
-                  comment_body = f"""## {emoji} Coverage Delta vs Main Branch
+                  comment_body = f"""
+                      ## {emoji} Coverage Delta vs Main Branch
 
-| Metric | Value |
-|--------|-------|
-| **Main Branch** | {baseline:.2f}% |
-| **This PR** | {current:.2f}% |
-| **Delta** | {color} {sign}{delta:.2f}% |
-
-{msg}
-"""
+                      | Metric | Value |
+                      |--------|-------|
+                      | **Main Branch** | {baseline:.2f}% |
+                      | **This PR** | {current:.2f}% |
+                      | **Delta** | {color} {sign}{delta:.2f}% |
+                      {msg}
+                      """
 
                   # Find and update existing comment or create new one
                   pr_number = os.environ['PR_NUMBER']
