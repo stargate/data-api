@@ -4,7 +4,7 @@ import jakarta.ws.rs.core.Response;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
-  // 12-Dec-2025, tatu: Cannot be converted, used as marker with LWTException
+  // 12-Dec-2025, tatu: Cannot be converted yet, used as marker with LWTException
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
 
   /** Embedding provider service error codes. */
