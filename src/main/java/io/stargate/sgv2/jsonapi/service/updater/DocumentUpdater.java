@@ -7,12 +7,14 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.*;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Updates the document read from the database with the updates came as part of the request. */
 public record DocumentUpdater(
@@ -97,8 +99,10 @@ public record DocumentUpdater(
     if (replaceDocumentId != null && idNode != null) {
       if (!JsonUtil.equalsOrdered(replaceDocumentId, idNode)) {
         // throw error id cannot be different
-        throw ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID.toApiException(
-            "'%s' vs '%s'", idNode, replaceDocumentId);
+        throw DocumentException.Code.DOCUMENT_REPLACE_DIFFERENT_DOCID.get(
+            Map.of(
+                "replaceId", replaceDocumentId.toString(),
+                "matchedId", idNode.toString()));
       }
     }
 

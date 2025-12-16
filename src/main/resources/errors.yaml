@@ -245,6 +245,32 @@ request-errors:
 
  # DOCUMENT request errors
   - scope: DOCUMENT
+    code: DOCUMENT_ALREADY_EXISTS
+    title: Document the given _id already exists
+    body: |-
+      Cannot insert the document: a document already exists with given '_id' (${id}). 
+
+      Either resend the command with distinct '_id', or use an update command instead.
+
+  # Internal error: does it belong here?
+  - scope: DOCUMENT
+    code: DOCUMENT_FROM_DB_UNPARSEABLE
+    title: Unable to parse JSON content
+    body: |-
+      Unable to parse JSON content retrieved from the database; not valid JSON.
+      Underlying problem: ${message}
+
+      Report the problem to database administrators.
+
+  - scope: DOCUMENT
+    code: DOCUMENT_REPLACE_DIFFERENT_DOCID
+    title: Document the given _id already exists
+    body: |-
+      The replace document and document resolved using filter have different '_id's: ${replaceId} (replace document) vs. ${matchedId} (document that filter matches). 
+
+      Resend the update command with a document that has same '_id' as document being replaced.
+
+  - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
     title: Primary key columns missing
     body: |-
@@ -1625,13 +1651,13 @@ request-errors:
 
   - scope: SORT
     code: OVERLOADED_SORT_ROW_LIMIT
-    title: Sort aborted due to in memory sort restriction
+    title: Sort aborted due to in-memory sort restriction
     body: |-
-      The command used in memory sorting which has a limit of 10,000 rows. 
+      The command used in-memory sorting which has a limit of ${maxLimit} ${unit}s. 
       
       Consult any warnings included in the response for how to improve the sort performance.
       
-      Resend the command using a more specific filter to reduce the number of rows sorted.
+      Resend the command using a more specific filter to reduce the number of ${unit}s sorted.
 
   - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
