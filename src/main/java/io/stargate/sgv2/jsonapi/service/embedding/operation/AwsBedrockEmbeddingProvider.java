@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.CountingOutputStream;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -116,7 +117,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
                         OBJECT_WRITER.writeValueAsBytes(
                             new AwsBedrockEmbeddingRequest(texts.getFirst(), dimension));
                   } catch (JacksonException e) { // should never happen
-                    throw ErrorCodeV1.EMBEDDING_REQUEST_ENCODING_ERROR.toApiException();
+                    throw EmbeddingProviderException.Code.EMBEDDING_REQUEST_ENCODING_ERROR.get(
+                        Map.of(
+                            "provider",
+                            modelProvider().apiName(),
+                            "model",
+                            modelName(),
+                            "errorMessage",
+                            e.toString()));
                   }
                   bytesUsageTracker.requestBytes = inputData.length;
                   requestBuilder.body(SdkBytes.fromByteArray(inputData)).modelId(modelName());
@@ -152,7 +160,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
                         batchId, List.of(bedrockResponse.embedding), modelUsage);
 
                   } catch (IOException e) {
-                    throw ErrorCodeV1.EMBEDDING_RESPONSE_DECODING_ERROR.toApiException();
+                    throw EmbeddingProviderException.Code.EMBEDDING_RESPONSE_DECODING_ERROR.get(
+                        Map.of(
+                            "provider",
+                            modelProvider().apiName(),
+                            "model",
+                            modelName(),
+                            "errorMessage",
+                            e.toString()));
                   }
                 });
 

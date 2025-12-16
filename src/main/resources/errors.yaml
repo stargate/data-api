@@ -2105,6 +2105,20 @@ server-errors:
 
   # EMBEDDING scope server errors
   - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_REQUEST_ENCODING_ERROR
+    title: Embedding request encoding failure
+    body: |-
+      Internal error: failed to encode embedding request (provider '${provider}', model '${model}').
+      Underlying problem: ${errorMessage}
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_RESPONSE_DECODING_ERROR
+    title: Embedding request response decoding failure
+    body: |-
+      Internal error: failed to decode response to embedding request (provider '${provider}', model '${model}').
+      Underlying problem: ${errorMessage}
+
+  - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error
     body: |-
@@ -2112,6 +2126,6 @@ server-errors:
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_SERVER_ERROR
-    title: The Embedding Provider returned a HTTP client error
+    title: The Embedding Provider returned a HTTP server error
     body: |-
       Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
