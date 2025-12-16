@@ -136,19 +136,17 @@ jobs:
               try:
                   tree = ET.parse(xml_file)
                   root = tree.getroot()
-                  # Get only the INSTRUCTION counter that is a direct child of <report>
-                  # (not nested in package/class/method elements)
+                  # Find the report-level INSTRUCTION counter (usually last in XML)
+                  # Iterate through all direct children and keep the last INSTRUCTION counter
                   covered = 0
                   missed = 0
                   for child in root:
                       if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
                           covered = int(child.get('covered', 0))
                           missed = int(child.get('missed', 0))
-                          break
                   total = covered + missed
                   return (covered / total * 100) if total > 0 else 0
-              except Exception as e:
-                  print(f"Error parsing coverage: {e}")
+              except:
                   return 0
 
           def github_api(method, endpoint, data=None):
@@ -408,19 +406,17 @@ jobs:
               try:
                   tree = ET.parse(xml_file)
                   root = tree.getroot()
-                  # Get only the INSTRUCTION counter that is a direct child of <report>
-                  # (not nested in package/class/method elements)
+                  # Find the report-level INSTRUCTION counter (usually last in XML)
+                  # Iterate through all direct children and keep the last INSTRUCTION counter
                   covered = 0
                   missed = 0
                   for child in root:
                       if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
                           covered = int(child.get('covered', 0))
                           missed = int(child.get('missed', 0))
-                          break
                   total = covered + missed
                   return (covered / total * 100) if total > 0 else 0
-              except Exception as e:
-                  print(f"Error parsing coverage: {e}")
+              except:
                   return 0
 
           def github_api(method, endpoint, data=None):
