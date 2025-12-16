@@ -125,23 +125,43 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           python3 << 'EOF'
-          import xml.etree.ElementTree as ET
           import os
           import json
           import urllib.request
 
-          def get_coverage(xml_file):
-              if not os.path.exists(xml_file):
-                  return 0
-              try:
-                  tree = ET.parse(xml_file)
-                  counters = tree.findall('.//counter[@type="INSTRUCTION"]')
-                  covered = sum(int(c.get('covered', 0)) for c in counters)
-                  missed = sum(int(c.get('missed', 0)) for c in counters)
-                  total = covered + missed
-                  return (covered / total * 100) if total > 0 else 0
-              except:
-                  return 0
+          def get_coverage(jacoco_dir):
+              """Calculate coverage from JaCoCo XML file"""
+              import xml.etree.ElementTree as ET
+
+              xml_file = os.path.join(jacoco_dir, 'jacoco.xml')
+              if os.path.exists(xml_file):
+                  try:
+                      tree = ET.parse(xml_file)
+                      root = tree.getroot()
+                      # Find report-level counter (direct child of root with largest total)
+                      # Strip namespace if present
+                      max_total = 0
+                      best_covered = 0
+                      best_missed = 0
+                      for child in root:
+                          tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                          if tag == 'counter' and child.get('type') == 'INSTRUCTION':
+                              covered = int(child.get('covered', 0))
+                              missed = int(child.get('missed', 0))
+                              total = covered + missed
+                              if total > max_total:
+                                  max_total = total
+                                  best_covered = covered
+                                  best_missed = missed
+                      total = best_covered + best_missed
+                      pct = (best_covered / total * 100) if total > 0 else 0
+                      print(f'XML parse ({xml_file}): covered={best_covered}, missed={best_missed}, total={total}, pct={pct:.2f}%')
+                      return pct
+                  except Exception as e:
+                      print(f'XML parse error: {e}')
+                      pass
+
+              return 0
 
           def github_api(method, endpoint, data=None):
               url = f"https://api.github.com/repos/{os.environ['REPO']}/{endpoint}"
@@ -154,8 +174,15 @@ jobs:
                   req.data = json.dumps(data).encode()
               return json.loads(urllib.request.urlopen(req).read())
 
-          current = get_coverage('target/site/jacoco/jacoco.xml')
-          baseline = get_coverage('baseline-coverage/jacoco.xml')
+          # Debug: Check if CSV exists
+          import os as os_check
+          csv_exists = os_check.path.exists('target/site/jacoco/jacoco.csv')
+          xml_exists = os_check.path.exists('target/site/jacoco/jacoco.xml')
+          print(f'Unit test files: CSV={csv_exists}, XML={xml_exists}')
+
+          current = get_coverage('target/site/jacoco')
+          baseline = get_coverage('baseline-coverage')
+          print(f'Unit test coverage: current={current:.2f}%, baseline={baseline:.2f}%')
           has_baseline = os.path.exists('baseline-coverage/jacoco.xml')
 
           # Write outputs for job summary
@@ -175,7 +202,7 @@ jobs:
                   msg = '⚠️ Coverage decreased' if delta < 0 else '✅ Coverage improved!' if delta > 0 else 'ℹ️ Coverage unchanged'
 
                   comment_body = (
-                      f"## {emoji} Coverage Delta vs Main Branch\n\n"
+                      f"## {emoji} Unit Test Coverage Delta vs Main Branch\n\n"
                       f"| Metric | Value |\n"
                       f"|--------|-------|\n"
                       f"| **Main Branch** | {baseline:.2f}% |\n"
@@ -188,7 +215,7 @@ jobs:
                   pr_number = os.environ['PR_NUMBER']
                   comments = github_api('GET', f'issues/{pr_number}/comments')
                   existing = next((c for c in comments if c.get('user', {}).get('login') == 'github-actions[bot]'
-                                   and 'Coverage Delta vs Main Branch' in c.get('body', '')), None)
+                                   and 'Unit Test Coverage Delta vs Main Branch' in c.get('body', '')), None)
 
                   if existing:
                       github_api('PATCH', f"issues/comments/{existing['id']}", {'body': comment_body})
@@ -211,7 +238,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
-          title: 'Code Coverage Report'
+          title: 'Unit Test Coverage Report'
           update-comment: true
 
       - name: Generate JaCoCo Badge
@@ -222,15 +249,17 @@ jobs:
           generate-branches-badge: true
           generate-summary: true
 
-      - name: Add coverage to Job Summary
+      - name: Add unit test coverage to Job Summary
         run: |
+          COVERAGE=$(printf "%.2f" $(echo "${{ steps.jacoco-badge.outputs.coverage }} * 100" | bc -l))
+          BRANCHES=$(printf "%.2f" $(echo "${{ steps.jacoco-badge.outputs.branches }} * 100" | bc -l))
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## 📊 Code Coverage Report
+          ## 📊 Unit Test Code Coverage Report
 
           | Metric | Coverage |
           |--------|----------|
-          | **Instructions** | ${{ steps.jacoco-badge.outputs.coverage }}% |
-          | **Branches** | ${{ steps.jacoco-badge.outputs.branches }}% |
+          | **Instructions** | ${COVERAGE}% |
+          | **Branches** | ${BRANCHES}% |
           EOF
 
           # Add delta for PRs with baseline
@@ -345,5 +374,197 @@ jobs:
       - name: Integration Test
         # -DRERANKING_CONFIG_RESOURCE=test-reranking-providers-config.yaml is to override the reranking config to customized one
         # -DEMBEDDING_CONFIG_RESOURCE=test-embedding-providers-config.yaml is to override the embedding config to customized one
+        # -Pjacoco-it enables the quarkus-jacoco extension for IT coverage
+        # -Dquarkus.package.write-transformed-bytecode-to-build-output=true is required for JaCoCo IT coverage
+        # Note: Container image build is disabled for coverage (JaCoCo only works with JAR artifacts)
         run: |
-          ./mvnw -B -ntp clean verify -DskipUnitTests -DRERANKING_CONFIG_RESOURCE=test-reranking-providers-config.yaml -DEMBEDDING_CONFIG_RESOURCE=test-embedding-providers-config.yaml -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Drun-create-index-parallel=true ${{ matrix.profile }}
+          ./mvnw -B -ntp clean verify -DskipUnitTests -DRERANKING_CONFIG_RESOURCE=test-reranking-providers-config.yaml -DEMBEDDING_CONFIG_RESOURCE=test-embedding-providers-config.yaml -Drun-create-index-parallel=true -Pjacoco-it -Dquarkus.package.write-transformed-bytecode-to-build-output=true ${{ matrix.profile }}
+
+      # Publish baseline IT coverage for main branch (for future PR comparisons)
+      - name: Publish baseline IT coverage
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v6
+        with:
+          name: baseline-it-coverage-${{ matrix.type }}
+          path: target/site/jacoco-it/jacoco.xml
+          retention-days: 30
+
+      # Download baseline IT coverage from main branch for PR comparison
+      - name: Download baseline IT coverage
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the latest successful run on main that has the baseline IT coverage artifact
+          run_id=$(gh run list --workflow=continuous-integration.yaml --branch=main --status=success --limit=1 --json databaseId --jq='.[0].databaseId')
+          if [ -n "$run_id" ]; then
+            echo "Downloading baseline IT coverage for ${{ matrix.type }} from run $run_id"
+            gh run download $run_id --name baseline-it-coverage-${{ matrix.type }} --dir baseline-it-coverage-${{ matrix.type }} || echo "No baseline IT coverage artifact found for ${{ matrix.type }}"
+          else
+            echo "No successful workflow run found on main branch with IT coverage artifact"
+          fi
+
+      - name: Calculate and report IT coverage delta
+        if: github.event_name == 'pull_request'
+        id: it-coverage-delta
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          MATRIX_TYPE: ${{ matrix.type }}
+        run: |
+          python3 << 'EOF'
+          import os
+          import json
+          import urllib.request
+
+          def get_coverage(jacoco_dir):
+              """Calculate coverage from JaCoCo XML file"""
+              import xml.etree.ElementTree as ET
+
+              xml_file = os.path.join(jacoco_dir, 'jacoco.xml')
+              if os.path.exists(xml_file):
+                  try:
+                      tree = ET.parse(xml_file)
+                      root = tree.getroot()
+                      # Find report-level counter (direct child of root with largest total)
+                      # Strip namespace if present
+                      max_total = 0
+                      best_covered = 0
+                      best_missed = 0
+                      for child in root:
+                          tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                          if tag == 'counter' and child.get('type') == 'INSTRUCTION':
+                              covered = int(child.get('covered', 0))
+                              missed = int(child.get('missed', 0))
+                              total = covered + missed
+                              if total > max_total:
+                                  max_total = total
+                                  best_covered = covered
+                                  best_missed = missed
+                      total = best_covered + best_missed
+                      pct = (best_covered / total * 100) if total > 0 else 0
+                      print(f'XML parse ({xml_file}): covered={best_covered}, missed={best_missed}, total={total}, pct={pct:.2f}%')
+                      return pct
+                  except Exception as e:
+                      print(f'XML parse error: {e}')
+                      pass
+
+              return 0
+
+          def github_api(method, endpoint, data=None):
+              url = f"https://api.github.com/repos/{os.environ['REPO']}/{endpoint}"
+              headers = {
+                  'Authorization': f"token {os.environ['GH_TOKEN']}",
+                  'Accept': 'application/vnd.github.v3+json'
+              }
+              req = urllib.request.Request(url, headers=headers, method=method)
+              if data:
+                  req.data = json.dumps(data).encode()
+              return json.loads(urllib.request.urlopen(req).read())
+
+          matrix_type = os.environ['MATRIX_TYPE']
+          current = get_coverage('target/site/jacoco-it')
+          baseline = get_coverage(f'baseline-it-coverage-{matrix_type}')
+          has_baseline = os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.xml')
+
+          # Write outputs for job summary
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'current_coverage={current:.2f}\n')
+              if has_baseline:
+                  delta = current - baseline
+                  f.write(f'baseline_coverage={baseline:.2f}\n')
+                  f.write(f'delta={delta:.2f}\n')
+                  f.write(f'has_baseline=true\n')
+                  print(f'IT Coverage ({matrix_type}): {baseline:.2f}% (main) → {current:.2f}% (PR) = {delta:+.2f}%')
+
+                  # Post PR comment with delta
+                  emoji = '📈' if delta > 0 else '📉' if delta < 0 else '➡️'
+                  color = '🟢' if delta > 0 else '🔴' if delta < 0 else '⚪'
+                  sign = '+' if delta > 0 else ''
+                  msg = '⚠️ Coverage decreased' if delta < 0 else '✅ Coverage improved!' if delta > 0 else 'ℹ️ Coverage unchanged'
+
+                  comment_body = (
+                      f"## {emoji} Integration Test Coverage Delta vs Main Branch ({matrix_type})\n\n"
+                      f"| Metric | Value |\n"
+                      f"|--------|-------|\n"
+                      f"| **Main Branch** | {baseline:.2f}% |\n"
+                      f"| **This PR** | {current:.2f}% |\n"
+                      f"| **Delta** | {color} {sign}{delta:.2f}% |\n"
+                      f"{msg}\n"
+                  )
+
+                  # Find and update existing comment or create new one
+                  pr_number = os.environ['PR_NUMBER']
+                  comments = github_api('GET', f'issues/{pr_number}/comments')
+                  existing = next((c for c in comments if c.get('user', {}).get('login') == 'github-actions[bot]'
+                                   and f'Integration Test Coverage Delta vs Main Branch ({matrix_type})' in c.get('body', '')), None)
+
+                  if existing:
+                      github_api('PATCH', f"issues/comments/{existing['id']}", {'body': comment_body})
+                      print(f'Updated comment {existing["id"]}')
+                  else:
+                      github_api('POST', f'issues/{pr_number}/comments', {'body': comment_body})
+                      print('Created new comment')
+              else:
+                  f.write(f'has_baseline=false\n')
+                  print(f'⚠️  No baseline IT coverage for {matrix_type} (expected on first PR after setup)')
+          EOF
+
+      - name: Add integration test coverage to PR
+        id: jacoco-it
+        uses: madrapps/jacoco-report@v1.7.2
+        if: github.event_name == 'pull_request'
+        with:
+          paths: |
+            ${{ github.workspace }}/target/site/jacoco-it/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+          title: 'Integration Test Coverage Report (${{ matrix.type }})'
+          update-comment: true
+        continue-on-error: true
+
+      - name: Generate JaCoCo IT Badge
+        id: jacoco-it-badge
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: target/site/jacoco-it/jacoco.csv
+          badges-directory: .github/badges/it-${{ matrix.type }}
+          generate-branches-badge: true
+          generate-summary: true
+        continue-on-error: true
+
+      - name: Add IT coverage to Job Summary
+        run: |
+          COVERAGE=$(printf "%.2f" $(echo "${{ steps.jacoco-it-badge.outputs.coverage }} * 100" | bc -l))
+          BRANCHES=$(printf "%.2f" $(echo "${{ steps.jacoco-it-badge.outputs.branches }} * 100" | bc -l))
+          echo "## 📊 Integration Test Code Coverage Report (${{ matrix.type }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Instructions** | ${COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branches** | ${BRANCHES}% |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Add delta for PRs with baseline
+          if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ steps.it-coverage-delta.outputs.has_baseline }}" == "true" ]; then
+            delta="${{ steps.it-coverage-delta.outputs.delta }}"
+            echo "### Coverage vs Main: ${{ steps.it-coverage-delta.outputs.baseline_coverage }}% → ${{ steps.it-coverage-delta.outputs.current_coverage }}% (${delta}%)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "_Baseline IT coverage will be available after first merge to main_" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "📥 [Download Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The complete JaCoCo HTML report is available as an artifact named \`jacoco-it-report-${{ matrix.type }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload JaCoCo integration test code coverage report
+        uses: actions/upload-artifact@v5
+        with:
+          name: jacoco-it-report-${{ matrix.type }}
+          path: target/site/jacoco-it/
