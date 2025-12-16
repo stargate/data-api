@@ -18,9 +18,9 @@ public class ExceptionUtilTest {
   @Test
   public void checkKey() {
     String key =
-        ExceptionUtil.getThrowableGroupingKey(ErrorCodeV1.CONCURRENCY_FAILURE.toApiException());
+        ExceptionUtil.getThrowableGroupingKey(ErrorCodeV1.INVALID_REQUEST.toApiException());
     assertThat(key).isNotNull();
-    assertThat(key).isEqualTo(ErrorCodeV1.CONCURRENCY_FAILURE.name());
+    assertThat(key).isEqualTo(ErrorCodeV1.INVALID_REQUEST.name());
 
     key = ExceptionUtil.getThrowableGroupingKey(new RuntimeException(""));
     assertThat(key).isNotNull();
@@ -32,17 +32,18 @@ public class ExceptionUtilTest {
     String message = "test error for ids %s: %s";
     List<DocumentId> ids = List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2"));
 
-    Exception throwable = ErrorCodeV1.CONCURRENCY_FAILURE.toApiException();
+    // Arbitrary error code chosen for testing purposes
+    ErrorCodeV1 errorCode = ErrorCodeV1.INVALID_REQUEST;
+    Exception throwable = errorCode.toApiException();
     CommandResult.Error error = ExceptionUtil.getError(message, ids, throwable);
     assertThat(error).isNotNull();
     assertThat(error)
         .satisfies(
             err -> {
               assertThat(err.message())
-                  .isEqualTo(
-                      "test error for ids ['doc1', 'doc2']: Unable to complete transaction due to concurrent transactions");
+                  .isEqualTo("test error for ids ['doc1', 'doc2']: " + errorCode.getMessage());
               assertThat(err.fields()).containsEntry("exceptionClass", "JsonApiException");
-              assertThat(err.fields()).containsEntry("errorCode", "CONCURRENCY_FAILURE");
+              assertThat(err.fields()).containsEntry("errorCode", errorCode.name());
             });
 
     throwable = new RuntimeException("Some error");

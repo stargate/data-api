@@ -3,8 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -541,12 +540,11 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("DATASET_TOO_BIG"))
+          .body("errors[0].errorCode", is("OVERLOADED_SORT_ROW_LIMIT"))
+          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
-              is(
-                  "Response data set too big to be sorted, add more filters: maximum sortable count = 100"));
+              startsWith("The command used in-memory sorting which has a limit of 100 documents"));
     }
   }
 

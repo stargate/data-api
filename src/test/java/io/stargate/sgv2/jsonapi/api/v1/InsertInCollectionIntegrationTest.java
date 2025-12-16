@@ -354,8 +354,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", jsonEquals("[]"))
-          .body("errors[0].message", is("Document already exists with the given _id"))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Cannot insert the document: a document already exists with given '_id' ('duplicate')."));
 
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -1167,8 +1170,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
-          .body("errors[0].message", startsWith("Failed to insert document with _id doc4"))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Cannot insert the document: a document already exists with given '_id' ('doc4')"));
 
       verifyDocCount(2);
     }
@@ -1401,8 +1407,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("status.insertedIds", is(List.of("doc4")))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", startsWith("Failed to insert document with _id doc4"));
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Cannot insert the document: a document already exists with given '_id' ('doc4')"));
 
       verifyDocCount(1);
     }
@@ -1426,8 +1435,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is("Document already exists with the given _id"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Cannot insert the document: a document already exists with given '_id' ('doc1')"))
           .body("insertedIds", is(nullValue()))
           .body("status.documentResponses", hasSize(3))
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
@@ -1505,17 +1517,25 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           // document in the list with that id
           .body("errors", hasSize(4))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", startsWith("Failed to insert document with _id"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].message",
+              startsWith("Cannot insert the document: a document already exists with given '_id'"))
           .body("errors[1].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
-          .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].message", startsWith("Failed to insert document with _id"))
+          .body("errors[1].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[1].message",
+              startsWith("Cannot insert the document: a document already exists with given '_id'"))
           .body("errors[2].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
-          .body("errors[2].exceptionClass", is("JsonApiException"))
-          .body("errors[2].message", startsWith("Failed to insert document with _id"))
+          .body("errors[2].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[2].message",
+              startsWith("Cannot insert the document: a document already exists with given '_id'"))
           .body("errors[3].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
-          .body("errors[3].exceptionClass", is("JsonApiException"))
-          .body("errors[3].message", startsWith("Failed to insert document with _id"));
+          .body("errors[3].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[3].message",
+              startsWith("Cannot insert the document: a document already exists with given '_id'"));
 
       verifyDocCount(2);
     }
