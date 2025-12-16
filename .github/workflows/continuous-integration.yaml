@@ -133,38 +133,16 @@ jobs:
           import csv
 
           def get_coverage(jacoco_dir):
-              """Calculate coverage from JaCoCo CSV (preferred) or XML (fallback)"""
+              """Calculate coverage from JaCoCo XML file"""
               import xml.etree.ElementTree as ET
 
-              # Try CSV first (more reliable, used by badge generator)
-              csv_file = os.path.join(jacoco_dir, 'jacoco.csv')
-              if os.path.exists(csv_file):
-                  try:
-                      covered = 0
-                      missed = 0
-                      row_count = 0
-                      with open(csv_file, 'r') as f:
-                          reader = csv.DictReader(f)
-                          for row in reader:
-                              row_count += 1
-                              covered += int(row.get('INSTRUCTION_COVERED', 0))
-                              missed += int(row.get('INSTRUCTION_MISSED', 0))
-                      total = covered + missed
-                      pct = (covered / total * 100) if total > 0 else 0
-                      print(f'CSV parse ({csv_file}): {row_count} rows, covered={covered}, missed={missed}, total={total}, pct={pct:.2f}%')
-                      return pct
-                  except Exception as e:
-                      print(f'CSV parse error: {e}')
-                      pass
-
-              # Fallback to XML (for old baselines)
               xml_file = os.path.join(jacoco_dir, 'jacoco.xml')
               if os.path.exists(xml_file):
                   try:
                       tree = ET.parse(xml_file)
-                      # Find report-level counter (direct child of root with largest total)
-                      # Root might have namespace, so strip it
                       root = tree.getroot()
+                      # Find report-level counter (direct child of root with largest total)
+                      # Strip namespace if present
                       max_total = 0
                       best_covered = 0
                       best_missed = 0
@@ -179,8 +157,11 @@ jobs:
                                   best_covered = covered
                                   best_missed = missed
                       total = best_covered + best_missed
-                      return (best_covered / total * 100) if total > 0 else 0
-                  except:
+                      pct = (best_covered / total * 100) if total > 0 else 0
+                      print(f'XML parse ({xml_file}): covered={best_covered}, missed={best_missed}, total={total}, pct={pct:.2f}%')
+                      return pct
+                  except Exception as e:
+                      print(f'XML parse error: {e}')
                       pass
 
               return 0
@@ -447,38 +428,16 @@ jobs:
           import csv
 
           def get_coverage(jacoco_dir):
-              """Calculate coverage from JaCoCo CSV (preferred) or XML (fallback)"""
+              """Calculate coverage from JaCoCo XML file"""
               import xml.etree.ElementTree as ET
 
-              # Try CSV first (more reliable, used by badge generator)
-              csv_file = os.path.join(jacoco_dir, 'jacoco.csv')
-              if os.path.exists(csv_file):
-                  try:
-                      covered = 0
-                      missed = 0
-                      row_count = 0
-                      with open(csv_file, 'r') as f:
-                          reader = csv.DictReader(f)
-                          for row in reader:
-                              row_count += 1
-                              covered += int(row.get('INSTRUCTION_COVERED', 0))
-                              missed += int(row.get('INSTRUCTION_MISSED', 0))
-                      total = covered + missed
-                      pct = (covered / total * 100) if total > 0 else 0
-                      print(f'CSV parse ({csv_file}): {row_count} rows, covered={covered}, missed={missed}, total={total}, pct={pct:.2f}%')
-                      return pct
-                  except Exception as e:
-                      print(f'CSV parse error: {e}')
-                      pass
-
-              # Fallback to XML (for old baselines)
               xml_file = os.path.join(jacoco_dir, 'jacoco.xml')
               if os.path.exists(xml_file):
                   try:
                       tree = ET.parse(xml_file)
-                      # Find report-level counter (direct child of root with largest total)
-                      # Root might have namespace, so strip it
                       root = tree.getroot()
+                      # Find report-level counter (direct child of root with largest total)
+                      # Strip namespace if present
                       max_total = 0
                       best_covered = 0
                       best_missed = 0
@@ -493,8 +452,11 @@ jobs:
                                   best_covered = covered
                                   best_missed = missed
                       total = best_covered + best_missed
-                      return (best_covered / total * 100) if total > 0 else 0
-                  except:
+                      pct = (best_covered / total * 100) if total > 0 else 0
+                      print(f'XML parse ({xml_file}): covered={best_covered}, missed={best_missed}, total={total}, pct={pct:.2f}%')
+                      return pct
+                  except Exception as e:
+                      print(f'XML parse error: {e}')
                       pass
 
               return 0
