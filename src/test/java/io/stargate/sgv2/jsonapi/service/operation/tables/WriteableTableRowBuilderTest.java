@@ -76,7 +76,7 @@ public class WriteableTableRowBuilderTest {
     var builder =
         new WriteableTableRowBuilder(commandContext, JSONCodecRegistries.DEFAULT_REGISTRY);
     var row = builder.build(fixture.container());
-    LOGGER.info("buildRow: row={}", PrettyPrintable.pprint(row));
+    LOGGER.trace("buildRow: row={}", PrettyPrintable.pprint(row));
     return row;
   }
 
