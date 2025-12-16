@@ -142,14 +142,19 @@ jobs:
                   try:
                       covered = 0
                       missed = 0
+                      row_count = 0
                       with open(csv_file, 'r') as f:
                           reader = csv.DictReader(f)
                           for row in reader:
+                              row_count += 1
                               covered += int(row.get('INSTRUCTION_COVERED', 0))
                               missed += int(row.get('INSTRUCTION_MISSED', 0))
                       total = covered + missed
-                      return (covered / total * 100) if total > 0 else 0
-                  except:
+                      pct = (covered / total * 100) if total > 0 else 0
+                      print(f'CSV parse ({csv_file}): {row_count} rows, covered={covered}, missed={missed}, total={total}, pct={pct:.2f}%')
+                      return pct
+                  except Exception as e:
+                      print(f'CSV parse error: {e}')
                       pass
 
               # Fallback to XML (for old baselines)
@@ -451,14 +456,19 @@ jobs:
                   try:
                       covered = 0
                       missed = 0
+                      row_count = 0
                       with open(csv_file, 'r') as f:
                           reader = csv.DictReader(f)
                           for row in reader:
+                              row_count += 1
                               covered += int(row.get('INSTRUCTION_COVERED', 0))
                               missed += int(row.get('INSTRUCTION_MISSED', 0))
                       total = covered + missed
-                      return (covered / total * 100) if total > 0 else 0
-                  except:
+                      pct = (covered / total * 100) if total > 0 else 0
+                      print(f'CSV parse ({csv_file}): {row_count} rows, covered={covered}, missed={missed}, total={total}, pct={pct:.2f}%')
+                      return pct
+                  except Exception as e:
+                      print(f'CSV parse error: {e}')
                       pass
 
               # Fallback to XML (for old baselines)
