@@ -2105,13 +2105,13 @@ server-errors:
 
   # EMBEDDING scope server errors
   - scope: EMBEDDING_PROVIDER
-    code: CLIENT_ERROR
+    code: EMBEDDING_PROVIDER_CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error
     body: |-
       Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
 
   - scope: EMBEDDING_PROVIDER
-    code: SERVER_ERROR
+    code: EMBEDDING_PROVIDER_SERVER_ERROR
     title: The Embedding Provider returned a HTTP client error
     body: |-
       Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}

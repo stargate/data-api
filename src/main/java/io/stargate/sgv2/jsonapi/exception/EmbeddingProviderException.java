@@ -9,8 +9,8 @@ public class EmbeddingProviderException extends ServerException {
   }
 
   public enum Code implements ErrorCode<EmbeddingProviderException> {
-    CLIENT_ERROR,
-    SERVER_ERROR;
+    EMBEDDING_PROVIDER_CLIENT_ERROR,
+      EMBEDDING_PROVIDER_SERVER_ERROR;
 
     private final ErrorTemplate<EmbeddingProviderException> template;
 
