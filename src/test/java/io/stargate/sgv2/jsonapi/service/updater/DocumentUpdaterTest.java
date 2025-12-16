@@ -12,6 +12,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
@@ -475,7 +476,7 @@ public class DocumentUpdaterTest {
     }
 
     @Test
-    public void replaceDifferentId() throws Exception {
+    public void replaceWithDifferentId() throws Exception {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
@@ -496,9 +497,11 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .withFailMessage(ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID.getMessage())
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID);
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.DOCUMENT_REPLACE_DIFFERENT_DOCID.name())
+          .hasMessageStartingWith(
+              "The replace document and document resolved using filter have different '_id's: \"2\" (replace document) vs. \"1\" (document");
     }
 
     @Test
@@ -513,12 +516,7 @@ public class DocumentUpdaterTest {
       JsonNode expectedData = objectMapper.readTree(expected);
 
       DocumentUpdater documentUpdater =
-          DocumentUpdater.construct(
-              (ObjectNode)
-                  objectMapper.readTree(
-                      """
-                                                                          {}
-                                                                      """));
+          DocumentUpdater.construct((ObjectNode) objectMapper.readTree("{ }"));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
           documentUpdater.apply(baseData, false);
       assertThat(updatedDocument)

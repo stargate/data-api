@@ -4,17 +4,8 @@ import jakarta.ws.rs.core.Response;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
-  // 12-Dec-2025, tatu: Cannot be converted, used as marker with LWTException
+  // 12-Dec-2025, tatu: Cannot be converted yet, used as marker with LWTException
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
-
-  DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
-
-  DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
-
-  DOCUMENT_UNPARSEABLE("Unable to parse the document"),
-
-  DOCUMENT_REPLACE_DIFFERENT_DOCID(
-      "The replace document and document resolved using filter have different _id"),
 
   /** Embedding provider service error codes. */
   EMBEDDING_REQUEST_ENCODING_ERROR("Unable to create embedding provider request message"),
@@ -159,7 +150,6 @@ public enum ErrorCodeV1 {
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_QUERY("Invalid query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
-  MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
 
   // Driver failure codes
   /** Error codes related to driver exceptions. */
