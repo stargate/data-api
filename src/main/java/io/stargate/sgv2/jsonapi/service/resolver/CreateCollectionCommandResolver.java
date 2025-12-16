@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;

@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Collections;
@@ -168,8 +168,10 @@ public class MeteredCommandProcessor {
         new CommandLog(
             command.getClass().getSimpleName(),
             commandContext.requestContext().tenant(),
-            commandContext.schemaObject().name().keyspace(),
-            commandContext.schemaObject().name().table(),
+            commandContext.schemaObject().identifier().keyspace().asInternal(),
+            commandContext.schemaObject().identifier().table() == null
+                ? ""
+                : commandContext.schemaObject().identifier().table().asInternal(),
             commandContext.schemaObject().type().name(),
             getIncomingDocumentsCount(command),
             getOutgoingDocumentsCount(result),

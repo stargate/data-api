@@ -14,7 +14,11 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-/** Caches the vector enabled status for the namespace */
+/**
+ * TODO: @YUQI - DELETE WHEN SCHMEA OBJECT CACHE IS READY
+ *
+ * <p>Caches the vector enabled status for the namespace
+ */
 // TODO: what is the vector status of a namespace ? vectors are per collection
 // TODO: clarify the name of this class, it is a cache of the collections/ tables not a cache of
 // namespaces ??

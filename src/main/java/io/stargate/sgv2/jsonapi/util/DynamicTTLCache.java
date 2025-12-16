@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,6 +177,10 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     LOGGER.warn(
         "Explicitly evicted session from cache. Cache Key: {} (entry found: {})", key, entryFound);
     return entryFound;
+  }
+
+  protected void evictIf(Predicate<KeyT> predicate) {
+    cache.synchronous().asMap().keySet().removeIf(predicate);
   }
 
   /**
