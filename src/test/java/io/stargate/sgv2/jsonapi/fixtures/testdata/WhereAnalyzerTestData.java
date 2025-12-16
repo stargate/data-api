@@ -119,7 +119,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
               this::callAnalyze,
               "Expected exception %s when: %s".formatted(exceptionClass, message));
 
-      LOGGER.warn("Analysis Error: {}\n {}", message, this.exception.toString());
+      LOGGER.debug("Analysis Error: {}\n {}", message, this.exception.toString());
       return this;
     }
 
@@ -133,14 +133,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public void callAnalyze() {
-      LOGGER.warn("Analyzing: {}\n {}", message, PrettyPrintable.pprint(this));
+      LOGGER.debug("Analyzing: {}\n {}", message, PrettyPrintable.pprint(this));
       // store the result in this fixture for later
       analysisResult =
           analyzer.analyse(
               TableWhereCQLClause.forSelect(
                       tableSchemaObject, WithWarnings.of(expression.rootImplicitAnd))
                   .target());
-      LOGGER.warn("Analysis result: {}", analysisResult);
+      LOGGER.debug("Analysis result: {}", analysisResult);
     }
 
     public WhereAnalyzerFixture assertFilterExceptionCode(FilterException.Code code) {

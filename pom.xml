@@ -422,6 +422,8 @@
             </goals>
             <configuration>
               <systemPropertyVariables>
+                <!-- Pass JaCoCo agent args to Quarkus application JVM for @QuarkusIntegrationTest coverage -->
+                <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
@@ -441,6 +443,7 @@
       </plugin>
       <!-- 02-Dec-2025, tatu: [data-api#2270] Enable Code Coverage generation
              (for Unit Tests)
+           08-Dec-2025, tatu: [data-api#2287] Add Integration Test coverage
         -->
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -467,11 +470,83 @@
               <goal>report</goal>
             </goals>
           </execution>
+          <!-- Integration test coverage -->
+          <execution>
+            <id>prepare-agent-integration</id>
+            <goals>
+              <goal>prepare-agent-integration</goal>
+            </goals>
+            <configuration>
+              <!-- Integration tests write to separate file -->
+              <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+            </configuration>
+          </execution>
+          <execution>
+            <id>report-integration</id>
+            <phase>post-integration-test</phase>
+            <goals>
+              <goal>report-integration</goal>
+            </goals>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
+              <outputDirectory>${project.build.directory}/site/jacoco-it</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
   <profiles>
+    <!-- Profile to enable JaCoCo extension for integration tests -->
+    <profile>
+      <id>jacoco-it</id>
+      <dependencies>
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-jacoco</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <testResources>
+          <testResource>
+            <directory>src/test/resources</directory>
+            <filtering>false</filtering>
+          </testResource>
+        </testResources>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>configure-jacoco-it</id>
+                <phase>process-test-resources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/test/resources</directory>
+                      <includes>
+                        <include>application.yaml</include>
+                      </includes>
+                      <filtering>true</filtering>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <properties>
+        <!-- Configure quarkus-jacoco to use IT coverage file -->
+        <quarkus.jacoco.data-file>target/jacoco-it.exec</quarkus.jacoco.data-file>
+      </properties>
+    </profile>
     <profile>
       <id>dse69-it</id>
       <activation>
