@@ -18,6 +18,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+# needed when a workflow wants to use OIDC (OpenID Connect) to authenticate to cloud
+permissions:
+  id-token: write
+  contents: write
+  packages: write
+  pull-requests: write
 
 # global env vars, available in all jobs and steps
 env:
@@ -356,12 +362,10 @@ jobs:
           </settings>
           EOF
 
-      # login to ECR to we can pull HCD image.
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          aws-access-key-id: ${{ secrets.HCD_ECR_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.HCD_ECR_SECRET_KEY }}
+          role-to-assume: ${{ secrets.US_WEST_2_559669398656_DATA_API_ECR_HCD }}
           aws-region: us-west-2
 
       - name: Login to Amazon ECR
