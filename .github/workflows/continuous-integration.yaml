@@ -96,9 +96,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: baseline-coverage
-          path: |
-            target/site/jacoco/jacoco.xml
-            target/site/jacoco/jacoco.csv
+          path: target/site/jacoco/jacoco.xml
           retention-days: 30
 
       # Download baseline coverage from main branch for PR comparison
@@ -130,7 +128,6 @@ jobs:
           import os
           import json
           import urllib.request
-          import csv
 
           def get_coverage(jacoco_dir):
               """Calculate coverage from JaCoCo XML file"""
@@ -186,8 +183,7 @@ jobs:
           current = get_coverage('target/site/jacoco')
           baseline = get_coverage('baseline-coverage')
           print(f'Unit test coverage: current={current:.2f}%, baseline={baseline:.2f}%')
-          # Check for either CSV (new) or XML (old baseline) for backwards compatibility
-          has_baseline = os.path.exists('baseline-coverage/jacoco.csv') or os.path.exists('baseline-coverage/jacoco.xml')
+          has_baseline = os.path.exists('baseline-coverage/jacoco.xml')
 
           # Write outputs for job summary
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
@@ -390,9 +386,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: baseline-it-coverage-${{ matrix.type }}
-          path: |
-            target/site/jacoco-it/jacoco.xml
-            target/site/jacoco-it/jacoco.csv
+          path: target/site/jacoco-it/jacoco.xml
           retention-days: 30
 
       # Download baseline IT coverage from main branch for PR comparison
@@ -425,7 +419,6 @@ jobs:
           import os
           import json
           import urllib.request
-          import csv
 
           def get_coverage(jacoco_dir):
               """Calculate coverage from JaCoCo XML file"""
@@ -475,8 +468,7 @@ jobs:
           matrix_type = os.environ['MATRIX_TYPE']
           current = get_coverage('target/site/jacoco-it')
           baseline = get_coverage(f'baseline-it-coverage-{matrix_type}')
-          # Check for either CSV (new) or XML (old baseline) for backwards compatibility
-          has_baseline = os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.csv') or os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.xml')
+          has_baseline = os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.xml')
 
           # Write outputs for job summary
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
