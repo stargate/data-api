@@ -133,22 +133,44 @@ jobs:
           import csv
 
           def get_coverage(jacoco_dir):
-              """Calculate coverage from JaCoCo CSV file (more reliable than XML)"""
+              """Calculate coverage from JaCoCo CSV (preferred) or XML (fallback)"""
+              import xml.etree.ElementTree as ET
+
+              # Try CSV first (more reliable, used by badge generator)
               csv_file = os.path.join(jacoco_dir, 'jacoco.csv')
-              if not os.path.exists(csv_file):
-                  return 0
-              try:
-                  covered = 0
-                  missed = 0
-                  with open(csv_file, 'r') as f:
-                      reader = csv.DictReader(f)
-                      for row in reader:
-                          covered += int(row.get('INSTRUCTION_COVERED', 0))
-                          missed += int(row.get('INSTRUCTION_MISSED', 0))
-                  total = covered + missed
-                  return (covered / total * 100) if total > 0 else 0
-              except:
-                  return 0
+              if os.path.exists(csv_file):
+                  try:
+                      covered = 0
+                      missed = 0
+                      with open(csv_file, 'r') as f:
+                          reader = csv.DictReader(f)
+                          for row in reader:
+                              covered += int(row.get('INSTRUCTION_COVERED', 0))
+                              missed += int(row.get('INSTRUCTION_MISSED', 0))
+                      total = covered + missed
+                      return (covered / total * 100) if total > 0 else 0
+                  except:
+                      pass
+
+              # Fallback to XML (for old baselines)
+              xml_file = os.path.join(jacoco_dir, 'jacoco.xml')
+              if os.path.exists(xml_file):
+                  try:
+                      tree = ET.parse(xml_file)
+                      root = tree.getroot()
+                      # Get the last INSTRUCTION counter (report-level aggregate)
+                      covered = 0
+                      missed = 0
+                      for child in root:
+                          if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
+                              covered = int(child.get('covered', 0))
+                              missed = int(child.get('missed', 0))
+                      total = covered + missed
+                      return (covered / total * 100) if total > 0 else 0
+                  except:
+                      pass
+
+              return 0
 
           def github_api(method, endpoint, data=None):
               url = f"https://api.github.com/repos/{os.environ['REPO']}/{endpoint}"
@@ -163,7 +185,8 @@ jobs:
 
           current = get_coverage('target/site/jacoco')
           baseline = get_coverage('baseline-coverage')
-          has_baseline = os.path.exists('baseline-coverage/jacoco.csv')
+          # Check for either CSV (new) or XML (old baseline) for backwards compatibility
+          has_baseline = os.path.exists('baseline-coverage/jacoco.csv') or os.path.exists('baseline-coverage/jacoco.xml')
 
           # Write outputs for job summary
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
@@ -404,22 +427,44 @@ jobs:
           import csv
 
           def get_coverage(jacoco_dir):
-              """Calculate coverage from JaCoCo CSV file (more reliable than XML)"""
+              """Calculate coverage from JaCoCo CSV (preferred) or XML (fallback)"""
+              import xml.etree.ElementTree as ET
+
+              # Try CSV first (more reliable, used by badge generator)
               csv_file = os.path.join(jacoco_dir, 'jacoco.csv')
-              if not os.path.exists(csv_file):
-                  return 0
-              try:
-                  covered = 0
-                  missed = 0
-                  with open(csv_file, 'r') as f:
-                      reader = csv.DictReader(f)
-                      for row in reader:
-                          covered += int(row.get('INSTRUCTION_COVERED', 0))
-                          missed += int(row.get('INSTRUCTION_MISSED', 0))
-                  total = covered + missed
-                  return (covered / total * 100) if total > 0 else 0
-              except:
-                  return 0
+              if os.path.exists(csv_file):
+                  try:
+                      covered = 0
+                      missed = 0
+                      with open(csv_file, 'r') as f:
+                          reader = csv.DictReader(f)
+                          for row in reader:
+                              covered += int(row.get('INSTRUCTION_COVERED', 0))
+                              missed += int(row.get('INSTRUCTION_MISSED', 0))
+                      total = covered + missed
+                      return (covered / total * 100) if total > 0 else 0
+                  except:
+                      pass
+
+              # Fallback to XML (for old baselines)
+              xml_file = os.path.join(jacoco_dir, 'jacoco.xml')
+              if os.path.exists(xml_file):
+                  try:
+                      tree = ET.parse(xml_file)
+                      root = tree.getroot()
+                      # Get the last INSTRUCTION counter (report-level aggregate)
+                      covered = 0
+                      missed = 0
+                      for child in root:
+                          if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
+                              covered = int(child.get('covered', 0))
+                              missed = int(child.get('missed', 0))
+                      total = covered + missed
+                      return (covered / total * 100) if total > 0 else 0
+                  except:
+                      pass
+
+              return 0
 
           def github_api(method, endpoint, data=None):
               url = f"https://api.github.com/repos/{os.environ['REPO']}/{endpoint}"
@@ -435,7 +480,8 @@ jobs:
           matrix_type = os.environ['MATRIX_TYPE']
           current = get_coverage('target/site/jacoco-it')
           baseline = get_coverage(f'baseline-it-coverage-{matrix_type}')
-          has_baseline = os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.csv')
+          # Check for either CSV (new) or XML (old baseline) for backwards compatibility
+          has_baseline = os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.csv') or os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.xml')
 
           # Write outputs for job summary
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
