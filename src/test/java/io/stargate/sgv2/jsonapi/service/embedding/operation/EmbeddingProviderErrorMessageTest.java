@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -111,11 +112,12 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("429");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED)
+          .isInstanceOf(APIException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider rate limited the request: Provider: nvidia; HTTP Status: 429; Error Message: {\"object\":\"list\"}");
+              "Provider 'nvidia' rate limited the request with HTTP 429; error message: {\"object\":\"list\"}");
     }
 
     @Test

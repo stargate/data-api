@@ -227,9 +227,14 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
     // Status code == 429
     if (jakartaResponse.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage",
+              errorMessage));
     }
 
     // Status code in 4XX other than 429

@@ -8,7 +8,6 @@ public enum ErrorCodeV1 {
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
 
   /** Embedding provider service error codes. */
-  EMBEDDING_PROVIDER_RATE_LIMITED("The Embedding Provider rate limited the request"),
   EMBEDDING_PROVIDER_TIMEOUT("The Embedding Provider timed out"),
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),

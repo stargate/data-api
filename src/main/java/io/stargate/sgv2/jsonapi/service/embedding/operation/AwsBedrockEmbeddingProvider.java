@@ -200,9 +200,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
     }
 
     if (bedrockException.statusCode() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(bedrockException.statusCode()),
+              "errorMessage",
+              bedrockException.getMessage()));
     }
 
     if (bedrockException.statusCode() > 400 && bedrockException.statusCode() < 500) {
