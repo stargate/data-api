@@ -360,7 +360,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body(
               "errors[0].message",
               startsWith(
-                  "The replace document and document resolved using filter have different _id"));
+                  "The replace document and document resolved using filter have different '_id's: \"doc4\" (replace document) vs. \"doc3\" (document"));
     }
 
     @Test

@@ -34,7 +34,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   private static final Set<ErrorCodeV1> serverFamily =
       new HashSet<>() {
         {
-          add(COUNT_READ_FAILED);
           add(CONCURRENCY_FAILURE);
           add(TOO_MANY_COLLECTIONS);
           add(VECTOR_SEARCH_NOT_SUPPORTED);
@@ -44,7 +43,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           add(VECTORIZE_INVALID_AUTHENTICATION_TYPE);
           add(VECTORIZE_CREDENTIAL_INVALID);
           add(VECTORIZECONFIG_CHECK_FAIL);
-          add(UNAUTHENTICATED_REQUEST);
           add(COLLECTION_CREATION_ERROR);
           add(INVALID_QUERY);
           add(NO_INDEX_ERROR);
@@ -56,7 +54,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       Map.of(
           new HashSet<>() {
             {
-              add(INVALID_CREATE_COLLECTION_OPTIONS);
               add(INVALID_USAGE_OF_VECTORIZE);
               add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
               add(VECTOR_SEARCH_TOO_BIG_VALUE);

@@ -4,7 +4,7 @@ package io.stargate.sgv2.jsonapi.exception;
  * Base for any errors that are from the {@link ErrorFamily#REQUEST} family, these are errors
  * related to the structure of the request.
  *
- * <p>Scope are defined in {@lnk Scope} and each represents a subclass of this class.
+ * <p>Scope are defined in {@link Scope} and each represents a subclass of this class.
  *
  * <p>The {@link Code} in this class is for error codes that do not have a scope.
  *
@@ -41,11 +41,16 @@ public class RequestException extends APIException {
   }
 
   public enum Code implements ErrorCode<RequestException> {
+    COMMAND_ACCEPTS_NO_OPTIONS,
+    COMMAND_FIELD_INVALID,
+    INVALID_CREATE_COLLECTION_FIELD,
     MISSING_RERANK_QUERY_TEXT,
+    UNAUTHENTICATED_REQUEST,
     UNKNOWN_COMMAND,
-    UNSUPPORTED_TABLE_COMMAND,
     UNSUPPORTED_COLLECTION_COMMAND,
-    UNSUPPORTED_RERANKING_COMMAND;
+    UNSUPPORTED_CONTENT_TYPE,
+    UNSUPPORTED_RERANKING_COMMAND,
+    UNSUPPORTED_TABLE_COMMAND;
 
     private final ErrorTemplate<RequestException> template;
 

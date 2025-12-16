@@ -4,27 +4,8 @@ import jakarta.ws.rs.core.Response;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
-  /** Command error codes. */
-  COUNT_READ_FAILED("Unable to count documents"),
-  INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
-  COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
-
-  /**
-   * Error code used for {@code ConstraintViolationException} failures mapped to {@code
-   * JsonApiException}
-   */
-  COMMAND_FIELD_INVALID("Request invalid"),
-
+  // 12-Dec-2025, tatu: Cannot be converted yet, used as marker with LWTException
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
-  COLLECTION_NOT_EXIST("Collection does not exist, collection name"),
-  DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
-
-  DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
-
-  DOCUMENT_UNPARSEABLE("Unable to parse the document"),
-
-  DOCUMENT_REPLACE_DIFFERENT_DOCID(
-      "The replace document and document resolved using filter have different _id"),
 
   /** Embedding provider service error codes. */
   EMBEDDING_REQUEST_ENCODING_ERROR("Unable to create embedding provider request message"),
@@ -115,8 +96,6 @@ public enum ErrorCodeV1 {
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
-  INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
-
   UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
@@ -165,14 +144,12 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
-  UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_QUERY("Invalid query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
-  MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
 
   // Driver failure codes
   /** Error codes related to driver exceptions. */

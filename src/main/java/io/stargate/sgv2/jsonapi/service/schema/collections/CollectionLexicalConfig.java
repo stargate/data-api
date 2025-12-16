@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Arrays;
@@ -89,8 +88,8 @@ public record CollectionLexicalConfig(
     // Case 2: Validate 'enabled' flag is present
     Boolean enabled = lexicalConfig.enabled();
     if (enabled == null) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'enabled' is required property for 'lexical' Object value");
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          "message", "'enabled' is required property for 'lexical' Object value");
     }
 
     // Following cases mean "analyzer" is not defined:
@@ -107,10 +106,11 @@ public record CollectionLexicalConfig(
     if (!enabled) {
       if (!analyzerNotDefined) {
         String nodeType = JsonUtil.nodeTypeAsString(analyzerDef);
-        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: %s. "
-                + "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or an empty Object {}.",
-            nodeType);
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+            "message",
+            ("'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: %s. "
+                    + "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or an empty Object '{ }'.")
+                .formatted(nodeType));
       }
       return configForDisabled();
     }
@@ -135,9 +135,13 @@ public record CollectionLexicalConfig(
       // First: check for any invalid (misspelled etc) fields
       foundNames.removeAll(VALID_ANALYZER_FIELDS);
       if (!foundNames.isEmpty()) {
-        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "Invalid field%s for 'lexical.analyzer'. Valid fields are: %s, found: %s",
-            (foundNames.size() == 1 ? "" : "s"), VALID_ANALYZER_FIELDS, new TreeSet<>(foundNames));
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+            "message",
+            "Invalid field%s for 'lexical.analyzer'. Valid fields are: %s, found: %s"
+                .formatted(
+                    (foundNames.size() == 1 ? "" : "s"),
+                    VALID_ANALYZER_FIELDS,
+                    new TreeSet<>(foundNames)));
       }
       // Second: check basic data types for allowed fields
       for (Map.Entry<String, JsonNode> entry : analyzerDef.properties()) {
@@ -159,16 +163,18 @@ public record CollectionLexicalConfig(
               }
             };
         if (!valueOk) {
-          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "'%s' property of 'lexical.analyzer' must be JSON %s, is: %s",
-              entry.getKey(), expectedType, JsonUtil.nodeTypeAsString(fieldValue));
+          throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+              "message",
+              "'%s' property of 'lexical.analyzer' must be JSON %s, is: %s"
+                  .formatted(entry.getKey(), expectedType, JsonUtil.nodeTypeAsString(fieldValue)));
         }
       }
     } else {
       // Otherwise, invalid definition
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'analyzer' property of 'lexical' must be either JSON Object or String, is: %s",
-          JsonUtil.nodeTypeAsString(analyzerDef));
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          "message",
+          "'analyzer' property of 'lexical' must be either JSON Object or String, is: %s"
+              .formatted(JsonUtil.nodeTypeAsString(analyzerDef)));
     }
     return new CollectionLexicalConfig(true, analyzerDef);
   }

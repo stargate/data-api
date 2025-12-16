@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.RowAccumulator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import org.apache.commons.lang3.NotImplementedException;
@@ -47,7 +48,10 @@ public class AccumulatingAsyncResultSet implements AsyncResultSet {
                 // better to
                 // return false or throw a checked so the application can generate a better error
                 // message
-                throw SortException.Code.OVERLOADED_SORT_ROW_LIMIT.get();
+                throw SortException.Code.OVERLOADED_SORT_ROW_LIMIT.get(
+                    Map.of(
+                        "maxLimit", "10,000",
+                        "unit", "row"));
               }
             });
   }

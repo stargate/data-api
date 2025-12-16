@@ -15,6 +15,11 @@ public class DocumentException extends RequestException {
   }
 
   public enum Code implements ErrorCode<DocumentException> {
+    DOCUMENT_ALREADY_EXISTS,
+    // Internal error: does it belong here?
+    DOCUMENT_FROM_DB_UNPARSEABLE,
+    DOCUMENT_REPLACE_DIFFERENT_DOCID,
+
     INVALID_COLUMN_VALUES,
     MISSING_PRIMARY_KEY_COLUMNS,
     UNKNOWN_TABLE_COLUMNS,

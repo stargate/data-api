@@ -14,7 +14,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 
 /**
  * Use the {@link CommandResultBuilder} to create a {@link CommandResult} for a command response,
- * for creation see {@link #singleDocumentBuilder(boolean, boolean)} and the other factory methods.
+ * for creation see {@link #singleDocumentBuilder} and the other factory methods.
  *
  * <p>Comments on {@link CommandResultBuilder} explain future work here.
  */
