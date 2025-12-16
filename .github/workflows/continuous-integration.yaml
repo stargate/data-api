@@ -157,16 +157,24 @@ jobs:
               if os.path.exists(xml_file):
                   try:
                       tree = ET.parse(xml_file)
+                      # Find report-level counter (direct child of root with largest total)
+                      # Root might have namespace, so strip it
                       root = tree.getroot()
-                      # Get the last INSTRUCTION counter (report-level aggregate)
-                      covered = 0
-                      missed = 0
+                      max_total = 0
+                      best_covered = 0
+                      best_missed = 0
                       for child in root:
-                          if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
+                          tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                          if tag == 'counter' and child.get('type') == 'INSTRUCTION':
                               covered = int(child.get('covered', 0))
                               missed = int(child.get('missed', 0))
-                      total = covered + missed
-                      return (covered / total * 100) if total > 0 else 0
+                              total = covered + missed
+                              if total > max_total:
+                                  max_total = total
+                                  best_covered = covered
+                                  best_missed = missed
+                      total = best_covered + best_missed
+                      return (best_covered / total * 100) if total > 0 else 0
                   except:
                       pass
 
@@ -183,8 +191,15 @@ jobs:
                   req.data = json.dumps(data).encode()
               return json.loads(urllib.request.urlopen(req).read())
 
+          # Debug: Check if CSV exists
+          import os as os_check
+          csv_exists = os_check.path.exists('target/site/jacoco/jacoco.csv')
+          xml_exists = os_check.path.exists('target/site/jacoco/jacoco.xml')
+          print(f'Unit test files: CSV={csv_exists}, XML={xml_exists}')
+
           current = get_coverage('target/site/jacoco')
           baseline = get_coverage('baseline-coverage')
+          print(f'Unit test coverage: current={current:.2f}%, baseline={baseline:.2f}%')
           # Check for either CSV (new) or XML (old baseline) for backwards compatibility
           has_baseline = os.path.exists('baseline-coverage/jacoco.csv') or os.path.exists('baseline-coverage/jacoco.xml')
 
@@ -451,16 +466,24 @@ jobs:
               if os.path.exists(xml_file):
                   try:
                       tree = ET.parse(xml_file)
+                      # Find report-level counter (direct child of root with largest total)
+                      # Root might have namespace, so strip it
                       root = tree.getroot()
-                      # Get the last INSTRUCTION counter (report-level aggregate)
-                      covered = 0
-                      missed = 0
+                      max_total = 0
+                      best_covered = 0
+                      best_missed = 0
                       for child in root:
-                          if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
+                          tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                          if tag == 'counter' and child.get('type') == 'INSTRUCTION':
                               covered = int(child.get('covered', 0))
                               missed = int(child.get('missed', 0))
-                      total = covered + missed
-                      return (covered / total * 100) if total > 0 else 0
+                              total = covered + missed
+                              if total > max_total:
+                                  max_total = total
+                                  best_covered = covered
+                                  best_missed = missed
+                      total = best_covered + best_missed
+                      return (best_covered / total * 100) if total > 0 else 0
                   except:
                       pass
 
