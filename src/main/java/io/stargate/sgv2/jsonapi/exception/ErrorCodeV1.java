@@ -8,7 +8,6 @@ public enum ErrorCodeV1 {
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
 
   /** Embedding provider service error codes. */
-  EMBEDDING_RESPONSE_DECODING_ERROR("Unable to parse embedding provider response message"),
   EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
       "The Embedding Provider authentication keys not provided"),
   EMBEDDING_PROVIDER_CLIENT_ERROR("The Embedding Provider returned a HTTP client error"),
