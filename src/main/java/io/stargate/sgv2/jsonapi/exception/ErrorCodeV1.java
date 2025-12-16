@@ -150,7 +150,6 @@ public enum ErrorCodeV1 {
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_QUERY("Invalid query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
-  MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
 
   // Driver failure codes
   /** Error codes related to driver exceptions. */

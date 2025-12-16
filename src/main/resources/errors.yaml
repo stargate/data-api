@@ -255,9 +255,9 @@ request-errors:
   # Internal error: does it belong here?
   - scope: DOCUMENT
     code: DOCUMENT_FROM_DB_UNPARSEABLE
-    title: Unable to parse fetched JSON document
+    title: Unable to parse JSON content
     body: |-
-      Unable to parse a JSON document fetched from the database; document not valid JSON.
+      Unable to parse JSON content retrieved from the database; not valid JSON.
       Underlying problem: ${message}
 
       Report the problem to database administrators.
