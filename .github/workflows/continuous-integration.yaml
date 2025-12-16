@@ -96,7 +96,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: baseline-coverage
-          path: target/site/jacoco/jacoco.xml
+          path: |
+            target/site/jacoco/jacoco.xml
+            target/site/jacoco/jacoco.csv
           retention-days: 30
 
       # Download baseline coverage from main branch for PR comparison
@@ -125,25 +127,24 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           python3 << 'EOF'
-          import xml.etree.ElementTree as ET
           import os
           import json
           import urllib.request
+          import csv
 
-          def get_coverage(xml_file):
-              if not os.path.exists(xml_file):
+          def get_coverage(jacoco_dir):
+              """Calculate coverage from JaCoCo CSV file (more reliable than XML)"""
+              csv_file = os.path.join(jacoco_dir, 'jacoco.csv')
+              if not os.path.exists(csv_file):
                   return 0
               try:
-                  tree = ET.parse(xml_file)
-                  root = tree.getroot()
-                  # Find the report-level INSTRUCTION counter (usually last in XML)
-                  # Iterate through all direct children and keep the last INSTRUCTION counter
                   covered = 0
                   missed = 0
-                  for child in root:
-                      if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
-                          covered = int(child.get('covered', 0))
-                          missed = int(child.get('missed', 0))
+                  with open(csv_file, 'r') as f:
+                      reader = csv.DictReader(f)
+                      for row in reader:
+                          covered += int(row.get('INSTRUCTION_COVERED', 0))
+                          missed += int(row.get('INSTRUCTION_MISSED', 0))
                   total = covered + missed
                   return (covered / total * 100) if total > 0 else 0
               except:
@@ -160,9 +161,9 @@ jobs:
                   req.data = json.dumps(data).encode()
               return json.loads(urllib.request.urlopen(req).read())
 
-          current = get_coverage('target/site/jacoco/jacoco.xml')
-          baseline = get_coverage('baseline-coverage/jacoco.xml')
-          has_baseline = os.path.exists('baseline-coverage/jacoco.xml')
+          current = get_coverage('target/site/jacoco')
+          baseline = get_coverage('baseline-coverage')
+          has_baseline = os.path.exists('baseline-coverage/jacoco.csv')
 
           # Write outputs for job summary
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
@@ -365,7 +366,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: baseline-it-coverage-${{ matrix.type }}
-          path: target/site/jacoco-it/jacoco.xml
+          path: |
+            target/site/jacoco-it/jacoco.xml
+            target/site/jacoco-it/jacoco.csv
           retention-days: 30
 
       # Download baseline IT coverage from main branch for PR comparison
@@ -395,25 +398,24 @@ jobs:
           MATRIX_TYPE: ${{ matrix.type }}
         run: |
           python3 << 'EOF'
-          import xml.etree.ElementTree as ET
           import os
           import json
           import urllib.request
+          import csv
 
-          def get_coverage(xml_file):
-              if not os.path.exists(xml_file):
+          def get_coverage(jacoco_dir):
+              """Calculate coverage from JaCoCo CSV file (more reliable than XML)"""
+              csv_file = os.path.join(jacoco_dir, 'jacoco.csv')
+              if not os.path.exists(csv_file):
                   return 0
               try:
-                  tree = ET.parse(xml_file)
-                  root = tree.getroot()
-                  # Find the report-level INSTRUCTION counter (usually last in XML)
-                  # Iterate through all direct children and keep the last INSTRUCTION counter
                   covered = 0
                   missed = 0
-                  for child in root:
-                      if child.tag == 'counter' and child.get('type') == 'INSTRUCTION':
-                          covered = int(child.get('covered', 0))
-                          missed = int(child.get('missed', 0))
+                  with open(csv_file, 'r') as f:
+                      reader = csv.DictReader(f)
+                      for row in reader:
+                          covered += int(row.get('INSTRUCTION_COVERED', 0))
+                          missed += int(row.get('INSTRUCTION_MISSED', 0))
                   total = covered + missed
                   return (covered / total * 100) if total > 0 else 0
               except:
@@ -431,9 +433,9 @@ jobs:
               return json.loads(urllib.request.urlopen(req).read())
 
           matrix_type = os.environ['MATRIX_TYPE']
-          current = get_coverage('target/site/jacoco-it/jacoco.xml')
-          baseline = get_coverage(f'baseline-it-coverage-{matrix_type}/jacoco.xml')
-          has_baseline = os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.xml')
+          current = get_coverage('target/site/jacoco-it')
+          baseline = get_coverage(f'baseline-it-coverage-{matrix_type}')
+          has_baseline = os.path.exists(f'baseline-it-coverage-{matrix_type}/jacoco.csv')
 
           # Write outputs for job summary
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
