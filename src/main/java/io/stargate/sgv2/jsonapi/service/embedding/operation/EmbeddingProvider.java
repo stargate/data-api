@@ -6,6 +6,7 @@ import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
@@ -233,16 +234,26 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
     // Status code in 4XX other than 429
     if (jakartaResponse.getStatusInfo().getFamily() == CLIENT_ERROR) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage",
+              errorMessage));
     }
 
     // Status code in 5XX
     if (jakartaResponse.getStatusInfo().getFamily() == Response.Status.Family.SERVER_ERROR) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage",
+              errorMessage));
     }
 
     // All other errors, Should never happen as all errors are covered above

@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -123,11 +124,12 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("400");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
+          .isInstanceOf(EmbeddingProviderException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP client error: Provider: nvidia; HTTP Status: 400; Error Message: {\"object\":\"list\"}");
+              "Provider 'nvidia' returned HTTP 400; error message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -136,11 +138,12 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("503");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR)
+          .isInstanceOf(EmbeddingProviderException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP server error: Provider: nvidia; HTTP Status: 503; Error Message: {\"object\":\"list\"}");
+              "Provider 'nvidia' returned HTTP 503; error message: {\"object\":\"list\"}");
     }
 
     @Test

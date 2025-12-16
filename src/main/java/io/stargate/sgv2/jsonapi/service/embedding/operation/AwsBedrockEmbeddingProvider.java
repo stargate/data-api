@@ -189,10 +189,11 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
         .transform(throwable -> mapBedrockException((BedrockRuntimeException) throwable));
   }
 
-  private Throwable mapBedrockException(BedrockRuntimeException bedrockException) {
+  private Exception mapBedrockException(BedrockRuntimeException bedrockException) {
 
     if (bedrockException.statusCode() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || bedrockException.statusCode() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
+
       return ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(
           "Provider: %s; HTTP Status: %s; Error Message: %s",
           modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
@@ -205,15 +206,25 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
     }
 
     if (bedrockException.statusCode() > 400 && bedrockException.statusCode() < 500) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(bedrockException.statusCode()),
+              "errorMessage",
+              bedrockException.getMessage()));
     }
 
     if (bedrockException.statusCode() >= 500) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(bedrockException.statusCode()),
+              "errorMessage",
+              bedrockException.getMessage()));
     }
 
     // All other errors, Should never happen as all errors are covered above
