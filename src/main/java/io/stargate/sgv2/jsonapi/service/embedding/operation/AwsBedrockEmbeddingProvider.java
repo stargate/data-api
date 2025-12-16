@@ -75,19 +75,31 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
     // TODO: move to V2 errors
     if (embeddingCredentials.accessId().isEmpty() && embeddingCredentials.secretId().isEmpty()) {
-      throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "Both '%s' and '%s' are missing in the header for provider '%s'",
-          EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
-          EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME,
-          modelProvider().apiName());
-    } else if (embeddingCredentials.accessId().isEmpty()) {
-      throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "'%s' is missing in the header for provider '%s'",
-          EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME, modelProvider().apiName());
-    } else if (embeddingCredentials.secretId().isEmpty()) {
-      throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "'%s' is missing in the header for provider '%s'",
-          EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME, modelProvider().apiName());
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "message",
+              "both '%s' and '%s' headers are missing"
+                  .formatted(
+                      EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
+                      EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME)));
+    }
+    if (embeddingCredentials.accessId().isEmpty()) {
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "message",
+              "'%s' header is missing".formatted(EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME)));
+    }
+    if (embeddingCredentials.secretId().isEmpty()) {
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "message",
+              "'%s' header is missing".formatted(EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME)));
     }
 
     var awsCreds =

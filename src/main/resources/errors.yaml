@@ -2119,13 +2119,19 @@ server-errors:
       Underlying problem: ${errorMessage}
 
   - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED
+    title: Authentication header(s) missing from embedding request
+    body: |-
+      Missing authentication header(s) from embedding request (provider '${provider}'): ${message}').
+
+  - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_CLIENT_ERROR
-    title: The Embedding Provider returned a HTTP client error
+    title: Embedding provider returned a HTTP client error
     body: |-
       Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_SERVER_ERROR
-    title: The Embedding Provider returned a HTTP server error
+    title: Embedding provider returned a HTTP server error
     body: |-
       Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}

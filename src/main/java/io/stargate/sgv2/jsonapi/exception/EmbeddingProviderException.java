@@ -11,6 +11,7 @@ public class EmbeddingProviderException extends ServerException {
   public enum Code implements ErrorCode<EmbeddingProviderException> {
     EMBEDDING_REQUEST_ENCODING_ERROR,
     EMBEDDING_RESPONSE_DECODING_ERROR,
+    EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED,
     EMBEDDING_PROVIDER_CLIENT_ERROR,
     EMBEDDING_PROVIDER_SERVER_ERROR;
 
