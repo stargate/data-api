@@ -212,7 +212,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       if (operator == null) {
         JsonExtensionType etype = JsonUtil.findJsonExtensionType(updateKey);
         if ((etype == null) && updateKey.startsWith("$")) {
-          throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(updateKey);
+          throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(updateKey);
         }
         String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
         // JSON Extension type needs to be explicitly handled:

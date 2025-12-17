@@ -54,7 +54,7 @@ public abstract class SetCollectionFilter<T> extends CollectionFilter {
             BuiltConditionPredicate.NOT_CONTAINS,
             new JsonTerm(value));
       default:
-        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(
             "Set operation '%s' on column '%s'", operator, columnName);
     }
   }

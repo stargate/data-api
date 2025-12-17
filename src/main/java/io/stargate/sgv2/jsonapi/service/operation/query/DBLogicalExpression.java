@@ -42,7 +42,7 @@ public class DBLogicalExpression implements Recordable {
         case AND -> DBLogicalOperator.AND;
         case OR -> DBLogicalOperator.OR;
         default ->
-            throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
+            throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(
                 "convert from logical operator failure, unsupported operator: " + logicalOperator);
       };
     }

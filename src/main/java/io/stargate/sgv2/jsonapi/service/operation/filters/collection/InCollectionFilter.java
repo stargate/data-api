@@ -169,7 +169,7 @@ public class InCollectionFilter extends CollectionFilter {
           return conditions;
         }
       default:
-        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(
             "Unsupported %s column operation %s", getPath(), operator);
     }
   }

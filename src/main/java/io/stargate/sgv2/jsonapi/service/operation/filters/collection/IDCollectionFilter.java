@@ -103,7 +103,7 @@ public class IDCollectionFilter extends CollectionFilter {
                 })
             .collect(Collectors.toList());
       default:
-        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(
             "Unsupported id column operation %s", operator);
     }
   }
