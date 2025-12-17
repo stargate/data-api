@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
@@ -1116,12 +1116,9 @@ public class FilterClauseBuilderTest {
         """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              t -> {
-                assertThat(t.getMessage())
-                    .isEqualTo(ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.getMessage());
-              });
+          .isInstanceOf(FilterException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", FilterException.Code.FILTER_MULTIPLE_ID_FILTER.name());
     }
 
     @Test

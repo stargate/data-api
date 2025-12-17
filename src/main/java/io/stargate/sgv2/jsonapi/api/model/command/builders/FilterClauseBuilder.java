@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -353,7 +354,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   private void validateExpression(
       OperationsConfig operationsConfig, LogicalExpression logicalExpression) {
     if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
-      throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
+      throw FilterException.Code.FILTER_MULTIPLE_ID_FILTER.get();
     }
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
       validateExpression(operationsConfig, subLogicalExpression);
