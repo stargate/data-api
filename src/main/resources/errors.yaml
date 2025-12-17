@@ -368,6 +368,14 @@ request-errors:
       Resend the command with filter that does not exceed maximum field count.
 
   - scope: FILTER
+    code: FILTER_INVALID_EXPRESSION
+    title: Unsupported filter clause
+    body: |-
+      Unsupported filter clause: ${message}.
+      
+      Resend the command using only supported filter expressions and paths.
+
+  - scope: FILTER
     code: FILTER_MULTIPLE_ID_FILTER
     title: Can only have one '_id' equals filter clause
     body: |-

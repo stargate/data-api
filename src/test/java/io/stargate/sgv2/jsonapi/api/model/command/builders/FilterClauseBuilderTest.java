@@ -1130,11 +1130,12 @@ public class FilterClauseBuilderTest {
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .startsWith("Invalid filter expression: filter clause path ('$gt')");
+                    .startsWith(
+                        "Unsupported filter clause: filter expression path ('$gt') cannot start with '$'");
               });
     }
 
@@ -1187,11 +1188,12 @@ public class FilterClauseBuilderTest {
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .startsWith("Invalid filter expression: filter clause path ('$exists')");
+                    .startsWith(
+                        "Unsupported filter clause: filter expression path ('$exists') cannot start with '$'");
               });
     }
   }
@@ -1231,12 +1233,12 @@ public class FilterClauseBuilderTest {
           """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "$match operator can only be used with the '$lexical' field, not 'content'");
+                        "'$match' operator can only be used with the '$lexical' field, not 'content'");
               });
     }
 
@@ -1277,12 +1279,12 @@ public class FilterClauseBuilderTest {
               """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Cannot filter on '$lexical' field using operator $eq: only $match is supported");
+                        "cannot filter on '$lexical' field using operator '$eq': only '$match' is supported");
               });
     }
 
@@ -1295,12 +1297,12 @@ public class FilterClauseBuilderTest {
                   """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Cannot filter on '$lexical' field using operator $eq: only $match is supported");
+                        "cannot filter on '$lexical' field using operator '$eq': only '$match' is supported");
               });
     }
   }

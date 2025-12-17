@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -55,8 +56,8 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
   protected String validateFilterClausePath(String path, FilterOperator operator) {
     if (!NamingRules.FIELD.apply(path)) {
       if (path.isEmpty()) {
-        throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
-            "filter clause path cannot be empty String");
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of("message", "filter expression path cannot be empty String"));
       }
       // 3 special fields with $ prefix, skip here
       switch (path) {
@@ -70,30 +71,39 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
           }
           // Only $match valid on $lexical field
           if (operator != ValueComparisonOperator.MATCH) {
-            throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
-                "Cannot filter on '%s' field using operator %s: only $match is supported",
-                path, operator.getOperator());
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of(
+                    "message",
+                    "cannot filter on '%s' field using operator '%s': only '$match' is supported"
+                        .formatted(path, operator.getOperator())));
           }
           return path;
         }
       }
-      throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
-          "filter clause path ('%s') cannot start with `$`", path);
+      throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+          Map.of("message", "filter expression path ('%s') cannot start with '$'".formatted(path)));
     } else {
       // and one special-case operator
       // $match only valid on $lexical field (ok case handled above)
       if (operator == ValueComparisonOperator.MATCH) {
-        throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
-            "%s operator can only be used with the '%s' field, not '%s'",
-            operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, path);
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of(
+                "message",
+                "'%s' operator can only be used with the '%s' field, not '%s'"
+                    .formatted(
+                        operator.getOperator(),
+                        DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+                        path)));
       }
     }
 
     try {
       path = DocumentPath.verifyEncodedPath(path);
     } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
-          "filter clause path ('%s') is not a valid path: %s", path, e.getMessage());
+      throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+          Map.of(
+              "message",
+              "filter expression path ('%s') is not valid: %s".formatted(path, e.getMessage())));
     }
 
     return path;

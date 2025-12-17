@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import java.util.Map;
 
 /**
  * List of value operator that can be used in Filter clause Have commented the unsupported
@@ -49,8 +50,8 @@ public enum ValueComparisonOperator implements FilterOperator {
         return GT;
       case MATCH:
         // No way to do "not matches" (not supported by database)
-        throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
-            "cannot use $not to invert $match operator");
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of("message", "cannot use '$not' to invert '$match' operator"));
     }
     return this;
   }

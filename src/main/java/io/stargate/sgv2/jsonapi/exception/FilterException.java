@@ -16,6 +16,7 @@ public class FilterException extends RequestException {
   public enum Code implements ErrorCode<FilterException> {
     CANNOT_LEXICAL_FILTER_NON_INDEXED_COLUMNS,
     FILTER_FIELDS_LIMIT_VIOLATION,
+    FILTER_INVALID_EXPRESSION,
     FILTER_MULTIPLE_ID_FILTER,
     FILTER_UNSUPPORTED_DATA_TYPE,
     FILTER_UNSUPPORTED_OPERATOR,
