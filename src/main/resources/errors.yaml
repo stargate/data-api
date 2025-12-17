@@ -383,6 +383,13 @@ request-errors:
 
       Resend the command using supported filter data types.
 
+  - scope: FILTER
+    code: FILTER_UNSUPPORTED_OPERATOR
+    title: Unsupported filter operator
+    body: |-
+      Unsupported ${message}.
+
+      Resend the command using only supported operators.
 
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the DOCUMENT scope
   - scope: FILTER

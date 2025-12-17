@@ -1,10 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.builder.JsonTerm;
+import java.util.Map;
 import java.util.Objects;
 
 /** DB filter / condition for testing a set value */
@@ -54,8 +55,8 @@ public abstract class SetCollectionFilter<T> extends CollectionFilter {
             BuiltConditionPredicate.NOT_CONTAINS,
             new JsonTerm(value));
       default:
-        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(
-            "Set operation '%s' on column '%s'", operator, columnName);
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "set operator '%s' on column '%s'".formatted(operator, columnName)));
     }
   }
 }

@@ -1171,10 +1171,10 @@ public class FilterClauseBuilderTest {
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $vector");
+                assertThat(t.getMessage()).startsWith("Unsupported filter operator '$vector'");
               });
     }
 
@@ -1453,10 +1453,10 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $GUID");
+                assertThat(t.getMessage()).startsWith("Unsupported filter operator '$GUID'");
               });
     }
 

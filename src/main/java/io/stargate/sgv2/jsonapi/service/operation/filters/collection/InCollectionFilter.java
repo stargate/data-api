@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
@@ -169,8 +168,8 @@ public class InCollectionFilter extends CollectionFilter {
           return conditions;
         }
       default:
-        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(
-            "Unsupported %s column operation %s", getPath(), operator);
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "'%s' column operator '%s'".formatted(getPath(), operator)));
     }
   }
 }

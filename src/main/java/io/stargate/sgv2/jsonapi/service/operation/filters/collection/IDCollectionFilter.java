@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.base.Preconditions;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
@@ -103,8 +102,8 @@ public class IDCollectionFilter extends CollectionFilter {
                 })
             .collect(Collectors.toList());
       default:
-        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(
-            "Unsupported id column operation %s", operator);
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "id column operator '%s'".formatted(operator.name())));
     }
   }
 

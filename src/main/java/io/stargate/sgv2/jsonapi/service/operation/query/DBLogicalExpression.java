@@ -1,10 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -42,8 +43,8 @@ public class DBLogicalExpression implements Recordable {
         case AND -> DBLogicalOperator.AND;
         case OR -> DBLogicalOperator.OR;
         default ->
-            throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATOR.toApiException(
-                "convert from logical operator failure, unsupported operator: " + logicalOperator);
+            throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+                Map.of("message", "logical operator '%s'".formatted(logicalOperator)));
       };
     }
   }

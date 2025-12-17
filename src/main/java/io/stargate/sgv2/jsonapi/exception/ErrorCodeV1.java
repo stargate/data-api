@@ -21,7 +21,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
   FILTER_INVALID_EXPRESSION("Invalid filter expression"),
-  FILTER_UNSUPPORTED_OPERATOR("Unsupported filter operator"),
 
   INVALID_REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
 
