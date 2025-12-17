@@ -10,6 +10,7 @@ public class DatabaseException extends ServerException {
 
   public enum Code implements ErrorCode<DatabaseException> {
     COUNT_READ_FAILED, // converted from ErrorV1
+    FAILED_CONCURRENT_OPERATIONS,
     FAILED_COMPARE_AND_SET,
     FAILED_READ_REQUEST,
     FAILED_TO_CONNECT_TO_DATABASE,
