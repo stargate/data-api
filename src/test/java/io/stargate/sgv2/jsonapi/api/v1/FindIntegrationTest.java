@@ -1012,7 +1012,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
-          .body("errors[0].message", endsWith("Invalid use of $eq operator"));
+          .body("errors[0].message", containsString("invalid use of '$eq' operator"));
     }
 
     @Test

@@ -377,10 +377,10 @@ public class FilterClauseBuilderTest {
         """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$all operator must have `ARRAY` value");
+                assertThat(t.getMessage()).contains("'$all' operator must have `Array` value");
               });
     }
 
@@ -392,10 +392,10 @@ public class FilterClauseBuilderTest {
         """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$all operator must have at least one value");
+                assertThat(t.getMessage()).contains("'$all' operator must have at least one value");
               });
     }
 
@@ -470,10 +470,10 @@ public class FilterClauseBuilderTest {
           """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$size operator must have integer");
+                assertThat(t.getMessage()).contains("'$size' operator must have integer");
               });
     }
 
@@ -486,10 +486,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$size operator must have integer");
+                assertThat(t.getMessage()).contains("'$size' operator must have integer");
               });
 
       String json1 =
@@ -498,10 +498,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable1 = catchThrowable(() -> readCollectionFilterClause(json1));
       assertThat(throwable1)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$size operator must have integer");
+                assertThat(t.getMessage()).contains("'$size' operator must have integer");
               });
     }
 
@@ -513,10 +513,11 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$size operator must have integer value >= 0");
+                assertThat(t.getMessage())
+                    .contains("'$size' operator must have integer value >= 0 (had -2)");
               });
     }
 
@@ -1011,10 +1012,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$in operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("'$in' operator must have `Array`");
               });
     }
 
@@ -1026,10 +1027,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$nin operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("'$nin' operator must have `Array`");
               });
     }
 
@@ -1048,10 +1049,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$nin operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("'$nin' operator must have `Array`");
               });
     }
 
@@ -1064,12 +1065,12 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "$in operator must have at most "
+                        "'$in' operator must have at most "
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");
               });
@@ -1084,12 +1085,12 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "$nin operator must have at most "
+                        "'$nin' operator must have at most "
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");
               });
@@ -1252,12 +1253,13 @@ public class FilterClauseBuilderTest {
               .formatted(jsonSnippet);
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "$match operator must have `String` value, was `%s`".formatted(actualType));
+                        "'$match' operator must have `String` value, was `%s`"
+                            .formatted(actualType));
               });
     }
 

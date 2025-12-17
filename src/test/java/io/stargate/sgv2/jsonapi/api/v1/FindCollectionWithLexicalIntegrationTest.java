@@ -297,7 +297,7 @@ public class FindCollectionWithLexicalIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: $match operator must have `String` value, was `Array`"));
+                  "Unsupported filter clause: '$match' operator must have `String` value, was `Array`"));
     }
 
     @Test
