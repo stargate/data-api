@@ -48,7 +48,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       return FilterClause.empty();
     }
     if (!filterNode.isObject()) {
-      throw FilterException.Code.UNSUPPORTED_FILTER_DATA_TYPE.get(
+      throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
           Map.of(
               "message",
               "filter definition must be JSON Object, command had "
@@ -124,7 +124,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       for (JsonNode next : arrayNode) {
         if (!next.isObject()) {
           // nodes in $and/$or array must be objects
-          throw FilterException.Code.UNSUPPORTED_FILTER_DATA_TYPE.get(
+          throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
               Map.of(
                   "message",
                   "Unsupported NodeType '%s' for '$%s' filter"
@@ -135,7 +135,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         populateExpression(logicalExpression, next);
       }
     } else {
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+      throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
           "Cannot filter on '%s' field using operator $eq: only $exists is supported",
           DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
@@ -161,11 +161,11 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
                     DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
                 // TODO: (21-Jul-2025) Should be refactored to CollectionFilterClauseBuilder as it
                 // only applies to Collections
-                throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                     "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                     entry.getKey());
             default ->
-                throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                     "Cannot filter on '%s' by array type", entry.getKey());
           };
       ArrayNode arrayNode = (ArrayNode) entry.getValue();
@@ -179,7 +179,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       switch (entry.getKey()) {
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                 DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                 "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                 entry.getKey());
       }
@@ -212,7 +212,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       if (operator == null) {
         JsonExtensionType etype = JsonUtil.findJsonExtensionType(updateKey);
         if ((etype == null) && updateKey.startsWith("$")) {
-          throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
+          throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(updateKey);
         }
         String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
         // JSON Extension type needs to be explicitly handled:
@@ -256,14 +256,14 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
                     || value.isTextual()
                     || value.isBoolean()
                     || value.isNumber())))) {
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
               "%s operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value",
               operator.getOperator());
         }
       } else if (operator == ValueComparisonOperator.MATCH) {
         // $match operator can only be used with String value
         if (!(valueObject instanceof String)) {
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
               "%s operator must have `String` value, was `%s`",
               operator.getOperator(), JsonUtil.nodeTypeAsString(value));
         }
@@ -333,7 +333,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
               if (value.isIntegralNumber() && value.canConvertToLong()) {
                 return new Date(value.longValue());
               }
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                   "$date value has to be sent as epoch time");
             } else if (etype != null) {
               // This will convert to Java value if valid value; we'll just convert back to String
@@ -343,7 +343,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             } else {
               // handle an invalid filter use case:
               // { "address": { "street": { "$xx": xxx } } }
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                   "Invalid use of %s operator", node.fieldNames().next());
             }
           } else {
@@ -355,7 +355,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
           }
         }
       default:
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+        throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
             "Unsupported NodeType %s", node.getNodeType());
     }
   }
@@ -389,7 +389,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       FilterOperation<?> filterOperation,
       LogicalExpression.LogicalOperator fromLogicalRelation) {
     if (isDocId(path) && fromLogicalRelation.equals(LogicalExpression.LogicalOperator.OR)) {
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+      throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
           "Cannot filter on '%s' field within '%s', ID field can not be used with $or operator",
           path, LogicalExpression.LogicalOperator.OR.getOperator());
     }
@@ -399,24 +399,24 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         case IN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.maxInOperatorValueSize()) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                   "$in operator must have at most %d values",
                   operationsConfig.maxInOperatorValueSize());
             }
           } else {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                 "$in operator must have `ARRAY`");
           }
         }
         case NIN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.maxInOperatorValueSize()) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                   "$nin operator must have at most %d values",
                   operationsConfig.maxInOperatorValueSize());
             }
           } else {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                 "$nin operator must have `ARRAY`");
           }
         }
@@ -427,7 +427,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       switch (elementComparisonOperator) {
         case EXISTS:
           if (!(filterOperation.operand().value() instanceof Boolean)) {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                 "$exists operator must have `BOOLEAN`");
           }
           break;
@@ -439,27 +439,27 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         case ALL:
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.isEmpty()) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                   "$all operator must have at least one value");
             }
           } else {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                 "$all operator must have `ARRAY` value");
           }
           break;
         case SIZE:
           if (filterOperation.operand().value() instanceof BigDecimal i) {
             if (i.intValue() < 0) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                   "$size operator must have integer value >= 0");
             }
             // Check if the value is an integer by comparing its scale.
             if (i.stripTrailingZeros().scale() > 0) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                   "$size operator must have an integer value");
             }
           } else {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                 "$size operator must have integer");
           }
           break;

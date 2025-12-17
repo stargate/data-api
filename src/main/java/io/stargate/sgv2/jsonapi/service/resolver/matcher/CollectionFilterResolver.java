@@ -236,7 +236,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                       IDCollectionFilter.Operator.NE, expression.value()));
                               break;
                             default:
-                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                              throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
                                   "%s", expression.operator());
                           }
                         });
@@ -264,7 +264,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                       (List<Object>) expression.value()));
                               break;
                             default:
-                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                              throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
                                   "%s", expression.operator());
                           }
                         });
@@ -541,7 +541,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case LTE:
         return MapCollectionFilter.Operator.LTE;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }
@@ -554,7 +554,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NIN:
         return InCollectionFilter.Operator.NIN;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }
@@ -567,7 +567,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NE:
         return SetCollectionFilter.Operator.NOT_CONTAINS;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }

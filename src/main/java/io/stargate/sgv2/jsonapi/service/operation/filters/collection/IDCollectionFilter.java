@@ -87,7 +87,7 @@ public class IDCollectionFilter extends CollectionFilter {
                   BuiltConditionPredicate.NEQ,
                   new JsonTerm(DOC_ID, strId)));
         } else {
-          throw FilterException.Code.UNSUPPORTED_FILTER_DATA_TYPE.get(
+          throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
               Map.of("message", "Unsupported '$ne' operand value: " + documentId.value()));
         }
       case IN:
@@ -103,7 +103,7 @@ public class IDCollectionFilter extends CollectionFilter {
                 })
             .collect(Collectors.toList());
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
             "Unsupported id column operation %s", operator);
     }
   }

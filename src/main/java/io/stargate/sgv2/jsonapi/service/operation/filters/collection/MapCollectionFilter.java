@@ -128,7 +128,7 @@ public abstract class MapCollectionFilter<T> extends CollectionFilter {
             BuiltConditionPredicate.LTE,
             new JsonTerm(key, value));
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
             "Map operation '%s' on column '%s'", operator, columnName);
     }
   }

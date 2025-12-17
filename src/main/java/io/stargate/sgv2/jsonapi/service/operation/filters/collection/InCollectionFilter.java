@@ -161,7 +161,7 @@ public class InCollectionFilter extends CollectionFilter {
                         new JsonTerm(DOC_ID, strId));
                 conditions.add(condition);
               } else {
-                throw FilterException.Code.UNSUPPORTED_FILTER_DATA_TYPE.get(
+                throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
                     Map.of("message", "Unsupported '$nin' operand value: " + docIdValue));
               }
             }
@@ -169,7 +169,7 @@ public class InCollectionFilter extends CollectionFilter {
           return conditions;
         }
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.FILTER_UNSUPPORTED_OPERATION.toApiException(
             "Unsupported %s column operation %s", getPath(), operator);
     }
   }

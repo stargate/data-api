@@ -49,7 +49,7 @@ public enum ValueComparisonOperator implements FilterOperator {
         return GT;
       case MATCH:
         // No way to do "not matches" (not supported by database)
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+        throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
             "cannot use $not to invert $match operator");
     }
     return this;

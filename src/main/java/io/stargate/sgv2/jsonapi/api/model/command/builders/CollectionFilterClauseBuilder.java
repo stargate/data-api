@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.builders;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
@@ -18,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
-import java.util.*;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +55,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
   protected String validateFilterClausePath(String path, FilterOperator operator) {
     if (!NamingRules.FIELD.apply(path)) {
       if (path.isEmpty()) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+        throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
             "filter clause path cannot be empty String");
       }
       // 3 special fields with $ prefix, skip here
@@ -72,20 +70,20 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
           }
           // Only $match valid on $lexical field
           if (operator != ValueComparisonOperator.MATCH) {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
                 "Cannot filter on '%s' field using operator %s: only $match is supported",
                 path, operator.getOperator());
           }
           return path;
         }
       }
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+      throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
           "filter clause path ('%s') cannot start with `$`", path);
     } else {
       // and one special-case operator
       // $match only valid on $lexical field (ok case handled above)
       if (operator == ValueComparisonOperator.MATCH) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+        throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
             "%s operator can only be used with the '%s' field, not '%s'",
             operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, path);
       }
@@ -94,7 +92,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
     try {
       path = DocumentPath.verifyEncodedPath(path);
     } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+      throw ErrorCodeV1.FILTER_INVALID_EXPRESSION.toApiException(
           "filter clause path ('%s') is not a valid path: %s", path, e.getMessage());
     }
 

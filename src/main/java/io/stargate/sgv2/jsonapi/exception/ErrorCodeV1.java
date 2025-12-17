@@ -20,8 +20,8 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  INVALID_FILTER_EXPRESSION("Invalid filter expression"),
-  UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
+  FILTER_INVALID_EXPRESSION("Invalid filter expression"),
+  FILTER_UNSUPPORTED_OPERATION("Unsupported filter operator"),
 
   INVALID_REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
 
