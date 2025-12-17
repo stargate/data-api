@@ -20,8 +20,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
-
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
