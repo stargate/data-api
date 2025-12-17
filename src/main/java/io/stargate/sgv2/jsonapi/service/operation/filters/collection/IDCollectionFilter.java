@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
@@ -14,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.builder.JsonTerm;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -69,7 +71,7 @@ public class IDCollectionFilter extends CollectionFilter {
                 BuiltConditionPredicate.EQ,
                 new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
       case NE:
-        final DocumentId documentId = (DocumentId) values.get(0);
+        final DocumentId documentId = values.get(0);
         if (documentId.value() instanceof BigDecimal numberId) {
           this.collectionIndexUsage.numberIndexTag = true;
           return List.of(
@@ -85,8 +87,8 @@ public class IDCollectionFilter extends CollectionFilter {
                   BuiltConditionPredicate.NEQ,
                   new JsonTerm(DOC_ID, strId)));
         } else {
-          throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
-              "Unsupported $ne operand value: %s", documentId.value());
+          throw FilterException.Code.UNSUPPORTED_FILTER_DATA_TYPE.get(
+              Map.of("message", "Unsupported '$ne' operand value: " + documentId.value()));
         }
       case IN:
         if (values.isEmpty()) return List.of();

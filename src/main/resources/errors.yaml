@@ -454,6 +454,14 @@ request-errors:
       Resend the command using only supported operations on `duration` columns. 
 
   - scope: FILTER
+    code: UNSUPPORTED_FILTER_DATA_TYPE
+    title: Unsupported filter data type
+    body: |-
+      Unsupported filter data type: ${message}.
+
+      Resend the command using supported filter data types.
+
+  - scope: FILTER
     code: MISSING_FILTER_FOR_UPDATE_DELETE
     title: Update and delete commands require a filter
     body: |-

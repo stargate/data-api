@@ -48,7 +48,11 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       return FilterClause.empty();
     }
     if (!filterNode.isObject()) {
-      throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
+      throw FilterException.Code.UNSUPPORTED_FILTER_DATA_TYPE.get(
+          Map.of(
+              "message",
+              "filter definition must be JSON Object, command had "
+                  + JsonUtil.nodeTypeAsString(filterNode)));
     }
 
     // implicit and
@@ -120,9 +124,13 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       for (JsonNode next : arrayNode) {
         if (!next.isObject()) {
           // nodes in $and/$or array must be objects
-          throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
-              "Unsupported NodeType '%s' for $%s filter",
-              JsonUtil.nodeTypeAsString(next), logicalExpression.getLogicalRelation());
+          throw FilterException.Code.UNSUPPORTED_FILTER_DATA_TYPE.get(
+              Map.of(
+                  "message",
+                  "Unsupported NodeType '%s' for '$%s' filter"
+                      .formatted(
+                          JsonUtil.nodeTypeAsString(next),
+                          logicalExpression.getLogicalRelation())));
         }
         populateExpression(logicalExpression, next);
       }

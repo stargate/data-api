@@ -1022,9 +1022,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
-              endsWith(
-                  " filter has 65 fields, exceeds maximum allowed "
-                      + OperationsConfig.DEFAULT_MAX_FILTER_SIZE));
+              containsString(
+                  "Filter has 65 fields, exceeds maximum allowed ("
+                      + OperationsConfig.DEFAULT_MAX_FILTER_SIZE
+                      + ")"));
     }
 
     private static String createJsonStringWithNFilterFields(int numberOfFields) {
