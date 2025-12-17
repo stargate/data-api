@@ -393,8 +393,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body("errors[0].message", containsString("$in operator must have `ARRAY`"));
     }
 

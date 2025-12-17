@@ -997,7 +997,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
           .body("errors[0].message", containsString("filter clause path ('$gt')"));
     }
 
@@ -1009,7 +1009,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
           .body("errors[0].message", endsWith("Invalid use of $eq operator"));
     }
 
