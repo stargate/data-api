@@ -2145,6 +2145,13 @@ server-errors:
 
   # EMBEDDING scope server errors
   - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_GATEWAY_NOT_AVAILABLE
+    title: Embedding Gateway not available
+    body: |-
+      Embedding Gateway not available.
+      Underlying problem: ${errorMessage}.
+
+  - scope: EMBEDDING_PROVIDER
     code: CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error
     body: |-

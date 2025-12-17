@@ -49,10 +49,6 @@ public final class ThrowableToErrorMapper {
 
         // if our own V1 exception, shortcut
         if (throwable instanceof JsonApiException jae) {
-          if (jae.getErrorCode().equals(ErrorCodeV1.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE)) {
-            // 30-Aug-2021: [data-api#1383] Why is this special case here?
-            return jae.getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-          }
           return jae.getCommandResultError(message, jae.getHttpStatus());
         }
 

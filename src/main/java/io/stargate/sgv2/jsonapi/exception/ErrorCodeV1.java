@@ -160,7 +160,6 @@ public enum ErrorCodeV1 {
   SERVER_READ_FAILED("Database read failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 
