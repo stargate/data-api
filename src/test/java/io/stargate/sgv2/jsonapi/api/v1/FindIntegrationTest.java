@@ -998,7 +998,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
-          .body("errors[0].message", containsString("filter clause path ('$gt')"));
+          .body(
+              "errors[0].message",
+              containsString("filter expression path ('$gt') cannot start with '$'"));
     }
 
     @Test
