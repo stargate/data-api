@@ -1160,11 +1160,11 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Cannot filter on '$vector' field using operator $eq: only $exists is supported"));
+                  "cannot filter on '$vector' field using operator '$eq': only '$exists' is supported"));
     }
   }
 

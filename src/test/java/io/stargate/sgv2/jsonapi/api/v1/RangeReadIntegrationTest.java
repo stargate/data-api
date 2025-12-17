@@ -392,7 +392,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .body(
               "errors[0].message",
               containsString(
-                  "$lte operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value"));
+                  "'$lte' operator must have `Date` or `Number` or `String` or `Boolean` value"));
     }
   }
 }
