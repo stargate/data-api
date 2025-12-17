@@ -340,7 +340,7 @@ public class FindCollectionWithLexicalIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: cannot use $not to invert $match operator"));
+                  "Unsupported filter clause: cannot use '$not' to invert '$match' operator."));
     }
 
     // Can only use $match with $lexical, not $eq, $ne, etc.
@@ -360,7 +360,7 @@ public class FindCollectionWithLexicalIntegrationTest
             .body(
                 "errors[0].message",
                 containsString(
-                    "Cannot filter on '$lexical' field using operator $eq: only $match is supported"));
+                    "Unsupported filter clause: cannot filter on '$lexical' field using operator '$eq': only '$match' is supported"));
       }
     }
   }

@@ -766,11 +766,11 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: filter clause path ('pricing&price&aud') is not a valid path: "));
+                  "Unsupported filter clause: filter expression path ('pricing&price&aud') is not valid"));
     }
   }
 
