@@ -148,12 +148,12 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
             || filterOperator == ValueComparisonOperator.IN) {
           return;
         }
-        // otherwise throw _id - specific JsonApiException
-        throw ErrorCodeV1.ID_NOT_INDEXED.toApiException(
-            "you can only use $eq or $in as the operator");
+        // otherwise throw _id - specific exception
+        throw FilterException.Code.FILTER_ID_NOT_INDEXED.get(
+            Map.of("operator", filterOperator.getOperator()));
       }
-      // For any other not-indexed path throw generic error
-      throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
+      // For any other not-indexed path throw generic exception
+      throw ErrorCodeV1.FILTER_PATH_UNINDEXED.toApiException(
           "filter path '%s' is not indexed", comparisonExpression.getPath());
     }
 
@@ -174,7 +174,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
     for (Map.Entry<?, ?> entry : map.entrySet()) {
       String incrementalPath = currentPath + "." + entry.getKey();
       if (!indexingProjector.isPathIncluded(incrementalPath)) {
-        throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
+        throw ErrorCodeV1.FILTER_PATH_UNINDEXED.toApiException(
             "filter path '%s' is not indexed", incrementalPath);
       }
       // continue build the incremental path if the value is a map
@@ -198,7 +198,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
       } else if (element instanceof String) {
         // no need to build incremental path, validate current path
         if (!indexingProjector.isPathIncluded(currentPath)) {
-          throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
+          throw ErrorCodeV1.FILTER_PATH_UNINDEXED.toApiException(
               "filter path '%s' is not indexed", currentPath);
         }
       }

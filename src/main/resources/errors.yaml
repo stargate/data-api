@@ -368,6 +368,14 @@ request-errors:
       Resend the command with filter that does not exceed maximum field count.
 
   - scope: FILTER
+    code: FILTER_ID_NOT_INDEXED
+    title: Collection field '_id' not indexed can only filter with '$eq' or '$in'
+    body: |-
+      Collection field '_id' is never indexed so filtering can only be done using operators '$eq' or '$in', not '${operator}'.
+      
+      Resend the command with proper filter.
+
+  - scope: FILTER
     code: FILTER_INVALID_EXPRESSION
     title: Unsupported filter clause
     body: |-
