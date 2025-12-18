@@ -774,7 +774,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
-              contains("Collection field 'address.street' is not indexed: cannot sort using it"));
+              containsString(
+                  "Collection field 'address.street' is not indexed: cannot sort using it"));
     }
 
     @Test
