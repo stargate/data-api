@@ -28,10 +28,6 @@ public enum ErrorCodeV1 {
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
-  UNINDEXED_FILTER_PATH("Unindexed filter path"),
-
-  ID_NOT_INDEXED("_id is not indexed"),
-
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
