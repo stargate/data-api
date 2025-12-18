@@ -2025,6 +2025,20 @@ server-errors:
       Retrying the command will likely result in the same error.
 
   - scope: DATABASE
+    code: FAILED_CONCURRENT_OPERATIONS
+    title: Failed to complete concurrent operations on the database
+    body: |-
+      The Data API command was unable to complete an operation on a document or row due to concurrent modifications from other requests. 
+      
+      This should be a rare error, it occurs when multiple requests attempt to modify the same document or row at the same time. The Data API has retried the operation multiple times, but was unable to complete it before another request modified the same document or row. This may indicate a "hot row" in your database, or low resources slowing down the database.
+      
+      NOTE: If the request updated multiple documents or rows, some of the updates may have completed successfully. Check the response for partial success information.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
     code: FAILED_COMPARE_AND_SET
     title: Failed database Compare and Set operation
     body: |-
