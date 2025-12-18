@@ -103,7 +103,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // Tables(CqlPagingState)
     if (sortClause != null) {
       if (!sortClause.isEmpty() && pageState != null && !pageState.isEmpty()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+        throw ErrorCodeV1.SORT_CLAUSE_INVALID.toApiException(
             "pageState is not supported with non-empty sort clause");
       }
       sortClause.validate(commandContext.schemaObject());

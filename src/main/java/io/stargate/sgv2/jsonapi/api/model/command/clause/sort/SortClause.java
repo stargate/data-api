@@ -128,7 +128,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     // validate each path in sortExpressions
     for (SortExpression sortExpression : sortExpressions) {
       if (!indexingProjector.isPathIncluded(sortExpression.getPath())) {
-        throw ErrorCodeV1.UNINDEXED_SORT_PATH.toApiException(
+        throw ErrorCodeV1.SORT_PATH_UNINDEXED.toApiException(
             "sort path '%s' is not indexed", sortExpression.getPath());
       }
       // `SortClauseDeserializer` looks for binary value and adds it as SortExpression irrespective
@@ -139,7 +139,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
               || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(
                   sortExpression.getPath()))
           && sortExpression.hasVector()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+        throw ErrorCodeV1.SORT_CLAUSE_INVALID.toApiException(
             "Sorting by embedding vector values for the collection requires `%s` field. Provided field name: `%s`.",
             DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, sortExpression.getPath());
       }

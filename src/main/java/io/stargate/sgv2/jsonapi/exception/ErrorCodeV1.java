@@ -30,8 +30,6 @@ public enum ErrorCodeV1 {
 
   UNINDEXED_FILTER_PATH("Unindexed filter path"),
 
-  UNINDEXED_SORT_PATH("Unindexed sort path"),
-
   ID_NOT_INDEXED("_id is not indexed"),
 
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
@@ -79,11 +77,10 @@ public enum ErrorCodeV1 {
   TOO_MANY_INDEXES("Too many indexes"),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
 
-  INVALID_SORT_CLAUSE("Invalid sort clause"),
-
-  INVALID_SORT_CLAUSE_PATH("Invalid sort clause path"),
-
-  INVALID_SORT_CLAUSE_VALUE("Invalid sort clause value"),
+  SORT_PATH_UNINDEXED("Unindexed sort path"),
+  SORT_CLAUSE_INVALID("Invalid sort clause"),
+  SORT_CLAUSE_PATH_INVALID("Invalid sort clause path"),
+  SORT_CLAUSE_VALUE_INVALID("Invalid sort clause value"),
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 

@@ -42,7 +42,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
 
     // otherwise, if it's not object throw exception
     if (!(node instanceof ObjectNode sortNode)) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+      throw ErrorCodeV1.SORT_CLAUSE_INVALID.toApiException(
           "Sort clause must be submitted as JSON Object");
     }
     return buildClauseFromDefinition(sortNode);
@@ -61,14 +61,14 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     if (innerValue instanceof ObjectNode innerObject) {
       var ejsonWrapped = EJSONWrapper.maybeFrom(innerObject);
       if (ejsonWrapped == null || ejsonWrapped.type() != EJSONWrapper.EJSONType.BINARY) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+        throw ErrorCodeV1.SORT_CLAUSE_VALUE_INVALID.toApiException(
             "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
             path, innerValue.toString());
       }
       try {
         return ejsonWrapped.getVectorValueForBinary();
       } catch (IllegalArgumentException | IllegalStateException e) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(e.getMessage());
+        throw ErrorCodeV1.SORT_CLAUSE_VALUE_INVALID.toApiException(e.getMessage());
       }
     }
     return null;
