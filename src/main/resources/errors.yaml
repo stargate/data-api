@@ -1842,6 +1842,14 @@ request-errors:
       Resend the command with valid vector/vectorize sort expression.
 
   - scope: SORT
+    code: SORT_PATH_UNINDEXED
+    title: Collection field used in sort clause not indexed
+    body: |-
+      Collection field '${path}' is not indexed: cannot sort using it. 
+      
+      Resend the command with sort on an indexed field.
+
+  - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND
     title: Sorting not supported by delete command on tables
     body: |-
