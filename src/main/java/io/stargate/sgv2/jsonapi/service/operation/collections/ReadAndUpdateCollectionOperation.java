@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Multi;
@@ -7,7 +9,8 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.unchecked.LWTFailureException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -93,7 +96,7 @@ public record ReadAndUpdateCollectionOperation(
         .transformToUniAndConcatenate(
             readDocument ->
                 processUpdate(dataApiRequestInfo, readDocument, queryExecutor, modifiedCount)
-                    .onFailure(LWTException.class)
+                    .onFailure(LWTFailureException.class)
                     .recoverWithUni(
                         () -> {
                           // Retry `retryLimit` times in case of LWT failure
@@ -114,7 +117,7 @@ public record ReadAndUpdateCollectionOperation(
                                                     queryExecutor,
                                                     modifiedCount));
                                   })
-                              .onFailure(LWTException.class)
+                              .onFailure(LWTFailureException.class)
                               .retry()
                               // because it's already run twice before this
                               // check.
@@ -122,8 +125,16 @@ public record ReadAndUpdateCollectionOperation(
                               .onFailure()
                               .recoverWithItem(
                                   error -> {
+                                    // AJM - GH #2309 - this means we failed all retries to get the
+                                    // LWT to apply
+                                    // we now need to create the error to return to the user, and we
+                                    // track these
+                                    // per document we are trying to update.
+                                    var dbError =
+                                        DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.get(
+                                            errVars(commandContext().schemaObject()));
                                     return new UpdatedDocument(
-                                        readDocument.id().orElseThrow(), false, null, error);
+                                        readDocument.id().orElseThrow(), false, null, dbError);
                                   });
                         }))
         .collect()
@@ -263,7 +274,7 @@ public record ReadAndUpdateCollectionOperation(
               if (result.wasApplied()) {
                 return Uni.createFrom().item(writableShreddedDocument.id());
               } else {
-                throw new LWTException(ErrorCodeV1.CONCURRENCY_FAILURE);
+                throw new LWTFailureException(updateQuery);
               }
             });
   }
