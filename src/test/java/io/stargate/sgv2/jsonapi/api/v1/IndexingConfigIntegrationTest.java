@@ -772,7 +772,9 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SORT_PATH_UNINDEXED"))
           .body("errors[0].exceptionClass", is("SortException"))
-          .body("errors[0].message", contains("sort path 'address.street' is not indexed"));
+          .body(
+              "errors[0].message",
+              contains("Collection field 'address.street' is not indexed: cannot sort using it"));
     }
 
     @Test
