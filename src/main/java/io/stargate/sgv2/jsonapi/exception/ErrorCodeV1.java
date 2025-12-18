@@ -5,6 +5,7 @@ import jakarta.ws.rs.core.Response;
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
   /** Embedding provider service error codes. */
+  // !!! 16-Dec-2025, tatu: USED BY EMBEDDING-GATEWAY, DO NOT CONVERT "EMBEDDING_" entries yet
   EMBEDDING_REQUEST_ENCODING_ERROR("Unable to create embedding provider request message"),
   EMBEDDING_RESPONSE_DECODING_ERROR("Unable to parse embedding provider response message"),
   EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
@@ -16,10 +17,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  FILTER_MULTIPLE_ID_FILTER(
-      "Cannot have more than one _id equals filter clause: use $in operator instead"),
-  FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
-
   INVALID_REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
 
   INVALID_REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
@@ -28,11 +25,7 @@ public enum ErrorCodeV1 {
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
-  UNINDEXED_FILTER_PATH("Unindexed filter path"),
-
   UNINDEXED_SORT_PATH("Unindexed sort path"),
-
-  ID_NOT_INDEXED("_id is not indexed"),
 
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
@@ -62,8 +55,6 @@ public enum ErrorCodeV1 {
   EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 
-  INVALID_FILTER_EXPRESSION("Invalid filter expression"),
-
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
@@ -80,10 +71,6 @@ public enum ErrorCodeV1 {
 
   TOO_MANY_INDEXES("Too many indexes"),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
-
-  UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
-
-  UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
 
   INVALID_SORT_CLAUSE("Invalid sort clause"),
 
@@ -166,7 +153,6 @@ public enum ErrorCodeV1 {
   SERVER_READ_FAILED("Database read failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 

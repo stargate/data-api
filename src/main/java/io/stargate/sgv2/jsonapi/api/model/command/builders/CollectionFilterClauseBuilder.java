@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.builders;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
@@ -12,13 +11,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
-import java.util.*;
 import java.util.List;
 import java.util.Map;
 
@@ -57,8 +55,8 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
   protected String validateFilterClausePath(String path, FilterOperator operator) {
     if (!NamingRules.FIELD.apply(path)) {
       if (path.isEmpty()) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "filter clause path cannot be empty String");
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of("message", "filter expression path cannot be empty String"));
       }
       // 3 special fields with $ prefix, skip here
       switch (path) {
@@ -72,30 +70,39 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
           }
           // Only $match valid on $lexical field
           if (operator != ValueComparisonOperator.MATCH) {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "Cannot filter on '%s' field using operator %s: only $match is supported",
-                path, operator.getOperator());
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of(
+                    "message",
+                    "cannot filter on '%s' field using operator '%s': only '$match' is supported"
+                        .formatted(path, operator.getOperator())));
           }
           return path;
         }
       }
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "filter clause path ('%s') cannot start with `$`", path);
+      throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+          Map.of("message", "filter expression path ('%s') cannot start with '$'".formatted(path)));
     } else {
       // and one special-case operator
       // $match only valid on $lexical field (ok case handled above)
       if (operator == ValueComparisonOperator.MATCH) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "%s operator can only be used with the '%s' field, not '%s'",
-            operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, path);
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of(
+                "message",
+                "'%s' operator can only be used with the '%s' field, not '%s'"
+                    .formatted(
+                        operator.getOperator(),
+                        DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+                        path)));
       }
     }
 
     try {
       path = DocumentPath.verifyEncodedPath(path);
     } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "filter clause path ('%s') is not a valid path: %s", path, e.getMessage());
+      throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+          Map.of(
+              "message",
+              "filter expression path ('%s') is not valid: %s".formatted(path, e.getMessage())));
     }
 
     return path;
@@ -140,13 +147,13 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
             || filterOperator == ValueComparisonOperator.IN) {
           return;
         }
-        // otherwise throw _id - specific JsonApiException
-        throw ErrorCodeV1.ID_NOT_INDEXED.toApiException(
-            "you can only use $eq or $in as the operator");
+        // otherwise throw _id - specific exception
+        throw FilterException.Code.FILTER_ID_NOT_INDEXED.get(
+            Map.of("operator", filterOperator.getOperator()));
       }
-      // For any other not-indexed path throw generic error
-      throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
-          "filter path '%s' is not indexed", comparisonExpression.getPath());
+      // For any other not-indexed path throw generic exception
+      throw FilterException.Code.FILTER_PATH_UNINDEXED.get(
+          Map.of("path", comparisonExpression.getPath()));
     }
 
     JsonLiteral<?> operand = comparisonExpression.getFilterOperations().get(0).operand();
@@ -166,8 +173,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
     for (Map.Entry<?, ?> entry : map.entrySet()) {
       String incrementalPath = currentPath + "." + entry.getKey();
       if (!indexingProjector.isPathIncluded(incrementalPath)) {
-        throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
-            "filter path '%s' is not indexed", incrementalPath);
+        throw FilterException.Code.FILTER_PATH_UNINDEXED.get(Map.of("path", incrementalPath));
       }
       // continue build the incremental path if the value is a map
       if (entry.getValue() instanceof Map<?, ?> valueMap) {
@@ -190,8 +196,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
       } else if (element instanceof String) {
         // no need to build incremental path, validate current path
         if (!indexingProjector.isPathIncluded(currentPath)) {
-          throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
-              "filter path '%s' is not indexed", currentPath);
+          throw FilterException.Code.FILTER_PATH_UNINDEXED.get(Map.of("path", currentPath));
         }
       }
     }
