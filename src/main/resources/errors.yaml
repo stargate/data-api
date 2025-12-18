@@ -368,6 +368,14 @@ request-errors:
       Resend the command with filter that does not exceed maximum field count.
 
   - scope: FILTER
+    code: FILTER_ID_NOT_INDEXED
+    title: Collection field '_id' not indexed can only filter with '$eq' or '$in'
+    body: |-
+      Collection field '_id' is never indexed so filtering can only be done using operators '$eq' or '$in', not '${operator}'.
+      
+      Resend the command with proper filter.
+
+  - scope: FILTER
     code: FILTER_INVALID_EXPRESSION
     title: Unsupported filter clause
     body: |-
@@ -382,6 +390,14 @@ request-errors:
       Command included more than one '_id' equals filter clauses, which is not supported: use '$in' operator instead.
       
       Resend the command using supported filters.
+
+  - scope: FILTER
+    code: FILTER_PATH_UNINDEXED
+    title: Collection path used in filter clause not indexed
+    body: |-
+      Collection path '${path}' is not indexed: cannot filter on that path.
+      
+      Resend the command with filter clause without such paths.
 
   - scope: FILTER
     code: FILTER_UNSUPPORTED_DATA_TYPE

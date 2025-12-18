@@ -28,11 +28,7 @@ public enum ErrorCodeV1 {
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
-  UNINDEXED_FILTER_PATH("Unindexed filter path"),
-
   UNINDEXED_SORT_PATH("Unindexed sort path"),
-
-  ID_NOT_INDEXED("_id is not indexed"),
 
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
