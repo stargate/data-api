@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -337,7 +338,7 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
     }
 
     @Test

@@ -1841,6 +1841,16 @@ request-errors:
       
       Resend the command with valid vector/vectorize sort expression.
 
+
+  - scope: SORT
+    code: SORT_CLAUSE_INVALID
+    title: Sort clause used by command not valid
+    body: |-
+      Sort clause used by command not valid.
+      Problem: ${message}.
+      
+      Resend the command with a valid sort clause.
+
   - scope: SORT
     code: SORT_PATH_UNINDEXED
     title: Collection field used in sort clause not indexed

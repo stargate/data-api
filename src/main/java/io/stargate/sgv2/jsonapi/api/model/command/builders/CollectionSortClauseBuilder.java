@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
@@ -41,14 +42,20 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
         throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
       }
       if (sortNode.size() > 1) {
-        throw ErrorCodeV1.SORT_CLAUSE_INVALID.toApiException(
-            "if sorting by '%s' no other sort expressions allowed",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of(
+                "message",
+                "when sorting by field '%s' no other sort expressions allowed"
+                    .formatted(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)));
       }
       if (!lexicalNode.isTextual()) {
-        throw ErrorCodeV1.SORT_CLAUSE_INVALID.toApiException(
-            "if sorting by '%s' value must be String, not %s",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, JsonUtil.nodeTypeAsString(lexicalNode));
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of(
+                "message",
+                "when sorting by field '%s' value must be String, not %s"
+                    .formatted(
+                        DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+                        JsonUtil.nodeTypeAsString(lexicalNode))));
       }
       return SortClause.immutable(SortExpression.collectionLexicalSort(lexicalNode.textValue()));
     }

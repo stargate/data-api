@@ -155,7 +155,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("errors[0].errorCode", is("SORT_CLAUSE_INVALID"))
           .body(
               "errors[0].message",
-              is("Invalid sort clause: pageState is not supported with non-empty sort clause"));
+              containsString(
+                  "Sort clause used by command not valid.\nProblem: 'pageState' is not supported with non-empty sort clause"));
     }
 
     @Test

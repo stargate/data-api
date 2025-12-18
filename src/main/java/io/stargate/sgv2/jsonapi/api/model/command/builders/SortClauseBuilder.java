@@ -6,9 +6,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -42,8 +45,11 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
 
     // otherwise, if it's not object throw exception
     if (!(node instanceof ObjectNode sortNode)) {
-      throw ErrorCodeV1.SORT_CLAUSE_INVALID.toApiException(
-          "Sort clause must be submitted as JSON Object");
+      throw SortException.Code.SORT_CLAUSE_INVALID.get(
+          Map.of(
+              "message",
+              "sort clause must be submitted as JSON Object, not %s"
+                  .formatted(JsonUtil.nodeTypeAsString(node))));
     }
     return buildClauseFromDefinition(sortNode);
   }

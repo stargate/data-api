@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -136,9 +135,13 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
               || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(
                   sortExpression.getPath()))
           && sortExpression.hasVector()) {
-        throw ErrorCodeV1.SORT_CLAUSE_INVALID.toApiException(
-            "Sorting by embedding vector values for the collection requires `%s` field. Provided field name: `%s`.",
-            DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, sortExpression.getPath());
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of(
+                "message",
+                "sorting by embedding vector values for the collection requires `%s` field. Provided field name: '%s'"
+                    .formatted(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+                        sortExpression.getPath())));
       }
     }
   }
