@@ -359,6 +359,46 @@ request-errors:
       
       Resend the command using indexed column(s).
 
+  - scope: FILTER
+    code: FILTER_FIELDS_LIMIT_VIOLATION
+    title: Filter fields size limitation violated
+    body: |-
+      Filter has ${fieldCount} fields, exceeds maximum allowed (${maxFieldCount}).
+      
+      Resend the command with filter that does not exceed maximum field count.
+
+  - scope: FILTER
+    code: FILTER_INVALID_EXPRESSION
+    title: Unsupported filter clause
+    body: |-
+      Unsupported filter clause: ${message}.
+      
+      Resend the command using only supported filter expressions and paths.
+
+  - scope: FILTER
+    code: FILTER_MULTIPLE_ID_FILTER
+    title: Can only have one '_id' equals filter clause
+    body: |-
+      Command included more than one '_id' equals filter clauses, which is not supported: use '$in' operator instead.
+      
+      Resend the command using supported filters.
+
+  - scope: FILTER
+    code: FILTER_UNSUPPORTED_DATA_TYPE
+    title: Unsupported filter data type
+    body: |-
+      Unsupported filter data type: ${message}.
+
+      Resend the command using supported filter data types.
+
+  - scope: FILTER
+    code: FILTER_UNSUPPORTED_OPERATOR
+    title: Unsupported filter operator
+    body: |-
+      Unsupported ${message}.
+
+      Resend the command using only supported operators.
+
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the DOCUMENT scope
   - scope: FILTER
     code: UNKNOWN_TABLE_COLUMNS
@@ -2104,6 +2144,13 @@ server-errors:
       ${SNIPPET.RETRY}
 
   # EMBEDDING scope server errors
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_GATEWAY_NOT_AVAILABLE
+    title: Embedding Gateway not available
+    body: |-
+      Embedding Gateway not available.
+      Underlying problem: ${errorMessage}.
+
   - scope: EMBEDDING_PROVIDER
     code: CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error

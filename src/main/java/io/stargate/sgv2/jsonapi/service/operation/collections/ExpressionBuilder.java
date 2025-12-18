@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
@@ -40,16 +40,15 @@ public class ExpressionBuilder {
       Expression<BuiltCondition> expressionWithoutId,
       List<IDCollectionFilter> idFilters) {
     if (idFilters.size() > 1) {
-      throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
+      throw FilterException.Code.FILTER_MULTIPLE_ID_FILTER.get();
     }
     if (idFilters.isEmpty()
         && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter
       if (expressionWithoutId == null) {
         // no valid non_id filters (eg. "name":{"$nin" : []} ) and no id filter
         return Collections.singletonList(null); // should find everything
-      } else {
-        return List.of(expressionWithoutId);
       }
+      return List.of(expressionWithoutId);
     }
 
     // have an idFilter

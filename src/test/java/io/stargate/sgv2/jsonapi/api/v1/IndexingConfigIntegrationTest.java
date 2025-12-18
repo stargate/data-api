@@ -778,11 +778,12 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
-              containsString("filter clause path ('pricing.price&jpy') is not a valid path: "))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "Unsupported filter clause: filter expression path ('pricing.price&jpy') is not valid: The ampersand"));
 
       // allow "metadata.app&.kubernetes&.io/name", so one document is returned
       givenHeadersAndJson(

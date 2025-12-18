@@ -65,7 +65,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           new HashSet<>() {
             {
               add(INVALID_REQUEST);
-              add(SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE);
             }
           },
           ErrorScope.EMBEDDING,
