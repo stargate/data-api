@@ -1980,7 +1980,7 @@ server-errors:
       
       The command used the keyspace and table or collection: ${keyspace}.${table}.
       
-      The request can be retried.
+      ${SNIPPET.RETRY}
 
   - scope: DATABASE
     code: FAILED_COMPARE_AND_SET
