@@ -125,7 +125,8 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     // validate each path in sortExpressions
     for (SortExpression sortExpression : sortExpressions) {
       if (!indexingProjector.isPathIncluded(sortExpression.getPath())) {
-        throw SortException.Code.SORT_PATH_UNINDEXED.get(Map.of("path", sortExpression.getPath()));
+        throw SortException.Code.SORT_CLAUSE_PATH_UNINDEXED.get(
+            Map.of("path", sortExpression.getPath()));
       }
       // `SortClauseDeserializer` looks for binary value and adds it as SortExpression irrespective
       // of field name to support ANN search for tables. There is no access to SchemaObject in the

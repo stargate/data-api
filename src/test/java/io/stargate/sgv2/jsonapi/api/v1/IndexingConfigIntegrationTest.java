@@ -770,7 +770,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SORT_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_UNINDEXED"))
           .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
