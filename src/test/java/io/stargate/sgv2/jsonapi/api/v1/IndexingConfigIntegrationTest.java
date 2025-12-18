@@ -179,9 +179,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               }
                 """)
           .body("$", responseIsError())
-          .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString("Collection path 'address.city' is not indexed: cannot filter"));
     }
 
     @Test
@@ -199,8 +201,10 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
             """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path '$vector' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString("Collection path '$vector' is not indexed: cannot filter"));
     }
 
     @Test
@@ -262,8 +266,10 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString("Collection path 'address.city' is not indexed: cannot filter"));
     }
 
     @Test
@@ -284,8 +290,10 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString("Collection path 'address.city' is not indexed: cannot filter"));
     }
 
     @Test
@@ -304,8 +312,10 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString("Collection path 'address.city' is not indexed: cannot filter"));
     }
 
     @Test
@@ -421,8 +431,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Collection path 'address' is not indexed: cannot filter on that path"));
       givenHeadersAndJson(
               """
                     {
@@ -546,8 +559,10 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address.street' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString("Collection path 'address.street' is not indexed: cannot filter"));
       // allow "address.city", only this as a string, not "address" as an object
       givenHeadersAndJson(
               """
@@ -570,8 +585,10 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString("Collection path 'address' is not indexed: cannot filter"));
     }
 
     @Test
@@ -597,8 +614,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Collection path 'address.city' is not indexed: cannot filter on that path"));
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
       givenHeadersAndJson(
               """
@@ -642,8 +662,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Collection path 'address.city' is not indexed: cannot filter on that path"));
       // explicitly deny "name", "address" "contact.email"
       givenHeadersAndJson(
               """
@@ -670,8 +693,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'contact.email' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Collection path 'contact.email' is not indexed: cannot filter on that path"));
     }
 
     @Test
@@ -698,8 +724,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"));
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Collection path 'address.city' is not indexed: cannot filter on that path."));
     }
 
     @Test
@@ -820,11 +849,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Unindexed filter path: filter path 'pricing.price&&&.aud' is not indexed"));
+                  "Collection path 'pricing.price&&&.aud' is not indexed: cannot filter on that path"));
     }
   }
 }
