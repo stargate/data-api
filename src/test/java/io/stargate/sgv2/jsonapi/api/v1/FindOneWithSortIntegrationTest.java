@@ -219,10 +219,11 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
-              containsString("path must be represented as a non-empty string"));
+              startsWith(
+                  "Path '' used in sort clause not valid: path must be represented as a non-empty string"));
     }
 
     @Test
@@ -233,8 +234,11 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", containsString("path ('$gt') cannot start with '$'"));
+          .body("errors[0].exceptionClass", is("SortException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Path '$gt' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields"));
     }
 
     @Test
@@ -245,11 +249,11 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
-              containsString(
-                  "Invalid sort clause path: sort clause path ('a&b') is not a valid path."));
+              startsWith(
+                  "Path 'a&b' used in sort clause not valid: The ampersand character '&' at position 1 must be followed by"));
     }
   }
 }

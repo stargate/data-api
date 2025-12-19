@@ -359,7 +359,7 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
     }
 
     @Test
@@ -370,9 +370,10 @@ class SortClauseBuilderTest {
           """;
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable)
-          .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with '$'");
+          .hasMessageContaining(
+              "Path '$gt' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields");
     }
 
     // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
@@ -387,9 +388,10 @@ class SortClauseBuilderTest {
                           {"$hybrid": 1}
                       """));
 
-      assertThat(t).isInstanceOf(JsonApiException.class);
+      assertThat(t).isInstanceOf(SortException.class);
       assertThat(t)
-          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with '$'");
+          .hasMessageContaining(
+              "Path '$hybrid' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')");
     }
 
     // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
@@ -403,9 +405,10 @@ class SortClauseBuilderTest {
                   {"$hybrid": "tokens are tasty"}
               """));
 
-      assertThat(t).isInstanceOf(JsonApiException.class);
+      assertThat(t).isInstanceOf(SortException.class);
       assertThat(t)
-          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with '$'");
+          .hasMessageContaining(
+              "Path '$hybrid' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields ");
     }
 
     @Test
@@ -416,10 +419,10 @@ class SortClauseBuilderTest {
           """;
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable)
           .hasMessageContaining(
-              "Invalid sort clause path: sort clause path ('a&b') is not a valid path.");
+              "Path 'a&b' used in sort clause not valid: The ampersand character '&' at position 1 must be followed by either '&' or '.' to form a valid escape sequence");
     }
   }
 

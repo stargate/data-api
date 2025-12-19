@@ -1850,6 +1850,15 @@ request-errors:
       
       Resend the command with a valid sort clause.
 
+
+  - scope: SORT
+    code: SORT_CLAUSE_PATH_INVALID
+    title: Path used in sort clause not valid
+    body: |-
+      Path '${path}' used in sort clause not valid: ${problem}.
+      
+      Resend the command with valid sort clause.
+
   - scope: SORT
     code: SORT_CLAUSE_PATH_UNINDEXED
     title: Collection field used in sort clause not indexed

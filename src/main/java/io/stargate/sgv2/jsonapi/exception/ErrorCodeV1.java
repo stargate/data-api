@@ -70,7 +70,6 @@ public enum ErrorCodeV1 {
   TOO_MANY_INDEXES("Too many indexes"),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
 
-  SORT_CLAUSE_PATH_INVALID("Invalid sort clause path"),
   SORT_CLAUSE_VALUE_INVALID("Invalid sort clause value"),
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),

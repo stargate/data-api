@@ -150,19 +150,22 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (!NamingRules.FIELD.apply(path)) {
       // This is only called after handling "special" sort expressions so simple validation
       if (path.isEmpty()) {
-        throw ErrorCodeV1.SORT_CLAUSE_PATH_INVALID.toApiException(
-            "path must be represented as a non-empty string");
+        throw SortException.Code.SORT_CLAUSE_PATH_INVALID.get(
+            Map.of("path", "", "problem", "path must be represented as a non-empty string"));
       }
-      throw ErrorCodeV1.SORT_CLAUSE_PATH_INVALID.toApiException(
-          "path ('%s') cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')",
-          path);
+      throw SortException.Code.SORT_CLAUSE_PATH_INVALID.get(
+          Map.of(
+              "path",
+              path,
+              "problem",
+              "path cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')"));
     }
 
     try {
       DocumentPath.verifyEncodedPath(path);
     } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.SORT_CLAUSE_PATH_INVALID.toApiException(
-          "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
+      throw SortException.Code.SORT_CLAUSE_PATH_INVALID.get(
+          Map.of("path", path, "problem", e.getMessage()));
     }
   }
 }
