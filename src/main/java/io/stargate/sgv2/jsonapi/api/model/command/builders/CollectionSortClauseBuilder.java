@@ -51,7 +51,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
         throw SortException.Code.SORT_CLAUSE_INVALID.get(
             Map.of(
                 "problem",
-                "when sorting by field '%s' value must be String, not %s"
+                "when sorting by field '%s', value must be String, not %s"
                     .formatted(
                         DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
                         JsonUtil.nodeTypeAsString(lexicalNode))));
