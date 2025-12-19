@@ -44,7 +44,6 @@ public enum ErrorCodeV1 {
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
-  SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be non-blank text value"),
 
   SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),

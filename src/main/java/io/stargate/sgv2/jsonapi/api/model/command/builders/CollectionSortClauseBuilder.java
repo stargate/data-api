@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -70,7 +69,13 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
           tryDecodeBinaryVector(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, vectorNode);
       if (vectorFloats == null) {
         if (!(vectorNode instanceof ArrayNode arrayNode)) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+          throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+              Map.of(
+                  "path",
+                  DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+                  "problem",
+                  "vector sort expression needs to be Array value, not %s"
+                      .formatted(JsonUtil.nodeTypeAsString(vectorNode))));
         }
         vectorFloats = JsonUtil.arrayNodeToVector(arrayNode);
       }
@@ -82,15 +87,29 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       // Vectorize sort can't be used with other sort clauses
       if (sortNode.size() > 1) {
         throw SortException.Code.SORT_CLAUSE_INVALID.get(
-            Map.of("problem", "vectorize search cannot be used with other sort expressions"));
+            Map.of(
+                "problem",
+                "vectorize sort (path '%s') cannot be used with other sort expressions"
+                    .formatted(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)));
       }
       if (!vectorizeNode.isTextual()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                "problem",
+                "vectorize sort expression needs to be non-blank String value, not %s"
+                    .formatted(JsonUtil.nodeTypeAsString(vectorizeNode))));
       }
 
       String vectorizeData = vectorizeNode.textValue();
       if (vectorizeData.isBlank()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                "problem",
+                "vectorize sort expression needs to be non-blank String value"));
       }
       // 12-Jun-2025, tatu: Important! Due to original bad design, we need to allow
       //   modification of the enclosed SortExpression in this case, so:

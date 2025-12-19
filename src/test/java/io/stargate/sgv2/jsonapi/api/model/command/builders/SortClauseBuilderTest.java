@@ -183,8 +183,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Value used for sort expression on path '$vector' not valid: vector sort expression needs to be Array value, not Number");
     }
 
     @Test
@@ -264,9 +266,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value, not Number");
     }
 
     @Test
@@ -280,9 +283,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value, not Object");
     }
 
     @Test
@@ -296,9 +300,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value");
     }
 
     @Test
@@ -317,7 +322,7 @@ class SortClauseBuilderTest {
       assertThat(throwable.getMessage())
           .contains(
               "Sort clause used by command not valid.\n"
-                  + "Problem: vectorize search cannot be used with other sort expressions");
+                  + "Problem: vectorize sort (path '$vectorize') cannot be used with other sort expressions");
     }
 
     @Test
