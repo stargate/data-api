@@ -138,7 +138,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
           && sortExpression.hasVector()) {
         throw SortException.Code.SORT_CLAUSE_INVALID.get(
             Map.of(
-                "message",
+                "problem",
                 "sorting by embedding vector values for the collection requires `%s` field. Provided field name: '%s'"
                     .formatted(
                         DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,

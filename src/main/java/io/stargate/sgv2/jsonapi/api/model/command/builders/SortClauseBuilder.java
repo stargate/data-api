@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -47,7 +46,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     if (!(node instanceof ObjectNode sortNode)) {
       throw SortException.Code.SORT_CLAUSE_INVALID.get(
           Map.of(
-              "message",
+              "problem",
               "sort clause must be submitted as JSON Object, not %s"
                   .formatted(JsonUtil.nodeTypeAsString(node))));
     }
@@ -67,14 +66,19 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     if (innerValue instanceof ObjectNode innerObject) {
       var ejsonWrapped = EJSONWrapper.maybeFrom(innerObject);
       if (ejsonWrapped == null || ejsonWrapped.type() != EJSONWrapper.EJSONType.BINARY) {
-        throw ErrorCodeV1.SORT_CLAUSE_VALUE_INVALID.toApiException(
-            "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
-            path, innerValue.toString());
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                path,
+                "problem",
+                "only binary vector object values are supported for sorting, not value: %s"
+                    .formatted(innerValue.toString())));
       }
       try {
         return ejsonWrapped.getVectorValueForBinary();
       } catch (IllegalArgumentException | IllegalStateException e) {
-        throw ErrorCodeV1.SORT_CLAUSE_VALUE_INVALID.toApiException(e.getMessage());
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of("path", path, "problem", e.getMessage()));
       }
     }
     return null;

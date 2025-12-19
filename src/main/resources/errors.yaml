@@ -1846,10 +1846,9 @@ request-errors:
     title: Sort clause used by command not valid
     body: |-
       Sort clause used by command not valid.
-      Problem: ${message}.
+      Problem: ${problem}.
       
       Resend the command with a valid sort clause.
-
 
   - scope: SORT
     code: SORT_CLAUSE_PATH_INVALID
@@ -1866,6 +1865,14 @@ request-errors:
       Collection field '${path}' is not indexed: cannot sort using it. 
       
       Resend the command with sort on an indexed field.
+
+  - scope: SORT
+    code: SORT_CLAUSE_VALUE_INVALID
+    title: Value used for sort expression not valid
+    body: |-
+      Value used for sort expression on path '${path}' not valid: ${problem}.
+      
+      Resend the command with valid sort expression value.
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND

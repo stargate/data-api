@@ -105,7 +105,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     if (sortClause != null) {
       if (!sortClause.isEmpty() && pageState != null && !pageState.isEmpty()) {
         throw SortException.Code.SORT_CLAUSE_INVALID.get(
-            Map.of("message", "'pageState' is not supported with non-empty sort clause"));
+            Map.of("problem", "'pageState' is not supported with non-empty sort clause"));
       }
       sortClause.validate(commandContext.schemaObject());
     }

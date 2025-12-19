@@ -44,14 +44,14 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       if (sortNode.size() > 1) {
         throw SortException.Code.SORT_CLAUSE_INVALID.get(
             Map.of(
-                "message",
+                "problem",
                 "when sorting by field '%s' no other sort expressions allowed"
                     .formatted(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)));
       }
       if (!lexicalNode.isTextual()) {
         throw SortException.Code.SORT_CLAUSE_INVALID.get(
             Map.of(
-                "message",
+                "problem",
                 "when sorting by field '%s' value must be String, not %s"
                     .formatted(
                         DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
@@ -63,7 +63,8 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (vectorNode != null) {
       // Vector sort can't be used with other sort clauses
       if (sortNode.size() > 1) {
-        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of("problem", "vector search cannot be used with other sort expressions"));
       }
       float[] vectorFloats =
           tryDecodeBinaryVector(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, vectorNode);
@@ -80,7 +81,8 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (vectorizeNode != null) {
       // Vectorize sort can't be used with other sort clauses
       if (sortNode.size() > 1) {
-        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of("problem", "vectorize search cannot be used with other sort expressions"));
       }
       if (!vectorizeNode.isTextual()) {
         throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
@@ -118,21 +120,37 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (!innerValue.isInt()) {
       // Special checking for String and ArrayNode to give less confusing error messages
       if (innerValue.isArray()) {
-        throw ErrorCodeV1.SORT_CLAUSE_VALUE_INVALID.toApiException(
-            "Sort ordering value can be Array only for Vector search");
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                path,
+                "problem",
+                "sort ordering value can be Array only for vector search"));
       }
       if (innerValue.isTextual()) {
-        throw ErrorCodeV1.SORT_CLAUSE_VALUE_INVALID.toApiException(
-            "Sort ordering value can be String only for Lexical or Vectorize search");
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                path,
+                "problem",
+                "sort ordering value can be String only for lexical or vectorize search"));
       }
-      throw ErrorCodeV1.SORT_CLAUSE_VALUE_INVALID.toApiException(
-          "Sort ordering value should be integer `1` or `-1`; or Array (Vector); or String (Lexical or Vectorize), was: %s",
-          JsonUtil.nodeTypeAsString(innerValue));
+      throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+          Map.of(
+              "path",
+              path,
+              "problem",
+              "sort ordering value should be integer `1` or `-1`; or Array (vector); or String (lexical or vectorize), was: %s"
+                  .formatted(JsonUtil.nodeTypeAsString(innerValue))));
     }
     if (!(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
-      throw ErrorCodeV1.SORT_CLAUSE_VALUE_INVALID.toApiException(
-          "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
-          innerValue);
+      throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+          Map.of(
+              "path",
+              path,
+              "problem",
+              "sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)"
+                  .formatted(innerValue)));
     }
 
     boolean ascending = innerValue.intValue() == 1;

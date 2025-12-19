@@ -70,8 +70,6 @@ public enum ErrorCodeV1 {
   TOO_MANY_INDEXES("Too many indexes"),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
 
-  SORT_CLAUSE_VALUE_INVALID("Invalid sort clause value"),
-
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
   UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
@@ -91,8 +89,6 @@ public enum ErrorCodeV1 {
   UNSUPPORTED_UPDATE_OPERATION_PATH("Unsupported update operation path"),
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
-
-  VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
 

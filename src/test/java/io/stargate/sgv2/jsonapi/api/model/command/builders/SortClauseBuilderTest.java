@@ -198,10 +198,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
           .contains(
-              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vector, Value: {}.");
+              "Value used for sort expression on path '$vector' not valid: only binary vector object values are supported for sorting, not value: {}");
     }
 
     @Test
@@ -231,9 +231,9 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("Vector search can't be used with other sort clause");
+          .contains("vector search cannot be used with other sort expressions");
     }
 
     @Test
@@ -313,9 +313,11 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("Vector search can't be used with other sort clause");
+          .contains(
+              "Sort clause used by command not valid.\n"
+                  + "Problem: vectorize search cannot be used with other sort expressions");
     }
 
     @Test
