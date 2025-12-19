@@ -73,6 +73,8 @@ public class TableBasedSchemaCache {
                   // TODO: DO NOT do a string starts with, use proper error structures
                   // again, why is this here, looks like it returns the same error code ?
                   // Guess: this a driver exception, not Data API's internal one
+                  // ... seems unlikely as driver does not have concept of "Collection" (vs Tables)?
+                  // (that is: "Collection" would refer to column datatype not "funny table"?)
                   if (error instanceof RuntimeException rte
                       && rte.getMessage().startsWith("Collection does not exist")) {
                     return Uni.createFrom()
