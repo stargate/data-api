@@ -139,7 +139,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               containsString(
-                  "trying to create Collection ('simple_collection') with different settings"));
+                  "Collection 'simple_collection' already exists but with settings different from ones passed with 'createCollection' command"));
 
       deleteCollection("simple_collection");
     }
@@ -162,7 +162,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               containsString(
-                  "trying to create Collection ('simple_collection') with different settings"));
+                  "Collection 'simple_collection' already exists but with settings different from ones passed with 'createCollection' command"));
 
       deleteCollection("simple_collection");
     }
@@ -181,7 +181,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               containsString(
-                  "trying to create Collection ('simple_collection') with different settings"));
+                  "Collection 'simple_collection' already exists but with settings different from ones passed with 'createCollection' command"));
 
       // create another vector collection with the same name but different function setting
       givenHeadersPostJsonThenOk(createVectorCollectionWithOtherFunctionSettings)
@@ -191,7 +191,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               containsString(
-                  "trying to create Collection ('simple_collection') with different settings"));
+                  "Collection 'simple_collection' already exists but with settings different from ones passed with 'createCollection' command"));
 
       deleteCollection("simple_collection");
     }
