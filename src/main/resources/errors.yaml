@@ -1090,8 +1090,16 @@ request-errors:
       Resend the command without dropping the indexed columns.
 
   - scope: SCHEMA
-    code: COLLECTION_NOT_EXIST
+    code: COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS
     title: Collection or table does not exist
+    body: |-
+      Collection '${collection}' already exists but with settings different from ones passed with 'createCollection' command.
+
+      If you need to change collection settings you will need to 'deleteCollection', then re-create with new settings.
+
+  - scope: SCHEMA
+    code: COLLECTION_NOT_EXIST
+    title: Collection already exists with different settings
     body: |-
       No collection or table with name '${collection}' exists.
 

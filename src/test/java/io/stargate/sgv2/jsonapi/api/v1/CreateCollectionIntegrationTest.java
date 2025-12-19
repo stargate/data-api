@@ -134,8 +134,8 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
       // create a vector collection with the same name
       givenHeadersPostJsonThenOk(createVectorCollection)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
+          .body("errors[0].errorCode", is("COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(
@@ -157,8 +157,8 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
       // create a non vector collection with the same name
       givenHeadersPostJsonThenOk(createNonVectorCollectionJson)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
+          .body("errors[0].errorCode", is("COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(
@@ -176,8 +176,8 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
       // create another vector collection with the same name but different size setting
       givenHeadersPostJsonThenOk(createVectorCollectionWithOtherSizeSettings)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
+          .body("errors[0].errorCode", is("COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(
@@ -186,8 +186,8 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
       // create another vector collection with the same name but different function setting
       givenHeadersPostJsonThenOk(createVectorCollectionWithOtherFunctionSettings)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
+          .body("errors[0].errorCode", is("COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(

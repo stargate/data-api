@@ -48,7 +48,6 @@ public enum ErrorCodeV1 {
   SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
-  EXISTING_COLLECTION_DIFFERENT_SETTINGS("Collection already exists"),
   EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 

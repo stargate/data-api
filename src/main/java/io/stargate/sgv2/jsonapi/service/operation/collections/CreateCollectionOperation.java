@@ -243,8 +243,8 @@ public record CreateCollectionOperation(
               }
               return Uni.createFrom()
                   .failure(
-                      ErrorCodeV1.EXISTING_COLLECTION_DIFFERENT_SETTINGS.toApiException(
-                          "trying to create Collection ('%s') with different settings", name));
+                      SchemaException.Code.COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS.get(
+                          Map.of("collection", name)));
             });
   }
 
