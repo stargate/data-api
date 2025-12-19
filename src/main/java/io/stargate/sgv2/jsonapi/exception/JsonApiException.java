@@ -69,12 +69,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           ErrorScope.EMBEDDING,
           new HashSet<>() {
             {
-              add(VECTORIZE_USAGE_ERROR);
-            }
-          },
-          ErrorScope.SORT,
-          new HashSet<>() {
-            {
               add(INVALID_VECTORIZE_VALUE_TYPE);
             }
           },
