@@ -278,7 +278,7 @@ public class FindCollectionWithLexicalIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "Problem: when sorting by field '$lexical' value must be String, not Number"));
+                  "Problem: when sorting by field '$lexical', value must be String, not Number"));
     }
 
     @Test
