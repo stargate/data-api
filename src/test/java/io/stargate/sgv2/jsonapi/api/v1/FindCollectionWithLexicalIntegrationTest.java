@@ -274,10 +274,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body("errors[0].errorCode", is("SORT_CLAUSE_INVALID"))
           .body(
               "errors[0].message",
-              containsString("if sorting by '$lexical' value must be String, not Number"));
+              containsString(
+                  "Problem: when sorting by field '$lexical', value must be String, not Number"));
     }
 
     @Test
@@ -316,10 +317,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body("errors[0].errorCode", is("SORT_CLAUSE_INVALID"))
           .body(
               "errors[0].message",
-              containsString("if sorting by '$lexical' no other sort expressions allowed"));
+              containsString(
+                  "Problem: when sorting by field '$lexical' no other sort expressions allowed"));
     }
 
     // No way to do "$not" with "$match" (not supported by DBs)

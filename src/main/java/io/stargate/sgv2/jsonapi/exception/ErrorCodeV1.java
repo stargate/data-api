@@ -25,8 +25,6 @@ public enum ErrorCodeV1 {
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
-  UNINDEXED_SORT_PATH("Unindexed sort path"),
-
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
@@ -46,12 +44,10 @@ public enum ErrorCodeV1 {
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
-  SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be non-blank text value"),
 
   SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
-  EXISTING_COLLECTION_DIFFERENT_SETTINGS("Collection already exists"),
   EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 
@@ -71,12 +67,6 @@ public enum ErrorCodeV1 {
 
   TOO_MANY_INDEXES("Too many indexes"),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
-
-  INVALID_SORT_CLAUSE("Invalid sort clause"),
-
-  INVALID_SORT_CLAUSE_PATH("Invalid sort clause path"),
-
-  INVALID_SORT_CLAUSE_VALUE("Invalid sort clause value"),
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
@@ -98,8 +88,6 @@ public enum ErrorCodeV1 {
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
-
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
@@ -112,7 +100,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
-  VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),

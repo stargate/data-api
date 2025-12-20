@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
@@ -41,14 +41,20 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
         throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
       }
       if (sortNode.size() > 1) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "if sorting by '%s' no other sort expressions allowed",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of(
+                "problem",
+                "when sorting by field '%s' no other sort expressions allowed"
+                    .formatted(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)));
       }
       if (!lexicalNode.isTextual()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "if sorting by '%s' value must be String, not %s",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, JsonUtil.nodeTypeAsString(lexicalNode));
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of(
+                "problem",
+                "when sorting by field '%s', value must be String, not %s"
+                    .formatted(
+                        DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+                        JsonUtil.nodeTypeAsString(lexicalNode))));
       }
       return SortClause.immutable(SortExpression.collectionLexicalSort(lexicalNode.textValue()));
     }
@@ -56,13 +62,20 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (vectorNode != null) {
       // Vector sort can't be used with other sort clauses
       if (sortNode.size() > 1) {
-        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of("problem", "vector search cannot be used with other sort expressions"));
       }
       float[] vectorFloats =
           tryDecodeBinaryVector(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, vectorNode);
       if (vectorFloats == null) {
         if (!(vectorNode instanceof ArrayNode arrayNode)) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+          throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+              Map.of(
+                  "path",
+                  DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+                  "problem",
+                  "vector sort expression needs to be Array value, not %s"
+                      .formatted(JsonUtil.nodeTypeAsString(vectorNode))));
         }
         vectorFloats = JsonUtil.arrayNodeToVector(arrayNode);
       }
@@ -73,15 +86,30 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (vectorizeNode != null) {
       // Vectorize sort can't be used with other sort clauses
       if (sortNode.size() > 1) {
-        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of(
+                "problem",
+                "vectorize sort (path '%s') cannot be used with other sort expressions"
+                    .formatted(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)));
       }
       if (!vectorizeNode.isTextual()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                "problem",
+                "vectorize sort expression needs to be non-blank String value, not %s"
+                    .formatted(JsonUtil.nodeTypeAsString(vectorizeNode))));
       }
 
       String vectorizeData = vectorizeNode.textValue();
       if (vectorizeData.isBlank()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                "problem",
+                "vectorize sort expression needs to be non-blank String value"));
       }
       // 12-Jun-2025, tatu: Important! Due to original bad design, we need to allow
       //   modification of the enclosed SortExpression in this case, so:
@@ -111,21 +139,37 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (!innerValue.isInt()) {
       // Special checking for String and ArrayNode to give less confusing error messages
       if (innerValue.isArray()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-            "Sort ordering value can be Array only for Vector search");
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                path,
+                "problem",
+                "sort ordering value can be Array only for vector search"));
       }
       if (innerValue.isTextual()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-            "Sort ordering value can be String only for Lexical or Vectorize search");
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                path,
+                "problem",
+                "sort ordering value can be String only for lexical or vectorize search"));
       }
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-          "Sort ordering value should be integer `1` or `-1`; or Array (Vector); or String (Lexical or Vectorize), was: %s",
-          JsonUtil.nodeTypeAsString(innerValue));
+      throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+          Map.of(
+              "path",
+              path,
+              "problem",
+              "sort ordering value should be integer `1` or `-1`; or Array (vector); or String (lexical or vectorize), was: %s"
+                  .formatted(JsonUtil.nodeTypeAsString(innerValue))));
     }
     if (!(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-          "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
-          innerValue);
+      throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+          Map.of(
+              "path",
+              path,
+              "problem",
+              "sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)"
+                  .formatted(innerValue)));
     }
 
     boolean ascending = innerValue.intValue() == 1;
@@ -143,19 +187,22 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (!NamingRules.FIELD.apply(path)) {
       // This is only called after handling "special" sort expressions so simple validation
       if (path.isEmpty()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-            "path must be represented as a non-empty string");
+        throw SortException.Code.SORT_CLAUSE_PATH_INVALID.get(
+            Map.of("path", "", "problem", "path must be represented as a non-empty string"));
       }
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-          "path ('%s') cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')",
-          path);
+      throw SortException.Code.SORT_CLAUSE_PATH_INVALID.get(
+          Map.of(
+              "path",
+              path,
+              "problem",
+              "path cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')"));
     }
 
     try {
       DocumentPath.verifyEncodedPath(path);
     } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-          "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
+      throw SortException.Code.SORT_CLAUSE_PATH_INVALID.get(
+          Map.of("path", path, "problem", e.getMessage()));
     }
   }
 }

@@ -770,9 +770,12 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].message", endsWith("sort path 'address.street' is not indexed"))
-          .body("errors[0].errorCode", is("UNINDEXED_SORT_PATH"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_UNINDEXED"))
+          .body("errors[0].exceptionClass", is("SortException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Collection field 'address.street' is not indexed: cannot sort using it"));
     }
 
     @Test

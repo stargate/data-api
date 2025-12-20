@@ -497,11 +497,12 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SORT_CLAUSE_VALUE_INVALID"))
+          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
-              startsWith("$vectorize search clause needs to be non-blank text value"));
+              startsWith(
+                  "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String"));
     }
 
     @Test
@@ -598,10 +599,12 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
+          .body("errors[0].exceptionClass", is("SortException"))
+          .body("errors[0].errorCode", is("SORT_CLAUSE_VALUE_INVALID"))
           .body(
-              "errors[0].message", is("$vectorize search clause needs to be non-blank text value"));
+              "errors[0].message",
+              startsWith(
+                  "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String"));
     }
   }
 

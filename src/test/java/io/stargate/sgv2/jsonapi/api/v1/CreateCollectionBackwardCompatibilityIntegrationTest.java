@@ -156,8 +156,8 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
                               """
                       .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME)));
 
-      // create the same collection using API - should not have
-      // EXISTING_COLLECTION_DIFFERENT_SETTINGS error
+      // create the same collection using API - should not get
+      // COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS error
       givenHeadersPostJsonThenOkNoErrors(
                   """
                       {
