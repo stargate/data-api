@@ -252,7 +252,7 @@ public final class ThrowableToErrorMapper {
       JacksonException e, String message) {
     if (e instanceof JsonParseException) {
       // Low-level parsing problem? Actual BAD_REQUEST (400) since we could not process
-      return ErrorCodeV1.INVALID_REQUEST_NOT_JSON
+      return ErrorCodeV1.REQUEST_NOT_JSON
           .toApiException(
               Response.Status.BAD_REQUEST,
               "underlying problem: (%s) %s",
@@ -265,7 +265,7 @@ public final class ThrowableToErrorMapper {
     if (e instanceof UnrecognizedPropertyException upe) {
       // 09-Oct-2025, tatu: Retain custom exception message, if set by us:
       if (ColumnDesc.class.equals(upe.getReferringClass())) {
-        return ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD
+        return ErrorCodeV1.REQUEST_FIELD_UNKNOWN
             .toApiException(upe.getOriginalMessage())
             .getCommandResultError();
       }
@@ -277,7 +277,7 @@ public final class ThrowableToErrorMapper {
               .map(ob -> String.format("\"%s\"", ob.toString()))
               .sorted()
               .collect(Collectors.joining(", "));
-      return ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD
+      return ErrorCodeV1.REQUEST_FIELD_UNKNOWN
           .toApiException(
               "\"%s\" not one of known fields (%s) at '%s'",
               upe.getPropertyName(), knownDesc, upe.getPathReference())
@@ -289,7 +289,7 @@ public final class ThrowableToErrorMapper {
     // NOTE: must be after the UnrecognizedPropertyException check
     // 09-Jan-2025, tatu: [data-api#1812] Not ideal but slightly better than before
     if (e instanceof JsonMappingException jme) {
-      return ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH
+      return ErrorCodeV1.REQUEST_STRUCTURE_MISMATCH
           .toApiException(
               Response.Status.BAD_REQUEST,
               "underlying problem: (%s) %s",

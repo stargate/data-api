@@ -861,7 +861,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                         }
                         """)
           .hasSingleApiError(
-              ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
+              ErrorCodeV1.REQUEST_STRUCTURE_MISMATCH,
               "Request invalid, mismatching JSON structure: underlying problem");
     }
 

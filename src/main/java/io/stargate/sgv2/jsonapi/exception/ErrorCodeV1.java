@@ -17,11 +17,11 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  INVALID_REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
+  REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
 
-  INVALID_REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
+  REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
 
-  INVALID_REQUEST_UNKNOWN_FIELD("Request invalid, unrecognized JSON field"),
+  REQUEST_FIELD_UNKNOWN("Request invalid, unrecognized JSON field"),
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
