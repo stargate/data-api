@@ -6,7 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.ws.rs.core.Response;
@@ -861,8 +861,10 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                         }
                         """)
           .hasSingleApiError(
-              ErrorCodeV1.REQUEST_STRUCTURE_MISMATCH,
-              "Request invalid, mismatching JSON structure: underlying problem");
+              RequestException.Code.REQUEST_STRUCTURE_MISMATCH,
+              RequestException.class,
+              "Request is valid JSON but has a structural mismatch",
+              "Cannot deserialize value of type `java.lang.String` from Object value");
     }
 
     @MethodSource("invalidIndexFunction")

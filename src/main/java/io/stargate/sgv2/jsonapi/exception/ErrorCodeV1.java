@@ -17,9 +17,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
-  REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
-
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),

@@ -96,7 +96,7 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
                   Map.entry("address", Map.of("type", "userDefined", "udtType", "address"))),
               "id")
           .hasSingleApiError(
-              "INVALID_REQUEST_UNKNOWN_FIELD",
+              "COMMAND_FIELD_UNKNOWN",
               "column 'address' definition contains unknown field 'udtType': not one of recognized fields");
     }
 

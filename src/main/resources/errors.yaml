@@ -170,6 +170,14 @@ request-errors:
       Resend request as valid JSON.
 
   - scope:
+    code: REQUEST_STRUCTURE_MISMATCH
+    title: Request structure not valid
+    body: |-
+      Request is valid JSON but has a structural mismatch: ${errorMessage}.
+      
+      Resend request with valid structure.
+
+  - scope:
     code: UNAUTHENTICATED_REQUEST
     title: Authentication failed
     body: |-

@@ -288,13 +288,9 @@ public final class ThrowableToErrorMapper {
     // NOTE: must be after the UnrecognizedPropertyException check
     // 09-Jan-2025, tatu: [data-api#1812] Not ideal but slightly better than before
     if (e instanceof JsonMappingException jme) {
-      return ErrorCodeV1.REQUEST_STRUCTURE_MISMATCH
-          .toApiException(
-              Response.Status.BAD_REQUEST,
-              "underlying problem: (%s) %s",
-              e.getClass().getName(),
-              e.getMessage())
-          .getCommandResultError();
+      return RequestException.Code.REQUEST_STRUCTURE_MISMATCH
+          .get(Map.of("errorMessage", e.getMessage()))
+          .getCommandResultError(Response.Status.BAD_REQUEST);
     }
 
     // Will need to add more handling but start with above

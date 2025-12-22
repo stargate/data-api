@@ -42,8 +42,11 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is(not(blankString())));
+          .body("errors[0].errorCode", is("REQUEST_NOT_JSON"))
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body(
+              "errors[0].message",
+              containsString("Request not valid JSON, problem: Unexpected character"));
     }
 
     @Test
