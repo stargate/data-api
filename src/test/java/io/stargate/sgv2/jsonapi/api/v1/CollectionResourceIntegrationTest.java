@@ -48,11 +48,11 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("REQUEST_NOT_JSON"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
-              startsWith("Request invalid, cannot parse as JSON: underlying problem:"))
-          .body("errors[0].message", containsString("Unrecognized token 'wrong'"));
+              startsWith(
+                  "Request not valid JSON, problem: Unrecognized token 'wrong': was expecting (JSON String, Number, Array, Object"));
     }
 
     @Test

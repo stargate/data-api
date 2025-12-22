@@ -252,13 +252,9 @@ public final class ThrowableToErrorMapper {
       JacksonException e, String message) {
     if (e instanceof JsonParseException) {
       // Low-level parsing problem? Actual BAD_REQUEST (400) since we could not process
-      return ErrorCodeV1.REQUEST_NOT_JSON
-          .toApiException(
-              Response.Status.BAD_REQUEST,
-              "underlying problem: (%s) %s",
-              e.getClass().getName(),
-              e.getMessage())
-          .getCommandResultError();
+      return RequestException.Code.REQUEST_NOT_JSON
+          .get(Map.of("errorMessage", e.getMessage()))
+          .getCommandResultError(Response.Status.BAD_REQUEST);
     }
 
     // Unrecognized property? (note: CommandObjectMapperHandler handles some cases)

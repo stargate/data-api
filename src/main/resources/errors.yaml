@@ -162,6 +162,14 @@ request-errors:
       Resend 'createCollection' with only valid fields.
 
   - scope:
+    code: REQUEST_NOT_JSON
+    title: Request not valid JSON
+    body: |-
+      Request not valid JSON, problem: ${errorMessage}.
+      
+      Resend request as valid JSON.
+
+  - scope:
     code: UNAUTHENTICATED_REQUEST
     title: Authentication failed
     body: |-
