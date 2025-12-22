@@ -146,6 +146,14 @@ request-errors:
       Resend command with valid value.
 
   - scope:
+    code: COMMAND_FIELD_UNKNOWN
+    title: Command field unknown
+    body: |-
+      Command field '${field}' not recognized: ${message}.
+      
+      Resend command with valid command fields.
+
+  - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
     title: Invalid field(s) for createCollection
     body: |-

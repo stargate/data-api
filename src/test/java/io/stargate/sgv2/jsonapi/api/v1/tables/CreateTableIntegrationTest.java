@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertN
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
@@ -1198,7 +1199,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                                 """,
                   // Currently gets converted by handlers to ErrorCodeV1: will be upgraded in future
-                  ErrorCodeV1.REQUEST_FIELD_UNKNOWN,
+                  RequestException.Code.COMMAND_FIELD_UNKNOWN,
                   "Request invalid, unrecognized JSON field: column 'id' definition contains unknown field 'favorite_color': not one of recognized fields [type,")));
 
       return testCases.stream();

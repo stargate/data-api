@@ -265,8 +265,8 @@ public final class ThrowableToErrorMapper {
     if (e instanceof UnrecognizedPropertyException upe) {
       // 09-Oct-2025, tatu: Retain custom exception message, if set by us:
       if (ColumnDesc.class.equals(upe.getReferringClass())) {
-        return ErrorCodeV1.REQUEST_FIELD_UNKNOWN
-            .toApiException(upe.getOriginalMessage())
+        return RequestException.Code.COMMAND_FIELD_UNKNOWN
+            .get(Map.of("field", upe.getPropertyName(), "message", upe.getOriginalMessage()))
             .getCommandResultError();
       }
       // otherwise rewrite to avoid Jackson-isms:
@@ -274,13 +274,16 @@ public final class ThrowableToErrorMapper {
           Optional.ofNullable(upe.getKnownPropertyIds()).orElse(Collections.emptyList());
       final String knownDesc =
           knownIds.stream()
-              .map(ob -> String.format("\"%s\"", ob.toString()))
+              .map(ob -> String.format("'%s'", ob.toString()))
               .sorted()
               .collect(Collectors.joining(", "));
-      return ErrorCodeV1.REQUEST_FIELD_UNKNOWN
-          .toApiException(
-              "\"%s\" not one of known fields (%s) at '%s'",
-              upe.getPropertyName(), knownDesc, upe.getPathReference())
+      return RequestException.Code.COMMAND_FIELD_UNKNOWN
+          .get(
+              Map.of(
+                  "field",
+                  upe.getPropertyName(),
+                  "message",
+                  "not one of known fields (%s)".formatted(knownDesc)))
           .getCommandResultError();
     }
 

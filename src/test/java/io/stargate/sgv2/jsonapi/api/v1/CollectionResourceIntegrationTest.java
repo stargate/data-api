@@ -97,13 +97,13 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("REQUEST_FIELD_UNKNOWN"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", startsWith("Request invalid, unrecognized JSON field"))
-          .body("errors[0].message", containsString("\"unknown\" not one of known fields"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_UNKNOWN"))
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].message", startsWith("Command field 'unknown' not recognized"))
           .body(
               "errors[0].message",
-              containsString("(\"filter\", \"options\", \"projection\", \"sort\")"));
+              containsString(
+                  "not one of known fields ('filter', 'options', 'projection', 'sort')"));
     }
 
     @Test
