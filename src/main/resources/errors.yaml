@@ -138,8 +138,8 @@ request-errors:
       Resend command without options.
 
   - scope:
-    code: COMMAND_FIELD_INVALID
-    title: Command field invalid
+    code: COMMAND_FIELD_VALUE_INVALID
+    title: Command field value invalid
     body: |-
       Command field '${field}' value ${value} not valid: ${message}.
       

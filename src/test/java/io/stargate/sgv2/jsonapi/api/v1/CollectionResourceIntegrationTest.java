@@ -116,7 +116,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
           .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",

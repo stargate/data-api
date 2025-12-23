@@ -46,7 +46,7 @@ public class ConstraintViolationExceptionMapper {
 
     String propertyValueDesc = valueDescription(violation.getInvalidValue());
     RequestException ex =
-        RequestException.Code.COMMAND_FIELD_INVALID.get(
+        RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
             Map.of("field", propertyPath, "value", propertyValueDesc, "message", message));
     return ex.getCommandResultError();
   }
