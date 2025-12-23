@@ -20,6 +20,9 @@ public abstract class StargateTestResource
 
   private static final Logger LOG = LoggerFactory.getLogger(StargateTestResource.class);
 
+  /** The backend database container (Cassandra, DSE, or HCD). */
+  private static GenericContainer<?> cassandraContainer;
+
   /**
    * Network ID injected by Quarkus when running tests inside a container (e.g., CI/CD). Used to
    * connect the database container to the same network as the test runner.
@@ -31,9 +34,6 @@ public abstract class StargateTestResource
    * containers when running tests from the host machine.
    */
   private Network network;
-
-  /** The backend database container (Cassandra, DSE, or HCD). */
-  private GenericContainer<?> cassandraContainer;
 
   /**
    * Called by Quarkus to inject the DevServicesContext, allowing us to detect if we are running
@@ -108,6 +108,10 @@ public abstract class StargateTestResource
   public static String getPersistenceModule() {
     return System.getProperty(
         "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
+  }
+
+  public static GenericContainer<?> getCassandraContainer() {
+    return cassandraContainer;
   }
 
   public static boolean isDse() {
