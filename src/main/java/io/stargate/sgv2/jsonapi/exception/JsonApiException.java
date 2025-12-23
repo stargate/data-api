@@ -56,13 +56,13 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
               add(INVALID_USAGE_OF_VECTORIZE);
               add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
               add(VECTOR_SEARCH_TOO_BIG_VALUE);
-              add(INVALID_PARAMETER_VALIDATION_TYPE);
               add(INVALID_INDEXING_DEFINITION);
             }
           },
           ErrorScope.SCHEMA,
           new HashSet<>() {
             {
+              add(INVALID_PARAMETER_VALIDATION_TYPE);
               add(INVALID_REQUEST);
             }
           },

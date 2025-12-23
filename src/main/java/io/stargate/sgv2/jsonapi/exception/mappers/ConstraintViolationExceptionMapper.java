@@ -21,13 +21,6 @@ public class ConstraintViolationExceptionMapper {
    */
   private static final int MAX_VALUE_LENGTH_TO_INCLUDE = 1000;
 
-  // constant error fields
-  public static final Map<String, Object> ERROR_FIELDS =
-      Map.of("exceptionClass", ConstraintViolationException.class.getSimpleName());
-
-  public static final Map<String, Object> ERROR_FIELDS_METRICS_TAG =
-      Map.of("exceptionClass", ConstraintViolationException.class.getSimpleName());
-
   @ServerExceptionMapper
   public RestResponse<CommandResult> constraintViolationException(
       ConstraintViolationException exception) {
@@ -53,7 +46,7 @@ public class ConstraintViolationExceptionMapper {
 
     String propertyValueDesc = valueDescription(violation.getInvalidValue());
     RequestException ex =
-        RequestException.Code.COMMAND_FIELD_INVALID.get(
+        RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
             Map.of("field", propertyPath, "value", propertyValueDesc, "message", message));
     return ex.getCommandResultError();
   }

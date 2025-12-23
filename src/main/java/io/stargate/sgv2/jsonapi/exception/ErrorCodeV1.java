@@ -17,13 +17,8 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  INVALID_REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
-
-  INVALID_REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
-
-  INVALID_REQUEST_UNKNOWN_FIELD("Request invalid, unrecognized JSON field"),
-
-  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
+  // Really Bad, generic name: but only used for EmbeddingProvidersConfig validation issues
+  INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
 
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
@@ -48,10 +43,15 @@ public enum ErrorCodeV1 {
   SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
-  EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
-  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
+  // CreateCollection error codes:
 
+  EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
+  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
+  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
+  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
+  TOO_MANY_COLLECTIONS("Too many collections"),
+  TOO_MANY_INDEXES("Too many indexes"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
   RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
@@ -62,11 +62,6 @@ public enum ErrorCodeV1 {
   RERANKING_PROVIDER_TIMEOUT("The Reranking Provider timed out"),
   RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
       "The reranking provider authentication key is not provided"),
-
-  TOO_MANY_COLLECTIONS("Too many collections"),
-
-  TOO_MANY_INDEXES("Too many indexes"),
-  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
@@ -139,7 +134,6 @@ public enum ErrorCodeV1 {
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
   SERVER_READ_FAILED("Database read failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
-  INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 

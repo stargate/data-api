@@ -69,7 +69,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       baseCommand = baseCommand.substring(0, ix) + " " + "Command";
     }
 
-    throw RequestException.Code.UNKNOWN_COMMAND.get(
+    throw RequestException.Code.COMMAND_UNKNOWN.get(
         Map.of(
             "commandType",
             baseCommand,

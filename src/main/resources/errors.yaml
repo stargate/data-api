@@ -138,12 +138,30 @@ request-errors:
       Resend command without options.
 
   - scope:
-    code: COMMAND_FIELD_INVALID
-    title: Command field invalid
+    code: COMMAND_FIELD_VALUE_INVALID
+    title: Command field value invalid
     body: |-
       Command field '${field}' value ${value} not valid: ${message}.
       
       Resend command with valid value.
+
+  - scope:
+    code: COMMAND_FIELD_UNKNOWN
+    title: Command field unknown
+    body: |-
+      Command field '${field}' not recognized: ${message}.
+      
+      Resend command with valid command fields.
+
+  - scope:
+    code: COMMAND_UNKNOWN
+    title: Command is not recognized by Data API
+    body: |-
+      Command '${command}' is not a ${commandType} recognized by Data API.
+      
+      Data API supports following ${commandType}s: ${knownCommands}.
+      
+      Resend using one of the supported commands.
 
   - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
@@ -154,22 +172,28 @@ request-errors:
       Resend 'createCollection' with only valid fields.
 
   - scope:
+    code: REQUEST_NOT_JSON
+    title: Request not valid JSON
+    body: |-
+      Request not valid JSON, problem: ${errorMessage}.
+      
+      Resend request as valid JSON.
+
+  - scope:
+    code: REQUEST_STRUCTURE_MISMATCH
+    title: Request structure not valid
+    body: |-
+      Request is valid JSON but has a structural mismatch: ${errorMessage}.
+      
+      Resend request with valid structure.
+
+  - scope:
     code: UNAUTHENTICATED_REQUEST
     title: Authentication failed
     body: |-
       Authentication failed for request due to invalid token.
       
       Resend with valid authentication token.
-
-  - scope:
-    code: UNKNOWN_COMMAND
-    title: Command is not recognized by Data API
-    body: |-
-      Command '${command}' is not a ${commandType} recognized by Data API.
-      
-      Data API supports following ${commandType}s: ${knownCommands}.
-      
-      Resend using one of the supported commands.
 
   - scope:
     code: UNSUPPORTED_CONTENT_TYPE

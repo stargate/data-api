@@ -42,8 +42,11 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is(not(blankString())));
+          .body("errors[0].errorCode", is("REQUEST_NOT_JSON"))
+          .body("errors[0].exceptionClass", is("RequestException"))
+          .body(
+              "errors[0].message",
+              containsString("Request not valid JSON, problem: Unexpected character"));
     }
 
     @Test
@@ -62,7 +65,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("RequestException"))
-          .body("errors[0].errorCode", is("UNKNOWN_COMMAND"))
+          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
               startsWith(
@@ -80,7 +83,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
           .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
