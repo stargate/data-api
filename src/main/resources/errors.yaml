@@ -154,6 +154,16 @@ request-errors:
       Resend command with valid command fields.
 
   - scope:
+    code: COMMAND_UNKNOWN
+    title: Command is not recognized by Data API
+    body: |-
+      Command '${command}' is not a ${commandType} recognized by Data API.
+      
+      Data API supports following ${commandType}s: ${knownCommands}.
+      
+      Resend using one of the supported commands.
+
+  - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
     title: Invalid field(s) for createCollection
     body: |-
@@ -184,16 +194,6 @@ request-errors:
       Authentication failed for request due to invalid token.
       
       Resend with valid authentication token.
-
-  - scope:
-    code: UNKNOWN_COMMAND
-    title: Command is not recognized by Data API
-    body: |-
-      Command '${command}' is not a ${commandType} recognized by Data API.
-      
-      Data API supports following ${commandType}s: ${knownCommands}.
-      
-      Resend using one of the supported commands.
 
   - scope:
     code: UNSUPPORTED_CONTENT_TYPE

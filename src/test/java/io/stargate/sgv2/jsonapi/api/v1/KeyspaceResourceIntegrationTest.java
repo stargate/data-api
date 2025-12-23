@@ -65,7 +65,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("RequestException"))
-          .body("errors[0].errorCode", is("UNKNOWN_COMMAND"))
+          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
               startsWith(
