@@ -311,7 +311,13 @@ request-errors:
     code: SHRED_BAD_BINARY_VECTOR_VALUE
     title: Bad binary vector value to shred
     body: |-
-      Bad binary vector value to shred, problem: ${errorMessage}.
+      Bad binary vector value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCID_TYPE
+    title: Bad binary vector value to shred
+    body: |-
+      Bad type for '_id' property: ${errorMessage}.
 
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT

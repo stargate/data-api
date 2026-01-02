@@ -469,7 +469,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "Bad binary vector value to shred, problem: Invalid content in EJSON $binary wrapper; not valid Base64-encoded String: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@'"));
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper; not valid Base64-encoded String: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@'"));
     }
 
     @Test
@@ -492,7 +492,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "Bad binary vector value to shred, problem: Unsupported JSON value type in EJSON $binary wrapper (Number): only String allowed"));
+                  "Bad binary vector value to shred: Unsupported JSON value type in EJSON $binary wrapper (Number): only String allowed"));
     }
 
     @Test
@@ -538,7 +538,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "Bad binary vector value to shred, problem: binary value to decode is not a multiple of 4 bytes long (3 bytes)"));
+                  "Bad binary vector value to shred: binary value to decode is not a multiple of 4 bytes long (3 bytes)"));
     }
 
     @Test

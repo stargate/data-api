@@ -24,6 +24,7 @@ public class DocumentException extends RequestException {
     MISSING_PRIMARY_KEY_COLUMNS,
 
     SHRED_BAD_BINARY_VECTOR_VALUE,
+    SHRED_BAD_DOCID_TYPE,
 
     UNKNOWN_TABLE_COLUMNS,
     UNSUPPORTED_COLUMN_TYPES,
