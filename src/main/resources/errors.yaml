@@ -315,7 +315,7 @@ request-errors:
 
   - scope: DOCUMENT
     code: SHRED_BAD_DOCID_TYPE
-    title: Bad binary vector value to shred
+    title: Bad type for '_id' property
     body: |-
       Bad type for '_id' property: ${errorMessage}.
 
