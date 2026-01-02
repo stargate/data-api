@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -315,7 +316,8 @@ public record WritableShreddedDocument(
       try {
         queryVectorValues = CqlVectorUtil.bytesToFloats(binaryVector);
       } catch (IllegalArgumentException e) {
-        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(e.getMessage());
+        throw DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.get(
+            Map.of("errorMessage", e.getMessage()));
       }
     }
 

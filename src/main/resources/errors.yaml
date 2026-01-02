@@ -307,6 +307,12 @@ request-errors:
       
       Resend the command including the missing primary key columns.
 
+  - scope: DOCUMENT
+    code: SHRED_BAD_BINARY_VECTOR_VALUE
+    title: Bad binary vector value to shred
+    body: |-
+      Bad binary vector value to shred, problem: ${errorMessage}.
+
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
     code: UNKNOWN_TABLE_COLUMNS

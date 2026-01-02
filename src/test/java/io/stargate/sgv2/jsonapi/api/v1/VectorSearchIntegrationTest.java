@@ -464,12 +464,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
-                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@' (code 0x40) in base64 content"));
+              containsString(
+                  "Bad binary vector value to shred, problem: Invalid content in EJSON $binary wrapper; not valid Base64-encoded String: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@'"));
     }
 
     @Test
@@ -487,12 +487,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
-                  "Bad binary vector value to shred: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed"));
+              containsString(
+                  "Bad binary vector value to shred, problem: Unsupported JSON value type in EJSON $binary wrapper (Number): only String allowed"));
     }
 
     @Test
@@ -533,12 +533,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
-                  "Bad binary vector value to shred: binary value to decode is not a multiple of 4 bytes long (3 bytes)"));
+              containsString(
+                  "Bad binary vector value to shred, problem: binary value to decode is not a multiple of 4 bytes long (3 bytes)"));
     }
 
     @Test

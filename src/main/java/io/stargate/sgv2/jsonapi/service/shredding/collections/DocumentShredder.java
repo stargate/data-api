@@ -14,6 +14,7 @@ import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
@@ -537,16 +538,20 @@ public class DocumentShredder {
         }
         JsonNode binaryValue = entry.getValue();
         if (!binaryValue.isTextual()) {
-          throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-              "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed",
-              binaryValue.getNodeType());
+          throw DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "Unsupported JSON value type in EJSON $binary wrapper (%s): only String allowed"
+                      .formatted(JsonUtil.nodeTypeAsString(binaryValue.getNodeType()))));
         }
         try {
           shredder.shredVector(path, binaryValue.binaryValue());
         } catch (IOException e) {
-          throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-              "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s"
-                  .formatted(e.getMessage()));
+          throw DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "Invalid content in EJSON $binary wrapper; not valid Base64-encoded String: %s"
+                      .formatted(e.getMessage())));
         }
       } else {
         throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(

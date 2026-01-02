@@ -33,7 +33,14 @@ public class JsonUtil {
     if (node == null) {
       return "<null>";
     }
-    String typeDesc = node.getNodeType().toString();
+    return nodeTypeAsString(node.getNodeType());
+  }
+
+  public static String nodeTypeAsString(JsonNodeType nodeType) {
+    if (nodeType == null) {
+      return "<null>";
+    }
+    String typeDesc = nodeType.toString();
     // We know all are longer than 1 character, upper case, so:
     return typeDesc.substring(0, 1) + typeDesc.substring(1).toLowerCase();
   }
