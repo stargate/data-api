@@ -606,7 +606,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
           .body(
               "errors[0].message",
@@ -627,8 +627,8 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               containsString(
@@ -648,8 +648,8 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               startsWith("Bad type for '_id' property: unrecognized JSON extension type"));
