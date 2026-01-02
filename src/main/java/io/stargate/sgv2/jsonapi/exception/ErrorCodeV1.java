@@ -17,9 +17,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  // Really Bad, generic name: but only used for EmbeddingProvidersConfig validation issues
-  INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
