@@ -576,9 +576,11 @@ public class DocumentShredder {
         return;
       }
       if (!value.isTextual()) {
-        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_LEXICAL_TYPE.toApiException(
-            "the value for field '%s' must be a STRING, was: %s",
-            path.toString(), value.getNodeType());
+        throw DocumentException.Code.SHRED_BAD_DOCUMENT_LEXICAL_TYPE.get(
+            Map.of(
+                "errorMessage",
+                "the value for field '%s' must be a JSON String, not a JSON %s"
+                    .formatted(path.toString(), JsonUtil.nodeTypeAsString(value))));
       }
       shredder.shredLexical(path, value.asText());
     }

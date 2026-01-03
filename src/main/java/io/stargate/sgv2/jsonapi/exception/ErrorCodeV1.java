@@ -17,8 +17,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  SHRED_BAD_DOCUMENT_LEXICAL_TYPE("Bad type for $lexical content to shred"),
-
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),

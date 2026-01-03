@@ -350,8 +350,10 @@ public class DocumentShredderTest {
       Throwable t = catchThrowable(() -> documentShredder.shred(commandContext(), inputDoc, null));
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_LEXICAL_TYPE)
-          .hasMessageContaining("the value for field '$lexical' must be a STRING, was: OBJECT");
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_BAD_DOCUMENT_LEXICAL_TYPE.name())
+          .hasMessageContaining(
+              "the value for field '$lexical' must be a JSON String, not a JSON Object");
     }
   }
 

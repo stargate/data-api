@@ -337,6 +337,12 @@ request-errors:
     body: |-
       Bad $vector value to shred: ${errorMessage}.
 
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_LEXICAL_TYPE
+    title: Bad $lexical value to shred
+    body: |-
+      Bad $lexical value to shred: ${errorMessage}.
+
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
     code: UNKNOWN_TABLE_COLUMNS
