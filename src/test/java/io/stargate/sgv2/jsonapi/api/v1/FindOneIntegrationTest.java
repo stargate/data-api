@@ -811,7 +811,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               containsString(
@@ -825,7 +825,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               containsString(

@@ -14,6 +14,7 @@ import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
@@ -110,8 +111,8 @@ public class DocumentShredder {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
-      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_TYPE.toApiException(
-          "document to shred must be a JSON Object, instead got %s", doc.getNodeType());
+      throw DocumentException.Code.SHRED_BAD_DOCUMENT_TYPE.get(
+          Map.of("documentType", JsonUtil.nodeTypeAsString(doc)));
     }
 
     final ObjectNode docWithId = normalizeDocumentId(collectionSettings, (ObjectNode) doc);
@@ -523,7 +524,7 @@ public class DocumentShredder {
         // e.g. "$vector": [0.25, 0.25]
         ArrayNode arr = (ArrayNode) value;
         if (arr.size() == 0) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+          throw DocumentException.Code.SHRED_BAD_VECTOR_SIZE.get();
         }
         shredder.shredVector(path, arr);
       } else if (value.isObject()) {
@@ -532,25 +533,35 @@ public class DocumentShredder {
         final Map.Entry<String, JsonNode> entry = obj.properties().iterator().next();
         JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
         if (keyType != BINARY) {
-          throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
-              "The key for the %s object must be '%s'", path, BINARY.encodedName());
+          throw DocumentException.Code.SHRED_BAD_DOCUMENT_VECTOR_TYPE.get(
+              Map.of(
+                  "errorMessage",
+                  "the key for the %s Object must be '%s', not '%s'"
+                      .formatted(path, BINARY.encodedName(), entry.getKey())));
         }
         JsonNode binaryValue = entry.getValue();
         if (!binaryValue.isTextual()) {
-          throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-              "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed",
-              binaryValue.getNodeType());
+          throw DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "Unsupported JSON value type in EJSON $binary wrapper (%s): only String allowed"
+                      .formatted(JsonUtil.nodeTypeAsString(binaryValue.getNodeType()))));
         }
         try {
           shredder.shredVector(path, binaryValue.binaryValue());
         } catch (IOException e) {
-          throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-              "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s"
-                  .formatted(e.getMessage()));
+          throw DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "Invalid content in EJSON $binary wrapper; not valid Base64-encoded String: %s"
+                      .formatted(e.getMessage())));
         }
       } else {
-        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
-            value.getNodeType().toString());
+        throw DocumentException.Code.SHRED_BAD_DOCUMENT_VECTOR_TYPE.get(
+            Map.of(
+                "errorMessage",
+                "JSON '%s's not supported: only JSON Arrays and Objects are"
+                    .formatted(JsonUtil.nodeTypeAsString(value.getNodeType()))));
       }
     }
 
@@ -565,9 +576,11 @@ public class DocumentShredder {
         return;
       }
       if (!value.isTextual()) {
-        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_LEXICAL_TYPE.toApiException(
-            "the value for field '%s' must be a STRING, was: %s",
-            path.toString(), value.getNodeType());
+        throw DocumentException.Code.SHRED_BAD_DOCUMENT_LEXICAL_TYPE.get(
+            Map.of(
+                "errorMessage",
+                "the value for field '%s' must be a JSON String, not a JSON %s"
+                    .formatted(path.toString(), JsonUtil.nodeTypeAsString(value))));
       }
       shredder.shredLexical(path, value.asText());
     }

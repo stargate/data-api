@@ -62,7 +62,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           ErrorScope.SCHEMA,
           new HashSet<>() {
             {
-              add(INVALID_PARAMETER_VALIDATION_TYPE);
               add(INVALID_REQUEST);
             }
           },

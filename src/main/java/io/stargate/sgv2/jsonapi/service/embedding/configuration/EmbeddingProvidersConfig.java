@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
@@ -207,7 +206,10 @@ public interface EmbeddingProvidersConfig {
         } else if (type.equals("options")) {
           return OPTIONS;
         }
-        throw ErrorCodeV1.INVALID_PARAMETER_VALIDATION_TYPE.toApiException(type);
+        throw new IllegalArgumentException(
+            "Invalid `ValidationType` value ('"
+                + type
+                + "') for `EmbeddingProvidersConfig`: expected either 'numericRange' or 'options'");
       }
 
       @Override
