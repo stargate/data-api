@@ -25,6 +25,7 @@ public class DocumentException extends RequestException {
 
     SHRED_BAD_BINARY_VECTOR_VALUE,
     SHRED_BAD_DOCID_TYPE,
+    SHRED_BAD_DOCID_VALUE,
 
     UNKNOWN_TABLE_COLUMNS,
     UNSUPPORTED_COLUMN_TYPES,

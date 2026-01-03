@@ -7,7 +7,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -165,7 +164,8 @@ public interface DocumentId extends DocRowIdentifer {
   static DocumentId fromString(String key) {
     key = Objects.requireNonNull(key);
     if (key.isEmpty()) {
-      throw ErrorCodeV1.SHRED_BAD_DOCID_EMPTY_STRING.toApiException();
+      throw DocumentException.Code.SHRED_BAD_DOCID_VALUE.get(
+          Map.of("errorMessage", "empty String not allowed"));
     }
     return new StringId(key);
   }

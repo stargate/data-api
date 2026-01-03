@@ -470,9 +470,9 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_TYPE)
           .hasMessage(
-              "Bad document type to shred: document to shred must be a JSON Object, instead got ARRAY")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_TYPE);
+              "Bad document type to shred: document to shred must be a JSON Object, instead got ARRAY");
     }
 
     @Test
@@ -485,8 +485,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
-          .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or null instead got Array: [].");
+          .hasMessageContaining(
+              "Bad type for '_id' field: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or null instead got Array: [].");
     }
 
     @Test
@@ -501,8 +501,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
-          .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or null instead got Object: {\"foo\":\"bar\"}.");
+          .hasMessageContaining(
+              "Bad type for '_id' field: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or null instead got Object: {\"foo\":\"bar\"}.");
     }
 
     @Test
@@ -515,8 +515,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage("Bad value for '_id' property: empty String not allowed")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_EMPTY_STRING);
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_VALUE.name())
+          .hasMessageContaining("Bad value for '_id' field: empty String not allowed");
     }
 
     @Test
@@ -530,7 +530,7 @@ public class DocumentShredderTest {
       assertThat(t)
           .isNotNull()
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessage("Document field name invalid: field name '$id' starts with '$'");
+          .hasMessageContaining("Document field name invalid: field name '$id' starts with '$'");
     }
 
     @Test

@@ -315,9 +315,15 @@ request-errors:
 
   - scope: DOCUMENT
     code: SHRED_BAD_DOCID_TYPE
-    title: Bad type for '_id' property
+    title: Bad type for '_id' field
     body: |-
-      Bad type for '_id' property: ${errorMessage}.
+      Bad type for '_id' field: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCID_VALUE
+    title: Bad value for '_id' field
+    body: |-
+      Bad value for '_id' field: ${errorMessage}.
 
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
