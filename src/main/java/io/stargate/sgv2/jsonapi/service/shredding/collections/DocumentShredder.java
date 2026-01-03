@@ -111,8 +111,8 @@ public class DocumentShredder {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
-      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_TYPE.toApiException(
-          "document to shred must be a JSON Object, instead got %s", doc.getNodeType());
+      throw DocumentException.Code.SHRED_BAD_DOCUMENT_TYPE.get(
+          Map.of("documentType", JsonUtil.nodeTypeAsString(doc)));
     }
 
     final ObjectNode docWithId = normalizeDocumentId(collectionSettings, (ObjectNode) doc);
@@ -533,8 +533,11 @@ public class DocumentShredder {
         final Map.Entry<String, JsonNode> entry = obj.properties().iterator().next();
         JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
         if (keyType != BINARY) {
-          throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
-              "The key for the %s object must be '%s'", path, BINARY.encodedName());
+          throw DocumentException.Code.SHRED_BAD_DOCUMENT_VECTOR_TYPE.get(
+              Map.of(
+                  "errorMessage",
+                  "the key for the %s Object must be '%s', not '%s'"
+                      .formatted(path, BINARY.encodedName(), entry.getKey())));
         }
         JsonNode binaryValue = entry.getValue();
         if (!binaryValue.isTextual()) {
@@ -554,8 +557,11 @@ public class DocumentShredder {
                       .formatted(e.getMessage())));
         }
       } else {
-        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
-            value.getNodeType().toString());
+        throw DocumentException.Code.SHRED_BAD_DOCUMENT_VECTOR_TYPE.get(
+            Map.of(
+                "errorMessage",
+                "JSON '%s's not supported: only JSON Arrays and Objects are"
+                    .formatted(JsonUtil.nodeTypeAsString(value.getNodeType()))));
       }
     }
 

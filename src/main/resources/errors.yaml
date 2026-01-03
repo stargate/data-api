@@ -325,6 +325,18 @@ request-errors:
     body: |-
       Bad value for '_id' field: ${errorMessage}.
 
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_TYPE
+    title: Bad document type to shred
+    body: |-
+      Bad document type to shred: document must be a JSON Object, instead got a JSON ${documentType}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_VECTOR_TYPE
+    title: Bad $vector value to shred
+    body: |-
+      Bad $vector value to shred: ${errorMessage}.
+
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
     code: UNKNOWN_TABLE_COLUMNS

@@ -470,9 +470,10 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_TYPE)
-          .hasMessage(
-              "Bad document type to shred: document to shred must be a JSON Object, instead got ARRAY");
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_BAD_DOCUMENT_TYPE.name())
+          .hasMessageContaining(
+              "Bad document type to shred: document must be a JSON Object, instead got a JSON Array");
     }
 
     @Test

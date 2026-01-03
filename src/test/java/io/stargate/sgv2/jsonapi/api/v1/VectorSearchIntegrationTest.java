@@ -9,6 +9,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
@@ -510,12 +511,14 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_VECTOR_TYPE"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_DOCUMENT_VECTOR_TYPE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
-                  "Bad $vector document type to shred : The key for the $vector object must be '$binary'"));
+              containsString(
+                  "Bad $vector value to shred: the key for the $vector Object must be '$binary', not 'binary'"));
     }
 
     @Test

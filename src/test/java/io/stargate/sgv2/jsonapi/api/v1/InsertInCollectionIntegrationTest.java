@@ -16,6 +16,7 @@ import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -69,12 +70,12 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", jsonEquals("[]"))
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCUMENT_TYPE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Bad document type to shred: document to shred must be a JSON Object, instead got NULL"));
+              containsString(
+                  "Bad document type to shred: document must be a JSON Object, instead got a JSON Null"));
     }
 
     @Test
@@ -611,7 +612,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body(
               "errors[0].message",
               containsString(
-                  "Bad type for '_id' property: Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (42)"));
+                  "Bad type for '_id' field: Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (42)"));
     }
 
     @Test
@@ -652,7 +653,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith("Bad type for '_id' property: unrecognized JSON extension type"));
+              startsWith("Bad type for '_id' field: unrecognized JSON extension type"));
     }
   }
 
