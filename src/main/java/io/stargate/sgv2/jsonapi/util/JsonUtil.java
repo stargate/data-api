@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Utf8;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
@@ -314,13 +315,16 @@ public class JsonUtil {
 
     float[] arrayVals = new float[arrayNode.size()];
     if (arrayNode.isEmpty()) {
-      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+      throw DocumentException.Code.SHRED_BAD_VECTOR_SIZE.get();
     }
 
     for (int i = 0; i < arrayNode.size(); i++) {
       JsonNode element = arrayNode.get(i);
       if (!element.isNumber()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+        throw DocumentException.Code.SHRED_BAD_VECTOR_VALUE.get(
+            Map.of(
+                "nodeType", JsonUtil.nodeTypeAsString(element),
+                "nodeValue", element.toString()));
       }
       arrayVals[i] = element.floatValue();
     }

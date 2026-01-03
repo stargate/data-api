@@ -407,7 +407,7 @@ public class DocumentShredderTest {
       assertThat(t)
           .isNotNull()
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
-          .hasMessage(
+          .hasMessageContaining(
               ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
                   + ": type '$date' has invalid JSON value of type BOOLEAN");
     }
@@ -422,8 +422,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage("$vector value can't be empty")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_VECTOR_SIZE);
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name())
+          .hasMessageContaining("Bad $vector value: cannot be empty Array");
     }
 
     @Test
@@ -438,8 +438,9 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage("$vector value needs to be array of numbers")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_VECTOR_VALUE);
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_VECTOR_VALUE.name())
+          .hasMessageContaining(
+              "Bad $vector value: needs to be an array containing only Numbers but has a String value (\"abc\")");
     }
 
     @Test

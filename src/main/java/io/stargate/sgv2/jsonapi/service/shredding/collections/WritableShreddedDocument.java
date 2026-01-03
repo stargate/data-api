@@ -301,7 +301,10 @@ public record WritableShreddedDocument(
       for (int i = 0; i < vector.size(); i++) {
         JsonNode element = vector.get(i);
         if (!element.isNumber()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+          throw DocumentException.Code.SHRED_BAD_VECTOR_VALUE.get(
+              Map.of(
+                  "nodeType", JsonUtil.nodeTypeAsString(element),
+                  "nodeValue", element.toString()));
         }
         arrayVals[i] = element.floatValue();
       }

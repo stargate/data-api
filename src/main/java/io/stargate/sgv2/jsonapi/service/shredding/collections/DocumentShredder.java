@@ -524,7 +524,7 @@ public class DocumentShredder {
         // e.g. "$vector": [0.25, 0.25]
         ArrayNode arr = (ArrayNode) value;
         if (arr.size() == 0) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+          throw DocumentException.Code.SHRED_BAD_VECTOR_SIZE.get();
         }
         shredder.shredVector(path, arr);
       } else if (value.isObject()) {

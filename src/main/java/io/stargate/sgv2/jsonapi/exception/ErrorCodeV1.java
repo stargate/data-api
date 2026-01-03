@@ -19,10 +19,6 @@ public enum ErrorCodeV1 {
 
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
-  SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
-
-  SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
-
   SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 

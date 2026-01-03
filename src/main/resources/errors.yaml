@@ -343,6 +343,18 @@ request-errors:
     body: |-
       Bad $lexical value to shred: ${errorMessage}.
 
+  - scope: DOCUMENT
+    code: SHRED_BAD_VECTOR_SIZE
+    title: Bad $vector value
+    body: |-
+      Bad $vector value: cannot be empty Array.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_VECTOR_VALUE
+    title: Bad $vector value
+    body: |-
+      Bad $vector value: needs to be an array containing only Numbers but has a ${nodeType} value (${nodeValue}).
+
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
     code: UNKNOWN_TABLE_COLUMNS
