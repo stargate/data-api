@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.*;
@@ -454,8 +453,9 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION);
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageContaining(
+              "Document field name not valid: field name '$unknownType' starts with '$'");
     }
   }
 
@@ -532,8 +532,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageContaining("Document field name invalid: field name '$id' starts with '$'");
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageContaining("Document field name not valid: field name '$id' starts with '$'");
     }
 
     @Test
@@ -548,8 +548,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessage("Document field name invalid: field name '$usd' starts with '$'");
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageContaining("Document field name not valid: field name '$usd' starts with '$'");
     }
 
     @Test
@@ -562,8 +562,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessage("Document field name invalid: field name '' is empty");
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageContaining("Document field name not valid: field name '' is empty");
     }
 
     @Test
@@ -578,8 +578,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessage("Document field name invalid: field name '' is empty");
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageContaining("Document field name not valid: field name '' is empty");
     }
   }
 

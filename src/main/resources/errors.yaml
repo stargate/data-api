@@ -350,6 +350,12 @@ request-errors:
       Bad JSON Extension value to shred: ${errorMessage}.
 
   - scope: DOCUMENT
+    code: SHRED_BAD_FIELD_NAME
+    title: Document field name not valid
+    body: |-
+      Document field name not valid: ${errorMessage}.
+
+  - scope: DOCUMENT
     code: SHRED_BAD_VECTOR_SIZE
     title: Bad $vector value
     body: |-

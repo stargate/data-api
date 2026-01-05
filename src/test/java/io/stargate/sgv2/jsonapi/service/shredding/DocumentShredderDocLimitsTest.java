@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
@@ -462,10 +463,10 @@ public class DocumentShredderDocLimitsTest {
       // First check at root level
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith("field name '" + invalidName + "' starts with '$'");
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageStartingWith("Document field name not valid: ")
+          .hasMessageContaining("field name '" + invalidName + "' starts with '$'");
 
       // And then as a nested field
       final ObjectNode doc2 = objectMapper.createObjectNode();
@@ -474,10 +475,10 @@ public class DocumentShredderDocLimitsTest {
 
       e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith("field name '" + invalidName + "' starts with '$'");
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageStartingWith("Document field name not valid: ")
+          .hasMessageContaining("field name '" + invalidName + "' starts with '$'");
     }
   }
 

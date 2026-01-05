@@ -1472,11 +1472,12 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       """)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_FIELD_NAME.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith("Document field name invalid: field name '$username' starts with '$'"))
+              containsString(
+                  "Document field name not valid: field name '$username' starts with '$'"))
           .body("insertedIds", is(nullValue()))
           .body("status.documentResponses", hasSize(3))
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
@@ -1562,11 +1563,12 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   """)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_FIELD_NAME.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith("Document field name invalid: field name '$username' starts with '$'"))
+              containsString(
+                  "Document field name not valid: field name '$username' starts with '$'"))
           .body("insertedIds", is(nullValue()))
           .body("status.documentResponses", hasSize(3))
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))

@@ -330,8 +330,11 @@ public class DocumentShredder {
                 || key.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD))) {
           ;
         } else {
-          throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
-              "field name '%s' %s", key, key.isEmpty() ? "is empty" : "starts with '$'");
+          throw DocumentException.Code.SHRED_BAD_FIELD_NAME.get(
+              Map.of(
+                  "errorMessage",
+                  "field name '%s' %s"
+                      .formatted(key, key.isEmpty() ? "is empty" : "starts with '$'")));
         }
       }
       int totalPathLength = parentPathLength + key.length();
