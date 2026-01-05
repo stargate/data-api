@@ -295,9 +295,11 @@ public class DocumentShredder {
           if (value.isTextual() || value.isIntegralNumber()) {
             return;
           }
-          throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-              "type '%s' has invalid JSON value of type %s",
-              extType.encodedName(), value.getNodeType());
+          throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "type '%s' has invalid JSON value of type %s"
+                      .formatted(extType.encodedName(), JsonUtil.nodeTypeAsString(value))));
         }
       }
 

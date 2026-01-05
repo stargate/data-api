@@ -344,6 +344,12 @@ request-errors:
       Bad $lexical value to shred: ${errorMessage}.
 
   - scope: DOCUMENT
+    code: SHRED_BAD_EJSON_VALUE
+    title: Bad JSON Extension value to shred
+    body: |-
+      Bad JSON Extension value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
     code: SHRED_BAD_VECTOR_SIZE
     title: Bad $vector value
     body: |-

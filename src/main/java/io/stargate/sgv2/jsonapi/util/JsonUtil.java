@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Utf8;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -130,9 +129,11 @@ public class JsonUtil {
           return new Date(value.longValue());
         }
         // Otherwise we have an error case
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "Date (%s) needs to have NUMBER value, has %s (path '%s')",
-            EJSON_VALUE_KEY_DATE, value.getNodeType(), path);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "Date (%s) needs to have Number value, had %s (path '%s')"
+                    .formatted(EJSON_VALUE_KEY_DATE, JsonUtil.nodeTypeAsString(value), path)));
       }
     }
     return null;
@@ -268,17 +269,23 @@ public class JsonUtil {
   private static void failOnInvalidExtendedValue(JsonExtensionType etype, JsonNode value) {
     switch (etype) {
       case EJSON_DATE:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be an epoch timestamp, instead got (%s)",
-            etype.encodedName(), value);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "'%s' value has to be an epoch timestamp, instead got (%s)"
+                    .formatted(etype.encodedName(), value)));
       case OBJECT_ID:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
-            etype.encodedName(), value);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)"
+                    .formatted(etype.encodedName(), value)));
       case UUID:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be 36-character UUID String, instead got (%s)",
-            etype.encodedName(), value);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "'%s' value has to be 36-character UUID String, instead got (%s)"
+                    .formatted(etype.encodedName(), value)));
     }
     // should never happen
     throw ServerException.internalServerError("Unrecognized JsonExtensionType: " + etype);

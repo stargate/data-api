@@ -377,7 +377,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
           .hasMessageContaining(
               "'$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-an-oid\")");
     }
@@ -399,7 +399,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got (\"not-a-uuid\")");
 
@@ -415,7 +415,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got ({})");
     }
@@ -453,10 +453,9 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
-          .hasMessageStartingWith(
-              ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value (\"abc\") for extended JSON type '$objectId' (path 'value')");
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasMessageContaining(
+              "Bad JSON Extension value to shred: invalid value (\"abc\") for extended JSON type '$objectId' (path 'value')");
     }
 
     @Test
@@ -471,10 +470,9 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
-          .hasMessageStartingWith(
-              ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value (\"foobar\") for extended JSON type '$uuid' (path 'value')");
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasMessageContaining(
+              "Bad JSON Extension value to shred: invalid value (\"foobar\") for extended JSON type '$uuid' (path 'value')");
     }
 
     @Test

@@ -17,8 +17,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
-
   SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 

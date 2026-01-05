@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
@@ -184,13 +183,18 @@ public record WritableShreddedDocument(
               }
               break;
           }
-          throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-              "invalid value (%s) for extended JSON type '%s' (path '%s')",
-              obj.iterator().next(), obj.fieldNames().next(), path);
+          throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "invalid value (%s) for extended JSON type '%s' (path '%s')"
+                      .formatted(obj.iterator().next(), obj.fieldNames().next(), path)));
         }
         // Otherwise it's either unsupported of malformed EJSON-encoded value; fail
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "unrecognized extended JSON type '%s' (path '%s')", obj.fieldNames().next(), path);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "unrecognized extended JSON type '%s' (path '%s')"
+                    .formatted(obj.fieldNames().next(), path)));
       }
 
       addKey(path);

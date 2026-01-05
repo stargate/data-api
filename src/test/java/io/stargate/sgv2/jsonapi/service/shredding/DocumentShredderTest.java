@@ -406,10 +406,9 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
           .hasMessageContaining(
-              ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": type '$date' has invalid JSON value of type BOOLEAN");
+              "Bad JSON Extension value to shred: type '$date' has invalid JSON value of type Boolean");
     }
 
     @Test
