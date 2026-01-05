@@ -287,6 +287,12 @@ request-errors:
       Report the problem to database administrators.
 
   - scope: DOCUMENT
+    code: DOCUMENT_LEXICAL_CONTENT_TOO_BIG
+    title: Document contains too big '$lexical' value
+    body: |-
+      Lexical content is too big, please use a smaller value for the '$lexical' field.
+
+  - scope: DOCUMENT
     code: DOCUMENT_REPLACE_DIFFERENT_DOCID
     title: Document the given _id already exists
     body: |-

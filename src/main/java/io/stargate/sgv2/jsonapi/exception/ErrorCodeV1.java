@@ -74,9 +74,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
-  LEXICAL_CONTENT_TOO_BIG(
-      "Lexical content is too big, please use a smaller value for the $lexical field"),
-
   HYBRID_FIELD_CONFLICT(
       "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
   HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
