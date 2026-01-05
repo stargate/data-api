@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
@@ -235,9 +234,11 @@ public class DocumentShredder {
   private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
     // First: is the resulting document size (as serialized) too big?
     if (docJson.length() > limits.maxSize()) {
-      throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-          "document size (%d chars) exceeds maximum allowed (%d)",
-          docJson.length(), limits.maxSize());
+      throw DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+          Map.of(
+              "errorMessage",
+              "document size (%d chars) exceeds maximum allowed (%d)"
+                  .formatted(docJson.length(), limits.maxSize())));
     }
   }
 
@@ -339,16 +340,20 @@ public class DocumentShredder {
       }
       int totalPathLength = parentPathLength + key.length();
       if (totalPathLength > limits.maxPropertyPathLength()) {
-        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "field path length (%d) exceeds maximum allowed (%d) (path ends with '%s')",
-            totalPathLength, limits.maxPropertyPathLength(), key);
+        throw DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+            Map.of(
+                "errorMessage",
+                "field path length (%d) exceeds maximum allowed (%d) (path ends with '%s')"
+                    .formatted(totalPathLength, limits.maxPropertyPathLength(), key)));
       }
     }
 
     private void validateDocDepth(DocumentLimitsConfig limits, int depth) {
       if (depth > limits.maxDepth()) {
-        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "document depth exceeds maximum allowed (%s)", limits.maxDepth());
+        throw DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+            Map.of(
+                "errorMessage",
+                "document depth exceeds maximum allowed (%d)".formatted(limits.maxDepth())));
       }
     }
   }
@@ -370,9 +375,11 @@ public class DocumentShredder {
     public void validate(ObjectNode doc) {
       validateObjectValue(null, doc);
       if (totalProperties.get() > limits.maxDocumentProperties()) {
-        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "total number of indexed properties (%d) in document exceeds maximum allowed (%d)",
-            totalProperties.get(), limits.maxDocumentProperties());
+        throw DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+            Map.of(
+                "errorMessage",
+                "total number of indexed properties (%d) in document exceeds maximum allowed (%d)"
+                    .formatted(totalProperties.get(), limits.maxDocumentProperties())));
       }
     }
 
@@ -391,14 +398,22 @@ public class DocumentShredder {
         // One special case: vector embeddings allow larger size
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
           if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
-            throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-                "number of elements Vector embedding (field '%s') has (%d) exceeds maximum allowed (%d)",
-                referringPropertyName, arrayValue.size(), limits.maxVectorEmbeddingLength());
+            throw DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+                Map.of(
+                    "errorMessage",
+                    "number of elements Vector embedding (field '%s') has (%d) exceeds maximum allowed (%d)"
+                        .formatted(
+                            referringPropertyName,
+                            arrayValue.size(),
+                            limits.maxVectorEmbeddingLength())));
           }
         } else {
-          throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-              "number of elements an indexable Array (field '%s') has (%d) exceeds maximum allowed (%d)",
-              referringPropertyName, arrayValue.size(), limits.maxArrayLength());
+          throw DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+              Map.of(
+                  "errorMessage",
+                  "number of elements an indexable Array (field '%s') has (%d) exceeds maximum allowed (%d)"
+                      .formatted(
+                          referringPropertyName, arrayValue.size(), limits.maxArrayLength())));
         }
       }
 
@@ -410,9 +425,12 @@ public class DocumentShredder {
     private void validateObjectValue(String referringPropertyName, JsonNode objectValue) {
       final int propCount = objectValue.size();
       if (propCount > limits.maxObjectProperties()) {
-        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "number of properties an indexable Object (field '%s') has (%d) exceeds maximum allowed (%s)",
-            referringPropertyName, objectValue.size(), limits.maxObjectProperties());
+        throw DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+            Map.of(
+                "errorMessage",
+                "number of properties an indexable Object (field '%s') has (%d) exceeds maximum allowed (%s)"
+                    .formatted(
+                        referringPropertyName, objectValue.size(), limits.maxObjectProperties())));
       }
       totalProperties.addAndGet(propCount);
 
@@ -436,9 +454,14 @@ public class DocumentShredder {
       OptionalInt encodedLength =
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {
-        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "indexed String value (field '%s') length (%d bytes) exceeds maximum allowed (%d bytes)",
-            referringPropertyName, encodedLength.getAsInt(), limits.maxStringLengthInBytes());
+        throw DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+            Map.of(
+                "errorMessage",
+                "indexed String value (field '%s') length (%d bytes) exceeds maximum allowed (%d bytes)"
+                    .formatted(
+                        referringPropertyName,
+                        encodedLength.getAsInt(),
+                        limits.maxStringLengthInBytes())));
       }
     }
   }

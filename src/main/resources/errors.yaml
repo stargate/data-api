@@ -367,6 +367,12 @@ request-errors:
     body: |-
       Bad $vector value: needs to be an array containing only Numbers but has a ${nodeType} value (${nodeValue}).
 
+  - scope: DOCUMENT
+    code: SHRED_DOC_LIMIT_VIOLATION
+    title: Document size limitation violated
+    body: |-
+      Document size limitation violated: ${errorMessage}.
+
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
     code: UNKNOWN_TABLE_COLUMNS

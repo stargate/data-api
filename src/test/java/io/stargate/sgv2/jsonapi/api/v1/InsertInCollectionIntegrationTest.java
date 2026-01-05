@@ -693,11 +693,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
+              containsString(
                   "Document size limitation violated: number of elements an indexable Array (field 'arr') has ("
                       + ARRAY_LEN
                       + ") exceeds maximum allowed ("
@@ -739,11 +739,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith(
+              containsString(
                   "Document size limitation violated: field path length (1003) exceeds maximum allowed (1000)"));
     }
 
@@ -786,11 +786,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(tooLongNumStr))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith(
+              containsString(
                   "Document size limitation violated: Number value length (110) exceeds the maximum allowed (100"));
     }
 
@@ -828,11 +828,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(tooLongString))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith(
+              containsString(
                   "Document size limitation violated: indexed String value (field 'bigString') length (8056 bytes) exceeds maximum allowed"));
     }
 
@@ -880,11 +880,12 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(bigDoc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
-              "errors[0].message", startsWith("Document size limitation violated: document size ("))
-          .body("errors[0].message", endsWith(") exceeds maximum allowed (4000000)"));
+              "errors[0].message",
+              containsString("Document size limitation violated: document size ("))
+          .body("errors[0].message", containsString(") exceeds maximum allowed (4000000)"));
     }
 
     @Test
@@ -909,14 +910,14 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(tooManyPropsDoc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith("Document size limitation violated: number of properties"))
+              containsString("Document size limitation violated: number of properties"))
           .body(
               "errors[0].message",
-              endsWith(
+              containsString(
                   "indexable Object (field 'subdoc') has (1001) exceeds maximum allowed (1000)"));
     }
 
@@ -944,12 +945,13 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(tooManyPropsDoc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              startsWith("Document size limitation violated: total number of indexed properties ("))
-          .body("errors[0].message", endsWith(" in document exceeds maximum allowed (2000)"));
+              containsString(
+                  "Document size limitation violated: total number of indexed properties ("))
+          .body("errors[0].message", containsString(" in document exceeds maximum allowed (2000)"));
     }
 
     private void _verifyInsert(String docId, JsonNode doc) {

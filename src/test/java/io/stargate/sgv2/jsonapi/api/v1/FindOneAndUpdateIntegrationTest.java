@@ -791,10 +791,10 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
               .formatted(tooLongNumStr);
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
           .body(
               "errors[0].message",
-              startsWith("Document size limitation violated: Number value length"));
+              containsString("Document size limitation violated: Number value length"));
     }
   }
 
