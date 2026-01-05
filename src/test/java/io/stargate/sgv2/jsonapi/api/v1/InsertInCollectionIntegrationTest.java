@@ -608,11 +608,11 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("DocumentException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
           .body(
               "errors[0].message",
               containsString(
-                  "Bad type for '_id' field: Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (42)"));
+                  "Bad JSON Extension value to shred: '$uuid' value has to be 36-character UUID String, instead got (42)"));
     }
 
     @Test
@@ -628,12 +628,12 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
           .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-quite-objectid\")"));
+                  "Bad JSON Extension value to shred: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-quite-objectid\")"));
     }
 
     @Test

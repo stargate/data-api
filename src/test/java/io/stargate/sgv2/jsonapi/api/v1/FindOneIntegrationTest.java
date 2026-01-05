@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -810,12 +811,12 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               "{ \"findOne\": { \"filter\" : {\"_id\": {\"$uuid\": \"not-an-uuid\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
           .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"not-an-uuid\")"));
+                  "Bad JSON Extension value to shred: '$uuid' value has to be 36-character UUID String, instead got (\"not-an-uuid\")"));
     }
 
     @Test
@@ -824,12 +825,12 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               "{ \"findOne\": { \"filter\" : {\"_id\": {\"$objectId\": \"bogus\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
           .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"bogus\")"));
+                  "Bad JSON Extension value to shred: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"bogus\")"));
     }
   }
 
