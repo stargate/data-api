@@ -2075,6 +2075,13 @@ server-errors:
       
       ${SNIPPET.RETRY}
 
+  - scope: DATABASE
+    code: UNEXPECTED_DOCUMENT_ID_TYPE
+    title: Unexpected stored document id type
+    body: |-
+      Type of document id stored in database unexpected: ${errorMessage}.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
 
   - scope: DATABASE
     code: UNEXPECTED_DRIVER_ERROR

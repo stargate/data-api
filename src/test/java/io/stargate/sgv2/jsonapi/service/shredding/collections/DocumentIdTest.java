@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -77,10 +77,11 @@ public class DocumentIdTest {
             });
     assertThat(e)
         .isNotNull()
-        .isInstanceOf(DocumentException.class)
-        .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
-        .hasMessageStartingWith(
-            "Bad type for '_id' field: Document Id must be a JSON String(1), Number(2), Boolean(3), null(4) or Date(5) instead got 99.");
+        .isInstanceOf(DatabaseException.class)
+        .hasFieldOrPropertyWithValue(
+            "code", DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.name())
+        .hasMessageContaining(
+            "Type of document id stored in database unexpected: Document Id must be a JSON String(1), Number(2), Boolean(3), null(4) or Date(5) instead got 99");
 
     e =
         catchException(
@@ -89,10 +90,11 @@ public class DocumentIdTest {
             });
     assertThat(e)
         .isNotNull()
-        .isInstanceOf(DocumentException.class)
-        .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
-        .hasMessageStartingWith(
-            "Bad type for '_id' field: Document Id type Boolean stored as invalid String 'abc' (must be 'true' or 'false').");
+        .isInstanceOf(DatabaseException.class)
+        .hasFieldOrPropertyWithValue(
+            "code", DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.name())
+        .hasMessageContaining(
+            "Type of document id stored in database unexpected: Document Id type Boolean stored as invalid String 'abc' (must be 'true' or 'false')");
 
     e =
         catchException(
@@ -101,10 +103,11 @@ public class DocumentIdTest {
             });
     assertThat(e)
         .isNotNull()
-        .isInstanceOf(DocumentException.class)
-        .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
-        .hasMessageStartingWith(
-            "Bad type for '_id' field: Document Id type Number stored as invalid String 'abc' (not a valid Number).");
+        .isInstanceOf(DatabaseException.class)
+        .hasFieldOrPropertyWithValue(
+            "code", DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.name())
+        .hasMessageContaining(
+            "Type of document id stored in database unexpected: Document Id type Number stored as invalid String 'abc' (not a valid Number)");
 
     e =
         catchException(
@@ -113,9 +116,10 @@ public class DocumentIdTest {
             });
     assertThat(e)
         .isNotNull()
-        .isInstanceOf(DocumentException.class)
-        .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
-        .hasMessageStartingWith(
-            "Bad type for '_id' field: Document Id type Date stored as invalid String 'abc' (needs to be Number).");
+        .isInstanceOf(DatabaseException.class)
+        .hasFieldOrPropertyWithValue(
+            "code", DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.name())
+        .hasMessageContaining(
+            "Type of document id stored in database unexpected: Document Id type Date stored as invalid String 'abc' (needs to be Number)");
   }
 }

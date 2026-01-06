@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
@@ -94,7 +95,7 @@ public interface DocumentId extends DocRowIdentifer {
   static DocumentId fromDatabase(int typeId, String documentIdAsText) {
     JsonType type = DocumentConstants.KeyTypeId.getJsonType(typeId);
     if (type == null) {
-      throw DocumentException.Code.SHRED_BAD_DOCID_TYPE.get(
+      throw DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.get(
           Map.of(
               "errorMessage",
               "Document Id must be a JSON String(1), Number(2), Boolean(3), null(4) or Date(5) instead got %d"
@@ -108,7 +109,7 @@ public interface DocumentId extends DocRowIdentifer {
           case "false":
             return fromBoolean(false);
         }
-        throw DocumentException.Code.SHRED_BAD_DOCID_TYPE.get(
+        throw DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.get(
             Map.of(
                 "errorMessage",
                 "Document Id type Boolean stored as invalid String '%s' (must be 'true' or 'false')"
@@ -121,7 +122,7 @@ public interface DocumentId extends DocRowIdentifer {
         try {
           return fromNumber(new BigDecimal(documentIdAsText));
         } catch (NumberFormatException e) {
-          throw DocumentException.Code.SHRED_BAD_DOCID_TYPE.get(
+          throw DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.get(
               Map.of(
                   "errorMessage",
                   "Document Id type Number stored as invalid String '%s' (not a valid Number)"
@@ -136,7 +137,7 @@ public interface DocumentId extends DocRowIdentifer {
           long ts = Long.parseLong(documentIdAsText);
           return fromTimestamp(ts);
         } catch (NumberFormatException e) {
-          throw DocumentException.Code.SHRED_BAD_DOCID_TYPE.get(
+          throw DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.get(
               Map.of(
                   "errorMessage",
                   "Document Id type Date stored as invalid String '%s' (needs to be Number)"
@@ -144,7 +145,7 @@ public interface DocumentId extends DocRowIdentifer {
         }
       }
     }
-    throw DocumentException.Code.SHRED_BAD_DOCID_TYPE.get(
+    throw DatabaseException.Code.UNEXPECTED_DOCUMENT_ID_TYPE.get(
         Map.of("errorMessage", "unknown `JsonType`: '%s'".formatted(type)));
   }
 
