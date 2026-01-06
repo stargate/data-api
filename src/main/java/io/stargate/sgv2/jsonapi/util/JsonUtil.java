@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
+import org.apache.commons.text.WordUtils;
 import org.bson.types.ObjectId;
 
 public class JsonUtil {
@@ -40,9 +41,7 @@ public class JsonUtil {
     if (nodeType == null) {
       return "<null>";
     }
-    String typeDesc = nodeType.toString();
-    // We know all are longer than 1 character, upper case, so:
-    return typeDesc.substring(0, 1) + typeDesc.substring(1).toLowerCase();
+    return WordUtils.capitalizeFully(nodeType.toString());
   }
 
   /**
@@ -330,7 +329,7 @@ public class JsonUtil {
       if (!element.isNumber()) {
         throw DocumentException.Code.SHRED_BAD_VECTOR_VALUE.get(
             Map.of(
-                "nodeType", JsonUtil.nodeTypeAsString(element),
+                "nodeType", nodeTypeAsString(element),
                 "nodeValue", element.toString()));
       }
       arrayVals[i] = element.floatValue();
