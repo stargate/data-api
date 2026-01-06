@@ -83,9 +83,13 @@ public abstract class StargateTestResource
     propsBuilder.put("stargate.jsonapi.operations.vectorize-enabled", "true");
 
     ImmutableMap<String, String> props = propsBuilder.build();
-    props.forEach(System::setProperty);
+    exposeSystemProperties(props);
     LOG.info("Using props map for the integration tests: %s".formatted(props));
     return props;
+  }
+
+  protected void exposeSystemProperties(Map<String, String> props) {
+    props.forEach(System::setProperty);
   }
 
   @Override

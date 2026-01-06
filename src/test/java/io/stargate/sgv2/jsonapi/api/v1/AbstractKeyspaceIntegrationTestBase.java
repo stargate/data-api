@@ -54,7 +54,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   /**
    * Access is protected via {@link #createDriverSession()} method and closed in {@link #cleanUp()}.
    */
-  private CqlSession cqlSession;
+  protected CqlSession cqlSession;
 
   @BeforeAll
   public static void enableLog() {
@@ -350,7 +350,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
    * Synchronized to avoid creating multiple sessions, performance is not a concern. Session is
    * closed in {@link #cleanUp()} method.
    */
-  private synchronized CqlSession createDriverSession() {
+  protected synchronized CqlSession createDriverSession() {
     if (cqlSession == null) {
       int port = Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
       String dc;

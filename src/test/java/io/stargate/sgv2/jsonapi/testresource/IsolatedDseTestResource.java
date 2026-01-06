@@ -15,6 +15,11 @@ public class IsolatedDseTestResource extends DseTestResource {
   }
 
   @Override
+  protected void exposeSystemProperties(Map<String, String> props) {
+    // Do not expose system properties to avoid interfering with other tests running in parallel
+  }
+
+  @Override
   public void stop() {
     super.stop();
     isolatedContainer = null;
