@@ -9,21 +9,51 @@ import com.github.dockerjava.api.DockerClient;
 import io.quarkus.logging.Log;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.testresource.IsolatedDseTestResource;
+import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(IsolatedDseTestResource.class)
+@QuarkusTestResource(
+    value = SessionEvictionIntegrationTest.SessionEvictionTestResource.class,
+    restrictToAnnotatedClass = true)
 public class SessionEvictionIntegrationTest extends AbstractCollectionIntegrationTestBase {
+
+  public static class SessionEvictionTestResource extends DseTestResource {
+
+    private static GenericContainer<?> isolatedContainer;
+
+    @Override
+    public Map<String, String> start() {
+      Map<String, String> props = super.start();
+      isolatedContainer = super.getCassandraContainer();
+      return props;
+    }
+
+    @Override
+    protected void exposeSystemProperties(Map<String, String> props) {
+      // Do not expose system properties to avoid interfering with other tests running in parallel
+    }
+
+    @Override
+    public void stop() {
+      super.stop();
+      isolatedContainer = null;
+    }
+
+    public static GenericContainer<?> getIsolatedContainer() {
+      return isolatedContainer;
+    }
+  }
 
   @Override
   protected synchronized CqlSession createDriverSession() {
     if (cqlSession == null) {
-      GenericContainer<?> container = IsolatedDseTestResource.getIsolatedContainer();
+      GenericContainer<?> container = SessionEvictionTestResource.getIsolatedContainer();
       if (container == null) {
         throw new IllegalStateException("Isolated container not started!");
       }
@@ -60,7 +90,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               """);
 
     // 2. Pause/stop the container to simulate DB failure
-    GenericContainer<?> dbContainer = IsolatedDseTestResource.getIsolatedContainer();
+    GenericContainer<?> dbContainer = SessionEvictionTestResource.getIsolatedContainer();
     DockerClient dockerClient = dbContainer.getDockerClient();
     String containerId = dbContainer.getContainerId();
     Log.info("Pausing Database Container to simulate failure (Freeze)...");
