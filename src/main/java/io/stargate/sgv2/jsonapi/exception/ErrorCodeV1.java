@@ -19,6 +19,8 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
+  EMBEDDING_SERVICE_NOT_CONFIGURED(
+      "Unable to vectorize data, embedding service not configured for the collection "),
   EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
@@ -46,8 +48,6 @@ public enum ErrorCodeV1 {
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
-  EMBEDDING_SERVICE_NOT_CONFIGURED(
-      "Unable to vectorize data, embedding service not configured for the collection "),
 
   UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
 
