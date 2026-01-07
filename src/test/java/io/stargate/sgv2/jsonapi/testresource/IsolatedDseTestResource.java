@@ -11,7 +11,9 @@ public class IsolatedDseTestResource extends DseTestResource {
   public Map<String, String> start() {
     Map<String, String> props = super.start();
     isolatedContainer = super.getCassandraContainer();
-    return props;
+    java.util.HashMap<String, String> mutableProps = new java.util.HashMap<>(props);
+    mutableProps.remove("stargate.int-test.cassandra.cql-port");
+    return mutableProps;
   }
 
   @Override
