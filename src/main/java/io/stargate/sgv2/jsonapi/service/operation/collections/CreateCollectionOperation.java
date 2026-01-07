@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -324,8 +325,8 @@ public record CreateCollectionOperation(
             res -> {
               if (!res) {
                 // table creation failure or index creation failure
-                return ErrorCodeV1.COLLECTION_CREATION_ERROR.toApiException(
-                    "provided collection ('%s')", name);
+                return DatabaseException.Code.COLLECTION_CREATION_ERROR.get(
+                    Map.of("collectionName", name));
               } else {
                 return new SchemaChangeResult(true);
               }

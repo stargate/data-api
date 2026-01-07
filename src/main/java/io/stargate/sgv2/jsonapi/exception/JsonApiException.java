@@ -42,7 +42,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           add(VECTORIZE_INVALID_AUTHENTICATION_TYPE);
           add(VECTORIZE_CREDENTIAL_INVALID);
           add(VECTORIZECONFIG_CHECK_FAIL);
-          add(COLLECTION_CREATION_ERROR);
           add(INVALID_QUERY);
           add(NO_INDEX_ERROR);
         }
