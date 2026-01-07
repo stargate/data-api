@@ -43,7 +43,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           add(VECTORIZE_CREDENTIAL_INVALID);
           add(VECTORIZECONFIG_CHECK_FAIL);
           add(INVALID_QUERY);
-          add(NO_INDEX_ERROR);
         }
       };
 
