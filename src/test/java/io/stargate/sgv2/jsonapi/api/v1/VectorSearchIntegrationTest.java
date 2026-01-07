@@ -9,6 +9,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
@@ -303,9 +304,9 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("$", responseIsWritePartialSuccess())
           .body("status", jsonEquals("{'insertedIds':[]}"))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vector value can't be empty"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].message", containsString("Bad $vector value: cannot be empty Array"));
     }
 
     @Test
@@ -330,9 +331,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("$", responseIsWritePartialSuccess())
           .body("status", jsonEquals("{'insertedIds':[]}"))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vector value needs to be array of numbers"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_VALUE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad $vector value: needs to be an array containing only Numbers but has a String value"));
     }
 
     @Test
@@ -464,12 +468,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
-                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@' (code 0x40) in base64 content"));
+              containsString(
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper; not valid Base64-encoded String: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@'"));
     }
 
     @Test
@@ -487,12 +491,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
-                  "Bad binary vector value to shred: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed"));
+              containsString(
+                  "Bad binary vector value to shred: Unsupported JSON value type in EJSON $binary wrapper (Number): only String allowed"));
     }
 
     @Test
@@ -510,12 +514,14 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_VECTOR_TYPE"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_DOCUMENT_VECTOR_TYPE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
-                  "Bad $vector document type to shred : The key for the $vector object must be '$binary'"));
+              containsString(
+                  "Bad $vector value to shred: the key for the $vector Object must be '$binary', not 'binary'"));
     }
 
     @Test
@@ -533,11 +539,11 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
-              is(
+              containsString(
                   "Bad binary vector value to shred: binary value to decode is not a multiple of 4 bytes long (3 bytes)"));
     }
 
@@ -934,9 +940,9 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].message", is("$vector value can't be empty"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].message", containsString("Bad $vector value: cannot be empty Array"));
     }
 
     @Test
@@ -960,9 +966,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].message", is("$vector value needs to be array of numbers"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_VALUE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad $vector value: needs to be an array containing only Numbers but has a String value"));
     }
 
     @Test
@@ -1087,9 +1096,9 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].message", is("$vector value can't be empty"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].message", containsString("Bad $vector value: cannot be empty Array"));
     }
 
     @Test
@@ -1136,9 +1145,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].message", is("$vector value needs to be array of numbers"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_VALUE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad $vector value: needs to be an array containing only Numbers but has a String value"));
     }
 
     // Vector columns can only use ANN, not regular filtering

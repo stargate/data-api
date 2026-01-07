@@ -17,32 +17,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  // Really Bad, generic name: but only used for EmbeddingProvidersConfig validation issues
-  INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-
-  SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
-
-  SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
-
-  SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
-
-  SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
-
-  SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
-
-  SHRED_BAD_DOCUMENT_VECTORIZE_TYPE("Bad $vectorize document type to shred "),
-
-  SHRED_BAD_DOCUMENT_LEXICAL_TYPE("Bad type for $lexical content to shred"),
-
-  SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
-
-  SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
-
-  SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
-
-  SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
-  SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
-
   // CreateCollection error codes:
 
   EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
@@ -99,9 +73,6 @@ public enum ErrorCodeV1 {
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
-
-  LEXICAL_CONTENT_TOO_BIG(
-      "Lexical content is too big, please use a smaller value for the $lexical field"),
 
   HYBRID_FIELD_CONFLICT(
       "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
