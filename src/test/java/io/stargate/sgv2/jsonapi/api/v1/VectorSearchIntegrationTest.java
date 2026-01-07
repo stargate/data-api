@@ -9,7 +9,9 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
@@ -124,8 +126,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                 """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
+          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString("function name can only be 'dot_product', 'cosine' or 'euclidean'"));
@@ -305,7 +307,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("status", jsonEquals("{'insertedIds':[]}"))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name()))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body("errors[0].message", containsString("Bad $vector value: cannot be empty Array"));
     }
 
@@ -332,7 +334,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("status", jsonEquals("{'insertedIds':[]}"))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_VALUE.name()))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -468,8 +470,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.name()))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -491,8 +495,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.name()))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -517,7 +523,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].errorCode",
               is(DocumentException.Code.SHRED_BAD_DOCUMENT_VECTOR_TYPE.name()))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -539,8 +545,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.name()))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -1119,7 +1127,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_QUERY"))
+          .body("errors[0].errorCode", is(DatabaseException.Code.INVALID_COLLECTION_QUERY.name()))
           .body(
               "errors[0].message",
               oneOf(
