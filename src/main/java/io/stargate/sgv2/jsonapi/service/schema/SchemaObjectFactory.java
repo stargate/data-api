@@ -18,7 +18,6 @@ import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-/** Creates */
 public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactory {
 
   private static final CollectionTableMatcher IS_COLLECTION_PREDICATE =
@@ -52,21 +51,29 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
           case KEYSPACE -> createKeyspaceSchemaObject(requestContext, identifier, forceRefresh);
           case TABLE ->
               createTableBasedSchemaObject(requestContext, identifier, forceRefresh)
-                  .invoke(
-                      tbso -> {
-                        if (tbso.type() != SchemaObjectType.TABLE) {
-                          throw new SchemaObjectTypeMismatchException(
-                              SchemaObjectType.TABLE, tbso.type());
+                  .onItem()
+                  .transformToUni(
+                      tableBasedSchemaObject -> {
+                        if (tableBasedSchemaObject.type() != SchemaObjectType.TABLE) {
+                          return Uni.createFrom()
+                              .failure(
+                                  new SchemaObjectTypeMismatchException(
+                                      SchemaObjectType.TABLE, tableBasedSchemaObject.type()));
                         }
+                        return Uni.createFrom().item(tableBasedSchemaObject);
                       });
           case COLLECTION ->
               createTableBasedSchemaObject(requestContext, identifier, forceRefresh)
-                  .invoke(
-                      tbso -> {
-                        if (tbso.type() != SchemaObjectType.COLLECTION) {
-                          throw new SchemaObjectTypeMismatchException(
-                              SchemaObjectType.COLLECTION, tbso.type());
+                  .onItem()
+                  .transformToUni(
+                      tableBasedSchemaObject -> {
+                        if (tableBasedSchemaObject.type() != SchemaObjectType.COLLECTION) {
+                          return Uni.createFrom()
+                              .failure(
+                                  new SchemaObjectTypeMismatchException(
+                                      SchemaObjectType.COLLECTION, tableBasedSchemaObject.type()));
                         }
+                        return Uni.createFrom().item(tableBasedSchemaObject);
                       });
           default ->
               throw new IllegalArgumentException(

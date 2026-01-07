@@ -43,10 +43,7 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
     if (!TABLE_MATCHER.test(tableMetadata)) {
       return Optional.empty();
     }
-    var indexesContainer =
-        TableSchemaObject.from(tableMetadata, OBJECT_MAPPER)
-            .apiTableDef()
-            .indexesIncludingUnsupported();
+    var indexesContainer = schemaObject.apiTableDef().indexesIncludingUnsupported();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "indexesForTable() - table: {} indexesContainer: {}",

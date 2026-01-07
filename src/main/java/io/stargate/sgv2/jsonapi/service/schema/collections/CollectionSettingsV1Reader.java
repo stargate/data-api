@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import java.util.List;
 
 /**
@@ -17,9 +18,8 @@ import java.util.List;
  */
 public class CollectionSettingsV1Reader {
   public CollectionSchemaObject readCollectionSettings(
+      SchemaObjectIdentifier identifier,
       JsonNode collectionNode,
-      String keyspaceName,
-      String collectionName,
       TableMetadata tableMetadata,
       ObjectMapper objectMapper) {
 
@@ -67,12 +67,15 @@ public class CollectionSettingsV1Reader {
     } else {
       rerankingConfig =
           CollectionRerankDef.fromCommentJson(
-              keyspaceName, collectionName, rerankingNode, objectMapper);
+              // [jsonapi#639]: get internal name to avoid quoting of case-sensitive names
+              identifier.keyspace().asInternal(),
+              identifier.table().asInternal(),
+              rerankingNode,
+              objectMapper);
     }
 
     return new CollectionSchemaObject(
-        keyspaceName,
-        collectionName,
+        identifier.tenant(),
         tableMetadata,
         idConfig,
         vectorConfig,

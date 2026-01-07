@@ -32,13 +32,13 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
 import io.stargate.sgv2.jsonapi.service.schema.UnscopedSchemaObjectIdentifier;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -80,7 +80,6 @@ public class CollectionResource {
   // TODO remove apiFeatureConfig as a property after cleanup for how we get schema from cache
   @Inject private FeaturesConfig apiFeatureConfig;
   @Inject private RequestContext requestContext;
-  @Inject private SchemaCache schemaCache;
 
   private final SchemaObjectCacheSupplier schemaObjectCacheSupplier;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;

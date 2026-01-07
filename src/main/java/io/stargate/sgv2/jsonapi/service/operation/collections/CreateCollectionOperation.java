@@ -127,7 +127,7 @@ public record CreateCollectionOperation(
 
     logger.info(
         "Executing CreateCollectionOperation for {}.{} with definition: {}",
-        commandContext.schemaObject().name().keyspace(),
+        commandContext.schemaObject().identifier().keyspace(),
         name,
         comment);
 
@@ -141,8 +141,7 @@ public record CreateCollectionOperation(
               // refactor to make
               // this operation fully Async, without refactoring all the logic.
               KeyspaceMetadata currKeyspace =
-                  allKeyspaces.get(
-                      CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
+                  allKeyspaces.get(commandContext.schemaObject().identifier().keyspace());
 
               if (currKeyspace == null) {
                 return Uni.createFrom()
@@ -162,7 +161,8 @@ public record CreateCollectionOperation(
 
               // if table exists, compare existingCollectionSettings and newCollectionSettings
               CollectionSchemaObject existingCollectionSettings =
-                  CollectionSchemaObject.getCollectionSettings(tableMetadata, objectMapper);
+                  CollectionSchemaObject.getCollectionSettings(
+                      requestContext.tenant(), tableMetadata, objectMapper);
 
               // Use the fromNameOrDefault() so if not specified it will default
               var embeddingSourceModel =
@@ -176,9 +176,8 @@ public record CreateCollectionOperation(
                           () -> SimilarityFunction.getUnknownFunctionException(vectorFunction));
 
               CollectionSchemaObject newCollectionSettings =
-                  CollectionSchemaObject.getCollectionSettings(
-                      currKeyspace.getName().asInternal(),
-                      name,
+                  CollectionSchemaObject.createCollectionSettings(
+                      commandContext.schemaObject().identifier(),
                       tableMetadata,
                       vectorSearch,
                       vectorSize,
@@ -221,7 +220,7 @@ public record CreateCollectionOperation(
                   logger.info(
                       "CreateCollectionOperation for {}.{} with existing legacy lexical/reranking settings, new settings differ. Tried to unify, result: {}"
                           + " Old settings: {}, New settings: {}",
-                      commandContext.schemaObject().name().keyspace(),
+                      commandContext.schemaObject().identifier().keyspace(),
                       name,
                       settingsAreEqual,
                       existingCollectionSettings,
@@ -230,7 +229,7 @@ public record CreateCollectionOperation(
                   logger.info(
                       "CreateCollectionOperation for {}.{} with different settings (but not old legacy lexical/reranking settings), cannot unify."
                           + " Old settings: {}, New settings: {}",
-                      commandContext.schemaObject().name().keyspace(),
+                      commandContext.schemaObject().identifier().keyspace(),
                       name,
                       existingCollectionSettings,
                       newCollectionSettings);
@@ -266,7 +265,7 @@ public record CreateCollectionOperation(
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo,
             getCreateTable(
-                commandContext.schemaObject().name().keyspace(),
+                commandContext.schemaObject().identifier().keyspace().asInternal(),
                 name,
                 vectorSearch,
                 vectorSize,
@@ -283,7 +282,7 @@ public record CreateCollectionOperation(
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(
-                            commandContext.schemaObject().name().keyspace(),
+                            commandContext.schemaObject().identifier().keyspace().asInternal(),
                             name,
                             lexicalConfig,
                             collectionExisted);

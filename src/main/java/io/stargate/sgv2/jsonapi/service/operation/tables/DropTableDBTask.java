@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
@@ -38,7 +36,7 @@ public class DropTableDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
 
   @Override
   protected SimpleStatement buildStatement() {
-    CqlIdentifier keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
+    CqlIdentifier keyspaceIdentifier = schemaObject.identifier().keyspace();
 
     // Set as StorageAttachedIndex as default
     Drop drop = SchemaBuilder.dropTable(keyspaceIdentifier, name);

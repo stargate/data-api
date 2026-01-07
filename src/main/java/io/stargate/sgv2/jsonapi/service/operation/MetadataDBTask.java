@@ -56,7 +56,11 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
       CommandContext<SchemaT> commandContext, CommandQueryExecutor queryExecutor) {
 
     return new MetadataAsyncResultSetSupplier(
-        commandContext, this, null, queryExecutor, schemaObject.name().keyspace());
+        commandContext,
+        this,
+        null,
+        queryExecutor,
+        schemaObject.identifier().keyspace().asInternal());
   }
 
   @Override

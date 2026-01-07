@@ -67,7 +67,10 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
         .values()
         .stream()
         .filter(TABLE_MATCHER)
-        .map(tableMetadata -> TableSchemaObject.from(tableMetadata, OBJECT_MAPPER))
+        .map(
+            tableMetadata ->
+                TableSchemaObject.from(
+                    schemaObject.identifier().tenant(), tableMetadata, OBJECT_MAPPER))
         .map(
             tableSchemaObject ->
                 tableSchemaObject

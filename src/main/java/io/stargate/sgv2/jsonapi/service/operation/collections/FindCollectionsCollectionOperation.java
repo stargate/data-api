@@ -64,7 +64,8 @@ public record FindCollectionsCollectionOperation(
         .map(
             keyspaces ->
                 keyspaces.get(
-                    CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace())))
+                    CqlIdentifier.fromInternal(
+                        commandContext.schemaObject().identifier().keyspace().asInternal())))
         .map(
             keyspaceMetadata -> {
               if (keyspaceMetadata == null) {
@@ -76,7 +77,8 @@ public record FindCollectionsCollectionOperation(
                       .filter(tableMatcher)
                       .map(
                           table ->
-                              CollectionSchemaObject.getCollectionSettings(table, objectMapper))
+                              CollectionSchemaObject.getCollectionSettings(
+                                  requestContext.tenant(), table, objectMapper))
                       .toList();
               return new Result(explain, collections);
             });
@@ -98,7 +100,9 @@ public record FindCollectionsCollectionOperation(
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
       } else {
         List<String> tables =
-            collections.stream().map(schemaObject -> schemaObject.name().table()).toList();
+            collections.stream()
+                .map(schemaObject -> schemaObject.identifier().table().asInternal())
+                .toList();
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, tables);
       }
       return builder.build();

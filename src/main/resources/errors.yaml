@@ -1024,6 +1024,16 @@ request-errors:
       Resend the command using a Keyspace that exists.
 
   - scope: SCHEMA
+    code: UNKNOWN_COLLECTION_OR_TABLE
+    title: Collection or Table does not exist in the Keyspace
+    body: |-
+      The command tried to get a Collection or Table ${table} that does not exist in the Keyspace ${keyspace}.
+
+      The keyspace has the existing collections or tables: ${allTables}.
+
+      Resend the command using a Collection or Table that exists.
+
+  - scope: SCHEMA
     code: UNKNOWN_PARTITION_SORT_COLUMNS
     title: Partition sort columns are not defined in the table schema
     body: |-

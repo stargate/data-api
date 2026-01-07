@@ -95,7 +95,7 @@ public class MeteredCommandProcessor {
 
     // Set up logging context (MDC)
     // use MDC to populate logs as needed(namespace,collection,tenantId)
-    commandContext.schemaObject().name().addToMDC();
+    commandContext.schemaObject().identifier().addToMDC();
     MDC.put("tenantId", commandContext.requestContext().tenant().toString());
 
     // --- Defer Command Processing (from PR2076) ---
@@ -149,7 +149,7 @@ public class MeteredCommandProcessor {
             () -> {
               // Cleanup MDC after processing completes (success or failure) to prevent data from
               // leaking into the next request handled by the same thread.
-              commandContext.schemaObject().name().removeFromMDC();
+              commandContext.schemaObject().identifier().removeFromMDC();
               MDC.remove("tenantId");
             });
   }

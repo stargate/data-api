@@ -29,7 +29,7 @@ public record DeleteCollectionCollectionOperation(
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info("Executing DeleteCollectionCollectionOperation for {}", name);
-    String cql = DROP_TABLE_CQL.formatted(context.schemaObject().name().keyspace(), name);
+    String cql = DROP_TABLE_CQL.formatted(context.schemaObject().identifier().keyspace(), name);
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
     return queryExecutor

@@ -50,7 +50,9 @@ public class SchemaObjectIdentifier
         switch (type) {
           case DATABASE -> "db:" + tenant;
           case KEYSPACE -> cqlIdentifierToMessageString(keyspace);
-          case COLLECTION, TABLE, INDEX ->
+            // Note, INDEX and UDT schemaType are not used currently
+            // Added for syntax completeness
+          case COLLECTION, TABLE, INDEX, UDT ->
               cqlIdentifierToMessageString(keyspace) + "." + cqlIdentifierToMessageString(table);
         };
   }

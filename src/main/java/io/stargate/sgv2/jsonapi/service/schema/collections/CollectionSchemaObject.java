@@ -38,18 +38,6 @@ import java.util.Optional;
  */
 public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
-  // Collection Schema to use if all information missing: Vector not configured,
-  // no Lexical enabled
-  //  public static final CollectionSchemaObject MISSING =
-  //      new CollectionSchemaObject(
-  //          SchemaObjectIdentifier.MISSING,
-  //          null,
-  //          IdConfig.defaultIdConfig(),
-  //          VectorConfig.NOT_ENABLED_CONFIG,
-  //          null,
-  //          CollectionLexicalConfig.configForDisabled(),
-  //          CollectionRerankDef.configForDisabled());
-
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
   private final CollectionIndexingConfig indexingConfig;
@@ -57,10 +45,6 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   private final CollectionLexicalConfig lexicalConfig;
   private final CollectionRerankDef rerankDef;
 
-  /**
-   * @param vectorConfig
-   * @param indexingConfig
-   */
   public CollectionSchemaObject(
       Tenant tenant,
       TableMetadata tableMetadata,
@@ -81,7 +65,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   }
 
   /**
-   * we have a lot of old tests that created a collection without having table meta data. Use the
+   * we have a lot of old tests that created a collection without having table metadata. Use the
    * ctor with TableMetadata in prod code
    */
   @VisibleForTesting
@@ -102,37 +86,6 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
     this.rerankDef = Objects.requireNonNull(rerankDef);
   }
-
-  //  public CollectionSchemaObject(
-  //      SchemaObjectIdentifier name,
-  //      TableMetadata tableMetadata,
-  //      IdConfig idConfig,
-  //      VectorConfig vectorConfig,
-  //      CollectionIndexingConfig indexingConfig,
-  //      CollectionLexicalConfig lexicalConfig,
-  //      CollectionRerankDef rerankDef) {
-  //    super(TYPE, name, tableMetadata);
-  //
-  //    this.idConfig = idConfig;
-  //    this.vectorConfig = vectorConfig;
-  //    this.indexingConfig = indexingConfig;
-  //    this.tableMetadata = tableMetadata;
-  //    this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
-  //    this.rerankDef = Objects.requireNonNull(rerankDef);
-  //  }
-
-  // TODO: remove this, it is just here for testing and can be handled by creating test data
-  // effectively
-  //  public CollectionSchemaObject withIdType(CollectionIdType idType) {
-  //    return new CollectionSchemaObject(
-  //        name(),
-  //        tableMetadata,
-  //        new IdConfig(idType),
-  //        vectorConfig,
-  //        indexingConfig,
-  //        lexicalConfig,
-  //        rerankDef);
-  //  }
 
   /**
    * Method for constructing a new CollectionSchemaObject with overrides for Lexical and Rerank
@@ -191,31 +144,9 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return indexingConfig.indexingProjector();
   }
 
-  // TODO: AARON COMMENTED OUT TO SEE IF IT IS USED
-  //  public enum AuthenticationType {
-  //    NONE,
-  //    HEADER,
-  //    SHARED_SECRET,
-  //    UNDEFINED;
-  //
-  //    public static AuthenticationType fromString(String authenticationType) {
-  //      if (authenticationType == null) return UNDEFINED;
-  //      return switch (authenticationType.toLowerCase()) {
-  //        case "none" -> NONE;
-  //        case "header" -> HEADER;
-  //        case "shared_secret" -> SHARED_SECRET;
-  //        default ->
-  //            throw ErrorCodeV1.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
-  //                "'%s'", authenticationType);
-  //      };
-  //    }
-  //  }
-
   public static CollectionSchemaObject getCollectionSettings(
       Tenant tenant, TableMetadata table, ObjectMapper objectMapper) {
-    // [jsonapi#639]: get internal name to avoid quoting of case-sensitive names
-    String keyspaceName = table.getKeyspace().asInternal();
-    String collectionName = table.getName().asInternal();
+
     // get vector column
     final Optional<ColumnMetadata> vectorColumn =
         table.getColumn(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME);
@@ -254,10 +185,9 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                       () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelName));
         }
       }
+
       return createCollectionSettings(
-          tenant,
-          keyspaceName,
-          collectionName,
+          SchemaObjectIdentifier.forCollection(tenant, table.getKeyspace(), table.getName()),
           table,
           true,
           vectorSize,
@@ -267,9 +197,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           objectMapper);
     } else { // if not vector collection
       return createCollectionSettings(
-          tenant,
-          keyspaceName,
-          collectionName,
+          SchemaObjectIdentifier.forCollection(tenant, table.getKeyspace(), table.getName()),
           table,
           false,
           0,
@@ -280,34 +208,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     }
   }
 
-  public static CollectionSchemaObject getCollectionSettings(
-      Tenant tenant,
-      String keyspaceName,
-      String collectionName,
-      TableMetadata tableMetadata,
-      boolean vectorEnabled,
-      int vectorSize,
-      SimilarityFunction similarityFunction,
-      EmbeddingSourceModel sourceModel,
-      String comment,
-      ObjectMapper objectMapper) {
-    return createCollectionSettings(
-        tenant,
-        keyspaceName,
-        collectionName,
-        tableMetadata,
-        vectorEnabled,
-        vectorSize,
-        similarityFunction,
-        sourceModel,
-        comment,
-        objectMapper);
-  }
-
-  private static CollectionSchemaObject createCollectionSettings(
-      Tenant tenant,
-      String keyspaceName,
-      String collectionName,
+  public static CollectionSchemaObject createCollectionSettings(
+      SchemaObjectIdentifier identifier,
       TableMetadata tableMetadata,
       boolean vectorEnabled,
       int vectorSize,
@@ -323,7 +225,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionRerankDef rerankingConfig = CollectionRerankDef.configForPreRerankingCollection();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
-            tenant,
+            identifier.tenant(),
             tableMetadata,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
@@ -339,7 +241,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             rerankingConfig);
       } else {
         return new CollectionSchemaObject(
-            tenant,
+            identifier.tenant(),
             tableMetadata,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
@@ -367,13 +269,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
           case 1:
             return new CollectionSettingsV1Reader()
-                .readCollectionSettings(
-                    tenant,
-                    collectionNode,
-                    keyspaceName,
-                    collectionName,
-                    tableMetadata,
-                    objectMapper);
+                .readCollectionSettings(identifier, collectionNode, tableMetadata, objectMapper);
           default:
             throw ErrorCodeV1.INVALID_SCHEMA_VERSION.toApiException();
         }
@@ -382,10 +278,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         // sample comment : {"indexing":{"deny":["address"]}}}
         return new CollectionSettingsV0Reader()
             .readCollectionSettings(
-                tenant,
+                identifier,
                 commentConfigNode,
-                keyspaceName,
-                collectionName,
                 tableMetadata,
                 vectorEnabled,
                 vectorSize,

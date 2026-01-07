@@ -14,9 +14,11 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionFactory;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
+import jakarta.validation.constraints.NotNull;
 import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.List;
@@ -119,7 +121,6 @@ public class SchemaObjectCache
     return get(requestContext, identifier, userAgent, forceRefresh);
   }
 
-  // get keyspace
   public Uni<KeyspaceSchemaObject> getKeyspace(
       RequestContext requestContext,
       SchemaObjectIdentifier identifier,
@@ -230,14 +231,11 @@ public class SchemaObjectCache
     return (Optional<T>) getIfPresent(createCacheKey(requestContext, identifier, userAgent, false));
   }
 
-  //
-  //  private <T extends SchemaObject> Optional<T> getIfPresent(SchemaCacheKey key) {
-  //
-  //    // todo, check and cast somehow
-  //    return (Optional<T>) getIfPresent(key);
-  //  }
   protected void evictTable(Tenant tenant, CqlIdentifier keyspace, CqlIdentifier table) {
     // no need to normalize the keyspace name, it is already normalized
+    // requestContext is only needed when creating/loading values
+    // Eviction with null requestContext works because SchemaCacheKey.equals() only compares
+    // schemaIdentifier
     var evictKey =
         createCacheKey(null, SchemaObjectIdentifier.forTable(tenant, keyspace, table), null, false);
 
@@ -250,6 +248,9 @@ public class SchemaObjectCache
 
   protected void evictKeyspace(Tenant tenant, CqlIdentifier keyspace, boolean evictAll) {
     // no need to normalize the keyspace name, it is already normalized
+    // requestContext is only needed when creating/loading values
+    // Eviction with null requestContext works because SchemaCacheKey.equals() only compares
+    // schemaIdentifier
     var evictKey =
         createCacheKey(null, SchemaObjectIdentifier.forKeyspace(tenant, keyspace), null, false);
 
@@ -259,8 +260,19 @@ public class SchemaObjectCache
 
     evict(evictKey);
     if (evictAll) {
-      // we need to remove all the tables, collections, etc that are in this keyspace
+      // we need to remove all the tables, collections, etc. All of those are in this keyspace.
       evictIf(key -> evictKey.schemaIdentifier.isSameKeyspace(key.schemaIdentifier));
+    }
+  }
+
+  /**
+   * TODO, how to do this for single level cache Removes all keyspaces and table entries for the
+   * given tenant from the cache.
+   */
+  void evictAllKeyspaces(Tenant tenant) {
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("evictAllKeyspaces() - tenant: {}", tenant);
     }
   }
 
@@ -426,7 +438,7 @@ public class SchemaObjectCache
     }
 
     @Override
-    public void onSessionReady(@NonNull Session session) {
+    public void onSessionReady(@NotNull Session session) {
       // This is called when the session is ready, we can get the tenant from the session name
       // and set it in the listener so we can use it in the other methods.
       tenant = TenantFactory.instance().create(session.getName());
@@ -438,44 +450,66 @@ public class SchemaObjectCache
      * re-created
      */
     @Override
-    public void onTableDropped(@NonNull TableMetadata table) {
+    public void onTableDropped(@NotNull TableMetadata table) {
       evictTable("onTableDropped", table);
     }
 
     /** When a table is created, evict from cache to avoid stale if it was re-created */
     @Override
-    public void onTableCreated(@NonNull TableMetadata table) {
+    public void onTableCreated(@NotNull TableMetadata table) {
       evictTable("onTableCreated", table);
     }
 
     /** When a table is updated, evict from cache to avoid stale entries */
     @Override
-    public void onTableUpdated(@NonNull TableMetadata current, @NonNull TableMetadata previous) {
+    public void onTableUpdated(@NotNull TableMetadata current, @NotNull TableMetadata previous) {
       // table name can never change
       evictTable("onTableUpdated", current);
     }
 
     /** When keyspace dropped, we dont need any more of the tables in the cache */
     @Override
-    public void onKeyspaceDropped(@NonNull KeyspaceMetadata keyspace) {
+    public void onKeyspaceDropped(@NotNull KeyspaceMetadata keyspace) {
       evictKeyspace("onKeyspaceDropped", keyspace, true);
     }
 
-    /** When keyspace created, evict KS and all other objects incase we missed the drop */
+    /** When keyspace created, evict KS and all other objects in case we missed the drop */
     @Override
-    public void onKeyspaceCreated(@NonNull KeyspaceMetadata keyspace) {
+    public void onKeyspaceCreated(@NotNull KeyspaceMetadata keyspace) {
       evictKeyspace("onKeyspaceCreated", keyspace, true);
     }
 
-    /** When keyspace updated, evict from cache incase stale keyspace or collections */
+    /** When keyspace updated, evict from cache in case stale keyspace or collections */
     @Override
     public void onKeyspaceUpdated(
-        @NonNull KeyspaceMetadata current, @NonNull KeyspaceMetadata previous) {
+        @NotNull KeyspaceMetadata current, @NotNull KeyspaceMetadata previous) {
       evictKeyspace("onKeyspaceUpdated", current, false);
     }
   }
 
-  /** Called to create a new session when one is needed. */
+  /**
+   * Listener for use with the {@link CQLSessionCache} to remove the schema object cache entries
+   * when a tenant is deactivated.
+   */
+  private static class SchemaObjectCacheDeactivatedTenantConsumer
+      implements CQLSessionCache.DeactivatedTenantListener {
+
+    private final SchemaObjectCache schemaObjectCache;
+
+    public SchemaObjectCacheDeactivatedTenantConsumer(SchemaObjectCache schemaObjectCache) {
+      this.schemaObjectCache =
+          Objects.requireNonNull(schemaObjectCache, "schemaObjectCache must not be null");
+    }
+
+    @Override
+    public void accept(Tenant tenant) {
+      // the sessions are keyed on the tenantID and the credentials, and one session can work with
+      // multiple keyspaces. So we need to evict all the keyspaces for the tenant
+      schemaObjectCache.evictAllKeyspaces(tenant);
+    }
+  }
+
+  /** Called to create a new schema object when one is needed. */
   interface SchemaObjectFactory {
     CompletionStage<SchemaObject> apply(
         RequestContext requestContext, SchemaObjectIdentifier identifier, boolean forceRefresh);

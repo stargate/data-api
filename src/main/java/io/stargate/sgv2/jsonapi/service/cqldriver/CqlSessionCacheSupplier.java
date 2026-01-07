@@ -4,7 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -29,13 +29,12 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
       @ConfigProperty(name = "quarkus.application.name") String applicationName,
       OperationsConfig operationsConfig,
       MeterRegistry meterRegistry,
-      SchemaCache schemaCache // aaron - later changes remove this dependency
-      ) {
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier) {
 
     Objects.requireNonNull(applicationName, "applicationName must not be null");
     Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
     Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
-    Objects.requireNonNull(schemaCache, "schemaCache must not be null");
+    Objects.requireNonNull(schemaObjectCacheSupplier, "schemaObjectCacheSupplier must not be null");
 
     var dbConfig = operationsConfig.databaseConfig();
 
@@ -46,13 +45,15 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             dbConfig.userName(),
             dbConfig.password());
 
+    var schemaObjectCache = schemaObjectCacheSupplier.get();
+
     var sessionFactory =
         new CqlSessionFactory(
             applicationName,
             dbConfig.localDatacenter(),
             dbConfig.cassandraEndPoints(),
             dbConfig.cassandraPort(),
-            schemaCache::getSchemaChangeListener);
+            schemaObjectCache::getSchemaChangeListener);
 
     singleton =
         new CQLSessionCache(
@@ -64,7 +65,7 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             sessionFactory,
             meterRegistry,
             List.of(
-                schemaCache.getDeactivatedTenantConsumer(),
+                schemaObjectCache.getDeactivatedTenantConsumer(),
                 new MetricsTenantDeactivationConsumer(meterRegistry)));
   }
 
