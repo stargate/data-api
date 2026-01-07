@@ -2109,6 +2109,41 @@ server-errors:
       Report the problem to database administrators.
 
   - scope: DATABASE
+    code: FAILED_CONCURRENT_OPERATIONS
+    title: Failed to complete concurrent operations on the database
+    body: |-
+      The Data API command was unable to complete an operation on a document or row due to concurrent modifications from other requests.
+      
+      This should be a rare error, it occurs when multiple requests attempt to modify the same document or row at the same time. The Data API has retried the operation multiple times, but was unable to complete it before another request modified the same document or row. This may indicate a "hot row" in your database, or low resources slowing down the database.
+      
+      NOTE: If the request updated multiple documents or rows, some of the updates may have completed successfully. Check the response for partial success information.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: FAILED_TO_CONNECT_TO_DATABASE
+    title: Data API Failed to connect to the database
+    body: |-
+      The Data API was unable to connect to any nodes in the database to process the command.
+      
+      This may be due to a temporary capacity issue with the database, or a wider outage.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: INVALID_COLLECTION_QUERY
+    title: Invalid query
+    body: |-
+      Invalid query against a collection.
+      Underlying problem: ${errorMessage}.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
     code: UNEXPECTED_DOCUMENT_ID_TYPE
     title: Unexpected stored document id type
     body: |-
@@ -2144,18 +2179,6 @@ server-errors:
       The Data API believed the keyspace existed, but the database returned an error that the keyspace does not exist. This may be a temporary issue.
       
       The command used the keyspace: ${keyspace}.
-      
-      ${SNIPPET.RETRY}
-
-  - scope: DATABASE
-    code: FAILED_TO_CONNECT_TO_DATABASE
-    title: Data API Failed to connect to the database
-    body: |-
-      The Data API was unable to connect to any nodes in the database to process the command. 
-      
-      This may be due to a temporary capacity issue with the database, or a wider outage.
-      
-      The command used the keyspace and table or collection: ${keyspace}.${table}.
       
       ${SNIPPET.RETRY}
 
@@ -2200,20 +2223,6 @@ server-errors:
       The database error: ${errorMessage}.
       
       Retrying the command will likely result in the same error.
-
-  - scope: DATABASE
-    code: FAILED_CONCURRENT_OPERATIONS
-    title: Failed to complete concurrent operations on the database
-    body: |-
-      The Data API command was unable to complete an operation on a document or row due to concurrent modifications from other requests. 
-      
-      This should be a rare error, it occurs when multiple requests attempt to modify the same document or row at the same time. The Data API has retried the operation multiple times, but was unable to complete it before another request modified the same document or row. This may indicate a "hot row" in your database, or low resources slowing down the database.
-      
-      NOTE: If the request updated multiple documents or rows, some of the updates may have completed successfully. Check the response for partial success information.
-      
-      The command used the keyspace and table or collection: ${keyspace}.${table}.
-      
-      ${SNIPPET.RETRY}
 
   - scope: DATABASE
     code: FAILED_COMPARE_AND_SET

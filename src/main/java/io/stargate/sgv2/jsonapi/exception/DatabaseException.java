@@ -20,6 +20,7 @@ public class DatabaseException extends ServerException {
     FAILED_TO_CONNECT_TO_DATABASE,
     FAILED_TRUNCATION,
     FAILED_WRITE_REQUEST,
+    INVALID_COLLECTION_QUERY, // legacy: converted from ErrorCodeV1.INVALID_QUERY
     INVALID_DATABASE_QUERY,
     TIMEOUT_READING_DATA,
     TIMEOUT_WRITING_DATA,
