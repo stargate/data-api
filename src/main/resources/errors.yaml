@@ -2072,6 +2072,15 @@ server-errors:
       ${SNIPPET.RETRY_UNKNOWN}
 
   - scope: DATABASE
+    code: COLLECTION_SCHEMA_VERSION_INVALID
+    title: Collection schema version invalid
+    body: |-
+      Collection '${collectionName}' has invalid schema version (${schemaVersion}).
+      Recommend re-creating the collection.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
     code: COUNT_READ_FAILED
     title: Count read failed
     body: |-
