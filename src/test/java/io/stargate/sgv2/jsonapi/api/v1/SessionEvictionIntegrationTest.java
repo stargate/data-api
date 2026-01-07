@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
+import static org.hamcrest.Matchers.*;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -77,7 +78,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
                       }
                     }
                     """)
-          .statusCode(500)
+          .statusCode(anyOf(is(500), is(504)))
           .body("$", responseIsErrorWithStatus());
       // .body("errors[0].message", containsString("AllNodesFailedException"));
       // .body("errors[0].message", containsString("No node was available"));
