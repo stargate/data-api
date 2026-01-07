@@ -16,8 +16,6 @@ public class DocumentException extends RequestException {
 
   public enum Code implements ErrorCode<DocumentException> {
     DOCUMENT_ALREADY_EXISTS,
-    // Internal error: does it belong here?
-    DOCUMENT_FROM_DB_UNPARSEABLE,
     DOCUMENT_LEXICAL_CONTENT_TOO_BIG,
     DOCUMENT_REPLACE_DIFFERENT_DOCID,
 

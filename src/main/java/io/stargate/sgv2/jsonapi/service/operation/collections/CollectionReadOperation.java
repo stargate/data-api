@@ -522,7 +522,7 @@ public interface CollectionReadOperation extends CollectionOperation {
    * Helper method to handle details of exactly how much information to include in error message.
    */
   static APIException parsingExceptionToApiException(JacksonException e) {
-    return DocumentException.Code.DOCUMENT_FROM_DB_UNPARSEABLE.get(
-        Map.of("message", e.getOriginalMessage()));
+    return DatabaseException.Code.DOCUMENT_FROM_DB_UNPARSEABLE.get(
+        Map.of("errorMessage", e.getOriginalMessage()));
   }
 }

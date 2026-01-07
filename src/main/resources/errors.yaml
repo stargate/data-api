@@ -56,6 +56,10 @@ snippets:
     body: |-
       It is safe to retry this request.
 
+  - name: RETRY_AFTER_FIX
+    body: |-
+      Fix the issue before retrying this request.
+
   - name: RETRY_UNKNOWN
     body: |-
       Review the Error Message before retrying this request.
@@ -276,21 +280,13 @@ request-errors:
 
       Either resend the command with distinct '_id', or use an update command instead.
 
-  # Internal error: does it belong here?
-  - scope: DOCUMENT
-    code: DOCUMENT_FROM_DB_UNPARSEABLE
-    title: Unable to parse JSON content
-    body: |-
-      Unable to parse JSON content retrieved from the database; not valid JSON.
-      Underlying problem: ${message}
-
-      Report the problem to database administrators.
-
   - scope: DOCUMENT
     code: DOCUMENT_LEXICAL_CONTENT_TOO_BIG
-    title: Document contains too big '$lexical' value
+    title: Document contains too big lexical value
     body: |-
       Lexical content is too big, please use a smaller value for the '$lexical' field.
+
+      ${SNIPPET.RETRY_AFTER_FIX}
 
   - scope: DOCUMENT
     code: DOCUMENT_REPLACE_DIFFERENT_DOCID
@@ -2074,6 +2070,16 @@ server-errors:
       The database error: ${errorMessage}.
       
       ${SNIPPET.RETRY}
+
+  # Internal error: does it belong here?
+  - scope: DATABASE
+    code: DOCUMENT_FROM_DB_UNPARSEABLE
+    title: Unable to parse JSON content
+    body: |-
+      Unable to parse JSON content retrieved from the database; not valid JSON.
+      Underlying problem: ${errorMessage}
+
+      Report the problem to database administrators.
 
   - scope: DATABASE
     code: UNEXPECTED_DOCUMENT_ID_TYPE

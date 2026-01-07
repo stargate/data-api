@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -71,7 +72,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("status.insertedIds", jsonEquals("[]"))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCUMENT_TYPE.name()))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -319,8 +320,8 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
-          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_ACCEPTS_NO_OPTIONS.name()))
+          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith("Command 'insertOne' does not accept options but some were included."));
@@ -406,8 +407,8 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       }
                       """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
+          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -607,7 +608,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
           .body(
               "errors[0].message",
@@ -629,7 +630,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
