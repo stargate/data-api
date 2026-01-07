@@ -171,9 +171,10 @@ public final class ThrowableToErrorMapper {
     } else if (message.contains(
             "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
         || message.contains("ANN ordering by vector requires the column to be indexed")) {
-      return ErrorCodeV1.NO_INDEX_ERROR
-          .toApiException()
-          .getCommandResultError(ErrorCodeV1.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
+      // Alas: Collection name not available at this point:
+      return DatabaseException.Code.COLLECTION_NO_INDEX_ERROR
+          .get()
+          .getCommandResultError(Response.Status.OK);
     }
     if (message.contains("vector<float,")) {
       // It is tricky to find the actual vector dimension from the message, include as-is

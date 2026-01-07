@@ -2072,6 +2072,15 @@ server-errors:
       ${SNIPPET.RETRY_UNKNOWN}
 
   - scope: DATABASE
+    code: COLLECTION_NO_INDEX_ERROR
+    title: Collection missing index(es)
+    body: |-
+      Faulty collection (missing index(es)).
+      Recommend re-creating the collection.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
     code: COLLECTION_SCHEMA_VERSION_INVALID
     title: Collection schema version invalid
     body: |-

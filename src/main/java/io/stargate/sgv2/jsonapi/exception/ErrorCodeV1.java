@@ -82,7 +82,6 @@ public enum ErrorCodeV1 {
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
   INVALID_QUERY("Invalid query"),
-  NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
 
   // Driver failure codes
   /** Error codes related to driver exceptions. */

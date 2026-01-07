@@ -10,6 +10,7 @@ public class DatabaseException extends ServerException {
 
   public enum Code implements ErrorCode<DatabaseException> {
     COLLECTION_CREATION_ERROR, // converted from ErrorCodeV1
+    COLLECTION_NO_INDEX_ERROR, // NO_INDEX_ERROR  // converted from ErrorCodeV1.NO_INDEX_ERROR
     COLLECTION_SCHEMA_VERSION_INVALID, // converted from ErrorCodeV1.INVALID_SCHEMA_VERSION
     COUNT_READ_FAILED, // converted from ErrorCodeV1
     DOCUMENT_FROM_DB_UNPARSEABLE,
