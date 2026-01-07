@@ -81,8 +81,6 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
-  INVALID_QUERY("Invalid query"),
-
   // Driver failure codes
   /** Error codes related to driver exceptions. */
   SERVER_CLOSED_CONNECTION("Driver request connection is closed"),

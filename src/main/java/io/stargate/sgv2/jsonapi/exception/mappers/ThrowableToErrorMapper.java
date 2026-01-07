@@ -195,9 +195,9 @@ public final class ThrowableToErrorMapper {
           .get()
           .getCommandResultError(Response.Status.OK);
     }
-    return ErrorCodeV1.INVALID_QUERY
-        .toApiException()
-        .getCommandResultError(message, Response.Status.OK);
+    return DatabaseException.Code.INVALID_COLLECTION_QUERY
+        .get(Map.of("errorMessage", message))
+        .getCommandResultError(Response.Status.OK);
   }
 
   /** Driver AllNodesFailedException a composite exception, peeling the errors from it */
