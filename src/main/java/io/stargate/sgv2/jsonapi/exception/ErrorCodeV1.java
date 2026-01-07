@@ -81,8 +81,6 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
-  COLLECTION_CREATION_ERROR(
-      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_QUERY("Invalid query"),

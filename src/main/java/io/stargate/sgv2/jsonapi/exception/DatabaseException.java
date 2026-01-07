@@ -9,6 +9,7 @@ public class DatabaseException extends ServerException {
   }
 
   public enum Code implements ErrorCode<DatabaseException> {
+    COLLECTION_CREATION_ERROR, // converted from ErrorV1
     COUNT_READ_FAILED, // converted from ErrorV1
     DOCUMENT_FROM_DB_UNPARSEABLE,
     FAILED_CONCURRENT_OPERATIONS,
