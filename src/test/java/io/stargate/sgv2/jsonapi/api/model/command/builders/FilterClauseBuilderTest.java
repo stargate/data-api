@@ -9,8 +9,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -255,12 +255,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Bad JSON Extension value: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
+                    .startsWith(
+                        "Bad JSON Extension value to shred: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
               });
     }
 
@@ -273,12 +273,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Bad JSON Extension value: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
+                    .startsWith(
+                        "Bad JSON Extension value to shred: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
               });
     }
 
@@ -1421,12 +1421,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
+                        "Bad JSON Extension value to shred: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
               });
     }
 
@@ -1439,12 +1439,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"xyz\")");
+                        "Bad JSON Extension value to shred: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"xyz\")");
               });
     }
 
@@ -1473,12 +1473,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
+                    .startsWith(
+                        "Bad JSON Extension value to shred: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
               });
     }
   }

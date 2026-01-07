@@ -56,6 +56,10 @@ snippets:
     body: |-
       It is safe to retry this request.
 
+  - name: RETRY_AFTER_FIX
+    body: |-
+      Fix the issue before retrying this request.
+
   - name: RETRY_UNKNOWN
     body: |-
       Review the Error Message before retrying this request.
@@ -276,15 +280,13 @@ request-errors:
 
       Either resend the command with distinct '_id', or use an update command instead.
 
-  # Internal error: does it belong here?
   - scope: DOCUMENT
-    code: DOCUMENT_FROM_DB_UNPARSEABLE
-    title: Unable to parse JSON content
+    code: DOCUMENT_LEXICAL_CONTENT_TOO_BIG
+    title: Document contains too big lexical value
     body: |-
-      Unable to parse JSON content retrieved from the database; not valid JSON.
-      Underlying problem: ${message}
+      Lexical content is too big, please use a smaller value for the '$lexical' field.
 
-      Report the problem to database administrators.
+      ${SNIPPET.RETRY_AFTER_FIX}
 
   - scope: DOCUMENT
     code: DOCUMENT_REPLACE_DIFFERENT_DOCID
@@ -306,6 +308,72 @@ request-errors:
       The command did not include values for primary key columns: ${missingKeys}.
       
       Resend the command including the missing primary key columns.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_BINARY_VECTOR_VALUE
+    title: Bad binary vector value to shred
+    body: |-
+      Bad binary vector value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCID_TYPE
+    title: Bad type for '_id' field
+    body: |-
+      Bad type for '_id' field: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCID_VALUE
+    title: Bad value for '_id' field
+    body: |-
+      Bad value for '_id' field: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_TYPE
+    title: Bad document type to shred
+    body: |-
+      Bad document type to shred: document must be a JSON Object, instead got a JSON ${documentType}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_VECTOR_TYPE
+    title: Bad $vector value to shred
+    body: |-
+      Bad $vector value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_LEXICAL_TYPE
+    title: Bad $lexical value to shred
+    body: |-
+      Bad $lexical value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_EJSON_VALUE
+    title: Bad JSON Extension value to shred
+    body: |-
+      Bad JSON Extension value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_FIELD_NAME
+    title: Document field name not valid
+    body: |-
+      Document field name not valid: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_VECTOR_SIZE
+    title: Bad $vector value
+    body: |-
+      Bad $vector value: cannot be empty Array.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_VECTOR_VALUE
+    title: Bad $vector value
+    body: |-
+      Bad $vector value: needs to be an array containing only Numbers but has a ${nodeType} value (${nodeValue}).
+
+  - scope: DOCUMENT
+    code: SHRED_DOC_LIMIT_VIOLATION
+    title: Document size limitation violated
+    body: |-
+      Document size limitation violated: ${errorMessage}.
 
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
@@ -2003,6 +2071,23 @@ server-errors:
       
       ${SNIPPET.RETRY}
 
+  # Internal error: does it belong here?
+  - scope: DATABASE
+    code: DOCUMENT_FROM_DB_UNPARSEABLE
+    title: Unable to parse JSON content
+    body: |-
+      Unable to parse JSON content retrieved from the database; not valid JSON.
+      Underlying problem: ${errorMessage}
+
+      Report the problem to database administrators.
+
+  - scope: DATABASE
+    code: UNEXPECTED_DOCUMENT_ID_TYPE
+    title: Unexpected stored document id type
+    body: |-
+      Type of document id stored in database unexpected: ${errorMessage}.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
 
   - scope: DATABASE
     code: UNEXPECTED_DRIVER_ERROR

@@ -10,7 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -168,8 +168,8 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value can't be empty");
+      assertThat(throwable).isInstanceOf(DocumentException.class);
+      assertThat(throwable.getMessage()).contains("Bad $vector value: cannot be empty Array");
     }
 
     @Test
@@ -217,8 +217,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
+      assertThat(throwable).isInstanceOf(DocumentException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Bad $vector value: needs to be an array containing only Numbers but has a String value (\"abc\")");
     }
 
     @Test

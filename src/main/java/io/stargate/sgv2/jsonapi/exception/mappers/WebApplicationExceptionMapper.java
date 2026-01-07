@@ -4,15 +4,13 @@ import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.WebApplicationException;
+import java.util.Map;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -32,7 +30,9 @@ public class WebApplicationExceptionMapper {
     // and if we have StreamConstraintsException, re-create as ApiException
     if (toReport instanceof StreamConstraintsException) {
       // but leave out the root cause, as it is not useful
-      toReport = ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(toReport.getMessage());
+      toReport =
+          DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.get(
+              Map.of("errorMessage", toReport.getMessage()));
     }
 
     // V2 Error are returned as APIException, this is required to translate the exception to

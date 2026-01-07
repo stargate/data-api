@@ -10,6 +10,7 @@ public class DatabaseException extends ServerException {
 
   public enum Code implements ErrorCode<DatabaseException> {
     COUNT_READ_FAILED, // converted from ErrorV1
+    DOCUMENT_FROM_DB_UNPARSEABLE,
     FAILED_CONCURRENT_OPERATIONS,
     FAILED_COMPARE_AND_SET,
     FAILED_READ_REQUEST,
@@ -21,6 +22,7 @@ public class DatabaseException extends ServerException {
     TIMEOUT_WRITING_DATA,
     UNAUTHORIZED_ACCESS,
     UNAVAILABLE_DATABASE,
+    UNEXPECTED_DOCUMENT_ID_TYPE,
     UNEXPECTED_DRIVER_ERROR,
     UNKNOWN_KEYSPACE,
     UNSUPPORTED_DATABASE_QUERY;
