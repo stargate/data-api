@@ -9,8 +9,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -255,12 +255,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Bad JSON Extension value: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
+                    .startsWith(
+                        "Bad JSON Extension value to shred: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
               });
     }
 
@@ -273,12 +273,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Bad JSON Extension value: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
+                    .startsWith(
+                        "Bad JSON Extension value to shred: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
               });
     }
 
@@ -377,10 +377,10 @@ public class FilterClauseBuilderTest {
         """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$all operator must have `ARRAY` value");
+                assertThat(t.getMessage()).contains("'$all' operator must have `Array` value");
               });
     }
 
@@ -392,10 +392,10 @@ public class FilterClauseBuilderTest {
         """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$all operator must have at least one value");
+                assertThat(t.getMessage()).contains("'$all' operator must have at least one value");
               });
     }
 
@@ -470,10 +470,10 @@ public class FilterClauseBuilderTest {
           """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$size operator must have integer");
+                assertThat(t.getMessage()).contains("'$size' operator must have integer");
               });
     }
 
@@ -486,10 +486,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$size operator must have integer");
+                assertThat(t.getMessage()).contains("'$size' operator must have integer");
               });
 
       String json1 =
@@ -498,10 +498,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable1 = catchThrowable(() -> readCollectionFilterClause(json1));
       assertThat(throwable1)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$size operator must have integer");
+                assertThat(t.getMessage()).contains("'$size' operator must have integer");
               });
     }
 
@@ -513,10 +513,11 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$size operator must have integer value >= 0");
+                assertThat(t.getMessage())
+                    .contains("'$size' operator must have integer value >= 0 (had -2)");
               });
     }
 
@@ -1011,10 +1012,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$in operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("'$in' operator must have `Array`");
               });
     }
 
@@ -1026,10 +1027,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$nin operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("'$nin' operator must have `Array`");
               });
     }
 
@@ -1048,10 +1049,10 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).contains("$nin operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("'$nin' operator must have `Array`");
               });
     }
 
@@ -1064,12 +1065,12 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "$in operator must have at most "
+                        "'$in' operator must have at most "
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");
               });
@@ -1084,12 +1085,12 @@ public class FilterClauseBuilderTest {
                       """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "$nin operator must have at most "
+                        "'$nin' operator must have at most "
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");
               });
@@ -1116,12 +1117,9 @@ public class FilterClauseBuilderTest {
         """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              t -> {
-                assertThat(t.getMessage())
-                    .isEqualTo(ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.getMessage());
-              });
+          .isInstanceOf(FilterException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", FilterException.Code.FILTER_MULTIPLE_ID_FILTER.name());
     }
 
     @Test
@@ -1133,11 +1131,12 @@ public class FilterClauseBuilderTest {
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .startsWith("Invalid filter expression: filter clause path ('$gt')");
+                    .startsWith(
+                        "Unsupported filter clause: filter expression path ('$gt') cannot start with '$'");
               });
     }
 
@@ -1174,10 +1173,10 @@ public class FilterClauseBuilderTest {
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $vector");
+                assertThat(t.getMessage()).startsWith("Unsupported filter operator '$vector'");
               });
     }
 
@@ -1190,11 +1189,12 @@ public class FilterClauseBuilderTest {
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .startsWith("Invalid filter expression: filter clause path ('$exists')");
+                    .startsWith(
+                        "Unsupported filter clause: filter expression path ('$exists') cannot start with '$'");
               });
     }
   }
@@ -1234,12 +1234,12 @@ public class FilterClauseBuilderTest {
           """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "$match operator can only be used with the '$lexical' field, not 'content'");
+                        "'$match' operator can only be used with the '$lexical' field, not 'content'");
               });
     }
 
@@ -1253,12 +1253,13 @@ public class FilterClauseBuilderTest {
               .formatted(jsonSnippet);
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "$match operator must have `String` value, was `%s`".formatted(actualType));
+                        "'$match' operator must have `String` value, was `%s`"
+                            .formatted(actualType));
               });
     }
 
@@ -1280,12 +1281,12 @@ public class FilterClauseBuilderTest {
               """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Cannot filter on '$lexical' field using operator $eq: only $match is supported");
+                        "cannot filter on '$lexical' field using operator '$eq': only '$match' is supported");
               });
     }
 
@@ -1298,12 +1299,12 @@ public class FilterClauseBuilderTest {
                   """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Cannot filter on '$lexical' field using operator $eq: only $match is supported");
+                        "cannot filter on '$lexical' field using operator '$eq': only '$match' is supported");
               });
     }
   }
@@ -1420,12 +1421,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
+                        "Bad JSON Extension value to shred: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
               });
     }
 
@@ -1438,12 +1439,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"xyz\")");
+                        "Bad JSON Extension value to shred: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"xyz\")");
               });
     }
 
@@ -1456,10 +1457,10 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(FilterException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $GUID");
+                assertThat(t.getMessage()).startsWith("Unsupported filter operator '$GUID'");
               });
     }
 
@@ -1472,12 +1473,12 @@ public class FilterClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(DocumentException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
+                    .startsWith(
+                        "Bad JSON Extension value to shred: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
               });
     }
   }

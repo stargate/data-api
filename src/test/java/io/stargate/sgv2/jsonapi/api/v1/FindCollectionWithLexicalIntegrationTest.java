@@ -274,10 +274,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body("errors[0].errorCode", is("SORT_CLAUSE_INVALID"))
           .body(
               "errors[0].message",
-              containsString("if sorting by '$lexical' value must be String, not Number"));
+              containsString(
+                  "Problem: when sorting by field '$lexical', value must be String, not Number"));
     }
 
     @Test
@@ -293,11 +294,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: $match operator must have `String` value, was `Array`"));
+                  "Unsupported filter clause: '$match' operator must have `String` value, was `Array`"));
     }
 
     @Test
@@ -316,10 +317,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body("errors[0].errorCode", is("SORT_CLAUSE_INVALID"))
           .body(
               "errors[0].message",
-              containsString("if sorting by '$lexical' no other sort expressions allowed"));
+              containsString(
+                  "Problem: when sorting by field '$lexical' no other sort expressions allowed"));
     }
 
     // No way to do "$not" with "$match" (not supported by DBs)
@@ -336,11 +338,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: cannot use $not to invert $match operator"));
+                  "Unsupported filter clause: cannot use '$not' to invert '$match' operator."));
     }
 
     // Can only use $match with $lexical, not $eq, $ne, etc.
@@ -356,11 +358,11 @@ public class FindCollectionWithLexicalIntegrationTest
                 "{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
             .body("$", responseIsError())
             .body("errors", hasSize(1))
-            .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+            .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
             .body(
                 "errors[0].message",
                 containsString(
-                    "Cannot filter on '$lexical' field using operator $eq: only $match is supported"));
+                    "Unsupported filter clause: cannot filter on '$lexical' field using operator '$eq': only '$match' is supported"));
       }
     }
   }

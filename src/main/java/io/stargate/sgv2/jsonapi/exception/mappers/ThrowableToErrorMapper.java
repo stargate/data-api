@@ -49,10 +49,6 @@ public final class ThrowableToErrorMapper {
 
         // if our own V1 exception, shortcut
         if (throwable instanceof JsonApiException jae) {
-          if (jae.getErrorCode().equals(ErrorCodeV1.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE)) {
-            // 30-Aug-2021: [data-api#1383] Why is this special case here?
-            return jae.getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-          }
           return jae.getCommandResultError(message, jae.getHttpStatus());
         }
 
@@ -194,8 +190,8 @@ public final class ThrowableToErrorMapper {
     // [data-api#2068]: Need to convert Lexical-value-too-big failure to something more meaningful
     if (message.contains(
         "analyzed size for column query_lexical_value exceeds the cumulative limit for index")) {
-      return ErrorCodeV1.LEXICAL_CONTENT_TOO_BIG
-          .toApiException()
+      return DocumentException.Code.DOCUMENT_LEXICAL_CONTENT_TOO_BIG
+          .get()
           .getCommandResultError(Response.Status.OK);
     }
     return ErrorCodeV1.INVALID_QUERY
@@ -256,21 +252,17 @@ public final class ThrowableToErrorMapper {
       JacksonException e, String message) {
     if (e instanceof JsonParseException) {
       // Low-level parsing problem? Actual BAD_REQUEST (400) since we could not process
-      return ErrorCodeV1.INVALID_REQUEST_NOT_JSON
-          .toApiException(
-              Response.Status.BAD_REQUEST,
-              "underlying problem: (%s) %s",
-              e.getClass().getName(),
-              e.getMessage())
-          .getCommandResultError();
+      return RequestException.Code.REQUEST_NOT_JSON
+          .get(Map.of("errorMessage", e.getMessage()))
+          .getCommandResultError(Response.Status.BAD_REQUEST);
     }
 
     // Unrecognized property? (note: CommandObjectMapperHandler handles some cases)
     if (e instanceof UnrecognizedPropertyException upe) {
       // 09-Oct-2025, tatu: Retain custom exception message, if set by us:
       if (ColumnDesc.class.equals(upe.getReferringClass())) {
-        return ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD
-            .toApiException(upe.getOriginalMessage())
+        return RequestException.Code.COMMAND_FIELD_UNKNOWN
+            .get(Map.of("field", upe.getPropertyName(), "message", upe.getOriginalMessage()))
             .getCommandResultError();
       }
       // otherwise rewrite to avoid Jackson-isms:
@@ -278,13 +270,16 @@ public final class ThrowableToErrorMapper {
           Optional.ofNullable(upe.getKnownPropertyIds()).orElse(Collections.emptyList());
       final String knownDesc =
           knownIds.stream()
-              .map(ob -> String.format("\"%s\"", ob.toString()))
+              .map(ob -> String.format("'%s'", ob.toString()))
               .sorted()
               .collect(Collectors.joining(", "));
-      return ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD
-          .toApiException(
-              "\"%s\" not one of known fields (%s) at '%s'",
-              upe.getPropertyName(), knownDesc, upe.getPathReference())
+      return RequestException.Code.COMMAND_FIELD_UNKNOWN
+          .get(
+              Map.of(
+                  "field",
+                  upe.getPropertyName(),
+                  "message",
+                  "not one of known fields (%s)".formatted(knownDesc)))
           .getCommandResultError();
     }
 
@@ -293,13 +288,9 @@ public final class ThrowableToErrorMapper {
     // NOTE: must be after the UnrecognizedPropertyException check
     // 09-Jan-2025, tatu: [data-api#1812] Not ideal but slightly better than before
     if (e instanceof JsonMappingException jme) {
-      return ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH
-          .toApiException(
-              Response.Status.BAD_REQUEST,
-              "underlying problem: (%s) %s",
-              e.getClass().getName(),
-              e.getMessage())
-          .getCommandResultError();
+      return RequestException.Code.REQUEST_STRUCTURE_MISMATCH
+          .get(Map.of("errorMessage", e.getMessage()))
+          .getCommandResultError(Response.Status.BAD_REQUEST);
     }
 
     // Will need to add more handling but start with above

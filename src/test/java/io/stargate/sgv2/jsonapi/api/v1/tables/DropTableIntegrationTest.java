@@ -102,7 +102,7 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
           .templated()
           .dropTable("", false)
           .hasSingleApiError(
-              RequestException.Code.COMMAND_FIELD_INVALID,
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
               RequestException.class,
               "field 'command.name' value \"\" not valid: must not be empty.");
     }

@@ -331,7 +331,7 @@ jobs:
           ./mvnw -B -ntp xml-format:xml-format fmt:format
 
       - name: Version bump PR
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         env:
           GITHUB_TOKEN:
         with:

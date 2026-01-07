@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -241,9 +242,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
         """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].message", containsString("$in operator must have `ARRAY`"));
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body("errors[0].message", containsString("'$in' operator must have `Array`"));
     }
 
     @Test
@@ -258,9 +259,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
             """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].message", containsString("$nin operator must have `ARRAY`"));
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body("errors[0].message", containsString("'$nin' operator must have `Array`"));
     }
 
     @Test
@@ -431,9 +432,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].message", containsString("$all operator must have `ARRAY` value"));
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body("errors[0].message", containsString("'$all' operator must have `Array` value"));
     }
 
     @Test
@@ -476,9 +477,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].message", containsString("$size operator must have integer"));
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body("errors[0].message", containsString("'$size' operator must have integer"));
     }
   }
 
@@ -765,12 +766,12 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: filter clause path ('pricing&price&aud') is not a valid path: "));
+                  "Unsupported filter clause: filter expression path ('pricing&price&aud') is not valid"));
     }
   }
 
@@ -799,9 +800,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
       givenHeadersPostJsonThenOk("{ \"findOne\": { \"filter\" : {\"_id\": {\"$guid\": \"doc1\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_OPERATION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is("Unsupported filter operator: $guid"));
+          .body("errors[0].errorCode", is("FILTER_UNSUPPORTED_OPERATOR"))
+          .body("errors[0].exceptionClass", is("FilterException"))
+          .body("errors[0].message", startsWith("Unsupported filter operator '$guid'"));
     }
 
     @Test
@@ -810,12 +811,12 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               "{ \"findOne\": { \"filter\" : {\"_id\": {\"$uuid\": \"not-an-uuid\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"not-an-uuid\")"));
+                  "Bad JSON Extension value to shred: '$uuid' value has to be 36-character UUID String, instead got (\"not-an-uuid\")"));
     }
 
     @Test
@@ -824,12 +825,12 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               "{ \"findOne\": { \"filter\" : {\"_id\": {\"$objectId\": \"bogus\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
+          .body("errors[0].exceptionClass", is("DocumentException"))
           .body(
               "errors[0].message",
               containsString(
-                  "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"bogus\")"));
+                  "Bad JSON Extension value to shred: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"bogus\")"));
     }
   }
 

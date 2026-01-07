@@ -134,12 +134,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
       // create a vector collection with the same name
       givenHeadersPostJsonThenOk(createVectorCollection)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
+          .body("errors[0].errorCode", is("COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(
-                  "trying to create Collection ('simple_collection') with different settings"));
+                  "Collection 'simple_collection' already exists but with settings different from ones passed with 'createCollection' command"));
 
       deleteCollection("simple_collection");
     }
@@ -157,12 +157,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
       // create a non vector collection with the same name
       givenHeadersPostJsonThenOk(createNonVectorCollectionJson)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
+          .body("errors[0].errorCode", is("COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(
-                  "trying to create Collection ('simple_collection') with different settings"));
+                  "Collection 'simple_collection' already exists but with settings different from ones passed with 'createCollection' command"));
 
       deleteCollection("simple_collection");
     }
@@ -176,22 +176,22 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
       // create another vector collection with the same name but different size setting
       givenHeadersPostJsonThenOk(createVectorCollectionWithOtherSizeSettings)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
+          .body("errors[0].errorCode", is("COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(
-                  "trying to create Collection ('simple_collection') with different settings"));
+                  "Collection 'simple_collection' already exists but with settings different from ones passed with 'createCollection' command"));
 
       // create another vector collection with the same name but different function setting
       givenHeadersPostJsonThenOk(createVectorCollectionWithOtherFunctionSettings)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
+          .body("errors[0].errorCode", is("COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS"))
+          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(
-                  "trying to create Collection ('simple_collection') with different settings"));
+                  "Collection 'simple_collection' already exists but with settings different from ones passed with 'createCollection' command"));
 
       deleteCollection("simple_collection");
     }
@@ -1606,7 +1606,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       }
                       """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
           .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
@@ -1635,7 +1635,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                               """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
           .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",

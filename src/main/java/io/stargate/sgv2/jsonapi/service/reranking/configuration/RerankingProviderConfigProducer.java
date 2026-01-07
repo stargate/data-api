@@ -5,7 +5,7 @@ import io.quarkus.runtime.Startup;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingServiceGrpc;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
@@ -65,7 +65,8 @@ public class RerankingProviderConfigProducer {
             rerankingService.getSupportedRerankingProviders(grpcRequest);
         rerankingProvidersConfig = grpcResponseToConfig(supportedProvidersResponse);
       } catch (Exception e) {
-        throw ErrorCodeV1.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE.toApiException();
+        throw EmbeddingProviderException.Code.EMBEDDING_GATEWAY_NOT_AVAILABLE.get(
+            Map.of("errorMessage", e.toString()));
       }
     }
 

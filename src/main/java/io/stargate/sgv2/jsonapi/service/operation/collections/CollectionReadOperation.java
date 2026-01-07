@@ -12,9 +12,7 @@ import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.exception.DatabaseException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -251,9 +249,9 @@ public interface CollectionReadOperation extends CollectionOperation {
               Iterator<Row> rowIterator = resultSet.currentPage().iterator();
               int remaining = resultSet.remaining();
               int count = documentCounter.addAndGet(remaining);
-              if (count == errorLimit) {
-                throw ErrorCodeV1.DATASET_TOO_BIG.toApiException(
-                    "maximum sortable count = %d", errorLimit);
+              if (count >= errorLimit) {
+                throw SortException.Code.OVERLOADED_SORT_ROW_LIMIT.get(
+                    Map.of("maxLimit", String.valueOf(errorLimit), "unit", "document"));
               }
               List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {
@@ -523,7 +521,8 @@ public interface CollectionReadOperation extends CollectionOperation {
   /**
    * Helper method to handle details of exactly how much information to include in error message.
    */
-  static JsonApiException parsingExceptionToApiException(JacksonException e) {
-    return ErrorCodeV1.DOCUMENT_UNPARSEABLE.toApiException("%s", e.getOriginalMessage());
+  static APIException parsingExceptionToApiException(JacksonException e) {
+    return DatabaseException.Code.DOCUMENT_FROM_DB_UNPARSEABLE.get(
+        Map.of("errorMessage", e.getOriginalMessage()));
   }
 }

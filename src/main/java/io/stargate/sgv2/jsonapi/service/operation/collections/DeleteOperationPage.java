@@ -30,7 +30,8 @@ public record DeleteOperationPage(
     boolean returnDocument,
     boolean singleDocument)
     implements Supplier<CommandResult> {
-  private static final String ERROR = "Failed to delete documents with _id %s: %s";
+
+  private static final String ERROR_PREFIX_TEMPLATE = "Failed to delete documents with _id %s: %s";
 
   @Override
   public CommandResult get() {
@@ -97,7 +98,9 @@ public record DeleteOperationPage(
                       .collect(Collectors.toList());
               errors.add(
                   ExceptionUtil.getError(
-                      ERROR, documentIds, deletedDocuments.stream().findFirst().get().getItem2()));
+                      ERROR_PREFIX_TEMPLATE,
+                      documentIds,
+                      deletedDocuments.stream().findFirst().get().getItem2()));
             });
 
     // return the result

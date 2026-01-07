@@ -9,6 +9,7 @@ public class EmbeddingProviderException extends ServerException {
   }
 
   public enum Code implements ErrorCode<EmbeddingProviderException> {
+    EMBEDDING_GATEWAY_NOT_AVAILABLE,
     CLIENT_ERROR,
     SERVER_ERROR;
 

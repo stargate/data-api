@@ -34,7 +34,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   private static final Set<ErrorCodeV1> serverFamily =
       new HashSet<>() {
         {
-          add(CONCURRENCY_FAILURE);
           add(TOO_MANY_COLLECTIONS);
           add(VECTOR_SEARCH_NOT_SUPPORTED);
           add(VECTORIZE_FEATURE_NOT_AVAILABLE);
@@ -57,7 +56,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
               add(INVALID_USAGE_OF_VECTORIZE);
               add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
               add(VECTOR_SEARCH_TOO_BIG_VALUE);
-              add(INVALID_PARAMETER_VALIDATION_TYPE);
               add(INVALID_INDEXING_DEFINITION);
             }
           },
@@ -65,23 +63,9 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           new HashSet<>() {
             {
               add(INVALID_REQUEST);
-              add(SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE);
             }
           },
           ErrorScope.EMBEDDING,
-          new HashSet<>() {
-            {
-              add(ID_NOT_INDEXED);
-            }
-          },
-          ErrorScope.FILTER,
-          new HashSet<>() {
-            {
-              add(VECTOR_SEARCH_USAGE_ERROR);
-              add(VECTORIZE_USAGE_ERROR);
-            }
-          },
-          ErrorScope.SORT,
           new HashSet<>() {
             {
               add(INVALID_VECTORIZE_VALUE_TYPE);

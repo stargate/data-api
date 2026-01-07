@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.exception.SortException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -42,8 +44,11 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
 
     // otherwise, if it's not object throw exception
     if (!(node instanceof ObjectNode sortNode)) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-          "Sort clause must be submitted as JSON Object");
+      throw SortException.Code.SORT_CLAUSE_INVALID.get(
+          Map.of(
+              "problem",
+              "sort clause must be submitted as JSON Object, not %s"
+                  .formatted(JsonUtil.nodeTypeAsString(node))));
     }
     return buildClauseFromDefinition(sortNode);
   }
@@ -61,14 +66,19 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     if (innerValue instanceof ObjectNode innerObject) {
       var ejsonWrapped = EJSONWrapper.maybeFrom(innerObject);
       if (ejsonWrapped == null || ejsonWrapped.type() != EJSONWrapper.EJSONType.BINARY) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-            "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
-            path, innerValue.toString());
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of(
+                "path",
+                path,
+                "problem",
+                "only binary vector object values are supported for sorting, not value: %s"
+                    .formatted(innerValue.toString())));
       }
       try {
         return ejsonWrapped.getVectorValueForBinary();
       } catch (IllegalArgumentException | IllegalStateException e) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(e.getMessage());
+        throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+            Map.of("path", path, "problem", e.getMessage()));
       }
     }
     return null;
