@@ -95,11 +95,7 @@ public class GenericOperation<
     var commandQueryExecutor =
         new CommandQueryExecutor(
             commandContext.cqlSessionCache(),
-            new CommandQueryExecutor.DBRequestContext(
-                commandContext.requestContext().tenant(),
-                commandContext.requestContext().authToken(),
-                commandContext.requestContext().userAgent(),
-                commandContext.requestTracing().enabled()),
+            commandContext.requestContext(),
             CommandQueryExecutor.QueryTarget.TABLE);
 
     // Common start pattern for all operations

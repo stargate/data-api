@@ -136,9 +136,7 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
 
     var queryExecutor =
         new CommandQueryExecutor(
-            sessionCache,
-            new CommandQueryExecutor.DBRequestContext(requestContext),
-            CommandQueryExecutor.QueryTarget.SCHEMA);
+            sessionCache, requestContext, CommandQueryExecutor.QueryTarget.SCHEMA);
 
     return queryExecutor
         .getKeyspaceMetadata(scopedName.keyspace(), forceRefresh)

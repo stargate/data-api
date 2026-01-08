@@ -186,7 +186,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     // , improve later
     return new CommandQueryExecutor(
         commandContext.cqlSessionCache(),
-        new CommandQueryExecutor.DBRequestContext(commandContext),
+        commandContext.requestContext(),
         CommandQueryExecutor.QueryTarget.TABLE);
   }
 

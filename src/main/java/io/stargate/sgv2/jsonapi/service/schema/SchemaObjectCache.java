@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionFactory;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
@@ -265,17 +264,6 @@ public class SchemaObjectCache
     }
   }
 
-  /**
-   * TODO, how to do this for single level cache Removes all keyspaces and table entries for the
-   * given tenant from the cache.
-   */
-  void evictAllKeyspaces(Tenant tenant) {
-
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("evictAllKeyspaces() - tenant: {}", tenant);
-    }
-  }
-
   private SchemaCacheKey createCacheKey(
       RequestContext requestContext,
       SchemaObjectIdentifier schemaIdentifier,
@@ -484,28 +472,6 @@ public class SchemaObjectCache
     public void onKeyspaceUpdated(
         @NotNull KeyspaceMetadata current, @NotNull KeyspaceMetadata previous) {
       evictKeyspace("onKeyspaceUpdated", current, false);
-    }
-  }
-
-  /**
-   * Listener for use with the {@link CQLSessionCache} to remove the schema object cache entries
-   * when a tenant is deactivated.
-   */
-  private static class SchemaObjectCacheDeactivatedTenantConsumer
-      implements CQLSessionCache.DeactivatedTenantListener {
-
-    private final SchemaObjectCache schemaObjectCache;
-
-    public SchemaObjectCacheDeactivatedTenantConsumer(SchemaObjectCache schemaObjectCache) {
-      this.schemaObjectCache =
-          Objects.requireNonNull(schemaObjectCache, "schemaObjectCache must not be null");
-    }
-
-    @Override
-    public void accept(Tenant tenant) {
-      // the sessions are keyed on the tenantID and the credentials, and one session can work with
-      // multiple keyspaces. So we need to evict all the keyspaces for the tenant
-      schemaObjectCache.evictAllKeyspaces(tenant);
     }
   }
 

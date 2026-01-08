@@ -64,9 +64,7 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             credentialsFactory,
             sessionFactory,
             meterRegistry,
-            List.of(
-                schemaObjectCache.getDeactivatedTenantConsumer(),
-                new MetricsTenantDeactivationConsumer(meterRegistry)));
+            List.of(new MetricsTenantDeactivationConsumer(meterRegistry)));
   }
 
   /** Gets the singleton instance of the {@link CQLSessionCache}. */

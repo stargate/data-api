@@ -10,7 +10,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -178,21 +177,6 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
    *     newly created or reused from the cache.
    */
   public Uni<CqlSession> getSession(RequestContext requestContext) {
-    Objects.requireNonNull(requestContext, "requestContext must not be null");
-
-    // Validation happens when creating the credentials and session key
-    return getSession(
-        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
-  }
-
-  /**
-   * Gets or creates a {@link CqlSession} for the provided DB Request Context
-   *
-   * @param requestContext {@link CommandQueryExecutor.DBRequestContext} to get the session for.
-   * @return A Uni with the {@link CqlSession} for this tenant and credentials, the session maybe
-   *     newly created or reused from the cache.
-   */
-  public Uni<CqlSession> getSession(CommandQueryExecutor.DBRequestContext requestContext) {
     Objects.requireNonNull(requestContext, "requestContext must not be null");
 
     // Validation happens when creating the credentials and session key

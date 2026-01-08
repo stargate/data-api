@@ -10,9 +10,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.request.UserAgent;
-import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.util.Objects;
@@ -64,15 +62,14 @@ public class CommandQueryExecutor {
   }
 
   private final CQLSessionCache cqlSessionCache;
-  private final DBRequestContext dbRequestContext;
+  private final RequestContext requestContext;
   private final QueryTarget queryTarget;
 
   public CommandQueryExecutor(
-      CQLSessionCache cqlSessionCache, DBRequestContext dbRequestContext, QueryTarget queryTarget) {
+      CQLSessionCache cqlSessionCache, RequestContext requestContext, QueryTarget queryTarget) {
     this.cqlSessionCache =
         Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
-    this.dbRequestContext =
-        Objects.requireNonNull(dbRequestContext, "dbRequestContext must not be null");
+    this.requestContext = requestContext;
     this.queryTarget = queryTarget;
   }
 
@@ -188,7 +185,7 @@ public class CommandQueryExecutor {
    * @return Uni of the {@link CqlSession}
    */
   private Uni<CqlSession> session() {
-    return cqlSessionCache.getSession(dbRequestContext);
+    return cqlSessionCache.getSession(requestContext);
   }
 
   private String getExecutionProfile(QueryType queryType) {
@@ -202,27 +199,8 @@ public class CommandQueryExecutor {
   @VisibleForTesting
   public Uni<AsyncResultSet> executeAndWrap(SimpleStatement statement) {
 
-    // changing tracing creates a new object, avoid if not needed
-    var execStatement =
-        dbRequestContext.tracingEnabled() != statement.isTracing()
-            ? statement.setTracing(dbRequestContext.tracingEnabled())
-            : statement;
-
     return session()
         .flatMap(
-            session -> Uni.createFrom().completionStage(() -> session.executeAsync(execStatement)));
-  }
-
-  // Aaron - Feb 3 - temp rename while factoring full RequestContext
-  public record DBRequestContext(
-      Tenant tenant, String authToken, UserAgent userAgent, boolean tracingEnabled) {
-
-    public DBRequestContext(CommandContext<?> commandContext) {
-      this(
-          commandContext.requestContext().tenant(),
-          commandContext.requestContext().authToken(),
-          commandContext.requestContext().userAgent(),
-          commandContext.requestTracing().enabled());
-    }
+            session -> Uni.createFrom().completionStage(() -> session.executeAsync(statement)));
   }
 }
