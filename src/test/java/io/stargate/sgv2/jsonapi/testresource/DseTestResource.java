@@ -150,6 +150,10 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put("stargate.jsonapi.embedding.providers.vertexai.enabled", "true");
     propsBuilder.put(
         "stargate.jsonapi.embedding.providers.vertexai.models[0].parameters[0].required", "true");
+
+    // Prefer instance-specific configuration from 'env' to support parallel execution and
+    // isolation. Fall back to global system properties only if instance-specific values are
+    // missing.
     if (this.containerNetworkId.isPresent()) {
       String host =
           env.getOrDefault(
@@ -163,6 +167,7 @@ public class DseTestResource extends StargateTestResource {
               System.getProperty(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP));
       propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-port", port);
     }
+
     if (isDse() || isHcd()) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.local-datacenter", "dc1");
     }

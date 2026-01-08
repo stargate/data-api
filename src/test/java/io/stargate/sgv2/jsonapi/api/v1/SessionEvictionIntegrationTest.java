@@ -23,37 +23,64 @@ import org.testcontainers.containers.GenericContainer;
     restrictToAnnotatedClass = true)
 public class SessionEvictionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
+  /**
+   * A specialized TestResource that spins up a new HCD/DSE container exclusively for this test
+   * class.
+   *
+   * <p>Unlike the standard {@link DseTestResource} used by other tests, this resource ensures a
+   * dedicated database instance. This isolation is crucial because this test involves destructive
+   * operations that would negatively impact other tests sharing a common database.
+   */
   public static class SessionEvictionTestResource extends DseTestResource {
 
-    private static GenericContainer<?> isolatedContainer;
+    /**
+     * Holds the reference to the container started by this resource.
+     *
+     * <p>This field is {@code static} to act as a bridge between the {@link QuarkusTestResource}
+     * lifecycle (which manages the resource instance) and the test instance (where we need to
+     * access the container to perform operations).
+     */
+    private static GenericContainer<?> sessionEvictionCassandraContainer;
 
+    /**
+     * Starts the container and captures the reference.
+     *
+     * <p>We override this method to capture the container instance created by the superclass into
+     * our static {@link #sessionEvictionCassandraContainer} field, making it accessible to the test
+     * methods.
+     */
     @Override
     public Map<String, String> start() {
       Map<String, String> props = super.start();
-      isolatedContainer = super.getCassandraContainer();
+      sessionEvictionCassandraContainer = super.getCassandraContainer();
       return props;
     }
 
+    /**
+     * Overridden to strictly prevent system property pollution.
+     *
+     * <p>The standard {@link DseTestResource} publishes connection details (like CQL port) to
+     * global System Properties. Since this test runs in parallel with others, publishing our
+     * isolated container's details would overwrite the shared container's configuration, causing
+     * other tests to connect to this container (which we are about to kill), leading to random
+     * failures in the test suite.
+     */
     @Override
     protected void exposeSystemProperties(Map<String, String> props) {
-      // Do not expose system properties to avoid interfering with other tests running in parallel
+      // No-op: Do not expose system properties to avoid interfering with other tests running in
+      // parallel
     }
 
-    @Override
-    public void stop() {
-      super.stop();
-      isolatedContainer = null;
-    }
-
-    public static GenericContainer<?> getIsolatedContainer() {
-      return isolatedContainer;
+    public static GenericContainer<?> getSessionEvictionCassandraContainer() {
+      return sessionEvictionCassandraContainer;
     }
   }
 
   @Override
   protected synchronized CqlSession createDriverSession() {
     if (cqlSession == null) {
-      GenericContainer<?> container = SessionEvictionTestResource.getIsolatedContainer();
+      GenericContainer<?> container =
+          SessionEvictionTestResource.getSessionEvictionCassandraContainer();
       if (container == null) {
         throw new IllegalStateException("Isolated container not started!");
       }
@@ -90,7 +117,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               """);
 
     // 2. Pause/stop the container to simulate DB failure
-    GenericContainer<?> dbContainer = SessionEvictionTestResource.getIsolatedContainer();
+    GenericContainer<?> dbContainer =
+        SessionEvictionTestResource.getSessionEvictionCassandraContainer();
     DockerClient dockerClient = dbContainer.getDockerClient();
     String containerId = dbContainer.getContainerId();
     Log.info("Pausing Database Container to simulate failure (Freeze)...");

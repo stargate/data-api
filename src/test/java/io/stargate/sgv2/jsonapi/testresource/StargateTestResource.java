@@ -88,6 +88,12 @@ public abstract class StargateTestResource
     return props;
   }
 
+  /**
+   * Exposes the provided configuration properties as system properties. This makes the database
+   * connection and test-specific settings available to the whole test environment.
+   *
+   * @param props A map containing the properties to be set as system properties.
+   */
   protected void exposeSystemProperties(Map<String, String> props) {
     props.forEach(System::setProperty);
   }
@@ -114,7 +120,14 @@ public abstract class StargateTestResource
         "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
   }
 
-  public GenericContainer<?> getCassandraContainer() {
+  /**
+   * Provides access to the backend database container. This allows subclasses to perform operations
+   * directly on the container, such as stop/start or pause/unpause it to simulate failure
+   * scenarios.
+   *
+   * @return The generic container instance for the backend database.
+   */
+  protected GenericContainer<?> getCassandraContainer() {
     return cassandraContainer;
   }
 
