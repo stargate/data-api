@@ -3,14 +3,11 @@ package io.stargate.sgv2.jsonapi.exception;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
-import java.util.function.Supplier;
 
 /**
  * Base for all exceptions returned from the API for external use (as opposed to ones only used
@@ -49,8 +46,7 @@ import java.util.function.Supplier;
  * APIExceptionCommandErrorBuilder} all the logic for mapping to the API is in there to keep it out
  * of the core exception classes.
  */
-public abstract class APIException extends RuntimeException
-    implements Supplier<CommandResult>, Recordable {
+public abstract class APIException extends RuntimeException implements Recordable {
 
   // All errors default to 200 HTTP status code, because we have partial failure modes.
   // There are some overrides, e.g. a server timeout may be a 500, this is managed in the
@@ -179,24 +175,6 @@ public abstract class APIException extends RuntimeException
         .append("body", body)
         .append("httpStatus", httpStatus)
         .append("exceptionFlags", exceptionFlags);
-  }
-
-  // Support for converting legacy ErrorCodeV1 usage
-  // Copied from JsonApiException with modifications
-  @Override
-  public CommandResult get() {
-    // resolve message
-    var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
-
-    // construct and return
-    builder.addCommandResultError(
-        getCommandResultError(Response.Status.fromStatusCode(httpStatus)));
-    // handle cause as well
-    Throwable cause = getCause();
-    if (null != cause) {
-      builder.addCommandResultError(ThrowableToErrorMapper.getMapperFunction().apply(cause));
-    }
-    return builder.build();
   }
 
   // Support for converting legacy ErrorCodeV1 usage

@@ -19,6 +19,8 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
+  COLLECTION_CREATION_ERROR(
+      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   EMBEDDING_SERVICE_NOT_CONFIGURED(
       "Unable to vectorize data, embedding service not configured for the collection "),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),

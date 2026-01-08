@@ -2072,15 +2072,6 @@ server-errors:
   # DATABASE scope server errors
 
   - scope: DATABASE
-    code: COLLECTION_CREATION_ERROR
-    title: Count read failed
-    body: |-
-      Failed to create collection '${collectionName}' (unable to create table in database).
-      Recommend re-creating the collection.
-      
-      ${SNIPPET.RETRY_UNKNOWN}
-
-  - scope: DATABASE
     code: COLLECTION_NO_INDEX_ERROR
     title: Collection missing index(es)
     body: |-
