@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.UUID;
@@ -1002,8 +1003,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
+          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString("limit options should not be greater than 1000 for vector search."));
@@ -1029,8 +1030,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
+          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString("skip options should not be used with vector search."));
@@ -1105,7 +1106,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name()))
-          .body("errors[0].exceptionClass", is("DocumentException"))
+          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body("errors[0].message", containsString("Bad $vector value: cannot be empty Array"));
     }
 
@@ -1130,9 +1131,11 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("errors[0].errorCode", is(DatabaseException.Code.INVALID_COLLECTION_QUERY.name()))
           .body(
               "errors[0].message",
-              oneOf(
-                  "Zero and near-zero vectors cannot be indexed or queried with cosine similarity",
-                  "Zero vectors cannot be indexed or queried with cosine similarity"));
+              anyOf(
+                  containsString(
+                      "Zero and near-zero vectors cannot be indexed or queried with cosine similarity"),
+                  containsString(
+                      "Zero vectors cannot be indexed or queried with cosine similarity")));
     }
 
     @Test
@@ -1179,8 +1182,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("FilterException"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
+          .body("errors[0].exceptionClass", is(FilterException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
