@@ -21,7 +21,6 @@ public enum ErrorCodeV1 {
 
   EMBEDDING_SERVICE_NOT_CONFIGURED(
       "Unable to vectorize data, embedding service not configured for the collection "),
-  EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
