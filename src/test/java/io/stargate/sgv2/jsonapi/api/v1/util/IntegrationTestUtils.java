@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
-
 /** Utilities for integration test. */
 public final class IntegrationTestUtils {
 
