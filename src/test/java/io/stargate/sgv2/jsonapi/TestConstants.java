@@ -212,8 +212,7 @@ public class TestConstants {
 
     MISSING =
         new CollectionSchemaObject(
-            TENANT,
-            null,
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
