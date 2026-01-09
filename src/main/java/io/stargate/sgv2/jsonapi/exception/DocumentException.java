@@ -15,7 +15,7 @@ public class DocumentException extends RequestException {
   }
 
   public enum Code implements ErrorCode<DocumentException> {
-    DOCUMENT_ALREADY_EXISTS,
+    DOCUMENT_ALREADY_EXISTS, // converted from ErrorCodeV1 -- in use by client DO NOT RENAME
     DOCUMENT_LEXICAL_CONTENT_TOO_BIG,
     DOCUMENT_REPLACE_DIFFERENT_DOCID,
 
