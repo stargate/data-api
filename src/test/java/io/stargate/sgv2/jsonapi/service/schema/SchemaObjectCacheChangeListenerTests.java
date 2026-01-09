@@ -62,7 +62,7 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
   @BeforeEach
   public void setUp() {
     // the listener needs to create tenants, and it uses this factory
-    TenantFactory.initialize(TEST_CONSTANTS.DATABASE_TYPE);
+    TenantFactory.initialize(DatabaseType.ASTRA);
   }
 
   @AfterEach

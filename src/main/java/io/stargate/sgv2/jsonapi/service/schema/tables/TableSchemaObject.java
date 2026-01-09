@@ -2,9 +2,11 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import org.slf4j.Logger;
@@ -47,6 +49,17 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     var vectorConfig = VectorConfig.from(tableMetadata, objectMapper);
     var apiTableDef = ApiTableDef.FROM_CQL_FACTORY.create(tableMetadata, vectorConfig);
     return new TableSchemaObject(tenant, tableMetadata, vectorConfig, apiTableDef);
+  }
+
+  /**
+   * we have tests that created a table without having table metadata. Use the ctor with
+   * TableMetadata in prod code
+   */
+  @VisibleForTesting
+  public TableSchemaObject(SchemaObjectIdentifier identifier) {
+    super(SchemaObjectType.TABLE, identifier);
+    vectorConfig = null;
+    apiTableDef = null;
   }
 
   @Override

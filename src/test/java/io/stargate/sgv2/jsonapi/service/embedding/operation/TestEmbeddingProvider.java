@@ -83,7 +83,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
     return TEST_CONSTANTS.collectionContext(
         "testCommand",
         new CollectionSchemaObject(
-            TEST_CONSTANTS.SCHEMA_OBJECT_NAME,
+            TEST_CONSTANTS.TENANT,
             null,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(

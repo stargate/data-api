@@ -385,14 +385,14 @@ public class SchemaObjectIdentifierTests {
     var id1 =
         SchemaObjectIdentifier.forCollection(
             TEST_CONSTANTS.TENANT,
-            TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
-            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
+            TEST_CONSTANTS.KEYSPACE_SCHEMA_OBJECT.identifier.keyspace(),
+            TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT.identifier.table());
 
     var id2 =
         SchemaObjectIdentifier.forCollection(
             OTHER_TENANT,
-            TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
-            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
+            TEST_CONSTANTS.KEYSPACE_SCHEMA_OBJECT.identifier.keyspace(),
+            TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT.identifier.table());
 
     assertThat(id1).isNotEqualTo(id2);
 

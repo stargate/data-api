@@ -72,7 +72,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   @Inject DocumentShredder documentShredder;
   @Inject ObjectMapper objectMapper;
   @Inject DataVectorizerService dataVectorizerService;
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -87,7 +87,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME,
+                testConstants.TENANT,
                 null,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(

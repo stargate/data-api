@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateAnalyzer;
@@ -40,9 +41,12 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
     public TableUpdateAnalyzerFixture(String message, TableMetadata tableMetadata) {
       this.message = message;
       this.tableMetadata = tableMetadata;
+      var TEST_CONSTANT = new TestConstants();
       this.analyzer =
-          new TableUpdateAnalyzer(TableSchemaObject.from(tableMetadata, new ObjectMapper()));
-      this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+          new TableUpdateAnalyzer(
+              TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper()));
+      this.tableSchemaObject =
+          TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper());
       this.columnAssignments =
           new UpdateClauseTestData.ColumnAssignmentsBuilder<>(this, tableMetadata);
     }

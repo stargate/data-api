@@ -23,7 +23,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -84,7 +83,7 @@ public class CommandResolverWithVectorizerTest {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
+                testConstants.TENANT,
                 null,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
@@ -173,7 +172,7 @@ public class CommandResolverWithVectorizerTest {
               assertThat(exception.getMessage())
                   .isEqualTo(
                       "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
               assertThat(exception.getErrorCode())
                   .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
             });
@@ -332,7 +331,7 @@ public class CommandResolverWithVectorizerTest {
               assertThat(exception.getMessage())
                   .isEqualTo(
                       "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
               assertThat(exception.getErrorCode())
                   .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
             });
@@ -527,7 +526,7 @@ public class CommandResolverWithVectorizerTest {
               assertThat(exception.getMessage())
                   .isEqualTo(
                       "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
               assertThat(exception.getErrorCode())
                   .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
             });

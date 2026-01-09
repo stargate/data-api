@@ -20,7 +20,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
@@ -48,8 +47,6 @@ public class OperationTestBase {
 
   protected final String KEYSPACE_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
-  protected final SchemaObjectName SCHEMA_OBJECT_NAME =
-      new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
 
   protected CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   protected KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
@@ -65,7 +62,7 @@ public class OperationTestBase {
     // must do this here to avoid touching quarkus config before it is initialized
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
+            testConstants.TENANT,
             null,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
@@ -73,7 +70,7 @@ public class OperationTestBase {
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
 
-    KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(COLLECTION_SCHEMA_OBJECT.identifier());
 
     COLLECTION_CONTEXT =
         testConstants.collectionContext(

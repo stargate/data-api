@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.internal.querybuilder.select.DefaultSelect;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
@@ -56,7 +57,8 @@ public class TableWhereCQLClauseTestData extends TestDataSuplier {
         String message, TableMetadata tableMetadata, DBLogicalExpression expressionBuilder) {
       this.message = message;
       this.tableMetadata = tableMetadata;
-      this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+      this.tableSchemaObject =
+          TableSchemaObject.from(new TestConstants().TENANT, tableMetadata, new ObjectMapper());
       this.expressionBuilder =
           new LogicalExpressionTestData.ExpressionBuilder<>(this, expressionBuilder, tableMetadata);
     }

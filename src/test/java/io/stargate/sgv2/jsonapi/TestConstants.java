@@ -19,12 +19,13 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
-import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -38,6 +39,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 public class TestConstants {
 
   public final String APP_NAME;
+  public final DatabaseType DATABASE_TYPE;
   public final TenantFactory SINGLETON_TENANT_FACTORY;
 
   // ============================================================
@@ -55,8 +57,6 @@ public class TestConstants {
   public final String COLLECTION_NAME;
   public final String TABLE_NAME;
 
-  public final SchemaObjectName SCHEMA_OBJECT_NAME;
-
   /** Raw SLA user agent, Use {@link #SLA_USER_AGENT} */
   public final String SLA_USER_AGENT_NAME = "Datastax-SLA-Checker";
 
@@ -66,6 +66,18 @@ public class TestConstants {
 
   /** An astra database type TENANT used for test */
   public final Tenant TENANT;
+
+  /** A database identifier for the test */
+  public final SchemaObjectIdentifier DATABASE_IDENTIFIER;
+
+  /** A keyspace identifier for the test */
+  public final SchemaObjectIdentifier KEYSPACE_IDENTIFIER;
+
+  /** A collection identifier for the test */
+  public final SchemaObjectIdentifier COLLECTION_IDENTIFIER;
+
+  /** A table identifier for the test */
+  public final SchemaObjectIdentifier TABLE_IDENTIFIER;
 
   /** A cassandra database type TENANT used for test */
   public final Tenant CASSANDRA_TENANT;
@@ -81,6 +93,11 @@ public class TestConstants {
   /** Embedding credentials */
   public final EmbeddingCredentials EMBEDDING_CREDENTIALS;
 
+  /**
+   * Collection Schema to use if all information missing: Vector not configured, no Lexical enabled
+   */
+  public final CollectionSchemaObject MISSING;
+
   // ============================================================
   // Schema Objects
   // ============================================================
@@ -88,6 +105,7 @@ public class TestConstants {
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
+  public final TableSchemaObject TABLE_SCHEMA_OBJECT;
   public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
   public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
 
@@ -99,20 +117,21 @@ public class TestConstants {
 
     COMMAND_NAME = "command-" + CORRELATION_ID;
     KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;
+    var keyspaceCqlIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME);
     COLLECTION_NAME = "collection-" + CORRELATION_ID;
+    var collectionCqlIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(COLLECTION_NAME);
     TABLE_NAME = "table-" + CORRELATION_ID;
 
     APP_NAME = "Stargate DATA API -" + CORRELATION_ID;
-
-    SCHEMA_OBJECT_NAME = new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
 
     // ============================================================
     // Request Context
     // ============================================================
 
+    DATABASE_TYPE = DatabaseType.ASTRA;
     var tenantId = "tenant-" + CORRELATION_ID;
     TenantFactory.reset();
-    TenantFactory.initialize(DatabaseType.ASTRA);
+    TenantFactory.initialize(DATABASE_TYPE);
     TENANT = TenantFactory.instance().create(tenantId);
 
     SINGLETON_TENANT_FACTORY = TenantFactory.instance();
@@ -136,10 +155,20 @@ public class TestConstants {
     // Schema Objects
     // ============================================================
 
+    DATABASE_IDENTIFIER = SchemaObjectIdentifier.forDatabase(TENANT);
+    KEYSPACE_IDENTIFIER = SchemaObjectIdentifier.forKeyspace(TENANT, keyspaceCqlIdentifier);
+    COLLECTION_IDENTIFIER =
+        SchemaObjectIdentifier.forCollection(
+            TENANT, keyspaceCqlIdentifier, collectionCqlIdentifier);
+    TABLE_IDENTIFIER =
+        SchemaObjectIdentifier.forTable(
+            TENANT,
+            keyspaceCqlIdentifier,
+            CqlIdentifierUtil.cqlIdentifierFromUserInput(TABLE_NAME));
+
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
@@ -153,8 +182,7 @@ public class TestConstants {
     // Schema object for testing with legacy (pre-lexical-config) defaults
     COLLECTION_SCHEMA_OBJECT_LEGACY =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
@@ -163,8 +191,7 @@ public class TestConstants {
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
                 List.of(
@@ -178,8 +205,20 @@ public class TestConstants {
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
 
-    KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
-    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();
+    TABLE_SCHEMA_OBJECT = new TableSchemaObject(TABLE_IDENTIFIER);
+
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
+    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject(TENANT);
+
+    MISSING =
+        new CollectionSchemaObject(
+            TENANT,
+            null,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
+            null,
+            CollectionLexicalConfig.configForDisabled(),
+            CollectionRerankDef.configForDisabled());
   }
 
   // CommandContext for working on the schema objects above
