@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
 import com.google.common.collect.ImmutableMap;
-import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -150,23 +149,6 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put("stargate.jsonapi.embedding.providers.vertexai.enabled", "true");
     propsBuilder.put(
         "stargate.jsonapi.embedding.providers.vertexai.models[0].parameters[0].required", "true");
-
-    // Prefer instance-specific configuration from 'env' to support parallel execution and
-    // isolation. Fall back to global system properties only if instance-specific values are
-    // missing.
-    if (this.containerNetworkId.isPresent()) {
-      String host =
-          env.getOrDefault(
-              "stargate.int-test.cassandra.host",
-              System.getProperty("stargate.int-test.cassandra.host"));
-      propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
-    } else {
-      String port =
-          env.getOrDefault(
-              IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP,
-              System.getProperty(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP));
-      propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-port", port);
-    }
 
     if (isDse() || isHcd()) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.local-datacenter", "dc1");
