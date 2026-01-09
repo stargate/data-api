@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.projection;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,8 +47,8 @@ public class TableProjectionDefinition {
       return INCLUDE_ALL_PROJECTOR;
     }
     if (!projectionDefinition.isObject()) {
-      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
-          "must be OBJECT, was %s", projectionDefinition.getNodeType());
+      throw ProjectionException.Code.UNSUPPORTED_PROJECTION_DEFINITION.get(
+          Map.of("$projectionValueType", JsonUtil.nodeTypeAsString(projectionDefinition)));
     }
     // Special cases: "star-include/exclude"
     if (projectionDefinition.size() == 1) {
