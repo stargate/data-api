@@ -3,16 +3,12 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.hamcrest.Matchers.*;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.github.dockerjava.api.DockerClient;
 import io.quarkus.logging.Log;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -76,29 +72,21 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     }
   }
 
+  /**
+   * Overridden to ensure we connect to the isolated container created for this test.
+   *
+   * <p>The base class implementation relies on global system properties, which point to the shared
+   * database container. To ensure this test correctly interacts with (and pauses) its dedicated
+   * container, we must retrieve the port directly from the isolated container instance.
+   */
   @Override
-  protected synchronized CqlSession createDriverSession() {
-    if (cqlSession == null) {
-      GenericContainer<?> container =
-          SessionEvictionTestResource.getSessionEvictionCassandraContainer();
-      if (container == null) {
-        throw new IllegalStateException("Isolated container not started!");
-      }
-      int port = container.getMappedPort(9042);
-      String dc;
-      if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
-        dc = "dc1";
-      } else {
-        dc = "datacenter1";
-      }
-      var builder =
-          new CqlSessionBuilder()
-              .withLocalDatacenter(dc)
-              .addContactPoint(new InetSocketAddress("localhost", port))
-              .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
-      cqlSession = builder.build();
+  protected int getCassandraCqlPort() {
+    GenericContainer<?> container =
+        SessionEvictionTestResource.getSessionEvictionCassandraContainer();
+    if (container == null) {
+      throw new IllegalStateException("Session eviction IT Cassandra container not started!");
     }
-    return cqlSession;
+    return container.getMappedPort(9042);
   }
 
   @Test
