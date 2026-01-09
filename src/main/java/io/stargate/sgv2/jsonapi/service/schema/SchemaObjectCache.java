@@ -17,13 +17,13 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionFactory;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
-import jakarta.validation.constraints.NotNull;
 import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -426,7 +426,7 @@ public class SchemaObjectCache
     }
 
     @Override
-    public void onSessionReady(@NotNull Session session) {
+    public void onSessionReady(@NonNull Session session) {
       // This is called when the session is ready, we can get the tenant from the session name
       // and set it in the listener so we can use it in the other methods.
       tenant = TenantFactory.instance().create(session.getName());
@@ -438,39 +438,39 @@ public class SchemaObjectCache
      * re-created
      */
     @Override
-    public void onTableDropped(@NotNull TableMetadata table) {
+    public void onTableDropped(@NonNull TableMetadata table) {
       evictTable("onTableDropped", table);
     }
 
     /** When a table is created, evict from cache to avoid stale if it was re-created */
     @Override
-    public void onTableCreated(@NotNull TableMetadata table) {
+    public void onTableCreated(@NonNull TableMetadata table) {
       evictTable("onTableCreated", table);
     }
 
     /** When a table is updated, evict from cache to avoid stale entries */
     @Override
-    public void onTableUpdated(@NotNull TableMetadata current, @NotNull TableMetadata previous) {
+    public void onTableUpdated(@NonNull TableMetadata current, @NonNull TableMetadata previous) {
       // table name can never change
       evictTable("onTableUpdated", current);
     }
 
     /** When keyspace dropped, we dont need any more of the tables in the cache */
     @Override
-    public void onKeyspaceDropped(@NotNull KeyspaceMetadata keyspace) {
+    public void onKeyspaceDropped(@NonNull KeyspaceMetadata keyspace) {
       evictKeyspace("onKeyspaceDropped", keyspace, true);
     }
 
     /** When keyspace created, evict KS and all other objects in case we missed the drop */
     @Override
-    public void onKeyspaceCreated(@NotNull KeyspaceMetadata keyspace) {
+    public void onKeyspaceCreated(@NonNull KeyspaceMetadata keyspace) {
       evictKeyspace("onKeyspaceCreated", keyspace, true);
     }
 
     /** When keyspace updated, evict from cache in case stale keyspace or collections */
     @Override
     public void onKeyspaceUpdated(
-        @NotNull KeyspaceMetadata current, @NotNull KeyspaceMetadata previous) {
+        @NonNull KeyspaceMetadata current, @NonNull KeyspaceMetadata previous) {
       evictKeyspace("onKeyspaceUpdated", current, false);
     }
   }
