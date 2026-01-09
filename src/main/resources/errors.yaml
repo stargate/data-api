@@ -1003,10 +1003,17 @@ request-errors:
     code: UNSUPPORTED_PROJECTION_DEFINITION
     title: Unsupported projection definition
     body: |-
-      Unsupported projection definition JSON value: must be Object, was {$projectionValueType}.
+      Unsupported projection definition JSON value: must be Object, was ${projectionValueType}.
       
       Resend the command with valid projection definition.
-  
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_PROJECTION_PARAM
+    title: Unsupported projection parameter
+    body: |-
+      Unsupported projection parameter: ${errorMessage}.
+      
+      Resend the command with valid projection definition.
 
   - scope: PROJECTION
     code: UNKNOWN_TABLE_COLUMNS

@@ -17,7 +17,7 @@ public class ProjectionException extends RequestException {
     UNSUPPORTED_COLUMN_TYPES,
 
     UNSUPPORTED_PROJECTION_DEFINITION, // from ErrorCodeV1
-
+    UNSUPPORTED_PROJECTION_PARAM, // from ErrorCodeV1
     UNKNOWN_TABLE_COLUMNS;
 
     private final ErrorTemplate<ProjectionException> template;
