@@ -114,7 +114,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     DockerClient dockerClient = dbContainer.getDockerClient();
     String containerId = dbContainer.getContainerId();
 
-    Log.info("Stopping Database Container to simulate failure...");
+    Log.error("Stopping Database Container to simulate failure...");
     dockerClient.stopContainerCmd(containerId).exec();
 
     try {
@@ -130,11 +130,11 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
                     }
                     """)
           .statusCode(500)
-          .body("errors[0].message", containsString("AllNodesFailedException"));
+          .body("errors[0].message", containsString("No node was available"));
 
     } finally {
       // 4. Restart the container to simulate recovery
-      Log.info("Restarting Database Container to simulate recovery...");
+      Log.error("Restarting Database Container to simulate recovery...");
       dockerClient.startContainerCmd(containerId).exec();
     }
 
@@ -154,12 +154,12 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               }
               """);
 
-    Log.info("Test Passed: Session recovered after DB restart.");
+    Log.error("Test Passed: Session recovered after DB restart.");
   }
 
   /** Polls the database until it becomes responsive again. */
   private void waitForDbRecovery() {
-    Log.info("Waiting for DB to recover...");
+    Log.error("Waiting for DB to recover...");
     long start = System.currentTimeMillis();
     long timeout = 60000; // 60 seconds timeout
 
@@ -187,7 +187,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
         // 200 OK means the DB handled the request (even if empty result)
         if (statusCode == 200) {
-          Log.info("DB recovered!");
+          Log.error("DB recovered!");
           return;
         }
       } catch (Exception e) {
