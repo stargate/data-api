@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static org.hamcrest.Matchers.*;
 
 import com.github.dockerjava.api.DockerClient;
@@ -89,19 +90,30 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
   }
 
   @Test
-  public void testSessionEvictionOnAllNodesFailed() throws Exception {
+  public void testSessionEvictionOnAllNodesFailed() {
 
-    // 1. Insert initial data to ensure the database is healthy before the test
+    // 1. Insert and find initial data to ensure the database is healthy before the test
     insertDoc(
         """
               {
                 "insertOne": {
                   "document": {
-                    "name": "before_crash"
+                    "_id": "before_crash"
                   }
                 }
               }
               """);
+
+    givenHeadersPostJsonThenOkNoErrors(
+            """
+              {
+                "findOne": {
+                  "filter" : {"_id" : "before_crash"}
+                }
+              }
+              """)
+        .body("$", responseIsFindSuccess())
+        .body("data.document._id", is("before_crash"));
 
     // 2. Stop the container to simulate DB failure
     // IMPORTANT: We use dockerClient.stopContainerCmd() instead of container.stop().
@@ -121,14 +133,10 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       // 3. Verify failure: The application should receive a 500 error/AllNodesFailedException
       givenHeadersPostJsonThen(
               """
-                    {
-                      "insertOne": {
-                        "document": {
-                          "name": "after_crash"
-                        }
-                      }
-                    }
-                    """)
+              {
+                "findOne": {}
+              }
+              """)
           .statusCode(500)
           .body("errors[0].message", containsString("No node was available"));
 
@@ -169,9 +177,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         String json =
             """
               {
-                "find": {
-                  "filter": {}
-                }
+                "findOne": {}
               }
               """;
 
