@@ -194,7 +194,7 @@ public class DocumentProjectorTest {
           .hasFieldOrPropertyWithValue(
               "code", ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name())
           .hasMessageContaining(
-              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$' (path: '$similarity')");
+              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are only allowed paths that can start with '$' (path: '$similarity')");
     }
   }
 
@@ -339,7 +339,7 @@ public class DocumentProjectorTest {
           .hasFieldOrPropertyWithValue(
               "code", ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name())
           .hasMessageContaining(
-              "Unsupported projection parameter: unrecognized/unsupported projection operator '$set' (only '$slice' supported)");
+              "Unsupported projection parameter: unsupported projection operator '$set' (only '$slice' supported)");
     }
 
     @Test
@@ -376,7 +376,7 @@ public class DocumentProjectorTest {
           .hasFieldOrPropertyWithValue(
               "code", ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name())
           .hasMessageContaining(
-              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$' (path: '$slice')");
+              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are only allowed paths that can start with '$' (path: '$slice')");
     }
 
     @Test
