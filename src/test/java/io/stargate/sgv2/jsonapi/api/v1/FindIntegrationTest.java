@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -1760,9 +1761,11 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported projection parameter: projection path ('price&') is not a valid path."))
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "Unsupported projection parameter: projection path ('price&') is not a valid path"))
+          .body(
+              "errors[0].errorCode",
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()))
+          .body("errors[0].exceptionClass", is(ProjectionException.class.getSimpleName()));
     }
 
     @Test
@@ -1781,9 +1784,11 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported projection parameter: projection path ('price&abc') is not a valid path."))
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "Unsupported projection parameter: projection path ('price&abc') is not a valid path"))
+          .body(
+              "errors[0].errorCode",
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()))
+          .body("errors[0].exceptionClass", is(ProjectionException.class.getSimpleName()));
     }
 
     @Test
@@ -1802,9 +1807,11 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported projection parameter: projection path ('foo..bar') is not a valid path."))
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "Unsupported projection parameter: projection path ('foo..bar') is not a valid path"))
+          .body(
+              "errors[0].errorCode",
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()))
+          .body("errors[0].exceptionClass", is(ProjectionException.class.getSimpleName()));
     }
   }
 
