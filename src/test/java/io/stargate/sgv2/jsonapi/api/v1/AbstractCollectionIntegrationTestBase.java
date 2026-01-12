@@ -127,30 +127,6 @@ public abstract class AbstractCollectionIntegrationTestBase
         .statusCode(200);
   }
 
-  /** Utility to insert many docs to the test collection. */
-  protected void insertManyDocs(String docsJson, int docsAmount) {
-    String doc =
-            """
-                {
-                  "insertMany": {
-                    "documents": %s
-                  }
-                }
-                """
-            .formatted(docsJson);
-
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(doc)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-        .then()
-        .body("$", responseIsWriteSuccess())
-        .body("status.insertedIds", hasSize(docsAmount))
-        .statusCode(200);
-  }
-
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThen(String json) {
     return givenHeadersPostJsonThen(keyspaceName, collectionName, json);
