@@ -283,7 +283,7 @@ public class DocumentProjector {
             throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
                 Map.of(
                     "errorMessage",
-                    "'$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$' (path: '%s')"
+                    "'$lexical'/'$vector'/'$vectorize' are only allowed paths that can start with '$' (path: '%s')"
                         .formatted(path)));
           }
 
@@ -292,7 +292,7 @@ public class DocumentProjector {
             throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
                 Map.of(
                     "errorMessage",
-                    "unrecognized/unsupported projection operator '%s' (only '$slice' supported)"
+                    "unsupported projection operator '%s' (only '$slice' supported)"
                         .formatted(path)));
           }
 
