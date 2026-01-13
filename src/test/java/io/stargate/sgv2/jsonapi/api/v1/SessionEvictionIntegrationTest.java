@@ -124,7 +124,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     String containerId = dbContainer.getContainerId();
 
     Log.error("Stopping Database Container to simulate failure...");
-    Log.info(
+    Log.error(
         "Container ID: " + containerId + ", Port Before Stop: " + dbContainer.getMappedPort(9042));
     dockerClient.stopContainerCmd(containerId).exec();
 
@@ -143,7 +143,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       // 4. Restart the container to simulate recovery
       Log.error("Restarting Database Container to simulate recovery...");
       dockerClient.startContainerCmd(containerId).exec();
-      Log.info(
+      Log.error(
           "Container ID: "
               + containerId
               + ", Port After Start: "
