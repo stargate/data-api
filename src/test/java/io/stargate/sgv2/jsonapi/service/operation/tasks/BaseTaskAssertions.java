@@ -45,7 +45,7 @@ public class BaseTaskAssertions<
     when(mockTable.identifier())
         .thenReturn(
             SchemaObjectIdentifier.forTable(
-                    TEST_CONSTANTS.TENANT,
+                TEST_CONSTANTS.TENANT,
                 CqlIdentifier.fromInternal(keyspaceName),
                 CqlIdentifier.fromInternal(tableName)));
     when(mockTable.keyspaceName()).thenReturn(CqlIdentifier.fromInternal(keyspaceName));
