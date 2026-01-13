@@ -1071,6 +1071,14 @@ request-errors:
       Resend 'createCollection' with valid options.
 
   - scope: SCHEMA
+    code: INVALID_INDEXING_DEFINITION
+    title: Invalid indexing definition
+    body: |-
+      'createCollection' indexing definition invalid: ${errorMessage}.
+      
+      Resend 'createCollection' with valid indexing definition.
+
+  - scope: SCHEMA
     code: MISSING_PARTITION_COLUMNS
     title: Partitioning keys are required for tables
     body: |-
