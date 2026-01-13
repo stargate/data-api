@@ -265,7 +265,11 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY);
         if (schemaVersionNode == null) {
           throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
-              Map.of("collectionName", collectionName, "schemaVersion", "<null>"));
+              Map.of(
+                  "collectionName",
+                  tableMetadata.getName().asInternal(),
+                  "schemaVersion",
+                  "<null>"));
         }
         int schemaVersion = collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt();
         switch (schemaVersion) {
@@ -276,7 +280,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
                 Map.of(
                     "collectionName",
-                    collectionName,
+                    tableMetadata.getName().asInternal(),
                     "schemaVersion",
                     String.valueOf(schemaVersion)));
         }
