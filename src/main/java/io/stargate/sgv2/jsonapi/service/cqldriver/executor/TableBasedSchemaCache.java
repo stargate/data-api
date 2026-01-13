@@ -61,12 +61,11 @@ public class TableBasedSchemaCache {
                 if (null != error) {
                   // not a valid collection schema
                   // TODO: Explain why this changes the error code
-                  if (error instanceof JsonApiException
-                      && ((JsonApiException) error).getErrorCode()
-                          == ErrorCodeV1.VECTORIZECONFIG_CHECK_FAIL) {
+                  if (error instanceof JsonApiException jae
+                      && jae.getErrorCode() == ErrorCodeV1.VECTORIZE_CONFIG_CHECK_FAIL) {
                     return Uni.createFrom()
                         .failure(
-                            ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
+                            ErrorCodeV1.INVALID_COLLECTION_SCHEMA.toApiException(
                                 "%s", collectionName));
                   }
                   // collection does not exist
@@ -75,8 +74,8 @@ public class TableBasedSchemaCache {
                   // Guess: this a driver exception, not Data API's internal one
                   // ... seems unlikely as driver does not have concept of "Collection" (vs Tables)?
                   // (that is: "Collection" would refer to column datatype not "funny table"?)
-                  if (error instanceof RuntimeException rte
-                      && rte.getMessage().startsWith("Collection does not exist")) {
+                  if (error instanceof RuntimeException
+                      && error.getMessage().startsWith("Collection does not exist")) {
                     return Uni.createFrom()
                         .failure(
                             SchemaException.Code.COLLECTION_NOT_EXIST.get(
