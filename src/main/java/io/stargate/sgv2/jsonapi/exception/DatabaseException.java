@@ -23,6 +23,7 @@ public class DatabaseException extends ServerException {
     INVALID_DATABASE_QUERY,
     TIMEOUT_READING_DATA,
     TIMEOUT_WRITING_DATA,
+    TOO_MANY_COLLECTIONS, // legacy: converted from ErrorCodeV1
     UNAUTHORIZED_ACCESS,
     UNAVAILABLE_DATABASE,
     UNEXPECTED_DOCUMENT_ID_TYPE,

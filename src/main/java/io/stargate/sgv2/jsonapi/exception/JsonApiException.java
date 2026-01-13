@@ -34,7 +34,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   private static final Set<ErrorCodeV1> serverFamily =
       new HashSet<>() {
         {
-          add(TOO_MANY_COLLECTIONS);
           add(VECTOR_SEARCH_NOT_SUPPORTED);
           add(VECTORIZE_FEATURE_NOT_AVAILABLE);
           add(VECTORIZE_SERVICE_NOT_REGISTERED);

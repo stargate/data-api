@@ -2168,6 +2168,12 @@ server-errors:
       ${SNIPPET.RETRY_UNKNOWN}
 
   - scope: DATABASE
+    code: TOO_MANY_COLLECTIONS
+    title: Too many collections
+    body: |-
+      Cannot create collection '${collectionName}': the maximum number of collections per database is ${collectionMaxCount}, database already has ${collectionCount}.
+
+  - scope: DATABASE
     code: UNEXPECTED_DOCUMENT_ID_TYPE
     title: Unexpected stored document id type
     body: |-

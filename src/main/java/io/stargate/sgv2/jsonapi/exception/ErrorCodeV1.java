@@ -28,7 +28,6 @@ public enum ErrorCodeV1 {
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
-  TOO_MANY_COLLECTIONS("Too many collections"),
   TOO_MANY_INDEXES("Too many indexes"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
