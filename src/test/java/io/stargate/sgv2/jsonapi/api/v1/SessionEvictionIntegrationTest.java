@@ -8,6 +8,7 @@ import com.github.dockerjava.api.DockerClient;
 import io.quarkus.logging.Log;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -186,9 +187,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
         int statusCode =
             given()
-                .port(getTestPort())
                 .headers(getHeaders())
-                .contentType(io.restassured.http.ContentType.JSON)
+                .contentType(ContentType.JSON)
                 .body(json)
                 .when()
                 .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
