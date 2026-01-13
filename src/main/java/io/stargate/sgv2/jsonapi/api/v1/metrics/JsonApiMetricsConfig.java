@@ -7,13 +7,13 @@ import jakarta.validation.constraints.NotBlank;
 @ConfigMapping(prefix = "stargate.jsonapi.metric")
 public interface JsonApiMetricsConfig {
   // XXX - amorton- delete
-//  @NotBlank
-//  @WithDefault("error.class")
-//  String errorClass();
-//
-//  @NotBlank
-//  @WithDefault("error.code")
-//  String errorCode();
+  //  @NotBlank
+  //  @WithDefault("error.class")
+  //  String errorClass();
+  //
+  //  @NotBlank
+  //  @WithDefault("error.code")
+  //  String errorCode();
 
   @NotBlank
   @WithDefault("command")

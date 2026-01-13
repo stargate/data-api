@@ -62,8 +62,7 @@ public class TruncateDBTaskPage<
     @Override
     public Supplier<CommandResult> getResults() {
 
-      return new TruncateDBTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(requestTracing));
+      return new TruncateDBTaskPage<>(tasks, CommandResult.statusOnlyBuilder(requestTracing));
     }
   }
 }

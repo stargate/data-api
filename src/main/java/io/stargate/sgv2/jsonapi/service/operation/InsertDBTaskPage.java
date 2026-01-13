@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
@@ -112,7 +111,8 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
     List<CommandErrorV2> seenErrors = new ArrayList<>();
     // Second: failed insertions; output in order of insertion
     for (var task : tasks.errorTasks()) {
-      // XXX - AARON- TODO: the task erorr is throwable, so mapping to Error will fail for regular runtime errorTasks
+      // XXX - AARON- TODO: the task erorr is throwable, so mapping to Error will fail for regular
+      // runtime errorTasks
       var cmdError = commandErrorFactory.create(task.failure().orElseThrow());
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
@@ -180,9 +180,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
     public InsertDBTaskPage<SchemaT> getResults() {
 
       return new InsertDBTaskPage<>(
-          tasks,
-          CommandResult.statusOnlyBuilder(requestTracing),
-          returnDocumentResponses);
+          tasks, CommandResult.statusOnlyBuilder(requestTracing), returnDocumentResponses);
     }
   }
 }

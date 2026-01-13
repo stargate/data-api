@@ -50,7 +50,6 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
     };
   }
 
-
   // ========================================================================
   // Special case - Driver Exceptions that are not subclasses of DriverException
   // which have been remapped to a APIDriverException subclass

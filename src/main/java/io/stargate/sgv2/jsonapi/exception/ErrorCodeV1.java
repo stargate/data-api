@@ -46,13 +46,13 @@ public enum ErrorCodeV1 {
   // CreateCollection error codes:
 
   EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
-//  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
+  //  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
   TOO_MANY_COLLECTIONS("Too many collections"),
-// XXX amorton delete
-//  TOO_MANY_INDEXES("Too many indexes"),
+  // XXX amorton delete
+  //  TOO_MANY_INDEXES("Too many indexes"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
   RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
@@ -108,8 +108,9 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
-//  COLLECTION_CREATION_ERROR(
-//      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
+  //  COLLECTION_CREATION_ERROR(
+  //      "Collection creation failure (unable to create table). Recommend re-creating the
+  // collection"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_QUERY("Invalid query"),
@@ -128,9 +129,9 @@ public enum ErrorCodeV1 {
    */
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
-//  SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
-//  SERVER_READ_FAILED("Database read failed"),
-//  SERVER_UNHANDLED_ERROR("Server failed"),
+  //  SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
+  //  SERVER_READ_FAILED("Database read failed"),
+  //  SERVER_UNHANDLED_ERROR("Server failed"),
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 

@@ -99,13 +99,14 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   }
 
   /**
-   * We use this in a few places, in these cases we want to mark the connection as unreliable so it will
-   * be recycled.
+   * We use this in a few places, in these cases we want to mark the connection as unreliable so it
+   * will be recycled.
    */
   private APIException unexpectedDriverError(DriverException exception) {
     return DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.get(
         EnumSet.of(UNRELIABLE_DB_SESSION), errVars(schemaObject, exception));
   }
+
   /**
    * Any driver exception that is not handled (handler returns same exception instance) wil be
    * mapped to the {@link DatabaseException.Code#UNEXPECTED_DRIVER_ERROR}. We assume any unexpected
@@ -126,7 +127,6 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
     // This is authentication as part of connecting to the DB
     return SecurityException.Code.UNAUTHENTICATED_REQUEST.get(errVars(schemaObject, exception));
   }
-
 
   // ========================================================================
   // Direct subclasses of DriverException with no child
@@ -190,9 +190,10 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
     var highestPriority = findHighestPriority(exception).orElseGet(() -> null);
 
     return switch (highestPriority) {
-      // AuthenticationException is a special case, it does not extend DriverException, needs to be wrapped
+        // AuthenticationException is a special case, it does not extend DriverException, needs to
+        // be wrapped
       case AuthenticationException e -> maybeHandle(AuthenticationDriverException.from(e));
-      // found a node specific error that is a driver based
+        // found a node specific error that is a driver based
       case DriverException e -> maybeHandle(e);
         // this is a non-driver based exception, so map to generic unexpected driver error
       case RuntimeException re ->

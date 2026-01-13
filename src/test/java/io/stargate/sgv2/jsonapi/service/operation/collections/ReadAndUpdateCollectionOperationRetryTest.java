@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -934,11 +933,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               assertThat(commandResultSupplier.errors()).hasSize(1);
               assertThat(commandResultSupplier.errors().get(0).errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(
-                      commandResultSupplier
-                          .errors()
-                          .get(0)
-                          .title())
+              assertThat(commandResultSupplier.errors().get(0).title())
                   .isEqualTo(
                       "Failed to update documents with _id ['doc1', 'doc2']: Failed to complete concurrent operations on the database");
             });

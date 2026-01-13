@@ -4,11 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -26,5 +23,4 @@ public class ExceptionUtilTest {
     assertThat(key).isNotNull();
     assertThat(key).isEqualTo("RuntimeException");
   }
-
 }

@@ -47,12 +47,12 @@ public interface MetricsConfig {
     String tenantTag();
 
     // XXX - amorton- delete
-//    /**
-//     * @return The tag key for error flag, defaults to <code>error</code>.
-//     */
-//    @NotBlank
-//    @WithDefault("error")
-//    String errorTag();
+    //    /**
+    //     * @return The tag key for error flag, defaults to <code>error</code>.
+    //     */
+    //    @NotBlank
+    //    @WithDefault("error")
+    //    String errorTag();
 
     /**
      * @return The tag key for user-agent flag, defaults to <code>user_agent</code>.

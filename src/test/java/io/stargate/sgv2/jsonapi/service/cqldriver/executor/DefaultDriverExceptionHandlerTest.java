@@ -104,15 +104,12 @@ public class DefaultDriverExceptionHandlerTest {
       return new Assertions(code, true, false, false, assertMessage, null);
     }
 
-    public static Assertions of(
-        ErrorCode<?> code, EnumSet<ExceptionFlags> assertExceptionFlags) {
+    public static Assertions of(ErrorCode<?> code, EnumSet<ExceptionFlags> assertExceptionFlags) {
       return new Assertions(code, true, false, false, null, assertExceptionFlags);
     }
 
     public static Assertions of(
-        ErrorCode<?> code,
-        String assertMessage,
-        EnumSet<ExceptionFlags> assertExceptionFlags) {
+        ErrorCode<?> code, String assertMessage, EnumSet<ExceptionFlags> assertExceptionFlags) {
       return new Assertions(code, true, false, false, assertMessage, assertExceptionFlags);
     }
 

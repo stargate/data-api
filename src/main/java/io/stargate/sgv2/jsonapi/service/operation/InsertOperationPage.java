@@ -5,9 +5,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.smallrye.mutiny.groups.MultiCollect;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.*;
@@ -25,8 +22,8 @@ import java.util.function.Supplier;
  *
  * <p>Create an instance with all the insert attempts the insert operation will process, then call
  * {@link #registerCompletedAttempt} for each completed attempt, the instance will then track failed
- * and successful attempts. This is used as an aggregator for {@link
- * MultiCollect#in(Supplier, BiConsumer)}
+ * and successful attempts. This is used as an aggregator for {@link MultiCollect#in(Supplier,
+ * BiConsumer)}
  */
 public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     implements Supplier<CommandResult> {
@@ -119,7 +116,8 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     }
 
     // Second: failed insertions; output in order of insertion
-    // We are creating the CommandErrorV2 objects here manually, rather than passing throwable to the
+    // We are creating the CommandErrorV2 objects here manually, rather than passing throwable to
+    // the
     /// CommandResultBuilder, because we do the de-dup and we care about order so being careful.
     for (var failedInsertion : failedInsertions) {
       // TODO AARON - confirm the null handling in the getError
@@ -162,9 +160,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    */
   private CommandResult nonPerDocumentResult(CommandResultBuilder builder) {
 
-    failedInsertions.stream()
-        .map(this::getErrorObject)
-        .forEach(builder::addCommandError);
+    failedInsertions.stream().map(this::getErrorObject).forEach(builder::addCommandError);
 
     // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
     List<DocRowIdentifer> insertedIds =
@@ -200,9 +196,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
 
   private CommandErrorV2 getErrorObject(InsertAttempt<SchemaT> insertAttempt) {
 
-    return insertAttempt.failure()
-        .map(commandErrorFactory::create)
-        .orElse(null);
+    return insertAttempt.failure().map(commandErrorFactory::create).orElse(null);
   }
 
   /**
@@ -216,52 +210,55 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    * for we fail the IT's in {@link InsertIntegrationTest.InsertManyFails} for per doc responses. In
    * this reference version this was the function "getError(Throwable throwable)"
    */
-//  private CommandResult.Error getErrorObjectV1(InsertAttempt<SchemaT> insertAttempt) {
-//
-//    // aaron we should not be here unless the attempt has failed.
-//    var throwable =
-//        insertAttempt
-//            .failure()
-//            .orElseThrow(
-//                () ->
-//                    new IllegalStateException(
-//                        String.format(
-//                            "getErrorObjectV1: attempting to get an error object for an insertAttempt that has not failed. insertAttempt: %s",
-//                            insertAttempt)));
-//
-//    if (returnDocumentResponses) {
-//      return ThrowableToErrorMapper.getMapperWithMessageFunction()
-//          .apply(throwable, throwable.getMessage());
-//    }
-//
-//    // aaron 23 sept - the insertAttempt.docRowID().orElse.. below is because if we fail to shred we
-//    // do not have the id
-//    // previously this type of error would bubble to the top of the stack, it is not handled as part
-//    // of building the
-//    // insert page. This is ugly, need to fix later.
-//    var docRowID = insertAttempt.docRowID().orElse(() -> "UNKNOWN").value();
-//
-//    String message =
-//        allInsertions.size() == 1
-//            ? throwable.getMessage()
-//            : "Failed to insert document with _id " + docRowID + ": " + throwable.getMessage();
-//
-//    /// TODO: confirm the null handling in the getMapperWithMessageFunction
-//    // passing null is what would have happened before changing to optional
-//    // BUG: this does not handle if the debug flag is set.
-//    return ThrowableToErrorMapper.getMapperWithMessageFunction()
-//        .apply(insertAttempt.failure().orElse(null), message);
-//  }
+  //  private CommandResult.Error getErrorObjectV1(InsertAttempt<SchemaT> insertAttempt) {
+  //
+  //    // aaron we should not be here unless the attempt has failed.
+  //    var throwable =
+  //        insertAttempt
+  //            .failure()
+  //            .orElseThrow(
+  //                () ->
+  //                    new IllegalStateException(
+  //                        String.format(
+  //                            "getErrorObjectV1: attempting to get an error object for an
+  // insertAttempt that has not failed. insertAttempt: %s",
+  //                            insertAttempt)));
+  //
+  //    if (returnDocumentResponses) {
+  //      return ThrowableToErrorMapper.getMapperWithMessageFunction()
+  //          .apply(throwable, throwable.getMessage());
+  //    }
+  //
+  //    // aaron 23 sept - the insertAttempt.docRowID().orElse.. below is because if we fail to
+  // shred we
+  //    // do not have the id
+  //    // previously this type of error would bubble to the top of the stack, it is not handled as
+  // part
+  //    // of building the
+  //    // insert page. This is ugly, need to fix later.
+  //    var docRowID = insertAttempt.docRowID().orElse(() -> "UNKNOWN").value();
+  //
+  //    String message =
+  //        allInsertions.size() == 1
+  //            ? throwable.getMessage()
+  //            : "Failed to insert document with _id " + docRowID + ": " + throwable.getMessage();
+  //
+  //    /// TODO: confirm the null handling in the getMapperWithMessageFunction
+  //    // passing null is what would have happened before changing to optional
+  //    // BUG: this does not handle if the debug flag is set.
+  //    return ThrowableToErrorMapper.getMapperWithMessageFunction()
+  //        .apply(insertAttempt.failure().orElse(null), message);
+  //  }
 
   /**
    * aaron - I think this generating the V2 messages, but it does not look like it. copied from what
    * was here and left alone
    */
-//  private static CommandResult.Error getErrorObjectV2(Throwable throwable) {
-//    // TODO AARON - confirm we have two different error message paths
-//    return ThrowableToErrorMapper.getMapperWithMessageFunction()
-//        .apply(throwable, throwable.getMessage());
-//  }
+  //  private static CommandResult.Error getErrorObjectV2(Throwable throwable) {
+  //    // TODO AARON - confirm we have two different error message paths
+  //    return ThrowableToErrorMapper.getMapperWithMessageFunction()
+  //        .apply(throwable, throwable.getMessage());
+  //  }
 
   /**
    * Aggregates the result of the insert operation into this object, used when building the page

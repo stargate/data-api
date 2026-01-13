@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.exception.RequestException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Map;
-import java.util.Set;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -26,7 +25,8 @@ public class ConstraintViolationExceptionMapper {
   private static final CommandErrorFactory commandErrorFactory = new CommandErrorFactory();
 
   @ServerExceptionMapper
-  public RestResponse<CommandResult> constraintViolationException(ConstraintViolationException exception) {
+  public RestResponse<CommandResult> constraintViolationException(
+      ConstraintViolationException exception) {
 
     var builder = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
 
@@ -49,8 +49,7 @@ public class ConstraintViolationExceptionMapper {
     String propertyValueDesc = valueDescription(violation.getInvalidValue());
     return commandErrorFactory.create(
         RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
-            Map.of("field", propertyPath, "value", propertyValueDesc, "message", message))
-    );
+            Map.of("field", propertyPath, "value", propertyValueDesc, "message", message)));
   }
 
   /** Helper method for construction description of value that caused the constraint violation. */

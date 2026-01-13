@@ -325,16 +325,20 @@ public record CreateCollectionOperation(
         .transform(
             res -> {
               if (!res) {
-                // amorton - 13 jan 2026 - this is bad, the old code would swallow the error for creating the
+                // amorton - 13 jan 2026 - this is bad, the old code would swallow the error for
+                // creating the
                 // table and indexes, will need to improve later.
 
                 // table creation failure or index creation failure
                 // HACK - remove when re-writing this class
-                return commandResultSupplier(DatabaseException.Code.CORRUPTED_COLLECTION_SCHEMA.get(
-                    errVars(
-                        commandContext.schemaObject(),
-                        map -> map.put("errorMessage", "Collection creation failure (unable to create table).")
-                    )));
+                return commandResultSupplier(
+                    DatabaseException.Code.CORRUPTED_COLLECTION_SCHEMA.get(
+                        errVars(
+                            commandContext.schemaObject(),
+                            map ->
+                                map.put(
+                                    "errorMessage",
+                                    "Collection creation failure (unable to create table)."))));
               } else {
                 return new SchemaChangeResult(true);
               }
@@ -361,26 +365,34 @@ public record CreateCollectionOperation(
               if (error.getMessage().matches("Index .* already exists")) {
                 // if index creation fails because index already exists
                 return Uni.createFrom()
-                    .item(() -> commandResultSupplier(SchemaException.Code.EXISTING_INDEX_FOR_COLLECTION.get(
-                            errVars(commandContext.schemaObject())))
-                    );
+                    .item(
+                        () ->
+                            commandResultSupplier(
+                                SchemaException.Code.EXISTING_INDEX_FOR_COLLECTION.get(
+                                    errVars(commandContext.schemaObject()))));
               } else {
                 // if index creation violates DB index limit and collection existed before,
                 // will not drop the collection
                 return Uni.createFrom()
-                    .item(() -> commandResultSupplier(SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.get(
-                        errVars(
-                            commandContext.schemaObject(),
-                            map -> map.put("indexesPerCollection", String.valueOf(dbLimitsConfig.indexesNeededPerCollection()))
-                        ))));
+                    .item(
+                        () ->
+                            commandResultSupplier(
+                                SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.get(
+                                    errVars(
+                                        commandContext.schemaObject(),
+                                        map ->
+                                            map.put(
+                                                "indexesPerCollection",
+                                                String.valueOf(
+                                                    dbLimitsConfig
+                                                        .indexesNeededPerCollection()))))));
               }
             });
   }
 
   private Supplier<CommandResult> commandResultSupplier(Throwable throwable) {
-    return () -> CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-        .addThrowable(throwable)
-        .build();
+    return () ->
+        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(throwable).build();
   }
 
   /**
@@ -425,35 +437,43 @@ public record CreateCollectionOperation(
         .merge();
   }
 
-  public Uni<Supplier<CommandResult>> cleanUpCollectionFailedWithTooManyIndex(RequestContext requestContext, QueryExecutor queryExecutor) {
+  public Uni<Supplier<CommandResult>> cleanUpCollectionFailedWithTooManyIndex(
+      RequestContext requestContext, QueryExecutor queryExecutor) {
 
     DeleteCollectionCollectionOperation deleteCollectionCollectionOperation =
         new DeleteCollectionCollectionOperation(commandContext, name);
 
-    // amorton - 13 jan  2026 - keeping the existing logic here, where the error was returning in two situations
+    // amorton - 13 jan  2026 - keeping the existing logic here, where the error was returning in
+    // two situations
     // unsure how the second happens
-    var exception = SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.get(
-        errVars(
-            commandContext.schemaObject(),
-            map -> map.put("indexesPerCollection", String.valueOf(dbLimitsConfig.indexesNeededPerCollection()))
-        ));
+    var exception =
+        SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.get(
+            errVars(
+                commandContext.schemaObject(),
+                map ->
+                    map.put(
+                        "indexesPerCollection",
+                        String.valueOf(dbLimitsConfig.indexesNeededPerCollection()))));
     return deleteCollectionCollectionOperation
         .execute(requestContext, queryExecutor)
         .onItem()
         .transform(
             res ->
-                (Supplier<CommandResult>)() -> CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-                    .addThrowable(exception)
-                    .build())
+                (Supplier<CommandResult>)
+                    () ->
+                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                            .addThrowable(exception)
+                            .build())
         .onFailure()
         .recoverWithItem(
             e ->
-              // This is unlikely to happen for delete collection though
-              // Also return with TOO_MANY_INDEXES exception
-              (Supplier<CommandResult>)() -> CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-                  .addThrowable(exception)
-                  .build()
-            );
+                // This is unlikely to happen for delete collection though
+                // Also return with TOO_MANY_INDEXES exception
+                (Supplier<CommandResult>)
+                    () ->
+                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                            .addThrowable(exception)
+                            .build());
   }
 
   /**
@@ -500,8 +520,10 @@ public record CreateCollectionOperation(
       throw SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.get(
           errVars(
               commandContext.schemaObject(),
-              map -> map.put("indexesPerCollection", String.valueOf(dbLimitsConfig.indexesNeededPerCollection()))
-          ));
+              map ->
+                  map.put(
+                      "indexesPerCollection",
+                      String.valueOf(dbLimitsConfig.indexesNeededPerCollection()))));
     }
 
     return null;

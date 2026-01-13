@@ -35,8 +35,8 @@ public record ReadOperationPage(
 
     var builder =
         singleResponse
-            ? CommandResult.singleDocumentBuilder( RequestTracing.NO_OP)
-            : CommandResult.multiDocumentBuilder( RequestTracing.NO_OP);
+            ? CommandResult.singleDocumentBuilder(RequestTracing.NO_OP)
+            : CommandResult.multiDocumentBuilder(RequestTracing.NO_OP);
 
     if (includeSortVector) {
       builder.addStatus(CommandStatus.SORT_VECTOR, vector);

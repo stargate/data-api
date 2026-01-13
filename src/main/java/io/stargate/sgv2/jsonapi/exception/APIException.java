@@ -41,9 +41,8 @@ import java.util.*;
  * </ul>
  *
  * To get the Error to be returned in the {@link
- * io.stargate.sgv2.jsonapi.api.model.command.CommandResult} use a {@link
- * CommandErrorFactory} all the logic for mapping to the API is in there to keep it out
- * of the core exception classes.
+ * io.stargate.sgv2.jsonapi.api.model.command.CommandResult} use a {@link CommandErrorFactory} all
+ * the logic for mapping to the API is in there to keep it out of the core exception classes.
  */
 public abstract class APIException extends RuntimeException implements Recordable {
 
@@ -177,34 +176,34 @@ public abstract class APIException extends RuntimeException implements Recordabl
   }
 
   // HACK TODO - aaron delete
-//  // Support for converting legacy ErrorCodeV1 usage
-//  public CommandResult.Error getCommandResultError() {
-//    return getCommandResultError(Response.Status.OK);
-//  }
-//
-//  // Support for converting legacy ErrorCodeV1 usage
-//  public CommandResult.Error getCommandResultError(Response.Status status) {
-//    Map<String, Object> fieldsForMetricsTag =
-//        Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName());
-//
-//    Map<String, Object> fields =
-//        new HashMap<>(
-//            Map.of(
-//                "id",
-//                errorId,
-//                "errorCode",
-//                code,
-//                "family",
-//                String.valueOf(family),
-//                "scope",
-//                scope,
-//                "title",
-//                title));
-//
-//    if (DebugConfigAccess.isDebugEnabled()) {
-//      fields.put("exceptionClass", this.getClass().getSimpleName());
-//    }
-//
-//    return new CommandResult.Error(getMessage(), fieldsForMetricsTag, fields, status);
-//  }
+  //  // Support for converting legacy ErrorCodeV1 usage
+  //  public CommandResult.Error getCommandResultError() {
+  //    return getCommandResultError(Response.Status.OK);
+  //  }
+  //
+  //  // Support for converting legacy ErrorCodeV1 usage
+  //  public CommandResult.Error getCommandResultError(Response.Status status) {
+  //    Map<String, Object> fieldsForMetricsTag =
+  //        Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName());
+  //
+  //    Map<String, Object> fields =
+  //        new HashMap<>(
+  //            Map.of(
+  //                "id",
+  //                errorId,
+  //                "errorCode",
+  //                code,
+  //                "family",
+  //                String.valueOf(family),
+  //                "scope",
+  //                scope,
+  //                "title",
+  //                title));
+  //
+  //    if (DebugConfigAccess.isDebugEnabled()) {
+  //      fields.put("exceptionClass", this.getClass().getSimpleName());
+  //    }
+  //
+  //    return new CommandResult.Error(getMessage(), fieldsForMetricsTag, fields, status);
+  //  }
 }

@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -32,8 +31,7 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
     Objects.requireNonNull(accumulator, "accumulator cannot be null");
     Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
-    accumulator
-        .requestTracing(commandContext.requestTracing());
+    accumulator.requestTracing(commandContext.requestTracing());
     return accumulator;
   }
 

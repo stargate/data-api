@@ -65,7 +65,9 @@ public record UpdateCollectionOperationPage(
                   groupedErrorUpdates.get(key);
               final List<DocumentId> documentIds =
                   updatedDocuments.stream().map(update -> update.id()).collect(Collectors.toList());
-              errors.add(commandErrorFactory.create(updatedDocuments.stream().findFirst().get().error(), documentIds));
+              errors.add(
+                  commandErrorFactory.create(
+                      updatedDocuments.stream().findFirst().get().error(), documentIds));
             });
 
     if (upsertedId[0] != null) {

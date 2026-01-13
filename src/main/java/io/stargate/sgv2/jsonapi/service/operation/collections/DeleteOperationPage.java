@@ -94,7 +94,9 @@ public record DeleteOperationPage(
                   deletedDocuments.stream()
                       .map(deletes -> deletes.getItem3().id().orElseThrow())
                       .collect(Collectors.toList());
-              errors.add(commandErrorFactory.create(deletedDocuments.stream().findFirst().get().getItem2(), documentIds));
+              errors.add(
+                  commandErrorFactory.create(
+                      deletedDocuments.stream().findFirst().get().getItem2(), documentIds));
             });
 
     // return the result

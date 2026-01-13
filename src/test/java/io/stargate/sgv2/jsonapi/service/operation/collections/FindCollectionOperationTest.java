@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,7 +29,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -2991,7 +2989,8 @@ public class FindCollectionOperationTest extends OperationTestBase {
       var commandError = new CommandErrorFactory().create(failure);
 
       assertThat(commandError).isNotNull();
-      assertThat(commandError.errorCode()).isEqualTo(DatabaseException.Code.FAILED_READ_REQUEST.name());
+      assertThat(commandError.errorCode())
+          .isEqualTo(DatabaseException.Code.FAILED_READ_REQUEST.name());
       assertThat(commandError.errorClass()).isEqualTo("JsonApiException");
       assertThat(commandError.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
       assertThat(commandError.message())

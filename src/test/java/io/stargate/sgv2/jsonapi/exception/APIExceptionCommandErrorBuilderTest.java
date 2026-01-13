@@ -6,14 +6,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import io.micrometer.core.instrument.Tag;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
-
-import java.util.List;
-import java.util.Map;
-
 import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** tests for {@link CommandErrorFactory} */
@@ -26,7 +21,6 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
     return TEST_DATA.TEST_ERROR_CONFIG_FILE;
   }
 
-
   @Test
   public void productionModeCommandErrorV2() {
     withDebugMode(
@@ -37,7 +31,6 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
           assertCommandErrorV2(exception, result);
         });
   }
-
 
   @Test
   public void debugModeCommandErrorV2() {
@@ -51,9 +44,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
           assertThat(result)
               .isNotNull()
               .satisfies(
-                  e ->
-                      assertThat(e.errorClass())
-                          .isEqualTo(exception.getClass().getSimpleName()));
+                  e -> assertThat(e.errorClass()).isEqualTo(exception.getClass().getSimpleName()));
         });
   }
 
@@ -91,12 +82,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
     assertThat(metricTags)
         .extracting(Tag::getKey, Tag::getValue)
         .contains(
-            tuple(
-                ExceptionMetrics.TAG_NAME_ERROR_CODE,
-                exception.fullyQualifiedCode()),
-            tuple(
-                ExceptionMetrics.TAG_NAME_ERROR_CLASS,
-                exception.getClass().getSimpleName())
-        );
+            tuple(ExceptionMetrics.TAG_NAME_ERROR_CODE, exception.fullyQualifiedCode()),
+            tuple(ExceptionMetrics.TAG_NAME_ERROR_CLASS, exception.getClass().getSimpleName()));
   }
 }

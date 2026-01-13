@@ -233,7 +233,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.errorCode()).isEqualTo(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name());
+                assertThat(error.errorCode())
+                    .isEqualTo(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name());
                 assertThat(error.errorClass()).isEqualTo(classSimpleName(DocumentException.class));
                 assertThat(error.message())
                     .startsWith(

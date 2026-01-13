@@ -92,10 +92,7 @@ public class MetadataDBTaskPage<TaskT extends MetadataDBTask<SchemaT>, SchemaT e
     public Supplier<CommandResult> getResults() {
 
       return new MetadataDBTaskPage<>(
-          tasks,
-          CommandResult.statusOnlyBuilder(requestTracing),
-          showSchema,
-          statusKey);
+          tasks, CommandResult.statusOnlyBuilder(requestTracing), showSchema, statusKey);
     }
   }
 }

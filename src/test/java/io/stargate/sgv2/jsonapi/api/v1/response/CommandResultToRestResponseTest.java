@@ -3,16 +3,13 @@ package io.stargate.sgv2.jsonapi.api.v1.response;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.ws.rs.core.Response;
-import java.util.Map;
 import java.util.UUID;
-
 import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,7 +22,8 @@ public class CommandResultToRestResponseTest {
 
     @Test
     public void happyPath() {
-      var commandResult = CommandResult.statusOnlyBuilder( RequestTracing.NO_OP)
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
               .addStatus(CommandStatus.OK, 1)
               .build();
 
@@ -36,9 +34,10 @@ public class CommandResultToRestResponseTest {
 
     @Test
     public void okStatusWithThrowable() {
-      
-      var commandResult  = CommandResult.statusOnlyBuilder( RequestTracing.NO_OP)
-          .addThrowable(new RuntimeException("test exception"))
+
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+              .addThrowable(new RuntimeException("test exception"))
               .build();
 
       assertThat(commandResult.toRestResponse().getStatus())
@@ -49,7 +48,8 @@ public class CommandResultToRestResponseTest {
     @Test
     public void non200StatusPassedThrough() {
 
-      var commandResult = CommandResult.statusOnlyBuilder( RequestTracing.NO_OP)
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
               .addCommandError(
                   CommandErrorV2.builder()
                       .id(UUID.randomUUID())
@@ -66,6 +66,5 @@ public class CommandResultToRestResponseTest {
           .as("Non-200 HTTP status set on CommandError is set as RestResponse status")
           .isEqualTo(RestResponse.Status.UNAUTHORIZED.getStatusCode());
     }
-
   }
 }

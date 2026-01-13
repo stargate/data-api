@@ -18,7 +18,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.ClassUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -268,10 +267,10 @@ public class MeteredCommandProcessor {
       // is error
       tags.add(ExceptionMetrics.TAG_ERROR_TRUE);
       // let error bubble, there must be a first error
-      // XXX AARON TODO - old code use a single error, can we use more than one tag value ? Cannot remember
+      // XXX AARON TODO - old code use a single error, can we use more than one tag value ? Cannot
+      // remember
       tags.addAll(result.errors().stream().findFirst().get().metricTags());
-    }
-    else{
+    } else {
       tags.add(ExceptionMetrics.TAG_ERROR_FALSE);
       tags.add(ExceptionMetrics.TAG_ERROR_CLASS_NOT_APPLICABLE);
       tags.add(ExceptionMetrics.TAG_ERROR_CODE_NOT_APPLICABLE);
@@ -279,7 +278,8 @@ public class MeteredCommandProcessor {
 
     // --- Schema Feature Tags ---
     // Indicate if the collection/table has vector search enabled in its schema
-    tags.add(Tag.of(
+    tags.add(
+        Tag.of(
             jsonApiMetricsConfig.vectorEnabled(),
             Boolean.toString(commandContext.schemaObject().vectorConfig().vectorEnabled())));
 

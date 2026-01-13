@@ -4,12 +4,11 @@ import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -146,8 +145,7 @@ public class CommandProcessor {
         // Check if session should be evicted before building the error response
         maybeEvictSession(commandContext, apiException);
 
-        yield () ->
-            resultBuilder.addThrowable(apiException).build();
+        yield () -> resultBuilder.addThrowable(apiException).build();
       }
       case JsonApiException jsonApiException -> {
         // old error objects, old comment below
@@ -155,8 +153,7 @@ public class CommandProcessor {
         // (created, or wrapped the exception) -- should not be logged (have already
         // been logged if necessary)
         maybeEvictSession(commandContext, jsonApiException.getCause());
-        yield () ->
-            resultBuilder.addThrowable(jsonApiException).build();
+        yield () -> resultBuilder.addThrowable(jsonApiException).build();
       }
       default -> {
         // Old error handling below, to be replaced eventually (aaron aug 28 2024)
@@ -167,8 +164,7 @@ public class CommandProcessor {
             throwable);
 
         maybeEvictSession(commandContext, throwable);
-        yield () ->
-            resultBuilder.addThrowable(throwable).build();
+        yield () -> resultBuilder.addThrowable(throwable).build();
       }
     };
   }
@@ -216,7 +212,8 @@ public class CommandProcessor {
     if (originalCommand instanceof DeprecatedCommand deprecatedCommand) {
       // we already have the result, not a result builder, so need to create the warning error here
       // not on hot path, can create the factory each time
-      commandResult.addWarning(new CommandErrorFactory().create(deprecatedCommand.getDeprecationWarning()));
+      commandResult.addWarning(
+          new CommandErrorFactory().create(deprecatedCommand.getDeprecationWarning()));
     }
     return commandResult;
   }

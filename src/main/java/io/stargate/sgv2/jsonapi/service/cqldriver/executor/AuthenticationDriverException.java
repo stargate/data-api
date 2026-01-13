@@ -3,12 +3,10 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
-import com.datastax.oss.driver.api.core.metadata.Node;
 
 /**
- * Exception to carry a {@link AuthenticationException} from the driver which is not a
- * subclass of the DriverException. Needs to be a subclass for the
- * {@link DriverExceptionHandler} to handle it
+ * Exception to carry a {@link AuthenticationException} from the driver which is not a subclass of
+ * the DriverException. Needs to be a subclass for the {@link DriverExceptionHandler} to handle it
  */
 public class AuthenticationDriverException extends APIDriverException {
 

@@ -26,7 +26,6 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   /** The request info bean. */
   private final RequestContext requestContext;
 
-
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsTagProvider(
