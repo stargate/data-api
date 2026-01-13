@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -24,9 +25,11 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -2984,14 +2987,14 @@ public class FindCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      CommandResult.Error error =
-          ThrowableToErrorMapper.getMapperWithMessageFunction()
-              .apply(failure, failure.getMessage());
-      assertThat(error).isNotNull();
-      assertThat(error.fields().get("errorCode")).isEqualTo("SERVER_READ_FAILED");
-      assertThat(error.fields().get("exceptionClass")).isEqualTo("JsonApiException");
-      assertThat(error.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
-      assertThat(error.message())
+
+      var commandError = new CommandErrorFactory().create(failure);
+
+      assertThat(commandError).isNotNull();
+      assertThat(commandError.errorCode()).isEqualTo(DatabaseException.Code.FAILED_READ_REQUEST.name());
+      assertThat(commandError.errorClass()).isEqualTo("JsonApiException");
+      assertThat(commandError.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
+      assertThat(commandError.message())
           .startsWith("Database read failed")
           .endsWith(
               "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");

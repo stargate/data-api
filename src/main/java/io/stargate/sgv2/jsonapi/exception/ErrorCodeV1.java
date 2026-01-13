@@ -128,9 +128,9 @@ public enum ErrorCodeV1 {
    */
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
-  SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
-  SERVER_READ_FAILED("Database read failed"),
-  SERVER_UNHANDLED_ERROR("Server failed"),
+//  SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
+//  SERVER_READ_FAILED("Database read failed"),
+//  SERVER_UNHANDLED_ERROR("Server failed"),
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 

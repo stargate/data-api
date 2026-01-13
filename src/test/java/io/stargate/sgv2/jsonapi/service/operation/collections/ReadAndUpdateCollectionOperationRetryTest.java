@@ -378,10 +378,9 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         .singleElement()
         .satisfies(
             error -> {
-              assertThat(error.fields())
-                  .containsEntry(
-                      "errorCode", DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).fields().get(ErrorObjectV2Constants.Fields.TITLE))
+              assertThat(error.errorCode())
+                  .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
+              assertThat(error.title())
                   .isEqualTo(
                       "Failed to update documents with _id ['doc1']: Failed to complete concurrent operations on the database");
             });
@@ -531,10 +530,9 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         .singleElement()
         .satisfies(
             error -> {
-              assertThat(error.fields())
-                  .containsEntry(
-                      "errorCode", DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).fields().get(ErrorObjectV2Constants.Fields.TITLE))
+              assertThat(error.errorCode())
+                  .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
+              assertThat(result.errors().get(0).title())
                   .isEqualTo(
                       "Failed to update documents with _id ['doc1']: Failed to complete concurrent operations on the database");
             });
@@ -719,10 +717,9 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         .singleElement()
         .satisfies(
             error -> {
-              assertThat(error.fields())
-                  .containsEntry(
-                      "errorCode", DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).fields().get(ErrorObjectV2Constants.Fields.TITLE))
+              assertThat(error.errorCode())
+                  .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
+              assertThat(result.errors().get(0).title())
                   .isEqualTo(
                       "Failed to update documents with _id ['doc1']: Failed to complete concurrent operations on the database");
             });
@@ -935,14 +932,13 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
                   .isEqualTo(0);
               assertThat(commandResultSupplier.errors()).isNotNull();
               assertThat(commandResultSupplier.errors()).hasSize(1);
-              assertThat(commandResultSupplier.errors().get(0).fields().get("errorCode"))
+              assertThat(commandResultSupplier.errors().get(0).errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
               assertThat(
                       commandResultSupplier
                           .errors()
                           .get(0)
-                          .fields()
-                          .get(ErrorObjectV2Constants.Fields.TITLE))
+                          .title())
                   .isEqualTo(
                       "Failed to update documents with _id ['doc1', 'doc2']: Failed to complete concurrent operations on the database");
             });

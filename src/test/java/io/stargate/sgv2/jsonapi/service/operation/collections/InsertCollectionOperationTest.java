@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,9 +20,11 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -230,9 +233,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.fields())
-                    .containsEntry("exceptionClass", "DocumentException")
-                    .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
+                assertThat(error.errorCode()).isEqualTo(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name());
+                assertThat(error.errorClass()).isEqualTo(classSimpleName(DocumentException.class));
                 assertThat(error.message())
                     .startsWith(
                         "Cannot insert the document: a document already exists with given '_id' ('doc1')");
@@ -597,9 +599,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 assertThat(error.message())
                     .isEqualTo(
                         "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.errorCode()).isEqualTo(ErrorCodeV1.INVALID_REQUEST.name());
+                assertThat(error.errorClass()).isEqualTo(classSimpleName(JsonApiException.class));
               });
     }
 
@@ -687,9 +688,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 assertThat(error.message())
                     .isEqualTo(
                         "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Test break #2");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.errorCode()).isEqualTo(ErrorCodeV1.INVALID_REQUEST.name());
+                assertThat(error.errorClass()).isEqualTo(classSimpleName(JsonApiException.class));
               });
     }
 
@@ -779,9 +779,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 assertThat(error.message())
                     .isEqualTo(
                         "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.errorCode()).isEqualTo(ErrorCodeV1.INVALID_REQUEST.name());
+                assertThat(error.errorClass()).isEqualTo(classSimpleName(JsonApiException.class));
               });
     }
 
@@ -864,7 +863,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.INSERTED_IDS, List.of());
       assertThat(result.errors())
           .hasSize(2)
-          .extracting(CommandResult.Error::message)
+          .extracting(CommandErrorV2::message)
           .containsExactlyInAnyOrder(
               "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Insert 1 failed",
               "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Insert 2 failed");

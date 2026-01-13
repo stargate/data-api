@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.fixtures.TestTextUtil;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -248,7 +249,7 @@ public class InsertLexicalInCollectionIntegrationTest
       givenHeadersPostJsonThenOk("{ \"insertOne\": {  \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is(ErrorCodeV1.LEXICAL_CONTENT_TOO_BIG.name()))
+          .body("errors[0].errorCode", is(DocumentException.Code.LEXICAL_CONTENT_TOO_LONG.name()))
           .body("errors[0].message", containsString("Lexical content is too big"));
     }
   }

@@ -10,6 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
@@ -24,6 +25,8 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -65,7 +68,7 @@ public class MeteredCommandProcessorTest {
           objectMapper.readValue(json, CountDocumentsCommand.class);
 
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP).build();
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -115,13 +118,19 @@ public class MeteredCommandProcessorTest {
 
       FindCommand countCommand = objectMapper.readValue(json, FindCommand.class);
 
-      Map<String, Object> fields = new HashMap<>();
-      fields.put("exceptionClass", "TestExceptionClass");
-      CommandResult.Error error =
-          new CommandResult.Error("message", fields, fields, Response.Status.OK);
+      CommandErrorV2 error = CommandErrorV2.builder()
+          .id(UUID.randomUUID())
+          .family("test family")
+          .scope("test scope")
+          .errorCode("test_code")
+          .message("message")
+          .errorClass("TestExceptionClass")
+          .httpStatus(Response.Status.OK)
+          .build();
+
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(error)
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+              .addCommandError(error)
               .build();
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
@@ -175,14 +184,19 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
-      Map<String, Object> fields = new HashMap<>();
-      fields.put("exceptionClass", "TestExceptionClass");
-      fields.put("errorCode", "TestErrorCode");
-      CommandResult.Error error =
-          new CommandResult.Error("message", fields, fields, Response.Status.OK);
+
+      CommandErrorV2 error = CommandErrorV2.builder()
+          .id(UUID.randomUUID())
+          .family("test family")
+          .scope("test scope")
+          .errorCode("test_code")
+          .message("message")
+          .errorClass("TestExceptionClass")
+          .httpStatus(Response.Status.OK)
+          .build();
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(error)
+          CommandResult.statusOnlyBuilder( RequestTracing.NO_OP)
+              .addCommandError(error)
               .build();
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
