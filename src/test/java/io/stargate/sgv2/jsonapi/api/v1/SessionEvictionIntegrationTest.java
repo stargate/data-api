@@ -96,11 +96,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     insertDoc(
         """
               {
-                "insertOne": {
-                  "document": {
-                    "_id": "before_crash"
-                  }
-                }
+                "_id": "before_crash"
               }
               """);
 
@@ -153,14 +149,21 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     // and created a new one automatically.
     insertDoc(
         """
-              {
-                "insertOne": {
-                  "document": {
-                    "name": "after_recovery"
-                  }
+                {
+                  "_id": "after_crash"
                 }
+                """);
+
+    givenHeadersPostJsonThenOkNoErrors(
+            """
+            {
+              "findOne": {
+                "filter" : {"_id" : "after_crash"}
               }
-              """);
+            }
+            """)
+        .body("$", responseIsFindSuccess())
+        .body("data.document._id", is("after_crash"));
 
     Log.error("Test Passed: Session recovered after DB restart.");
   }
