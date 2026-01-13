@@ -6,7 +6,6 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -114,10 +113,7 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
     // Oddity: Implementation does not support batching, so we only accept "batches"
     // of 1 String, fail for others
     if (texts.size() != 1) {
-      // TODO: This should be IllegalArgumentException
-
-      // Temporary fail message: with re-batching will give better information
-      throw ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
+      throw new IllegalArgumentException(
           "UpstageAI only supports vectorization of 1 text at a time, got " + texts.size());
     }
 
