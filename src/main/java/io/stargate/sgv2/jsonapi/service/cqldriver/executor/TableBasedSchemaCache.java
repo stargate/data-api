@@ -5,8 +5,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
@@ -59,15 +57,6 @@ public class TableBasedSchemaCache {
           .transformToUni(
               (result, error) -> {
                 if (null != error) {
-                  // not a valid collection schema
-                  // TODO: Explain why this changes the error code
-                  if (error instanceof JsonApiException jae
-                      && jae.getErrorCode() == ErrorCodeV1.VECTORIZE_CONFIG_CHECK_FAIL) {
-                    return Uni.createFrom()
-                        .failure(
-                            ErrorCodeV1.INVALID_COLLECTION_SCHEMA.toApiException(
-                                "%s", collectionName));
-                  }
                   // collection does not exist
                   // TODO: DO NOT do a string starts with, use proper error structures
                   // again, why is this here, looks like it returns the same error code ?

@@ -26,7 +26,6 @@ public enum ErrorCodeV1 {
 
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
-  INVALID_COLLECTION_SCHEMA("Not a valid collection schema"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
   TOO_MANY_COLLECTIONS("Too many collections"),
   TOO_MANY_INDEXES("Too many indexes"),
@@ -70,7 +69,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
-  VECTORIZE_CONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
   HYBRID_FIELD_CONFLICT(
       "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
