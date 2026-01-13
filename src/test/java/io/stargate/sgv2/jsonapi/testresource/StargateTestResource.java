@@ -214,7 +214,8 @@ public abstract class StargateTestResource
 
     container
         .withEnv("HEAP_NEWSIZE", "512M")
-        .withEnv("MAX_HEAP_SIZE", "2048M")
+        .withEnv(
+            "MAX_HEAP_SIZE", System.getProperty("testing.containers.cassandra-heap-max", "2048M"))
         .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
         .withEnv("JVM_EXTRA_OPTS", JVM_EXTRA_OPTS)
         .withNetworkAliases(new String[] {"cassandra"})

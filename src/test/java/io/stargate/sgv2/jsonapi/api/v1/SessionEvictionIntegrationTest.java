@@ -48,9 +48,21 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      */
     @Override
     public Map<String, String> start() {
-      Map<String, String> props = super.start();
-      sessionEvictionCassandraContainer = super.getCassandraContainer();
-      return props;
+      // Reduce memory usage for this dedicated container to avoid OOM in CI.
+      // We set it temporarily just for this container's creation.
+      String originalHeap = System.getProperty("testing.containers.cassandra-heap-max");
+      System.setProperty("testing.containers.cassandra-heap-max", "1024M");
+      try {
+        Map<String, String> props = super.start();
+        sessionEvictionCassandraContainer = super.getCassandraContainer();
+        return props;
+      } finally {
+        if (originalHeap != null) {
+          System.setProperty("testing.containers.cassandra-heap-max", originalHeap);
+        } else {
+          System.clearProperty("testing.containers.cassandra-heap-max");
+        }
+      }
     }
 
     /**
