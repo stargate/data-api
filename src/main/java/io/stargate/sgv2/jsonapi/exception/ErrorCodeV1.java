@@ -24,7 +24,7 @@ public enum ErrorCodeV1 {
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   // Ditto for this one:
-  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
+  COLLECTION_INDEX_CREATION_FAILED("Index creation failed, check schema"),
 
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
   TOO_MANY_INDEXES("Too many indexes"),

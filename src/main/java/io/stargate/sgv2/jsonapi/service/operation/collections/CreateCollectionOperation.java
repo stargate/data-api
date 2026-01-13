@@ -355,7 +355,7 @@ public record CreateCollectionOperation(
                 return Uni.createFrom()
                     .item(
                         () ->
-                            ErrorCodeV1.INDEXES_CREATION_FAILED.toApiException(
+                            ErrorCodeV1.COLLECTION_INDEX_CREATION_FAILED.toApiException(
                                 "The index failed to create because an index with the collection name (%s) prefix already exists.",
                                 name));
               } else {
