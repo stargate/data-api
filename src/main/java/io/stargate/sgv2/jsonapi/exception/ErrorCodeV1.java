@@ -19,10 +19,11 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
+  // This cannot yet be converted, due to CreateCollectionOperation requiring exception
+  // implements `Supplier<CommandResult>`:
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
-  EMBEDDING_SERVICE_NOT_CONFIGURED(
-      "Unable to vectorize data, embedding service not configured for the collection "),
+
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),

@@ -1216,6 +1216,14 @@ request-errors:
       Resend the command using supported model.
 
   - scope: SCHEMA
+    code: EMBEDDING_SERVICE_NOT_CONFIGURED
+    title: Embedding service not configured for collection
+    body: |-
+      Collection '${collectionName}' does not have embedding service configured: cannot vectorize data.
+      
+      Collection must be recreated with embedding service configuration to allow vectorization.
+
+  - scope: SCHEMA
     code: END_OF_LIFE_AI_MODEL
     title: Cannot use end of life model.
     body: |-

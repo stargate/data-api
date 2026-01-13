@@ -35,10 +35,12 @@ public class SchemaException extends RequestException {
     CANNOT_VECTORIZE_UNKNOWN_COLUMNS,
     COLLECTION_NOT_EXIST, // converted from ErrorCodeV1
     DEPRECATED_AI_MODEL,
+    EMBEDDING_SERVICE_NOT_CONFIGURED, // converted from ErrorCodeV1
     END_OF_LIFE_AI_MODEL,
 
     // from ErrorCodeV1 but used by clients DO NOT RENAME:
     EXISTING_COLLECTION_DIFFERENT_SETTINGS,
+
     EXISTING_TABLE_NOT_DATA_API_COLLECTION, // converted from ErrorCodeV1
     INVALID_CREATE_COLLECTION_OPTIONS,
     INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN,
