@@ -9,7 +9,9 @@ public class DatabaseException extends ServerException {
   }
 
   public enum Code implements ErrorCode<DatabaseException> {
-    COUNT_READ_FAILED, // converted from ErrorV1
+    COLLECTION_NO_INDEX_ERROR, // converted from ErrorCodeV1.NO_INDEX_ERROR
+    COLLECTION_SCHEMA_VERSION_INVALID, // converted from ErrorCodeV1.INVALID_SCHEMA_VERSION
+    COUNT_READ_FAILED, // converted from ErrorCodeV1
     DOCUMENT_FROM_DB_UNPARSEABLE,
     FAILED_CONCURRENT_OPERATIONS,
     FAILED_COMPARE_AND_SET,
@@ -17,6 +19,7 @@ public class DatabaseException extends ServerException {
     FAILED_TO_CONNECT_TO_DATABASE,
     FAILED_TRUNCATION,
     FAILED_WRITE_REQUEST,
+    INVALID_COLLECTION_QUERY, // legacy: converted from ErrorCodeV1.INVALID_QUERY
     INVALID_DATABASE_QUERY,
     TIMEOUT_READING_DATA,
     TIMEOUT_WRITING_DATA,

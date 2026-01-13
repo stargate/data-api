@@ -25,6 +25,7 @@
 #
 # "snippets" is a list of text snippets than can be included in any error body, the snippets are included in the
 # variables when running the template for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
+# variables when running the template for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
 # where <NAME> is the name of the snippet key.
 # Each snippet has:
 # - name: UPPER_SNAKE_CASE_1
@@ -999,6 +1000,22 @@ request-errors:
       Resend the command using only supported column types.
 
   - scope: PROJECTION
+    code: UNSUPPORTED_PROJECTION_DEFINITION
+    title: Unsupported projection definition
+    body: |-
+      Unsupported projection definition JSON value: must be Object, was ${projectionValueType}.
+      
+      Resend the command with valid projection definition.
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_PROJECTION_PARAM
+    title: Unsupported projection parameter
+    body: |-
+      Unsupported projection parameter: ${errorMessage}.
+      
+      Resend the command with valid projection definition.
+
+  - scope: PROJECTION
     code: UNKNOWN_TABLE_COLUMNS
     title: Columns in the projection are not defined in the table schema
     body: |-
@@ -1192,16 +1209,8 @@ request-errors:
       Resend the command without dropping the indexed columns.
 
   - scope: SCHEMA
-    code: COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS
-    title: Collection or table does not exist
-    body: |-
-      Collection '${collection}' already exists but with settings different from ones passed with 'createCollection' command.
-
-      If you need to change collection settings you will need to 'deleteCollection', then re-create with new settings.
-
-  - scope: SCHEMA
     code: COLLECTION_NOT_EXIST
-    title: Collection already exists with different settings
+    title: Collection or table does not exist
     body: |-
       No collection or table with name '${collection}' exists.
 
@@ -1226,6 +1235,22 @@ request-errors:
       ${message}
       
       Resend the command using supported model.
+
+  - scope: SCHEMA
+    code: EXISTING_COLLECTION_DIFFERENT_SETTINGS
+    title: Collection already exists with different settings
+    body: |-
+      Collection '${collectionName}' already exists but with settings different from ones passed with 'createCollection' command.
+
+      If you need to change collection settings you will need to 'deleteCollection', then re-create with new settings.
+
+  - scope: SCHEMA
+    code: EXISTING_TABLE_NOT_DATA_API_COLLECTION
+    title: Existing table not a valid Data API collection
+    body: |-
+      Attempt to create new collection failed: table '${tableName}' already exists and it is not a valid Data API collection.
+
+      Recommend deleting the table and resending the command.
 
   - scope: SCHEMA
     code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS
@@ -2073,6 +2098,24 @@ server-errors:
   # DATABASE scope server errors
 
   - scope: DATABASE
+    code: COLLECTION_NO_INDEX_ERROR
+    title: Collection missing index(es)
+    body: |-
+      Faulty collection (missing index(es)).
+      Recommend re-creating the collection.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
+    code: COLLECTION_SCHEMA_VERSION_INVALID
+    title: Collection schema version invalid
+    body: |-
+      Collection '${collectionName}' has invalid schema version (${schemaVersion}).
+      Recommend re-creating the collection.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
     code: COUNT_READ_FAILED
     title: Count read failed
     body: |-
@@ -2090,6 +2133,41 @@ server-errors:
       Underlying problem: ${errorMessage}
 
       Report the problem to database administrators.
+
+  - scope: DATABASE
+    code: FAILED_CONCURRENT_OPERATIONS
+    title: Failed to complete concurrent operations on the database
+    body: |-
+      The Data API command was unable to complete an operation on a document or row due to concurrent modifications from other requests.
+      
+      This should be a rare error, it occurs when multiple requests attempt to modify the same document or row at the same time. The Data API has retried the operation multiple times, but was unable to complete it before another request modified the same document or row. This may indicate a "hot row" in your database, or low resources slowing down the database.
+      
+      NOTE: If the request updated multiple documents or rows, some of the updates may have completed successfully. Check the response for partial success information.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: FAILED_TO_CONNECT_TO_DATABASE
+    title: Data API Failed to connect to the database
+    body: |-
+      The Data API was unable to connect to any nodes in the database to process the command.
+      
+      This may be due to a temporary capacity issue with the database, or a wider outage.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: INVALID_COLLECTION_QUERY
+    title: Invalid query
+    body: |-
+      Invalid query against a collection.
+      Underlying problem: ${errorMessage}.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
 
   - scope: DATABASE
     code: UNEXPECTED_DOCUMENT_ID_TYPE
@@ -2127,18 +2205,6 @@ server-errors:
       The Data API believed the keyspace existed, but the database returned an error that the keyspace does not exist. This may be a temporary issue.
       
       The command used the keyspace: ${keyspace}.
-      
-      ${SNIPPET.RETRY}
-
-  - scope: DATABASE
-    code: FAILED_TO_CONNECT_TO_DATABASE
-    title: Data API Failed to connect to the database
-    body: |-
-      The Data API was unable to connect to any nodes in the database to process the command. 
-      
-      This may be due to a temporary capacity issue with the database, or a wider outage.
-      
-      The command used the keyspace and table or collection: ${keyspace}.${table}.
       
       ${SNIPPET.RETRY}
 
@@ -2183,20 +2249,6 @@ server-errors:
       The database error: ${errorMessage}.
       
       Retrying the command will likely result in the same error.
-
-  - scope: DATABASE
-    code: FAILED_CONCURRENT_OPERATIONS
-    title: Failed to complete concurrent operations on the database
-    body: |-
-      The Data API command was unable to complete an operation on a document or row due to concurrent modifications from other requests. 
-      
-      This should be a rare error, it occurs when multiple requests attempt to modify the same document or row at the same time. The Data API has retried the operation multiple times, but was unable to complete it before another request modified the same document or row. This may indicate a "hot row" in your database, or low resources slowing down the database.
-      
-      NOTE: If the request updated multiple documents or rows, some of the updates may have completed successfully. Check the response for partial success information.
-      
-      The command used the keyspace and table or collection: ${keyspace}.${table}.
-      
-      ${SNIPPET.RETRY}
 
   - scope: DATABASE
     code: FAILED_COMPARE_AND_SET

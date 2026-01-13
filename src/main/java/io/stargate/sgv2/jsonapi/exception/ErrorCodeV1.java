@@ -19,7 +19,10 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
-  EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
+  COLLECTION_CREATION_ERROR(
+      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
+  EMBEDDING_SERVICE_NOT_CONFIGURED(
+      "Unable to vectorize data, embedding service not configured for the collection "),
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
@@ -39,15 +42,9 @@ public enum ErrorCodeV1 {
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
-  UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
-
-  UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
-
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
-  EMBEDDING_SERVICE_NOT_CONFIGURED(
-      "Unable to vectorize data, embedding service not configured for the collection "),
 
   UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
 
@@ -80,13 +77,6 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
-
-  COLLECTION_CREATION_ERROR(
-      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
-  INVALID_SCHEMA_VERSION(
-      "Collection has invalid schema version. Recommend re-creating the collection"),
-  INVALID_QUERY("Invalid query"),
-  NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
 
   // Driver failure codes
   /** Error codes related to driver exceptions. */
