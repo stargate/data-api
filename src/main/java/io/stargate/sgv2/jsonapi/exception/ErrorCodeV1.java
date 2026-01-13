@@ -23,8 +23,9 @@ public enum ErrorCodeV1 {
   // implements `Supplier<CommandResult>`:
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
-
+  // Ditto for this one:
   INDEXES_CREATION_FAILED("Index creation failed, check schema"),
+
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
   TOO_MANY_COLLECTIONS("Too many collections"),
