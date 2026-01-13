@@ -174,7 +174,8 @@ public class SchemaObjectIdentifier
   @Override
   public void addToMDC() {
     // NOTE: MUST stay as namespace for logging analysis
-    MDC.put("namespace", keyspace.asInternal());
+    // keyspace can be null for DatabaseSchemaObjectIdentifier
+    MDC.put("namespace", normalizeOptionalString(keyspace == null ? null : keyspace.asInternal()));
 
     // NOTE: MUST stay as collection for logging analysis
     MDC.put("collection", normalizeOptionalString(table == null ? null : table.asInternal()));

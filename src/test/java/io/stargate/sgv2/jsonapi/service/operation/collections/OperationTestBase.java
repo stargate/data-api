@@ -23,11 +23,13 @@ import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -47,6 +49,14 @@ public class OperationTestBase {
 
   protected final String KEYSPACE_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
+  protected final SchemaObjectIdentifier KEYSPACE_IDENTIFIER =
+      SchemaObjectIdentifier.forKeyspace(
+          testConstants.TENANT, CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME));
+  protected final SchemaObjectIdentifier COLLECTION_IDENTIFIER =
+      SchemaObjectIdentifier.forCollection(
+          testConstants.TENANT,
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME),
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(COLLECTION_NAME));
 
   protected CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   protected KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
@@ -62,15 +72,14 @@ public class OperationTestBase {
     // must do this here to avoid touching quarkus config before it is initialized
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            testConstants.TENANT,
-            null,
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
 
-    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(COLLECTION_SCHEMA_OBJECT.identifier());
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
 
     COLLECTION_CONTEXT =
         testConstants.collectionContext(

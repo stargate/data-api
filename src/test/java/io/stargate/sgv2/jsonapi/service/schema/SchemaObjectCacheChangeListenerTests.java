@@ -13,15 +13,12 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CacheTestsBase;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,17 +55,6 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
 
   private final SchemaObjectIdentifier KEYSPACE_OTHER_IDENTIFIER =
       TABLE_OTHER_IDENTIFIER.keyspaceIdentifier();
-
-  @BeforeEach
-  public void setUp() {
-    // the listener needs to create tenants, and it uses this factory
-    TenantFactory.initialize(DatabaseType.ASTRA);
-  }
-
-  @AfterEach
-  public void reset() {
-    TenantFactory.reset();
-  }
 
   @Test
   public void silentFailWhenOnSessionReadyNotCalled() {

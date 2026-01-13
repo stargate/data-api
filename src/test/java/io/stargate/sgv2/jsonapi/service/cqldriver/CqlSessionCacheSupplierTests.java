@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCache;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import java.util.List;
 import java.util.Optional;
@@ -36,11 +38,15 @@ public class CqlSessionCacheSupplierTests {
     when(operationsConfig.slaUserAgent())
         .thenReturn(Optional.of(TEST_CONSTANTS.SLA_USER_AGENT_NAME));
 
-    var mockSchemaCache = mock(SchemaObjectCacheSupplier.class);
+    var mockSchemaObjectCacheSupplier = mock(SchemaObjectCacheSupplier.class);
+    var mockSchemaObjectCache = mock(SchemaObjectCache.class);
+    when(mockSchemaObjectCacheSupplier.get()).thenReturn(mockSchemaObjectCache);
+    when(mockSchemaObjectCache.getSchemaChangeListener())
+        .thenReturn(mock(SchemaChangeListener.class));
 
     var factory =
         new CqlSessionCacheSupplier(
-            "testApp", operationsConfig, new SimpleMeterRegistry(), mockSchemaCache);
+            "testApp", operationsConfig, new SimpleMeterRegistry(), mockSchemaObjectCacheSupplier);
 
     var sessionCache1 = factory.get();
     var sessionCache2 = factory.get();

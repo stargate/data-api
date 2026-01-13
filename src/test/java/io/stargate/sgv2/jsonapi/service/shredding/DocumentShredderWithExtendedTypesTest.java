@@ -200,8 +200,7 @@ public class DocumentShredderWithExtendedTypesTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       var collectionSchemaObject =
           new CollectionSchemaObject(
-              testConstants.TENANT,
-              null,
+              testConstants.COLLECTION_IDENTIFIER,
               new IdConfig(CollectionIdType.UNDEFINED),
               VectorConfig.NOT_ENABLED_CONFIG,
               null,
@@ -246,13 +245,21 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleWithoutIdGenObjectId() throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      var collectionSchemaObject =
+          new CollectionSchemaObject(
+              testConstants.COLLECTION_IDENTIFIER,
+              new IdConfig(CollectionIdType.OBJECT_ID),
+              VectorConfig.NOT_ENABLED_CONFIG,
+              null,
+              CollectionLexicalConfig.configForDisabled(),
+              CollectionRerankDef.configForDisabled());
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
               "test",
-              testConstants.MISSING,
+              collectionSchemaObject,
               null);
 
       DocumentId docId = doc.id();
@@ -305,8 +312,7 @@ public class DocumentShredderWithExtendedTypesTest {
 
       var collectionSchemaObject =
           new CollectionSchemaObject(
-              testConstants.TENANT,
-              null,
+              testConstants.COLLECTION_IDENTIFIER,
               new IdConfig(idType),
               VectorConfig.NOT_ENABLED_CONFIG,
               null,

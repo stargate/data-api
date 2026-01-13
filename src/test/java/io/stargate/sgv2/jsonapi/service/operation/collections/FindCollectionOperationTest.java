@@ -87,8 +87,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                testConstants.TENANT,
-                null,
+                COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(

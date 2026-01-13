@@ -257,8 +257,7 @@ public class DataVectorizerTest {
       // new collection settings with different expected vector size
       CollectionSchemaObject collectionSettings =
           new CollectionSchemaObject(
-              testConstants.TENANT,
-              null,
+              testConstants.COLLECTION_IDENTIFIER,
               IdConfig.defaultIdConfig(),
               VectorConfig.fromColumnDefinitions(
                   List.of(

@@ -34,6 +34,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollecti
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
@@ -44,6 +45,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDo
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.inject.Inject;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -76,6 +78,11 @@ public class CommandResolverWithVectorizerTest {
   // TODO: do these need to be unique to this test ? Can we use TestConstants ?
   protected final String KEYSPACE_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
+  protected final SchemaObjectIdentifier COLLECTION_IDENTIFIER =
+      SchemaObjectIdentifier.forCollection(
+          testConstants.TENANT,
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME),
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(COLLECTION_NAME));
 
   @BeforeEach
   public void beforeEach() {
@@ -83,8 +90,7 @@ public class CommandResolverWithVectorizerTest {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                testConstants.TENANT,
-                null,
+                COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -171,8 +177,8 @@ public class CommandResolverWithVectorizerTest {
               JsonApiException exception = (JsonApiException) e;
               assertThat(exception.getMessage())
                   .isEqualTo(
-                      "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
+                      "Unable to vectorize data, embedding service not configured for the collection : \"%s\""
+                          .formatted(VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table()));
               assertThat(exception.getErrorCode())
                   .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
             });
@@ -330,8 +336,8 @@ public class CommandResolverWithVectorizerTest {
               JsonApiException exception = (JsonApiException) e;
               assertThat(exception.getMessage())
                   .isEqualTo(
-                      "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
+                      "Unable to vectorize data, embedding service not configured for the collection : \"%s\""
+                          .formatted(VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table()));
               assertThat(exception.getErrorCode())
                   .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
             });
@@ -525,8 +531,8 @@ public class CommandResolverWithVectorizerTest {
               JsonApiException exception = (JsonApiException) e;
               assertThat(exception.getMessage())
                   .isEqualTo(
-                      "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
+                      "Unable to vectorize data, embedding service not configured for the collection : \"%s\""
+                          .formatted(VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table()));
               assertThat(exception.getErrorCode())
                   .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
             });
