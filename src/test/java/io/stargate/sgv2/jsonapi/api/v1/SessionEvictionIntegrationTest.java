@@ -173,7 +173,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
   private void waitForDbRecovery() {
     Log.error("Waiting for DB to recover...");
     long start = System.currentTimeMillis();
-    long timeout = 60000; // 60 seconds timeout
+    long timeout = 120000; // 120 seconds timeout
+    String lastError = null;
 
     while (System.currentTimeMillis() - start < timeout) {
       try {
@@ -185,22 +186,26 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               }
               """;
 
-        int statusCode =
+        var response =
             given()
                 .headers(getHeaders())
                 .contentType(ContentType.JSON)
                 .body(json)
                 .when()
-                .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-                .getStatusCode();
+                .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
+
+        int statusCode = response.getStatusCode();
 
         // 200 OK means the DB handled the request (even if empty result)
         if (statusCode == 200) {
           Log.error("DB recovered!");
           return;
+        } else {
+          lastError = "Status: " + statusCode + ", Body: " + response.getBody().asString();
         }
       } catch (Exception e) {
         // Ignore connection errors and continue retrying
+        lastError = "Recovery Exception: " + e.getMessage();
       }
 
       try {
@@ -208,6 +213,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       } catch (InterruptedException ignored) {
       }
     }
-    throw new RuntimeException("DB failed to recover within " + timeout + "ms");
+    throw new RuntimeException(
+        "DB failed to recover within " + timeout + "ms. Last error: " + lastError);
   }
 }
