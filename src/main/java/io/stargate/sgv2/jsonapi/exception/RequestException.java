@@ -27,6 +27,8 @@ public class RequestException extends APIException {
     PROJECTION,
     /** See {@link SchemaException} */
     SCHEMA,
+    /** See {@link SecurityException} */
+    SECURITY,
     /** See {@link SortException} */
     SORT,
     /** See {@link UpdateException} */
@@ -51,7 +53,6 @@ public class RequestException extends APIException {
     REQUEST_NOT_JSON,
     REQUEST_STRUCTURE_MISMATCH,
 
-    UNAUTHENTICATED_REQUEST,
     UNSUPPORTED_COLLECTION_COMMAND,
     UNSUPPORTED_CONTENT_TYPE,
     UNSUPPORTED_RERANKING_COMMAND,

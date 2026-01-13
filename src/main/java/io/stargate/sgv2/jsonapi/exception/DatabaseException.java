@@ -9,6 +9,7 @@ public class DatabaseException extends ServerException {
   }
 
   public enum Code implements ErrorCode<DatabaseException> {
+    CORRUPTED_COLLECTION_SCHEMA,
     COUNT_READ_FAILED, // converted from ErrorV1
     FAILED_CONCURRENT_OPERATIONS,
     FAILED_COMPARE_AND_SET,
@@ -19,7 +20,6 @@ public class DatabaseException extends ServerException {
     INVALID_DATABASE_QUERY,
     TIMEOUT_READING_DATA,
     TIMEOUT_WRITING_DATA,
-    UNAUTHORIZED_ACCESS,
     UNAVAILABLE_DATABASE,
     UNEXPECTED_DRIVER_ERROR,
     UNKNOWN_KEYSPACE,

@@ -15,10 +15,11 @@ public interface ErrorObjectV2Constants {
   }
 
   /** Tags used when tracking metrics */
-  interface MetricTags {
-    String ERROR_CODE = "errorCode";
-    String EXCEPTION_CLASS = "exceptionClass";
-  }
+// XXXX AMORTON - delete
+  //  interface MetricTags {
+//    String ERROR_CODE = "errorCode";
+//    String EXCEPTION_CLASS = "exceptionClass";
+//  }
 
   /** Standard names for message template variables */
   interface TemplateVars {

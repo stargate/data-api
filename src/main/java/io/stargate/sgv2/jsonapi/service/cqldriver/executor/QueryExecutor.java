@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,33 +32,45 @@ import org.slf4j.LoggerFactory;
  * backwards compatibility. From there is passed to the operation and used to execute.
  *
  * <p>It is no longer a bean and should not be injected.
+ *
+ * <p>See {@link CommandQueryExecutor} for the new approach
  */
 public class QueryExecutor {
   private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
-  private final OperationsConfig operationsConfig;
 
-  /** CQLSession cache. */
   private final CQLSessionCache cqlSessionCache;
-
+  private final OperationsConfig operationsConfig;
+  // nullable, see executeAsync
+  private final Function<SimpleStatement, DriverExceptionHandler> exceptionHandlerFactory;
   private final RequestTracing requestTracing;
 
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
-    this(cqlSessionCache, operationsConfig, RequestTracing.NO_OP);
+    this(cqlSessionCache, operationsConfig, null, RequestTracing.NO_OP);
   }
 
   public QueryExecutor(
       CQLSessionCache cqlSessionCache,
       OperationsConfig operationsConfig,
+      Function<SimpleStatement, DriverExceptionHandler> exceptionHandlerFactory,
       RequestTracing requestTracing) {
+
     this.cqlSessionCache =
         Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
     this.operationsConfig =
         Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
+    // null checked in executeAsync
+    this.exceptionHandlerFactory = exceptionHandlerFactory;
     this.requestTracing = Objects.requireNonNull(requestTracing, "requestTracing must not be null");
   }
 
   private Uni<AsyncResultSet> executeAsync(
       RequestContext requestContext, SimpleStatement statement) {
+
+    // we only check exceptionHandlerFactory here, because it may be null if no special this object
+    // was
+    // created for the legacy SchemaCache classes which only use the driver metadata and will be
+    // removed soon.
+    Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory must not be null");
 
     var stmtWithTracing =
         requestTracing.enabled() != statement.isTracing()
@@ -72,13 +85,29 @@ public class QueryExecutor {
         .flatMap(
             session ->
                 Uni.createFrom().completionStage(() -> session.executeAsync(stmtWithTracing)))
-        .onItem()
-        .call(
-            asyncResultSet ->
-                DBTraceMessages.maybeCqlTrace(
-                    requestTracing,
-                    asyncResultSet,
-                    "Statement trace for non task based operation"));
+        .onItemOrFailure()
+        .transformToUni(
+            (asyncResultSet, error) ->
+                switch (error) {
+                  case RuntimeException rte -> {
+                    var handler =
+                        Objects.requireNonNull(
+                            exceptionHandlerFactory.apply(statement),
+                            "QueryExecutor.executeAsync() - exceptionHandlerFactory returned null");
+
+                    throw handler.maybeHandle(rte);
+                  }
+                  case Throwable throwable -> {
+                    throw new RuntimeException(throwable);
+                  }
+                  case null -> {
+                    DBTraceMessages.maybeCqlTrace(
+                        requestTracing,
+                        asyncResultSet,
+                        "Statement trace for non task based operation");
+                    yield Uni.createFrom().item(asyncResultSet);
+                  }
+                });
   }
 
   /**

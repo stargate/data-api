@@ -55,7 +55,7 @@ public class UpdateDBTaskPage<SchemaT extends TableSchemaObject>
       // returning a document
       // e.g. for findOneAndDelete, for now it is always status only
       return new UpdateDBTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing));
+          tasks, CommandResult.statusOnlyBuilder(requestTracing));
     }
   }
 }

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
@@ -9,7 +10,7 @@ import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** tests for {@link APIExceptionCommandErrorBuilder} */
+/** tests for {@link CommandErrorFactory} */
 public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
 
   private final ErrorTestData TEST_DATA = new ErrorTestData();
@@ -26,7 +27,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
         () -> {
           var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
           var result =
-              new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
+              new CommandErrorFactory(true).buildLegacyCommandResultError(exception);
           assertCommandError(exception, result, 5, true);
         });
   }
@@ -37,7 +38,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
         false,
         () -> {
           var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-          var result = new APIExceptionCommandErrorBuilder(true).buildCommandErrorV2(exception);
+          var result = new CommandErrorFactory(true).buildCommandErrorV2(exception);
           assertCommandErrorV2(exception, result);
         });
   }
@@ -49,7 +50,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
         () -> {
           var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
           var result =
-              new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
+              new CommandErrorFactory(true).buildLegacyCommandResultError(exception);
           assertCommandError(exception, result, 1, false);
         });
   }
@@ -61,7 +62,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
         () -> {
           var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
           var result =
-              new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
+              new CommandErrorFactory(true).buildLegacyCommandResultError(exception);
           assertCommandError(exception, result, 6, true);
 
           assertThat(result)
@@ -81,7 +82,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
         true,
         () -> {
           var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-          var result = new APIExceptionCommandErrorBuilder(true).buildCommandErrorV2(exception);
+          var result = new CommandErrorFactory(true).buildCommandErrorV2(exception);
           assertCommandErrorV2(exception, result);
 
           assertThat(result)
@@ -138,7 +139,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
               assertThat(e.getId()).isEqualTo(exception.errorId);
               assertThat(e.httpStatus().getStatusCode()).isEqualTo(exception.httpStatus);
 
-              assertMetricTags(exception, e.metricsTags());
+              assertMetricTags(exception, e.metricTags());
             });
   }
 

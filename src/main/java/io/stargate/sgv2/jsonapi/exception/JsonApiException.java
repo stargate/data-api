@@ -17,7 +17,8 @@ import java.util.function.Supplier;
  * <p>Implements {@link Supplier< CommandResult >} so this exception can be mapped to command result
  * directly.
  */
-public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
+public class JsonApiException extends RuntimeException {
+
   private final UUID id;
 
   private final ErrorCodeV1 errorCode;
@@ -42,9 +43,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           add(VECTORIZE_INVALID_AUTHENTICATION_TYPE);
           add(VECTORIZE_CREDENTIAL_INVALID);
           add(VECTORIZECONFIG_CHECK_FAIL);
-          add(COLLECTION_CREATION_ERROR);
           add(INVALID_QUERY);
-          add(NO_INDEX_ERROR);
         }
       };
 
@@ -99,71 +98,83 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     this.httpStatus = httpStatus;
     this.title = errorCode.getMessage();
     this.errorFamily = getErrorFamily();
-    this.errorScope = getErrorScope(errorFamily);
+    this.errorScope = getErrorScope();
   }
 
-  /** {@inheritDoc} */
-  @Override
-  public CommandResult get() {
-    // resolve message
-    String message = getMessage();
-    if (message == null) {
-      message = errorCode.getMessage();
-    }
+//  /** {@inheritDoc} */
+//  @Override
+//  public CommandResult get() {
+//    // resolve message
+//    String message = getMessage();
+//    if (message == null) {
+//      message = errorCode.getMessage();
+//    }
+//
+//    var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
+//
+//    // construct and return
+//    builder.addCommandResultError(getCommandResultError(message, httpStatus));
+//    // handle cause as well
+//    Throwable cause = getCause();
+//    if (null != cause) {
+//      builder.addCommandResultError(ThrowableToErrorMapper.getMapperFunction().apply(cause));
+//    }
+//    return builder.build();
+//  }
 
-    var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
+//  public CommandResult.Error getCommandResultError(String message, Response.Status status) {
+//    Map<String, Object> fieldsForMetricsTag =
+//        Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
+//    Map<String, Object> fields =
+//        new HashMap<>(
+//            Map.of(
+//                "id",
+//                id,
+//                "errorCode",
+//                errorCode.name(),
+//                "family",
+//                errorFamily,
+//                "scope",
+//                errorScope,
+//                "title",
+//                title));
+//
+//    if (DebugConfigAccess.isDebugEnabled()) {
+//      fields.put("exceptionClass", this.getClass().getSimpleName());
+//    }
+//
+//    return new CommandResult.Error(message, fieldsForMetricsTag, fields, status);
+//  }
+//
+//  public CommandResult.Error getCommandResultError(Response.Status status) {
+//    return getCommandResultError(getMessage(), status);
+//  }
+//
+//  public CommandResult.Error getCommandResultError() {
+//    return getCommandResultError(getMessage(), httpStatus);
+//  }
 
-    // construct and return
-    builder.addCommandResultError(getCommandResultError(message, httpStatus));
-    // handle cause as well
-    Throwable cause = getCause();
-    if (null != cause) {
-      builder.addCommandResultError(ThrowableToErrorMapper.getMapperFunction().apply(cause));
-    }
-    return builder.build();
+  public UUID getErrorId() {
+    return id;
   }
 
-  public CommandResult.Error getCommandResultError(String message, Response.Status status) {
-    Map<String, Object> fieldsForMetricsTag =
-        Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    Map<String, Object> fields =
-        new HashMap<>(
-            Map.of(
-                "id",
-                id,
-                "errorCode",
-                errorCode.name(),
-                "family",
-                errorFamily,
-                "scope",
-                errorScope,
-                "title",
-                title));
-
-    if (DebugConfigAccess.isDebugEnabled()) {
-      fields.put("exceptionClass", this.getClass().getSimpleName());
-    }
-
-    return new CommandResult.Error(message, fieldsForMetricsTag, fields, status);
-  }
-
-  public CommandResult.Error getCommandResultError(Response.Status status) {
-    return getCommandResultError(getMessage(), status);
-  }
-
-  public CommandResult.Error getCommandResultError() {
-    return getCommandResultError(getMessage(), httpStatus);
+  public String getTitle() {
+    return title;
   }
 
   public ErrorCodeV1 getErrorCode() {
     return errorCode;
   }
 
+  public String getFullyQualifiedErrorCode() {
+    return getErrorFamily() + "_" + getErrorScope() + "_" + errorCode.name();
+  }
+
   public Response.Status getHttpStatus() {
     return httpStatus;
   }
 
-  private ErrorFamily getErrorFamily() {
+  public ErrorFamily getErrorFamily() {
     if (serverFamily.contains(errorCode)
         || errorCode.name().startsWith("SERVER")
         || errorCode.name().startsWith("EMBEDDING")) {
@@ -172,7 +183,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     return ErrorFamily.REQUEST;
   }
 
-  private ErrorScope getErrorScope(ErrorFamily family) {
+  public ErrorScope getErrorScope() {
     for (Map.Entry<Set<ErrorCodeV1>, ErrorScope> entry : errorCodeScopeMap.entrySet()) {
       if (entry.getKey().contains(errorCode)) {
         return entry.getValue();
@@ -217,12 +228,12 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     return ErrorScope.EMPTY;
   }
 
-  enum ErrorFamily {
+  public enum ErrorFamily {
     SERVER,
     REQUEST
   }
 
-  enum ErrorScope {
+  public enum ErrorScope {
     AUTHENTICATION("AUTHENTICATION"),
     DATABASE("DATABASE"),
     DATA_LOADER("DATA_LOADER"),

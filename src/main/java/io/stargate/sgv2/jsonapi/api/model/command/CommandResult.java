@@ -26,6 +26,7 @@ public record CommandResult(
             nullable = true,
             oneOf = {ResponseData.MultiResponseData.class, ResponseData.SingleResponseData.class})
         ResponseData data,
+    // **
     @Schema(
             description =
                 "Status objects, generally describe the side effects of commands, such as the number of updated or inserted documents.",
@@ -41,7 +42,8 @@ public record CommandResult(
             })
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
         Map<CommandStatus, Object> status,
-    @JsonInclude(JsonInclude.Include.NON_EMPTY) @Schema(nullable = true) List<Error> errors) {
+    // **
+    @JsonInclude(JsonInclude.Include.NON_EMPTY) @Schema(nullable = true) List<CommandErrorV2> errors) {
 
   public CommandResult {
 
@@ -66,77 +68,72 @@ public record CommandResult(
    * io.stargate.sgv2.jsonapi.service.operation.OperationAttemptPageBuilder} is how things will turn
    * out.
    */
-  public static CommandResultBuilder singleDocumentBuilder(
-      boolean useErrorObjectV2, RequestTracing requestTracing) {
+  public static CommandResultBuilder singleDocumentBuilder(RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.SINGLE_DOCUMENT, useErrorObjectV2, requestTracing);
+        CommandResultBuilder.ResponseType.SINGLE_DOCUMENT, requestTracing);
   }
 
-  /** See {@link #singleDocumentBuilder(boolean, RequestTracing)} */
-  public static CommandResultBuilder multiDocumentBuilder(
-      boolean useErrorObjectV2, RequestTracing requestTracing) {
+  /** See {@link #singleDocumentBuilder(RequestTracing)} */
+  public static CommandResultBuilder multiDocumentBuilder(RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.MULTI_DOCUMENT, useErrorObjectV2, requestTracing);
+        CommandResultBuilder.ResponseType.MULTI_DOCUMENT, requestTracing);
   }
 
-  /** See {@link #singleDocumentBuilder(boolean, RequestTracing)} */
-  public static CommandResultBuilder statusOnlyBuilder(
-      boolean useErrorObjectV2, RequestTracing requestTracing) {
+  /** See {@link #singleDocumentBuilder(RequestTracing)} */
+  public static CommandResultBuilder statusOnlyBuilder(RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, requestTracing);
+        CommandResultBuilder.ResponseType.STATUS_ONLY, requestTracing);
   }
 
-  /**
-   * @param message Error message.
-   * @param fields Error fields. Note that they are serialized at the same level as the message.
-   */
-  @Schema(
-      type = SchemaType.OBJECT,
-      description =
-          "List of errors that occurred during a command execution. Can include additional properties besides the message that is always provided, like `errorCode`, `exceptionClass`, etc.",
-      properties = {
-        @SchemaProperty(
-            name = "message",
-            description = "Human-readable error message.",
-            implementation = String.class)
-      })
-  public record Error(
-      String message,
-      @JsonIgnore @Schema(hidden = true) Map<String, Object> fieldsForMetricsTag,
-      @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
-      // Http status to be used in the response, defaulted to 200
-      @JsonIgnore Response.Status httpStatus) {
-
-    // this is a compact constructor for records
-    // ensure message is not set in the fields key
-    public Error {
-      if (null != fields && fields.containsKey("message")) {
-        throw ServerException.internalServerError(
-            "Error fields can not contain the reserved key 'message'");
-      }
-    }
-  }
+//  /**
+//   * @param message Error message.
+//   * @param fields Error fields. Note that they are serialized at the same level as the message.
+//   */
+//  @Schema(
+//      type = SchemaType.OBJECT,
+//      description =
+//          "List of errors that occurred during a command execution. Can include additional properties besides the message that is always provided, like `errorCode`, `exceptionClass`, etc.",
+//      properties = {
+//        @SchemaProperty(
+//            name = "message",
+//            description = "Human-readable error message.",
+//            implementation = String.class)
+//      })
+//
+//  public record Error(
+//      String message,
+//      @JsonIgnore @Schema(hidden = true) Map<String, Object> fieldsForMetricsTag,
+//      @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
+//      // Http status to be used in the response, defaulted to 200
+//      @JsonIgnore Response.Status httpStatus) {
+//
+//    // this is a compact constructor for records
+//    // ensure message is not set in the fields key
+//    public Error {
+//      if (null != fields && fields.containsKey("message")) {
+//        throw ServerException.internalServerError(
+//            "Error fields can not contain the reserved key 'message'");
+//      }
+//    }
+//  }
 
   /**
    * Create the {@link RestResponse} Maps CommandResult to RestResponse. Except for few selective
    * errors, all errors are mapped to http status 200. In case of 401, 500, 502 and 504 response is
    * sent with appropriate status code.
    *
-   * @return
    */
   public RestResponse<CommandResult> toRestResponse() {
 
-    if (null != this.errors()) {
-      final Optional<Error> first =
-          this.errors().stream()
-              .filter(error -> error.httpStatus() != Response.Status.OK)
-              .findFirst();
+    Optional<RestResponse<CommandResult>> maybeErrorResponse = errors == null ?
+        Optional.empty()
+        :
+        errors().stream()
+            .filter(error -> error.httpStatus() != Response.Status.OK)
+            .findFirst()
+            .map(firstError -> RestResponse.ResponseBuilder.create(firstError.httpStatus(), this).build());
 
-      if (first.isPresent()) {
-        return RestResponse.ResponseBuilder.create(first.get().httpStatus(), this).build();
-      }
-    }
-    return RestResponse.ok(this);
+    return maybeErrorResponse.orElseGet(() -> RestResponse.ok(this));
   }
 
   /**

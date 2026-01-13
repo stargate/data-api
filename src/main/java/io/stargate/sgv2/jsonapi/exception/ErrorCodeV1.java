@@ -46,12 +46,13 @@ public enum ErrorCodeV1 {
   // CreateCollection error codes:
 
   EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
-  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
+//  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
   TOO_MANY_COLLECTIONS("Too many collections"),
-  TOO_MANY_INDEXES("Too many indexes"),
+// XXX amorton delete
+//  TOO_MANY_INDEXES("Too many indexes"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
   RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
@@ -100,9 +101,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
-  LEXICAL_CONTENT_TOO_BIG(
-      "Lexical content is too big, please use a smaller value for the $lexical field"),
-
   HYBRID_FIELD_CONFLICT(
       "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
   HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
@@ -110,12 +108,11 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
-  COLLECTION_CREATION_ERROR(
-      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
+//  COLLECTION_CREATION_ERROR(
+//      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_QUERY("Invalid query"),
-  NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
 
   // Driver failure codes
   /** Error codes related to driver exceptions. */

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.tables;
+package io.stargate.sgv2.jsonapi.service.operation.keyspaces;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;

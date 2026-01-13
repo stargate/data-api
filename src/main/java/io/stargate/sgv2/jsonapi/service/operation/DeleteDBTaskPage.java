@@ -55,7 +55,7 @@ public class DeleteDBTaskPage<SchemaT extends TableBasedSchemaObject>
       // e.g. for findOneAndDelete, for now it is always status only
 
       return new DeleteDBTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing));
+          tasks, CommandResult.statusOnlyBuilder(requestTracing));
     }
   }
 }

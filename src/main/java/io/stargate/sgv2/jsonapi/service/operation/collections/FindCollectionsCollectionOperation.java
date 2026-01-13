@@ -89,7 +89,7 @@ public record FindCollectionsCollectionOperation(
     @Override
     public CommandResult get() {
 
-      var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
+      var builder = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
       if (explain) {
         final List<CreateCollectionCommand> createCollectionCommands =
             collections.stream()

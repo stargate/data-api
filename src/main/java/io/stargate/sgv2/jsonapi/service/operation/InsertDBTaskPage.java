@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
@@ -31,6 +28,8 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
 
   // True if the response should include detailed info for each document
   private final boolean returnDocumentResponses;
+
+  private static final CommandErrorFactory commandErrorFactory = new CommandErrorFactory();
 
   private InsertDBTaskPage(
       TaskGroup<InsertDBTask<SchemaT>, SchemaT> tasks,
@@ -110,10 +109,11 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
           new InsertionResult(task.docRowID().orElseThrow(), InsertionStatus.OK, null);
     }
 
-    List<CommandResult.Error> seenErrors = new ArrayList<>();
+    List<CommandErrorV2> seenErrors = new ArrayList<>();
     // Second: failed insertions; output in order of insertion
     for (var task : tasks.errorTasks()) {
-      var cmdError = resultBuilder.throwableToCommandError(task.failure().orElseThrow());
+      // XXX - AARON- TODO: the task erorr is throwable, so mapping to Error will fail for regular runtime errorTasks
+      var cmdError = commandErrorFactory.create(task.failure().orElseThrow());
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
       // either one exists, use it; or if not, add it and use the new index.
@@ -134,7 +134,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
           new InsertionResult(task.docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
     }
 
-    seenErrors.forEach(resultBuilder::addCommandResultError);
+    resultBuilder.addCommandError(seenErrors);
     resultBuilder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
     maybeAddSchema(CommandStatus.PRIMARY_KEY_SCHEMA);
   }
@@ -143,17 +143,11 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
    * Custom indexOf method that ignores the id field when used with Error Object v2 because it is
    * different for every error.
    */
-  private int indexOf(List<CommandResult.Error> seenErrors, CommandResult.Error searchError) {
+  private int indexOf(List<CommandErrorV2> seenErrors, CommandErrorV2 searchError) {
 
+    var predicate = searchError.nonIdentityMatcher();
     for (int i = 0; i < seenErrors.size(); i++) {
-      var seenError = seenErrors.get(i);
-      var fields1 = new HashMap<>(seenError.fields());
-      var fields2 = new HashMap<>(searchError.fields());
-      fields1.remove(ErrorObjectV2Constants.Fields.ID);
-      fields2.remove(ErrorObjectV2Constants.Fields.ID);
-      fields1.put(ErrorObjectV2Constants.Fields.MESSAGE, seenError.message());
-      fields2.put(ErrorObjectV2Constants.Fields.MESSAGE, searchError.message());
-      if (fields1.equals(fields2)) {
+      if (predicate.test(seenErrors.get(i))) {
         return i;
       }
     }
@@ -187,7 +181,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
 
       return new InsertDBTaskPage<>(
           tasks,
-          CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing),
+          CommandResult.statusOnlyBuilder(requestTracing),
           returnDocumentResponses);
     }
   }

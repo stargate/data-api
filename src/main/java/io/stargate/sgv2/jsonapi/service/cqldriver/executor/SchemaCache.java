@@ -126,6 +126,7 @@ public class SchemaCache {
     // Cannot get a session from the sessionCacheSupplier in the constructor because
     // it will create a circular call. So need to wait until now to create the QueryExecutor
     // this is OK, only happens when the table is not in the cache
+    // HACK - fix before merge
     var queryExecutor = new QueryExecutor(sessionCacheSupplier.get(), operationsConfig);
     return tableCacheFactory.create(key.keyspace(), queryExecutor, objectMapper);
   }

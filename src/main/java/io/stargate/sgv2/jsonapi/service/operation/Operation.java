@@ -1,12 +1,17 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.keyspaces.KeyspaceDriverExceptionHandler;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -38,11 +43,34 @@ public interface Operation<SchemaT extends SchemaObject> {
    * #execute(RequestContext, QueryExecutor)}.
    */
   default Uni<Supplier<CommandResult>> execute(CommandContext<SchemaT> commandContext) {
+
+    // amorton - gh#2318 - this method is only used by the legacy collection code which will be
+    // removed.
+    // all the table code is in tasks, see TaskOperation.execute(CommandContext)
+    // with that in mind, we can check/force this is a collection code path
+
+    Function<SimpleStatement, DriverExceptionHandler> exceptionHandlerFactory =
+        switch (commandContext.schemaObject().type()) {
+          case COLLECTION ->
+              statement ->
+                  new CollectionDriverExceptionHandler(
+                      commandContext.asCollectionContext().schemaObject(), statement);
+          case KEYSPACE ->
+              statement ->
+                  new KeyspaceDriverExceptionHandler(
+                      commandContext.asKeyspaceContext().schemaObject(), statement);
+          default ->
+              throw new UnsupportedOperationException(
+                  "Unexpected schema type for legacy DB operation: "
+                      + commandContext.schemaObject().type());
+        };
+
     return execute(
         commandContext.requestContext(),
         new QueryExecutor(
             commandContext.cqlSessionCache(),
             commandContext.config().get(OperationsConfig.class),
+            exceptionHandlerFactory,
             commandContext.requestTracing()));
   }
 }

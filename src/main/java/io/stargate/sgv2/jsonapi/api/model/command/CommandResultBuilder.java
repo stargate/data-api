@@ -3,8 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.util.recordable.Jsonable;
 import java.util.*;
 
@@ -27,7 +25,7 @@ public class CommandResultBuilder {
   }
 
   private final Map<CommandStatus, Object> cmdStatus = new HashMap<>();
-  private final List<CommandResult.Error> cmdErrors = new ArrayList<>();
+  private final List<CommandErrorV2> cmdErrors = new ArrayList<>();
   private final List<JsonNode> documents = new ArrayList<>();
   // Warnings are always the V2 error structure
   private final List<CommandErrorV2> warnings = new ArrayList<>();
@@ -37,22 +35,18 @@ public class CommandResultBuilder {
   private final ResponseType responseType;
 
   private final RequestTracing requestTracing;
-  // Created in the Ctor
-  private final APIExceptionCommandErrorBuilder apiExceptionToError;
 
-  // another builder, because if we add a warning we want to use the V2 error object
-  // but may not be returning V2 errors in the result
-  private final APIExceptionCommandErrorBuilder apiWarningToError;
+  // amorton - we could probably use the same factory for errors and warning, keeping seperate
+  // as we have only just refactored this area and to keep the logic clear
+  private final CommandErrorFactory cmdErrorFactory =  new CommandErrorFactory();
+  private final CommandErrorFactory cmdWarningError =  new CommandErrorFactory();
 
   CommandResultBuilder(
-      ResponseType responseType, boolean useErrorObjectV2, RequestTracing requestTracing) {
+      ResponseType responseType, RequestTracing requestTracing) {
     this.responseType = responseType;
 
     // There is a no op implementation for tracing that is used when tracing is disabled
     this.requestTracing = Objects.requireNonNull(requestTracing, "requestTracing must not be null");
-
-    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(useErrorObjectV2);
-    this.apiWarningToError = new APIExceptionCommandErrorBuilder(true);
   }
 
   public CommandResultBuilder addStatus(CommandStatus status, Object value) {
@@ -66,16 +60,25 @@ public class CommandResultBuilder {
   }
 
   public CommandResultBuilder addThrowable(Throwable throwable) {
-    var error = throwableToCommandError(throwable);
-    return addCommandResultError(error);
+    return addThrowable(throwable, true);
   }
 
-  public CommandResultBuilder addCommandResultError(List<CommandResult.Error> errors) {
-    Objects.requireNonNull(errors, "errors cannot be null").forEach(this::addCommandResultError);
+  public CommandResultBuilder addThrowable(Throwable throwable, boolean andCause) {
+
+    var ret = addCommandError(cmdErrorFactory.create(throwable));
+    while (andCause && throwable.getCause() != null) {
+      throwable = throwable.getCause();
+      ret = ret.addCommandError(cmdErrorFactory.create(throwable));
+    }
+    return ret;
+  }
+
+  public CommandResultBuilder addCommandError(List<CommandErrorV2> errors) {
+    Objects.requireNonNull(errors, "errors cannot be null").forEach(this::addCommandError);
     return this;
   }
 
-  public CommandResultBuilder addCommandResultError(CommandResult.Error error) {
+  public CommandResultBuilder addCommandError(CommandErrorV2 error) {
     cmdErrors.add(error);
     return this;
   }
@@ -91,30 +94,13 @@ public class CommandResultBuilder {
   }
 
   public CommandResultBuilder addWarning(APIException warning) {
-    warnings.add(
-        apiWarningToError.buildCommandErrorV2(
-            Objects.requireNonNull(warning, "warning cannot be null")));
+    warnings.add(cmdWarningError.create(warning));
     return this;
   }
 
   public CommandResultBuilder nextPageState(String nextPageState) {
     this.nextPageState = nextPageState;
     return this;
-  }
-
-  /** Gets the appropriately formatted error. */
-  public CommandResult.Error throwableToCommandError(Throwable throwable) {
-
-    if (throwable instanceof APIException apiException) {
-      // new v2 error object, with family etc.
-      // the builder will handle the debug mode and extended errors settings to return a V1 or V2
-      // error
-      return apiExceptionToError.buildLegacyCommandResultError(apiException);
-    }
-
-    // the mapper handles error object v2 part
-    return ThrowableToErrorMapper.getMapperWithMessageFunction()
-        .apply(throwable, throwable.getMessage());
   }
 
   public CommandResult build() {

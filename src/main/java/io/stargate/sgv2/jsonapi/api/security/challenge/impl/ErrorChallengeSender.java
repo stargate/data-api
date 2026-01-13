@@ -4,9 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.exception.SecurityException;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -38,16 +41,16 @@ public class ErrorChallengeSender
 
   @Inject
   public ErrorChallengeSender(ObjectMapper objectMapper) {
+
     this.objectMapper = objectMapper;
     String message =
         "Role unauthorized for operation: Missing token, expecting one in the %s header."
             .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
-    CommandResult.Error error =
-        new CommandResult.Error(
-            message, Collections.emptyMap(), Collections.emptyMap(), Response.Status.UNAUTHORIZED);
+
+    // amorton - 12 jan 2026 - not sure if this is used at all ?
     commandResult =
-        CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-            .addCommandResultError(error)
+        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+            .addThrowable(SecurityException.Code.UNAUTHORIZED_ACCESS.get())
             .build();
   }
 

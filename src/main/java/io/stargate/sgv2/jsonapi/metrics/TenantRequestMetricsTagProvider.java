@@ -26,11 +26,6 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   /** The request info bean. */
   private final RequestContext requestContext;
 
-  /** The tag for error being true, created only once. */
-  private final Tag errorTrue;
-
-  /** The tag for error being false, created only once. */
-  private final Tag errorFalse;
 
   /** Default constructor. */
   @Inject
@@ -38,8 +33,6 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
       RequestContext requestContext, MetricsConfig metricsConfig) {
     this.requestContext = requestContext;
     this.config = metricsConfig.tenantRequestCounter();
-    errorTrue = Tag.of(config.errorTag(), "true");
-    errorFalse = Tag.of(config.errorTag(), "false");
   }
 
   @Override

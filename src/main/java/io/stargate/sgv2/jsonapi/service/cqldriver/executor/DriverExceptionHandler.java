@@ -34,6 +34,7 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
         // checking the subclasses that have children first, the handlers for these should
         // cast for their children
       case AllNodesFailedException e -> handle(e);
+      case APIDriverException e -> handle(e);
       case QueryValidationException e -> handle(e);
       case QueryExecutionException e -> handle(e);
         // all these are direct subclasses of DriverException with no children
@@ -47,6 +48,23 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
       case UnsupportedProtocolVersionException e -> handle(e);
       default -> exception;
     };
+  }
+
+
+  // ========================================================================
+  // Special case - Driver Exceptions that are not subclasses of DriverException
+  // which have been remapped to a APIDriverException subclass
+  // ========================================================================
+
+  default RuntimeException handle(APIDriverException exception) {
+    return switch (exception) {
+      case AuthenticationDriverException e -> handle(e);
+      default -> exception;
+    };
+  }
+
+  default RuntimeException handle(AuthenticationDriverException exception) {
+    return exception;
   }
 
   // ========================================================================
