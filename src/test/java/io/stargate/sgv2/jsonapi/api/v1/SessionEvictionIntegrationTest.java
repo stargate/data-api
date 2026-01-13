@@ -48,21 +48,9 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      */
     @Override
     public Map<String, String> start() {
-      // Reduce memory usage for this dedicated container to avoid OOM in CI.
-      // We set it temporarily just for this container's creation.
-      String originalHeap = System.getProperty("testing.containers.cassandra-heap-max");
-      System.setProperty("testing.containers.cassandra-heap-max", "1024M");
-      try {
-        Map<String, String> props = super.start();
-        sessionEvictionCassandraContainer = super.getCassandraContainer();
-        return props;
-      } finally {
-        if (originalHeap != null) {
-          System.setProperty("testing.containers.cassandra-heap-max", originalHeap);
-        } else {
-          System.clearProperty("testing.containers.cassandra-heap-max");
-        }
-      }
+      Map<String, String> props = super.start();
+      sessionEvictionCassandraContainer = super.getCassandraContainer();
+      return props;
     }
 
     /**
@@ -136,6 +124,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     String containerId = dbContainer.getContainerId();
 
     Log.error("Stopping Database Container to simulate failure...");
+    Log.info(
+        "Container ID: " + containerId + ", Port Before Stop: " + dbContainer.getMappedPort(9042));
     dockerClient.stopContainerCmd(containerId).exec();
 
     try {
@@ -153,6 +143,11 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       // 4. Restart the container to simulate recovery
       Log.error("Restarting Database Container to simulate recovery...");
       dockerClient.startContainerCmd(containerId).exec();
+      Log.info(
+          "Container ID: "
+              + containerId
+              + ", Port After Start: "
+              + dbContainer.getMappedPort(9042));
     }
 
     // 5. Wait for the database to become responsive again
