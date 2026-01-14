@@ -25,7 +25,7 @@ public enum ErrorCodeV1 {
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   // Ditto for this one:
   COLLECTION_INDEX_CREATION_FAILED("Index creation failed, check schema"),
-
+  // and this:
   TOO_MANY_INDEXES("Too many indexes"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
