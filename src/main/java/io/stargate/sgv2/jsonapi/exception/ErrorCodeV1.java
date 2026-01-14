@@ -26,7 +26,6 @@ public enum ErrorCodeV1 {
   // Ditto for this one:
   COLLECTION_INDEX_CREATION_FAILED("Index creation failed, check schema"),
 
-  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
   TOO_MANY_INDEXES("Too many indexes"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),

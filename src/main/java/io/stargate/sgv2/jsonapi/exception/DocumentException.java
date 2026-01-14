@@ -20,6 +20,7 @@ public class DocumentException extends RequestException {
     DOCUMENT_REPLACE_DIFFERENT_DOCID,
 
     INVALID_COLUMN_VALUES,
+    INVALID_VECTORIZE_VALUE_TYPE, // converted from ErrorCodeV1
     MISSING_PRIMARY_KEY_COLUMNS,
 
     SHRED_BAD_BINARY_VECTOR_VALUE,

@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.*;
 
 /**
@@ -79,8 +80,12 @@ public class DataVectorizer {
             continue;
           }
           if (!jsonNode.isTextual()) {
-            throw ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
-                "issue in document at position %s", (position + 1));
+            throw DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.get(
+                Map.of(
+                    "errorMessage",
+                    "needs to be String, not %s (issue in document at position %s)"
+                        .formatted(
+                            JsonUtil.nodeTypeAsString(jsonNode), String.valueOf(position + 1))));
           }
 
           String vectorizeData = jsonNode.asText();

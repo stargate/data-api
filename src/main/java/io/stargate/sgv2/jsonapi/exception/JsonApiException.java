@@ -59,13 +59,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
               add(INVALID_REQUEST);
             }
           },
-          ErrorScope.EMBEDDING,
-          new HashSet<>() {
-            {
-              add(INVALID_VECTORIZE_VALUE_TYPE);
-            }
-          },
-          ErrorScope.DOCUMENT);
+          ErrorScope.EMBEDDING);
 
   protected JsonApiException(ErrorCodeV1 errorCode) {
     this(errorCode, errorCode.getMessage(), null);

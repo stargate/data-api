@@ -298,6 +298,12 @@ request-errors:
       Resend the update command with a document that has same '_id' as document being replaced.
 
   - scope: DOCUMENT
+    code: INVALID_VECTORIZE_VALUE_TYPE
+    title: Invalid $vectorize value type
+    body: |-
+      Invalid $vectorize value: ${errorMessage}.
+
+  - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
     title: Primary key columns missing
     body: |-
