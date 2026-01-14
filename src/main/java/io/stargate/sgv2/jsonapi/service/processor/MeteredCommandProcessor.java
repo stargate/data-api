@@ -168,7 +168,9 @@ public class MeteredCommandProcessor {
         new CommandLog(
             command.getClass().getSimpleName(),
             commandContext.requestContext().tenant(),
-            commandContext.schemaObject().identifier().keyspace().asInternal(),
+            commandContext.schemaObject().identifier().keyspace() == null
+                ? ""
+                : commandContext.schemaObject().identifier().keyspace().asInternal(),
             commandContext.schemaObject().identifier().table() == null
                 ? ""
                 : commandContext.schemaObject().identifier().table().asInternal(),
