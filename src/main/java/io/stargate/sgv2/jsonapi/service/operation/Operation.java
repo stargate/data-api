@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandle
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.databases.DatabaseDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.KeyspaceDriverExceptionHandler;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -59,6 +60,10 @@ public interface Operation<SchemaT extends SchemaObject> {
               statement ->
                   new KeyspaceDriverExceptionHandler(
                       commandContext.asKeyspaceContext().schemaObject(), statement);
+          case DATABASE ->
+              statement ->
+                  new DatabaseDriverExceptionHandler(
+                      commandContext.asDatabaseContext().schemaObject(), statement);
           default ->
               throw new UnsupportedOperationException(
                   "Unexpected schema type for legacy DB operation: "
