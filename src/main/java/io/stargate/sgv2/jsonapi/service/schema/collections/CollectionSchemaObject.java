@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -363,7 +362,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
     return new CreateCollectionCommand(
-        cqlIdentifierToMessageString(collectionSetting.identifier().table()), options);
+        collectionSetting.identifier().table().asInternal(), options);
   }
 
   public IdConfig idConfig() {

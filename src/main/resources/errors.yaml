@@ -1209,12 +1209,6 @@ request-errors:
       Resend the command without dropping the indexed columns.
 
   - scope: SCHEMA
-    code: COLLECTION_NOT_EXIST
-    title: Collection or table does not exist
-    body: |-
-      No collection or table with name '${collection}' exists.
-
-  - scope: SCHEMA
     code: DEPRECATED_AI_MODEL
     title: Cannot use deprecated model.
     body: |-

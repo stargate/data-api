@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
@@ -61,11 +60,7 @@ public record FindCollectionsCollectionOperation(
     return queryExecutor
         .getDriverMetadata(requestContext)
         .map(Metadata::getKeyspaces)
-        .map(
-            keyspaces ->
-                keyspaces.get(
-                    CqlIdentifier.fromInternal(
-                        commandContext.schemaObject().identifier().keyspace().asInternal())))
+        .map(keyspaces -> keyspaces.get(commandContext.schemaObject().identifier().keyspace()))
         .map(
             keyspaceMetadata -> {
               if (keyspaceMetadata == null) {
@@ -101,7 +96,7 @@ public record FindCollectionsCollectionOperation(
       } else {
         List<String> tables =
             collections.stream()
-                .map(schemaObject -> schemaObject.identifier().table().asInternal())
+                .map(schemaObject -> (schemaObject.identifier().table().asInternal()))
                 .toList();
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, tables);
       }

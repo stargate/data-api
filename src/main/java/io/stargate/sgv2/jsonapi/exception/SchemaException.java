@@ -33,7 +33,6 @@ public class SchemaException extends RequestException {
     CANNOT_RENAME_UNKNOWN_TYPE_FIELD,
     CANNOT_VECTORIZE_NON_VECTOR_COLUMNS,
     CANNOT_VECTORIZE_UNKNOWN_COLUMNS,
-    COLLECTION_NOT_EXIST, // converted from ErrorCodeV1
     DEPRECATED_AI_MODEL,
     END_OF_LIFE_AI_MODEL,
 

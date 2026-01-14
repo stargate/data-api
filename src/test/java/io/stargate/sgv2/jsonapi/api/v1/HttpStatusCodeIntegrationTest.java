@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.hamcrest.core.AnyOf;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -109,12 +108,6 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               }
             }
             """;
-      AnyOf<String> anyOf =
-          AnyOf.anyOf(
-              endsWith("table %s.%s does not exist".formatted(keyspaceName, "badCollection")),
-              endsWith("table %s does not exist".formatted("badCollection")),
-              containsString(
-                  "No collection or table with name '%s' exists".formatted("badCollection")));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -124,8 +117,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].message", anyOf)
+          .body("errors[0].errorCode", is("UNKNOWN_COLLECTION_OR_TABLE"))
           .body("errors[0].exceptionClass", is("SchemaException"));
     }
 
