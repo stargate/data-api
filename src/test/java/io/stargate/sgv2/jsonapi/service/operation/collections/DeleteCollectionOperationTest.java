@@ -1292,9 +1292,8 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
               assertThat(result.errors()).hasSize(1);
               assertThat(result.errors().get(0).errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).title())
-                  .isEqualTo(
-                      "Failed to delete documents with _id ['doc1']: Failed to complete concurrent operations on the database");
+              assertThat(result.errors().get(0).documentIds())
+                  .containsExactlyInAnyOrderElementsOf(List.of(DocumentId.fromString("doc1")));
             });
   }
 
@@ -1478,9 +1477,9 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
               assertThat(result.errors()).hasSize(1);
               assertThat(result.errors().get(0).errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).title())
-                  .isEqualTo(
-                      "Failed to delete documents with _id ['doc1', 'doc2']: Failed to complete concurrent operations on the database");
+              assertThat(result.errors().get(0).documentIds())
+                  .containsExactlyInAnyOrderElementsOf(
+                      List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
             });
   }
 

@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.micrometer.core.instrument.Tag;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
 import java.util.function.Predicate;
@@ -30,7 +30,7 @@ public record CommandErrorV2(
     @JsonIgnore @Schema(hidden = true) Response.Status httpStatus,
     @Schema(hidden = true) @JsonInclude(JsonInclude.Include.NON_NULL) String errorClass,
     @JsonIgnore @Schema(hidden = true) List<Tag> metricTags,
-    @JsonInclude(JsonInclude.Include.NON_EMPTY) List<DocumentId> documentIds) {
+    @JsonInclude(JsonInclude.Include.NON_EMPTY) List<DocRowIdentifer> documentIds) {
 
   public CommandErrorV2 {
 
@@ -79,7 +79,7 @@ public record CommandErrorV2(
     private Response.Status httpStatus;
     private String errorClass;
     private List<Tag> metricsTags;
-    private List<DocumentId> documentIds;
+    private List<DocRowIdentifer> documentIds;
 
     private Builder() {}
 
@@ -128,8 +128,11 @@ public record CommandErrorV2(
       return this;
     }
 
-    public Builder documentIds(List<DocumentId> documentIds) {
-      this.documentIds = documentIds;
+    public Builder documentIds(List<? extends DocRowIdentifer> documentIds) {
+      this.documentIds =
+          documentIds == null
+              ? Collections.emptyList()
+              : documentIds.stream().map(d -> (DocRowIdentifer) d).toList();
       return this;
     }
 

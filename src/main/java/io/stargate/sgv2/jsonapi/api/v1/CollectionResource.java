@@ -221,7 +221,7 @@ public class CollectionResource {
                 return Uni.createFrom()
                     .item(
                         CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-                            .addThrowable(throwable, true)
+                            .addThrowable(throwable)
                             .build());
               } else {
                 // TODO No need for the else clause here, simplify

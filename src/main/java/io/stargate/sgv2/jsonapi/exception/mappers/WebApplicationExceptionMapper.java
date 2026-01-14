@@ -42,11 +42,11 @@ public class WebApplicationExceptionMapper {
               .toRestResponse();
       case NotAllowedException
                   nae -> // XXX - amorton CHANGE - this was previusly returning an ENTITY with
-                         // status METHOD_NOT_ALLOWED
+          // status METHOD_NOT_ALLOWED
           responseForException(nae);
       case NotFoundException
                   nfe -> // XXX - amorton CHANGE - this was previusly returning an ENTITY with
-                         // status NOT_FOUND
+          // status NOT_FOUND
           responseForException(nfe);
         // Return 415 for invalid Content-Type
       case NotSupportedException

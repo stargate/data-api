@@ -195,8 +195,11 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   }
 
   private CommandErrorV2 getErrorObject(InsertAttempt<SchemaT> insertAttempt) {
-
-    return insertAttempt.failure().map(commandErrorFactory::create).orElse(null);
+    if (insertAttempt.failure().isPresent()) {
+      var docsIds = insertAttempt.docRowID().map(List::of).orElse(List.of());
+      return commandErrorFactory.create(insertAttempt.failure().get(), docsIds);
+    }
+    return null;
   }
 
   /**

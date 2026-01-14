@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
-
 // XXX Amorton - DELETE
 // public record ServiceRegistrationResult() implements Supplier<CommandResult> {
 //  @Override

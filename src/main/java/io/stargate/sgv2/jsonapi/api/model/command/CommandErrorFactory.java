@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
@@ -34,35 +34,45 @@ public class CommandErrorFactory {
     return create(throwable, Collections.emptyList());
   }
 
-  public CommandErrorV2 create(Throwable throwable, List<DocumentId> documentIds) {
+  public CommandErrorV2 create(Throwable throwable, List<? extends DocRowIdentifer> documentIds) {
     Objects.requireNonNull(throwable, "throwable cannot be null");
     return switch (throwable) {
-      case APIException apiException -> create(apiException);
-      case JsonApiException jsonApiException -> create(jsonApiException);
-      case Throwable t -> create(ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(t)));
+      case APIException apiException -> create(apiException, documentIds);
+      case JsonApiException jsonApiException -> create(jsonApiException, documentIds);
+      case Throwable t ->
+          create(ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(t)), documentIds);
     };
   }
 
-  public CommandErrorV2 create(JsonApiException exception, List<DocumentId> documentIds) {
+  public CommandErrorV2 create(JsonApiException jsonApiException) {
+    return create(jsonApiException, Collections.emptyList());
+  }
 
-    Objects.requireNonNull(exception, "exception cannot be null");
+  public CommandErrorV2 create(
+      JsonApiException jsonApiException, List<? extends DocRowIdentifer> documentIds) {
+
+    Objects.requireNonNull(jsonApiException, "jsonApiException cannot be null");
     var builder = CommandErrorV2.builder();
 
     if (debugEnabled) {
-      builder.errorClass(exception.getClass().getSimpleName());
+      builder.errorClass(jsonApiException.getClass().getSimpleName());
     }
 
     return builder
-        .errorCode(exception.getErrorCode().name())
-        .message(exception.getMessage())
-        .httpStatus(exception.getHttpStatus())
-        .metricsTags(ExceptionMetrics.tagsFor(exception))
-        .family(exception.getErrorFamily().toString())
-        .scope(exception.getErrorScope().toString())
-        .title(exception.getTitle())
-        .id(exception.getErrorId())
+        .errorCode(jsonApiException.getErrorCode().name())
+        .message(jsonApiException.getMessage())
+        .httpStatus(jsonApiException.getHttpStatus())
+        .metricsTags(ExceptionMetrics.tagsFor(jsonApiException))
+        .family(jsonApiException.getErrorFamily().toString())
+        .scope(jsonApiException.getErrorScope().toString())
+        .title(jsonApiException.getTitle())
+        .id(jsonApiException.getErrorId())
         .documentIds(documentIds == null ? Collections.emptyList() : documentIds)
         .build();
+  }
+
+  public CommandErrorV2 create(APIException apiException) {
+    return create(apiException, Collections.emptyList());
   }
 
   /**
@@ -72,7 +82,8 @@ public class CommandErrorFactory {
    * @param apiException the exception that is going to be returned.
    * @return a {@link CommandErrorV2} that represents the <code>apiException</code>.
    */
-  public CommandErrorV2 create(APIException apiException, List<DocumentId> documentIds) {
+  public CommandErrorV2 create(
+      APIException apiException, List<? extends DocRowIdentifer> documentIds) {
 
     Objects.requireNonNull(apiException, "apiException cannot be null");
     var builder = CommandErrorV2.builder();

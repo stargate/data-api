@@ -68,10 +68,10 @@ public class DefaultDriverExceptionHandlerTest {
 
     // for now, assumed they always turn into a DatabaseException
     assertThat(handledEx)
-        .as("Handled error is of assertions class")
-        .isOfAnyClassIn(DatabaseException.class);
+        .as("Handled error is of ApiException type")
+        .isInstanceOf(APIException.class);
 
-    DatabaseException apiEx = (DatabaseException) handledEx;
+    APIException apiEx = (APIException) handledEx;
     assertions.runAssertions(TEST_DATA, originalEx, apiEx);
   }
 

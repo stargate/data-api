@@ -14,6 +14,7 @@ public class SecurityException extends RequestException {
   }
 
   public enum Code implements ErrorCode<SecurityException> {
+    MISSING_AUTHENTICATION_TOKEN,
     UNAUTHENTICATED_REQUEST,
     UNAUTHORIZED_ACCESS;
 

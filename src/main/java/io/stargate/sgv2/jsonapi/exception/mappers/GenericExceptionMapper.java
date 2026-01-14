@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception.mappers;
 
-
 /**
  * Translates any exception that is not handled by the command engine during the API operation to a
  * CommandResult, with status `HTTP 200`.

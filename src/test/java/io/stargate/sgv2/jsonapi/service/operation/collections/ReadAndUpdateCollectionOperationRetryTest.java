@@ -28,6 +28,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
@@ -379,9 +380,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             error -> {
               assertThat(error.errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(error.title())
-                  .isEqualTo(
-                      "Failed to update documents with _id ['doc1']: Failed to complete concurrent operations on the database");
+              assertThat(error.documentIds()).containsExactly(DocumentId.fromString("doc1"));
             });
   }
 
@@ -531,9 +530,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             error -> {
               assertThat(error.errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).title())
-                  .isEqualTo(
-                      "Failed to update documents with _id ['doc1']: Failed to complete concurrent operations on the database");
+              assertThat(error.documentIds()).containsExactly(DocumentId.fromString("doc1"));
             });
   }
 
@@ -718,9 +715,8 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             error -> {
               assertThat(error.errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).title())
-                  .isEqualTo(
-                      "Failed to update documents with _id ['doc1']: Failed to complete concurrent operations on the database");
+              assertThat(result.errors().get(0).documentIds())
+                  .containsExactly(DocumentId.fromString("doc1"));
             });
   }
 
@@ -933,9 +929,10 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               assertThat(commandResultSupplier.errors()).hasSize(1);
               assertThat(commandResultSupplier.errors().get(0).errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(commandResultSupplier.errors().get(0).title())
-                  .isEqualTo(
-                      "Failed to update documents with _id ['doc1', 'doc2']: Failed to complete concurrent operations on the database");
+              assertThat(commandResultSupplier.errors().get(0).documentIds())
+                  .containsOnly(
+                      DocumentId.fromString("doc1"),
+                      DocumentId.fromString("doc2")); // order undefined
             });
   }
 }

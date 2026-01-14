@@ -39,14 +39,11 @@ public class ErrorChallengeSender
   public ErrorChallengeSender(ObjectMapper objectMapper) {
 
     this.objectMapper = objectMapper;
-    String message =
-        "Role unauthorized for operation: Missing token, expecting one in the %s header."
-            .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
-
-    // amorton - 12 jan 2026 - not sure if this is used at all ?
     commandResult =
         CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-            .addThrowable(SecurityException.Code.UNAUTHORIZED_ACCESS.get())
+            .addThrowable(
+                SecurityException.Code.MISSING_AUTHENTICATION_TOKEN.get(
+                    "authHeader", HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME))
             .build();
   }
 

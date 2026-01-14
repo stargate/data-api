@@ -38,6 +38,8 @@ public class CommandResultBuilder {
 
   // amorton - we could probably use the same factory for errors and warning, keeping seperate
   // as we have only just refactored this area and to keep the logic clear
+  // NOTE: keep instance because the CommandErrorFactory has a debug flag that is read at
+  // construction time
   private final CommandErrorFactory cmdErrorFactory = new CommandErrorFactory();
   private final CommandErrorFactory cmdWarningError = new CommandErrorFactory();
 
@@ -59,17 +61,7 @@ public class CommandResultBuilder {
   }
 
   public CommandResultBuilder addThrowable(Throwable throwable) {
-    return addThrowable(throwable, true);
-  }
-
-  public CommandResultBuilder addThrowable(Throwable throwable, boolean andCause) {
-
-    var ret = addCommandError(cmdErrorFactory.create(throwable));
-    while (andCause && throwable.getCause() != null) {
-      throwable = throwable.getCause();
-      ret = ret.addCommandError(cmdErrorFactory.create(throwable));
-    }
-    return ret;
+    return addCommandError(cmdErrorFactory.create(throwable));
   }
 
   public CommandResultBuilder addCommandError(List<CommandErrorV2> errors) {

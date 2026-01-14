@@ -34,34 +34,4 @@ class JsonApiExceptionTest {
                   .isEqualTo(ClassUtils.classSimpleName(JsonApiException.class));
             });
   }
-
-  @Test
-  public void withCause() {
-    Exception cause = new IllegalArgumentException("Cause message is important");
-    JsonApiException ex = new JsonApiException(ErrorCodeV1.INVALID_REQUEST, cause);
-
-    var commandResult =
-        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(ex).build();
-
-    assertThat(commandResult.data()).isNull();
-    assertThat(commandResult.status()).isEmpty();
-    assertThat(commandResult.errors())
-        .hasSize(2)
-        .anySatisfy(
-            error -> {
-              assertThat(error.message()).isEqualTo("Request not supported by the data store");
-              assertThat(error.errorCode()).isEqualTo(ErrorCodeV1.INVALID_REQUEST.name());
-              assertThat(error.errorClass())
-                  .isEqualTo(ClassUtils.classSimpleName(JsonApiException.class));
-            })
-        .anySatisfy(
-            error -> {
-              assertThat(error.message())
-                  .isEqualTo(
-                      "Server failed: root cause: (java.lang.IllegalArgumentException) Cause message is important");
-              assertThat(error.errorCode()).isEqualTo(ErrorCodeV1.INVALID_REQUEST.name());
-              assertThat(error.errorClass())
-                  .isEqualTo(ClassUtils.classSimpleName(JsonApiException.class));
-            });
-  }
 }

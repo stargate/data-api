@@ -173,7 +173,7 @@ request-errors:
 
   - scope:
     code: REQUEST_NOT_JSON
-    httpStatusOverride: 400
+    http-status-override: 400
     title: Request not valid JSON
     body: |-
       Request not valid JSON, problem: ${errorMessage}.
@@ -182,7 +182,7 @@ request-errors:
 
   - scope:
     code: REQUEST_STRUCTURE_MISMATCH
-    httpStatusOverride: 400
+    http-status-override: 400
     title: Request structure not valid
     body: |-
       Request is valid JSON but has a structural mismatch: ${errorMessage}.
@@ -191,7 +191,7 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_CONTENT_TYPE
-    httpStatusOverride: 415
+    http-status-override: 415
     title: Unsupported Content-Type
     body: |-
       Request sent with unsupported 'Content-Type' header: ${message}
@@ -264,7 +264,18 @@ request-errors:
   # ================================================================================================================
 
   - scope: SECURITY
-    httpStatusOverride: 401
+    http-status-override: 401
+    code: MISSING_AUTHENTICATION_TOKEN
+    title: Missing authorization token
+    body: |-
+      The command did not include an authorization token in the request headers.
+      
+      The authorization header is: ${authHeader}.
+      
+      Resend the command using the correct authentication details.
+
+  - scope: SECURITY
+    http-status-override: 401
     code: UNAUTHORIZED_ACCESS
     title: Unauthorized access to the database
     body: |-
@@ -277,7 +288,7 @@ request-errors:
       Resend the command using the correct authentication details.
 
   - scope: SECURITY
-    httpStatusOverride: 401
+    http-status-override: 401
     code: UNAUTHENTICATED_REQUEST
     title: Authentication failed
     body: |-

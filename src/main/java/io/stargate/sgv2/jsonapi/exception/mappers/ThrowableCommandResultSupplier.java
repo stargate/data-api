@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception.mappers;
 
-
 /**
  * Command result supplier for a generic exception.
  *
