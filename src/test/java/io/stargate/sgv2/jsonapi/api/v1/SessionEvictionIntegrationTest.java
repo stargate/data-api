@@ -113,11 +113,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         .body("data.document._id", is("before_crash"));
 
     // 2. Stop the container to simulate DB failure
-    // IMPORTANT: We use dockerClient.stopContainerCmd() instead of container.stop().
-    // - container.stop() (Testcontainers) removes the container, so a restart would create a NEW
-    //   container with a NEW random port.
-    // - dockerClient.stopContainerCmd() (Docker API) simply halts the process but keeps the
-    //   container (and its port mapping) intact.
     GenericContainer<?> dbContainer =
         SessionEvictionTestResource.getSessionEvictionCassandraContainer();
     DockerClient dockerClient = dbContainer.getDockerClient();
@@ -148,6 +143,18 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               + containerId
               + ", Port After Start: "
               + dbContainer.getMappedPort(9042));
+
+      // check status
+      var inspectAfter = dockerClient.inspectContainerCmd(containerId).exec();
+      var state = inspectAfter.getState();
+      Log.error(
+          "Container Status After Start: "
+              + dockerClient
+                  .inspectContainerCmd(containerId)
+                  .exec()
+                  .getState()
+                  .getStatus()); // 应该是 "running"
+      Log.error("Container Running: " + state.getRunning());
     }
 
     // 5. Wait for the database to become responsive again
@@ -179,13 +186,31 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
   /** Polls the database until it becomes responsive again. */
   private void waitForDbRecovery() {
     Log.error("Waiting for DB to recover...");
+    GenericContainer<?> dbContainer =
+        SessionEvictionTestResource.getSessionEvictionCassandraContainer();
+    DockerClient dockerClient = dbContainer.getDockerClient();
+    String containerId = dbContainer.getContainerId();
+
     long start = System.currentTimeMillis();
     long timeout = 120000; // 120 seconds timeout
     String lastError = null;
 
     while (System.currentTimeMillis() - start < timeout) {
       try {
-        // Perform a lightweight check (e.g., an empty find) to see if DB responds
+        // 1. Log real-time container status from Docker
+        var state = dockerClient.inspectContainerCmd(containerId).exec().getState();
+        boolean isRunning = Boolean.TRUE.equals(state.getRunning());
+        Log.error(
+            "Polling - Container Status: " + state.getStatus() + " (Running: " + isRunning + ")");
+
+        if (isRunning) {
+          // 2. Check internal Cassandra status via nodetool
+          boolean isNodeUp = isCassandraUp(dockerClient, containerId);
+          Log.error(
+              "Polling - Cassandra Nodetool Status: " + (isNodeUp ? "UP" : "DOWN/Initializing"));
+        }
+
+        // 3. Perform a lightweight check (e.g., an empty find) to see if DB responds
         String json =
             """
               {
@@ -205,22 +230,79 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
         // 200 OK means the DB handled the request (even if empty result)
         if (statusCode == 200) {
-          Log.error("DB recovered!");
+          Log.error("DB recovered! Received 200 OK.");
           return;
         } else {
           lastError = "Status: " + statusCode + ", Body: " + response.getBody().asString();
+          Log.error("DB responded but not ready: " + lastError);
         }
       } catch (Exception e) {
-        // Ignore connection errors and continue retrying
-        lastError = "Recovery Exception: " + e.getMessage();
+        // Log connection errors
+        lastError = "Exception: " + e.getMessage();
+        Log.error("DB connection error during polling: " + lastError);
       }
 
       try {
-        Thread.sleep(1000); // Poll every 1s
+        Thread.sleep(2000); // Poll every 2s to reduce log noise
       } catch (InterruptedException ignored) {
       }
     }
     throw new RuntimeException(
         "DB failed to recover within " + timeout + "ms. Last error: " + lastError);
+  }
+
+  /** Checks if Cassandra is up and normal by running "nodetool status" inside the container. */
+  private boolean isCassandraUp(DockerClient dockerClient, String containerId) {
+    try {
+      var execCreateCmdResponse =
+          dockerClient
+              .execCreateCmd(containerId)
+              .withAttachStdout(true)
+              .withAttachStderr(true)
+              .withCmd("nodetool", "status")
+              .exec();
+
+      var callback =
+          new com.github.dockerjava.api.async.ResultCallback.Adapter<
+              com.github.dockerjava.api.model.Frame>() {
+            @Override
+            public void onNext(com.github.dockerjava.api.model.Frame object) {
+              // No-op: we don't strictly need to capture output here as we rely on exit code.
+              // In a more advanced version, we could collect bytes here to check for "UN".
+            }
+          };
+
+      dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(callback).awaitCompletion();
+
+      // Note: In a real implementation we would capture stdout to check for "UN"
+      // But WaitContainerResultCallback doesn't easily expose stdout capture without custom logic.
+      // For now, if the command returns exit code 0, it means nodetool connected successfully,
+      // which is a very strong indicator that JMX and the JVM are up.
+      // A failed node usually causes nodetool to throw a ConnectException and exit with non-zero.
+
+      // However, to be more robust for "UN" check, let's use a simpler approach:
+      // If exit code is 0, we assume UP for debugging purposes.
+      // (Capturing output requires a custom Adapter which adds complexity to this test class).
+
+      // Let's rely on exit code for now.
+      // 0 = Success (JMX connected, likely UP)
+      // 1+ = Failed (JMX not ready)
+
+      // We can improve this if needed by implementing a proper ResultCallback that collects bytes.
+
+      // Actually, let's use a standard adapter to be sure:
+      // But since we can't easily add inner classes, let's just use the exit code as a proxy.
+
+      // Correction: WaitContainerResultCallback does not provide exit code directly in all
+      // versions.
+      // Let's use InspectExecCmd to get the exit code after execution.
+      var inspectExecResponse = dockerClient.inspectExecCmd(execCreateCmdResponse.getId()).exec();
+      long exitCode = inspectExecResponse.getExitCodeLong();
+
+      return exitCode == 0;
+    } catch (Exception e) {
+      Log.error("Failed to run nodetool status: " + e.getMessage());
+      return false;
+    }
   }
 }
