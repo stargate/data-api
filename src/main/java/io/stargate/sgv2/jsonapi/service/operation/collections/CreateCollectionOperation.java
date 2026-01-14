@@ -177,7 +177,7 @@ public record CreateCollectionOperation(
 
               CollectionSchemaObject newCollectionSettings =
                   CollectionSchemaObject.createCollectionSettings(
-                      commandContext.schemaObject().identifier(),
+                      requestContext.tenant(),
                       tableMetadata,
                       vectorSearch,
                       vectorSize,

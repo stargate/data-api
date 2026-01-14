@@ -187,17 +187,10 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       }
 
       return createCollectionSettings(
-          SchemaObjectIdentifier.forCollection(tenant, table.getKeyspace(), table.getName()),
-          table,
-          true,
-          vectorSize,
-          function,
-          sourceModel,
-          comment,
-          objectMapper);
+          tenant, table, true, vectorSize, function, sourceModel, comment, objectMapper);
     } else { // if not vector collection
       return createCollectionSettings(
-          SchemaObjectIdentifier.forCollection(tenant, table.getKeyspace(), table.getName()),
+          tenant,
           table,
           false,
           0,
@@ -209,7 +202,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   }
 
   public static CollectionSchemaObject createCollectionSettings(
-      SchemaObjectIdentifier identifier,
+      Tenant tenant,
       TableMetadata tableMetadata,
       boolean vectorEnabled,
       int vectorSize,
@@ -225,7 +218,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionRerankDef rerankingConfig = CollectionRerankDef.configForPreRerankingCollection();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
-            identifier.tenant(),
+            tenant,
             tableMetadata,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
@@ -241,7 +234,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             rerankingConfig);
       } else {
         return new CollectionSchemaObject(
-            identifier.tenant(),
+            tenant,
             tableMetadata,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
@@ -275,7 +268,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         switch (schemaVersion) {
           case 1:
             return new CollectionSettingsV1Reader()
-                .readCollectionSettings(identifier, collectionNode, tableMetadata, objectMapper);
+                .readCollectionSettings(tenant, collectionNode, tableMetadata, objectMapper);
           default:
             throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
                 Map.of(
@@ -289,7 +282,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         // sample comment : {"indexing":{"deny":["address"]}}}
         return new CollectionSettingsV0Reader()
             .readCollectionSettings(
-                identifier,
+                tenant,
                 commentConfigNode,
                 tableMetadata,
                 vectorEnabled,
