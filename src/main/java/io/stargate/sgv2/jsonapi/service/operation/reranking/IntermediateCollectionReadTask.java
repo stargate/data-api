@@ -6,13 +6,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.resolver.FindCommandResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Collections;
 import java.util.List;
@@ -82,7 +82,8 @@ public class IntermediateCollectionReadTask
                       new TraceMessage(
                           "Executing inner '%s' command for schema object '%s' "
                               .formatted(
-                                  findCommand.commandName().getApiName(), schemaObject.name()),
+                                  findCommand.commandName().getApiName(),
+                                  schemaObject.identifier()),
                           Recordable.copyOf(Map.of("command", findCommand))));
           return findOperation.execute(commandContext);
         },

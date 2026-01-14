@@ -252,7 +252,7 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
     @Order(4)
     public void testInvalidKeyspace() {
       final SchemaException schemaException =
-          SchemaException.Code.INVALID_KEYSPACE.get(Map.of("keyspace", "invalid_keyspace"));
+          SchemaException.Code.UNKNOWN_KEYSPACE.get(Map.of("keyspace", "invalid_keyspace"));
 
       assertNamespaceCommand("invalid_keyspace")
           .postListTables("{}")

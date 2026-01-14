@@ -178,8 +178,8 @@ public record DeleteCollectionOperation(
     String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
     return String.format(
         delete,
-        commandContext.schemaObject().name().keyspace(),
-        commandContext.schemaObject().name().table());
+        commandContext.schemaObject().identifier().keyspace(),
+        commandContext.schemaObject().identifier().table());
   }
 
   /**
