@@ -19,15 +19,13 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
+  // This cannot yet be converted, due to CreateCollectionOperation requiring exception
+  // implements `Supplier<CommandResult>`:
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
-  EMBEDDING_SERVICE_NOT_CONFIGURED(
-      "Unable to vectorize data, embedding service not configured for the collection "),
-  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
-  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
-  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
-  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
-  TOO_MANY_COLLECTIONS("Too many collections"),
+  // Ditto for this one:
+  COLLECTION_INDEX_CREATION_FAILED("Index creation failed, check schema"),
+  // and this:
   TOO_MANY_INDEXES("Too many indexes"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
@@ -69,7 +67,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
   HYBRID_FIELD_CONFLICT(
       "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),

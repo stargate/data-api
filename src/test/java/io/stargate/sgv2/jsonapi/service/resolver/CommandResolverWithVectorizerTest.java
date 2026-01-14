@@ -21,8 +21,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -166,16 +165,17 @@ public class CommandResolverWithVectorizerTest {
             .getFailure();
 
     assertThat(throwable)
-        .isInstanceOf(JsonApiException.class)
+        .isInstanceOf(SchemaException.class)
         .satisfies(
             e -> {
-              JsonApiException exception = (JsonApiException) e;
+              SchemaException exception = (SchemaException) e;
+              assertThat(exception.code)
+                  .isEqualTo(SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.name());
               assertThat(exception.getMessage())
-                  .isEqualTo(
-                      "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
-              assertThat(exception.getErrorCode())
-                  .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                  .containsSequence(
+                      "Collection '"
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table()
+                          + "' does not have embedding service configured: cannot vectorize data");
             });
   }
 
@@ -325,16 +325,17 @@ public class CommandResolverWithVectorizerTest {
             .withSubscriber(UniAssertSubscriber.create())
             .getFailure();
     assertThat(throwable)
-        .isInstanceOf(JsonApiException.class)
+        .isInstanceOf(SchemaException.class)
         .satisfies(
             e -> {
-              JsonApiException exception = (JsonApiException) e;
+              SchemaException exception = (SchemaException) e;
+              assertThat(exception.code)
+                  .isEqualTo(SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.name());
               assertThat(exception.getMessage())
-                  .isEqualTo(
-                      "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
-              assertThat(exception.getErrorCode())
-                  .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                  .containsSequence(
+                      "Collection '"
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table()
+                          + "' does not have embedding service configured: cannot vectorize data");
             });
   }
 
@@ -520,16 +521,17 @@ public class CommandResolverWithVectorizerTest {
             .getFailure();
 
     assertThat(throwable)
-        .isInstanceOf(JsonApiException.class)
+        .isInstanceOf(SchemaException.class)
         .satisfies(
             e -> {
-              JsonApiException exception = (JsonApiException) e;
+              SchemaException exception = (SchemaException) e;
+              assertThat(exception.code)
+                  .isEqualTo(SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.name());
               assertThat(exception.getMessage())
-                  .isEqualTo(
-                      "Unable to vectorize data, embedding service not configured for the collection : "
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
-              assertThat(exception.getErrorCode())
-                  .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                  .containsSequence(
+                      "Collection '"
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table()
+                          + "' does not have embedding service configured: cannot vectorize data");
             });
   }
 

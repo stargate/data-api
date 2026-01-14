@@ -325,11 +325,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                               """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
+          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
-              is("Invalid indexing definition: `allow` and `deny` cannot be used together"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "'createCollection' indexing definition invalid: 'allow' and 'deny' cannot be used together"));
     }
   }
 
@@ -353,11 +354,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       }
                       """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
+          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
-              is("Invalid indexing definition: `allow` cannot contain duplicates"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "'createCollection' indexing definition invalid: 'allow' cannot contain duplicates"));
     }
 
     @Test
@@ -378,11 +380,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                 }
                 """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
+          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
-              is("Invalid indexing definition: `allow` and `deny` cannot be used together"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "'createCollection' indexing definition invalid: 'allow' and 'deny' cannot be used together"));
 
       deleteCollection("simple_collection");
     }
@@ -405,11 +408,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     }
                     """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
+          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
-              startsWith("Invalid indexing definition: path must not start with '$'"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "'createCollection' indexing definition invalid: path ('$in') must not start with '$'"));
     }
 
     @Test
@@ -428,12 +432,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     }
                     """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
+          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Invalid indexing definition: path must be represented as a non-empty string"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "'createCollection' indexing definition invalid: path must be represented as a non-empty string"));
     }
 
     @Test
@@ -452,12 +456,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     }
                     """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
+          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Invalid indexing definition: indexing path ('pricing.price&usd') is not a valid path."))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "'createCollection' indexing definition invalid: indexing path ('pricing.price&usd') is not a valid path"));
     }
 
     @Test

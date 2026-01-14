@@ -298,6 +298,12 @@ request-errors:
       Resend the update command with a document that has same '_id' as document being replaced.
 
   - scope: DOCUMENT
+    code: INVALID_VECTORIZE_VALUE_TYPE
+    title: Invalid $vectorize value type
+    body: |-
+      Invalid $vectorize value: ${errorMessage}.
+
+  - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
     title: Primary key columns missing
     body: |-
@@ -1071,6 +1077,14 @@ request-errors:
       Resend 'createCollection' with valid options.
 
   - scope: SCHEMA
+    code: INVALID_INDEXING_DEFINITION
+    title: Invalid indexing definition
+    body: |-
+      'createCollection' indexing definition invalid: ${errorMessage}.
+      
+      Resend 'createCollection' with valid indexing definition.
+
+  - scope: SCHEMA
     code: MISSING_PARTITION_COLUMNS
     title: Partitioning keys are required for tables
     body: |-
@@ -1214,6 +1228,14 @@ request-errors:
       ${message}
       
       Resend the command using supported model.
+
+  - scope: SCHEMA
+    code: EMBEDDING_SERVICE_NOT_CONFIGURED
+    title: Embedding service not configured for collection
+    body: |-
+      Collection '${collectionName}' does not have embedding service configured: cannot vectorize data.
+      
+      Collection must be recreated with embedding service configuration to allow vectorization.
 
   - scope: SCHEMA
     code: END_OF_LIFE_AI_MODEL
@@ -2158,6 +2180,12 @@ server-errors:
       Underlying problem: ${errorMessage}.
       
       ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
+    code: TOO_MANY_COLLECTIONS
+    title: Too many collections
+    body: |-
+      Cannot create collection '${collectionName}': the maximum number of collections per database is ${collectionMaxCount}, database already has ${collectionCount}.
 
   - scope: DATABASE
     code: UNEXPECTED_DOCUMENT_ID_TYPE

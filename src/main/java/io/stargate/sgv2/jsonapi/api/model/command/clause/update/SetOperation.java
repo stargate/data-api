@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -113,7 +113,10 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
             doc.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
           } else if (!newValue.isTextual()) {
             // if $vectorize is not textual value
-            throw ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE.toApiException();
+            throw DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.get(
+                Map.of(
+                    "errorMessage",
+                    "needs to be String, not %s".formatted(JsonUtil.nodeTypeAsString(newValue))));
           } else if (newValue.asText().isBlank()) {
             // $vectorize is blank text value, set $vector as null value, no need to vectorize
             doc.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);

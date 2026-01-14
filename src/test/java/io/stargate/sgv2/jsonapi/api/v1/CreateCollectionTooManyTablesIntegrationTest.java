@@ -2,10 +2,12 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Test;
@@ -64,21 +66,21 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
           .body("status.ok", is(1));
     }
     // And then failure
-    givenHeadersAndJson(createTemplate.formatted(99))
+    givenHeadersAndJson(createTemplate.formatted(49))
         .when()
         .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
         .body("$", responseIsError())
+        .body("errors[0].errorCode", is(DatabaseException.Code.TOO_MANY_COLLECTIONS.name()))
+        .body("errors[0].exceptionClass", is(DatabaseException.class.getSimpleName()))
         .body(
             "errors[0].message",
-            is(
-                "Too many collections: number of collections in database cannot exceed "
+            containsString(
+                "Cannot create collection 'tooMany_49': the maximum number of collections per database is "
                     + COLLECTIONS_TO_CREATE
-                    + ", already have "
-                    + COLLECTIONS_TO_CREATE))
-        .body("errors[0].errorCode", is("TOO_MANY_COLLECTIONS"))
-        .body("errors[0].exceptionClass", is("JsonApiException"));
+                    + ", database already has "
+                    + COLLECTIONS_TO_CREATE));
 
     // But then verify that re-creating an existing one should still succeed
     // (if using same settings)

@@ -905,9 +905,10 @@ public class DocumentUpdaterTest {
                     documentUpdater.apply(baseData, false);
               });
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE)
-          .hasFieldOrPropertyWithValue("message", "$vectorize value needs to be text value");
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name())
+          .hasMessageContaining("Invalid $vectorize value: needs to be String, not Number");
     }
   }
 
@@ -1077,9 +1078,10 @@ public class DocumentUpdaterTest {
                     documentUpdater.apply(baseData, false);
               });
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE)
-          .hasFieldOrPropertyWithValue("message", "$vectorize value needs to be text value");
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name())
+          .hasMessageContaining("Invalid $vectorize value: needs to be String, not Number");
     }
 
     @Test
