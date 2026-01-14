@@ -22,7 +22,7 @@ public class SchemaObjectCacheSupplier implements Supplier<SchemaObjectCache> {
 
     var dbConfig = operationsConfig.databaseConfig();
 
-    var factory = new SchemaObjectFactory(cqlSessionCacheSupplier.get());
+    var factory = new SchemaObjectFactory(cqlSessionCacheSupplier);
 
     this.singleton =
         new SchemaObjectCache(

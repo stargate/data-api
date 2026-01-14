@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactory {
 
@@ -25,10 +26,11 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private final CQLSessionCache sessionCache;
+  private final Supplier<CQLSessionCache> sessionCacheSupplier;
 
-  public SchemaObjectFactory(CQLSessionCache sessionCache) {
-    this.sessionCache = Objects.requireNonNull(sessionCache, "sessionCache must not be null");
+  public SchemaObjectFactory(Supplier<CQLSessionCache> sessionCacheSupplier) {
+    this.sessionCacheSupplier =
+        Objects.requireNonNull(sessionCacheSupplier, "sessionCacheSupplier must not be null");
   }
 
   @Override
@@ -136,7 +138,7 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
 
     var queryExecutor =
         new CommandQueryExecutor(
-            sessionCache, requestContext, CommandQueryExecutor.QueryTarget.SCHEMA);
+            sessionCacheSupplier.get(), requestContext, CommandQueryExecutor.QueryTarget.SCHEMA);
 
     return queryExecutor
         .getKeyspaceMetadata(scopedName.keyspace(), forceRefresh)

@@ -45,15 +45,13 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             dbConfig.userName(),
             dbConfig.password());
 
-    var schemaObjectCache = schemaObjectCacheSupplier.get();
-
     var sessionFactory =
         new CqlSessionFactory(
             applicationName,
             dbConfig.localDatacenter(),
             dbConfig.cassandraEndPoints(),
             dbConfig.cassandraPort(),
-            schemaObjectCache::getSchemaChangeListener);
+            () -> schemaObjectCacheSupplier.get().getSchemaChangeListener());
 
     singleton =
         new CQLSessionCache(
