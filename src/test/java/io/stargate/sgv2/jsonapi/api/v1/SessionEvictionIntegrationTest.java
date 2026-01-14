@@ -48,9 +48,21 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      */
     @Override
     public Map<String, String> start() {
-      Map<String, String> props = super.start();
-      sessionEvictionCassandraContainer = super.getCassandraContainer();
-      return props;
+      // Reduce memory usage for this dedicated container to avoid OOM in CI.
+      // We set it temporarily just for this container's creation.
+      String originalHeap = System.getProperty("testing.containers.cassandra-heap-max");
+      System.setProperty("testing.containers.cassandra-heap-max", "1024M");
+      try {
+        Map<String, String> props = super.start();
+        sessionEvictionCassandraContainer = super.getCassandraContainer();
+        return props;
+      } finally {
+        if (originalHeap != null) {
+          System.setProperty("testing.containers.cassandra-heap-max", originalHeap);
+        } else {
+          System.clearProperty("testing.containers.cassandra-heap-max");
+        }
+      }
     }
 
     /**
@@ -190,34 +202,52 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         SessionEvictionTestResource.getSessionEvictionCassandraContainer();
     DockerClient dockerClient = dbContainer.getDockerClient();
     String containerId = dbContainer.getContainerId();
-
     long start = System.currentTimeMillis();
     long timeout = 120000; // 120 seconds timeout
     String lastError = null;
-
     while (System.currentTimeMillis() - start < timeout) {
       try {
-        // 1. Log real-time container status from Docker
-        var state = dockerClient.inspectContainerCmd(containerId).exec().getState();
+        var inspect = dockerClient.inspectContainerCmd(containerId).exec();
+        var state = inspect.getState();
         boolean isRunning = Boolean.TRUE.equals(state.getRunning());
         Log.error(
             "Polling - Container Status: " + state.getStatus() + " (Running: " + isRunning + ")");
-
+        if (!isRunning) {
+          Log.error("CRITICAL: Container is NOT running. Performing post-mortem...");
+          Log.error("  Exit Code: " + state.getExitCode()); // 137 = OOM Killed
+          Log.error("  OOMKilled: " + state.getOOMKilled());
+          try {
+            Log.error("--- CONTAINER LOGS (LAST 50 LINES) ---");
+            dockerClient
+                .logContainerCmd(containerId)
+                .withStdOut(true)
+                .withStdErr(true)
+                .withTail(50)
+                .exec(
+                    new com.github.dockerjava.api.async.ResultCallback.Adapter<
+                        com.github.dockerjava.api.model.Frame>() {
+                      @Override
+                      public void onNext(com.github.dockerjava.api.model.Frame frame) {
+                        Log.error(new String(frame.getPayload()));
+                      }
+                    })
+                .awaitCompletion();
+            Log.error("--- END CONTAINER LOGS ---");
+          } catch (Exception logEx) {
+            Log.error("Failed to fetch container logs: " + logEx.getMessage());
+          }
+        }
         if (isRunning) {
-          // 2. Check internal Cassandra status via nodetool
           boolean isNodeUp = isCassandraUp(dockerClient, containerId);
           Log.error(
               "Polling - Cassandra Nodetool Status: " + (isNodeUp ? "UP" : "DOWN/Initializing"));
         }
-
-        // 3. Perform a lightweight check (e.g., an empty find) to see if DB responds
         String json =
             """
               {
                 "findOne": {}
               }
               """;
-
         var response =
             given()
                 .headers(getHeaders())
@@ -225,10 +255,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
                 .body(json)
                 .when()
                 .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
-
         int statusCode = response.getStatusCode();
-
-        // 200 OK means the DB handled the request (even if empty result)
         if (statusCode == 200) {
           Log.error("DB recovered! Received 200 OK.");
           return;
@@ -237,13 +264,11 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
           Log.error("DB responded but not ready: " + lastError);
         }
       } catch (Exception e) {
-        // Log connection errors
         lastError = "Exception: " + e.getMessage();
         Log.error("DB connection error during polling: " + lastError);
       }
-
       try {
-        Thread.sleep(2000); // Poll every 2s to reduce log noise
+        Thread.sleep(2000); // Poll every 2s
       } catch (InterruptedException ignored) {
       }
     }
