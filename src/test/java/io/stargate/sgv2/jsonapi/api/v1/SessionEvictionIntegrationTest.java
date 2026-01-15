@@ -198,8 +198,26 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         var inspect = dockerClient.inspectContainerCmd(containerId).exec();
         var state = inspect.getState();
         boolean isRunning = Boolean.TRUE.equals(state.getRunning());
+        var ports = inspect.getNetworkSettings().getPorts().getBindings();
+        int mappedPort = dbContainer.getMappedPort(9042);
         Log.error(
-            "Polling - Container Status: " + state.getStatus() + " (Running: " + isRunning + ")");
+            "Polling - Container Status: "
+                + state.getStatus()
+                + " (Running: "
+                + isRunning
+                + "), Ports: "
+                + ports
+                + ", CurrentMappedPort: "
+                + mappedPort);
+
+        // 2. TCP Socket Probe
+        try (java.net.Socket socket = new java.net.Socket()) {
+          socket.connect(new java.net.InetSocketAddress("localhost", mappedPort), 2000);
+          Log.error("Polling - Socket Probe: SUCCESS (TCP Handshake OK)");
+        } catch (Exception e) {
+          Log.error("Polling - Socket Probe: FAILED - " + e.getMessage());
+        }
+
         if (!isRunning) {
           Log.error("CRITICAL: Container is NOT running. Performing post-mortem...");
           Log.error("  Exit Code: " + state.getExitCode()); // 137 = OOM Killed
