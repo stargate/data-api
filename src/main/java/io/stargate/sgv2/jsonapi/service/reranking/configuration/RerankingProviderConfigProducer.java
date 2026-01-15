@@ -99,7 +99,7 @@ public class RerankingProviderConfigProducer {
     if (defaultProviders.size() != 1) {
       throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
           Map.of(
-              "errorClass",
+              "exceptionClass",
               getClass().getSimpleName(),
               "errorMessage",
               "Data API must have exactly one default reranking provider"));
@@ -122,7 +122,7 @@ public class RerankingProviderConfigProducer {
     if (allDefaultModels.size() != 1) {
       throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
           Map.of(
-              "errorClass",
+              "exceptionClass",
               getClass().getSimpleName(),
               "errorMessage",
               "Data API must have exactly one default reranking model"));
@@ -135,7 +135,7 @@ public class RerankingProviderConfigProducer {
     if (!defaultProviderName.equals(defaultModelProviderName)) {
       throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
           Map.of(
-              "errorClass",
+              "exceptionClass",
               getClass().getSimpleName(),
               "errorMessage",
               "Default reranking model must belong to the default provider: "

@@ -2990,7 +2990,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       assertThat(commandError).isNotNull();
       assertThat(commandError.errorCode())
           .isEqualTo(DatabaseException.Code.FAILED_READ_REQUEST.name());
-      assertThat(commandError.errorClass()).isEqualTo(classSimpleName(DatabaseException.class));
+      assertThat(commandError.exceptionClass()).isEqualTo(classSimpleName(DatabaseException.class));
       // XXX amorton - changed to return 200
       //      assertThat(commandError.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
       assertThat(commandError.message()).contains("The number of nodes blocked for was: 0.");

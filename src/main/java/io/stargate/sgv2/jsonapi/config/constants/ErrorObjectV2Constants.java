@@ -26,7 +26,7 @@ public interface ErrorObjectV2Constants {
     String SCHEMA_TYPE = "schemaType";
     String KEYSPACE = "keyspace";
     String TABLE = "table";
-    String ERROR_CLASS = "errorClass";
+    String ERROR_CLASS = "exceptionClass";
     String ERROR_MESSAGE = "errorMessage";
   }
 }

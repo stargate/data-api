@@ -9,7 +9,7 @@ public interface JsonApiMetricsConfig {
   // XXX - amorton- delete
   //  @NotBlank
   //  @WithDefault("error.class")
-  //  String errorClass();
+  //  String exceptionClass();
   //
   //  @NotBlank
   //  @WithDefault("error.code")

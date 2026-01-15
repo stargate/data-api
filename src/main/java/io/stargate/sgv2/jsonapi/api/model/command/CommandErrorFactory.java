@@ -66,7 +66,7 @@ public class CommandErrorFactory {
     var builder = CommandErrorV2.builder();
 
     if (debugEnabled) {
-      builder.errorClass(jsonApiException.getClass().getSimpleName());
+      builder.exceptionClass(jsonApiException.getClass().getSimpleName());
     }
 
     return builder
@@ -100,7 +100,7 @@ public class CommandErrorFactory {
     var builder = CommandErrorV2.builder();
 
     if (debugEnabled) {
-      builder.errorClass(apiException.getClass().getSimpleName());
+      builder.exceptionClass(apiException.getClass().getSimpleName());
     }
 
     return builder

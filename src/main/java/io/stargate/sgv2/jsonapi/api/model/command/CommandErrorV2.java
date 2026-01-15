@@ -28,7 +28,7 @@ public record CommandErrorV2(
     String title,
     String message,
     @JsonIgnore @Schema(hidden = true) Response.Status httpStatus,
-    @Schema(hidden = true) @JsonInclude(JsonInclude.Include.NON_NULL) String errorClass,
+    @Schema(hidden = true) @JsonInclude(JsonInclude.Include.NON_NULL) String exceptionClass,
     @JsonIgnore @Schema(hidden = true) List<Tag> metricTags,
     @JsonInclude(JsonInclude.Include.NON_EMPTY) List<DocRowIdentifer> documentIds) {
 
@@ -41,9 +41,9 @@ public record CommandErrorV2(
     requireNoNullOrBlank(title, "title cannot be null or blank");
     requireNoNullOrBlank(message, "message cannot be null or blank");
     Objects.requireNonNull(httpStatus, "httpStatus cannot be null");
-    // errorClass is not required, it is only passed when we are in debug mode
+    // exceptionClass is not required, it is only passed when we are in debug mode
     // normalise to null if blank
-    errorClass = errorClass == null || errorClass.isBlank() ? null : errorClass;
+    exceptionClass = exceptionClass == null || exceptionClass.isBlank() ? null : exceptionClass;
     metricTags = metricTags == null ? Collections.emptyList() : List.copyOf(metricTags);
     documentIds = documentIds == null ? Collections.emptyList() : List.copyOf(documentIds);
   }
@@ -77,7 +77,7 @@ public record CommandErrorV2(
     private String title;
     private String message;
     private Response.Status httpStatus;
-    private String errorClass;
+    private String exceptionClass;
     private List<Tag> metricsTags;
     private List<DocRowIdentifer> documentIds;
 
@@ -98,8 +98,8 @@ public record CommandErrorV2(
       return this;
     }
 
-    public Builder errorClass(String errorClass) {
-      this.errorClass = errorClass;
+    public Builder exceptionClass(String errorClass) {
+      this.exceptionClass = errorClass;
       return this;
     }
 
@@ -145,7 +145,7 @@ public record CommandErrorV2(
           title,
           message,
           httpStatus,
-          errorClass,
+          exceptionClass,
           metricsTags,
           documentIds);
     }

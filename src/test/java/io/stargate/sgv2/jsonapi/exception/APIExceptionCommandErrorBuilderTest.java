@@ -44,7 +44,9 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
           assertThat(result)
               .isNotNull()
               .satisfies(
-                  e -> assertThat(e.errorClass()).isEqualTo(exception.getClass().getSimpleName()));
+                  e ->
+                      assertThat(e.exceptionClass())
+                          .isEqualTo(exception.getClass().getSimpleName()));
         });
   }
 

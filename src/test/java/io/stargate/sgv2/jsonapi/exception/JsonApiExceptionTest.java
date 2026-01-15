@@ -30,7 +30,7 @@ class JsonApiExceptionTest {
             error -> {
               assertThat(error.message()).isEqualTo("Request not supported by the data store");
               assertThat(error.errorCode()).isEqualTo(ErrorCodeV1.INVALID_REQUEST.name());
-              assertThat(error.errorClass())
+              assertThat(error.exceptionClass())
                   .isEqualTo(ClassUtils.classSimpleName(JsonApiException.class));
             });
   }
