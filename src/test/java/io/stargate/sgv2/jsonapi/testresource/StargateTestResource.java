@@ -175,6 +175,9 @@ public abstract class StargateTestResource
     GenericContainer<?> container;
 
     // Some JVM options are same for all backends, start with those:
+    // 14-Jan-2026, hazel: [data-api#2263] Removed '-Dcassandra.initial_token=1' as it prevents
+    // restarting containers with existing data (ConfigurationException: Cannot change tokens 1 to
+    // 16)
     String JVM_EXTRA_OPTS =
         "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.sai.max_string_term_size_kb=8"
             // 18-Mar-2025, tatu: to work around [https://github.com/riptano/cndb/issues/13330],
