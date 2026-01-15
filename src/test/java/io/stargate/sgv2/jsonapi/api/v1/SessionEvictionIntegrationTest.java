@@ -10,6 +10,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -40,10 +41,21 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      */
     private static GenericContainer<?> sessionEvictionCassandraContainer;
 
+    /**
+     * Overridden to enforce a fixed port binding for the Cassandra container.
+     *
+     * <p>Standard Testcontainers use random port mapping. However, this test manually stops and
+     * restarts the container to simulate failure. In some environments, a restarted container might
+     * not retain its original random port mapping, or the port forwarding may break.
+     *
+     * <p>By using a fixed port binding (finding an available local port and mapping it explicitly),
+     * we ensure the database is always accessible on the same port after a restart, allowing the
+     * Java driver to successfully reconnect.
+     */
     @Override
     protected GenericContainer<?> baseCassandraContainer(boolean reuse) {
       GenericContainer<?> container = super.baseCassandraContainer(reuse);
-      try (java.net.ServerSocket socket = new java.net.ServerSocket(0)) {
+      try (ServerSocket socket = new ServerSocket(0)) {
         int port = socket.getLocalPort();
         container.setPortBindings(Collections.singletonList(port + ":9042"));
       } catch (java.io.IOException e) {
@@ -105,7 +117,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
   @Test
   public void testSessionEvictionOnAllNodesFailed() {
-
     // 1. Insert and find initial data to ensure the database is healthy before the test
     insertDoc(
         """
@@ -130,10 +141,9 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         SessionEvictionTestResource.getSessionEvictionCassandraContainer();
     DockerClient dockerClient = dbContainer.getDockerClient();
     String containerId = dbContainer.getContainerId();
-
-    Log.error("Stopping Database Container to simulate failure...");
-    Log.error(
-        "Container ID: " + containerId + ", Port Before Stop: " + dbContainer.getMappedPort(9042));
+    // Use low-level dockerClient to stop the container without triggering Testcontainers'
+    // cleanup/termination logic (which dbContainer.stop() would do).
+    // This effectively "pulls the plug" while keeping the container instance intact for restart.
     dockerClient.stopContainerCmd(containerId).exec();
 
     try {
@@ -192,11 +202,14 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
             """)
         .body("$", responseIsFindSuccess())
         .body("data.document._id", is("after_crash"));
-
-    Log.error("Test Passed: Session recovered after DB restart.");
   }
 
-  /** Polls the database until it becomes responsive again. */
+  /**
+   * Polls the Data API until it returns a successful response, indicating the database has
+   * recovered.
+   *
+   * @throws RuntimeException if the system does not recover within the timeout period.
+   */
   private void waitForDbRecovery() {
     Log.error("Waiting for DB to recover...");
     GenericContainer<?> dbContainer =
