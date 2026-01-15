@@ -153,7 +153,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
                   .inspectContainerCmd(containerId)
                   .exec()
                   .getState()
-                  .getStatus()); // 应该是 "running"
+                  .getStatus()); // should be "running"
       Log.error("Container Running: " + state.getRunning());
     }
 
@@ -227,15 +227,19 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         }
         if (isRunning) {
           boolean isNodeUp = isCassandraUp(dockerClient, containerId);
+          boolean isNativeTransportActive = isNativeTransportActive(dockerClient, containerId);
           Log.error(
-              "Polling - Cassandra Nodetool Status: " + (isNodeUp ? "UP" : "DOWN/Initializing"));
+              "Polling - Cassandra Status: NodeUp="
+                  + isNodeUp
+                  + ", NativeTransport="
+                  + isNativeTransportActive);
         }
         String json =
             """
-              {
-                "findOne": {}
-              }
-              """;
+                      {
+                        "findOne": {}
+                      }
+                      """;
         var response =
             given()
                 .headers(getHeaders())
@@ -279,42 +283,43 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
           new com.github.dockerjava.api.async.ResultCallback.Adapter<
               com.github.dockerjava.api.model.Frame>() {
             @Override
-            public void onNext(com.github.dockerjava.api.model.Frame object) {
-              // No-op: we don't strictly need to capture output here as we rely on exit code.
-              // In a more advanced version, we could collect bytes here to check for "UN".
+            public void onNext(com.github.dockerjava.api.model.Frame object) {}
+          };
+
+      dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(callback).awaitCompletion();
+      var inspectExecResponse = dockerClient.inspectExecCmd(execCreateCmdResponse.getId()).exec();
+      return inspectExecResponse.getExitCodeLong() == 0;
+    } catch (Exception e) {
+      Log.error("Failed to run nodetool status: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /** Checks if Native Transport is active by running "nodetool info" inside the container. */
+  private boolean isNativeTransportActive(DockerClient dockerClient, String containerId) {
+    try {
+      var execCreateCmdResponse =
+          dockerClient
+              .execCreateCmd(containerId)
+              .withAttachStdout(true)
+              .withAttachStderr(true)
+              .withCmd("nodetool", "info")
+              .exec();
+
+      StringBuilder output = new StringBuilder();
+      var callback =
+          new com.github.dockerjava.api.async.ResultCallback.Adapter<
+              com.github.dockerjava.api.model.Frame>() {
+            @Override
+            public void onNext(com.github.dockerjava.api.model.Frame frame) {
+              output.append(new String(frame.getPayload()));
             }
           };
 
       dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(callback).awaitCompletion();
-
-      // Note: In a real implementation we would capture stdout to check for "UN"
-      // But WaitContainerResultCallback doesn't easily expose stdout capture without custom logic.
-      // For now, if the command returns exit code 0, it means nodetool connected successfully,
-      // which is a very strong indicator that JMX and the JVM are up.
-      // A failed node usually causes nodetool to throw a ConnectException and exit with non-zero.
-
-      // However, to be more robust for "UN" check, let's use a simpler approach:
-      // If exit code is 0, we assume UP for debugging purposes.
-      // (Capturing output requires a custom Adapter which adds complexity to this test class).
-
-      // Let's rely on exit code for now.
-      // 0 = Success (JMX connected, likely UP)
-      // 1+ = Failed (JMX not ready)
-
-      // We can improve this if needed by implementing a proper ResultCallback that collects bytes.
-
-      // Actually, let's use a standard adapter to be sure:
-      // But since we can't easily add inner classes, let's just use the exit code as a proxy.
-
-      // Correction: WaitContainerResultCallback does not provide exit code directly in all
-      // versions.
-      // Let's use InspectExecCmd to get the exit code after execution.
-      var inspectExecResponse = dockerClient.inspectExecCmd(execCreateCmdResponse.getId()).exec();
-      long exitCode = inspectExecResponse.getExitCodeLong();
-
-      return exitCode == 0;
+      return output.toString().contains("Native Transport active: true");
     } catch (Exception e) {
-      Log.error("Failed to run nodetool status: " + e.getMessage());
+      Log.error("Failed to run nodetool info: " + e.getMessage());
       return false;
     }
   }
