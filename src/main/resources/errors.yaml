@@ -194,10 +194,11 @@ request-errors:
     http-status-override: 415
     title: Unsupported Content-Type
     body: |-
-      Request sent with unsupported 'Content-Type' header: ${message}
+      Request sent with unsupported 'Content-Type' header value.
+      
+      The API only supports content type: application/json
       
       Resend with supported 'Content-Type' header.
-
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND

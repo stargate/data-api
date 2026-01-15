@@ -95,10 +95,10 @@ public class QueryExecutor {
                             exceptionHandlerFactory.apply(statement),
                             "QueryExecutor.executeAsync() - exceptionHandlerFactory returned null");
 
-                    throw handler.maybeHandle(rte);
+                    yield Uni.createFrom().failure(handler.maybeHandle(rte));
                   }
                   case Throwable throwable -> {
-                    throw new RuntimeException(throwable);
+                    yield Uni.createFrom().failure(throwable);
                   }
                   case null -> {
                     DBTraceMessages.maybeCqlTrace(
@@ -303,7 +303,22 @@ public class QueryExecutor {
 
     return cqlSessionCache
         .getSession(requestContext)
-        .flatMap(session -> Uni.createFrom().completionStage(session::refreshSchemaAsync));
+        .flatMap(session -> Uni.createFrom().completionStage(session::refreshSchemaAsync))
+        .onItemOrFailure()
+        .transformToUni(
+            (metadata, error) ->
+                switch (error) {
+                  case RuntimeException rte -> {
+                    var handler =
+                        Objects.requireNonNull(
+                            exceptionHandlerFactory.apply(null),
+                            "QueryExecutor.executeAsync() - exceptionHandlerFactory returned null");
+
+                    yield Uni.createFrom().failure(handler.maybeHandle(rte));
+                  }
+                  case Throwable throwable -> Uni.createFrom().failure(throwable);
+                  case null -> Uni.createFrom().item(metadata);
+                });
   }
 
   /**

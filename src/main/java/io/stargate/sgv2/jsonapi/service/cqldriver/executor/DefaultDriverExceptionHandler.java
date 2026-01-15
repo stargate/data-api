@@ -10,8 +10,8 @@ import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.*;
 import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
-import io.stargate.sgv2.jsonapi.exception.SecurityException;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -125,7 +125,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   @Override
   public RuntimeException handle(AuthenticationDriverException exception) {
     // This is authentication as part of connecting to the DB
-    return SecurityException.Code.UNAUTHENTICATED_REQUEST.get(errVars(schemaObject, exception));
+    return APISecurityException.Code.UNAUTHENTICATED_REQUEST.get(errVars(schemaObject, exception));
   }
 
   // ========================================================================
@@ -268,7 +268,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
   @Override
   public RuntimeException handle(UnauthorizedException exception) {
-    return SecurityException.Code.UNAUTHORIZED_ACCESS.get(errVars(schemaObject, exception));
+    return APISecurityException.Code.UNAUTHORIZED_ACCESS.get(errVars(schemaObject, exception));
   }
 
   // ========================================================================

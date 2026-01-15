@@ -27,7 +27,7 @@ public class RequestException extends APIException {
     PROJECTION,
     /** See {@link SchemaException} */
     SCHEMA,
-    /** See {@link SecurityException} */
+    /** See {@link APISecurityException} */
     SECURITY,
     /** See {@link SortException} */
     SORT,

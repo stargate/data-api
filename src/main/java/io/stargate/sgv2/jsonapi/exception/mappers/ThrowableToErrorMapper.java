@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception.mappers;
 
-import com.datastax.oss.driver.api.core.servererrors.*;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -8,7 +7,7 @@ import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.*;
-import io.stargate.sgv2.jsonapi.exception.SecurityException;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import jakarta.ws.rs.NotSupportedException;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,7 +59,7 @@ public final class ThrowableToErrorMapper {
     // UnauthorizedException from quarkus
     // TODO: AARON - why would this happen ?
     if (throwable instanceof UnauthorizedException) {
-      return SecurityException.Code.UNAUTHENTICATED_REQUEST.get();
+      return APISecurityException.Code.UNAUTHENTICATED_REQUEST.get();
       //          .getCommandResultError(Response.Status.UNAUTHORIZED);
     }
 

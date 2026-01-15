@@ -19,7 +19,7 @@ import com.datastax.oss.driver.api.core.type.codec.CodecNotFoundException;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.google.common.base.Strings;
 import io.stargate.sgv2.jsonapi.exception.*;
-import io.stargate.sgv2.jsonapi.exception.SecurityException;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -246,7 +246,8 @@ public class DefaultDriverExceptionHandlerTest {
             allFailedTwoNodesOneWriteTimeout(),
             Assertions.of(DatabaseException.Code.TIMEOUT_WRITING_DATA)),
         new TestArguments(
-            allFailedTwoNodesAllAuth(), Assertions.of(SecurityException.Code.UNAUTHORIZED_ACCESS)),
+            allFailedTwoNodesAllAuth(),
+            Assertions.of(APISecurityException.Code.UNAUTHORIZED_ACCESS)),
         new TestArguments(
             allFailedOneRuntime(),
             Assertions.of(

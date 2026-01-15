@@ -7,7 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.exception.SecurityException;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -42,7 +42,7 @@ public class ErrorChallengeSender
     commandResult =
         CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
             .addThrowable(
-                SecurityException.Code.MISSING_AUTHENTICATION_TOKEN.get(
+                APISecurityException.Code.MISSING_AUTHENTICATION_TOKEN.get(
                     "authHeader", HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME))
             .build();
   }

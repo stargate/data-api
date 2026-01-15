@@ -10,6 +10,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
@@ -18,6 +19,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionFactory;
+import io.stargate.sgv2.jsonapi.service.operation.databases.DatabaseDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Objects;
@@ -126,8 +128,14 @@ public class SchemaCache {
     // Cannot get a session from the sessionCacheSupplier in the constructor because
     // it will create a circular call. So need to wait until now to create the QueryExecutor
     // this is OK, only happens when the table is not in the cache
-    // HACK - fix before merge
-    var queryExecutor = new QueryExecutor(sessionCacheSupplier.get(), operationsConfig);
+    // XXXX aaron HACK
+    var queryExecutor =
+        new QueryExecutor(
+            sessionCacheSupplier.get(),
+            operationsConfig,
+            (statement) ->
+                new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(), statement),
+            RequestTracing.NO_OP);
     return tableCacheFactory.create(key.keyspace(), queryExecutor, objectMapper);
   }
 

@@ -146,7 +146,7 @@ public record ErrorTemplate<T extends APIException>(
     final Constructor<T> constructor;
     try {
       constructor = exceptionClass.getConstructor(ErrorInstance.class);
-    } catch (NoSuchMethodException | SecurityException e) {
+    } catch (NoSuchMethodException | APISecurityException e) {
       throw new IllegalArgumentException(
           "Failed to find constructor that accepts APIException.ErrorInstance.class for the exception class: "
               + exceptionClass.getSimpleName(),

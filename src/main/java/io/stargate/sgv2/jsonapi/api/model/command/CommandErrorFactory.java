@@ -12,6 +12,8 @@ import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Builder that creates a {@link CommandErrorV2} from an {@link APIException} or the legacy {@link
@@ -23,6 +25,7 @@ import java.util.Objects;
  * remove the legacy CommandResult.Error
  */
 public class CommandErrorFactory {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CommandErrorFactory.class);
 
   private final boolean debugEnabled;
 
@@ -39,9 +42,17 @@ public class CommandErrorFactory {
     return switch (throwable) {
       case APIException apiException -> create(apiException, documentIds);
       case JsonApiException jsonApiException -> create(jsonApiException, documentIds);
-      case Throwable t ->
-          create(ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(t)), documentIds);
+      case Throwable t -> create(wrapThrowable(t), documentIds);
     };
+  }
+
+  private APIException wrapThrowable(Throwable throwable) {
+
+    LOGGER.warn(
+        "An unhandled Java exception was mapped to {}",
+        ServerException.Code.UNEXPECTED_SERVER_ERROR.name(),
+        throwable);
+    return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(throwable));
   }
 
   public CommandErrorV2 create(JsonApiException jsonApiException) {
