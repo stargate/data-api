@@ -10,6 +10,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -38,6 +39,18 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      * access the container to perform operations).
      */
     private static GenericContainer<?> sessionEvictionCassandraContainer;
+
+    @Override
+    protected GenericContainer<?> baseCassandraContainer(boolean reuse) {
+      GenericContainer<?> container = super.baseCassandraContainer(reuse);
+      try (java.net.ServerSocket socket = new java.net.ServerSocket(0)) {
+        int port = socket.getLocalPort();
+        container.setPortBindings(Collections.singletonList(port + ":9042"));
+      } catch (java.io.IOException e) {
+        throw new RuntimeException("Failed to find open port", e);
+      }
+      return container;
+    }
 
     /**
      * Starts the container and captures the reference.

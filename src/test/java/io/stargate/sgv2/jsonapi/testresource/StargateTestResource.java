@@ -170,7 +170,7 @@ public abstract class StargateTestResource
     return ImmutableMap.builder();
   }
 
-  private GenericContainer<?> baseCassandraContainer(boolean reuse) {
+  protected GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = getCassandraImage();
     GenericContainer<?> container;
 
