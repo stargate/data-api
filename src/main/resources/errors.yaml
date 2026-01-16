@@ -173,7 +173,6 @@ request-errors:
 
   - scope:
     code: REQUEST_NOT_JSON
-    http-status-override: 400
     title: Request not valid JSON
     body: |-
       Request not valid JSON, problem: ${errorMessage}.

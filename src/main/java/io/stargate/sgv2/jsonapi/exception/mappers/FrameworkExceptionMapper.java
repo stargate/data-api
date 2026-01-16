@@ -22,7 +22,33 @@ import org.slf4j.LoggerFactory;
 public class FrameworkExceptionMapper {
   private static final Logger LOGGER = LoggerFactory.getLogger(FrameworkExceptionMapper.class);
 
-  /** Mapping for jackson parsing and mapping exceptions */
+  /**
+   * Most generic mapping for things not handled by other functions.
+   *
+   * <p>This could include ApiExceptions that we throw from inside our deserialization code called
+   * from quarkus.
+   */
+  @ServerExceptionMapper
+  public RestResponse<CommandResult> mapThrowable(Throwable throwable) {
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("mapThrowable() - mapping attached exception", throwable);
+    }
+
+    var mapped = ThrowableToErrorMapper.mapThrowable(throwable);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("mapThrowable() - mapped to attached exception", mapped);
+    }
+    return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+        .addThrowable(mapped)
+        .build()
+        .toRestResponse();
+  }
+
+  /**
+   * Mapping for jackson parsing and mapping exceptions
+   *
+   * <p>
+   */
   @ServerExceptionMapper({JsonParseException.class, MismatchedInputException.class})
   public RestResponse<CommandResult> mapJacksonException(Throwable jacksonException) {
 
@@ -41,6 +67,11 @@ public class FrameworkExceptionMapper {
         .toRestResponse();
   }
 
+  /**
+   * Mapping for Jakarta WebApplicationException and its subtypes
+   *
+   * <p>
+   */
   @ServerExceptionMapper
   public RestResponse<CommandResult> mapJakartaException(WebApplicationException wae) {
 
