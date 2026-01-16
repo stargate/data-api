@@ -214,7 +214,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     boolean isCassandraUp = false;
     Response response = null;
 
-    logger.info(
+    logger.warn(
         "Waiting for DB recovery. Container status: "
             + isContainerRunning
             + ", Cassandra status: "
@@ -232,7 +232,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         if (isCassandraUp) {
           response = getAPIResponse();
           if (response.getStatusCode() == 200) {
-            logger.info(
+            logger.warn(
                 "Database and API have recovered after "
                     + (System.currentTimeMillis() - start)
                     + "ms.");
@@ -240,7 +240,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
           }
         }
       } catch (Exception e) {
-        logger.info("Error checking DB status: " + e.getMessage());
+        logger.warn("Error checking DB status: " + e.getMessage());
       }
 
       // Poll every 1s
