@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.exception.mappers;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.*;
@@ -13,27 +15,45 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Tries to omit the `WebApplicationException` and just report the cause. <p/ */
-public class WebApplicationExceptionMapper {
+/**
+ * Exception mappers that are bound into the quarkus framework to handle exceptions raised form
+ * there.
+ */
+public class FrameworkExceptionMapper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(FrameworkExceptionMapper.class);
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(WebApplicationExceptionMapper.class);
+  /** Mapping for jackson parsing and mapping exceptions */
+  @ServerExceptionMapper({JsonParseException.class, MismatchedInputException.class})
+  public RestResponse<CommandResult> mapJacksonException(Throwable jacksonException) {
+
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("mapJacksonException() - mapping attached exception", jacksonException);
+    }
+
+    ///  XXX: TODO: Aaron - bring the handling for jackon errors into this class
+    var mapped = ThrowableToErrorMapper.mapThrowable(jacksonException);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("mapJacksonException() - mapped to attached exception", mapped);
+    }
+    return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+        .addThrowable(mapped)
+        .build()
+        .toRestResponse();
+  }
 
   @ServerExceptionMapper
-  public RestResponse<CommandResult> translateWebApplicationException(
-      WebApplicationException webApplicationException) {
+  public RestResponse<CommandResult> mapJakartaException(WebApplicationException wae) {
 
     // 06-Nov-2023, tatu: Let's dig the innermost root cause; needed f.ex for [jsonapi#448]
     //    to get to StreamConstraintsException
-    Throwable toReport = webApplicationException;
+    Throwable toReport = wae;
     while (toReport.getCause() != null) {
       toReport = toReport.getCause();
     }
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "translateWebApplicationException() - webApplicationException='{}', translating attached exception",
-          webApplicationException,
-          toReport);
+          "mapJakartaException() - wae='{}', translating attached exception", wae, toReport);
     }
 
     var resultBuilder = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
@@ -80,7 +100,7 @@ public class WebApplicationExceptionMapper {
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "translateWebApplicationException() - returning restResponse.getStatusInfo()={}",
+          "mapJakartaException() - returning restResponse.getStatusInfo()={}",
           restResponse.getStatusInfo());
     }
     return restResponse;
@@ -95,14 +115,14 @@ public class WebApplicationExceptionMapper {
     //      return RestResponse.status(jae.getHttpStatus(), commandResult);
     //    }
     //    // Return 405 for method not allowed and 404 for not found
-    //    if (webApplicationException instanceof NotAllowedException) {
+    //    if (wae instanceof NotAllowedException) {
     //      return RestResponse.status(RestResponse.Status.METHOD_NOT_ALLOWED, commandResult);
     //    }
-    //    if (webApplicationException instanceof NotFoundException) {
+    //    if (wae instanceof NotFoundException) {
     //      return RestResponse.status(RestResponse.Status.NOT_FOUND, commandResult);
     //    }
     //    // Return 415 for invalid Content-Type
-    //    if (webApplicationException instanceof NotSupportedException) {
+    //    if (wae instanceof NotSupportedException) {
     //      return RestResponse.status(RestResponse.Status.UNSUPPORTED_MEDIA_TYPE, commandResult);
     //    }
 
