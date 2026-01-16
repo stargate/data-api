@@ -5,10 +5,14 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindS
 import static org.hamcrest.Matchers.*;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.model.Frame;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.Map;
@@ -22,6 +26,7 @@ import org.testcontainers.containers.GenericContainer;
     value = SessionEvictionIntegrationTest.SessionEvictionTestResource.class,
     restrictToAnnotatedClass = true)
 public class SessionEvictionIntegrationTest extends AbstractCollectionIntegrationTestBase {
+
   private static final Logger logger =
       LoggerFactory.getLogger(SessionEvictionIntegrationTest.class);
 
@@ -61,7 +66,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       try (ServerSocket socket = new ServerSocket(0)) {
         int port = socket.getLocalPort();
         container.setPortBindings(Collections.singletonList(port + ":9042"));
-      } catch (java.io.IOException e) {
+      } catch (IOException e) {
         throw new RuntimeException("Failed to find open port", e);
       }
       return container;
@@ -186,111 +191,72 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
   }
 
   /**
-   * Polls the Data API until it returns a successful response, indicating the database has
-   * recovered.
+   * Polls the DB container until the container is running, Cassandra is up, and the API request
+   * returns 200.
    *
-   * @throws RuntimeException if the system does not recover within the timeout period.
+   * @throws RuntimeException if recovery does not occur within the timeout period.
    */
   private void waitForDbRecovery() {
-    logger.info("Waiting for DB to recover...");
     GenericContainer<?> dbContainer =
         SessionEvictionTestResource.getSessionEvictionCassandraContainer();
     DockerClient dockerClient = dbContainer.getDockerClient();
     String containerId = dbContainer.getContainerId();
     long start = System.currentTimeMillis();
     long timeout = 120000; // 120 seconds timeout
-    String lastError = null;
+    boolean isContainerRunning = false;
+    boolean isCassandraUp = false;
+    Response response = null;
+
+    logger.info("Waiting for database recovery...");
+
     while (System.currentTimeMillis() - start < timeout) {
       try {
-        var inspect = dockerClient.inspectContainerCmd(containerId).exec();
-        var state = inspect.getState();
-        boolean isRunning = Boolean.TRUE.equals(state.getRunning());
-        var ports = inspect.getNetworkSettings().getPorts().getBindings();
-        int mappedPort = dbContainer.getMappedPort(9042);
-        logger.info(
-            "Polling - Container Status: "
-                + state.getStatus()
-                + " (Running: "
-                + isRunning
-                + "), Ports: "
-                + ports
-                + ", CurrentMappedPort: "
-                + mappedPort);
+        // 1. Check if the container is running
+        isContainerRunning =
+            Boolean.TRUE.equals(
+                dockerClient.inspectContainerCmd(containerId).exec().getState().getRunning());
 
-        // 2. TCP Socket Probe
-        try (java.net.Socket socket = new java.net.Socket()) {
-          socket.connect(new java.net.InetSocketAddress("localhost", mappedPort), 2000);
-          logger.info("Polling - Socket Probe: SUCCESS (TCP Handshake OK)");
-        } catch (Exception e) {
-          logger.info("Polling - Socket Probe: FAILED - " + e.getMessage());
-        }
+        // 2. Check if Cassandra is up
+        isCassandraUp = isCassandraUp(dockerClient, containerId);
 
-        if (!isRunning) {
-          logger.info("CRITICAL: Container is NOT running. Performing post-mortem...");
-          logger.info("  Exit Code: " + state.getExitCode()); // 137 = OOM Killed
-          logger.info("  OOMKilled: " + state.getOOMKilled());
-          try {
-            logger.info("--- CONTAINER LOGS (LAST 50 LINES) ---");
-            dockerClient
-                .logContainerCmd(containerId)
-                .withStdOut(true)
-                .withStdErr(true)
-                .withTail(50)
-                .exec(
-                    new com.github.dockerjava.api.async.ResultCallback.Adapter<
-                        com.github.dockerjava.api.model.Frame>() {
-                      @Override
-                      public void onNext(com.github.dockerjava.api.model.Frame frame) {
-                        logger.info(new String(frame.getPayload()));
-                      }
-                    })
-                .awaitCompletion();
-            logger.info("--- END CONTAINER LOGS ---");
-          } catch (Exception logEx) {
-            logger.info("Failed to fetch container logs: " + logEx.getMessage());
+        // 3. Verify Data API connectivity via simple findOne command
+        if (isContainerRunning && isCassandraUp) {
+          response =
+              given()
+                  .headers(getHeaders())
+                  .contentType(ContentType.JSON)
+                  .body("{\"findOne\": {}}")
+                  .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
+
+          if (response.getStatusCode() == 200) {
+            logger.info(
+                "Database and API have recovered after "
+                    + (System.currentTimeMillis() - start)
+                    + "ms.");
+            return;
           }
         }
-        if (isRunning) {
-          boolean isNodeUp = isCassandraUp(dockerClient, containerId);
-          boolean isNativeTransportActive = isNativeTransportActive(dockerClient, containerId);
-          logger.info(
-              "Polling - Cassandra Status: NodeUp="
-                  + isNodeUp
-                  + ", NativeTransport="
-                  + isNativeTransportActive);
-        }
-        String json =
-            """
-                      {
-                        "findOne": {}
-                      }
-                      """;
-        var response =
-            given()
-                .headers(getHeaders())
-                .contentType(ContentType.JSON)
-                .body(json)
-                .when()
-                .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
-        int statusCode = response.getStatusCode();
-        if (statusCode == 200) {
-          logger.info("DB recovered! Received 200 OK.");
-          return;
-        } else {
-          lastError = "Status: " + statusCode + ", Body: " + response.getBody().asString();
-          logger.info("DB responded but not ready: " + lastError);
-        }
       } catch (Exception e) {
-        lastError = "Exception: " + e.getMessage();
-        logger.info("DB connection error during polling: " + lastError);
+        logger.info("Error checking DB status: " + e.getMessage());
       }
+
+      // Poll every 1s
       try {
-        Thread.sleep(2000); // Poll every 2s
+        Thread.sleep(1000);
       } catch (InterruptedException ignored) {
+        Thread.currentThread().interrupt();
+        break;
       }
     }
     throw new RuntimeException(
-        "DB failed to recover within " + timeout + "ms. Last error: " + lastError);
+        "DB failed to recover within "
+            + timeout
+            + "ms. Container status: "
+            + isContainerRunning
+            + ", Cassandra status: "
+            + isCassandraUp
+            + ", API response: "
+            + response);
   }
 
   /** Checks if Cassandra is up and normal by running "nodetool status" inside the container. */
@@ -305,46 +271,15 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               .exec();
 
       var callback =
-          new com.github.dockerjava.api.async.ResultCallback.Adapter<
-              com.github.dockerjava.api.model.Frame>() {
+          new ResultCallback.Adapter<Frame>() {
             @Override
-            public void onNext(com.github.dockerjava.api.model.Frame object) {}
+            public void onNext(Frame object) {}
           };
 
       dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(callback).awaitCompletion();
       var inspectExecResponse = dockerClient.inspectExecCmd(execCreateCmdResponse.getId()).exec();
       return inspectExecResponse.getExitCodeLong() == 0;
     } catch (Exception e) {
-      logger.info("Failed to run nodetool status: " + e.getMessage());
-      return false;
-    }
-  }
-
-  /** Checks if Native Transport is active by running "nodetool info" inside the container. */
-  private boolean isNativeTransportActive(DockerClient dockerClient, String containerId) {
-    try {
-      var execCreateCmdResponse =
-          dockerClient
-              .execCreateCmd(containerId)
-              .withAttachStdout(true)
-              .withAttachStderr(true)
-              .withCmd("nodetool", "info")
-              .exec();
-
-      StringBuilder output = new StringBuilder();
-      var callback =
-          new com.github.dockerjava.api.async.ResultCallback.Adapter<
-              com.github.dockerjava.api.model.Frame>() {
-            @Override
-            public void onNext(com.github.dockerjava.api.model.Frame frame) {
-              output.append(new String(frame.getPayload()));
-            }
-          };
-
-      dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(callback).awaitCompletion();
-      return output.toString().contains("Native Transport active: true");
-    } catch (Exception e) {
-      logger.info("Failed to run nodetool info: " + e.getMessage());
       return false;
     }
   }
