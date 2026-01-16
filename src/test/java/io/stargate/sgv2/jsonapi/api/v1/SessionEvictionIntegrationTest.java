@@ -53,8 +53,9 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      * Overridden to enforce a fixed port binding for the Cassandra container.
      *
      * <p>Standard Testcontainers use random port mapping. However, this test manually stops and
-     * restarts the container to simulate failure. In some environments, a restarted container might
-     * not retain its original random port mapping, or the port forwarding may break.
+     * restarts the container to simulate failure. Under normal circumstances, a restarted container
+     * will not retain its original random port mapping, causing the initial port forwarding to
+     * break.
      *
      * <p>By using a fixed port binding (finding an available local port and mapping it explicitly),
      * we ensure the database is always accessible on the same port after a restart, allowing the
@@ -123,10 +124,16 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     return container.getMappedPort(9042);
   }
 
+  /**
+   * @return The DockerClient for the isolated Cassandra container.
+   */
   private DockerClient getDockerClient() {
     return SessionEvictionTestResource.getSessionEvictionCassandraContainer().getDockerClient();
   }
 
+  /**
+   * @return The container ID of the isolated Cassandra container.
+   */
   private String getContainerId() {
     return SessionEvictionTestResource.getSessionEvictionCassandraContainer().getContainerId();
   }

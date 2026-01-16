@@ -370,8 +370,8 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   /**
-   * Gets the Cassandra CQL port. Subclasses can override this if the port is not available via
-   * standard system properties.
+   * Gets the Cassandra CQL port. Subclasses can override this if their tests need isolated
+   * container and port.
    */
   protected int getCassandraCqlPort() {
     return Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
