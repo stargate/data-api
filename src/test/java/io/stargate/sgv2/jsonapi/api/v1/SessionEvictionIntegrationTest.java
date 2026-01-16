@@ -214,12 +214,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     boolean isCassandraUp = false;
     Response response = null;
 
-    logger.warn(
-        "Waiting for DB recovery. Container status: "
-            + isContainerRunning
-            + ", Cassandra status: "
-            + isCassandraUp);
-
     while (System.currentTimeMillis() - start < timeout) {
       try {
         // 1. Check container
