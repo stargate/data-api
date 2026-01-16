@@ -123,6 +123,14 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     return container.getMappedPort(9042);
   }
 
+  private DockerClient getDockerClient() {
+    return SessionEvictionTestResource.getSessionEvictionCassandraContainer().getDockerClient();
+  }
+
+  private String getContainerId() {
+    return SessionEvictionTestResource.getSessionEvictionCassandraContainer().getContainerId();
+  }
+
   @Test
   public void testSessionEvictionOnAllNodesFailed() {
     // 1. Insert and find initial data to ensure the database is healthy before the test
@@ -145,14 +153,10 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         .body("data.document._id", is("before_crash"));
 
     // 2. Stop the container to simulate DB failure
-    GenericContainer<?> dbContainer =
-        SessionEvictionTestResource.getSessionEvictionCassandraContainer();
-    DockerClient dockerClient = dbContainer.getDockerClient();
-    String containerId = dbContainer.getContainerId();
     // Use low-level dockerClient to stop the container without triggering Testcontainers'
     // cleanup/termination logic (which dbContainer.stop() would do).
     // This effectively "pulls the plug" while keeping the container instance intact for restart.
-    dockerClient.stopContainerCmd(containerId).exec();
+    getDockerClient().stopContainerCmd(getContainerId()).exec();
 
     // 3. Verify failure: The request should receive a 500 error/AllNodesFailedException
     givenHeadersPostJsonThen(
@@ -165,7 +169,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         .body("errors[0].message", containsString("No node was available"));
 
     // 4. Restart the container to simulate recovery
-    dockerClient.startContainerCmd(containerId).exec();
+    getDockerClient().startContainerCmd(getContainerId()).exec();
 
     // 5. Wait for the database to become responsive again
     waitForDbRecovery();
@@ -197,37 +201,29 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
    * @throws RuntimeException if recovery does not occur within the timeout period.
    */
   private void waitForDbRecovery() {
-    GenericContainer<?> dbContainer =
-        SessionEvictionTestResource.getSessionEvictionCassandraContainer();
-    DockerClient dockerClient = dbContainer.getDockerClient();
-    String containerId = dbContainer.getContainerId();
     long start = System.currentTimeMillis();
     long timeout = 120000; // 120 seconds timeout
     boolean isContainerRunning = false;
     boolean isCassandraUp = false;
     Response response = null;
 
-    logger.info("Waiting for database recovery...");
+    logger.info(
+        "Waiting for DB recovery. Container status: "
+            + isContainerRunning
+            + ", Cassandra status: "
+            + isCassandraUp);
 
     while (System.currentTimeMillis() - start < timeout) {
       try {
-        // 1. Check if the container is running
-        isContainerRunning =
-            Boolean.TRUE.equals(
-                dockerClient.inspectContainerCmd(containerId).exec().getState().getRunning());
+        // 1. Check container
+        isContainerRunning = isContainerRunning();
 
-        // 2. Check if Cassandra is up
-        isCassandraUp = isCassandraUp(dockerClient, containerId);
+        // 2. Check Cassandra (only after the container is running)
+        isCassandraUp = isContainerRunning && isCassandraUp(getDockerClient(), getContainerId());
 
-        // 3. Verify Data API connectivity via simple findOne command
-        if (isContainerRunning && isCassandraUp) {
-          response =
-              given()
-                  .headers(getHeaders())
-                  .contentType(ContentType.JSON)
-                  .body("{\"findOne\": {}}")
-                  .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
-
+        // 3. Check API (only after Cassandra is up)
+        if (isCassandraUp) {
+          response = getAPIResponse();
           if (response.getStatusCode() == 200) {
             logger.info(
                 "Database and API have recovered after "
@@ -255,8 +251,26 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
             + isContainerRunning
             + ", Cassandra status: "
             + isCassandraUp
-            + ", API response: "
-            + response);
+            + ", API response body: "
+            + (response != null ? response.asString() : "null"));
+  }
+
+  /** Checks if the Cassandra container is currently in the "running" state. */
+  private boolean isContainerRunning() {
+    return Boolean.TRUE.equals(
+        getDockerClient().inspectContainerCmd(getContainerId()).exec().getState().getRunning());
+  }
+
+  /**
+   * Get a simple findOne response from the Data API. We will verify the response after the function
+   * call
+   */
+  private Response getAPIResponse() {
+    return given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body("{\"findOne\": {}}")
+        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
   }
 
   /** Checks if Cassandra is up and normal by running "nodetool status" inside the container. */
