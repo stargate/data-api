@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindS
 import static org.hamcrest.Matchers.*;
 
 import com.github.dockerjava.api.DockerClient;
-import io.quarkus.logging.Log;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -14,6 +13,8 @@ import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 
 @QuarkusIntegrationTest
@@ -21,6 +22,8 @@ import org.testcontainers.containers.GenericContainer;
     value = SessionEvictionIntegrationTest.SessionEvictionTestResource.class,
     restrictToAnnotatedClass = true)
 public class SessionEvictionIntegrationTest extends AbstractCollectionIntegrationTestBase {
+  private static final Logger logger =
+      LoggerFactory.getLogger(SessionEvictionIntegrationTest.class);
 
   /**
    * A specialized TestResource that spins up a new HCD/DSE container exclusively for this test
@@ -146,45 +149,23 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     // This effectively "pulls the plug" while keeping the container instance intact for restart.
     dockerClient.stopContainerCmd(containerId).exec();
 
-    try {
-      // 3. Verify failure: The application should receive a 500 error/AllNodesFailedException
-      givenHeadersPostJsonThen(
-              """
+    // 3. Verify failure: The request should receive a 500 error/AllNodesFailedException
+    givenHeadersPostJsonThen(
+            """
               {
                 "findOne": {}
               }
               """)
-          .statusCode(500)
-          .body("errors[0].message", containsString("No node was available"));
+        .statusCode(500)
+        .body("errors[0].message", containsString("No node was available"));
 
-    } finally {
-      // 4. Restart the container to simulate recovery
-      Log.error("Restarting Database Container to simulate recovery...");
-      dockerClient.startContainerCmd(containerId).exec();
-      Log.error(
-          "Container ID: "
-              + containerId
-              + ", Port After Start: "
-              + dbContainer.getMappedPort(9042));
-
-      // check status
-      var inspectAfter = dockerClient.inspectContainerCmd(containerId).exec();
-      var state = inspectAfter.getState();
-      Log.error(
-          "Container Status After Start: "
-              + dockerClient
-                  .inspectContainerCmd(containerId)
-                  .exec()
-                  .getState()
-                  .getStatus()); // should be "running"
-      Log.error("Container Running: " + state.getRunning());
-    }
+    // 4. Restart the container to simulate recovery
+    dockerClient.startContainerCmd(containerId).exec();
 
     // 5. Wait for the database to become responsive again
     waitForDbRecovery();
 
-    // 6. Verify Session Recovery: The application should have evicted the bad session
-    // and created a new one automatically.
+    // 6. Verify Session Recovery: insert and find data again, the request should succeed
     insertDoc(
         """
                 {
@@ -211,7 +192,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
    * @throws RuntimeException if the system does not recover within the timeout period.
    */
   private void waitForDbRecovery() {
-    Log.error("Waiting for DB to recover...");
+    logger.info("Waiting for DB to recover...");
     GenericContainer<?> dbContainer =
         SessionEvictionTestResource.getSessionEvictionCassandraContainer();
     DockerClient dockerClient = dbContainer.getDockerClient();
@@ -226,7 +207,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         boolean isRunning = Boolean.TRUE.equals(state.getRunning());
         var ports = inspect.getNetworkSettings().getPorts().getBindings();
         int mappedPort = dbContainer.getMappedPort(9042);
-        Log.error(
+        logger.info(
             "Polling - Container Status: "
                 + state.getStatus()
                 + " (Running: "
@@ -239,17 +220,17 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         // 2. TCP Socket Probe
         try (java.net.Socket socket = new java.net.Socket()) {
           socket.connect(new java.net.InetSocketAddress("localhost", mappedPort), 2000);
-          Log.error("Polling - Socket Probe: SUCCESS (TCP Handshake OK)");
+          logger.info("Polling - Socket Probe: SUCCESS (TCP Handshake OK)");
         } catch (Exception e) {
-          Log.error("Polling - Socket Probe: FAILED - " + e.getMessage());
+          logger.info("Polling - Socket Probe: FAILED - " + e.getMessage());
         }
 
         if (!isRunning) {
-          Log.error("CRITICAL: Container is NOT running. Performing post-mortem...");
-          Log.error("  Exit Code: " + state.getExitCode()); // 137 = OOM Killed
-          Log.error("  OOMKilled: " + state.getOOMKilled());
+          logger.info("CRITICAL: Container is NOT running. Performing post-mortem...");
+          logger.info("  Exit Code: " + state.getExitCode()); // 137 = OOM Killed
+          logger.info("  OOMKilled: " + state.getOOMKilled());
           try {
-            Log.error("--- CONTAINER LOGS (LAST 50 LINES) ---");
+            logger.info("--- CONTAINER LOGS (LAST 50 LINES) ---");
             dockerClient
                 .logContainerCmd(containerId)
                 .withStdOut(true)
@@ -260,19 +241,19 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
                         com.github.dockerjava.api.model.Frame>() {
                       @Override
                       public void onNext(com.github.dockerjava.api.model.Frame frame) {
-                        Log.error(new String(frame.getPayload()));
+                        logger.info(new String(frame.getPayload()));
                       }
                     })
                 .awaitCompletion();
-            Log.error("--- END CONTAINER LOGS ---");
+            logger.info("--- END CONTAINER LOGS ---");
           } catch (Exception logEx) {
-            Log.error("Failed to fetch container logs: " + logEx.getMessage());
+            logger.info("Failed to fetch container logs: " + logEx.getMessage());
           }
         }
         if (isRunning) {
           boolean isNodeUp = isCassandraUp(dockerClient, containerId);
           boolean isNativeTransportActive = isNativeTransportActive(dockerClient, containerId);
-          Log.error(
+          logger.info(
               "Polling - Cassandra Status: NodeUp="
                   + isNodeUp
                   + ", NativeTransport="
@@ -293,15 +274,15 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
                 .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
         int statusCode = response.getStatusCode();
         if (statusCode == 200) {
-          Log.error("DB recovered! Received 200 OK.");
+          logger.info("DB recovered! Received 200 OK.");
           return;
         } else {
           lastError = "Status: " + statusCode + ", Body: " + response.getBody().asString();
-          Log.error("DB responded but not ready: " + lastError);
+          logger.info("DB responded but not ready: " + lastError);
         }
       } catch (Exception e) {
         lastError = "Exception: " + e.getMessage();
-        Log.error("DB connection error during polling: " + lastError);
+        logger.info("DB connection error during polling: " + lastError);
       }
       try {
         Thread.sleep(2000); // Poll every 2s
@@ -334,7 +315,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       var inspectExecResponse = dockerClient.inspectExecCmd(execCreateCmdResponse.getId()).exec();
       return inspectExecResponse.getExitCodeLong() == 0;
     } catch (Exception e) {
-      Log.error("Failed to run nodetool status: " + e.getMessage());
+      logger.info("Failed to run nodetool status: " + e.getMessage());
       return false;
     }
   }
@@ -363,7 +344,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(callback).awaitCompletion();
       return output.toString().contains("Native Transport active: true");
     } catch (Exception e) {
-      Log.error("Failed to run nodetool info: " + e.getMessage());
+      logger.info("Failed to run nodetool info: " + e.getMessage());
       return false;
     }
   }
