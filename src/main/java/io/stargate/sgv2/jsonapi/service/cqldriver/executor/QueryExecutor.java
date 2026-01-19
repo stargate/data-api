@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.util.ClassUtils;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Base64;
@@ -73,8 +72,6 @@ public class QueryExecutor {
     // removed soon.
     Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory must not be null");
 
-    logger.error("XXX RUNNING QUERY: {}", statement.getQuery());
-
     var stmtWithTracing =
         requestTracing.enabled() != statement.isTracing()
             ? statement.setTracing(requestTracing.enabled())
@@ -93,10 +90,6 @@ public class QueryExecutor {
             (asyncResultSet, error) ->
                 switch (error) {
                   case RuntimeException rte -> {
-                    logger.error(
-                        "XXX 1 GOT ERROR:, facotry- {} ",
-                        ClassUtils.classSimpleName(exceptionHandlerFactory),
-                        error);
                     var handler =
                         Objects.requireNonNull(
                             exceptionHandlerFactory.apply(statement),
@@ -105,7 +98,6 @@ public class QueryExecutor {
                     yield Uni.createFrom().failure(handler.maybeHandle(rte));
                   }
                   case Throwable throwable -> {
-                    logger.error("XXX 2 GOT ERROR: ", error);
                     yield Uni.createFrom().failure(throwable);
                   }
                   case null -> {
