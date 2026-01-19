@@ -181,7 +181,6 @@ request-errors:
 
   - scope:
     code: REQUEST_STRUCTURE_MISMATCH
-    http-status-override: 400
     title: Request structure not valid
     body: |-
       Request is valid JSON but has a structural mismatch: ${errorMessage}.
