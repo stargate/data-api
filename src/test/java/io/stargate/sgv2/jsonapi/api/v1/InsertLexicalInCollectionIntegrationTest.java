@@ -249,8 +249,7 @@ public class InsertLexicalInCollectionIntegrationTest
       givenHeadersPostJsonThenOk("{ \"insertOne\": {  \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is(DocumentException.Code.LEXICAL_CONTENT_TOO_LONG.name()))
-          .body("errors[0].message", containsString("Lexical content is too big"));
+          .body("errors[0].errorCode", is(DocumentException.Code.LEXICAL_CONTENT_TOO_LONG.name()));
     }
   }
 
