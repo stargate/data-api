@@ -235,14 +235,20 @@ public class SchemaObjectCache
     // requestContext is only needed when creating/loading values
     // Eviction with null requestContext works because SchemaCacheKey.equals() only compares
     // schemaIdentifier
-    var evictKey =
+    var evictKeyTable =
         createCacheKey(null, SchemaObjectIdentifier.forTable(tenant, keyspace, table), null, false);
+    var evictKeyCollection =
+        createCacheKey(
+            null, SchemaObjectIdentifier.forCollection(tenant, keyspace, table), null, false);
 
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("evictTable() - evictKey: {}", evictKey);
+      LOGGER.trace("evictTable() - evictKey: {}/{}", evictKeyTable, evictKeyCollection);
     }
 
-    evict(evictKey);
+    // since we do not know it is table or collection with current schema-refresh event
+    // need to evict both by creating two keys
+    evict(evictKeyTable);
+    evict(evictKeyCollection);
   }
 
   protected void evictKeyspace(Tenant tenant, CqlIdentifier keyspace, boolean evictAll) {
