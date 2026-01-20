@@ -41,7 +41,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDriverExceptionHandler.class);
 
-  protected final SchemaObject schemaObject;
+  protected final SchemaT schemaObject;
   // NOTE: to subclasses - the statement may be null, this happens when some Operations work with
   // metadata
   // rather than using statements.

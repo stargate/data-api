@@ -9,6 +9,8 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
@@ -560,12 +562,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              is(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause = (InvalidQueryException) Not enough bytes to read a vector<float, 5>"));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
     }
   }
 
@@ -1110,12 +1107,15 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_QUERY"))
-          .body(
+          .body("errors[0].errorCode", is(DatabaseException.Code.INVALID_DATABASE_QUERY.name()))
+          .body( // amorton - 20 jan - 2026 - keping the message checks because the error code is
+              // very high level
               "errors[0].message",
-              oneOf(
-                  "Zero and near-zero vectors cannot be indexed or queried with cosine similarity",
-                  "Zero vectors cannot be indexed or queried with cosine similarity"));
+              anyOf(
+                  containsString(
+                      "Zero and near-zero vectors cannot be indexed or queried with cosine similarity"),
+                  containsString(
+                      "Zero vectors cannot be indexed or queried with cosine similarity")));
     }
 
     @Test
@@ -1624,11 +1624,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
 
       // Insert data with $vector array size greater than vector index defined size.
       givenHeadersAndJson(
@@ -1651,11 +1647,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
     }
 
     @Test
@@ -1680,11 +1672,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
 
       // Insert data with $vector array size greater than vector index defined size.
       givenHeadersAndJson(
@@ -1705,11 +1693,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
     }
   }
 

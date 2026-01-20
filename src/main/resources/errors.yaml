@@ -421,9 +421,19 @@ request-errors:
       The collection: ${keyspace}.${table}.
       
       Resend the command using a smaller value for the `$lexical` field.
-  
 
-  # ================================================================================================================
+  - scope: DOCUMENT
+    code: INVALID_VECTOR_LENGTH
+    title: Vector values in documents are not valid
+    body: |-
+      The command attempted to update or find using `$vector`, using a vector that has a length different to the declared '$vector' dimension for the Collection.
+      
+      The collection was: ${keyspace}.${table}.
+      The configured vector dimension is: ${configVectorLength}.
+      
+      Resend the command using a vector of the correct length.
+
+# ================================================================================================================
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
 

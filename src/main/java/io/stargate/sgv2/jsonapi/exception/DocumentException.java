@@ -23,6 +23,8 @@ public class DocumentException extends RequestException {
     LEXICAL_CONTENT_TOO_LONG,
 
     INVALID_COLUMN_VALUES,
+    INVALID_VECTOR_LENGTH, // copy from V1 VECTOR_SIZE_MISMATCH("Length of vector parameter
+    // different from declared '$vector' dimension"),
     MISSING_PRIMARY_KEY_COLUMNS,
     UNKNOWN_TABLE_COLUMNS,
     UNSUPPORTED_COLUMN_TYPES,
