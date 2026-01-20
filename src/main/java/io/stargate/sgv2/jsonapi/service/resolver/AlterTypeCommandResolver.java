@@ -96,7 +96,7 @@ public class AlterTypeCommandResolver implements CommandResolver<AlterTypeComman
     }
 
     // sanity check
-    if (taskGroup.isEmpty()) {
+    if (taskGroup.tasks().isEmpty()) {
       throw SchemaException.Code.MISSING_ALTER_TYPE_OPERATIONS.get();
     }
 

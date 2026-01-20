@@ -71,7 +71,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
 
     // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
     List<DocRowIdentifer> insertedIds =
-        tasks.completedTasks().stream()
+        taskGroup.completedTasks().stream()
             .map(InsertDBTask::docRowID)
             .map(Optional::orElseThrow)
             .toList();
@@ -102,17 +102,17 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
     // kept using the same approach as InsertOperationPage to make comparison easy until we remove
     // the old class
 
-    var results = new InsertionResult[tasks.size()];
+    var results = new InsertionResult[taskGroup.tasks().size()];
 
     // Results array filled in order: first successful insertions
-    for (var task : tasks.completedTasks()) {
+    for (var task : taskGroup.completedTasks()) {
       results[task.position()] =
           new InsertionResult(task.docRowID().orElseThrow(), InsertionStatus.OK, null);
     }
 
     List<CommandResult.Error> seenErrors = new ArrayList<>();
     // Second: failed insertions; output in order of insertion
-    for (var task : tasks.errorTasks()) {
+    for (var task : taskGroup.errorTasks()) {
       var cmdError = resultBuilder.throwableToCommandError(task.failure().orElseThrow());
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
@@ -129,7 +129,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
 
     // And third, if any, skipped insertions; those that were not attempted (f.ex due
     // to failure for ordered inserts)
-    for (var task : tasks.skippedTasks()) {
+    for (var task : taskGroup.skippedTasks()) {
       results[task.position()] =
           new InsertionResult(task.docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
     }

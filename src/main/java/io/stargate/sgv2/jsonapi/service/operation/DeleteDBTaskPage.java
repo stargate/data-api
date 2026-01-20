@@ -37,7 +37,7 @@ public class DeleteDBTaskPage<SchemaT extends TableBasedSchemaObject>
     // For now, we will return -1 as the deleted count.When we update collections to use this class
     // we can refactor to return the actual count for them.
     // If there is error, we won't add this status.
-    if (tasks.errorTasks().isEmpty()) {
+    if (taskGroup.errorTasks().isEmpty()) {
       resultBuilder.addStatus(CommandStatus.DELETED_COUNT, -1);
     }
   }

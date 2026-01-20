@@ -47,7 +47,7 @@ public abstract class EmbeddingOperationFactory {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
             "createOperation() - zero embeddingActions, creating direct TaskOperation operation tasksAndDeferrables.taskGroup().size()={}",
-            tasksAndDeferrables.taskGroup().size());
+            tasksAndDeferrables.taskGroup().tasks().size());
       }
       // basic task, just wrap the tasks in an operation and go
       return new TaskOperation<>(
@@ -58,7 +58,7 @@ public abstract class EmbeddingOperationFactory {
       LOGGER.debug(
           "createOperation() - creating CompositeTask Operation, embeddingActions.size()={}, tasksAndDeferrables.taskGroup().size()={}",
           embeddingActions.size(),
-          tasksAndDeferrables.taskGroup().size());
+          tasksAndDeferrables.taskGroup().tasks().size());
     }
 
     var compositeBuilder = new CompositeTaskOperationBuilder<>(commandContext);
@@ -78,7 +78,7 @@ public abstract class EmbeddingOperationFactory {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "createOperation() - created EmbeddingTasks embeddingTaskGroup.size={}",
-          embeddingTaskGroup.size());
+          embeddingTaskGroup.tasks().size());
     }
 
     // we want to run a group of embedding tasks and then a group of the other tasks,
