@@ -27,7 +27,7 @@ import org.testcontainers.containers.GenericContainer;
     restrictToAnnotatedClass = true)
 public class SessionEvictionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(SessionEvictionIntegrationTest.class);
 
   /**
@@ -82,7 +82,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      */
     @Override
     public Map<String, String> start() {
-      Map<String, String> props = super.start();
+      var props = super.start();
       sessionEvictionCassandraContainer = super.getCassandraContainer();
       return props;
     }
@@ -226,7 +226,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         if (isCassandraUp) {
           response = getAPIResponse();
           if (response.getStatusCode() == 200) {
-            logger.warn(
+            LOGGER.info(
                 "Database and API have recovered after "
                     + (System.currentTimeMillis() - start)
                     + "ms.");
@@ -234,7 +234,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
           }
         }
       } catch (Exception e) {
-        logger.warn("Error checking DB status: " + e.getMessage());
+        LOGGER.warn("Error checking DB status: " + e.getMessage(), e);
       }
 
       // Poll every 1s

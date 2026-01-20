@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_HOST_PROP;
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP;
+
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
@@ -58,11 +60,9 @@ public abstract class StargateTestResource
 
     // 1. Connection Config: Tell the app how to connect to the backend database
     propsBuilder.put(
-        "stargate.int-test.cassandra.host",
+        CASSANDRA_CQL_HOST_PROP,
         cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
-    propsBuilder.put(
-        IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP,
-        cassandraContainer.getMappedPort(9042).toString());
+    propsBuilder.put(CASSANDRA_CQL_PORT_PROP, cassandraContainer.getMappedPort(9042).toString());
     propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
 
     // 2. Runtime Limits Config: Override default limits for testing purposes

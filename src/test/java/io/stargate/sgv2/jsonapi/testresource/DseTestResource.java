@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_HOST_PROP;
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP;
+
 import com.google.common.collect.ImmutableMap;
-import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -156,15 +158,11 @@ public class DseTestResource extends StargateTestResource {
     // missing.
     if (this.containerNetworkId.isPresent()) {
       String host =
-          env.getOrDefault(
-              "stargate.int-test.cassandra.host",
-              System.getProperty("stargate.int-test.cassandra.host"));
+          env.getOrDefault(CASSANDRA_CQL_HOST_PROP, System.getProperty(CASSANDRA_CQL_HOST_PROP));
       propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
     } else {
       String port =
-          env.getOrDefault(
-              IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP,
-              System.getProperty(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP));
+          env.getOrDefault(CASSANDRA_CQL_PORT_PROP, System.getProperty(CASSANDRA_CQL_PORT_PROP));
       propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-port", port);
     }
 
