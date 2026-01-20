@@ -25,6 +25,7 @@
 #
 # "snippets" is a list of text snippets than can be included in any error body, the snippets are included in the
 # variables when running the template for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
+# variables when running the template for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
 # where <NAME> is the name of the snippet key.
 # Each snippet has:
 # - name: UPPER_SNAKE_CASE_1
@@ -55,6 +56,10 @@ snippets:
   - name: RETRY
     body: |-
       It is safe to retry this request.
+
+  - name: RETRY_AFTER_FIX
+    body: |-
+      Fix the issue before retrying this request.
 
   - name: RETRY_UNKNOWN
     body: |-
@@ -309,16 +314,6 @@ request-errors:
 
       Either resend the command with distinct '_id', or use an update command instead.
 
-  # Internal error: does it belong here?
-  - scope: DOCUMENT
-    code: DOCUMENT_FROM_DB_UNPARSEABLE
-    title: Unable to parse JSON content
-    body: |-
-      Unable to parse JSON content retrieved from the database; not valid JSON.
-      Underlying problem: ${message}
-
-      Report the problem to database administrators.
-
   - scope: DOCUMENT
     code: DOCUMENT_REPLACE_DIFFERENT_DOCID
     title: Document the given _id already exists
@@ -339,6 +334,72 @@ request-errors:
       The command did not include values for primary key columns: ${missingKeys}.
       
       Resend the command including the missing primary key columns.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_BINARY_VECTOR_VALUE
+    title: Bad binary vector value to shred
+    body: |-
+      Bad binary vector value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCID_TYPE
+    title: Bad type for '_id' field
+    body: |-
+      Bad type for '_id' field: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCID_VALUE
+    title: Bad value for '_id' field
+    body: |-
+      Bad value for '_id' field: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_TYPE
+    title: Bad document type to shred
+    body: |-
+      Bad document type to shred: document must be a JSON Object, instead got a JSON ${documentType}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_VECTOR_TYPE
+    title: Bad $vector value to shred
+    body: |-
+      Bad $vector value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_DOCUMENT_LEXICAL_TYPE
+    title: Bad $lexical value to shred
+    body: |-
+      Bad $lexical value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_EJSON_VALUE
+    title: Bad JSON Extension value to shred
+    body: |-
+      Bad JSON Extension value to shred: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_FIELD_NAME
+    title: Document field name not valid
+    body: |-
+      Document field name not valid: ${errorMessage}.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_VECTOR_SIZE
+    title: Bad $vector value
+    body: |-
+      Bad $vector value: cannot be empty Array.
+
+  - scope: DOCUMENT
+    code: SHRED_BAD_VECTOR_VALUE
+    title: Bad $vector value
+    body: |-
+      Bad $vector value: needs to be an array containing only Numbers but has a ${nodeType} value (${nodeValue}).
+
+  - scope: DOCUMENT
+    code: SHRED_DOC_LIMIT_VIOLATION
+    title: Document size limitation violated
+    body: |-
+      Document size limitation violated: ${errorMessage}.
 
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
@@ -998,6 +1059,22 @@ request-errors:
       Resend the command using only supported column types.
 
   - scope: PROJECTION
+    code: UNSUPPORTED_PROJECTION_DEFINITION
+    title: Unsupported projection definition
+    body: |-
+      Unsupported projection definition JSON value: must be Object, was ${projectionValueType}.
+      
+      Resend the command with valid projection definition.
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_PROJECTION_PARAM
+    title: Unsupported projection parameter
+    body: |-
+      Unsupported projection parameter: ${errorMessage}.
+      
+      Resend the command with valid projection definition.
+
+  - scope: PROJECTION
     code: UNKNOWN_TABLE_COLUMNS
     title: Columns in the projection are not defined in the table schema
     body: |-
@@ -1181,16 +1258,8 @@ request-errors:
       Resend the command without dropping the indexed columns.
 
   - scope: SCHEMA
-    code: COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS
-    title: Collection or table does not exist
-    body: |-
-      Collection '${collection}' already exists but with settings different from ones passed with 'createCollection' command.
-
-      If you need to change collection settings you will need to 'deleteCollection', then re-create with new settings.
-
-  - scope: SCHEMA
     code: COLLECTION_NOT_EXIST
-    title: Collection already exists with different settings
+    title: Collection or table does not exist
     body: |-
       No collection or table with name '${collection}' exists.
 
@@ -1215,6 +1284,22 @@ request-errors:
       ${message}
       
       Resend the command using supported model.
+
+  - scope: SCHEMA
+    code: EXISTING_COLLECTION_DIFFERENT_SETTINGS
+    title: Collection already exists with different settings
+    body: |-
+      Collection '${collectionName}' already exists but with settings different from ones passed with 'createCollection' command.
+
+      If you need to change collection settings you will need to 'deleteCollection', then re-create with new settings.
+
+  - scope: SCHEMA
+    code: EXISTING_TABLE_NOT_DATA_API_COLLECTION
+    title: Existing table not a valid Data API collection
+    body: |-
+      Attempt to create new collection failed: table '${tableName}' already exists and it is not a valid Data API collection.
+
+      Recommend deleting the table and resending the command.
 
   - scope: SCHEMA
     code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS
@@ -2097,6 +2182,24 @@ server-errors:
       Recreate the collection using the Data API, or contact support for assistance repairing.
 
   - scope: DATABASE
+    code: COLLECTION_NO_INDEX_ERROR
+    title: Collection missing index(es)
+    body: |-
+      Faulty collection (missing index(es)).
+      Recommend re-creating the collection.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
+    code: COLLECTION_SCHEMA_VERSION_INVALID
+    title: Collection schema version invalid
+    body: |-
+      Collection '${collectionName}' has invalid schema version (${schemaVersion}).
+      Recommend re-creating the collection.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
     code: COUNT_READ_FAILED
     title: Count read failed
     body: |-
@@ -2105,6 +2208,50 @@ server-errors:
       The database error: ${errorMessage}.
       
       ${SNIPPET.RETRY}
+
+  # Internal error: does it belong here?
+  - scope: DATABASE
+    code: DOCUMENT_FROM_DB_UNPARSEABLE
+    title: Unable to parse JSON content
+    body: |-
+      Unable to parse JSON content retrieved from the database; not valid JSON.
+      Underlying problem: ${errorMessage}
+
+      Report the problem to database administrators.
+
+  - scope: DATABASE
+    code: FAILED_CONCURRENT_OPERATIONS
+    title: Failed to complete concurrent operations on the database
+    body: |-
+      The Data API command was unable to complete an operation on a document or row due to concurrent modifications from other requests.
+      
+      This should be a rare error, it occurs when multiple requests attempt to modify the same document or row at the same time. The Data API has retried the operation multiple times, but was unable to complete it before another request modified the same document or row. This may indicate a "hot row" in your database, or low resources slowing down the database.
+      
+      NOTE: If the request updated multiple documents or rows, some of the updates may have completed successfully. Check the response for partial success information.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: FAILED_TO_CONNECT_TO_DATABASE
+    title: Data API Failed to connect to the database
+    body: |-
+      The Data API was unable to connect to any nodes in the database to process the command.
+      
+      This may be due to a temporary capacity issue with the database, or a wider outage.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: UNEXPECTED_DOCUMENT_ID_TYPE
+    title: Unexpected stored document id type
+    body: |-
+      Type of document id stored in database unexpected: ${errorMessage}.
+      
+      ${SNIPPET.RETRY_UNKNOWN}
 
   - scope: DATABASE
     code: UNEXPECTED_DRIVER_ERROR
@@ -2138,18 +2285,6 @@ server-errors:
       ${SNIPPET.RETRY}
 
   - scope: DATABASE
-    code: FAILED_TO_CONNECT_TO_DATABASE
-    title: Data API Failed to connect to the database
-    body: |-
-      The Data API was unable to connect to any nodes in the database to process the command. 
-      
-      This may be due to a temporary capacity issue with the database, or a wider outage.
-      
-      The command used the keyspace and table or collection: ${keyspace}.${table}.
-      
-      ${SNIPPET.RETRY}
-
-  - scope: DATABASE
     code: INVALID_DATABASE_QUERY
     title: Invalid database query
     body: |-
@@ -2178,20 +2313,6 @@ server-errors:
       The database error: ${errorMessage}.
       
       Retrying the command will likely result in the same error.
-
-  - scope: DATABASE
-    code: FAILED_CONCURRENT_OPERATIONS
-    title: Failed to complete concurrent operations on the database
-    body: |-
-      The Data API command was unable to complete an operation on a document or row due to concurrent modifications from other requests. 
-      
-      This should be a rare error, it occurs when multiple requests attempt to modify the same document or row at the same time. The Data API has retried the operation multiple times, but was unable to complete it before another request modified the same document or row. This may indicate a "hot row" in your database, or low resources slowing down the database.
-      
-      NOTE: If the request updated multiple documents or rows, some of the updates may have completed successfully. Check the response for partial success information.
-      
-      The command used the keyspace and table or collection: ${keyspace}.${table}.
-      
-      ${SNIPPET.RETRY}
 
   - scope: DATABASE
     code: FAILED_COMPARE_AND_SET

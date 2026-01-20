@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
@@ -790,10 +791,10 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
               .formatted(tooLongNumStr);
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
           .body(
               "errors[0].message",
-              startsWith("Document size limitation violated: Number value length"));
+              containsString("Document size limitation violated: Number value length"));
     }
   }
 
@@ -1369,11 +1370,11 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
               """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SHRED_BAD_EJSON_VALUE"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
           .body(
               "errors[0].message",
-              is(
-                  "Bad JSON Extension value: Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
+              containsString(
+                  "Bad JSON Extension value to shred: Date ($date) needs to have Number value, had String (path 'createdAt')"));
     }
   }
 

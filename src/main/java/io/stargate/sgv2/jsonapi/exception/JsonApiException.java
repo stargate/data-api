@@ -40,7 +40,6 @@ public class JsonApiException extends RuntimeException {
           add(VECTORIZE_INVALID_AUTHENTICATION_TYPE);
           add(VECTORIZE_CREDENTIAL_INVALID);
           add(VECTORIZECONFIG_CHECK_FAIL);
-          add(INVALID_QUERY);
         }
       };
 
@@ -58,7 +57,6 @@ public class JsonApiException extends RuntimeException {
           ErrorScope.SCHEMA,
           new HashSet<>() {
             {
-              add(INVALID_PARAMETER_VALIDATION_TYPE);
               add(INVALID_REQUEST);
             }
           },

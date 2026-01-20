@@ -17,36 +17,11 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  // Really Bad, generic name: but only used for EmbeddingProvidersConfig validation issues
-  INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-
-  SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
-
-  SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
-
-  SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
-
-  SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
-
-  SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
-
-  SHRED_BAD_DOCUMENT_VECTORIZE_TYPE("Bad $vectorize document type to shred "),
-
-  SHRED_BAD_DOCUMENT_LEXICAL_TYPE("Bad type for $lexical content to shred"),
-
-  SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
-
-  SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
-
-  SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
-
-  SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
-  SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
-
   // CreateCollection error codes:
-
   EXISTING_TABLE_NOT_DATA_API_COLLECTION("Existing table is not a valid Data API collection"),
-  //  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
+  EMBEDDING_SERVICE_NOT_CONFIGURED(
+      "Unable to vectorize data, embedding service not configured for the collection "),
+
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
@@ -66,15 +41,9 @@ public enum ErrorCodeV1 {
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
-  UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
-
-  UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
-
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
-  EMBEDDING_SERVICE_NOT_CONFIGURED(
-      "Unable to vectorize data, embedding service not configured for the collection "),
 
   UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
 
@@ -108,9 +77,6 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
 
-  //  COLLECTION_CREATION_ERROR(
-  //      "Collection creation failure (unable to create table). Recommend re-creating the
-  // collection"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_QUERY("Invalid query"),

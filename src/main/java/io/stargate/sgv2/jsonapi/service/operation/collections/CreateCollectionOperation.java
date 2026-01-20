@@ -242,8 +242,8 @@ public record CreateCollectionOperation(
               }
               return Uni.createFrom()
                   .failure(
-                      SchemaException.Code.COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS.get(
-                          Map.of("collection", name)));
+                      SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.get(
+                          Map.of("collectionName", name)));
             });
   }
 
@@ -492,8 +492,8 @@ public record CreateCollectionOperation(
       if (table.getName().asInternal().equals(tableName)) {
         // If that is not a valid Data API collection, error out the createCollectionCommand
         if (!COLLECTION_MATCHER.test(table)) {
-          throw ErrorCodeV1.EXISTING_TABLE_NOT_DATA_API_COLLECTION.toApiException(
-              "table ('%s') already exists and it is not a valid Data API collection", tableName);
+          throw SchemaException.Code.EXISTING_TABLE_NOT_DATA_API_COLLECTION.get(
+              Map.of("tableName", tableName));
         }
         // If that is a valid Data API table, we returned it
         return table;
