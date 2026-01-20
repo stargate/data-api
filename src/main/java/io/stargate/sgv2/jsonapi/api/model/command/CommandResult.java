@@ -82,44 +82,11 @@ public record CommandResult(
     return new CommandResultBuilder(CommandResultBuilder.ResponseType.STATUS_ONLY, requestTracing);
   }
 
-  //  /**
-  //   * @param message Error message.
-  //   * @param fields Error fields. Note that they are serialized at the same level as the message.
-  //   */
-  //  @Schema(
-  //      type = SchemaType.OBJECT,
-  //      description =
-  //          "List of errors that occurred during a command execution. Can include additional
-  // properties besides the message that is always provided, like `errorCode`, `exceptionClass`,
-  // etc.",
-  //      properties = {
-  //        @SchemaProperty(
-  //            name = "message",
-  //            description = "Human-readable error message.",
-  //            implementation = String.class)
-  //      })
-  //
-  //  public record Error(
-  //      String message,
-  //      @JsonIgnore @Schema(hidden = true) Map<String, Object> fieldsForMetricsTag,
-  //      @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
-  //      // Http status to be used in the response, defaulted to 200
-  //      @JsonIgnore Response.Status httpStatus) {
-  //
-  //    // this is a compact constructor for records
-  //    // ensure message is not set in the fields key
-  //    public Error {
-  //      if (null != fields && fields.containsKey("message")) {
-  //        throw ServerException.internalServerError(
-  //            "Error fields can not contain the reserved key 'message'");
-  //      }
-  //    }
-  //  }
-
   /**
-   * Create the {@link RestResponse} Maps CommandResult to RestResponse. Except for few selective
-   * errors, all errors are mapped to http status 200. In case of 401, 500, 502 and 504 response is
-   * sent with appropriate status code.
+   * Create the {@link RestResponse} based on the state of this CommandResult.
+   *
+   * <p>The HTTP response will be 200, unless there is a single error in the errors list with a
+   * non-200 status, in which case the first of those will be used for the response status code.
    */
   public RestResponse<CommandResult> toRestResponse() {
 
@@ -137,7 +104,7 @@ public record CommandResult(
   }
 
   /**
-   * returned a new CommandResult with warning message added in status map
+   * Adds a warning to this CommandResult's status map.
    *
    * @param warning message
    */

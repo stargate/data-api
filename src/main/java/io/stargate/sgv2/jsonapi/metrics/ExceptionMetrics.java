@@ -33,7 +33,6 @@ public class ExceptionMetrics {
   public static List<Tag> tagsFor(JsonApiException legacyException) {
 
     // These tags must be backwards compatible with how we tracked before
-    // These tags must be backwards compatible with how we tracked before
     return List.of(
         Tag.of(TAG_NAME_ERROR_CODE, legacyException.getFullyQualifiedErrorCode()),
         exceptionClassTag(legacyException));

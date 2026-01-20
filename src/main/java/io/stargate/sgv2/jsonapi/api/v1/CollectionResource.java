@@ -207,17 +207,6 @@ public class CollectionResource {
         .transformToUni(
             (schemaObject, throwable) -> {
               if (throwable != null) {
-
-                // XXX - amorton- delete
-                //                // We failed to get the schema object, or failed to build it.
-                //                Throwable error = throwable;
-                //                if (throwable instanceof RuntimeException && throwable.getCause()
-                // != null) {
-                //                  error = throwable.getCause();
-                //                } else if (error instanceof JsonApiException jsonApiException) {
-                //                  return Uni.createFrom().failure(jsonApiException);
-                //                }
-                //                // otherwise use generic for now
                 return Uni.createFrom()
                     .item(
                         CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)

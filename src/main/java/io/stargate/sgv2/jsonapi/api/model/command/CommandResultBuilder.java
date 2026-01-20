@@ -36,7 +36,7 @@ public class CommandResultBuilder {
 
   private final RequestTracing requestTracing;
 
-  // amorton - we could probably use the same factory for errors and warning, keeping seperate
+  // amorton - we could probably use the same factory for errors and warning, keeping separate
   // as we have only just refactored this area and to keep the logic clear
   // NOTE: keep instance because the CommandErrorFactory has a debug flag that is read at
   // construction time

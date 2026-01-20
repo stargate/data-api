@@ -2,7 +2,9 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.core.instrument.Tag;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
@@ -10,27 +12,31 @@ import java.util.function.Predicate;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
- * See {@link CommandError} for why this class exists.
+ * Public API model for an error or warning returned from the API.
  *
- * <p>Use either {@link #builderV1()} or {@link #builder()} to get te builder to create an instance
- * of this class.
+ * <p>Use {@link CommandErrorFactory} to get an instance because it know how to adapt from any
+ * throwable using the {@link CommandErrorV2.Builder}.
  *
- * <p><b>Note:</b> This class is expected to be serialised to JSON for the responses message, and we
- * are not using a Java record because 1) they do not support inheritance 2) we want to (eventually)
- * lock down the constuctor so all errors are built through the builder. So uses bean naming to keep
- * Jackson happy.
+ * <p>See {@link io.stargate.sgv2.jsonapi.exception.APIException} for discussion of the fields.
  */
 public record CommandErrorV2(
-    UUID id,
-    String family,
-    String scope,
-    String errorCode,
-    String title,
-    String message,
+    @JsonProperty(ErrorObjectV2Constants.Fields.ID) UUID id,
+    @JsonProperty(ErrorObjectV2Constants.Fields.FAMILY) String family,
+    @JsonProperty(ErrorObjectV2Constants.Fields.SCOPE) String scope,
+    @JsonProperty(ErrorObjectV2Constants.Fields.CODE) String errorCode,
+    @JsonProperty(ErrorObjectV2Constants.Fields.TITLE) String title,
+    @JsonProperty(ErrorObjectV2Constants.Fields.MESSAGE) String message,
     @JsonIgnore @Schema(hidden = true) Response.Status httpStatus,
-    @Schema(hidden = true) @JsonInclude(JsonInclude.Include.NON_NULL) String exceptionClass,
+    @JsonProperty(ErrorObjectV2Constants.Fields.EXCEPTION_CLASS)
+        @Schema(hidden = true)
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String exceptionClass,
     @JsonIgnore @Schema(hidden = true) List<Tag> metricTags,
-    @JsonInclude(JsonInclude.Include.NON_EMPTY) List<DocRowIdentifer> documentIds) {
+
+    // Optional, nullable, list of the documents related to this error
+    @JsonProperty(ErrorObjectV2Constants.Fields.DOCUMENT_IDS)
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        List<DocRowIdentifer> documentIds) {
 
   public CommandErrorV2 {
 
@@ -55,7 +61,10 @@ public record CommandErrorV2(
     return value;
   }
 
-  // XXX TO COMMENT
+  /**
+   * Gets a Predicate that will match this Error with other errors based on all fields except the
+   * ID, used when aggregating errors with the same information in them.
+   */
   public Predicate<CommandErrorV2> nonIdentityMatcher() {
     return other ->
         (family() == null || family().equals(other.family()))

@@ -48,7 +48,7 @@ public class FrameworkExceptionMapper {
   /**
    * Mapping for jackson parsing and mapping exceptions
    *
-   * <p>
+   * <p>Uses the attribute because these two Jackson exceptions do not have a common parent.
    */
   @ServerExceptionMapper({JsonParseException.class, MismatchedInputException.class})
   public RestResponse<CommandResult> mapJacksonException(Throwable jacksonException) {
@@ -57,7 +57,7 @@ public class FrameworkExceptionMapper {
       LOGGER.debug("mapJacksonException() - mapping attached exception", jacksonException);
     }
 
-    ///  XXX: TODO: Aaron - bring the handling for jackon errors into this class
+    /// TODO: Aaron - bring the handling for jackon errors into this class
     var mapped = ThrowableToErrorMapper.mapThrowable(jacksonException);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("mapJacksonException() - mapped to attached exception", mapped);
@@ -137,29 +137,6 @@ public class FrameworkExceptionMapper {
           restResponse.getStatusInfo());
     }
     return restResponse;
-
-    //    // and if we have StreamConstraintsException, re-create as ApiException
-    //    if (toReport instanceof StreamConstraintsException) {
-    //      // but leave out the root cause, as it is not useful
-    //      toReport = ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(toReport.getMessage());
-    //    }
-
-    //    if (toReport instanceof JsonApiException jae) {
-    //      return RestResponse.status(jae.getHttpStatus(), commandResult);
-    //    }
-    //    // Return 405 for method not allowed and 404 for not found
-    //    if (wae instanceof NotAllowedException) {
-    //      return RestResponse.status(RestResponse.Status.METHOD_NOT_ALLOWED, commandResult);
-    //    }
-    //    if (wae instanceof NotFoundException) {
-    //      return RestResponse.status(RestResponse.Status.NOT_FOUND, commandResult);
-    //    }
-    //    // Return 415 for invalid Content-Type
-    //    if (wae instanceof NotSupportedException) {
-    //      return RestResponse.status(RestResponse.Status.UNSUPPORTED_MEDIA_TYPE, commandResult);
-    //    }
-
-    //    return RestResponse.ok(commandResult);
   }
 
   private static RestResponse<CommandResult> responseForException(WebApplicationException wae) {

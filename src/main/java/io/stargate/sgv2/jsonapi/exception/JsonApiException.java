@@ -96,60 +96,6 @@ public class JsonApiException extends RuntimeException {
     this.errorScope = getErrorScope();
   }
 
-  //  /** {@inheritDoc} */
-  //  @Override
-  //  public CommandResult get() {
-  //    // resolve message
-  //    String message = getMessage();
-  //    if (message == null) {
-  //      message = errorCode.getMessage();
-  //    }
-  //
-  //    var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
-  //
-  //    // construct and return
-  //    builder.addCommandResultError(getCommandResultError(message, httpStatus));
-  //    // handle cause as well
-  //    Throwable cause = getCause();
-  //    if (null != cause) {
-  //      builder.addCommandResultError(ThrowableToErrorMapper.getMapperFunction().apply(cause));
-  //    }
-  //    return builder.build();
-  //  }
-
-  //  public CommandResult.Error getCommandResultError(String message, Response.Status status) {
-  //    Map<String, Object> fieldsForMetricsTag =
-  //        Map.of("errorCode", errorCode.name(), "exceptionClass",
-  // this.getClass().getSimpleName());
-  //    Map<String, Object> fields =
-  //        new HashMap<>(
-  //            Map.of(
-  //                "id",
-  //                id,
-  //                "errorCode",
-  //                errorCode.name(),
-  //                "family",
-  //                errorFamily,
-  //                "scope",
-  //                errorScope,
-  //                "title",
-  //                title));
-  //
-  //    if (DebugConfigAccess.isDebugEnabled()) {
-  //      fields.put("exceptionClass", this.getClass().getSimpleName());
-  //    }
-  //
-  //    return new CommandResult.Error(message, fieldsForMetricsTag, fields, status);
-  //  }
-  //
-  //  public CommandResult.Error getCommandResultError(Response.Status status) {
-  //    return getCommandResultError(getMessage(), status);
-  //  }
-  //
-  //  public CommandResult.Error getCommandResultError() {
-  //    return getCommandResultError(getMessage(), httpStatus);
-  //  }
-
   public UUID getErrorId() {
     return id;
   }
