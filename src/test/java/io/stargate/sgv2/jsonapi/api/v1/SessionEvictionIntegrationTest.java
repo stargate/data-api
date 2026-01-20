@@ -97,7 +97,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      * failures in the test suite.
      */
     @Override
-    protected void exposeSystemProperties(Map<String, String> props) {
+    protected void setSystemProperties(Map<String, String> props) {
       // No-op: Do not expose system properties to avoid interfering with other tests running in
       // parallel
     }
