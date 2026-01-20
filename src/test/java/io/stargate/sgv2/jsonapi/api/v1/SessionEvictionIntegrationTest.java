@@ -50,7 +50,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     private static GenericContainer<?> sessionEvictionCassandraContainer;
 
     /**
-     * Overridden to enforce a fixed port binding for the Cassandra container.
+     * Overridden to enforce a fixed port binding for the Cassandra container native binary / CQL
+     * port (9042).
      *
      * <p>Standard Testcontainers use random port mapping. However, this test manually stops and
      * restarts the container to simulate failure. Under normal circumstances, a restarted container
@@ -66,6 +67,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       GenericContainer<?> container = super.baseCassandraContainer(reuse);
       try (ServerSocket socket = new ServerSocket(0)) {
         int port = socket.getLocalPort();
+        // Map the randomly selected available host port to the container's native CQL port (9042)
         container.setPortBindings(Collections.singletonList(port + ":9042"));
       } catch (IOException e) {
         throw new RuntimeException("Failed to find open port", e);
@@ -181,7 +183,21 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     // 5. Wait for the database to become responsive again
     waitForDbRecovery();
 
-    // 6. Verify Session Recovery: insert and find data again, the request should succeed
+    // 6. Verify Session Recovery: check the data before crashing
+    // Not to check that cassandra works, but to check that we are running the same container as
+    // before. We want to verify that the data / state before the crash is the same as after.
+    givenHeadersPostJsonThenOkNoErrors(
+            """
+                {
+                  "findOne": {
+                    "filter" : {"_id" : "before_crash"}
+                  }
+                }
+                """)
+        .body("$", responseIsFindSuccess())
+        .body("data.document._id", is("before_crash"));
+
+    // 7. Verify Session Recovery: insert and find data again, the request should succeed
     insertDoc(
         """
                 {
@@ -227,14 +243,13 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
           response = getAPIResponse();
           if (response.getStatusCode() == 200) {
             LOGGER.info(
-                "Database and API have recovered after "
-                    + (System.currentTimeMillis() - start)
-                    + "ms.");
+                "Database and API have recovered after {} ms.",
+                (System.currentTimeMillis() - start));
             return;
           }
         }
       } catch (Exception e) {
-        LOGGER.warn("Error checking DB status: " + e.getMessage(), e);
+        LOGGER.warn("Error checking DB status: {}", e.getMessage(), e);
       }
 
       // Poll every 1s
@@ -295,6 +310,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       var inspectExecResponse = dockerClient.inspectExecCmd(execCreateCmdResponse.getId()).exec();
       return inspectExecResponse.getExitCodeLong() == 0;
     } catch (Exception e) {
+      LOGGER.warn("Error Cassandra status: {}", e.getMessage(), e);
       return false;
     }
   }
