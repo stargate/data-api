@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.ListTypesDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.MetadataDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.keyspaces.KeyspaceDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import jakarta.enterprise.context.ApplicationScoped;

@@ -28,6 +28,14 @@ public enum ErrorCodeV1 {
   // and this:
   TOO_MANY_INDEXES("Too many indexes"),
 
+  EMBEDDING_SERVICE_NOT_CONFIGURED(
+      "Unable to vectorize data, embedding service not configured for the collection "),
+
+  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
+  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
+  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
+  TOO_MANY_COLLECTIONS("Too many collections"),
+
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
   RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
   RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
@@ -59,7 +67,6 @@ public enum ErrorCodeV1 {
   VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME("Unrecognized vector search source model name"),
 
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
-  VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
 
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
@@ -74,24 +81,6 @@ public enum ErrorCodeV1 {
   HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
       "Unsupported JSON value type for '$hybrid' sub-field"),
-
-  // Driver failure codes
-  /** Error codes related to driver exceptions. */
-  SERVER_CLOSED_CONNECTION("Driver request connection is closed"),
-  SERVER_COORDINATOR_FAILURE("Coordinator failed"),
-  /** Driver failure other than timeout. */
-  SERVER_DRIVER_FAILURE("Driver failed"),
-  /** Driver timeout failure. */
-  SERVER_DRIVER_TIMEOUT("Driver timeout"),
-  /**
-   * Error code used for "should never happen" style problems. Suffix part needs to include details
-   * of actual issue.
-   */
-  SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
-  SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
-  SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
-  SERVER_READ_FAILED("Database read failed"),
-  SERVER_UNHANDLED_ERROR("Server failed"),
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 

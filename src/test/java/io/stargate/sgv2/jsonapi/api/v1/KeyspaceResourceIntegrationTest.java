@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,9 +30,8 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .statusCode(401)
           .body("$", responseIsError())
           .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing token, expecting one in the Token header."));
+              "errors[0].errorCode",
+              is(APISecurityException.Code.MISSING_AUTHENTICATION_TOKEN.name()));
     }
 
     @Test

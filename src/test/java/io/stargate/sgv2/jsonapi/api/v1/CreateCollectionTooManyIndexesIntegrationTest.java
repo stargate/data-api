@@ -3,12 +3,10 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.matchesPattern;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Test;
@@ -76,11 +74,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceInte
         .statusCode(200)
         .body("$", responseIsError())
         .body(
-            "errors[0].message",
-            matchesPattern(
-                "Too many indexes: cannot create a new collection; need \\d+ indexes to create the collection; \\d+ indexes already created in database, maximum \\d+"))
-        .body("errors[0].errorCode", is(ErrorCodeV1.TOO_MANY_INDEXES.name()))
-        .body("errors[0].exceptionClass", is(JsonApiException.class.getSimpleName()));
+            "errors[0].errorCode", is(SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.name()));
 
     // But then verify that re-creating an existing one should still succeed
     // (if using same settings)

@@ -193,21 +193,15 @@ request-errors:
       Resend request with valid structure.
 
   - scope:
-    code: UNAUTHENTICATED_REQUEST
-    title: Authentication failed
-    body: |-
-      Authentication failed for request due to invalid token.
-      
-      Resend with valid authentication token.
-
-  - scope:
     code: UNSUPPORTED_CONTENT_TYPE
+    http-status-override: 415
     title: Unsupported Content-Type
     body: |-
-      Request sent with unsupported 'Content-Type' header: ${message}
+      Request sent with unsupported 'Content-Type' header value.
+      
+      The API only supports content type: application/json
       
       Resend with supported 'Content-Type' header.
-
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND
@@ -268,6 +262,45 @@ request-errors:
       When specified the `rerankQuery` option takes priority. In all cases the query text must be a non blank text value. 
       
       Resend the command including the query text for reranking.
+
+  # ================================================================================================================
+  # Family: REQUEST         Scope: SECURITY
+  # ================================================================================================================
+
+  - scope: SECURITY
+    http-status-override: 401
+    code: MISSING_AUTHENTICATION_TOKEN
+    title: Missing authorization token
+    body: |-
+      The command did not include an authorization token in the request headers.
+      
+      The authorization header is: ${authHeader}.
+      
+      Resend the command using the correct authentication details.
+
+  - scope: SECURITY
+    http-status-override: 401
+    code: UNAUTHORIZED_ACCESS
+    title: Unauthorized access to the database
+    body: |-
+      The command is not authorized to perform the action on the database. 
+      
+      The authentication details provided with the command do not allow it to perform the action is was attempting, such as reading or writing data. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      Resend the command using the correct authentication details.
+
+  - scope: SECURITY
+    http-status-override: 401
+    code: UNAUTHENTICATED_REQUEST
+    title: Authentication failed
+    body: |-
+      Authentication failed for request due to invalid token.
+      
+      Resend with valid authentication token.
+
+
 # ================================================================================================================
 # Family: REQUEST         Scope: DOCUMENT
 # ================================================================================================================
@@ -280,14 +313,6 @@ request-errors:
       Cannot insert the document: a document already exists with given '_id' (${id}). 
 
       Either resend the command with distinct '_id', or use an update command instead.
-
-  - scope: DOCUMENT
-    code: DOCUMENT_LEXICAL_CONTENT_TOO_BIG
-    title: Document contains too big lexical value
-    body: |-
-      Lexical content is too big, please use a smaller value for the '$lexical' field.
-
-      ${SNIPPET.RETRY_AFTER_FIX}
 
   - scope: DOCUMENT
     code: DOCUMENT_REPLACE_DIFFERENT_DOCID
@@ -440,6 +465,40 @@ request-errors:
       The command included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
       
       Resend the command using only vector columns with a vectorize definition.
+
+  - scope: DOCUMENT
+    code: UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION
+    title: Vectorize not supported on column with missing vectorize configuration
+    body: |-
+      Vectorize can only be used with columns that have a vectorize configuration. 
+      
+      ${SNIPPET.ADD_VECTORIZE_CONFIG}
+      
+      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
+      The command included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      
+      Resend the command using only vector columns with a vectorize definition.
+
+  - scope: DOCUMENT
+    code: LEXICAL_CONTENT_TOO_LONG
+    title: Lexical content exceeds maximum length
+    body: |-
+      The command attempted to insert or update the `$lexical` field with content that exceeds the maximum allowed length. 
+      
+      The collection: ${keyspace}.${table}.
+      
+      Resend the command using a smaller value for the `$lexical` field.
+
+  - scope: DOCUMENT
+    code: INVALID_VECTOR_LENGTH
+    title: Vector values in documents are not valid
+    body: |-
+      The command attempted to update or find using `$vector`, using a vector that has a length different to the declared '$vector' dimension for the Collection.
+      
+      The collection was: ${keyspace}.${table}.
+      The configured vector dimension is: ${configVectorLength}.
+      
+      Resend the command using a vector of the correct length.
 
 # ================================================================================================================
 # Family: REQUEST         Scope: FILTER
@@ -1773,6 +1832,28 @@ request-errors:
     body: |-
       Column `${column}` doesn't exist in the table.
 
+  - scope: SCHEMA
+    code: TOO_MANY_INDEXES_FOR_COLLECTION
+    title: Cannot create collection due to number of existing indexes
+    body: |-
+      The command attempted to create an collection, however the number of indexes in the database has reached the maximum allowed.
+      
+      Failed to create Collection: ${keyspace}.${table}.
+      The number of indexes needed for each collection is: ${indexesPerCollection}.
+      
+      Reduce the number of indexes in the database and resend the command.
+
+  - scope: SCHEMA
+    code: EXISTING_INDEX_FOR_COLLECTION
+    title: Cannot create collection due to existing index with conflicting name
+    body: |-
+      The command attempted to create an collection, however the the name of one of the indexes needed for the collection conflicts with an existing index in the database.
+      
+      Failed to create Collection: ${keyspace}.${table}.
+      
+      Remove existing indexes with names that start with the collection name and resend the command.
+
+
 # ================================================================================================================
 # Family: REQUEST         Scope: SORT
 # ================================================================================================================
@@ -2110,6 +2191,19 @@ server-errors:
   # DATABASE scope server errors
 
   - scope: DATABASE
+    code: CORRUPTED_COLLECTION_SCHEMA
+    title: Corrupted collection schema
+    body: |-
+      The Data API failed to operate on the collection because the schema definition is corrupted.
+      
+      The definition of the collection in the database has changed, typically this happens when an index is removed outside of the Data API. Further operations on the collection will fail until the collection is repaired or re-created.
+      
+      The corrupted collection is: ${keyspace}.${table}.
+      The database error: ${errorMessage}.
+      
+      Recreate the collection using the Data API, or contact support for assistance repairing.
+
+  - scope: DATABASE
     code: COLLECTION_NO_INDEX_ERROR
     title: Collection missing index(es)
     body: |-
@@ -2132,6 +2226,7 @@ server-errors:
     title: Count read failed
     body: |-
       The Data API read from the database failed.
+      
       The database error: ${errorMessage}.
       
       ${SNIPPET.RETRY}
@@ -2225,18 +2320,6 @@ server-errors:
       The command used the keyspace: ${keyspace}.
       
       ${SNIPPET.RETRY}
-
-  - scope: DATABASE
-    code: UNAUTHORIZED_ACCESS
-    title: Unauthorized access to the database
-    body: |-
-      The command is not authorized to perform the action on the database. 
-      
-      The authentication details provided with the command do not allow it to perform the action is was attempting, such as reading or writing data. 
-      
-      The command used the keyspace and table or collection: ${keyspace}.${table}.
-      
-      Resend the command using the correct authentication details.
 
   - scope: DATABASE
     code: INVALID_DATABASE_QUERY

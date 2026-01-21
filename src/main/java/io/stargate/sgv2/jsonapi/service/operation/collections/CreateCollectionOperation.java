@@ -14,11 +14,10 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -252,20 +251,21 @@ public record CreateCollectionOperation(
   /**
    * execute collection creation and indexes creation
    *
-   * @param dataApiRequestInfo DBRequestContext
+   * @param requestContext DBRequestContext
    * @param queryExecutor QueryExecutor instance
    * @param lexicalConfig Lexical configuration for the collection
    * @param collectionExisted boolean that says if collection existed before
    * @return Uni<Supplier<CommandResult>>
    */
   private Uni<Supplier<CommandResult>> executeCollectionCreation(
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       QueryExecutor queryExecutor,
       CollectionLexicalConfig lexicalConfig,
       boolean collectionExisted) {
-    final Uni<AsyncResultSet> execute =
+
+    final Uni<AsyncResultSet> execCreateTable =
         queryExecutor.executeCreateSchemaChange(
-            dataApiRequestInfo,
+            requestContext,
             getCreateTable(
                 commandContext.schemaObject().name().keyspace(),
                 name,
@@ -273,8 +273,9 @@ public record CreateCollectionOperation(
                 vectorSize,
                 comment,
                 lexicalConfig));
+
     final Uni<Boolean> indexResult =
-        execute
+        execCreateTable
             .onItem()
             .delayIt()
             .by(Duration.ofMillis(ddlDelayMillis > 0 ? ddlDelayMillis : 100))
@@ -297,10 +298,10 @@ public record CreateCollectionOperation(
 
                     if (ddlDelayMillis == 0) {
                       indexResultMulti =
-                          createIndexParallel(queryExecutor, dataApiRequestInfo, indexStatements);
+                          createIndexParallel(queryExecutor, requestContext, indexStatements);
                     } else {
                       indexResultMulti =
-                          createIndexOrdered(queryExecutor, dataApiRequestInfo, indexStatements);
+                          createIndexOrdered(queryExecutor, requestContext, indexStatements);
                     }
 
                     return indexResultMulti
@@ -319,14 +320,26 @@ public record CreateCollectionOperation(
                     return Uni.createFrom().item(false);
                   }
                 });
+
     return indexResult
         .onItem()
         .transform(
             res -> {
               if (!res) {
+                // amorton - 13 jan 2026 - this is bad, the old code would swallow the error for
+                // creating the
+                // table and indexes, will need to improve later.
+
                 // table creation failure or index creation failure
-                return ErrorCodeV1.COLLECTION_CREATION_ERROR.toApiException(
-                    "provided collection ('%s')", name);
+                // HACK - remove when re-writing this class
+                return commandResultSupplier(
+                    DatabaseException.Code.CORRUPTED_COLLECTION_SCHEMA.get(
+                        errVars(
+                            commandContext.schemaObject(),
+                            map ->
+                                map.put(
+                                    "errorMessage",
+                                    "Collection creation failure (unable to create table)"))));
               } else {
                 return new SchemaChangeResult(true);
               }
@@ -347,7 +360,7 @@ public record CreateCollectionOperation(
               // if index creation fails and collection not existed before and rollback is enabled,
               // then drop the collection
               if (!collectionExisted && tooManyIndexesRollbackEnabled) {
-                return cleanUpCollectionFailedWithTooManyIndex(dataApiRequestInfo, queryExecutor);
+                return cleanUpCollectionFailedWithTooManyIndex(requestContext, queryExecutor);
               }
 
               if (error.getMessage().matches("Index .* already exists")) {
@@ -355,20 +368,32 @@ public record CreateCollectionOperation(
                 return Uni.createFrom()
                     .item(
                         () ->
-                            ErrorCodeV1.COLLECTION_INDEX_CREATION_FAILED.toApiException(
-                                "The index failed to create because an index with the collection name (%s) prefix already exists.",
-                                name));
+                            commandResultSupplier(
+                                SchemaException.Code.EXISTING_INDEX_FOR_COLLECTION.get(
+                                    errVars(commandContext.schemaObject()))));
               } else {
                 // if index creation violates DB index limit and collection existed before,
                 // will not drop the collection
                 return Uni.createFrom()
                     .item(
                         () ->
-                            ErrorCodeV1.TOO_MANY_INDEXES.toApiException(
-                                "Failed to create index for collection '%s': The number of required indexes exceeds the provisioned limit for the database.",
-                                name));
+                            commandResultSupplier(
+                                SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.get(
+                                    errVars(
+                                        commandContext.schemaObject(),
+                                        map ->
+                                            map.put(
+                                                "indexesPerCollection",
+                                                String.valueOf(
+                                                    dbLimitsConfig
+                                                        .indexesNeededPerCollection()))))));
               }
             });
+  }
+
+  private Supplier<CommandResult> commandResultSupplier(Throwable throwable) {
+    return () ->
+        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(throwable).build();
   }
 
   /**
@@ -413,28 +438,43 @@ public record CreateCollectionOperation(
         .merge();
   }
 
-  public Uni<JsonApiException> cleanUpCollectionFailedWithTooManyIndex(
-      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+  public Uni<Supplier<CommandResult>> cleanUpCollectionFailedWithTooManyIndex(
+      RequestContext requestContext, QueryExecutor queryExecutor) {
 
     DeleteCollectionCollectionOperation deleteCollectionCollectionOperation =
         new DeleteCollectionCollectionOperation(commandContext, name);
+
+    // amorton - 13 jan  2026 - keeping the existing logic here, where the error was returning in
+    // two situations
+    // unsure how the second happens
+    var exception =
+        SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.get(
+            errVars(
+                commandContext.schemaObject(),
+                map ->
+                    map.put(
+                        "indexesPerCollection",
+                        String.valueOf(dbLimitsConfig.indexesNeededPerCollection()))));
     return deleteCollectionCollectionOperation
-        .execute(dataApiRequestInfo, queryExecutor)
+        .execute(requestContext, queryExecutor)
         .onItem()
         .transform(
             res ->
-                ErrorCodeV1.TOO_MANY_INDEXES.toApiException(
-                    "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
-                    name, dbLimitsConfig.indexesNeededPerCollection()))
+                (Supplier<CommandResult>)
+                    () ->
+                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                            .addThrowable(exception)
+                            .build())
         .onFailure()
         .recoverWithItem(
-            e -> {
-              // This is unlikely to happen for delete collection though
-              // Also return with TOO_MANY_INDEXES exception
-              return ErrorCodeV1.TOO_MANY_INDEXES.toApiException(
-                  "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
-                  name, dbLimitsConfig.indexesNeededPerCollection());
-            });
+            e ->
+                // This is unlikely to happen for delete collection though
+                // Also return with TOO_MANY_INDEXES exception
+                (Supplier<CommandResult>)
+                    () ->
+                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                            .addThrowable(exception)
+                            .build());
   }
 
   /**
@@ -483,11 +523,13 @@ public record CreateCollectionOperation(
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
     if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())
         > dbLimitsConfig.indexesAvailablePerDatabase()) {
-      throw ErrorCodeV1.TOO_MANY_INDEXES.toApiException(
-          "cannot create a new collection; need %d indexes to create the collection; %d indexes already created in database, maximum %d",
-          dbLimitsConfig.indexesNeededPerCollection(),
-          saisUsed,
-          dbLimitsConfig.indexesAvailablePerDatabase());
+      throw SchemaException.Code.TOO_MANY_INDEXES_FOR_COLLECTION.get(
+          errVars(
+              commandContext.schemaObject(),
+              map ->
+                  map.put(
+                      "indexesPerCollection",
+                      String.valueOf(dbLimitsConfig.indexesNeededPerCollection()))));
     }
 
     return null;

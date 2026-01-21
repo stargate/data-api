@@ -2,8 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
@@ -43,8 +42,8 @@ import java.util.*;
  *
  * To get the Error to be returned in the {@link
  * io.stargate.sgv2.jsonapi.api.model.command.CommandResult} use a {@link
- * APIExceptionCommandErrorBuilder} all the logic for mapping to the API is in there to keep it out
- * of the core exception classes.
+ * io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder} and the {@link
+ * CommandErrorFactory}
  */
 public abstract class APIException extends RuntimeException implements Recordable {
 
@@ -150,7 +149,7 @@ public abstract class APIException extends RuntimeException implements Recordabl
   /**
    * Overrides to return the {@link #body} of the error. Using the body as this is effectively the
    * message, the structure we want to return to the in the API JSON comes from {@link
-   * APIExceptionCommandErrorBuilder}
+   * CommandErrorFactory}
    *
    * @return
    */
@@ -175,35 +174,5 @@ public abstract class APIException extends RuntimeException implements Recordabl
         .append("body", body)
         .append("httpStatus", httpStatus)
         .append("exceptionFlags", exceptionFlags);
-  }
-
-  // Support for converting legacy ErrorCodeV1 usage
-  public CommandResult.Error getCommandResultError() {
-    return getCommandResultError(Response.Status.OK);
-  }
-
-  // Support for converting legacy ErrorCodeV1 usage
-  public CommandResult.Error getCommandResultError(Response.Status status) {
-    Map<String, Object> fieldsForMetricsTag =
-        Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName());
-    Map<String, Object> fields =
-        new HashMap<>(
-            Map.of(
-                "id",
-                errorId,
-                "errorCode",
-                code,
-                "family",
-                String.valueOf(family),
-                "scope",
-                scope,
-                "title",
-                title));
-
-    if (DebugConfigAccess.isDebugEnabled()) {
-      fields.put("exceptionClass", this.getClass().getSimpleName());
-    }
-
-    return new CommandResult.Error(getMessage(), fieldsForMetricsTag, fields, status);
   }
 }
