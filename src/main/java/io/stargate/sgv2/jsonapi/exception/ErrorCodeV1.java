@@ -19,18 +19,6 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
-  // This cannot yet be converted, due to CreateCollectionOperation requiring exception
-  // implements `Supplier<CommandResult>`:
-  COLLECTION_CREATION_ERROR(
-      "Collection creation failure (unable to create table). Recommend re-creating the collection"),
-  // Ditto for this one:
-  COLLECTION_INDEX_CREATION_FAILED("Index creation failed, check schema"),
-  // and this:
-  TOO_MANY_INDEXES("Too many indexes"),
-
-  EMBEDDING_SERVICE_NOT_CONFIGURED(
-      "Unable to vectorize data, embedding service not configured for the collection "),
-
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
