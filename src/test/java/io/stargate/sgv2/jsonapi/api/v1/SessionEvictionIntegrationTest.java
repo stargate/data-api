@@ -11,6 +11,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -174,8 +175,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
                 "findOne": {}
               }
               """)
-        .statusCode(500)
-        .body("errors[0].message", containsString("No node was available"));
+        .statusCode(200)
+        .body("errorCode", is(DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE.name()));
 
     // 4. Restart the container to simulate recovery
     getDockerClient().startContainerCmd(getContainerId()).exec();
