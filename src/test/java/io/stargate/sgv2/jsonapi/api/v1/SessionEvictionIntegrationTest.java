@@ -151,11 +151,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               }
               """);
 
-    LOGGER.error(
-        "break here??? Container status: {}, Cassandra status: {}",
-        isContainerRunning(),
-        isCassandraUp(getDockerClient(), getContainerId()));
-
     givenHeadersPostJsonThenOkNoErrors(
             """
               {
@@ -235,7 +230,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     long timeout = 120000; // 120 seconds timeout
     boolean isContainerRunning = false;
     boolean isCassandraUp = false;
-    Response response = null;
+    boolean isAPIReady = false;
 
     while (System.currentTimeMillis() - start < timeout) {
       try {
@@ -246,14 +241,11 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         isCassandraUp = isContainerRunning && isCassandraUp(getDockerClient(), getContainerId());
 
         // 3. Check API (only after Cassandra is up)
-        if (isCassandraUp) {
-          response = getAPIResponse();
-          if (response.getStatusCode() == 200) {
-            LOGGER.info(
-                "Database and API have recovered after {} ms.",
-                (System.currentTimeMillis() - start));
-            return;
-          }
+        isAPIReady = isCassandraUp && isApiReady();
+        if (isAPIReady) {
+          LOGGER.info(
+              "Database and API have recovered after {} ms.", (System.currentTimeMillis() - start));
+          return;
         }
       } catch (Exception e) {
         LOGGER.warn("Error checking DB status: {}", e.getMessage(), e);
@@ -274,8 +266,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
             + isContainerRunning
             + ", Cassandra status: "
             + isCassandraUp
-            + ", API response body: "
-            + (response != null ? response.asString() : "null"));
+            + ", API status: "
+            + isAPIReady);
   }
 
   /** Checks if the Cassandra container is currently in the "running" state. */
@@ -285,15 +277,32 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
   }
 
   /**
-   * Get a simple findOne response from the Data API. We will verify the response after the function
-   * call
+   * Checks if the API is responsive and returning a success response.
+   *
+   * @return true if the API returns 200 OK and the body indicates success (no errors, has data).
    */
-  private Response getAPIResponse() {
-    return given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body("{\"findOne\": {}}")
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
+  private boolean isApiReady() {
+    try {
+      Response response =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body("{\"findOne\": {}}")
+              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName);
+
+      if (response.statusCode() != 200) {
+        return false;
+      }
+
+      // Check body structure manually to avoid throwing AssertionErrors
+      var jsonPath = response.jsonPath();
+      // Success means: has "data", no "errors", no "status" (for findOne)
+      return jsonPath.get("data") != null
+          && jsonPath.get("errors") == null
+          && jsonPath.get("status") == null;
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   /** Checks if Cassandra is up and normal by running "nodetool status" inside the container. */
