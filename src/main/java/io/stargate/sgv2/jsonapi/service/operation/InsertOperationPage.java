@@ -2,13 +2,9 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.smallrye.mutiny.groups.MultiCollect;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.*;
@@ -26,8 +22,8 @@ import java.util.function.Supplier;
  *
  * <p>Create an instance with all the insert attempts the insert operation will process, then call
  * {@link #registerCompletedAttempt} for each completed attempt, the instance will then track failed
- * and successful attempts. This is used as an aggregator for {@link
- * io.smallrye.mutiny.groups.MultiCollect#in(Supplier, BiConsumer)}
+ * and successful attempts. This is used as an aggregator for {@link MultiCollect#in(Supplier,
+ * BiConsumer)}
  */
 public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     implements Supplier<CommandResult> {
@@ -42,19 +38,16 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   private final List<InsertAttempt<SchemaT>> successfulInsertions;
   private final List<InsertAttempt<SchemaT>> failedInsertions;
 
-  // Flagged true to include the new error object v2
-  private final boolean useErrorObjectV2;
-
   private final RequestTracing requestTracing;
 
   // Created in the Ctor
-  private final APIExceptionCommandErrorBuilder apiExceptionToError;
+  private final CommandErrorFactory commandErrorFactory = new CommandErrorFactory();
 
   /** Create an instance that has debug false and useErrorObjectV2 false */
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses) {
-    this(allAttemptedInsertions, returnDocumentResponses, false, RequestTracing.NO_OP);
+    this(allAttemptedInsertions, returnDocumentResponses, RequestTracing.NO_OP);
   }
 
   /**
@@ -64,12 +57,10 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    *     wildcard to allow for implementations of the {@link InsertAttempt} interface to be passed
    *     easily.
    * @param returnDocumentResponses If the response should include detailed info for each document.
-   * @param useErrorObjectV2 Flagged true to include the new error object v2.
    */
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses,
-      boolean useErrorObjectV2,
       RequestTracing requestTracing) {
 
     Objects.requireNonNull(allAttemptedInsertions, "allAttemptedInsertions cannot be null");
@@ -79,9 +70,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
 
     this.successfulInsertions = new ArrayList<>(allAttemptedInsertions.size());
     this.failedInsertions = new ArrayList<>(allAttemptedInsertions.size());
-    this.useErrorObjectV2 = useErrorObjectV2;
     this.requestTracing = requestTracing;
-    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(useErrorObjectV2);
   }
 
   enum InsertionStatus {
@@ -104,7 +93,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     // TODO AARON used to only sort the success list when not returning detailed responses, check OK
     Collections.sort(successfulInsertions);
 
-    var builder = CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing);
+    var builder = CommandResult.statusOnlyBuilder(requestTracing);
     return returnDocumentResponses ? perDocumentResult(builder) : nonPerDocumentResult(builder);
   }
 
@@ -118,7 +107,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   private CommandResult perDocumentResult(CommandResultBuilder builder) {
     // New style output: detailed responses.
     InsertionResult[] results = new InsertionResult[allInsertions.size()];
-    List<CommandResult.Error> errors = new ArrayList<>();
+    List<CommandErrorV2> errors = new ArrayList<>();
 
     // Results array filled in order: first successful insertions
     for (var okInsertion : successfulInsertions) {
@@ -127,16 +116,19 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     }
 
     // Second: failed insertions; output in order of insertion
+    // We are creating the CommandErrorV2 objects here manually, rather than passing throwable to
+    // the
+    /// CommandResultBuilder, because we do the de-dup and we care about order so being careful.
     for (var failedInsertion : failedInsertions) {
       // TODO AARON - confirm the null handling in the getError
-      CommandResult.Error error = getErrorObject(failedInsertion);
+      var commandError = getErrorObject(failedInsertion);
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
       // either one exists, use it; or if not, add it and use the new index.
-      int errorIdx = errors.indexOf(error);
+      int errorIdx = errors.indexOf(commandError);
       if (errorIdx < 0) { // new non-dup error; add it
         errorIdx = errors.size(); // will be appended at the end
-        errors.add(error);
+        errors.add(commandError);
       }
       results[failedInsertion.position()] =
           new InsertionResult(
@@ -153,7 +145,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
       }
     }
     builder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
-    builder.addCommandResultError(errors);
+    builder.addCommandError(errors);
     maybeAddSchema(builder);
 
     return builder.build();
@@ -168,7 +160,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    */
   private CommandResult nonPerDocumentResult(CommandResultBuilder builder) {
 
-    failedInsertions.stream().map(this::getErrorObject).forEach(builder::addCommandResultError);
+    failedInsertions.stream().map(this::getErrorObject).forEach(builder::addCommandError);
 
     // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
     List<DocRowIdentifer> insertedIds =
@@ -202,79 +194,12 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
         .ifPresent(o -> builder.addStatus(CommandStatus.PRIMARY_KEY_SCHEMA, o));
   }
 
-  /** Gets the appropriately formatted error given {@link #useErrorObjectV2}. */
-  private CommandResult.Error getErrorObject(InsertAttempt<SchemaT> insertAttempt) {
-
-    var throwable = insertAttempt.failure().orElse(null);
-    if (throwable instanceof APIException apiException) {
-      // new v2 error object, with family etc.
-      // the builder will handle the debug mode and extended errors settings to return a V1 or V2
-      // error
-      return apiExceptionToError.buildLegacyCommandResultError(apiException);
+  private CommandErrorV2 getErrorObject(InsertAttempt<SchemaT> insertAttempt) {
+    if (insertAttempt.failure().isPresent()) {
+      var docsIds = insertAttempt.docRowID().map(List::of).orElse(List.of());
+      return commandErrorFactory.create(insertAttempt.failure().get(), docsIds);
     }
-    if (useErrorObjectV2) {
-      return getErrorObjectV2(throwable);
-    }
-
-    return getErrorObjectV1(insertAttempt);
-  }
-
-  /**
-   * Original error object V1, before the family etc, when the exception is not a ApiException aaron
-   * - 3 sept 2024 - old code, moved but mostly left alone.
-   *
-   * <p>the reference "how it used to work" version of this class is the commit at <code>
-   * c3ea7b01ef5b658b4bd51be7fc98b0e0333c3e87</code>. In that, when generating the errors for
-   * perDocument response it called the mapper without a message prefix, it added the prefix "Failed
-   * to insert document with _id %s: %s" when doing the non perDocument responsed. Replicating below
-   * for we fail the IT's in {@link InsertIntegrationTest.InsertManyFails} for per doc responses. In
-   * this reference version this was the function "getError(Throwable throwable)"
-   */
-  private CommandResult.Error getErrorObjectV1(InsertAttempt<SchemaT> insertAttempt) {
-
-    // aaron we should not be here unless the attempt has failed.
-    var throwable =
-        insertAttempt
-            .failure()
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        String.format(
-                            "getErrorObjectV1: attempting to get an error object for an insertAttempt that has not failed. insertAttempt: %s",
-                            insertAttempt)));
-
-    if (returnDocumentResponses) {
-      return ThrowableToErrorMapper.getMapperWithMessageFunction()
-          .apply(throwable, throwable.getMessage());
-    }
-
-    // aaron 23 sept - the insertAttempt.docRowID().orElse.. below is because if we fail to shred we
-    // do not have the id
-    // previously this type of error would bubble to the top of the stack, it is not handled as part
-    // of building the
-    // insert page. This is ugly, need to fix later.
-    var docRowID = insertAttempt.docRowID().orElse(() -> "UNKNOWN").value();
-
-    String message =
-        allInsertions.size() == 1
-            ? throwable.getMessage()
-            : "Failed to insert document with _id " + docRowID + ": " + throwable.getMessage();
-
-    /// TODO: confirm the null handling in the getMapperWithMessageFunction
-    // passing null is what would have happened before changing to optional
-    // BUG: this does not handle if the debug flag is set.
-    return ThrowableToErrorMapper.getMapperWithMessageFunction()
-        .apply(insertAttempt.failure().orElse(null), message);
-  }
-
-  /**
-   * aaron - I think this generating the V2 messages, but it does not look like it. copied from what
-   * was here and left alone
-   */
-  private static CommandResult.Error getErrorObjectV2(Throwable throwable) {
-    // TODO AARON - confirm we have two different error message paths
-    return ThrowableToErrorMapper.getMapperWithMessageFunction()
-        .apply(throwable, throwable.getMessage());
+    return null;
   }
 
   /**
