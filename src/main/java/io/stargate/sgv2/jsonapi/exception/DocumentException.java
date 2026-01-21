@@ -16,10 +16,13 @@ public class DocumentException extends RequestException {
 
   public enum Code implements ErrorCode<DocumentException> {
     DOCUMENT_ALREADY_EXISTS, // converted from ErrorCodeV1 -- in use by client DO NOT RENAME
-    DOCUMENT_LEXICAL_CONTENT_TOO_BIG,
     DOCUMENT_REPLACE_DIFFERENT_DOCID,
 
+    LEXICAL_CONTENT_TOO_LONG,
+
     INVALID_COLUMN_VALUES,
+    INVALID_VECTOR_LENGTH, // copy from V1 VECTOR_SIZE_MISMATCH("Length of vector parameter
+    // different from declared '$vector' dimension"),
     MISSING_PRIMARY_KEY_COLUMNS,
 
     SHRED_BAD_BINARY_VECTOR_VALUE,

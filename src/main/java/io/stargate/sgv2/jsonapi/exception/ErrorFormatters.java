@@ -168,7 +168,7 @@ public abstract class ErrorFormatters {
    * @param schemaObject The schema object to get the basic variables from, variables are added for
    *     <code>schemaType</code>, <code>keyspace</code>, and <code>table</code>. May be null.
    * @param exception The exception to get the basic variables from, variables are added for <code>
-   *     errorClass</code> and <code>errorMessage</code>. May be null.
+   *     exceptionClass</code> and <code>errorMessage</code>. May be null.
    * @param consumer The consumer to add more variables to the map. May be null.
    * @return Map with the basic schema object variables and any additional variables added by the
    *     consumer.

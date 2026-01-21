@@ -3,12 +3,13 @@ package io.stargate.sgv2.jsonapi.api.v1.response;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.ws.rs.core.Response;
-import java.util.Map;
+import java.util.UUID;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,96 +22,49 @@ public class CommandResultToRestResponseTest {
 
     @Test
     public void happyPath() {
-      CommandResult result =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
               .addStatus(CommandStatus.OK, 1)
               .build();
-      final RestResponse mappedResult = result.toRestResponse();
-      assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
+
+      assertThat(commandResult.toRestResponse().getStatus())
+          .as("Default HTTP status is 200 OK")
+          .isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
 
     @Test
-    public void errorWithOkStatus() {
-      CommandResult result =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(
-                  new CommandResult.Error(
-                      "My message.",
-                      Map.of("field", "value"),
-                      Map.of("field", "value"),
-                      Response.Status.OK))
+    public void okStatusWithThrowable() {
+
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+              .addThrowable(new RuntimeException("test exception"))
               .build();
 
-      final RestResponse mappedResult = result.toRestResponse();
-      assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
+      assertThat(commandResult.toRestResponse().getStatus())
+          .as("Default HTTP status is 200 OK with throwable added")
+          .isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
 
     @Test
-    public void unauthorized() {
-      CommandResult result =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(
-                  new CommandResult.Error(
-                      "My message.",
-                      Map.of("field", "value"),
-                      Map.of("field", "value"),
-                      Response.Status.UNAUTHORIZED))
+    public void non200StatusPassedThrough() {
+
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+              .addCommandError(
+                  CommandErrorV2.builder()
+                      .id(UUID.randomUUID())
+                      .family("TEST_FAMILY")
+                      .scope("TEST_SCOPE")
+                      .errorCode("TEST_CODE")
+                      .title("Test Title")
+                      .message("Test Message")
+                      .httpStatus(Response.Status.UNAUTHORIZED)
+                      .build())
               .build();
 
-      final RestResponse mappedResult = result.toRestResponse();
-      assertThat(mappedResult.getStatus())
+      assertThat(commandResult.toRestResponse().getStatus())
+          .as("Non-200 HTTP status set on CommandError is set as RestResponse status")
           .isEqualTo(RestResponse.Status.UNAUTHORIZED.getStatusCode());
-    }
-
-    @Test
-    public void badGateway() {
-      CommandResult result =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(
-                  new CommandResult.Error(
-                      "My message.",
-                      Map.of("field", "value"),
-                      Map.of("field", "value"),
-                      Response.Status.BAD_GATEWAY))
-              .build();
-
-      final RestResponse mappedResult = result.toRestResponse();
-      assertThat(mappedResult.getStatus())
-          .isEqualTo(RestResponse.Status.BAD_GATEWAY.getStatusCode());
-    }
-
-    @Test
-    public void internalError() {
-      CommandResult result =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(
-                  new CommandResult.Error(
-                      "My message.",
-                      Map.of("field", "value"),
-                      Map.of("field", "value"),
-                      Response.Status.INTERNAL_SERVER_ERROR))
-              .build();
-
-      final RestResponse mappedResult = result.toRestResponse();
-      assertThat(mappedResult.getStatus())
-          .isEqualTo(RestResponse.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    }
-
-    @Test
-    public void gatewayError() {
-      CommandResult result =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(
-                  new CommandResult.Error(
-                      "My message.",
-                      Map.of("field", "value"),
-                      Map.of("field", "value"),
-                      Response.Status.GATEWAY_TIMEOUT))
-              .build();
-
-      final RestResponse mappedResult = result.toRestResponse();
-      assertThat(mappedResult.getStatus())
-          .isEqualTo(RestResponse.Status.GATEWAY_TIMEOUT.getStatusCode());
     }
   }
 }
