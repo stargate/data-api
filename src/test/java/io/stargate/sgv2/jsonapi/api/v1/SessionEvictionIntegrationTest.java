@@ -292,6 +292,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
   /** Checks if Cassandra is up and normal by running "nodetool status" inside the container. */
   private boolean isCassandraUp(DockerClient dockerClient, String containerId) {
     try {
+      // .exec() here merely registers the command with Docker and returns an execution ID. It does
+      // NOT start the command yet.
       var execCreateCmdResponse =
           dockerClient
               .execCreateCmd(containerId)
@@ -300,15 +302,25 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               .withCmd("nodetool", "status")
               .exec();
 
+      // Capture the output (stdout/stderr) from the container command
+      // The Docker Java API for 'execStart' is asynchronous and requires a ResultCallback to handle
+      // the stream of output (Frames) from the container.
+      StringBuilder output = new StringBuilder();
       var callback =
           new ResultCallback.Adapter<Frame>() {
             @Override
-            public void onNext(Frame object) {}
+            public void onNext(Frame object) {
+              output.append(new String(object.getPayload()));
+            }
           };
 
+      // .exec(callback) triggers the actual execution in the container.
+      // .awaitCompletion() blocks until the command finished or the callback is closed.
       dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(callback).awaitCompletion();
       var inspectExecResponse = dockerClient.inspectExecCmd(execCreateCmdResponse.getId()).exec();
-      return inspectExecResponse.getExitCodeLong() == 0;
+
+      // Check that the command succeeded (exit code 0) AND the node status implies "UN" (Up/Normal)
+      return inspectExecResponse.getExitCodeLong() == 0 && output.toString().contains("UN");
     } catch (Exception e) {
       LOGGER.warn("Error Cassandra status: {}", e.getMessage(), e);
       return false;
