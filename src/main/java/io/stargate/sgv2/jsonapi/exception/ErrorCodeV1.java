@@ -19,11 +19,6 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
-  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
-  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
-  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
-  TOO_MANY_COLLECTIONS("Too many collections"),
-
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
   RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
   RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
