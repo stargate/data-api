@@ -233,22 +233,19 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     boolean isAPIReady = false;
 
     while (System.currentTimeMillis() - start < timeout) {
-      try {
-        // 1. Check container
-        isContainerRunning = isContainerRunning();
 
-        // 2. Check Cassandra (only after the container is running)
-        isCassandraUp = isContainerRunning && isCassandraUp(getDockerClient(), getContainerId());
+      // 1. Check container
+      isContainerRunning = isContainerRunning();
 
-        // 3. Check API (only after Cassandra is up)
-        isAPIReady = isCassandraUp && isApiReady();
-        if (isAPIReady) {
-          LOGGER.info(
-              "Database and API have recovered after {} ms.", (System.currentTimeMillis() - start));
-          return;
-        }
-      } catch (Exception e) {
-        LOGGER.warn("Error checking DB status: {}", e.getMessage(), e);
+      // 2. Check Cassandra (only after the container is running)
+      isCassandraUp = isContainerRunning && isCassandraUp(getDockerClient(), getContainerId());
+
+      // 3. Check API (only after Cassandra is up)
+      isAPIReady = isCassandraUp && isApiReady();
+      if (isAPIReady) {
+        LOGGER.info(
+            "Database and API have recovered after {} ms.", (System.currentTimeMillis() - start));
+        return;
       }
 
       // Poll every 1s
@@ -259,6 +256,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         break;
       }
     }
+
     throw new RuntimeException(
         "DB failed to recover within "
             + timeout
@@ -294,13 +292,14 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         return false;
       }
 
-      // Check body structure manually to avoid throwing AssertionErrors
-      var jsonPath = response.jsonPath();
       // Success means: has "data", no "errors", no "status" (for findOne)
+      var jsonPath = response.jsonPath();
       return jsonPath.get("data") != null
           && jsonPath.get("errors") == null
           && jsonPath.get("status") == null;
+
     } catch (Exception e) {
+      LOGGER.warn("Error checking API status: {}", e.getMessage(), e);
       return false;
     }
   }
@@ -338,7 +337,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       // Check that the command succeeded (exit code 0) AND the node status implies "UN" (Up/Normal)
       return inspectExecResponse.getExitCodeLong() == 0 && output.toString().contains("UN");
     } catch (Exception e) {
-      LOGGER.warn("Error Cassandra status: {}", e.getMessage(), e);
+      LOGGER.warn("Error checking Cassandra status: {}", e.getMessage(), e);
       return false;
     }
   }
