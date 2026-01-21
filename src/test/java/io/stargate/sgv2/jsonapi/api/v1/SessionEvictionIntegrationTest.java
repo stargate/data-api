@@ -176,7 +176,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               }
               """)
         .statusCode(200)
-        .body("errorCode", is(DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE.name()));
+        .body(
+            "errors[0].errorCode", is(DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE.name()));
 
     // 4. Restart the container to simulate recovery
     getDockerClient().startContainerCmd(getContainerId()).exec();
