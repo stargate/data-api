@@ -151,6 +151,11 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
               }
               """);
 
+    LOGGER.error(
+        "break here??? Container status: {}, Cassandra status: {}",
+        isContainerRunning(),
+        isCassandraUp(getDockerClient(), getContainerId()));
+
     givenHeadersPostJsonThenOkNoErrors(
             """
               {
