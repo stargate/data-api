@@ -36,7 +36,7 @@ public class SchemaException extends RequestException {
     COLLECTION_NOT_EXIST, // converted from ErrorCodeV1
     DEPRECATED_AI_MODEL,
     END_OF_LIFE_AI_MODEL,
-
+    EXISTING_INDEX_FOR_COLLECTION,
     // from ErrorCodeV1 but used by clients DO NOT RENAME:
     EXISTING_COLLECTION_DIFFERENT_SETTINGS,
     EXISTING_TABLE_NOT_DATA_API_COLLECTION, // converted from ErrorCodeV1
@@ -50,6 +50,7 @@ public class SchemaException extends RequestException {
     MISSING_DIMENSION_IN_VECTOR_COLUMN,
     MISSING_FIELDS_FOR_TYPE_CREATION,
     MISSING_PARTITION_COLUMNS,
+    TOO_MANY_INDEXES_FOR_COLLECTION,
     UNKNOWN_DATA_TYPE,
     UNKNOWN_INDEX_COLUMN,
     UNKNOWN_INDEX_TYPE,

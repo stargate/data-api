@@ -1,13 +1,14 @@
 package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Map;
-import java.util.Set;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -21,22 +22,23 @@ public class ConstraintViolationExceptionMapper {
    */
   private static final int MAX_VALUE_LENGTH_TO_INCLUDE = 1000;
 
+  private static final CommandErrorFactory commandErrorFactory = new CommandErrorFactory();
+
   @ServerExceptionMapper
   public RestResponse<CommandResult> constraintViolationException(
       ConstraintViolationException exception) {
-    // map all violations to errors
-    Set<ConstraintViolation<?>> violations = exception.getConstraintViolations();
-    var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
-    violations.stream()
+
+    var builder = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
+
+    exception.getConstraintViolations().stream()
         .map(ConstraintViolationExceptionMapper::getError)
         .distinct()
-        .forEach(builder::addCommandResultError);
+        .forEach(builder::addCommandError);
 
-    // return result
     return builder.build().toRestResponse();
   }
 
-  private static CommandResult.Error getError(ConstraintViolation<?> violation) {
+  private static CommandErrorV2 getError(ConstraintViolation<?> violation) {
     String message = violation.getMessage();
     String propertyPath = violation.getPropertyPath().toString();
     // Let's remove useless "postCommand." prefix if seen
@@ -45,10 +47,9 @@ public class ConstraintViolationExceptionMapper {
     }
 
     String propertyValueDesc = valueDescription(violation.getInvalidValue());
-    RequestException ex =
+    return commandErrorFactory.create(
         RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
-            Map.of("field", propertyPath, "value", propertyValueDesc, "message", message));
-    return ex.getCommandResultError();
+            Map.of("field", propertyPath, "value", propertyValueDesc, "message", message)));
   }
 
   /** Helper method for construction description of value that caused the constraint violation. */

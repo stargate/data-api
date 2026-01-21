@@ -845,8 +845,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     public void invalidJSONStructure() {
       assertTableCommand(keyspaceName, testTableName)
           // Invalid JSON structure: "name" should be String, not Object;
-          // reported as HTTP 400
-          .expectHttpStatus(Response.Status.BAD_REQUEST)
+          // amorton - 20 jan 2026 - this used to be http 400,but that was inconsistent, now 200
+          .expectHttpStatus(Response.Status.OK)
           .postCreateIndex(
               """
                         {

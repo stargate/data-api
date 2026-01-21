@@ -1,152 +1,162 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micrometer.core.instrument.Tag;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import jakarta.ws.rs.core.Response;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Predicate;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
- * See {@link CommandError} for why this class exists.
+ * Public API model for an error or warning returned from the API.
  *
- * <p>Use either {@link #builderV1()} or {@link #builderV2()} to get te builder to create an
- * instance of this class.
+ * <p>Use {@link CommandErrorFactory} to get an instance because it know how to adapt from any
+ * throwable using the {@link CommandErrorV2.Builder}.
  *
- * <p><b>Note:</b> This class is expected to be serialised to JSON for the responses message, and we
- * are not using a Java record because 1) they do not support inheritance 2) we want to (eventually)
- * lock down the constuctor so all errors are built through the builder. So uses bean naming to keep
- * Jackson happy.
+ * <p>See {@link io.stargate.sgv2.jsonapi.exception.APIException} for discussion of the fields.
  */
-public class CommandErrorV2 extends CommandError {
+public record CommandErrorV2(
+    @JsonProperty(ErrorObjectV2Constants.Fields.ID) UUID id,
+    @JsonProperty(ErrorObjectV2Constants.Fields.FAMILY) String family,
+    @JsonProperty(ErrorObjectV2Constants.Fields.SCOPE) String scope,
+    @JsonProperty(ErrorObjectV2Constants.Fields.CODE) String errorCode,
+    @JsonProperty(ErrorObjectV2Constants.Fields.TITLE) String title,
+    @JsonProperty(ErrorObjectV2Constants.Fields.MESSAGE) String message,
+    @JsonIgnore @Schema(hidden = true) Response.Status httpStatus,
+    @JsonProperty(ErrorObjectV2Constants.Fields.EXCEPTION_CLASS)
+        @Schema(hidden = true)
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String exceptionClass,
+    @JsonIgnore @Schema(hidden = true) List<Tag> metricTags,
 
-  private final String family;
-  private final String scope;
-  private final String title;
-  private final UUID id;
+    // Optional, nullable, list of the documents related to this error
+    @JsonProperty(ErrorObjectV2Constants.Fields.DOCUMENT_IDS)
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        List<DocRowIdentifer> documentIds) {
 
-  public CommandErrorV2(
-      String errorCode,
-      String message,
-      Response.Status httpStatus,
-      String errorClass,
-      Map<String, Object> metricsTags,
-      String family,
-      String scope,
-      String title,
-      UUID id) {
-    super(errorCode, message, httpStatus, errorClass, metricsTags);
-    this.family = requireNoNullOrBlank(family, "family cannot be null or blank");
-    this.scope = scope == null ? "" : scope;
-    this.title = requireNoNullOrBlank(title, "title cannot be null or blank");
-    this.id = Objects.requireNonNull(id, "id cannot be null");
+  public CommandErrorV2 {
+
+    Objects.requireNonNull(id, "id cannot be null");
+    requireNoNullOrBlank(family, "family cannot be null or blank");
+    scope = scope == null ? "" : scope;
+    requireNoNullOrBlank(errorCode, "errorCode cannot be null or blank");
+    requireNoNullOrBlank(title, "title cannot be null or blank");
+    requireNoNullOrBlank(message, "message cannot be null or blank");
+    Objects.requireNonNull(httpStatus, "httpStatus cannot be null");
+    // exceptionClass is not required, it is only passed when we are in debug mode
+    // normalise to null if blank
+    exceptionClass = exceptionClass == null || exceptionClass.isBlank() ? null : exceptionClass;
+    metricTags = metricTags == null ? Collections.emptyList() : List.copyOf(metricTags);
+    documentIds = documentIds == null ? Collections.emptyList() : List.copyOf(documentIds);
   }
 
-  /** Create a new builder for the {@link CommandError} that represents the V1 error object. */
-  public static Builder<CommandError> builderV1() {
-    return new Builder<>(true);
+  private static String requireNoNullOrBlank(String value, String message) {
+    if (Objects.isNull(value) || value.isBlank()) {
+      throw new IllegalArgumentException(message);
+    }
+    return value;
   }
 
-  /** Create a new builder for the {@link CommandErrorV2} that represents the V2 error object. */
-  public static Builder<CommandErrorV2> builderV2() {
-    return new Builder<>(false);
+  /**
+   * Gets a Predicate that will match this Error with other errors based on all fields except the
+   * ID, used when aggregating errors with the same information in them.
+   */
+  public Predicate<CommandErrorV2> nonIdentityMatcher() {
+    return other ->
+        (family() == null || family().equals(other.family()))
+            && (scope() == null || scope().equals(other.scope()))
+            && (errorCode() == null || errorCode().equals(other.errorCode()))
+            && (title() == null || title().equals(other.title()))
+            && (message() == null || message().equals(other.message()));
   }
 
-  public String getFamily() {
-    return family;
+  public static Builder builder() {
+    return new Builder();
   }
 
-  public String getScope() {
-    return scope;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public UUID getId() {
-    return id;
-  }
-
-  public static class Builder<T extends CommandError> {
-    private String errorCode;
-    private String message;
-    private Response.Status httpStatus;
-    private String errorClass;
-    private Map<String, Object> metricsTags;
+  public static class Builder {
+    private UUID id;
     private String family;
     private String scope;
+    private String errorCode;
     private String title;
-    private UUID id;
+    private String message;
+    private Response.Status httpStatus;
+    private String exceptionClass;
+    private List<Tag> metricsTags;
+    private List<DocRowIdentifer> documentIds;
 
-    private final boolean v1Error;
+    private Builder() {}
 
-    Builder(boolean v1Error) {
-      this.v1Error = v1Error;
-    }
-
-    public Builder<T> errorCode(String errorCode) {
+    public Builder errorCode(String errorCode) {
       this.errorCode = errorCode;
       return this;
     }
 
-    public Builder<T> message(String message) {
+    public Builder message(String message) {
       this.message = message;
       return this;
     }
 
-    public Builder<T> httpStatus(Response.Status httpStatus) {
+    public Builder httpStatus(Response.Status httpStatus) {
       this.httpStatus = httpStatus;
       return this;
     }
 
-    public Builder<T> errorClass(String errorClass) {
-      this.errorClass = errorClass;
+    public Builder exceptionClass(String errorClass) {
+      this.exceptionClass = errorClass;
       return this;
     }
 
-    public Builder<T> metricsTags(Map<String, Object> metricsTags) {
+    public Builder metricsTags(List<Tag> metricsTags) {
       this.metricsTags = metricsTags;
       return this;
     }
 
-    public Builder<T> family(String family) {
+    public Builder family(String family) {
       this.family = family;
       return this;
     }
 
-    public Builder<T> scope(String scope) {
+    public Builder scope(String scope) {
       this.scope = scope;
       return this;
     }
 
-    public Builder<T> title(String title) {
+    public Builder title(String title) {
       this.title = title;
       return this;
     }
 
-    public Builder<T> id(UUID id) {
+    public Builder id(UUID id) {
       this.id = id;
       return this;
     }
 
-    public T build() {
-      return v1Error
-          ? unchecked(new CommandError(errorCode, message, httpStatus, errorClass, metricsTags))
-          : unchecked(
-              new CommandErrorV2(
-                  errorCode,
-                  message,
-                  httpStatus,
-                  errorClass,
-                  metricsTags,
-                  family,
-                  scope,
-                  title,
-                  id));
+    public Builder documentIds(List<? extends DocRowIdentifer> documentIds) {
+      this.documentIds =
+          documentIds == null
+              ? Collections.emptyList()
+              : documentIds.stream().map(d -> (DocRowIdentifer) d).toList();
+      return this;
     }
 
-    @SuppressWarnings("unchecked")
-    private T unchecked(CommandError error) {
-      return (T) error;
+    public CommandErrorV2 build() {
+      return new CommandErrorV2(
+          id,
+          family,
+          scope,
+          errorCode,
+          title,
+          message,
+          httpStatus,
+          exceptionClass,
+          metricsTags,
+          documentIds);
     }
   }
 }
