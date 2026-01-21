@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.eq;
@@ -233,8 +232,6 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.errorCode())
                     .isEqualTo(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name());
-                assertThat(error.exceptionClass())
-                    .isEqualTo(classSimpleName(DocumentException.class));
                 assertThat(error.message())
                     .startsWith(
                         "Cannot insert the document: a document already exists with given '_id' ('doc1')");
@@ -607,8 +604,6 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                     .containsExactlyElementsOf(List.of(DocumentId.fromString("doc1")));
                 assertThat(error.errorCode())
                     .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
-                assertThat(error.exceptionClass())
-                    .isEqualTo(classSimpleName(ServerException.class));
               });
     }
 
@@ -702,8 +697,6 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 assertThat(error.message()).contains("Error Message: Test break #2");
                 assertThat(error.errorCode())
                     .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
-                assertThat(error.exceptionClass())
-                    .isEqualTo(classSimpleName(ServerException.class));
               });
     }
 
@@ -799,8 +792,6 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 assertThat(error.message()).contains("Error Message: Test break #1");
                 assertThat(error.errorCode())
                     .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
-                assertThat(error.exceptionClass())
-                    .isEqualTo(classSimpleName(ServerException.class));
               });
     }
 

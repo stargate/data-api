@@ -338,7 +338,7 @@ public record CreateCollectionOperation(
                             map ->
                                 map.put(
                                     "errorMessage",
-                                    "Collection creation failure (unable to create table)."))));
+                                    "Collection creation failure (unable to create table)"))));
               } else {
                 return new SchemaChangeResult(true);
               }

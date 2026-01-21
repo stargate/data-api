@@ -267,8 +267,6 @@ public class MeteredCommandProcessor {
       // is error
       tags.add(ExceptionMetrics.TAG_ERROR_TRUE);
       // let error bubble, there must be a first error
-      // XXX AARON TODO - old code use a single error, can we use more than one tag value ? Cannot
-      // remember
       tags.addAll(result.errors().stream().findFirst().get().metricTags());
     } else {
       tags.add(ExceptionMetrics.TAG_ERROR_FALSE);

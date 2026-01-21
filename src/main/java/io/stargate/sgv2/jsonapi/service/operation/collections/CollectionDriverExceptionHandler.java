@@ -46,7 +46,6 @@ public class CollectionDriverExceptionHandler
   @Override
   public RuntimeException handle(InvalidQueryException exception) {
 
-    LOGGER.error("handle(InvalidQueryException) - XXX", exception);
     for (var msg : CORRUPTED_COLLECTION_MESSAGES) {
       if (exception.getMessage().contains(msg)) {
         return DatabaseException.Code.CORRUPTED_COLLECTION_SCHEMA.get(

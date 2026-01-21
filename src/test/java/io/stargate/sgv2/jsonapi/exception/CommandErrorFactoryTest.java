@@ -12,7 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** tests for {@link CommandErrorFactory} */
-public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
+public class CommandErrorFactoryTest extends ConfiguredErrorTest {
 
   private final ErrorTestData TEST_DATA = new ErrorTestData();
 

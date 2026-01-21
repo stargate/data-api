@@ -111,8 +111,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
     List<CommandErrorV2> seenErrors = new ArrayList<>();
     // Second: failed insertions; output in order of insertion
     for (var task : tasks.errorTasks()) {
-      // XXX - AARON- TODO: the task erorr is throwable, so mapping to Error will fail for regular
-      // runtime errorTasks
+
       var cmdError = commandErrorFactory.create(task.failure().orElseThrow());
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:

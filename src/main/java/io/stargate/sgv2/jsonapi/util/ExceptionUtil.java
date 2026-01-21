@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.util;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 
+/** TODO: amorton - 21 jan 2026 - to remove see https://github.com/stargate/data-api/issues/2341 */
 public class ExceptionUtil {
 
   public static String getThrowableGroupingKey(Throwable error) {
@@ -12,30 +13,4 @@ public class ExceptionUtil {
       default -> error.getClass().getSimpleName();
     };
   }
-
-  //  public static CommandResult.Error getError(
-  //      String messageTemplate, List<DocumentId> documentIds, Throwable throwable) {
-  //
-  //    if (throwable instanceof APIException apiException) {
-  //      // AJM - GH #2309 - this is a hack until all of V1 errors and ThrowableToErrorMapper are
-  //      // removed
-  //      // if we know it is a V2 error it has lots of structure, and the message is long.
-  //      // So we will want to prefix the TITLE of the error with our message template
-  //
-  //      // TERRIBLE HACK - when this function is called with an APIException we ignore the message
-  //      // template
-  //      var commandError =
-  //          ThrowableToErrorMapper.getMapperWithMessageFunction().apply(apiException, "");
-  //      commandError
-  //          .fields()
-  //          .put(
-  //              ErrorObjectV2Constants.Fields.TITLE,
-  //              messageTemplate.formatted(
-  //                  documentIds, commandError.fields().get(ErrorObjectV2Constants.Fields.TITLE)));
-  //      return commandError;
-  //    }
-  //
-  //    String message = messageTemplate.formatted(documentIds, throwable.getMessage());
-  //    return ThrowableToErrorMapper.getMapperWithMessageFunction().apply(throwable, message);
-  //  }
 }

@@ -203,67 +203,6 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   }
 
   /**
-   * Original error object V1, before the family etc, when the exception is not a ApiException aaron
-   * - 3 sept 2024 - old code, moved but mostly left alone.
-   *
-   * <p>the reference "how it used to work" version of this class is the commit at <code>
-   * c3ea7b01ef5b658b4bd51be7fc98b0e0333c3e87</code>. In that, when generating the errors for
-   * perDocument response it called the mapper without a message prefix, it added the prefix "Failed
-   * to insert document with _id %s: %s" when doing the non perDocument responsed. Replicating below
-   * for we fail the IT's in {@link InsertIntegrationTest.InsertManyFails} for per doc responses. In
-   * this reference version this was the function "getError(Throwable throwable)"
-   */
-  //  private CommandResult.Error getErrorObjectV1(InsertAttempt<SchemaT> insertAttempt) {
-  //
-  //    // aaron we should not be here unless the attempt has failed.
-  //    var throwable =
-  //        insertAttempt
-  //            .failure()
-  //            .orElseThrow(
-  //                () ->
-  //                    new IllegalStateException(
-  //                        String.format(
-  //                            "getErrorObjectV1: attempting to get an error object for an
-  // insertAttempt that has not failed. insertAttempt: %s",
-  //                            insertAttempt)));
-  //
-  //    if (returnDocumentResponses) {
-  //      return ThrowableToErrorMapper.getMapperWithMessageFunction()
-  //          .apply(throwable, throwable.getMessage());
-  //    }
-  //
-  //    // aaron 23 sept - the insertAttempt.docRowID().orElse.. below is because if we fail to
-  // shred we
-  //    // do not have the id
-  //    // previously this type of error would bubble to the top of the stack, it is not handled as
-  // part
-  //    // of building the
-  //    // insert page. This is ugly, need to fix later.
-  //    var docRowID = insertAttempt.docRowID().orElse(() -> "UNKNOWN").value();
-  //
-  //    String message =
-  //        allInsertions.size() == 1
-  //            ? throwable.getMessage()
-  //            : "Failed to insert document with _id " + docRowID + ": " + throwable.getMessage();
-  //
-  //    /// TODO: confirm the null handling in the getMapperWithMessageFunction
-  //    // passing null is what would have happened before changing to optional
-  //    // BUG: this does not handle if the debug flag is set.
-  //    return ThrowableToErrorMapper.getMapperWithMessageFunction()
-  //        .apply(insertAttempt.failure().orElse(null), message);
-  //  }
-
-  /**
-   * aaron - I think this generating the V2 messages, but it does not look like it. copied from what
-   * was here and left alone
-   */
-  //  private static CommandResult.Error getErrorObjectV2(Throwable throwable) {
-  //    // TODO AARON - confirm we have two different error message paths
-  //    return ThrowableToErrorMapper.getMapperWithMessageFunction()
-  //        .apply(throwable, throwable.getMessage());
-  //  }
-
-  /**
    * Aggregates the result of the insert operation into this object, used when building the page
    * from running inserts.
    *
