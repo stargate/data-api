@@ -88,7 +88,6 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
         new AzureOpenAIEmbeddingRequest(
             texts.toArray(new String[texts.size()]), modelName(), dimension);
 
-    // TODO: V2 error
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
     // NOTE: NO "Bearer " prefix with API key for Azure
     var accessToken = embeddingCredentials.apiKey().get();

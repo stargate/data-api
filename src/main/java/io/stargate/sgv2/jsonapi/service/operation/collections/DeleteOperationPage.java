@@ -81,7 +81,7 @@ public record DeleteOperationPage(
         });
 
     // Create error by error code or error class
-    List<CommandErrorV2> errors = new ArrayList<>(groupedErrorDeletes.size());
+    List<CommandError> errors = new ArrayList<>(groupedErrorDeletes.size());
     var commandErrorFactory = new CommandErrorFactory();
 
     groupedErrorDeletes

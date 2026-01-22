@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -54,7 +54,7 @@ public record UpdateCollectionOperationPage(
           }
         });
     // Create error by error code or error class
-    List<CommandErrorV2> errors = new ArrayList<>(groupedErrorUpdates.size());
+    List<CommandError> errors = new ArrayList<>(groupedErrorUpdates.size());
     var commandErrorFactory = new CommandErrorFactory();
 
     groupedErrorUpdates

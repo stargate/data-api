@@ -41,7 +41,7 @@ public record CommandResult(
         Map<CommandStatus, Object> status,
     // **
     @JsonInclude(JsonInclude.Include.NON_EMPTY) @Schema(nullable = true)
-        List<CommandErrorV2> errors) {
+        List<CommandError> errors) {
 
   public CommandResult {
 
@@ -58,13 +58,6 @@ public record CommandResult(
   /**
    * Get a builder for the {@link CommandResult} for a single document response, see {@link
    * CommandResultBuilder}
-   *
-   * <p><b>NOTE:</b> aaron 9-oct-2024 I kept the errorObjectV2 param to make it clear how
-   * inconsistency we are configuring these settings. Ultimately useErrorObjectV2 will go away. I
-   * will create ticket so that we create the builder in resolver or similar and then pass it around
-   * rather than creating in many places. Also the {@link
-   * io.stargate.sgv2.jsonapi.service.operation.OperationAttemptPageBuilder} is how things will turn
-   * out.
    */
   public static CommandResultBuilder singleDocumentBuilder(RequestTracing requestTracing) {
     return new CommandResultBuilder(
@@ -108,10 +101,9 @@ public record CommandResult(
    *
    * @param warning message
    */
-  public void addWarning(CommandErrorV2 warning) {
-    List<CommandErrorV2> warnings =
-        (List<CommandErrorV2>)
-            status.computeIfAbsent(CommandStatus.WARNINGS, k -> new ArrayList<>());
+  public void addWarning(CommandError warning) {
+    List<CommandError> warnings =
+        (List<CommandError>) status.computeIfAbsent(CommandStatus.WARNINGS, k -> new ArrayList<>());
     warnings.add(warning);
   }
 }

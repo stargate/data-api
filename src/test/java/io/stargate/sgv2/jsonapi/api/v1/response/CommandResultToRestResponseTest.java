@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.response;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -51,7 +51,7 @@ public class CommandResultToRestResponseTest {
       var commandResult =
           CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
               .addCommandError(
-                  CommandErrorV2.builder()
+                  CommandError.builder()
                       .id(UUID.randomUUID())
                       .family("TEST_FAMILY")
                       .scope("TEST_SCOPE")
