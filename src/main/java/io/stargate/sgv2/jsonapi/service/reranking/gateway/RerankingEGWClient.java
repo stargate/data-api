@@ -96,7 +96,6 @@ public class RerankingEGWClient extends RerankingProvider {
         .transform(
             gatewayResponse -> {
               if (gatewayResponse.hasError()) {
-                // TODO : move to V2 error
                 throw new JsonApiException(
                     ErrorCodeV1.valueOf(gatewayResponse.getError().getErrorCode()),
                     gatewayResponse.getError().getErrorMessage());

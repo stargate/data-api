@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.micrometer.core.instrument.Tag;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
 import java.util.List;
@@ -60,7 +60,7 @@ public class CommandErrorFactoryTest extends ConfiguredErrorTest {
     }
   }
 
-  private void assertCommandErrorV2(APIException exception, CommandErrorV2 commandError) {
+  private void assertCommandErrorV2(APIException exception, CommandError commandError) {
 
     assertThat(commandError)
         .as("CommandErrorV2 matches ApiException %s", exception)

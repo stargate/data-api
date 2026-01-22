@@ -19,7 +19,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -883,7 +883,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.INSERTED_IDS, List.of());
       assertThat(result.errors())
           .hasSize(2)
-          .extracting(CommandErrorV2::message)
+          .extracting(CommandError::message)
           .anySatisfy(msg -> assertThat(msg).contains("Insert 1 failed"))
           .anySatisfy(msg -> assertThat(msg).contains("Insert 2 failed"));
     }

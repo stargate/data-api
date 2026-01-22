@@ -181,7 +181,6 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
         .onItem()
         .transform(
             gatewayResponse -> {
-              // TODO : move to V2 error
               if (gatewayResponse.hasError()) {
                 throw new JsonApiException(
                     ErrorCodeV1.valueOf(gatewayResponse.getError().getErrorCode()),

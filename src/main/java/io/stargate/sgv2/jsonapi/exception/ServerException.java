@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import java.util.Map;
 
 /**
@@ -51,6 +51,6 @@ public class ServerException extends APIException {
 
   public static ServerException internalServerError(String message) {
     return Code.INTERNAL_SERVER_ERROR.get(
-        Map.of(ErrorObjectV2Constants.TemplateVars.ERROR_MESSAGE, message));
+        Map.of(ErrorConstants.TemplateVars.ERROR_MESSAGE, message));
   }
 }

@@ -129,8 +129,6 @@ public abstract class RerankingProvider extends ProviderBase {
   @Override
   protected RuntimeException mapHTTPError(Response jakartaResponse, String errorMessage) {
 
-    // TODO: move to V2 errors
-
     if (jakartaResponse.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
 

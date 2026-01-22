@@ -25,10 +25,9 @@ public class CommandResultBuilder {
   }
 
   private final Map<CommandStatus, Object> cmdStatus = new HashMap<>();
-  private final List<CommandErrorV2> cmdErrors = new ArrayList<>();
+  private final List<CommandError> cmdErrors = new ArrayList<>();
   private final List<JsonNode> documents = new ArrayList<>();
-  // Warnings are always the V2 error structure
-  private final List<CommandErrorV2> warnings = new ArrayList<>();
+  private final List<CommandError> warnings = new ArrayList<>();
 
   private String nextPageState = null;
 
@@ -64,12 +63,12 @@ public class CommandResultBuilder {
     return addCommandError(cmdErrorFactory.create(throwable));
   }
 
-  public CommandResultBuilder addCommandError(List<CommandErrorV2> errors) {
+  public CommandResultBuilder addCommandError(List<CommandError> errors) {
     Objects.requireNonNull(errors, "errors cannot be null").forEach(this::addCommandError);
     return this;
   }
 
-  public CommandResultBuilder addCommandError(CommandErrorV2 error) {
+  public CommandResultBuilder addCommandError(CommandError error) {
     cmdErrors.add(error);
     return this;
   }

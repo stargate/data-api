@@ -43,7 +43,6 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   // Created in the Ctor
   private final CommandErrorFactory commandErrorFactory = new CommandErrorFactory();
 
-  /** Create an instance that has debug false and useErrorObjectV2 false */
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses) {
@@ -107,7 +106,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   private CommandResult perDocumentResult(CommandResultBuilder builder) {
     // New style output: detailed responses.
     InsertionResult[] results = new InsertionResult[allInsertions.size()];
-    List<CommandErrorV2> errors = new ArrayList<>();
+    List<CommandError> errors = new ArrayList<>();
 
     // Results array filled in order: first successful insertions
     for (var okInsertion : successfulInsertions) {
@@ -116,12 +115,12 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     }
 
     // Second: failed insertions; output in order of insertion
-    // We are creating the CommandErrorV2 objects here manually, rather than passing throwable to
+    // We are creating the CommandError objects here manually, rather than passing throwable to
     // the
     /// CommandResultBuilder, because we do the de-dup and we care about order so being careful.
     for (var failedInsertion : failedInsertions) {
       // TODO AARON - confirm the null handling in the getError
-      var commandError = getErrorObject(failedInsertion);
+      var commandError = getCommandError(failedInsertion);
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
       // either one exists, use it; or if not, add it and use the new index.
@@ -160,7 +159,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    */
   private CommandResult nonPerDocumentResult(CommandResultBuilder builder) {
 
-    failedInsertions.stream().map(this::getErrorObject).forEach(builder::addCommandError);
+    failedInsertions.stream().map(this::getCommandError).forEach(builder::addCommandError);
 
     // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
     List<DocRowIdentifer> insertedIds =
@@ -194,7 +193,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
         .ifPresent(o -> builder.addStatus(CommandStatus.PRIMARY_KEY_SCHEMA, o));
   }
 
-  private CommandErrorV2 getErrorObject(InsertAttempt<SchemaT> insertAttempt) {
+  private CommandError getCommandError(InsertAttempt<SchemaT> insertAttempt) {
     if (insertAttempt.failure().isPresent()) {
       var docsIds = insertAttempt.docRowID().map(List::of).orElse(List.of());
       return commandErrorFactory.create(insertAttempt.failure().get(), docsIds);
