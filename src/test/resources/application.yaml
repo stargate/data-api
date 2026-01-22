@@ -15,7 +15,7 @@ quarkus:
     category:
       # production log level for this category is DEBUG, way too noisy for tests
       'io.stargate':
-        level: WARN
+        level: INFO
       'io.stargate.sgv2.jsonapi.service.cqldriver':
         level: INFO
       # Suppress reflection hierarchy warnings for external dependencies not in Jandex
