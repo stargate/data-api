@@ -1379,6 +1379,12 @@ request-errors:
       Reranking feature is not enabled for this database.
 
   - scope: SCHEMA
+    code: RERANKING_SERVICE_TYPE_UNAVAILABLE
+    title: Reranking service type unavailable
+    body: |-
+      Reranking service type unavailable: ${errorMessage}.
+
+  - scope: SCHEMA
     code: TOO_MANY_COLLECTIONS
     title: Too many collections
     body: |-
