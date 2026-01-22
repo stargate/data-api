@@ -2,10 +2,14 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.*;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.NotSupportedException;
@@ -22,6 +26,20 @@ import org.slf4j.LoggerFactory;
  */
 public class FrameworkExceptionMapper {
   private static final Logger LOGGER = LoggerFactory.getLogger(FrameworkExceptionMapper.class);
+
+  /**
+   * Prefix used in constraint violation property paths that should be stripped out. <b>NOTE:</b>
+   * This name must match the name of the function in the ResourceHandeler, e.g. {@link
+   * io.stargate.sgv2.jsonapi.api.v1.CollectionResource#postCommand(CollectionCommand, String,
+   * String)}
+   */
+  private static final String PREFIX_POST_COMMAND = "postCommand.";
+
+  /**
+   * For constraint errors, the maximum length of "value" to include without truncation: values
+   * longer than this will be truncated to this length (plus marker)
+   */
+  private static final int MAX_VALUE_LENGTH_TO_INCLUDE = 1000;
 
   /**
    * Most generic mapping for things not handled by other functions.
@@ -102,28 +120,13 @@ public class FrameworkExceptionMapper {
                           Map.of("errorMessage", sce.getMessage())))
                   .build()
                   .toRestResponse();
-          case NotAllowedException
-                      nae -> // XXX - amorton CHANGE - this was previusly returning an ENTITY with
-              // status METHOD_NOT_ALLOWED
-              responseForException(nae);
-          case NotFoundException
-                      nfe -> // XXX - amorton CHANGE - this was previusly returning an ENTITY with
-              // status NOT_FOUND
-              responseForException(nfe);
-            // amorton - 15 jan 2026 - existing code returned 415 and an entity body
+          case NotAllowedException nae -> responseForException(nae);
+          case NotFoundException nfe -> responseForException(nfe);
           case NotSupportedException nse ->
               resultBuilder
                   .addThrowable(RequestException.Code.UNSUPPORTED_CONTENT_TYPE.get())
                   .build()
                   .toRestResponse();
-          case null ->
-              resultBuilder
-                  .addThrowable(
-                      ServerException.Code.INTERNAL_SERVER_ERROR.get(
-                          "errorMessage", "WebApplicationExceptionMapper error was null"))
-                  .build()
-                  .toRestResponse();
-
           default ->
               resultBuilder
                   .addThrowable(ThrowableToErrorMapper.mapThrowable(toReport))
@@ -137,6 +140,65 @@ public class FrameworkExceptionMapper {
           restResponse.getStatusInfo());
     }
     return restResponse;
+  }
+
+  @ServerExceptionMapper
+  public RestResponse<CommandResult> constraintViolationException(
+      ConstraintViolationException exception) {
+
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("constraintViolationException() - mapping attached exception", exception);
+    }
+
+    var builder = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
+
+    // this used to have a distinct() call, but it was doing it on all CommandError objects which
+    // like the ApiException has a unique ID so had not affect.
+    exception.getConstraintViolations().stream()
+        .map(FrameworkExceptionMapper::constraintException)
+        .forEach(builder::addThrowable);
+
+    return builder.build().toRestResponse();
+  }
+
+  private static APIException constraintException(ConstraintViolation<?> violation) {
+
+    // Let's remove useless "postCommand." prefix if seen
+    // This comes from the name of the function on the ResourceHandler
+    var propertyPath =
+        violation.getPropertyPath().toString().startsWith(PREFIX_POST_COMMAND)
+            ? violation.getPropertyPath().toString().substring(PREFIX_POST_COMMAND.length())
+            : violation.getPropertyPath().toString();
+
+    return RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
+        Map.of(
+            "field",
+            propertyPath,
+            "value",
+            prettyPrintConstraintValue(violation.getInvalidValue()),
+            "message",
+            violation.getMessage()));
+  }
+
+  private static String prettyPrintConstraintValue(Object rawValue) {
+
+    // Note, previous check for rawValue.getClass().isPrimitive() removed as
+    // this would be passed in as the boxed type not primitive.
+
+    return switch (rawValue) {
+      case null -> "`null`";
+      case Number n -> n.toString();
+      case Boolean b -> b.toString();
+      case JsonNode j -> "<JSON value of " + j.toString().length() + " characters>";
+      case Object o when o.toString().length() <= MAX_VALUE_LENGTH_TO_INCLUDE ->
+          String.format("\"%s\"", o);
+      case Object o ->
+          String.format(
+              "\"%s\"...[TRUNCATED from %d to %d characters]",
+              o.toString().substring(0, MAX_VALUE_LENGTH_TO_INCLUDE),
+              o.toString().length(),
+              MAX_VALUE_LENGTH_TO_INCLUDE);
+    };
   }
 
   private static RestResponse<CommandResult> responseForException(WebApplicationException wae) {
