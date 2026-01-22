@@ -352,7 +352,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
    */
   private synchronized CqlSession createDriverSession() {
     if (cqlSession == null) {
-      int port = Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+      int port = getCassandraCqlPort();
       String dc;
       if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
         dc = "dc1";
@@ -367,6 +367,14 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
       cqlSession = builder.build();
     }
     return cqlSession;
+  }
+
+  /**
+   * Gets the Cassandra CQL port. Subclasses can override this if their tests need isolated
+   * container and port.
+   */
+  protected int getCassandraCqlPort() {
+    return Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
   }
 
   /** Helper method for determining if lexical search is available for the database backend */
