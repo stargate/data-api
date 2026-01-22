@@ -54,6 +54,9 @@ public class SchemaException extends RequestException {
     MISSING_DIMENSION_IN_VECTOR_COLUMN,
     MISSING_FIELDS_FOR_TYPE_CREATION,
     MISSING_PARTITION_COLUMNS,
+
+    RERANKING_FEATURE_NOT_ENABLED, // legacy: converted from ErrorCodeV1
+
     TOO_MANY_COLLECTIONS, // legacy: converted from ErrorCodeV1
     TOO_MANY_INDEXES_FOR_COLLECTION,
     UNKNOWN_DATA_TYPE,

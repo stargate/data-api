@@ -1373,6 +1373,12 @@ request-errors:
       Resend the command providing at least one field. 
 
   - scope: SCHEMA
+    code: RERANKING_FEATURE_NOT_ENABLED
+    title: Reranking feature not enabled
+    body: |-
+      Reranking feature is not enabled for this database.
+
+  - scope: SCHEMA
     code: TOO_MANY_COLLECTIONS
     title: Too many collections
     body: |-
