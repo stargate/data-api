@@ -40,7 +40,6 @@ public final class ThrowableToErrorMapper {
     // amorton - 7 jan 2026 - this could be better as pattern matching, but leaving until we remove
     // the whole class.
 
-    // V2 error, normally handled in the Task processing but can be in other places
     if (throwable instanceof APIException) {
       return throwable;
     }

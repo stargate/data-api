@@ -9,7 +9,7 @@ import static org.hamcrest.Matchers.containsString;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.Disabled;
@@ -288,15 +288,13 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               startsWith("Authentication failed for request due to invalid token"))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: createNamespace."))

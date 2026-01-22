@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
@@ -38,7 +38,7 @@ public class ConstraintViolationExceptionMapper {
     return builder.build().toRestResponse();
   }
 
-  private static CommandErrorV2 getError(ConstraintViolation<?> violation) {
+  private static CommandError getError(ConstraintViolation<?> violation) {
     String message = violation.getMessage();
     String propertyPath = violation.getPropertyPath().toString();
     // Let's remove useless "postCommand." prefix if seen
