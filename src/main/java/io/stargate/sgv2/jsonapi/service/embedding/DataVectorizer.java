@@ -103,7 +103,7 @@ public class DataVectorizer {
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProvider == null) {
           throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-              Map.of("collectionName", schemaObject.name().table()));
+              Map.of("table", schemaObject.name().table()));
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -172,7 +172,7 @@ public class DataVectorizer {
   public Uni<float[]> vectorize(String vectorizeContent) {
     if (embeddingProvider == null) {
       throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-          Map.of("collectionName", schemaObject.name().table()));
+          Map.of("table", schemaObject.name().table()));
     }
     Uni<List<float[]>> vectors =
         embeddingProvider
@@ -216,7 +216,7 @@ public class DataVectorizer {
       if (sortClause.hasVectorizeSearchClause()) {
         if (embeddingProvider == null) {
           throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-              Map.of("collectionName", schemaObject.name().table()));
+              Map.of("table", schemaObject.name().table()));
         }
         final List<SortExpression> sortExpressions = sortClause.sortExpressions();
         SortExpression expression = sortExpressions.getFirst();
@@ -306,7 +306,7 @@ public class DataVectorizer {
     // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
     if (embeddingProvider == null) {
       throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-          Map.of("collectionName", schemaObject.name().table()));
+          Map.of("table", schemaObject.name().table()));
     }
 
     return embeddingProvider

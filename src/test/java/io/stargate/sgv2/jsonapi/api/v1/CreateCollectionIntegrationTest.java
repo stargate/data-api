@@ -138,7 +138,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -163,7 +162,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -184,7 +182,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -196,7 +193,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -326,7 +322,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -355,7 +350,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -381,7 +375,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                 """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -409,7 +402,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -433,7 +425,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -457,7 +448,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(SchemaException.Code.INVALID_INDEXING_DEFINITION.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -482,7 +472,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.name()))
-          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -509,7 +498,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.name()))
-          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -536,7 +524,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.name()))
-          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -563,7 +550,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.name()))
-          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -643,7 +629,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -679,7 +664,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -814,7 +798,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -846,7 +829,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -966,7 +948,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -995,7 +976,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1060,7 +1040,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1091,7 +1070,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1125,7 +1103,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1242,7 +1219,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1277,7 +1253,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1311,7 +1286,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1347,7 +1321,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1381,7 +1354,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1418,7 +1390,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1454,7 +1425,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1660,7 +1630,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
-          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1689,7 +1658,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
-          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(

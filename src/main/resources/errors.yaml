@@ -1292,7 +1292,7 @@ request-errors:
     code: EMBEDDING_SERVICE_NOT_CONFIGURED
     title: Embedding service not configured for collection
     body: |-
-      Collection '${collectionName}' does not have embedding service configured: cannot vectorize data.
+      Collection '${table}' does not have embedding service configured: cannot vectorize data.
       
       Collection must be recreated with embedding service configuration to allow vectorization.
 
