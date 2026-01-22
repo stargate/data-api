@@ -9,7 +9,7 @@
 # Note, github actions docker-image-publish and release will hang when switch to ubi9
 # Use ubi8 for now just to unblock the workflow.
 # see https://catalog.redhat.com/en/software/containers/ubi8/openjdk-21-runtime/653fd184292263c0a2f14d69
-FROM registry.access.redhat.com/ubi8/openjdk-21:1.23
+FROM registry.access.redhat.com/ubi8/openjdk-21:1.24
 
 ENV LANGUAGE='en_US:en'
 
