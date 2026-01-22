@@ -17,7 +17,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -509,9 +510,14 @@ public record CreateCollectionOperation(
     final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
     if (collectionCount >= MAX_COLLECTIONS) {
-      throw ErrorCodeV1.TOO_MANY_COLLECTIONS.toApiException(
-          "number of collections in database cannot exceed %d, already have %d",
-          MAX_COLLECTIONS, collectionCount);
+      throw SchemaException.Code.TOO_MANY_COLLECTIONS.get(
+          Map.of(
+              "table",
+              tableName,
+              "collectionCount",
+              String.valueOf(collectionCount),
+              "collectionMaxCount",
+              String.valueOf(MAX_COLLECTIONS)));
     }
     // And then see how many Indexes have been created, how many available
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();

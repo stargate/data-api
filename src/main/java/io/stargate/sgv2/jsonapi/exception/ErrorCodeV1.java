@@ -18,13 +18,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
   // CreateCollection error codes:
-  EMBEDDING_SERVICE_NOT_CONFIGURED(
-      "Unable to vectorize data, embedding service not configured for the collection "),
-
-  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
-  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
-  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
-  TOO_MANY_COLLECTIONS("Too many collections"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
   RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
@@ -64,7 +57,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
   HYBRID_FIELD_CONFLICT(
       "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
