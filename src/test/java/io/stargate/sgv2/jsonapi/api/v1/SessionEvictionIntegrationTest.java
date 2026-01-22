@@ -32,85 +32,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       LoggerFactory.getLogger(SessionEvictionIntegrationTest.class);
 
   /**
-   * A specialized TestResource that spins up a new HCD/DSE container exclusively for this test
-   * class.
-   *
-   * <p>Unlike the standard {@link DseTestResource} used by other tests, this resource ensures a
-   * dedicated database instance. This isolation is crucial because this test involves destructive
-   * operations that would negatively impact other tests sharing a common database.
-   */
-  public static class SessionEvictionTestResource extends DseTestResource {
-
-    /**
-     * Holds the reference to the container started by this resource.
-     *
-     * <p>This field is {@code static} to act as a bridge between the {@link QuarkusTestResource}
-     * lifecycle (which manages the resource instance) and the test instance (where we need to
-     * access the container to perform operations).
-     */
-    private static GenericContainer<?> sessionEvictionCassandraContainer;
-
-    /**
-     * Overridden to enforce a fixed port binding for the Cassandra container native binary / CQL
-     * port (9042).
-     *
-     * <p>Standard Testcontainers use random port mapping. However, this test manually stops and
-     * restarts the container to simulate failure. Under normal circumstances, a restarted container
-     * will not retain its original random port mapping, causing the initial port forwarding to
-     * break.
-     *
-     * <p>By using a fixed port binding (finding an available local port and mapping it explicitly),
-     * we ensure the database is always accessible on the same port after a restart, allowing the
-     * Java driver to successfully reconnect.
-     */
-    @Override
-    protected GenericContainer<?> baseCassandraContainer(boolean reuse) {
-      GenericContainer<?> container = super.baseCassandraContainer(reuse);
-      try (ServerSocket socket = new ServerSocket(0)) {
-        int port = socket.getLocalPort();
-        // Map the randomly selected available host port to the container's native CQL port (9042)
-        container.setPortBindings(Collections.singletonList(port + ":9042"));
-      } catch (IOException e) {
-        throw new RuntimeException("Failed to find open port", e);
-      }
-      return container;
-    }
-
-    /**
-     * Starts the container and captures the reference.
-     *
-     * <p>We override this method to capture the container instance created by the superclass into
-     * our static {@link #sessionEvictionCassandraContainer} field, making it accessible to the test
-     * methods.
-     */
-    @Override
-    public Map<String, String> start() {
-      var props = super.start();
-      sessionEvictionCassandraContainer = super.getCassandraContainer();
-      return props;
-    }
-
-    /**
-     * Overridden to strictly prevent system property pollution.
-     *
-     * <p>The standard {@link DseTestResource} publishes connection details (like CQL port) to
-     * global System Properties. Since this test runs in parallel with others, publishing our
-     * isolated container's details would overwrite the shared container's configuration, causing
-     * other tests to connect to this container (which we are about to kill), leading to random
-     * failures in the test suite.
-     */
-    @Override
-    protected void setSystemProperties(Map<String, String> props) {
-      // No-op: Do not expose system properties to avoid interfering with other tests running in
-      // parallel
-    }
-
-    public static GenericContainer<?> getSessionEvictionCassandraContainer() {
-      return sessionEvictionCassandraContainer;
-    }
-  }
-
-  /**
    * Overridden to ensure we connect to the isolated container created for this test.
    *
    * <p>The base class implementation relies on global system properties, which point to the shared
@@ -125,20 +46,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       throw new IllegalStateException("Session eviction IT Cassandra container not started!");
     }
     return container.getMappedPort(9042);
-  }
-
-  /**
-   * @return The DockerClient for the isolated Cassandra container.
-   */
-  private DockerClient getDockerClient() {
-    return SessionEvictionTestResource.getSessionEvictionCassandraContainer().getDockerClient();
-  }
-
-  /**
-   * @return The container ID of the isolated Cassandra container.
-   */
-  private String getContainerId() {
-    return SessionEvictionTestResource.getSessionEvictionCassandraContainer().getContainerId();
   }
 
   @Test
@@ -217,6 +124,20 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
             """)
         .body("$", responseIsFindSuccess())
         .body("data.document._id", is("after_crash"));
+  }
+
+  /**
+   * @return The DockerClient for the isolated Cassandra container.
+   */
+  private DockerClient getDockerClient() {
+    return SessionEvictionTestResource.getSessionEvictionCassandraContainer().getDockerClient();
+  }
+
+  /**
+   * @return The container ID of the isolated Cassandra container.
+   */
+  private String getContainerId() {
+    return SessionEvictionTestResource.getSessionEvictionCassandraContainer().getContainerId();
   }
 
   /**
@@ -339,6 +260,85 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     } catch (Exception e) {
       LOGGER.warn("Error checking Cassandra status: {}", e.getMessage(), e);
       return false;
+    }
+  }
+
+  /**
+   * A specialized TestResource that spins up a new HCD/DSE container exclusively for this test
+   * class.
+   *
+   * <p>Unlike the standard {@link DseTestResource} used by other tests, this resource ensures a
+   * dedicated database instance. This isolation is crucial because this test involves destructive
+   * operations that would negatively impact other tests sharing a common database.
+   */
+  public static class SessionEvictionTestResource extends DseTestResource {
+
+    /**
+     * Holds the reference to the container started by this resource.
+     *
+     * <p>This field is {@code static} to act as a bridge between the {@link QuarkusTestResource}
+     * lifecycle (which manages the resource instance) and the test instance (where we need to
+     * access the container to perform operations).
+     */
+    private static GenericContainer<?> sessionEvictionCassandraContainer;
+
+    /**
+     * Overridden to enforce a fixed port binding for the Cassandra container native binary / CQL
+     * port (9042).
+     *
+     * <p>Standard Testcontainers use random port mapping. However, this test manually stops and
+     * restarts the container to simulate failure. Under normal circumstances, a restarted container
+     * will not retain its original random port mapping, causing the initial port forwarding to
+     * break.
+     *
+     * <p>By using a fixed port binding (finding an available local port and mapping it explicitly),
+     * we ensure the database is always accessible on the same port after a restart, allowing the
+     * Java driver to successfully reconnect.
+     */
+    @Override
+    protected GenericContainer<?> baseCassandraContainer(boolean reuse) {
+      GenericContainer<?> container = super.baseCassandraContainer(reuse);
+      try (ServerSocket socket = new ServerSocket(0)) {
+        int port = socket.getLocalPort();
+        // Map the randomly selected available host port to the container's native CQL port (9042)
+        container.setPortBindings(Collections.singletonList(port + ":9042"));
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to find open port", e);
+      }
+      return container;
+    }
+
+    /**
+     * Starts the container and captures the reference.
+     *
+     * <p>We override this method to capture the container instance created by the superclass into
+     * our static {@link #sessionEvictionCassandraContainer} field, making it accessible to the test
+     * methods.
+     */
+    @Override
+    public Map<String, String> start() {
+      var props = super.start();
+      sessionEvictionCassandraContainer = super.getCassandraContainer();
+      return props;
+    }
+
+    /**
+     * Overridden to strictly prevent system property pollution.
+     *
+     * <p>The standard {@link DseTestResource} publishes connection details (like CQL port) to
+     * global System Properties. Since this test runs in parallel with others, publishing our
+     * isolated container's details would overwrite the shared container's configuration, causing
+     * other tests to connect to this container (which we are about to kill), leading to random
+     * failures in the test suite.
+     */
+    @Override
+    protected void setSystemProperties(Map<String, String> props) {
+      // No-op: Do not expose system properties to avoid interfering with other tests running in
+      // parallel
+    }
+
+    public static GenericContainer<?> getSessionEvictionCassandraContainer() {
+      return sessionEvictionCassandraContainer;
     }
   }
 }
