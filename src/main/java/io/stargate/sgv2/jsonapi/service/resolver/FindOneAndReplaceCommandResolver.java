@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
@@ -24,6 +25,7 @@ import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Map;
 
 /** Resolves the {@link FindOneAndReplaceCommand } */
 @ApplicationScoped
@@ -68,7 +70,7 @@ public class FindOneAndReplaceCommandResolver implements CommandResolver<FindOne
     // Add $vector and $vectorize replacement validation here
     if (command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
         && command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-      throw ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE.toApiException();
+      throw SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.get(Map.of("extraDesc", ""));
     }
 
     //

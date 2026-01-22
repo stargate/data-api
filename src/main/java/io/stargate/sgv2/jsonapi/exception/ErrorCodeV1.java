@@ -29,8 +29,6 @@ public enum ErrorCodeV1 {
   RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
       "The reranking provider authentication key is not provided"),
 
-  INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
-
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),

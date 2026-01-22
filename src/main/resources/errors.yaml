@@ -1304,6 +1304,14 @@ request-errors:
       Resend 'createCollection' with valid indexing definition.
 
   - scope: SCHEMA
+    code: INVALID_USAGE_OF_VECTORIZE
+    title: Invalid use of '$vector' and '$vectorize'
+    body: |-
+      '$vector' and '$vectorize' cannot be used together in same document${extraDesc}.
+      
+      Resend command with only '$vector' or '$vectorize'.
+
+  - scope: SCHEMA
     code: LEXICAL_NOT_AVAILABLE_FOR_DATABASE
     title: Lexical search is not available on this database
     body: |-
