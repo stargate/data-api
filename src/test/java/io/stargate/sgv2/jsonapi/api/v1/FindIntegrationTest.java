@@ -1764,8 +1764,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   "Unsupported projection parameter: projection path ('price&') is not a valid path"))
           .body(
               "errors[0].errorCode",
-              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()))
-          .body("errors[0].exceptionClass", is(ProjectionException.class.getSimpleName()));
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()));
     }
 
     @Test
@@ -1787,8 +1786,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   "Unsupported projection parameter: projection path ('price&abc') is not a valid path"))
           .body(
               "errors[0].errorCode",
-              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()))
-          .body("errors[0].exceptionClass", is(ProjectionException.class.getSimpleName()));
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()));
     }
 
     @Test
@@ -1810,8 +1808,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   "Unsupported projection parameter: projection path ('foo..bar') is not a valid path"))
           .body(
               "errors[0].errorCode",
-              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()))
-          .body("errors[0].exceptionClass", is(ProjectionException.class.getSimpleName()));
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()));
     }
   }
 

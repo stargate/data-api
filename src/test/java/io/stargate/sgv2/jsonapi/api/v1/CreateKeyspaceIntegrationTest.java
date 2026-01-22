@@ -133,7 +133,6 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -273,7 +272,6 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .statusCode(200)
           .body("$", responseIsErrorWithStatus())
           .body("errors[0].errorCode", is(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(

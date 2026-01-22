@@ -91,7 +91,6 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith("Command 'deleteOne' does not accept options but some were included."));

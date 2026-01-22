@@ -30,10 +30,6 @@ public record CommandError(
     @JsonProperty(ErrorConstants.Fields.TITLE) String title,
     @JsonProperty(ErrorConstants.Fields.MESSAGE) String message,
     @JsonIgnore @Schema(hidden = true) Response.Status httpStatus,
-    @JsonProperty(ErrorConstants.Fields.EXCEPTION_CLASS)
-        @Schema(hidden = true)
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        String exceptionClass,
     @JsonIgnore @Schema(hidden = true) List<Tag> metricTags,
 
     // Optional, nullable, list of the documents related to this error
@@ -51,7 +47,6 @@ public record CommandError(
     Objects.requireNonNull(httpStatus, "httpStatus cannot be null");
     // exceptionClass is not required, it is only passed when we are in debug mode
     // normalise to null if blank
-    exceptionClass = exceptionClass == null || exceptionClass.isBlank() ? null : exceptionClass;
     metricTags = metricTags == null ? Collections.emptyList() : List.copyOf(metricTags);
     documentIds = documentIds == null ? Collections.emptyList() : List.copyOf(documentIds);
   }
@@ -88,7 +83,6 @@ public record CommandError(
     private String title;
     private String message;
     private Response.Status httpStatus;
-    private String exceptionClass;
     private List<Tag> metricsTags;
     private List<DocRowIdentifer> documentIds;
 
@@ -106,11 +100,6 @@ public record CommandError(
 
     public Builder httpStatus(Response.Status httpStatus) {
       this.httpStatus = httpStatus;
-      return this;
-    }
-
-    public Builder exceptionClass(String errorClass) {
-      this.exceptionClass = errorClass;
       return this;
     }
 
@@ -149,16 +138,7 @@ public record CommandError(
 
     public CommandError build() {
       return new CommandError(
-          id,
-          family,
-          scope,
-          errorCode,
-          title,
-          message,
-          httpStatus,
-          exceptionClass,
-          metricsTags,
-          documentIds);
+          id, family, scope, errorCode, title, message, httpStatus, metricsTags, documentIds);
     }
   }
 }
