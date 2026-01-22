@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_HOST_PROP;
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP;
+
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -57,10 +60,9 @@ public abstract class StargateTestResource
 
     // 1. Connection Config: Tell the app how to connect to the backend database
     propsBuilder.put(
-        "stargate.int-test.cassandra.host",
+        CASSANDRA_CQL_HOST_PROP,
         cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
-    propsBuilder.put(
-        "stargate.int-test.cassandra.cql-port", cassandraContainer.getMappedPort(9042).toString());
+    propsBuilder.put(CASSANDRA_CQL_PORT_PROP, cassandraContainer.getMappedPort(9042).toString());
     propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
 
     // 2. Runtime Limits Config: Override default limits for testing purposes
@@ -83,9 +85,19 @@ public abstract class StargateTestResource
     propsBuilder.put("stargate.jsonapi.operations.vectorize-enabled", "true");
 
     ImmutableMap<String, String> props = propsBuilder.build();
-    props.forEach(System::setProperty);
+    setSystemProperties(props);
     LOG.info("Using props map for the integration tests: %s".formatted(props));
     return props;
+  }
+
+  /**
+   * Exposes the provided configuration properties as system properties. This makes the database
+   * connection and test-specific settings available to the whole test environment.
+   *
+   * @param props A map containing the properties to be set as system properties.
+   */
+  protected void setSystemProperties(Map<String, String> props) {
+    props.forEach(System::setProperty);
   }
 
   @Override
@@ -108,6 +120,17 @@ public abstract class StargateTestResource
   public static String getPersistenceModule() {
     return System.getProperty(
         "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
+  }
+
+  /**
+   * Provides access to the backend database container. This allows subclasses to perform operations
+   * directly on the container, such as stop/start or pause/unpause it to simulate failure
+   * scenarios.
+   *
+   * @return The generic container instance for the backend database.
+   */
+  protected GenericContainer<?> getCassandraContainer() {
+    return cassandraContainer;
   }
 
   public static boolean isDse() {
@@ -147,13 +170,16 @@ public abstract class StargateTestResource
     return ImmutableMap.builder();
   }
 
-  private GenericContainer<?> baseCassandraContainer(boolean reuse) {
+  protected GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = getCassandraImage();
     GenericContainer<?> container;
 
     // Some JVM options are same for all backends, start with those:
+    // 14-Jan-2026, hazel: [data-api#2263] Removed '-Dcassandra.initial_token=1' as it prevents
+    // restarting containers with existing data (ConfigurationException: Cannot change tokens 1 to
+    // 16)
     String JVM_EXTRA_OPTS =
-        "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8"
+        "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.sai.max_string_term_size_kb=8"
             // 18-Mar-2025, tatu: to work around [https://github.com/riptano/cndb/issues/13330],
             // need to temporarily add this for HCD:
             + " -Dcassandra.cluster_version_provider.min_stable_duration_ms=-1"
