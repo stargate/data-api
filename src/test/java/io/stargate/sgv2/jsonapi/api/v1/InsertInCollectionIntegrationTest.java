@@ -72,7 +72,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("status.insertedIds", jsonEquals("[]"))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCUMENT_TYPE.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -321,7 +320,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(RequestException.Code.COMMAND_ACCEPTS_NO_OPTIONS.name()))
-          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith("Command 'insertOne' does not accept options but some were included."));
@@ -408,7 +406,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
-          .body("errors[0].exceptionClass", is(RequestException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -608,7 +605,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
           .body(
               "errors[0].message",
@@ -630,7 +626,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -651,7 +646,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString("Bad type for '_id' field: unrecognized JSON extension type"));
@@ -695,7 +689,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -741,7 +734,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -788,7 +780,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -830,7 +821,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -882,7 +872,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString("Document size limitation violated: document size ("))
@@ -912,7 +901,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString("Document size limitation violated: number of properties"))
@@ -947,7 +935,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -1411,7 +1398,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("status.insertedIds", is(List.of("doc4")))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1439,7 +1425,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1476,7 +1461,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_FIELD_NAME.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -1522,22 +1506,18 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           // document in the list with that id
           .body("errors", hasSize(4))
           .body("errors[0].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith("Cannot insert the document: a document already exists with given '_id'"))
           .body("errors[1].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
-          .body("errors[1].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[1].message",
               startsWith("Cannot insert the document: a document already exists with given '_id'"))
           .body("errors[2].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
-          .body("errors[2].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[2].message",
               startsWith("Cannot insert the document: a document already exists with given '_id'"))
           .body("errors[3].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
-          .body("errors[3].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[3].message",
               startsWith("Cannot insert the document: a document already exists with given '_id'"));
@@ -1567,7 +1547,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_FIELD_NAME.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -1606,7 +1585,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsError())
           .body("status.insertedIds", is(nullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("SchemaException"))
           .body(
               "errors[0].message",
               containsString(
@@ -1644,7 +1622,6 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               containsString(

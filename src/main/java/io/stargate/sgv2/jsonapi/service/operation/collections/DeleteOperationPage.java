@@ -82,7 +82,6 @@ public record DeleteOperationPage(
 
     // Create error by error code or error class
     List<CommandError> errors = new ArrayList<>(groupedErrorDeletes.size());
-    var commandErrorFactory = new CommandErrorFactory();
 
     groupedErrorDeletes
         .keySet()
@@ -95,7 +94,7 @@ public record DeleteOperationPage(
                       .map(deletes -> deletes.getItem3().id().orElseThrow())
                       .collect(Collectors.toList());
               errors.add(
-                  commandErrorFactory.create(
+                  CommandErrorFactory.create(
                       deletedDocuments.stream().findFirst().get().getItem2(), documentIds));
             });
 

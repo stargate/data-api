@@ -270,7 +270,6 @@ public class MeteredCommandProcessor {
       tags.addAll(result.errors().stream().findFirst().get().metricTags());
     } else {
       tags.add(ExceptionMetrics.TAG_ERROR_FALSE);
-      tags.add(ExceptionMetrics.TAG_ERROR_CLASS_NOT_APPLICABLE);
       tags.add(ExceptionMetrics.TAG_ERROR_CODE_NOT_APPLICABLE);
     }
 

@@ -9,7 +9,6 @@ public interface ErrorConstants {
     // Only included in debug mode, backwards compatible with old style
     String CODE = "errorCode";
     String DOCUMENT_IDS = "documentIds";
-    String EXCEPTION_CLASS = "exceptionClass";
     String FAMILY = "family";
     String ID = "id";
     String MESSAGE = "message";

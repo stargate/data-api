@@ -219,7 +219,6 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
-          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
               startsWith(
@@ -234,7 +233,6 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
-          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
               startsWith(
@@ -249,7 +247,6 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
-          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
               startsWith(
