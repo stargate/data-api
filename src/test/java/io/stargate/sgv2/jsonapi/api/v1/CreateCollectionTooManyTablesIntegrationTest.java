@@ -7,7 +7,7 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Test;
@@ -72,8 +72,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
         .then()
         .statusCode(200)
         .body("$", responseIsError())
-        .body("errors[0].errorCode", is(DatabaseException.Code.TOO_MANY_COLLECTIONS.name()))
-        .body("errors[0].exceptionClass", is(DatabaseException.class.getSimpleName()))
+        .body("errors[0].errorCode", is(SchemaException.Code.TOO_MANY_COLLECTIONS.name()))
         .body(
             "errors[0].message",
             containsString(

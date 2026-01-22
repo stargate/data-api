@@ -1096,102 +1096,6 @@ request-errors:
   # ================================================================================================================
 
   - scope: SCHEMA
-    code: UNKNOWN_KEYSPACE
-    title: Keyspace does not exist in the Database
-    body: |-
-      The command tried to use a Keyspace that does not exist in the Database.
-
-      The keyspace used by the command: ${keyspace}.
-
-      Resend the command using a Keyspace that exists.
-
-  - scope: SCHEMA
-    code: UNKNOWN_PARTITION_SORT_COLUMNS
-    title: Partition sort columns are not defined in the table schema
-    body: |-
-      The columns used for partition sorting are not present in the table schema.
-            
-      The table definition includes the columns: ${tableColumns}.
-      The partition sort includes the unknown columns: ${unknownColumns}.
-      
-      Resend the command using only columns included in the table definition.
-
-  - scope: SCHEMA
-    code: UNKNOWN_PARTITION_COLUMNS
-    title: Partition columns are not defined in the table schema
-    body: |-
-      The column used to partition by are not present in the table schema.
-      
-      The table definition includes the columns: ${tableColumns}.
-      The partition includes the unknown columns: ${unknownColumns}.
-      
-      Resend the command using only columns included in the table definition.
-
-  - scope: SCHEMA
-    code: INVALID_CREATE_COLLECTION_OPTIONS
-    title: Invalid options for createCollection
-    body: |-
-      'createCollection' command option(s) invalid: ${message}
-      
-      Resend 'createCollection' with valid options.
-
-  - scope: SCHEMA
-    code: INVALID_INDEXING_DEFINITION
-    title: Invalid indexing definition
-    body: |-
-      'createCollection' indexing definition invalid: ${errorMessage}.
-      
-      Resend 'createCollection' with valid indexing definition.
-
-  - scope: SCHEMA
-    code: MISSING_PARTITION_COLUMNS
-    title: Partitioning keys are required for tables
-    body: |-
-        The table definition must have at least one partition key.
-      
-        ${SNIPPET.EXPLAIN_PARTITIONING}
-      
-        The table definition includes the columns: ${tableColumns}.
-      
-        Resend the command using at least one partition key. 
-
-  - scope: SCHEMA
-    code: MISSING_ALTER_TABLE_OPERATIONS
-    title: Alter table command must include operations
-    body: |-
-      The `alterTable` command must contain at least one operation to alter the table schema, such as adding or dropping columns.
-      
-      The command included the empty operation: ${missingTableOperation}
-      
-      Resend the command including changes to the table.
-
-  - scope: SCHEMA
-    code: MISSING_ALTER_TYPE_OPERATIONS
-    title: Alter type command must include operations
-    body: |-
-      The `alterType` command must contain at least one operation to alter the type schema, such as adding or renaming fields.
-      
-      Resend the command including changes to the type.
-
-  - scope: SCHEMA
-    code: MISSING_DIMENSION_IN_VECTOR_COLUMN
-    title: Dimension is required for vector column if embedding service is not specified
-    body: |-
-        The dimension is required for vector columns if the embedding service is not specified.
-        
-        The command attempted to create the vector column without a dimension.
-        
-        Resend the command using a dimension for the vector columns.
-
-  - scope: SCHEMA
-    code: MISSING_FIELDS_FOR_TYPE_CREATION
-    title: At least one field is required for type creation
-    body: |-
-      The type definition must have at least one field.
-      
-      Resend the command providing at least one field. 
-
-  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
     title: Columns with the same name are defined in the table schema
     body: |-
@@ -1272,6 +1176,54 @@ request-errors:
       Resend the command without dropping the indexed columns.
 
   - scope: SCHEMA
+    code: CANNOT_RENAME_UNKNOWN_TYPE_FIELD
+    title: Field cannot be renamed if it is not defined in the type
+    body: |-
+      The command attempted to rename a field that is not defined in the named type.
+      
+      The command altered the type: ${typeName}.
+      The unknown field was: ${unknownField}.
+      
+      Resend the command using only fields defined in the type.
+
+
+
+  - scope: SCHEMA
+    code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS
+    title: Columns cannot be vectorized if they are not defined in the table schema
+    body: |-
+      The command attempted to vectorize columns that are not in the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to vectorize the unknown columns: ${unknownColumns}.  
+      
+      Resend the command using only columns defined in the table schema.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_VECTORIZE_FROM_UNKNOWN_COLUMNS
+    title: Vectorize configuration cannot be dropped from columns if they are not defined in the table schema
+    body: |-
+      The command attempted to drop vectorize configuration from columns that are not in the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      And has the vector columns: ${vectorColumns}.
+      The command attempted to drop vectorize configuration from the unknown columns: ${unknownColumns}.  
+      
+      Resend the command using only columns defined in the table schema.
+
+  - scope: SCHEMA
+    code: CANNOT_VECTORIZE_NON_VECTOR_COLUMNS
+    title: Columns cannot be vectorized if they are not `vector` type
+    body: |-
+      Columns can only be vectorized if they use the `vector` column type.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      And has the vector columns: ${vectorColumns}.
+      The command attempted to vectorize the non-vector columns: ${nonVectorColumns}.
+      
+      Resend the command using only columns that use the `vector` type.
+
+  - scope: SCHEMA
     code: COLLECTION_NOT_EXIST
     title: Collection or table does not exist
     body: |-
@@ -1324,52 +1276,6 @@ request-errors:
       Recommend deleting the table and resending the command.
 
   - scope: SCHEMA
-    code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS
-    title: Columns cannot be vectorized if they are not defined in the table schema
-    body: |-
-      The command attempted to vectorize columns that are not in the table schema.
-      
-      The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The command attempted to vectorize the unknown columns: ${unknownColumns}.  
-      
-      Resend the command using only columns defined in the table schema.
-
-  - scope: SCHEMA
-    code: CANNOT_VECTORIZE_NON_VECTOR_COLUMNS
-    title: Columns cannot be vectorized if they are not `vector` type
-    body: |-
-      Columns can only be vectorized if they use the `vector` column type.
-      
-      The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      And has the vector columns: ${vectorColumns}.
-      The command attempted to vectorize the non-vector columns: ${nonVectorColumns}.
-      
-      Resend the command using only columns that use the `vector` type.
-
-  - scope: SCHEMA
-    code: CANNOT_DROP_VECTORIZE_FROM_UNKNOWN_COLUMNS
-    title: Vectorize configuration cannot be dropped from columns if they are not defined in the table schema
-    body: |-
-      The command attempted to drop vectorize configuration from columns that are not in the table schema.
-      
-      The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      And has the vector columns: ${vectorColumns}.
-      The command attempted to drop vectorize configuration from the unknown columns: ${unknownColumns}.  
-      
-      Resend the command using only columns defined in the table schema.
-
-  - scope: SCHEMA
-    code: CANNOT_RENAME_UNKNOWN_TYPE_FIELD
-    title: Field cannot be renamed if it is not defined in the type
-    body: |-
-      The command attempted to rename a field that is not defined in the named type.
-      
-      The command altered the type: ${typeName}.
-      The unknown field was: ${unknownField}.
-      
-      Resend the command using only fields defined in the type.
-
-  - scope: SCHEMA
     code: CANNOT_DROP_VECTORIZE_FROM_NON_VECTOR_COLUMNS
     title: Vectorize configuration cannot be dropped from columns if they are not `vector` type
     body: |-
@@ -1380,6 +1286,22 @@ request-errors:
       The command attempted to drop vectorize config from the non-vector columns: ${nonVectorColumns}.  
       
       Resend the command using only columns that use the `vector` type.
+
+  - scope: SCHEMA
+    code: INVALID_CREATE_COLLECTION_OPTIONS
+    title: Invalid options for createCollection
+    body: |-
+      'createCollection' command option(s) invalid: ${message}
+      
+      Resend 'createCollection' with valid options.
+
+  - scope: SCHEMA
+    code: INVALID_INDEXING_DEFINITION
+    title: Invalid indexing definition
+    body: |-
+      'createCollection' indexing definition invalid: ${errorMessage}.
+      
+      Resend 'createCollection' with valid indexing definition.
 
   - scope: SCHEMA
     code: LEXICAL_NOT_AVAILABLE_FOR_DATABASE
@@ -1395,17 +1317,103 @@ request-errors:
       The collection ${keyspace}.${table} does not have Lexical feature enabled.
 
   - scope: SCHEMA
+    code: MISSING_PARTITION_COLUMNS
+    title: Partitioning keys are required for tables
+    body: |-
+      The table definition must have at least one partition key.
+      
+      ${SNIPPET.EXPLAIN_PARTITIONING}
+      
+      The table definition includes the columns: ${tableColumns}.
+      
+      Resend the command using at least one partition key. 
+
+  - scope: SCHEMA
+    code: MISSING_ALTER_TABLE_OPERATIONS
+    title: Alter table command must include operations
+    body: |-
+      The `alterTable` command must contain at least one operation to alter the table schema, such as adding or dropping columns.
+      
+      The command included the empty operation: ${missingTableOperation}
+      
+      Resend the command including changes to the table.
+
+  - scope: SCHEMA
+    code: MISSING_ALTER_TYPE_OPERATIONS
+    title: Alter type command must include operations
+    body: |-
+      The `alterType` command must contain at least one operation to alter the type schema, such as adding or renaming fields.
+      
+      Resend the command including changes to the type.
+
+  - scope: SCHEMA
+    code: MISSING_DIMENSION_IN_VECTOR_COLUMN
+    title: Dimension is required for vector column if embedding service is not specified
+    body: |-
+      The dimension is required for vector columns if the embedding service is not specified.
+      
+      The command attempted to create the vector column without a dimension.
+      
+      Resend the command using a dimension for the vector columns.
+
+  - scope: SCHEMA
+    code: MISSING_FIELDS_FOR_TYPE_CREATION
+    title: At least one field is required for type creation
+    body: |-
+      The type definition must have at least one field.
+      
+      Resend the command providing at least one field. 
+
+  - scope: SCHEMA
+    code: TOO_MANY_COLLECTIONS
+    title: Too many collections
+    body: |-
+      Cannot create collection '${table}': the maximum number of collections per database is ${collectionMaxCount}, database already has ${collectionCount}.
+
+  - scope: SCHEMA
     code: UNKNOWN_DATA_TYPE
     title: Data type is unknown
     body: |-
       The column definition used a data type that is not known.
-        
+      
       ${SNIPPET.CURRENTLY_UNSUPPORTED}
       
       The supported data types are: ${supportedTypes}.
       The command used the unsupported data type: ${unsupportedType}.
       
       Resend the command using a known data types.
+
+  - scope: SCHEMA
+    code: UNKNOWN_KEYSPACE
+    title: Keyspace does not exist in the Database
+    body: |-
+      The command tried to use a Keyspace that does not exist in the Database.
+
+      The keyspace used by the command: ${keyspace}.
+
+      Resend the command using a Keyspace that exists.
+
+  - scope: SCHEMA
+    code: UNKNOWN_PARTITION_SORT_COLUMNS
+    title: Partition sort columns are not defined in the table schema
+    body: |-
+      The columns used for partition sorting are not present in the table schema.
+      
+      The table definition includes the columns: ${tableColumns}.
+      The partition sort includes the unknown columns: ${unknownColumns}.
+      
+      Resend the command using only columns included in the table definition.
+
+  - scope: SCHEMA
+    code: UNKNOWN_PARTITION_COLUMNS
+    title: Partition columns are not defined in the table schema
+    body: |-
+      The column used to partition by are not present in the table schema.
+      
+      The table definition includes the columns: ${tableColumns}.
+      The partition includes the unknown columns: ${unknownColumns}.
+      
+      Resend the command using only columns included in the table definition.
 
   - scope: SCHEMA
     code: UNKNOWN_USER_DEFINED_TYPE
@@ -2275,12 +2283,6 @@ server-errors:
       Underlying problem: ${errorMessage}.
       
       ${SNIPPET.RETRY_UNKNOWN}
-
-  - scope: DATABASE
-    code: TOO_MANY_COLLECTIONS
-    title: Too many collections
-    body: |-
-      Cannot create collection '${collectionName}': the maximum number of collections per database is ${collectionMaxCount}, database already has ${collectionCount}.
 
   - scope: DATABASE
     code: UNEXPECTED_DOCUMENT_ID_TYPE

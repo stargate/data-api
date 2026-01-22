@@ -510,9 +510,9 @@ public record CreateCollectionOperation(
     final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
     if (collectionCount >= MAX_COLLECTIONS) {
-      throw DatabaseException.Code.TOO_MANY_COLLECTIONS.get(
+      throw SchemaException.Code.TOO_MANY_COLLECTIONS.get(
           Map.of(
-              "collectionName",
+              "table",
               tableName,
               "collectionCount",
               String.valueOf(collectionCount),
