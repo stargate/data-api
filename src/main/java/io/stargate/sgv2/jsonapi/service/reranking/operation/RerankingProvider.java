@@ -148,16 +148,21 @@ public abstract class RerankingProvider extends ProviderBase {
 
     if (jakartaResponse.getStatusInfo().getFamily() == CLIENT_ERROR) {
 
-      return ErrorCodeV1.RERANKING_PROVIDER_CLIENT_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return SchemaException.Code.RERANKING_PROVIDER_CLIENT_ERROR.get(
+          Map.of(
+              "errorMessage",
+              "Provider: %s; HTTP Status: %s; Error Message: %s"
+                  .formatted(
+                      modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
     }
 
     if (jakartaResponse.getStatusInfo().getFamily() == Response.Status.Family.SERVER_ERROR) {
-
-      return ErrorCodeV1.RERANKING_PROVIDER_SERVER_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return SchemaException.Code.RERANKING_PROVIDER_SERVER_ERROR.get(
+          Map.of(
+              "errorMessage",
+              "Provider: %s; HTTP Status: %s; Error Message: %s"
+                  .formatted(
+                      modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
     }
 
     // All other errors, Should never happen as all errors are covered above

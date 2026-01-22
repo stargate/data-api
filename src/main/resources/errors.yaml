@@ -1391,6 +1391,18 @@ request-errors:
       Reranking provider returned an unexpected response: ${errorMessage}.
 
   - scope: SCHEMA
+    code: RERANKING_PROVIDER_CLIENT_ERROR
+    title: Reranking provider client error
+    body: |-
+      Reranking provider client error: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: RERANKING_PROVIDER_SERVER_ERROR
+    title: Reranking provider server error
+    body: |-
+      Reranking provider server error: ${errorMessage}.
+
+  - scope: SCHEMA
     code: TOO_MANY_COLLECTIONS
     title: Too many collections
     body: |-

@@ -13,8 +13,8 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelType;
@@ -141,11 +141,10 @@ public class RerankingGatewayClientTest {
         EmbeddingGateway.RerankingResponse.newBuilder();
     EmbeddingGateway.RerankingResponse.ErrorResponse.Builder errorResponseBuilder =
         EmbeddingGateway.RerankingResponse.ErrorResponse.newBuilder();
-    final JsonApiException apiException =
-        ErrorCodeV1.RERANKING_PROVIDER_SERVER_ERROR.toApiException();
-    errorResponseBuilder
-        .setErrorCode(apiException.getErrorCode().name())
-        .setErrorMessage(apiException.getMessage());
+    final SchemaException apiException =
+        SchemaException.Code.RERANKING_PROVIDER_SERVER_ERROR.get(
+            Map.of("errorMessage", "Test fail"));
+    errorResponseBuilder.setErrorCode(apiException.code).setErrorMessage(apiException.getMessage());
     builder.setError(errorResponseBuilder.build());
     when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(builder.build()));
 
@@ -174,7 +173,7 @@ public class RerankingGatewayClientTest {
             e -> {
               JsonApiException exception = (JsonApiException) e;
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
-              assertThat(exception.getErrorCode()).isEqualTo(apiException.getErrorCode());
+              assertThat(exception.getErrorCode().name()).isEqualTo(apiException.code);
             });
   }
 }
