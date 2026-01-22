@@ -19,7 +19,6 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
-  RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
   RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
   RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
   RERANKING_PROVIDER_RATE_LIMITED("The Reranking Provider rate limited the request"),

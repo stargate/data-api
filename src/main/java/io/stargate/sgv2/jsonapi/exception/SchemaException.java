@@ -57,6 +57,7 @@ public class SchemaException extends RequestException {
 
     RERANKING_FEATURE_NOT_ENABLED, // legacy: converted from ErrorCodeV1
     RERANKING_SERVICE_TYPE_UNAVAILABLE, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_UNEXPECTED_RESPONSE, // legacy: converted from ErrorCodeV1
 
     TOO_MANY_COLLECTIONS, // legacy: converted from ErrorCodeV1
     TOO_MANY_INDEXES_FOR_COLLECTION,

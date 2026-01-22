@@ -1385,6 +1385,12 @@ request-errors:
       Reranking service type unavailable: ${errorMessage}.
 
   - scope: SCHEMA
+    code: RERANKING_PROVIDER_UNEXPECTED_RESPONSE
+    title: Unexpected response from reranking provider
+    body: |-
+      Reranking provider returned an unexpected response: ${errorMessage}.
+
+  - scope: SCHEMA
     code: TOO_MANY_COLLECTIONS
     title: Too many collections
     body: |-

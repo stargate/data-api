@@ -6,6 +6,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import jakarta.ws.rs.core.Response;
@@ -13,6 +14,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,9 +161,11 @@ public abstract class RerankingProvider extends ProviderBase {
     }
 
     // All other errors, Should never happen as all errors are covered above
-    return ErrorCodeV1.RERANKING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-        "Provider: %s; HTTP Status: %s; Error Message: %s",
-        modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+    return SchemaException.Code.RERANKING_PROVIDER_UNEXPECTED_RESPONSE.get(
+        Map.of(
+            "errorMessage",
+            "Provider: %s; HTTP Status: %s; Error Message: %s"
+                .formatted(modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
   }
 
   /** Create batches of passages to be reranked. */
