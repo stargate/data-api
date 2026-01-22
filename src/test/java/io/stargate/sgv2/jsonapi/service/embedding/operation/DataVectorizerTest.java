@@ -191,9 +191,10 @@ public class DataVectorizerTest {
         assertThat(failure)
             .isNotNull()
             .isInstanceOf(SchemaException.class)
-            .hasFieldOrPropertyWithValue("code", SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.name())
+            .hasFieldOrPropertyWithValue(
+                "code", SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.name())
             .withFailMessage(
-                    "'$vector' and '$vectorize' cannot be used together: issue in document at position 1");
+                "'$vector' and '$vectorize' cannot be used together: issue in document at position 1");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
