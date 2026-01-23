@@ -6,7 +6,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import io.micrometer.core.instrument.Tag;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
-import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,48 +21,16 @@ public class CommandErrorFactoryTest extends ConfiguredErrorTest {
   }
 
   @Test
-  public void productionModeCommandErrorV2() {
-    withDebugMode(
-        false,
-        () -> {
-          var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-          var result = new CommandErrorFactory().create(exception);
-          assertCommandErrorV2(exception, result);
-        });
+  public void commandError() {
+    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
+    var result = CommandErrorFactory.create(exception);
+    assertCommandError(exception, result);
   }
 
-  @Test
-  public void debugModeCommandErrorV2() {
-    withDebugMode(
-        true,
-        () -> {
-          var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-          var result = new CommandErrorFactory().create(exception);
-          assertCommandErrorV2(exception, result);
-
-          assertThat(result)
-              .isNotNull()
-              .satisfies(
-                  e ->
-                      assertThat(e.exceptionClass())
-                          .isEqualTo(exception.getClass().getSimpleName()));
-        });
-  }
-
-  private void withDebugMode(boolean debugMode, Runnable runnable) {
-    final boolean previousDebugMode = DebugConfigAccess.isDebugEnabled();
-    DebugConfigAccess.setDebugEnabled(debugMode);
-    try {
-      runnable.run();
-    } finally {
-      DebugConfigAccess.setDebugEnabled(previousDebugMode);
-    }
-  }
-
-  private void assertCommandErrorV2(APIException exception, CommandError commandError) {
+  private void assertCommandError(APIException exception, CommandError commandError) {
 
     assertThat(commandError)
-        .as("CommandErrorV2 matches ApiException %s", exception)
+        .as("CommandError matches ApiException %s", exception)
         .isNotNull()
         .satisfies(
             e -> {
@@ -83,8 +50,6 @@ public class CommandErrorFactoryTest extends ConfiguredErrorTest {
 
     assertThat(metricTags)
         .extracting(Tag::getKey, Tag::getValue)
-        .contains(
-            tuple(ExceptionMetrics.TAG_NAME_ERROR_CODE, exception.fullyQualifiedCode()),
-            tuple(ExceptionMetrics.TAG_NAME_ERROR_CLASS, exception.getClass().getSimpleName()));
+        .contains(tuple(ExceptionMetrics.TAG_NAME_ERROR_CODE, exception.fullyQualifiedCode()));
   }
 }

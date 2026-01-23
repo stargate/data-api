@@ -180,7 +180,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                 """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.city' is not indexed: cannot filter"));
@@ -201,7 +200,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
             """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString("Collection path '$vector' is not indexed: cannot filter"));
@@ -266,7 +264,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.city' is not indexed: cannot filter"));
@@ -290,7 +287,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.city' is not indexed: cannot filter"));
@@ -312,7 +308,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.city' is not indexed: cannot filter"));
@@ -381,7 +376,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_ID_NOT_INDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
@@ -431,7 +425,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
@@ -457,7 +450,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_ID_NOT_INDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
@@ -559,7 +551,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.street' is not indexed: cannot filter"));
@@ -585,7 +576,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString("Collection path 'address' is not indexed: cannot filter"));
@@ -614,7 +604,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
@@ -662,7 +651,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
@@ -693,7 +681,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
@@ -724,7 +711,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
@@ -771,7 +757,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
               containsString(
@@ -813,7 +798,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(
@@ -852,7 +836,6 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
-          .body("errors[0].exceptionClass", is("FilterException"))
           .body(
               "errors[0].message",
               containsString(

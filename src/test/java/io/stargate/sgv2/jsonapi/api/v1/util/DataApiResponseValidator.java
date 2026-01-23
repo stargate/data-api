@@ -161,7 +161,6 @@ public class DataApiResponseValidator {
   public DataApiResponseValidator hasSingleApiError(ErrorCodeV1 errorCode) {
     return body("$", responseIsError)
         .body("errors", hasSize(1))
-        .body("errors[0].exceptionClass", is("JsonApiException"))
         .body("errors[0].errorCode", is(errorCode.name()));
   }
 
@@ -188,7 +187,6 @@ public class DataApiResponseValidator {
 
     return body("$", responseIsError)
         .body("errors", hasSize(1))
-        .body("errors[0].exceptionClass", is(errorClass.getSimpleName()))
         .body("errors[0].errorCode", is(errorCode.toString()));
   }
 
@@ -227,8 +225,7 @@ public class DataApiResponseValidator {
     return body("$", responseIsError)
         .body("errors", hasSize(1))
         .body("errors[0].errorCode", is(expected.code))
-        .body("errors[0].message", is(expected.body))
-        .body("errors[0].exceptionClass", is(expected.getClass().getSimpleName()));
+        .body("errors[0].message", is(expected.body));
   }
 
   // // // API-aware validation: non-error content // // //
