@@ -60,6 +60,8 @@ public class SchemaException extends RequestException {
     RERANKING_PROVIDER_UNEXPECTED_RESPONSE, // legacy: converted from ErrorCodeV1
     RERANKING_PROVIDER_CLIENT_ERROR, // legacy: converted from ErrorCodeV1
     RERANKING_PROVIDER_SERVER_ERROR, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_RATE_LIMITED, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_TIMEOUT, // legacy: converted from ErrorCodeV1
 
     TOO_MANY_COLLECTIONS, // legacy: converted from ErrorCodeV1
     TOO_MANY_INDEXES_FOR_COLLECTION,

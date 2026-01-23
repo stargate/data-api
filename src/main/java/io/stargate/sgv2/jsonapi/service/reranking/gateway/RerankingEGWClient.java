@@ -7,8 +7,7 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
@@ -86,7 +85,8 @@ public class RerankingEGWClient extends RerankingProvider {
       gatewayRerankingUni = grpcGatewayService.rerank(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw ErrorCodeV1.RERANKING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+        throw SchemaException.Code.RERANKING_PROVIDER_TIMEOUT.get(
+            Map.of("errorMessage", e.getMessage()));
       }
       throw e;
     }
@@ -96,9 +96,10 @@ public class RerankingEGWClient extends RerankingProvider {
         .transform(
             gatewayResponse -> {
               if (gatewayResponse.hasError()) {
-                throw new JsonApiException(
-                    ErrorCodeV1.valueOf(gatewayResponse.getError().getErrorCode()),
-                    gatewayResponse.getError().getErrorMessage());
+                // 22-Jan-2026, tatu: This is ugly. But has to be done to work around fragility
+                //   of exception mapping
+                throw SchemaException.Code.valueOf(gatewayResponse.getError().getErrorCode())
+                    .withPreformattedMessage(gatewayResponse.getError().getErrorMessage());
               }
 
               return new BatchedRerankingResponse(

@@ -13,7 +13,6 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
@@ -168,12 +167,12 @@ public class RerankingGatewayClientTest {
             .getFailure();
 
     assertThat(result)
-        .isInstanceOf(JsonApiException.class)
+        .isInstanceOf(SchemaException.class)
         .satisfies(
             e -> {
-              JsonApiException exception = (JsonApiException) e;
+              SchemaException exception = (SchemaException) e;
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
-              assertThat(exception.getErrorCode().name()).isEqualTo(apiException.code);
+              assertThat(exception.code).isEqualTo(apiException.code);
             });
   }
 }

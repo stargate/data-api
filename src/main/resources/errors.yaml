@@ -1403,6 +1403,18 @@ request-errors:
       Reranking provider server error: ${errorMessage}.
 
   - scope: SCHEMA
+    code: RERANKING_PROVIDER_RATE_LIMITED
+    title: Reranking provider rate-limited
+    body: |-
+      Reranking provider rate-limited: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: RERANKING_PROVIDER_TIMEOUT
+    title: Reranking provider timeout
+    body: |-
+      Reranking provider timed out: ${errorMessage}.
+
+  - scope: SCHEMA
     code: TOO_MANY_COLLECTIONS
     title: Too many collections
     body: |-
