@@ -40,9 +40,6 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
 
   private final RequestTracing requestTracing;
 
-  // Created in the Ctor
-  private final CommandErrorFactory commandErrorFactory = new CommandErrorFactory();
-
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses) {
@@ -196,7 +193,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   private CommandError getCommandError(InsertAttempt<SchemaT> insertAttempt) {
     if (insertAttempt.failure().isPresent()) {
       var docsIds = insertAttempt.docRowID().map(List::of).orElse(List.of());
-      return commandErrorFactory.create(insertAttempt.failure().get(), docsIds);
+      return CommandErrorFactory.create(insertAttempt.failure().get(), docsIds);
     }
     return null;
   }

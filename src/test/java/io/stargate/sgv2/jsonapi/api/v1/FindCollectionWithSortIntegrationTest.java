@@ -541,7 +541,6 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("OVERLOADED_SORT_ROW_LIMIT"))
-          .body("errors[0].exceptionClass", is("SortException"))
           .body(
               "errors[0].message",
               startsWith("The command used in-memory sorting which has a limit of 100 documents"));

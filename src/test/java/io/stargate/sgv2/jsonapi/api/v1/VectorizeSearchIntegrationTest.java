@@ -206,7 +206,6 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("errors", hasSize(1))
           .body(
               "errors[0].errorCode", is(DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -236,7 +235,6 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("errors", hasSize(1))
           .body(
               "errors[0].errorCode", is(DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name()))
-          .body("errors[0].exceptionClass", is(DocumentException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString("Invalid $vectorize value: needs to be String, not Number"));
@@ -504,7 +502,6 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_VALUE_INVALID.name()))
-          .body("errors[0].exceptionClass", is(SortException.class.getSimpleName()))
           .body(
               "errors[0].message",
               startsWith(
@@ -605,7 +602,6 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("SortException"))
           .body("errors[0].errorCode", is("SORT_CLAUSE_VALUE_INVALID"))
           .body(
               "errors[0].message",
@@ -1164,7 +1160,6 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("VECTORIZE_SERVICE_TYPE_UNAVAILABLE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               containsString("unknown model 'random' for service provider 'nvidia'"));

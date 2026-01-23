@@ -51,7 +51,6 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("REQUEST_NOT_JSON"))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               containsString("Request not valid JSON, problem: Unexpected character"));
@@ -72,7 +71,6 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
@@ -92,7 +90,6 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith("Command field 'command' value `null` not valid: must not be null"));

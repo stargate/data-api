@@ -28,8 +28,6 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
   // True if the response should include detailed info for each document
   private final boolean returnDocumentResponses;
 
-  private static final CommandErrorFactory commandErrorFactory = new CommandErrorFactory();
-
   private InsertDBTaskPage(
       TaskGroup<InsertDBTask<SchemaT>, SchemaT> tasks,
       CommandResultBuilder resultBuilder,
@@ -112,7 +110,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
     // Second: failed insertions; output in order of insertion
     for (var task : tasks.errorTasks()) {
 
-      var cmdError = commandErrorFactory.create(task.failure().orElseThrow());
+      var cmdError = CommandErrorFactory.create(task.failure().orElseThrow());
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
       // either one exists, use it; or if not, add it and use the new index.

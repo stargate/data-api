@@ -55,7 +55,6 @@ public record UpdateCollectionOperationPage(
         });
     // Create error by error code or error class
     List<CommandError> errors = new ArrayList<>(groupedErrorUpdates.size());
-    var commandErrorFactory = new CommandErrorFactory();
 
     groupedErrorUpdates
         .keySet()
@@ -66,7 +65,7 @@ public record UpdateCollectionOperationPage(
               final List<DocumentId> documentIds =
                   updatedDocuments.stream().map(update -> update.id()).collect(Collectors.toList());
               errors.add(
-                  commandErrorFactory.create(
+                  CommandErrorFactory.create(
                       updatedDocuments.stream().findFirst().get().error(), documentIds));
             });
 

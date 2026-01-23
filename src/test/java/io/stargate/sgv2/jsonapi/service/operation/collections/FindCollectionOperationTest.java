@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -2985,14 +2984,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
               .awaitFailure()
               .getFailure();
 
-      var commandError = new CommandErrorFactory().create(failure);
+      var commandError = CommandErrorFactory.create(failure);
 
       assertThat(commandError).isNotNull();
       assertThat(commandError.errorCode())
           .isEqualTo(DatabaseException.Code.FAILED_READ_REQUEST.name());
-      assertThat(commandError.exceptionClass()).isEqualTo(classSimpleName(DatabaseException.class));
-      // XXX amorton - changed to return 200
-      //      assertThat(commandError.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
       assertThat(commandError.message()).contains("The number of nodes blocked for was: 0.");
     }
   }
