@@ -86,8 +86,12 @@ public interface ErrorCode<T extends APIException> {
    * message is pre-formatted and needs to by-pass formatting.
    */
   default T withPreformattedMessage(String formattedMessage) {
-    return template()
-        .withPreformattedMessage(EnumSet.noneOf(ExceptionFlags.class), formattedMessage);
+    return withPreformattedMessage(EnumSet.noneOf(ExceptionFlags.class), formattedMessage);
+  }
+
+  default T withPreformattedMessage(
+      EnumSet<ExceptionFlags> exceptionFlags, String formattedMessage) {
+    return template().withPreformattedMessage(exceptionFlags, formattedMessage);
   }
 
   /**

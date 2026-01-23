@@ -82,7 +82,7 @@ public record ErrorTemplate<T extends APIException>(
 
   /**
    * By-pass factory method needed when translating from gRPC into proper exception instance:
-   * message is pre-formatted and needs to by-pass formatting.
+   * message is pre-formatted and needs to by-pass templating.
    */
   public T withPreformattedMessage(
       EnumSet<ExceptionFlags> exceptionFlags, String formattedMessage) {
