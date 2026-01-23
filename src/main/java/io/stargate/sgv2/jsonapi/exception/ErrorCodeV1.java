@@ -19,7 +19,6 @@ public enum ErrorCodeV1 {
 
   // CreateCollection error codes:
 
-  RERANKING_PROVIDER_TIMEOUT("The Reranking Provider timed out"),
   RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
       "The reranking provider authentication key is not provided"),
 
