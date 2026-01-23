@@ -1415,6 +1415,12 @@ request-errors:
       Reranking provider timed out: ${errorMessage}.
 
   - scope: SCHEMA
+    code: RERANKING_PROVIDER_AUTHENTICATION_KEY_NOT_PROVIDED
+    title: Reranking provider has no authentication key
+    body: |-
+      No authentication key provided for reranking provider: In order to rerank, please provide the reranking API key.
+
+  - scope: SCHEMA
     code: TOO_MANY_COLLECTIONS
     title: Too many collections
     body: |-
