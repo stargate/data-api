@@ -6,8 +6,8 @@ import com.google.common.collect.Multimap;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * @param moreData - if `true` means more documents available in DB for the provided condition
  */
 public record DeleteOperationPage(
-    List<Tuple3<Boolean, Throwable, ReadDocument>> deletedInformation,
+    List<Tuple3<Boolean, APIException, ReadDocument>> deletedInformation,
     boolean moreData,
     boolean returnDocument,
     boolean singleDocument)
@@ -67,7 +67,7 @@ public record DeleteOperationPage(
     List<JsonNode> deletedDoc = new ArrayList<>();
 
     // aggregate the errors by error code or error class
-    Multimap<String, Tuple3<Boolean, Throwable, ReadDocument>> groupedErrorDeletes =
+    Multimap<String, Tuple3<Boolean, APIException, ReadDocument>> groupedErrorDeletes =
         ArrayListMultimap.create();
     deletedInformation.forEach(
         deletedData -> {
@@ -75,8 +75,7 @@ public record DeleteOperationPage(
             deletedDoc.add(deletedData.getItem3().get());
           }
           if (deletedData.getItem2() != null) {
-            String key = ExceptionUtil.getThrowableGroupingKey(deletedData.getItem2());
-            groupedErrorDeletes.put(key, deletedData);
+            groupedErrorDeletes.put(deletedData.getItem2().code, deletedData);
           }
         });
 
@@ -87,7 +86,7 @@ public record DeleteOperationPage(
         .keySet()
         .forEach(
             key -> {
-              Collection<Tuple3<Boolean, Throwable, ReadDocument>> deletedDocuments =
+              Collection<Tuple3<Boolean, APIException, ReadDocument>> deletedDocuments =
                   groupedErrorDeletes.get(key);
               List<DocumentId> documentIds =
                   deletedDocuments.stream()

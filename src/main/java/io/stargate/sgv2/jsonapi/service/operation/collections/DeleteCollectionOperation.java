@@ -10,8 +10,7 @@ import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.exception.DatabaseException;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.exception.unchecked.LWTFailureException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -147,7 +146,7 @@ public record DeleteCollectionOperation(
                       (deleted, error) ->
                           Tuple3.of(
                               deleted != null ? deleted.getItem1() : false,
-                              error,
+                              maybeWrapThrowable(error),
                               error == null
                                       && deleted != null
                                       && deleted.getItem2() != null
@@ -167,6 +166,13 @@ public record DeleteCollectionOperation(
               return new DeleteOperationPage(
                   deletedInformation, moreData.get(), returnDocumentInResponse, deleteLimit == 1);
             });
+  }
+
+  private static APIException maybeWrapThrowable(Throwable throwable) {
+    if (throwable instanceof APIException apiException) {
+      return apiException;
+    }
+    return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(throwable));
   }
 
   private ReadDocument applyProjection(ReadDocument document) {
