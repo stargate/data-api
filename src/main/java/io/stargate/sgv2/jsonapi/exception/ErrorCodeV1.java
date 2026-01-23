@@ -44,13 +44,6 @@ public enum ErrorCodeV1 {
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
 
-  HYBRID_FIELD_CONFLICT(
-      "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
-  HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
-  HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
-  HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
-      "Unsupported JSON value type for '$hybrid' sub-field"),
-
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 
   INVALID_REQUEST("Request not supported by the data store"),

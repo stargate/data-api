@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.is;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.fixtures.TestTextUtil;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -413,9 +413,7 @@ public class InsertLexicalInCollectionIntegrationTest
             """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is(ErrorCodeV1.HYBRID_FIELD_CONFLICT.name()))
-          .body(
-              "errors[0].message", containsString(ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()));
+          .body("errors[0].errorCode", is(RequestException.Code.HYBRID_FIELD_CONFLICT.name()));
     }
   }
 }

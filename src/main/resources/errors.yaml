@@ -169,6 +169,32 @@ request-errors:
       Resend using one of the supported commands.
 
   - scope:
+    code: HYBRID_FIELD_CONFLICT
+    title: Conflict with $hybrid field
+    body: |-
+      Field '$hybrid' cannot be used with '$lexical', '$vector', or '$vectorize'.
+      
+      Resend command without conflicting fields.
+
+  - scope:
+    code: HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE
+    title: Unsupported JSON value type for $hybrid field
+    body: |-
+      Unsupported JSON value type for '$hybrid' field: ${errorMessage}.
+
+  - scope:
+    code: HYBRID_FIELD_UNKNOWN_SUBFIELDS
+    title: Unknown sub-field(s) for $hybrid field
+    body: |-
+      Unknown sub-field(s) for '$hybrid' field: ${errorMessage}.
+
+  - scope:
+    code: HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE
+    title: Unsupported JSON value type for $hybrid sub-field
+    body: |-
+      Unsupported JSON value type for '$hybrid' sub-field: ${errorMessage}.
+
+  - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
     title: Invalid field(s) for createCollection
     body: |-
