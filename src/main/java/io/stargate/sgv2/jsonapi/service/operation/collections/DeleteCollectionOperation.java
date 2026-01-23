@@ -169,10 +169,11 @@ public record DeleteCollectionOperation(
   }
 
   private static APIException maybeWrapThrowable(Throwable throwable) {
-    if (throwable instanceof APIException apiException) {
-      return apiException;
-    }
-    return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(throwable));
+    return switch (throwable) {
+      case null -> null;
+      case APIException apiException -> apiException;
+      default -> ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(throwable));
+    };
   }
 
   private ReadDocument applyProjection(ReadDocument document) {
