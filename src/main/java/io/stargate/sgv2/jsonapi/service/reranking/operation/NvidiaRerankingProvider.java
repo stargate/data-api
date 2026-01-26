@@ -98,9 +98,6 @@ public class NvidiaRerankingProvider extends RerankingProvider {
           "In order to rerank, please provide the reranking API key.");
     }
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey();
-    
-    // Extract tenant ID from reranking credentials to forward to GPU API Gateway
-    String tenantId = rerankingCredentials.tenant().toString();
 
     var nvidiaRequest =
         new NvidiaRerankingRequest(
@@ -110,7 +107,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             TRUNCATE_PASSAGE);
 
     final long callStartNano = System.nanoTime();
-    return retryHTTPCall(nvidiaClient.rerank(accessToken, tenantId, nvidiaRequest))
+    return retryHTTPCall(nvidiaClient.rerank(accessToken, rerankingCredentials.tenant().toString(), nvidiaRequest))
         .onItem()
         .transform(
             jakartaResponse -> {
@@ -149,7 +146,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<Response> rerank(
         @HeaderParam("Authorization") String accessToken,
-        @HeaderParam("TENANT_ID") String tenantId,
+        @HeaderParam("tenant-id") String tenantId,
         NvidiaRerankingRequest request);
   }
 
