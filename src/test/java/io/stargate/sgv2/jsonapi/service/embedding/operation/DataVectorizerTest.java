@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -189,10 +190,11 @@ public class DataVectorizerTest {
                 .getFailure();
         assertThat(failure)
             .isNotNull()
-            .isInstanceOf(JsonApiException.class)
+            .isInstanceOf(SchemaException.class)
+            .hasFieldOrPropertyWithValue(
+                "code", SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.name())
             .withFailMessage(
-                "$vectorize` and `$vector` can't be used together, issue in document at position 1")
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE);
+                "'$vector' and '$vectorize' cannot be used together: issue in document at position 1");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

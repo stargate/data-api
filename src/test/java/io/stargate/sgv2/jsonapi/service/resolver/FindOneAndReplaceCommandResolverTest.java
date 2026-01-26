@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
@@ -66,8 +66,8 @@ public class FindOneAndReplaceCommandResolverTest {
     FindOneAndReplaceCommand command = objectMapper.readValue(json, FindOneAndReplaceCommand.class);
     Exception e = catchException(() -> resolver.resolveCommand(commandContext, command));
     assertThat(e)
-        .isInstanceOf(JsonApiException.class)
-        .hasMessageContaining("$vectorize` and `$vector` can't be used together");
+        .isInstanceOf(SchemaException.class)
+        .hasMessageContaining("$vector' and '$vectorize' cannot be used together in same document");
   }
 
   @Test

@@ -70,8 +70,8 @@ public class DataVectorizer {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
           if (document.has(VECTOR_EMBEDDING_FIELD)) {
-            throw ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE.toApiException(
-                "issue in document at position %d", (position + 1));
+            throw SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.get(
+                Map.of("extraDesc", ": issue in document at position " + (position + 1)));
           }
           final JsonNode jsonNode =
               document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);

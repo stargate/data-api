@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
@@ -288,7 +287,7 @@ public class CollectionRerankDef {
     // configuration.
     if (!isRerankingEnabledForAPI) {
       if (rerankingDesc != null) {
-        throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
+        throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
       }
       return DISABLED;
     }
