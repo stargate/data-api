@@ -13,6 +13,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.fixtures.TestTextUtil;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -222,7 +223,9 @@ public class InsertLexicalInCollectionIntegrationTest
           .then()
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.name()))
           .body(
               "errors[0].message",
               containsString("only be used on collections for which Lexical feature is enabled"));
@@ -392,7 +395,7 @@ public class InsertLexicalInCollectionIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "Unrecognized sub-field(s) for '$hybrid' Object: expected '$lexical' and/or '$vectorize' but encountered: 'extra', 'stuff' (Document 1 of 1)"));
+                  "Unknown sub-field(s) for '$hybrid' field: expected '$lexical' and/or '$vectorize' but encountered: 'extra', 'stuff' (Document 1 of 1)"));
     }
 
     @Test
