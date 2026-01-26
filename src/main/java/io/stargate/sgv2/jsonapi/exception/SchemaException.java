@@ -45,6 +45,7 @@ public class SchemaException extends RequestException {
     INVALID_CREATE_COLLECTION_OPTIONS,
     INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN,
     INVALID_INDEXING_DEFINITION,
+    INVALID_USAGE_OF_VECTORIZE, // legacy: converted from ErrorCodeV1
     INVALID_USER_DEFINED_TYPE_NAME,
     LEXICAL_NOT_AVAILABLE_FOR_DATABASE,
     LEXICAL_NOT_ENABLED_FOR_COLLECTION,
@@ -53,6 +54,16 @@ public class SchemaException extends RequestException {
     MISSING_DIMENSION_IN_VECTOR_COLUMN,
     MISSING_FIELDS_FOR_TYPE_CREATION,
     MISSING_PARTITION_COLUMNS,
+
+    RERANKING_FEATURE_NOT_ENABLED, // legacy: converted from ErrorCodeV1
+    RERANKING_SERVICE_TYPE_UNAVAILABLE, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_UNEXPECTED_RESPONSE, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_CLIENT_ERROR, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_SERVER_ERROR, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_RATE_LIMITED, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_TIMEOUT, // legacy: converted from ErrorCodeV1
+    RERANKING_PROVIDER_AUTHENTICATION_KEY_NOT_PROVIDED, // legacy: converted from ErrorCodeV1
+
     TOO_MANY_COLLECTIONS, // legacy: converted from ErrorCodeV1
     TOO_MANY_INDEXES_FOR_COLLECTION,
     UNKNOWN_DATA_TYPE,
