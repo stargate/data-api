@@ -213,7 +213,7 @@ public class CommandProcessor {
       // we already have the result, not a result builder, so need to create the warning error here
       // not on hot path, can create the factory each time
       commandResult.addWarning(
-          new CommandErrorFactory().create(deprecatedCommand.getDeprecationWarning()));
+          CommandErrorFactory.create(deprecatedCommand.getDeprecationWarning()));
     }
     return commandResult;
   }

@@ -3,13 +3,12 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -47,15 +46,12 @@ public record UpdateCollectionOperationPage(
           if (returnDocs) {
             updatedDocs.add(update.document());
           }
-          //
           if (update.error() != null) {
-            String key = ExceptionUtil.getThrowableGroupingKey(update.error());
-            groupedErrorUpdates.put(key, update);
+            groupedErrorUpdates.put(update.error().code, update);
           }
         });
     // Create error by error code or error class
-    List<CommandErrorV2> errors = new ArrayList<>(groupedErrorUpdates.size());
-    var commandErrorFactory = new CommandErrorFactory();
+    List<CommandError> errors = new ArrayList<>(groupedErrorUpdates.size());
 
     groupedErrorUpdates
         .keySet()
@@ -66,7 +62,7 @@ public record UpdateCollectionOperationPage(
               final List<DocumentId> documentIds =
                   updatedDocuments.stream().map(update -> update.id()).collect(Collectors.toList());
               errors.add(
-                  commandErrorFactory.create(
+                  CommandErrorFactory.create(
                       updatedDocuments.stream().findFirst().get().error(), documentIds));
             });
 

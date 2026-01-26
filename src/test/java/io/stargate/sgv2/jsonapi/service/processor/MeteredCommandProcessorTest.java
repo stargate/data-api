@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +16,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
-import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -97,7 +95,6 @@ public class MeteredCommandProcessorTest {
                           .contains("tenant=\"%s".formatted(testConstants.TENANT.toString()));
                       assertThat(line).contains("error=\"false\"");
                       assertThat(line).contains("error_code=\"NA\"");
-                      assertThat(line).contains("error_class=\"NA\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
               });
@@ -119,11 +116,8 @@ public class MeteredCommandProcessorTest {
       // easier to create an Exception and build the error from it, it will include tags etc
       var exception =
           ServerException.Code.INTERNAL_SERVER_ERROR.get("errorMessage", "test error details");
-      CommandResult commandResult;
-      try (var ignored = DebugConfigAccess.withDebugEnabled()) {
-        commandResult =
-            CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(exception).build();
-      }
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(exception).build();
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -159,8 +153,6 @@ public class MeteredCommandProcessorTest {
                       assertThat(line).contains("error=\"true\"");
                       assertThat(line)
                           .contains("error_code=\"" + exception.fullyQualifiedCode() + "\"");
-                      assertThat(line)
-                          .contains("error_class=\"" + classSimpleName(exception) + "\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
               });
@@ -183,11 +175,9 @@ public class MeteredCommandProcessorTest {
       // easier to create an Exception and build the error from it, it will include tags etc
       var exception =
           ServerException.Code.INTERNAL_SERVER_ERROR.get("errorMessage", "test error details");
-      CommandResult commandResult;
-      try (var ignored = DebugConfigAccess.withDebugEnabled()) {
-        commandResult =
-            CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(exception).build();
-      }
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(exception).build();
+      ;
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -225,8 +215,6 @@ public class MeteredCommandProcessorTest {
                       assertThat(line).contains("error=\"true\"");
                       assertThat(line)
                           .contains("error_code=\"" + exception.fullyQualifiedCode() + "\"");
-                      assertThat(line)
-                          .contains("error_class=\"" + classSimpleName(exception) + "\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
               });

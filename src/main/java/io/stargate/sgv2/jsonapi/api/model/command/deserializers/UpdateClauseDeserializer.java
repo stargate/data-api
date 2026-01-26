@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.io.IOException;
 import java.util.*;
 
@@ -62,7 +63,7 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       if (checkUpdateOperationNode != null
           && checkUpdateOperationNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
         if (checkUpdateOperationNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-          throw ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE.toApiException();
+          throw SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.get(Map.of("extraDesc", ""));
         }
       }
     }
