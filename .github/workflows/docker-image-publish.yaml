@@ -83,7 +83,7 @@ jobs:
     # matrix props:
     strategy:
       matrix:
-        image: [jsonapi ]
+        image: [jsonapi]
 
     env:
       # not a newest version, this reflects riptano action target version
@@ -120,7 +120,7 @@ jobs:
         run: |
           echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
           echo "=== signing image [$COSIGN_IMAGE] ..."
-          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
+          cosign sign --yes --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
 
       - name: Sign profiling docker image
         shell: bash
@@ -134,4 +134,4 @@ jobs:
         run: |
           echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
           echo "=== signing image [$COSIGN_IMAGE] ..."
-          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
+          cosign sign --yes --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
