@@ -114,7 +114,7 @@ jobs:
           AUX_KEY: signedby
           AUX_VALUE: stargate
         run: |
-          echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
+          echo "$COSIGN_PRIVATE_BASE64" | base64 --decode > $COSIGN_KEY_FILE
           echo "=== signing image [$COSIGN_IMAGE] ..."
           cosign sign --yes --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
 
@@ -128,6 +128,6 @@ jobs:
           AUX_KEY: signedby
           AUX_VALUE: stargate
         run: |
-          echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
+          echo "$COSIGN_PRIVATE_BASE64" | base64 --decode > $COSIGN_KEY_FILE
           echo "=== signing image [$COSIGN_IMAGE] ..."
           cosign sign --yes --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
