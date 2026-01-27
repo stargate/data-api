@@ -62,7 +62,10 @@ public class RequestException extends APIException {
     UNSUPPORTED_COLLECTION_COMMAND,
     UNSUPPORTED_CONTENT_TYPE,
     UNSUPPORTED_RERANKING_COMMAND,
-    UNSUPPORTED_TABLE_COMMAND;
+    UNSUPPORTED_TABLE_COMMAND,
+
+    UNSUPPORTED_UPDATE_DATA_TYPE // from ErrorCodeV1
+  ;
 
     private final ErrorTemplate<RequestException> template;
 

@@ -271,6 +271,12 @@ request-errors:
       
       Resend using a supported collection. 
 
+  - scope:
+    code: UNSUPPORTED_UPDATE_DATA_TYPE
+    title: Unsupported update data type
+    body: |-
+      Unsupported update data type: ${errorMessage}.
+
   # unscoped because this touches both the sort and the options
   - scope:
     code: MISSING_RERANK_QUERY_TEXT

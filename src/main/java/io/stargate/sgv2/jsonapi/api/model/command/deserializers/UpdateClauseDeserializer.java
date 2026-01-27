@@ -9,7 +9,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.util.*;
 
@@ -26,9 +28,11 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_DATA_TYPE.toApiException(
-          "update data type for UpdateClause must be JSON Object, was: %s",
-          filterNode.getNodeType());
+      throw RequestException.Code.UNSUPPORTED_UPDATE_DATA_TYPE.get(
+          Map.of(
+              "errorMessage",
+              "update data type for UpdateClause must be JSON Object, was: %s"
+                  .formatted(JsonUtil.nodeTypeAsString(filterNode))));
     }
     final EnumMap<UpdateOperator, ObjectNode> updateDefs = new EnumMap<>(UpdateOperator.class);
     for (Map.Entry<String, JsonNode> entry : filterNode.properties()) {
@@ -44,9 +48,11 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       }
       JsonNode operationArg = entry.getValue();
       if (!operationArg.isObject()) {
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_DATA_TYPE.toApiException(
-            "update data type for Operator '%s' must be JSON Object, was: %s",
-            operName, operationArg.getNodeType());
+        throw RequestException.Code.UNSUPPORTED_UPDATE_DATA_TYPE.get(
+            Map.of(
+                "errorMessage",
+                "update data type for Operator '%s' must be JSON Object, was: %s"
+                    .formatted(operName, JsonUtil.nodeTypeAsString(operationArg))));
       }
       updateDefs.put(oper, (ObjectNode) operationArg);
     }
