@@ -7,8 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -149,11 +148,11 @@ public class OpenAiEmbeddingClientTest {
               "some data");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
+          .isInstanceOf(EmbeddingProviderException.class)
+          .hasFieldOrPropertyWithValue("code", EmbeddingProviderException.Code.CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
+              "Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -165,11 +164,11 @@ public class OpenAiEmbeddingClientTest {
               "some data");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
+          .isInstanceOf(EmbeddingProviderException.class)
+          .hasFieldOrPropertyWithValue("code", EmbeddingProviderException.Code.CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
+              "Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
     }
   }
 }

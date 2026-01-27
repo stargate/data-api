@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.containsString;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistryTestData;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -1734,8 +1734,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb");
+              EmbeddingProviderException.Code.CLIENT_ERROR,
+              EmbeddingProviderException.class,
+              "Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb");
     }
 
     @Order(2)
@@ -1782,8 +1783,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                     }
                                     """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb");
+              EmbeddingProviderException.Code.CLIENT_ERROR,
+              EmbeddingProviderException.class,
+              "Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb");
     }
 
     @Order(3)
@@ -1829,7 +1831,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR,
+              EmbeddingProviderException.Code.CLIENT_ERROR,
+              EmbeddingProviderException.class,
               anyOf(
                   containsString("Provider: openai; HTTP Status: 401; Error Message: "),
                   containsString("Provider: jinaAI; HTTP Status: 401; Error Message: ")));

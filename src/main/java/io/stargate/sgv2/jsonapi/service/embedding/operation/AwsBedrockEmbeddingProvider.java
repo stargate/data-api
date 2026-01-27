@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.CountingOutputStream;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -176,9 +177,13 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
     }
 
     if (bedrockException.statusCode() > 400 && bedrockException.statusCode() < 500) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+      return EmbeddingProviderException.Code.CLIENT_ERROR.get(
+          "provider",
+          modelProvider().apiName(),
+          "httpStatus",
+          String.valueOf(bedrockException.statusCode()),
+          "errorMessage",
+          bedrockException.getMessage());
     }
 
     if (bedrockException.statusCode() >= 500) {
