@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
@@ -64,9 +63,11 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
           modified |= !newValue.equals(oldValue);
         }
       } else { // Non-number existing value? Fail
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
-            "$inc requires target to be Number; value at '%s' of type %s",
-            target.fullPath(), oldValue.getNodeType());
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.get(
+            Map.of(
+                "errorMessage",
+                "$inc requires target to be Number; value at '%s' of type %s"
+                    .formatted(target.fullPath(), JsonUtil.nodeTypeAsString(oldValue))));
       }
     }
 

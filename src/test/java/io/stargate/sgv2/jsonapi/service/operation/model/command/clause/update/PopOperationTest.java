@@ -9,8 +9,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.PopOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.MethodOrderer;
@@ -204,11 +202,9 @@ public class PopOperationTest extends UpdateOperationTestBase {
                 oper.updateDocument(doc);
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $pop requires target to be ARRAY; value at 'a' of type NUMBER");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.name())
+          .hasMessageContaining("$pop requires target to be Array; value at 'a' of type Number");
     }
 
     @Test
@@ -222,11 +218,10 @@ public class PopOperationTest extends UpdateOperationTestBase {
                 oper.updateDocument(doc);
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $pop requires target to be ARRAY; value at 'subdoc.1' of type BOOLEAN");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.name())
+          .hasMessageContaining(
+              "$pop requires target to be Array; value at 'subdoc.1' of type Boolean");
     }
   }
 }

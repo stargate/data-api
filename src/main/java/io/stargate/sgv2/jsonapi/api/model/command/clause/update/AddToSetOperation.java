@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
@@ -111,9 +110,11 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
       } else if (node.isArray()) { // Already array? Append
         array = (ArrayNode) node;
       } else { // Something else? fail
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
-            "$addToSet requires target to be ARRAY; value at '%s' of type %s",
-            action.locator().path(), node.getNodeType());
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.get(
+            Map.of(
+                "errorMessage",
+                "$addToSet requires target to be Array; value at '%s' of type %s"
+                    .formatted(action.locator().path(), JsonUtil.nodeTypeAsString(node))));
       }
 
       final JsonNode toAdd = action.value;

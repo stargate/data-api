@@ -866,6 +866,12 @@ request-errors:
       Unsupported update operation path: ${errorMessage}.
 
   - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_TARGET
+    title: Unsupported update operation target
+    body: |-
+      Unsupported update operation target: ${errorMessage}.
+
+  - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
     title: Primary key columns cannot be updated
     body: |-
