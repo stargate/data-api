@@ -848,6 +848,12 @@ request-errors:
       Unsupported update operation: ${errorMessage}.
 
   - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_MODIFIER
+    title: Unsupported update operation modifier
+    body: |-
+      Unsupported update operation modifier: ${errorMessage}.
+
+  - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
     title: Primary key columns cannot be updated
     body: |-

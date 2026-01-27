@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -62,8 +63,11 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
           break;
 
         default:
-          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
-              "$addToSet only supports $each modifier; trying to use '%s'", modifier);
+          throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.get(
+              Map.of(
+                  "errorMessage",
+                  "$addToSet only supports $each modifier; trying to use '%s'"
+                      .formatted(modifier)));
       }
     }
     // For now should not be possible to occur but once we add other modifiers could:

@@ -277,12 +277,9 @@ public class MulOperationTest extends UpdateOperationTestBase {
                         """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                  + ": $mul does not support modifiers");
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.name())
+          .hasMessageContaining("$mul does not support modifiers");
     }
   }
 }

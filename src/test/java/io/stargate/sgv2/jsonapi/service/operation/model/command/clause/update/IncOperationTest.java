@@ -327,12 +327,9 @@ public class IncOperationTest extends UpdateOperationTestBase {
                         """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                  + ": $inc does not support modifiers");
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.name())
+          .hasMessageContaining("$inc does not support modifiers");
     }
   }
 }

@@ -144,12 +144,10 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                                 """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                  + ": $push only supports $each and $position currently; trying to use '$sort'");
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.name())
+          .hasMessageContaining(
+              "$push only supports $each and $position currently; trying to use '$sort'");
     }
 
     // Modifiers, if any, must be "under" field name, not at main level (and properties
@@ -344,12 +342,10 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                                 """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                  + ": $push only supports $each and $position currently; trying to use 'value'");
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.name())
+          .hasMessageContaining(
+              "$push only supports $each and $position currently; trying to use 'value'");
     }
   }
 
