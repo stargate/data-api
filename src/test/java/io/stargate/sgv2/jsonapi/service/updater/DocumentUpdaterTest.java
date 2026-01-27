@@ -596,9 +596,11 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .satisfies(
               secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
+                // Normalize by re-parsing to convert FloatNode to DoubleNode (Jackson parses
+                // JSON numbers as DoubleNode by default, but vectors come as FloatNode)
+                assertThat(
+                        objectMapper.readTree(
+                            objectMapper.writeValueAsString(secondResponseNode.document())))
                     .isEqualTo(expectedData2);
                 assertThat(secondResponseNode.modified()).isEqualTo(true); // modified $vector
               });
@@ -797,7 +799,7 @@ public class DocumentUpdaterTest {
                                 "_id": "1",
                                 "location": "London",
                                 "$vector": [0.25,0.25,0.25],
-                                "$vectorize": "London is rainy1"
+                                "$vectorize": "London is rainy"
                           }
                           """;
       JsonNode expectedData2 = objectMapper.readTree(expected2);
@@ -805,9 +807,10 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .satisfies(
               secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
+                // Normalize by re-parsing to convert FloatNode to DoubleNode
+                assertThat(
+                        objectMapper.readTree(
+                            objectMapper.writeValueAsString(secondResponseNode.document())))
                     .isEqualTo(expectedData2);
                 assertThat(secondResponseNode.modified()).isEqualTo(true);
               });
@@ -975,9 +978,10 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .satisfies(
               secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
+                // Normalize by re-parsing to convert FloatNode to DoubleNode
+                assertThat(
+                        objectMapper.readTree(
+                            objectMapper.writeValueAsString(secondResponseNode.document())))
                     .isEqualTo(expectedData2);
                 assertThat(secondResponseNode.modified()).isEqualTo(true);
                 // modified $vector
@@ -1225,9 +1229,10 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .satisfies(
               secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
+                // Normalize by re-parsing to convert FloatNode to DoubleNode
+                assertThat(
+                        objectMapper.readTree(
+                            objectMapper.writeValueAsString(secondResponseNode.document())))
                     .isEqualTo(expectedData2);
                 assertThat(secondResponseNode.modified()).isEqualTo(true);
                 // modified $vector
