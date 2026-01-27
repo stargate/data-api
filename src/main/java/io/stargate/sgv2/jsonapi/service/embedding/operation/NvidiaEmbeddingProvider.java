@@ -88,7 +88,9 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY;
 
     long callStartNano = System.nanoTime();
-    return retryHTTPCall(nvidiaClient.embed(accessToken, embeddingCredentials.tenant().toString(), nvidiaRequest))
+    return retryHTTPCall(
+            nvidiaClient.embed(
+                accessToken, embeddingCredentials.tenant().toString(), nvidiaRequest))
         .onItem()
         .transform(
             jakartaResponse -> {
