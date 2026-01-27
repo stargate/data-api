@@ -83,18 +83,14 @@ jobs:
     # matrix props:
     strategy:
       matrix:
-        image: [jsonapi ]
-
-    env:
-      # not a newest version, this reflects riptano action target version
-      # 22-Jul-2025, tatu: pre-2.0.0 no longer supported, use current latest
-      COSIGN_VERSION: v2.5.3
+        image: [jsonapi]
 
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
         with:
-          cosign-release: ${{ env.COSIGN_VERSION }}
+          # 22-Jul-2025, tatu: pre-2.0.0 no longer supported, use current latest
+          cosign-release: 'v2.5.3'
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -118,9 +114,9 @@ jobs:
           AUX_KEY: signedby
           AUX_VALUE: stargate
         run: |
-          echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
+          echo "$COSIGN_PRIVATE_BASE64" | base64 --decode > $COSIGN_KEY_FILE
           echo "=== signing image [$COSIGN_IMAGE] ..."
-          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
+          cosign sign --yes --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
 
       - name: Sign profiling docker image
         shell: bash
@@ -132,6 +128,6 @@ jobs:
           AUX_KEY: signedby
           AUX_VALUE: stargate
         run: |
-          echo $COSIGN_PRIVATE_BASE64 | base64 --decode > $COSIGN_KEY_FILE
+          echo "$COSIGN_PRIVATE_BASE64" | base64 --decode > $COSIGN_KEY_FILE
           echo "=== signing image [$COSIGN_IMAGE] ..."
-          cosign sign --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE
+          cosign sign --yes --key $COSIGN_KEY_FILE -a $AUX_KEY=$AUX_VALUE $COSIGN_IMAGE

@@ -8,7 +8,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,8 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
   public void failFindRerankingProviders() {
     assertGeneralCommand()
         .postFindRerankingProviders()
-        .hasSingleApiError(ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED);
+        .hasSingleApiError(
+            SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED, SchemaException.class);
   }
 
   // But with header override, should succeed
@@ -68,7 +69,8 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
 
     assertNamespaceCommand(keyspaceName)
         .postCreateCollection(simpleCollectionDef(COLLECTION_TO_CREATE))
-        .hasSingleApiError(ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED);
+        .hasSingleApiError(
+            SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED, SchemaException.class);
   }
 
   // But with header override, should succeed
@@ -109,7 +111,8 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
               """;
     assertTableCommand(keyspaceName, COLLECTION_TO_CREATE)
         .postCommand(CommandName.FIND_AND_RERANK, command)
-        .hasSingleApiError(ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED);
+        .hasSingleApiError(
+            SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED, SchemaException.class);
   }
 
   private static String simpleCollectionDef(String collectionName) {

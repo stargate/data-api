@@ -3,14 +3,14 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.35-SNAPSHOT</version>
+  <version>1.0.36-SNAPSHOT</version>
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <!-- 14-oct-2025, aaron: Updated to latest Quarkus for security fixes in netty -->
-    <!-- 10-nov-2025, tatu: Updated to latest Quarkus -->
-    <quarkus.platform.version>3.29.2</quarkus.platform.version>
+    <!-- 23-jan-2026, tatu: Updated to latest Quarkus -->
+    <quarkus.platform.version>3.30.8</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <!-- 17-Oct-2025, tatu: Although quarkus-bom provides for Mockito version,
@@ -288,7 +288,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.22.0</version>
+      <version>3.27.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>

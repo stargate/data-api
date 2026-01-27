@@ -169,6 +169,32 @@ request-errors:
       Resend using one of the supported commands.
 
   - scope:
+    code: HYBRID_FIELD_CONFLICT
+    title: Conflict with $hybrid field
+    body: |-
+      Field '$hybrid' cannot be used with '$lexical', '$vector', or '$vectorize'.
+      
+      Resend command without conflicting fields.
+
+  - scope:
+    code: HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE
+    title: Unsupported JSON value type for $hybrid field
+    body: |-
+      Unsupported JSON value type for '$hybrid' field: ${errorMessage}.
+
+  - scope:
+    code: HYBRID_FIELD_UNKNOWN_SUBFIELDS
+    title: Unknown sub-field(s) for $hybrid field
+    body: |-
+      Unknown sub-field(s) for '$hybrid' field: ${errorMessage}.
+
+  - scope:
+    code: HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE
+    title: Unsupported JSON value type for $hybrid sub-field
+    body: |-
+      Unsupported JSON value type for '$hybrid' sub-field: ${errorMessage}.
+
+  - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
     title: Invalid field(s) for createCollection
     body: |-
@@ -1304,6 +1330,14 @@ request-errors:
       Resend 'createCollection' with valid indexing definition.
 
   - scope: SCHEMA
+    code: INVALID_USAGE_OF_VECTORIZE
+    title: Invalid use of '$vector' and '$vectorize'
+    body: |-
+      '$vector' and '$vectorize' cannot be used together in same document${extraDesc}.
+      
+      Resend command with only '$vector' or '$vectorize'.
+
+  - scope: SCHEMA
     code: LEXICAL_NOT_AVAILABLE_FOR_DATABASE
     title: Lexical search is not available on this database
     body: |-
@@ -1363,6 +1397,54 @@ request-errors:
       The type definition must have at least one field.
       
       Resend the command providing at least one field. 
+
+  - scope: SCHEMA
+    code: RERANKING_FEATURE_NOT_ENABLED
+    title: Reranking feature not enabled
+    body: |-
+      Reranking feature is not enabled for this database.
+
+  - scope: SCHEMA
+    code: RERANKING_SERVICE_TYPE_UNAVAILABLE
+    title: Reranking service type unavailable
+    body: |-
+      Reranking service type unavailable: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: RERANKING_PROVIDER_UNEXPECTED_RESPONSE
+    title: Unexpected response from reranking provider
+    body: |-
+      Reranking provider returned an unexpected response: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: RERANKING_PROVIDER_CLIENT_ERROR
+    title: Reranking provider client error
+    body: |-
+      Reranking provider client error: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: RERANKING_PROVIDER_SERVER_ERROR
+    title: Reranking provider server error
+    body: |-
+      Reranking provider server error: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: RERANKING_PROVIDER_RATE_LIMITED
+    title: Reranking provider rate-limited
+    body: |-
+      Reranking provider rate-limited: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: RERANKING_PROVIDER_TIMEOUT
+    title: Reranking provider timeout
+    body: |-
+      Reranking provider timed out: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: RERANKING_PROVIDER_AUTHENTICATION_KEY_NOT_PROVIDED
+    title: Reranking provider has no authentication key
+    body: |-
+      No authentication key provided for reranking provider: In order to rerank, please provide the reranking API key.
 
   - scope: SCHEMA
     code: TOO_MANY_COLLECTIONS

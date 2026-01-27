@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.config.feature;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 
 /**
@@ -44,7 +43,8 @@ public enum ApiFeature {
    *   <li>FindAndRerank command.
    * </ul>
    *
-   * If disabled, those operations will fail with {@link ErrorCodeV1#RERANKING_FEATURE_NOT_ENABLED}.
+   * If disabled, those operations will fail with {@link
+   * SchemaException.Code#RERANKING_FEATURE_NOT_ENABLED}.
    *
    * <p>Disabled by default.
    */

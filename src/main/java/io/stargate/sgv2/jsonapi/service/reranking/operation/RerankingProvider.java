@@ -4,8 +4,7 @@ import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import jakarta.ws.rs.core.Response;
@@ -13,6 +12,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,8 +120,8 @@ public abstract class RerankingProvider extends ProviderBase {
   protected boolean decideRetry(Throwable throwable) {
 
     var retry =
-        (throwable.getCause() instanceof JsonApiException jae
-            && jae.getErrorCode() == ErrorCodeV1.RERANKING_PROVIDER_TIMEOUT);
+        (throwable.getCause() instanceof SchemaException se
+            && se.code.equals(SchemaException.Code.RERANKING_PROVIDER_TIMEOUT.name()));
 
     return retry || super.decideRetry(throwable);
   }
@@ -131,37 +131,47 @@ public abstract class RerankingProvider extends ProviderBase {
 
     if (jakartaResponse.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
-
-      return ErrorCodeV1.RERANKING_PROVIDER_TIMEOUT.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return SchemaException.Code.RERANKING_PROVIDER_TIMEOUT.get(
+          Map.of(
+              "errorMessage",
+              "Provider: %s; HTTP Status: %s; Error Message: %s"
+                  .formatted(
+                      modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
     }
 
     if (jakartaResponse.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
-
-      return ErrorCodeV1.RERANKING_PROVIDER_RATE_LIMITED.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return SchemaException.Code.RERANKING_PROVIDER_RATE_LIMITED.get(
+          Map.of(
+              "errorMessage",
+              "Provider: %s; HTTP Status: %s; Error Message: %s"
+                  .formatted(
+                      modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
     }
 
     if (jakartaResponse.getStatusInfo().getFamily() == CLIENT_ERROR) {
-
-      return ErrorCodeV1.RERANKING_PROVIDER_CLIENT_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return SchemaException.Code.RERANKING_PROVIDER_CLIENT_ERROR.get(
+          Map.of(
+              "errorMessage",
+              "Provider: %s; HTTP Status: %s; Error Message: %s"
+                  .formatted(
+                      modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
     }
 
     if (jakartaResponse.getStatusInfo().getFamily() == Response.Status.Family.SERVER_ERROR) {
-
-      return ErrorCodeV1.RERANKING_PROVIDER_SERVER_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return SchemaException.Code.RERANKING_PROVIDER_SERVER_ERROR.get(
+          Map.of(
+              "errorMessage",
+              "Provider: %s; HTTP Status: %s; Error Message: %s"
+                  .formatted(
+                      modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
     }
 
     // All other errors, Should never happen as all errors are covered above
-    return ErrorCodeV1.RERANKING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-        "Provider: %s; HTTP Status: %s; Error Message: %s",
-        modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+    return SchemaException.Code.RERANKING_PROVIDER_UNEXPECTED_RESPONSE.get(
+        Map.of(
+            "errorMessage",
+            "Provider: %s; HTTP Status: %s; Error Message: %s"
+                .formatted(modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
   }
 
   /** Create batches of passages to be reranked. */

@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -47,10 +46,8 @@ public record UpdateCollectionOperationPage(
           if (returnDocs) {
             updatedDocs.add(update.document());
           }
-          //
           if (update.error() != null) {
-            String key = ExceptionUtil.getThrowableGroupingKey(update.error());
-            groupedErrorUpdates.put(key, update);
+            groupedErrorUpdates.put(update.error().code, update);
           }
         });
     // Create error by error code or error class
