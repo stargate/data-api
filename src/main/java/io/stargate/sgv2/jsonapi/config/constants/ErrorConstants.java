@@ -1,16 +1,14 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
-public interface ErrorObjectV2Constants {
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 
-  /**
-   * Names of the fields to use in the JSON response for an {@link
-   * io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2}
-   */
+public interface ErrorConstants {
+
+  /** Names of the fields to use in the JSON response for an {@link CommandError} */
   interface Fields {
     // Only included in debug mode, backwards compatible with old style
     String CODE = "errorCode";
     String DOCUMENT_IDS = "documentIds";
-    String EXCEPTION_CLASS = "exceptionClass";
     String FAMILY = "family";
     String ID = "id";
     String MESSAGE = "message";

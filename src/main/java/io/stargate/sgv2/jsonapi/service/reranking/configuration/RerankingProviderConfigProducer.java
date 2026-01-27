@@ -5,7 +5,7 @@ import io.quarkus.runtime.Startup;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingServiceGrpc;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
@@ -101,9 +101,9 @@ public class RerankingProviderConfigProducer {
     if (defaultProviders.size() != 1) {
       throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
           Map.of(
-              ErrorObjectV2Constants.TemplateVars.ERROR_CLASS,
+              ErrorConstants.TemplateVars.ERROR_CLASS,
               ClassUtils.classSimpleName(getClass()),
-              ErrorObjectV2Constants.TemplateVars.ERROR_MESSAGE,
+              ErrorConstants.TemplateVars.ERROR_MESSAGE,
               "Data API must have exactly one default reranking provider"));
     }
 
@@ -124,9 +124,9 @@ public class RerankingProviderConfigProducer {
     if (allDefaultModels.size() != 1) {
       throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
           Map.of(
-              ErrorObjectV2Constants.TemplateVars.ERROR_CLASS,
+              ErrorConstants.TemplateVars.ERROR_CLASS,
               ClassUtils.classSimpleName(getClass()),
-              ErrorObjectV2Constants.TemplateVars.ERROR_MESSAGE,
+              ErrorConstants.TemplateVars.ERROR_MESSAGE,
               "Data API must have exactly one default reranking model"));
     }
 
@@ -137,9 +137,9 @@ public class RerankingProviderConfigProducer {
     if (!defaultProviderName.equals(defaultModelProviderName)) {
       throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
           Map.of(
-              ErrorObjectV2Constants.TemplateVars.ERROR_CLASS,
+              ErrorConstants.TemplateVars.ERROR_CLASS,
               ClassUtils.classSimpleName(getClass()),
-              ErrorObjectV2Constants.TemplateVars.ERROR_MESSAGE,
+              ErrorConstants.TemplateVars.ERROR_MESSAGE,
               "Default reranking model must belong to the default provider: "
                   + defaultProviderName));
     }

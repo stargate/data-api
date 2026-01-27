@@ -9,6 +9,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.unchecked.LWTFailureException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -379,5 +380,10 @@ IF tx_id = ?
             });
   }
 
-  record UpdatedDocument(DocumentId id, boolean upserted, JsonNode document, Throwable error) {}
+  /**
+   * Container for the status of updating a document, callers should wrap any throwable that is not
+   * a {@link APIException} into a {@link
+   * io.stargate.sgv2.jsonapi.exception.ServerException.Code#UNEXPECTED_SERVER_ERROR}
+   */
+  record UpdatedDocument(DocumentId id, boolean upserted, JsonNode document, APIException error) {}
 }

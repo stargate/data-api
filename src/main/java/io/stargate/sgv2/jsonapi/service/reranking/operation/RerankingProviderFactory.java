@@ -4,7 +4,7 @@ import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
@@ -78,8 +78,10 @@ public class RerankingProviderFactory {
 
     var providerConfig = rerankingConfig.providers().get(modelProvider.apiName());
     if (providerConfig == null) {
-      throw ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
-          "unknown reranking service provider '%s'", modelProvider.apiName());
+      throw SchemaException.Code.RERANKING_SERVICE_TYPE_UNAVAILABLE.get(
+          Map.of(
+              "errorMessage",
+              "unknown reranking service provider '%s'".formatted(modelProvider.apiName())));
     }
 
     var modelConfig =
@@ -88,8 +90,8 @@ public class RerankingProviderFactory {
             .findFirst()
             .orElseThrow(
                 () ->
-                    ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
-                        "unknown model name '%s'", modelName));
+                    SchemaException.Code.RERANKING_SERVICE_TYPE_UNAVAILABLE.get(
+                        Map.of("errorMessage", "unknown model name '%s'".formatted(modelName))));
 
     if (operationsConfig.enableEmbeddingGateway()) {
       // return the reranking Grpc client to embedding gateway service
@@ -105,8 +107,9 @@ public class RerankingProviderFactory {
 
     RerankingProviderFactory.ProviderConstructor ctor = RERANKING_PROVIDER_CTORS.get(modelProvider);
     if (ctor == null) {
-      throw ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
-          "unknown service provider '%s'", modelProvider.apiName());
+      throw SchemaException.Code.RERANKING_SERVICE_TYPE_UNAVAILABLE.get(
+          Map.of(
+              "errorMessage", "unknown service provider '%s'".formatted(modelProvider.apiName())));
     }
     return ctor.create(modelConfig);
   }

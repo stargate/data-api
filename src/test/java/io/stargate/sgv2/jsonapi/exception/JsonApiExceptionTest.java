@@ -7,7 +7,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import io.stargate.sgv2.jsonapi.util.ClassUtils;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -30,8 +29,6 @@ class JsonApiExceptionTest {
             error -> {
               assertThat(error.message()).isEqualTo("Request not supported by the data store");
               assertThat(error.errorCode()).isEqualTo(ErrorCodeV1.INVALID_REQUEST.name());
-              assertThat(error.exceptionClass())
-                  .isEqualTo(ClassUtils.classSimpleName(JsonApiException.class));
             });
   }
 }

@@ -17,27 +17,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  // CreateCollection error codes:
-  EMBEDDING_SERVICE_NOT_CONFIGURED(
-      "Unable to vectorize data, embedding service not configured for the collection "),
-
-  INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
-  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
-  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
-  TOO_MANY_COLLECTIONS("Too many collections"),
-
-  RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
-  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
-  RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
-  RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
-  RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
-  RERANKING_PROVIDER_RATE_LIMITED("The Reranking Provider rate limited the request"),
-  RERANKING_PROVIDER_TIMEOUT("The Reranking Provider timed out"),
-  RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
-      "The reranking provider authentication key is not provided"),
-
-  INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
-
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
@@ -64,14 +43,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
-
-  HYBRID_FIELD_CONFLICT(
-      "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
-  HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
-  HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
-  HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
-      "Unsupported JSON value type for '$hybrid' sub-field"),
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 

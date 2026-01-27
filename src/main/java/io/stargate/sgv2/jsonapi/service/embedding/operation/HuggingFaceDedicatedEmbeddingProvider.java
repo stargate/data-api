@@ -86,7 +86,6 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
     var huggingFaceRequest =
         new HuggingFaceDedicatedEmbeddingRequest(texts.toArray(new String[texts.size()]));
 
-    // TODO: V2 error
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
 

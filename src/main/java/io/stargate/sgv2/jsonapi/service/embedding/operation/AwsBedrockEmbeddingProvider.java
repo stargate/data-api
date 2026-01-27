@@ -72,7 +72,6 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
               + texts.size());
     }
 
-    // TODO: move to V2 errors
     if (embeddingCredentials.accessId().isEmpty() && embeddingCredentials.secretId().isEmpty()) {
       throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
           "Both '%s' and '%s' are missing in the header for provider '%s'",

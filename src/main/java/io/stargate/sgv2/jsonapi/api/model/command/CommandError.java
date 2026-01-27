@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.core.instrument.Tag;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
@@ -14,31 +14,29 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /**
  * Public API model for an error or warning returned from the API.
  *
- * <p>Use {@link CommandErrorFactory} to get an instance because it know how to adapt from any
- * throwable using the {@link CommandErrorV2.Builder}.
+ * <p>This represents the "v2" / version 2 error structure, it was originally in the code called v2
+ * but is now just the command error.
+ *
+ * <p>Use {@link CommandErrorFactory} to get an instance because it knows how to adapt from any
+ * throwable using the {@link CommandError.Builder}.
  *
  * <p>See {@link io.stargate.sgv2.jsonapi.exception.APIException} for discussion of the fields.
  */
-public record CommandErrorV2(
-    @JsonProperty(ErrorObjectV2Constants.Fields.ID) UUID id,
-    @JsonProperty(ErrorObjectV2Constants.Fields.FAMILY) String family,
-    @JsonProperty(ErrorObjectV2Constants.Fields.SCOPE) String scope,
-    @JsonProperty(ErrorObjectV2Constants.Fields.CODE) String errorCode,
-    @JsonProperty(ErrorObjectV2Constants.Fields.TITLE) String title,
-    @JsonProperty(ErrorObjectV2Constants.Fields.MESSAGE) String message,
+public record CommandError(
+    @JsonProperty(ErrorConstants.Fields.ID) UUID id,
+    @JsonProperty(ErrorConstants.Fields.FAMILY) String family,
+    @JsonProperty(ErrorConstants.Fields.SCOPE) String scope,
+    @JsonProperty(ErrorConstants.Fields.CODE) String errorCode,
+    @JsonProperty(ErrorConstants.Fields.TITLE) String title,
+    @JsonProperty(ErrorConstants.Fields.MESSAGE) String message,
     @JsonIgnore @Schema(hidden = true) Response.Status httpStatus,
-    @JsonProperty(ErrorObjectV2Constants.Fields.EXCEPTION_CLASS)
-        @Schema(hidden = true)
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        String exceptionClass,
     @JsonIgnore @Schema(hidden = true) List<Tag> metricTags,
 
     // Optional, nullable, list of the documents related to this error
-    @JsonProperty(ErrorObjectV2Constants.Fields.DOCUMENT_IDS)
-        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @JsonProperty(ErrorConstants.Fields.DOCUMENT_IDS) @JsonInclude(JsonInclude.Include.NON_EMPTY)
         List<DocRowIdentifer> documentIds) {
 
-  public CommandErrorV2 {
+  public CommandError {
 
     Objects.requireNonNull(id, "id cannot be null");
     requireNoNullOrBlank(family, "family cannot be null or blank");
@@ -49,7 +47,6 @@ public record CommandErrorV2(
     Objects.requireNonNull(httpStatus, "httpStatus cannot be null");
     // exceptionClass is not required, it is only passed when we are in debug mode
     // normalise to null if blank
-    exceptionClass = exceptionClass == null || exceptionClass.isBlank() ? null : exceptionClass;
     metricTags = metricTags == null ? Collections.emptyList() : List.copyOf(metricTags);
     documentIds = documentIds == null ? Collections.emptyList() : List.copyOf(documentIds);
   }
@@ -65,7 +62,7 @@ public record CommandErrorV2(
    * Gets a Predicate that will match this Error with other errors based on all fields except the
    * ID, used when aggregating errors with the same information in them.
    */
-  public Predicate<CommandErrorV2> nonIdentityMatcher() {
+  public Predicate<CommandError> nonIdentityMatcher() {
     return other ->
         (family() == null || family().equals(other.family()))
             && (scope() == null || scope().equals(other.scope()))
@@ -86,7 +83,6 @@ public record CommandErrorV2(
     private String title;
     private String message;
     private Response.Status httpStatus;
-    private String exceptionClass;
     private List<Tag> metricsTags;
     private List<DocRowIdentifer> documentIds;
 
@@ -104,11 +100,6 @@ public record CommandErrorV2(
 
     public Builder httpStatus(Response.Status httpStatus) {
       this.httpStatus = httpStatus;
-      return this;
-    }
-
-    public Builder exceptionClass(String errorClass) {
-      this.exceptionClass = errorClass;
       return this;
     }
 
@@ -145,18 +136,9 @@ public record CommandErrorV2(
       return this;
     }
 
-    public CommandErrorV2 build() {
-      return new CommandErrorV2(
-          id,
-          family,
-          scope,
-          errorCode,
-          title,
-          message,
-          httpStatus,
-          exceptionClass,
-          metricsTags,
-          documentIds);
+    public CommandError build() {
+      return new CommandError(
+          id, family, scope, errorCode, title, message, httpStatus, metricsTags, documentIds);
     }
   }
 }

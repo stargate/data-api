@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.nio.ByteBuffer;
@@ -339,7 +339,7 @@ public class QueryExecutor {
 
               if (keyspaceMetadata == null) {
                 throw SchemaException.Code.UNKNOWN_KEYSPACE.get(
-                    ErrorObjectV2Constants.TemplateVars.KEYSPACE, namespace);
+                    ErrorConstants.TemplateVars.KEYSPACE, namespace);
               }
 
               return keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName));

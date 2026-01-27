@@ -9,10 +9,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Helper class that encapsulates the logic for expanding "$hybrid" fields in Collection Documents
@@ -57,9 +58,10 @@ public class HybridFieldExpander {
           case TextNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
           case ObjectNode ob -> addFromObject(context, doc, ob, docIndex, docCount);
           default ->
-              throw ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE.toApiException(
-                  "expected String, Object or `null` but received %s (Document %d of %d)",
-                  JsonUtil.nodeTypeAsString(hybridField), docIndex + 1, docCount);
+              throw RequestException.Code.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE.get(
+                  "errorMessage",
+                  "expected String, Object or `null` but received %s (Document %d of %d)"
+                      .formatted(JsonUtil.nodeTypeAsString(hybridField), docIndex + 1, docCount));
         }
       } else {
         // No $hybrid field, check other fields and add feature usage to CommandContext
@@ -89,9 +91,11 @@ public class HybridFieldExpander {
     // Any unknown fields? Report
     if (!hybrid.isEmpty()) {
       Iterator<CharSequence> it = (Iterator<CharSequence>) (Iterator<?>) hybrid.fieldNames();
-      throw ErrorCodeV1.HYBRID_FIELD_UNKNOWN_SUBFIELDS.toApiException(
-          "expected '$lexical' and/or '$vectorize' but encountered: '%s' (Document %d of %d)",
-          String.join("', '", () -> it), docIndex + 1, docCount);
+      throw RequestException.Code.HYBRID_FIELD_UNKNOWN_SUBFIELDS.get(
+          Map.of(
+              "errorMessage",
+              "expected '$lexical' and/or '$vectorize' but encountered: '%s' (Document %d of %d)"
+                  .formatted(String.join("', '", () -> it), docIndex + 1, docCount)));
     }
 
     // Also: must validate $lexical, $vectorize value types if not null (missing)
@@ -119,9 +123,12 @@ public class HybridFieldExpander {
       case TextNode ignored -> value;
       case null -> NullNode.getInstance();
       default ->
-          throw ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE.toApiException(
-              "expected String or `null` for '%s' but received %s (Document %d of %d)",
-              subfield, JsonUtil.nodeTypeAsString(value), docIndex + 1, docCount);
+          throw RequestException.Code.HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE.get(
+              Map.of(
+                  "errorMessage",
+                  "expected String or `null` for '%s' but received %s (Document %d of %d)"
+                      .formatted(
+                          subfield, JsonUtil.nodeTypeAsString(value), docIndex + 1, docCount)));
     };
   }
 
@@ -133,7 +140,7 @@ public class HybridFieldExpander {
     var oldVectorize = doc.replace(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, vectorize);
 
     if ((oldLexical != null) || (oldVector != null) || (oldVectorize != null)) {
-      throw ErrorCodeV1.HYBRID_FIELD_CONFLICT.toApiException();
+      throw RequestException.Code.HYBRID_FIELD_CONFLICT.get();
     }
   }
 }

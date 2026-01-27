@@ -5,7 +5,7 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -94,8 +94,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
     // TODO: Move error to v2
     if (rerankingCredentials.apiKey().isEmpty()) {
-      throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "In order to rerank, please provide the reranking API key.");
+      throw SchemaException.Code.RERANKING_PROVIDER_AUTHENTICATION_KEY_NOT_PROVIDED.get();
     }
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey();
 

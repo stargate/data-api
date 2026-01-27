@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
-import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
@@ -16,11 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Factory that creates a {@link CommandErrorV2} from an {@link APIException} or the legacy {@link
+ * Factory that creates a {@link CommandError} from an {@link APIException} or the legacy {@link
  * io.stargate.sgv2.jsonapi.exception.JsonApiException}.
- *
- * <p><b>NOTE:</b> This holds some state on the DEBUG status,to decide if the exception class should
- * be in the output.
  *
  * <p>This class encapsulates the mapping between the APIException and the API tier to keep it out
  * of the core exception classes.
@@ -28,19 +24,15 @@ import org.slf4j.LoggerFactory;
 public class CommandErrorFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(CommandErrorFactory.class);
 
-  private final boolean debugEnabled;
-
-  public CommandErrorFactory() {
-    this.debugEnabled = DebugConfigAccess.isDebugEnabled();
-  }
+  private CommandErrorFactory() {}
 
   /** See {@link #create(Throwable, List)}. */
-  public CommandErrorV2 create(Throwable throwable) {
+  public static CommandError create(Throwable throwable) {
     return create(throwable, Collections.emptyList());
   }
 
   /**
-   * Create a {@link CommandErrorV2} from any throwable.
+   * Create a {@link CommandError} from any throwable.
    *
    * <p>
    *
@@ -48,9 +40,10 @@ public class CommandErrorFactory {
    *     JsonApiException} it will be wrapped in a {@link
    *     ServerException.Code#UNEXPECTED_SERVER_ERROR} .
    * @param documentIds Nullable list of impacted documents or rows for the error.
-   * @return New instance of {@link CommandErrorV2} representing the throwable.
+   * @return New instance of {@link CommandError} representing the throwable.
    */
-  public CommandErrorV2 create(Throwable throwable, List<? extends DocRowIdentifer> documentIds) {
+  public static CommandError create(
+      Throwable throwable, List<? extends DocRowIdentifer> documentIds) {
     Objects.requireNonNull(throwable, "throwable cannot be null");
 
     return switch (throwable) {
@@ -60,7 +53,7 @@ public class CommandErrorFactory {
     };
   }
 
-  private APIException wrapThrowable(Throwable throwable) {
+  private static APIException wrapThrowable(Throwable throwable) {
     LOGGER.warn(
         "An unhandled Java exception was mapped to {}",
         ServerException.Code.UNEXPECTED_SERVER_ERROR.name(),
@@ -69,20 +62,16 @@ public class CommandErrorFactory {
   }
 
   /** See {@link #create(Throwable, List)}. */
-  public CommandErrorV2 create(JsonApiException jsonApiException) {
+  public static CommandError create(JsonApiException jsonApiException) {
     return create(jsonApiException, Collections.emptyList());
   }
 
   /** See {@link #create(Throwable, List)}. */
-  public CommandErrorV2 create(
+  public static CommandError create(
       JsonApiException jsonApiException, List<? extends DocRowIdentifer> documentIds) {
 
     Objects.requireNonNull(jsonApiException, "jsonApiException cannot be null");
-    var builder = CommandErrorV2.builder();
-
-    if (debugEnabled) {
-      builder.exceptionClass(jsonApiException.getClass().getSimpleName());
-    }
+    var builder = CommandError.builder();
 
     return builder
         .errorCode(jsonApiException.getErrorCode().name())
@@ -98,20 +87,16 @@ public class CommandErrorFactory {
   }
 
   /** See {@link #create(Throwable, List)}. */
-  public CommandErrorV2 create(APIException apiException) {
+  public static CommandError create(APIException apiException) {
     return create(apiException, Collections.emptyList());
   }
 
   /** See {@link #create(Throwable, List)}. */
-  public CommandErrorV2 create(
+  public static CommandError create(
       APIException apiException, List<? extends DocRowIdentifer> documentIds) {
 
     Objects.requireNonNull(apiException, "apiException cannot be null");
-    var builder = CommandErrorV2.builder();
-
-    if (debugEnabled) {
-      builder.exceptionClass(apiException.getClass().getSimpleName());
-    }
+    var builder = CommandError.builder();
 
     return builder
         .errorCode(apiException.code)

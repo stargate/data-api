@@ -9,8 +9,8 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <!-- 14-oct-2025, aaron: Updated to latest Quarkus for security fixes in netty -->
-    <!-- 10-nov-2025, tatu: Updated to latest Quarkus -->
-    <quarkus.platform.version>3.29.2</quarkus.platform.version>
+    <!-- 23-jan-2026, tatu: Updated to latest Quarkus -->
+    <quarkus.platform.version>3.30.8</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <!-- 17-Oct-2025, tatu: Although quarkus-bom provides for Mockito version,
@@ -278,6 +278,11 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.docker-java</groupId>
+      <artifactId>docker-java-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

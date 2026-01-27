@@ -25,23 +25,15 @@ public class CommandResultBuilder {
   }
 
   private final Map<CommandStatus, Object> cmdStatus = new HashMap<>();
-  private final List<CommandErrorV2> cmdErrors = new ArrayList<>();
+  private final List<CommandError> cmdErrors = new ArrayList<>();
   private final List<JsonNode> documents = new ArrayList<>();
-  // Warnings are always the V2 error structure
-  private final List<CommandErrorV2> warnings = new ArrayList<>();
+  private final List<CommandError> warnings = new ArrayList<>();
 
   private String nextPageState = null;
 
   private final ResponseType responseType;
 
   private final RequestTracing requestTracing;
-
-  // amorton - we could probably use the same factory for errors and warning, keeping separate
-  // as we have only just refactored this area and to keep the logic clear
-  // NOTE: keep instance because the CommandErrorFactory has a debug flag that is read at
-  // construction time
-  private final CommandErrorFactory cmdErrorFactory = new CommandErrorFactory();
-  private final CommandErrorFactory cmdWarningError = new CommandErrorFactory();
 
   CommandResultBuilder(ResponseType responseType, RequestTracing requestTracing) {
     this.responseType = responseType;
@@ -61,15 +53,15 @@ public class CommandResultBuilder {
   }
 
   public CommandResultBuilder addThrowable(Throwable throwable) {
-    return addCommandError(cmdErrorFactory.create(throwable));
+    return addCommandError(CommandErrorFactory.create(throwable));
   }
 
-  public CommandResultBuilder addCommandError(List<CommandErrorV2> errors) {
+  public CommandResultBuilder addCommandError(List<CommandError> errors) {
     Objects.requireNonNull(errors, "errors cannot be null").forEach(this::addCommandError);
     return this;
   }
 
-  public CommandResultBuilder addCommandError(CommandErrorV2 error) {
+  public CommandResultBuilder addCommandError(CommandError error) {
     cmdErrors.add(error);
     return this;
   }
@@ -85,7 +77,7 @@ public class CommandResultBuilder {
   }
 
   public CommandResultBuilder addWarning(APIException warning) {
-    warnings.add(cmdWarningError.create(warning));
+    warnings.add(CommandErrorFactory.create(warning));
     return this;
   }
 
