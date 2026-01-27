@@ -271,12 +271,6 @@ request-errors:
       
       Resend using a supported collection. 
 
-  - scope:
-    code: UNSUPPORTED_UPDATE_DATA_TYPE
-    title: Unsupported update data type
-    body: |-
-      Unsupported update data type: ${errorMessage}.
-
   # unscoped because this touches both the sort and the options
   - scope:
     code: MISSING_RERANK_QUERY_TEXT
@@ -840,6 +834,18 @@ request-errors:
       {"$push": {"mapColumn": {"$each": [["key1","value1"],["key2", "value2"]]}}} or {"$push": {"mapColumn": {"$each": [{"key1":"value1"},{"key2":"value2"}]}}}
 
       Resend the command with valid usage of $push operator.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_DATA_TYPE
+    title: Unsupported update data type
+    body: |-
+      Unsupported update data type: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION
+    title: Unsupported update operation
+    body: |-
+      Unsupported update operation: ${errorMessage}.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS

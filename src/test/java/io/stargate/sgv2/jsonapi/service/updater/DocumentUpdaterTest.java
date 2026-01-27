@@ -262,8 +262,9 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION)
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION.name())
           .hasMessageStartingWith(
               "Unsupported update operation: Invalid update operator 'location' (must start with '$')");
     }
@@ -281,8 +282,9 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION)
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION.name())
           .hasMessageStartingWith(
               "Unsupported update operation: Unsupported update operator '$pullAll'");
     }
