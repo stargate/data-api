@@ -2,11 +2,11 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -32,13 +32,16 @@ import org.slf4j.LoggerFactory;
  * there.
  *
  * <p>Using different functions with decorators to make it a bit clearer what is handled where.
+ *
+ * <p><b>NOTE:</b>Not exactly sure how quarkus if finding the mappers when sublcasses are thrown, be
+ * careful making changes specially with {@link #mapJacksonException(Throwable)}
  */
 public class FrameworkExceptionMapper {
   private static final Logger LOGGER = LoggerFactory.getLogger(FrameworkExceptionMapper.class);
 
   /**
    * Prefix used in constraint violation property paths that should be stripped out. <b>NOTE:</b>
-   * This name must match the name of the function in the ResourceHandeler, e.g. {@link
+   * This name must match the name of the function in the ResourceHandler, e.g. {@link
    * io.stargate.sgv2.jsonapi.api.v1.CollectionResource#postCommand(CollectionCommand, String,
    * String)}
    */
@@ -56,7 +59,7 @@ public class FrameworkExceptionMapper {
    * <p>This could include ApiExceptions that we throw from inside our deserialization code called
    * from quarkus.
    */
-  @ServerExceptionMapper
+  @ServerExceptionMapper({Throwable.class})
   public RestResponse<CommandResult> mapThrowable(Throwable throwable) {
 
     var translated = translateThrowable(throwable);
@@ -74,11 +77,12 @@ public class FrameworkExceptionMapper {
   /**
    * Mapping for jackson parsing and mapping exceptions
    *
-   * <p>This used to have a decoator filter for the JsonParseException and MismatchedInputException
-   * classes, expanded to JacksonException to cover more cases.- amorton 23 jan 2026
+   * <p><b>NOTE:</b> This needs to have the specific exception classes listed to be called by
+   * quarkus. If not, the {@link com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException}
+   * will not be handled.
    */
-  @ServerExceptionMapper
-  public RestResponse<CommandResult> mapJacksonException(JacksonException jacksonException) {
+  @ServerExceptionMapper({JsonParseException.class, MismatchedInputException.class})
+  public RestResponse<CommandResult> mapJacksonException(Throwable jacksonException) {
 
     var translated = translateThrowable(jacksonException);
     if (LOGGER.isDebugEnabled()) {
@@ -96,7 +100,7 @@ public class FrameworkExceptionMapper {
    *
    * <p>
    */
-  @ServerExceptionMapper
+  @ServerExceptionMapper({WebApplicationException.class})
   public RestResponse<CommandResult> mapJakartaException(
       WebApplicationException webApplicationException) {
 
@@ -126,7 +130,7 @@ public class FrameworkExceptionMapper {
     return responseForException(translated);
   }
 
-  @ServerExceptionMapper
+  @ServerExceptionMapper({ConstraintViolationException.class})
   public RestResponse<CommandResult> constraintViolationException(
       ConstraintViolationException exception) {
 
