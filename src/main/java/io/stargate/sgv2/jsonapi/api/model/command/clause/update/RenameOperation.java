@@ -3,10 +3,13 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Implementation of {@code $rename} update operation used to rename fields of documents. */
 public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
@@ -20,8 +23,11 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
       String srcPath = validateUpdatePath(UpdateOperator.RENAME, entry.getKey());
       JsonNode value = entry.getValue();
       if (!value.isTextual()) {
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-            "$rename requires STRING parameter for 'to', got: %s", value.getNodeType());
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+            Map.of(
+                "errorMessage",
+                "$rename requires STRING parameter for 'to', got: %s"
+                    .formatted(JsonUtil.nodeTypeAsString(value))));
       }
       String dstPath = validateUpdatePath(UpdateOperator.RENAME, value.textValue());
       if (srcPath.equals(dstPath)) {

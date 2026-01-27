@@ -215,11 +215,10 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                                                 """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $addToSet requires field names at main level, found modifier: $each");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining(
+              "$addToSet requires field names at main level, found modifier: $each");
     }
 
     @Test
@@ -362,11 +361,9 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
                     objectFromJson("{ \"array\" : { \"$each\" : 365 } }"));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $addToSet modifier $each requires ARRAY argument, found: NUMBER");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining("$addToSet modifier $each requires Array argument, found: Number");
     }
 
     // If there is one modifier for given field, all Object properties must be (supported)

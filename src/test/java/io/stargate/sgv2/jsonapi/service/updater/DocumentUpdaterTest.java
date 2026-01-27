@@ -13,8 +13,6 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
@@ -339,8 +337,8 @@ public class DocumentUpdaterTest {
                         (ObjectNode) objectMapper.readTree("{\"unsetField\":1, \"common\":1}")));
               });
       assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
           .hasMessageContaining(
               "update operators '$set' and '$unset' must not refer to same path: 'common'");
     }
@@ -357,8 +355,8 @@ public class DocumentUpdaterTest {
                           UpdateOperator.MUL,
                           (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}"))));
       assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
           .hasMessageContaining(
               "update operators '$inc' and '$mul' must not refer to same path: 'root.x'");
     }
@@ -373,8 +371,8 @@ public class DocumentUpdaterTest {
                           UpdateOperator.SET,
                           (ObjectNode) objectMapper.readTree("{\"root.1\":-7, \"root\":[ ]}"))));
       assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
           .hasMessageContaining(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.1' ($set)");
     }
@@ -399,8 +397,8 @@ public class DocumentUpdaterTest {
           }
           """))));
       assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
           .hasMessageContaining(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.a' ($set)");
     }

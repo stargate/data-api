@@ -164,11 +164,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                                 """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $push requires field names at main level, found modifier: $each");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining("$push requires field names at main level, found modifier: $each");
     }
 
     @Test
@@ -321,11 +319,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
                                                 """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $push modifier $each requires ARRAY argument, found: NUMBER");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining(": $push modifier $each requires Array argument, found: Number");
     }
 
     // If there is one modifier for given field, all Object properties must be (supported)
@@ -452,11 +448,10 @@ public class PushOperationTest extends UpdateOperationTestBase {
                     objectFromJson("{\"array\" : { \"$each\": [1], \"$position\" : true } }"));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $push modifier $position requires (integral) NUMBER argument, found: BOOLEAN");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining(
+              "$push modifier $position requires (integral) Number argument, found: Boolean");
     }
 
     @Test
@@ -468,11 +463,10 @@ public class PushOperationTest extends UpdateOperationTestBase {
                     objectFromJson("{\"array\" : { \"$each\": [1], \"$position\" : 1.5 } }"));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $push modifier $position requires Integer NUMBER argument, instead got: 1.5");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining(
+              "$push modifier $position requires Integer Number argument, instead got: 1.5");
     }
 
     @Test
@@ -484,11 +478,10 @@ public class PushOperationTest extends UpdateOperationTestBase {
                     objectFromJson("{\"array\" : { \"$position\" : 2 } }"));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $push modifiers can only be used with $each modifier; none included");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining(
+              "$push modifiers can only be used with $each modifier; none included");
     }
   }
 }

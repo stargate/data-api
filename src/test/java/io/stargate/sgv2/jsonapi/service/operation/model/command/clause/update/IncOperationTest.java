@@ -209,11 +209,9 @@ public class IncOperationTest extends UpdateOperationTestBase {
                                   """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $inc requires numeric parameter, got: STRING");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining("$inc requires numeric parameter, got: String");
     }
 
     // Not legal to try to modify doc id (immutable):

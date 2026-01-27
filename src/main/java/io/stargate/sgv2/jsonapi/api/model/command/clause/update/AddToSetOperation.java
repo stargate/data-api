@@ -28,8 +28,11 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
       final String name = validateUpdatePath(UpdateOperator.ADD_TO_SET, entry.getKey());
       // At main level we must have field name (no modifiers)
       if (looksLikeModifier(name)) {
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-            "$addToSet requires field names at main level, found modifier: %s", name);
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+            Map.of(
+                "errorMessage",
+                "$addToSet requires field names at main level, found modifier: %s"
+                    .formatted(name)));
       }
       // But within field value modifiers are allowed: if there's one, all must be modifiers
       JsonNode value = entry.getValue();
@@ -56,9 +59,11 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
         case "$each":
           eachArg = arg;
           if (!eachArg.isArray()) {
-            throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-                "$addToSet modifier $each requires ARRAY argument, found: %s",
-                eachArg.getNodeType());
+            throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+                Map.of(
+                    "errorMessage",
+                    "$addToSet modifier $each requires Array argument, found: %s"
+                        .formatted(JsonUtil.nodeTypeAsString(eachArg))));
           }
           break;
 
@@ -72,8 +77,10 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
     }
     // For now should not be possible to occur but once we add other modifiers could:
     if (eachArg == null) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-          "$addToSet modifiers can only be used with $each modifier; none included");
+      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+          Map.of(
+              "errorMessage",
+              "$addToSet modifiers can only be used with $each modifier; none included"));
     }
 
     return new Action(PathMatchLocator.forPath(propName), eachArg, true);

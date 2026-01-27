@@ -854,6 +854,12 @@ request-errors:
       Unsupported update operation modifier: ${errorMessage}.
 
   - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_PARAM
+    title: Unsupported update operation parameter
+    body: |-
+      Unsupported update operation parameter: ${errorMessage}.
+
+  - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
     title: Primary key columns cannot be updated
     body: |-

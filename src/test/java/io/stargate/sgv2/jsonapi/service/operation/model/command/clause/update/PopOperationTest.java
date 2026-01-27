@@ -161,11 +161,9 @@ public class PopOperationTest extends UpdateOperationTestBase {
                 UpdateOperator.POP.resolveOperation(objectFromJson("{\"array\" : \"text\"}"));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $pop requires NUMBER argument (-1 or 1), instead got: STRING");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining("$pop requires Number argument (-1 or 1), instead got: String");
     }
 
     @Test
@@ -176,11 +174,9 @@ public class PopOperationTest extends UpdateOperationTestBase {
                 UpdateOperator.POP.resolveOperation(objectFromJson("{\"array\" : 0}"));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $pop requires argument of -1 or 1, instead got: 0");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining("$pop requires argument of -1 or 1, instead got: 0");
     }
 
     @Test
