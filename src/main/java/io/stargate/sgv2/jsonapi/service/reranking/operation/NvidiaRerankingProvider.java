@@ -79,7 +79,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     nvidiaClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(modelConfig.url()))
-            .readTimeout(modelConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(10, TimeUnit.MILLISECONDS)
             .build(NvidiaRerankingClient.class);
   }
 
