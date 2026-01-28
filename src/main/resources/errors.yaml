@@ -1791,6 +1791,12 @@ request-errors:
       Resend the command using a known metric.
 
   - scope: SCHEMA
+    code: VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME
+    title: Unrecognized vector search source model name
+    body: |-
+      Unrecognized vector search source model name: ${errorMessage}.
+
+  - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_INDEX
     title: Dropped index is not defined in the keyspace schema
     body: |-
