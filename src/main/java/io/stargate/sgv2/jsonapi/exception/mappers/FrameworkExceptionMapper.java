@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Using different functions with decorators to make it a bit clearer what is handled where.
  *
- * <p><b>NOTE:</b>Not exactly sure how quarkus if finding the mappers when sublcasses are thrown, be
+ * <p><b>NOTE:</b>Not exactly sure how quarkus if finding the mappers when subclasses are thrown, be
  * careful making changes specially with {@link #mapJacksonException(Throwable)}
  */
 public class FrameworkExceptionMapper {
