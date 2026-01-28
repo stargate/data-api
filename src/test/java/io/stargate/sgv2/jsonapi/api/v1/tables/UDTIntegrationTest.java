@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
@@ -96,7 +97,7 @@ public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
                   Map.entry("address", Map.of("type", "userDefined", "udtType", "address"))),
               "id")
           .hasSingleApiError(
-              "COMMAND_FIELD_UNKNOWN",
+              RequestException.Code.COMMAND_FIELD_UNKNOWN.name(),
               "column 'address' definition contains unknown field 'udtType': not one of recognized fields");
     }
 
