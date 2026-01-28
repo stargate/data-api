@@ -869,7 +869,7 @@ request-errors:
     code: UNSUPPORTED_UPDATE_OPERATION_TARGET
     title: Unsupported update operation target
     body: |-
-      Unsupported update operation target: ${errorMessage}.
+      Unsupported target JSON value for update operation: ${errorMessage}.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
