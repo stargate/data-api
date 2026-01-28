@@ -40,6 +40,7 @@ public class EmbeddingProviderException extends ServerException {
     EMBEDDING_PROVIDER_CLIENT_ERROR,
     EMBEDDING_PROVIDER_RATE_LIMITED,
     EMBEDDING_PROVIDER_SERVER_ERROR,
+    EMBEDDING_PROVIDER_TIMEOUT,
     ;
 
     private final ErrorTemplate<EmbeddingProviderException> template;

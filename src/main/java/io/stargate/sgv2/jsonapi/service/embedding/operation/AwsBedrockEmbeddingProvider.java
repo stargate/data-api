@@ -193,9 +193,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
     if (bedrockException.statusCode() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || bedrockException.statusCode() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(bedrockException.statusCode()),
+              "errorMessage",
+              bedrockException.getMessage()));
     }
 
     if (bedrockException.statusCode() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {

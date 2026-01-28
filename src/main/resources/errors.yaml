@@ -2616,5 +2616,9 @@ server-errors:
     body: |-
       Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
       
-
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_TIMEOUT
+    title: The Embedding Provider request timed out
+    body: |-
+      Provider '${provider}' request timed out with HTTP ${httpStatus}; error message: ${errorMessage}
 

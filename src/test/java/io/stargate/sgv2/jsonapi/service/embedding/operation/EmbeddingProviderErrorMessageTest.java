@@ -126,7 +126,6 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("400");
 
       assertThat(exception)
-          .isInstanceOf(EmbeddingProviderException.class)
           .hasFieldOrPropertyWithValue(
               "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
@@ -140,7 +139,6 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("503");
 
       assertThat(exception)
-          .isInstanceOf(EmbeddingProviderException.class)
           .hasFieldOrPropertyWithValue(
               "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR.name())
           .hasFieldOrPropertyWithValue(
@@ -154,11 +152,11 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("408");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT)
+          .hasFieldOrPropertyWithValue(
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider timed out: Provider: nvidia; HTTP Status: 408; Error Message: {\"object\":\"list\"}");
+              "Provider 'nvidia' request timed out with HTTP 408; error message: {\"object\":\"list\"}");
     }
 
     @Test

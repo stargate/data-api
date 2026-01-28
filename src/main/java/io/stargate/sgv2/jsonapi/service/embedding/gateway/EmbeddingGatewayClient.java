@@ -169,7 +169,14 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       embeddingResponse = grpcGatewayClient.embed(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+        throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+            Map.of(
+                "provider",
+                modelProvider().apiName(),
+                "httpStatus",
+                String.valueOf(e.getStatus().getCode()),
+                "errorMessage",
+                e.getMessage()));
       }
       throw e;
     }

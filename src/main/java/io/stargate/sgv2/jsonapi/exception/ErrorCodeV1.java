@@ -8,7 +8,6 @@ public enum ErrorCodeV1 {
   // !!! 16-Dec-2025, tatu: USED BY EMBEDDING-GATEWAY, DO NOT CONVERT "EMBEDDING_" entries yet
   EMBEDDING_PROVIDER_TIMEOUT("The Embedding Provider timed out"),
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
-  EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 

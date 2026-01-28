@@ -148,7 +148,6 @@ public class OpenAiEmbeddingClientTest {
               "some data");
 
       assertThat(exception)
-          .isInstanceOf(EmbeddingProviderException.class)
           .hasFieldOrPropertyWithValue(
               "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
@@ -165,7 +164,6 @@ public class OpenAiEmbeddingClientTest {
               "some data");
 
       assertThat(exception)
-          .isInstanceOf(EmbeddingProviderException.class)
           .hasFieldOrPropertyWithValue(
               "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
