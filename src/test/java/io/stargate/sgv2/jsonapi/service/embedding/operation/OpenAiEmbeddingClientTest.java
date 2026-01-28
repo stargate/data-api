@@ -149,7 +149,8 @@ public class OpenAiEmbeddingClientTest {
 
       assertThat(exception)
           .isInstanceOf(EmbeddingProviderException.class)
-          .hasFieldOrPropertyWithValue("code", EmbeddingProviderException.Code.CLIENT_ERROR.name())
+          .hasFieldOrPropertyWithValue(
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
               "Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
@@ -165,7 +166,8 @@ public class OpenAiEmbeddingClientTest {
 
       assertThat(exception)
           .isInstanceOf(EmbeddingProviderException.class)
-          .hasFieldOrPropertyWithValue("code", EmbeddingProviderException.Code.CLIENT_ERROR.name())
+          .hasFieldOrPropertyWithValue(
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
               "Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");

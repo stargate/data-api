@@ -74,19 +74,33 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
     }
 
     if (embeddingCredentials.accessId().isEmpty() && embeddingCredentials.secretId().isEmpty()) {
-      throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "Both '%s' and '%s' are missing in the header for provider '%s'",
-          EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
-          EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME,
-          modelProvider().apiName());
-    } else if (embeddingCredentials.accessId().isEmpty()) {
-      throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "'%s' is missing in the header for provider '%s'",
-          EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME, modelProvider().apiName());
-    } else if (embeddingCredentials.secretId().isEmpty()) {
-      throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "'%s' is missing in the header for provider '%s'",
-          EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME, modelProvider().apiName());
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "message",
+              "both '%s' and '%s' headers are missing"
+                  .formatted(
+                      EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
+                      EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME)));
+    }
+
+    if (embeddingCredentials.accessId().isEmpty()) {
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "message",
+              "'%s' header is missing".formatted(EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME)));
+    }
+
+    if (embeddingCredentials.secretId().isEmpty()) {
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "message",
+              "'%s' header is missing".formatted(EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME)));
     }
 
     var awsCreds =
@@ -117,7 +131,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
                     bytesUsageTracker.requestBytes = inputData.length;
                     requestBuilder.body(SdkBytes.fromByteArray(inputData)).modelId(modelName());
                   } catch (JsonProcessingException e) {
-                    throw ErrorCodeV1.EMBEDDING_REQUEST_ENCODING_ERROR.toApiException();
+                    throw EmbeddingProviderException.Code.EMBEDDING_REQUEST_ENCODING_ERROR.get(
+                        Map.of(
+                            "provider",
+                            modelProvider().apiName(),
+                            "model",
+                            modelName(),
+                            "errorMessage",
+                            e.toString()));
                   }
                 })
             .thenApply(
@@ -151,7 +172,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
                         batchId, List.of(bedrockResponse.embedding), modelUsage);
 
                   } catch (IOException e) {
-                    throw ErrorCodeV1.EMBEDDING_RESPONSE_DECODING_ERROR.toApiException();
+                    throw EmbeddingProviderException.Code.EMBEDDING_RESPONSE_DECODING_ERROR.get(
+                        Map.of(
+                            "provider",
+                            modelProvider().apiName(),
+                            "model",
+                            modelName(),
+                            "errorMessage",
+                            e.toString()));
                   }
                 });
 
@@ -171,13 +199,18 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
     }
 
     if (bedrockException.statusCode() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(bedrockException.statusCode()),
+              "errorMessage",
+              bedrockException.getMessage()));
     }
 
     if (bedrockException.statusCode() > 400 && bedrockException.statusCode() < 500) {
-      return EmbeddingProviderException.Code.CLIENT_ERROR.get(
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.get(
           "provider",
           modelProvider().apiName(),
           "httpStatus",
@@ -187,9 +220,13 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
     }
 
     if (bedrockException.statusCode() >= 500) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR.get(
+          "provider",
+          modelProvider().apiName(),
+          "httpStatus",
+          String.valueOf(bedrockException.statusCode()),
+          "errorMessage",
+          bedrockException.getMessage());
     }
 
     // All other errors, Should never happen as all errors are covered above

@@ -2579,13 +2579,42 @@ server-errors:
       Underlying problem: ${errorMessage}.
 
   - scope: EMBEDDING_PROVIDER
-    code: CLIENT_ERROR
-    title: The Embedding Provider returned a HTTP client error
+    code: EMBEDDING_REQUEST_ENCODING_ERROR
+    title: Embedding request encoding failure
     body: |-
-      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      Internal error: failed to encode embedding request (provider '${provider}', model '${model}').
+      Underlying problem: ${errorMessage} 
 
   - scope: EMBEDDING_PROVIDER
-    code: SERVER_ERROR
+    code: EMBEDDING_RESPONSE_DECODING_ERROR
+    title: Embedding request response decoding failure
+    body: |-
+      Internal error: failed to decode response to embedding request (provider '${provider}', model '${model}').
+      Underlying problem: ${errorMessage}
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED
+    title: Authentication header(s) missing from embedding request
+    body: |-
+      Missing authentication header(s) from embedding request (provider '${provider}'): ${message}').
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error
     body: |-
       Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_RATE_LIMITED
+    title: Embedding provider rate limited the request
+    body: |-
+      Provider '${provider}' rate limited the request with HTTP ${httpStatus}; error message: ${errorMessage}
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_SERVER_ERROR
+    title: The Embedding Provider returned a HTTP server error
+    body: |-
+      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      
+
+

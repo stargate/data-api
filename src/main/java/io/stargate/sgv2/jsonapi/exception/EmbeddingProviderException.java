@@ -10,8 +10,15 @@ public class EmbeddingProviderException extends ServerException {
 
   public enum Code implements ErrorCode<EmbeddingProviderException> {
     EMBEDDING_GATEWAY_NOT_AVAILABLE,
-    CLIENT_ERROR,
-    SERVER_ERROR;
+
+    EMBEDDING_REQUEST_ENCODING_ERROR,
+    EMBEDDING_RESPONSE_DECODING_ERROR,
+
+    EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED,
+    EMBEDDING_PROVIDER_CLIENT_ERROR,
+    EMBEDDING_PROVIDER_RATE_LIMITED,
+    EMBEDDING_PROVIDER_SERVER_ERROR,
+    ;
 
     private final ErrorTemplate<EmbeddingProviderException> template;
 

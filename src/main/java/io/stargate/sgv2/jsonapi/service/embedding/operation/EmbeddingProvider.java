@@ -227,14 +227,19 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
     // Status code == 429
     if (jakartaResponse.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage",
+              errorMessage));
     }
 
     // Status code in 4XX other than 429
     if (jakartaResponse.getStatusInfo().getFamily() == CLIENT_ERROR) {
-      return EmbeddingProviderException.Code.CLIENT_ERROR.get(
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.get(
           "provider",
           modelProvider().apiName(),
           "httpStatus",
@@ -245,9 +250,13 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
     // Status code in 5XX
     if (jakartaResponse.getStatusInfo().getFamily() == Response.Status.Family.SERVER_ERROR) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR.get(
+          "provider",
+          modelProvider().apiName(),
+          "httpStatus",
+          String.valueOf(jakartaResponse.getStatus()),
+          "errorMessage",
+          errorMessage);
     }
 
     // All other errors, Should never happen as all errors are covered above

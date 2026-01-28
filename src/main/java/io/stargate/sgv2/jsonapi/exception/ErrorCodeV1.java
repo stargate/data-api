@@ -6,12 +6,6 @@ import jakarta.ws.rs.core.Response;
 public enum ErrorCodeV1 {
   /** Embedding provider service error codes. */
   // !!! 16-Dec-2025, tatu: USED BY EMBEDDING-GATEWAY, DO NOT CONVERT "EMBEDDING_" entries yet
-  EMBEDDING_REQUEST_ENCODING_ERROR("Unable to create embedding provider request message"),
-  EMBEDDING_RESPONSE_DECODING_ERROR("Unable to parse embedding provider response message"),
-  EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
-      "The Embedding Provider authentication keys not provided"),
-  EMBEDDING_PROVIDER_SERVER_ERROR("The Embedding Provider returned a HTTP server error"),
-  EMBEDDING_PROVIDER_RATE_LIMITED("The Embedding Provider rate limited the request"),
   EMBEDDING_PROVIDER_TIMEOUT("The Embedding Provider timed out"),
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
