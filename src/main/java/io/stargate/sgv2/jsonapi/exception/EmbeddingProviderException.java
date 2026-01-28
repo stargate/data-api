@@ -1,11 +1,33 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import java.util.EnumSet;
+import java.util.Optional;
+import java.util.UUID;
+
 public class EmbeddingProviderException extends ServerException {
 
   public static final Scope SCOPE = Scope.EMBEDDING_PROVIDER;
 
   public EmbeddingProviderException(ErrorInstance errorInstance) {
     super(errorInstance);
+  }
+
+  /**
+   * To construct an EmbeddingProviderException from EGW response.
+   *
+   * @see io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient
+   */
+  public EmbeddingProviderException(String code, String title, String body) {
+    this(
+        new ErrorInstance(
+            UUID.randomUUID(),
+            FAMILY,
+            SCOPE,
+            code,
+            title,
+            body,
+            Optional.empty(),
+            EnumSet.noneOf(ExceptionFlags.class)));
   }
 
   public enum Code implements ErrorCode<EmbeddingProviderException> {

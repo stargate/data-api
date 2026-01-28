@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -203,7 +202,10 @@ public class EmbeddingGatewayClientTest {
             Map.of(
                 "provider", "TEST-MODEL", "httpStatus", "429", "errorMessage", "Slow Down Dude!"));
 
-    errorResponseBuilder.setErrorCode(apiException.code).setErrorMessage(apiException.getMessage());
+    errorResponseBuilder
+        .setErrorCode(apiException.code)
+        .setErrorTitle(apiException.title)
+        .setErrorBody(apiException.body);
     builder.setError(errorResponseBuilder.build());
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
 
@@ -234,12 +236,12 @@ public class EmbeddingGatewayClientTest {
             .getFailure();
 
     assertThat(result)
-        .isInstanceOf(JsonApiException.class)
+        .isInstanceOf(APIException.class)
         .satisfies(
             e -> {
-              JsonApiException exception = (JsonApiException) e;
+              APIException exception = (APIException) e;
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
-              assertThat(exception.getErrorCode().name()).isEqualTo(apiException.code);
+              assertThat(exception.code).isEqualTo(apiException.code);
             });
   }
 }
