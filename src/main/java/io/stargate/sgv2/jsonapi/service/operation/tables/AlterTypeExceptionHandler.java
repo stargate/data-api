@@ -42,7 +42,7 @@ public class AlterTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
   }
 
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
 
     // Note, "Unkown" is a typo in driver, and the message returns the keyspace name when it
     // it should be the type name. e.g. below is an error on the "demo.address" type:

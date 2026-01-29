@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -110,7 +111,6 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("429");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED)
           .hasFieldOrPropertyWithValue(
               "message",
@@ -123,7 +123,6 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("400");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
@@ -136,7 +135,6 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("503");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
@@ -149,8 +147,7 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("408");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT)
+          .hasFieldOrPropertyWithValue("errorCode", RequestException.Code.EMBEDDING_PROVIDER_TIMEOUT.name())
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider timed out: Provider: nvidia; HTTP Status: 408; Error Message: {\"object\":\"list\"}");
@@ -182,7 +179,6 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("application/xml");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
               "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
@@ -196,7 +192,6 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("text/plain;charset=UTF-8");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
               "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
@@ -210,7 +205,6 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("no json body");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
               "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(

@@ -122,10 +122,12 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     return buildDBResultSupplier(commandContext, getCommandQueryExecutor(commandContext));
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   */
   @Override
-  protected RuntimeException maybeHandleException(
-      AsyncResultSetSupplier resultSupplier, RuntimeException runtimeException) {
+  protected Throwable maybeHandleException(
+      AsyncResultSetSupplier resultSupplier, Throwable throwable) {
 
     // resultSupplier may be null if we did not get to execute a statement
     var handler =
@@ -134,7 +136,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
                 schemaObject, resultSupplier == null ? null : resultSupplier.statement),
             "DBTask.maybeHandleException() - exceptionHandlerFactory returned null");
 
-    return handler.maybeHandle(runtimeException);
+    return handler.maybeHandle(throwable);
   }
 
   // =================================================================================================

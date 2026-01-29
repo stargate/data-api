@@ -13,6 +13,7 @@ import com.google.common.io.CountingOutputStream;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
@@ -164,9 +165,12 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
     if (bedrockException.statusCode() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || bedrockException.statusCode() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+
+      throw RequestException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+              Map.of(
+                  "modelProvider", modelProvider().apiName(),
+                  "httpStatus", String.valueOf(bedrockException.statusCode()),
+                  "errorMessage", bedrockException.getMessage()));
     }
 
     if (bedrockException.statusCode() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {

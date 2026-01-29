@@ -30,7 +30,7 @@ public abstract class RerankingProvider extends ProviderBase {
   protected RerankingProvider(
       ModelProvider modelProvider,
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
-    super(modelProvider, ModelType.RERANKING);
+    super(modelProvider, ModelType.RERANKING, new RerankingProviderExceptionHandler(modelProvider, ModelType.RERANKING));
 
     this.modelConfig = modelConfig;
 
@@ -133,10 +133,9 @@ public abstract class RerankingProvider extends ProviderBase {
         || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
       return SchemaException.Code.RERANKING_PROVIDER_TIMEOUT.get(
           Map.of(
-              "errorMessage",
-              "Provider: %s; HTTP Status: %s; Error Message: %s"
-                  .formatted(
-                      modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
+              "modelProvider", modelProvider().apiName(),
+              "httpStatus", String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage", errorMessage));
     }
 
     if (jakartaResponse.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {

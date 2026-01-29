@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -172,7 +173,11 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       embeddingResponse = grpcGatewayClient.embed(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+        throw RequestException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+            Map.of(
+                "modelProvider", modelProvider().apiName(),
+                "httpStatus", "<GRPC DEADLINE EXCEEDED>",
+                "errorMessage", "<GRPC DEADLINE EXCEEDED>"));
       }
       throw e;
     }

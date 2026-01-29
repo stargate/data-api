@@ -23,7 +23,7 @@ public class DropTableExceptionHandler extends KeyspaceDriverExceptionHandler {
   }
 
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
 
     // Need to wait for keyspace to have keyspace metadata to get the list of tables to be included
     // in the message

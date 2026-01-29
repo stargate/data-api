@@ -81,10 +81,10 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected RuntimeException maybeHandleException(
-      EmbeddingResultSupplier resultSupplier, RuntimeException runtimeException) {
+  protected Throwable maybeHandleException(
+      EmbeddingResultSupplier resultSupplier, Throwable throwable) {
     // return the same exception to say it was not handled
-    return runtimeException;
+    return throwable;
   }
 
   @Override

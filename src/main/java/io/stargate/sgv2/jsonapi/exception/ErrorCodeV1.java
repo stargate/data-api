@@ -13,7 +13,7 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_CLIENT_ERROR("The Embedding Provider returned a HTTP client error"),
   EMBEDDING_PROVIDER_SERVER_ERROR("The Embedding Provider returned a HTTP server error"),
   EMBEDDING_PROVIDER_RATE_LIMITED("The Embedding Provider rate limited the request"),
-  EMBEDDING_PROVIDER_TIMEOUT("The Embedding Provider timed out"),
+  //  EMBEDDING_PROVIDER_TIMEOUT("The Embedding Provider timed out"),
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 

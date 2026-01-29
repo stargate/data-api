@@ -7,7 +7,7 @@ import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -47,7 +47,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
       ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(modelProvider, ModelType.EMBEDDING);
+    super(modelProvider, ModelType.EMBEDDING, new EmbeddingProviderExceptionHandler(modelProvider, ModelType.EMBEDDING));
 
     this.providerConfig = providerConfig;
     this.modelConfig = modelConfig;
@@ -203,25 +203,17 @@ public abstract class EmbeddingProvider extends ProviderBase {
     return requestProperties().atMostRetries();
   }
 
-  @Override
-  protected boolean decideRetry(Throwable throwable) {
-
-    var retry =
-        (throwable.getCause() instanceof JsonApiException jae
-            && jae.getErrorCode() == ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT);
-
-    return retry || super.decideRetry(throwable);
-  }
-
   /** Maps an HTTP response to a V1 JsonApiException */
   @Override
   protected RuntimeException mapHTTPError(Response jakartaResponse, String errorMessage) {
 
     if (jakartaResponse.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return RequestException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+          Map.of(
+              "modelProvider", modelProvider().apiName(),
+              "httpStatus", String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage", errorMessage));
     }
 
     // Status code == 429
