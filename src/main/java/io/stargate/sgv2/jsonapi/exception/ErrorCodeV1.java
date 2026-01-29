@@ -17,23 +17,9 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
-
-  UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
-
-  UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
-
-  UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
-
-  UNSUPPORTED_UPDATE_OPERATION_PATH("Unsupported update operation path"),
-
-  UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
-
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
-
-  VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME("Unrecognized vector search source model name"),
 
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
 

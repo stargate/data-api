@@ -836,6 +836,42 @@ request-errors:
       Resend the command with valid usage of $push operator.
 
   - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_DATA_TYPE
+    title: Unsupported update data type
+    body: |-
+      Unsupported update data type: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION
+    title: Unsupported update operation
+    body: |-
+      Unsupported update operation: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_MODIFIER
+    title: Unsupported update operation modifier
+    body: |-
+      Unsupported update operation modifier: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_PARAM
+    title: Unsupported update operation parameter
+    body: |-
+      Unsupported update operation parameter: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_PATH
+    title: Unsupported update operation path
+    body: |-
+      Unsupported update operation path: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_TARGET
+    title: Unsupported update operation target
+    body: |-
+      Unsupported target JSON value for update operation: ${errorMessage}.
+
+  - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
     title: Primary key columns cannot be updated
     body: |-
@@ -1753,6 +1789,12 @@ request-errors:
       The command attempted to use the metric: ${unknownMetric}.
       
       Resend the command using a known metric.
+
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME
+    title: Unrecognized vector search source model name
+    body: |-
+      Unrecognized vector search source model name: ${errorMessage}.
 
   - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_INDEX

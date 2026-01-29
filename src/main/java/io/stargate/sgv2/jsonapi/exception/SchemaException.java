@@ -91,6 +91,8 @@ public class SchemaException extends RequestException {
     UNSUPPORTED_VECTOR_DIMENSION,
     UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES,
 
+    VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME, // legacy: converted from ErrorCodeV1
+
     // older below - separated because they need to be confirmed
     INVALID_KEYSPACE,
     INVALID_VECTORIZE_FIELD_CONFIGURATION,
