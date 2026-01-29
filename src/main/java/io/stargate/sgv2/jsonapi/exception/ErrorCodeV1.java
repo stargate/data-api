@@ -6,7 +6,6 @@ import jakarta.ws.rs.core.Response;
 public enum ErrorCodeV1 {
   /** Embedding provider service error codes. */
   // !!! 16-Dec-2025, tatu: USED BY EMBEDDING-GATEWAY, DO NOT CONVERT "EMBEDDING_" entries yet
-  EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
 
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
 
