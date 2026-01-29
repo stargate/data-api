@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -536,11 +537,13 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
             """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PATH"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name()))
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported update operation path: update path ('price&usd') is not a valid path."));
+                  "Unsupported update operation path: update path ('price&usd') is not valid: The ampersand character"));
     }
   }
 
@@ -1665,7 +1668,9 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
               }
               """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name()))
           .body(
               "errors[0].message",
               containsString(
