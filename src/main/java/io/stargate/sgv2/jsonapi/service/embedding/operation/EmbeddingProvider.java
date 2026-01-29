@@ -265,18 +265,20 @@ public abstract class EmbeddingProvider extends ProviderBase {
     }
 
     // All other errors, Should never happen as all errors are covered above
-    return ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-        "Provider: %s; HTTP Status: %s; Error Message: %s",
-        modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+    return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+        Map.of(
+            "errorMessage",
+            "Provider: %s; HTTP Status: %s; Error Message: %s"
+                .formatted(modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
   }
 
   /** Call this from the subclass when the response from the provider is empty */
   protected void throwEmptyData(Response jakartaResponse) {
-    throw ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-        "Provider: %s; HTTP Status: %s; Error Message: %s",
-        modelProvider().apiName(),
-        jakartaResponse.getStatus(),
-        "ModelProvider returned empty data for model %s".formatted(modelName()));
+    throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+        Map.of(
+            "errorMessage",
+            "Provider: %s; HTTP Status: %s; Error Message: The embedding provider returned empty data for model %s"
+                .formatted(modelProvider().apiName(), jakartaResponse.getStatus(), modelName())));
   }
 
   /**

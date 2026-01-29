@@ -2622,3 +2622,9 @@ server-errors:
     body: |-
       Provider '${provider}' request timed out with HTTP ${httpStatus}; error message: ${errorMessage}
 
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE
+    title: The Embedding Provider returned an unexpected response
+    body: |-
+      The Embedding Provider returned an unexpected response.
+      Underlying problem: ${errorMessage}.

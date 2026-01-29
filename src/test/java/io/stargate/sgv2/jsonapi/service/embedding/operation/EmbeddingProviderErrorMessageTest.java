@@ -9,8 +9,6 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -185,12 +183,10 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("application/xml");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'; HTTP Status: 200; The response body is: '<object>list</object>'.");
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.name())
+          .hasMessageContaining(
+              "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'; HTTP Status: 200; The response body is: '<object>list</object>'.");
     }
 
     @Test
@@ -199,26 +195,19 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("text/plain;charset=UTF-8");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'text/plain;charset=UTF-8'; HTTP Status: 200; The response body is: 'vectors as plain text'.");
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.name())
+          .hasMessageContaining(
+              "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'text/plain;charset=UTF-8'; HTTP Status: 200; The response body is: 'vectors as plain text'.");
     }
 
     @Test
     public void testNoJsonResponse() {
-
       var exception = vectorizeWithError("no json body");
-
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: No response body from the embedding provider");
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.name())
+          .hasMessageContaining("No response body from the embedding provider");
     }
 
     @Test
@@ -227,12 +216,10 @@ public class EmbeddingProviderErrorMessageTest {
       var exception = vectorizeWithError("empty json body");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Provider: nvidia; HTTP Status: 200; Error Message: ModelProvider returned empty data for model testModel");
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.name())
+          .hasMessageContaining(
+              "Provider: nvidia; HTTP Status: 200; Error Message: The embedding provider returned empty data for model testModel");
     }
   }
 }

@@ -13,7 +13,6 @@ import com.google.common.io.CountingOutputStream;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
@@ -235,9 +234,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
     }
 
     // All other errors, Should never happen as all errors are covered above
-    return ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-        "Provider: %s; HTTP Status: %s; Error Message: %s",
-        modelProvider().apiName(), bedrockException.statusCode(), bedrockException.getMessage());
+    return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+        Map.of(
+            "errorMessage",
+            "Provider: %s; HTTP Status: %s; Error Message: %s"
+                .formatted(
+                    modelProvider().apiName(),
+                    bedrockException.statusCode(),
+                    bedrockException.getMessage())));
   }
 
   private static class ByteUsageTracker {
