@@ -8,12 +8,11 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.databases.DatabaseDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.KeyspaceDriverExceptionHandler;
-import java.util.function.Function;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**

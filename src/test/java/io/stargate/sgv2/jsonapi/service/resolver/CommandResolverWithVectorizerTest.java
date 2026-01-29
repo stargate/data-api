@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -34,6 +33,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollecti
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
@@ -44,6 +44,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDo
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.inject.Inject;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -77,14 +78,19 @@ public class CommandResolverWithVectorizerTest {
   protected final String KEYSPACE_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
 
+  protected final SchemaObjectIdentifier COLLECTION_IDENTIFIER =
+      SchemaObjectIdentifier.forCollection(
+          testConstants.TENANT,
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME),
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(COLLECTION_NAME));
+
   @BeforeEach
   public void beforeEach() {
     VECTOR_COMMAND_CONTEXT =
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
-                null,
+                COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -174,7 +180,7 @@ public class CommandResolverWithVectorizerTest {
               assertThat(exception.getMessage())
                   .containsSequence(
                       "Collection '"
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table()
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table().asInternal()
                           + "' does not have embedding service configured: cannot vectorize data");
             });
   }
@@ -334,7 +340,7 @@ public class CommandResolverWithVectorizerTest {
               assertThat(exception.getMessage())
                   .containsSequence(
                       "Collection '"
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table()
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table().asInternal()
                           + "' does not have embedding service configured: cannot vectorize data");
             });
   }
@@ -530,7 +536,7 @@ public class CommandResolverWithVectorizerTest {
               assertThat(exception.getMessage())
                   .containsSequence(
                       "Collection '"
-                          + VECTOR_COMMAND_CONTEXT.schemaObject().name().table()
+                          + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table().asInternal()
                           + "' does not have embedding service configured: cannot vectorize data");
             });
   }
