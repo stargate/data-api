@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;

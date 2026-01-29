@@ -20,7 +20,7 @@ public enum ErrorCodeV1 {
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
 
-  // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
+// NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 
 //  INVALID_REQUEST("Request not supported by the data store"),
 
