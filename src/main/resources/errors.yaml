@@ -2621,6 +2621,20 @@ server-errors:
       Underlying problem: ${errorMessage}.
 
   - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_GATEWAY_REQUEST_PROCESSING_ERROR
+    title: Embedding Gateway failed to process request
+    body: |-
+      Embedding Gateway failed to process request
+      Underlying problem: ${errorMessage}.         
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_GATEWAY_RATE_LIMITED
+    title: Embedding Gateway rate limited the request
+    body: |-
+      Embedding Gateway rate limited the request
+      Underlying problem: ${errorMessage}.    
+
+  - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_REQUEST_ENCODING_ERROR
     title: Embedding request encoding failure
     body: |-

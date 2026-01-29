@@ -22,10 +22,11 @@ public enum ErrorCodeV1 {
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
 
-  INVALID_REQUEST("Request not supported by the data store"),
+//  INVALID_REQUEST("Request not supported by the data store"),
 
-  EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
-  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
+//  EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
+//  EMBEDDING_GATEWAY_REQUEST_PROCESSING_ERROR("Embedding Gateway failed to process request");
+;
 
   private final String message;
 

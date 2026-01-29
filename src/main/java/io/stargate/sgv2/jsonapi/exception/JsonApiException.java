@@ -50,13 +50,7 @@ public class JsonApiException extends RuntimeException {
               add(VECTOR_SEARCH_TOO_BIG_VALUE);
             }
           },
-          ErrorScope.SCHEMA,
-          new HashSet<>() {
-            {
-              add(INVALID_REQUEST);
-            }
-          },
-          ErrorScope.EMBEDDING);
+          ErrorScope.SCHEMA);
 
   protected JsonApiException(ErrorCodeV1 errorCode) {
     this(errorCode, errorCode.getMessage(), null);
