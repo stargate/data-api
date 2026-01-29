@@ -25,11 +25,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -219,16 +218,11 @@ public class CollectionResource {
         .transformToUni(
             (schemaObject, throwable) -> {
               if (throwable != null) {
-
-                // We failed to get the schema object, or failed to build it.
-                Throwable error = throwable;
-                if (throwable instanceof RuntimeException && throwable.getCause() != null) {
-                  error = throwable.getCause();
-                } else if (error instanceof JsonApiException jsonApiException) {
-                  return Uni.createFrom().failure(jsonApiException);
-                }
-                // otherwise use generic for now
-                return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
+                return Uni.createFrom()
+                    .item(
+                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                            .addThrowable(throwable)
+                            .build());
               } else {
                 // TODO: This needs to change, currently it is only checking if there is vectorize
                 // for the $vector column in a collection
@@ -287,6 +281,6 @@ public class CollectionResource {
                         });
               }
             })
-        .map(commandResult -> commandResult.toRestResponse());
+        .map(CommandResult::toRestResponse);
   }
 }

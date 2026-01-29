@@ -8,6 +8,8 @@ import static org.hamcrest.Matchers.*;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Arrays;
 import java.util.List;
@@ -202,12 +204,12 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].errorCode", is(DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name()))
           .body(
               "errors[0].message",
-              startsWith(
-                  "$vectorize value needs to be text value: issue in document at position 1"));
+              containsString(
+                  "Invalid $vectorize value: needs to be String, not Array (issue in document at position 1)"));
     }
 
     @Test
@@ -231,9 +233,11 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vectorize value needs to be text value"))
-          .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body(
+              "errors[0].errorCode", is(DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name()))
+          .body(
+              "errors[0].message",
+              containsString("Invalid $vectorize value: needs to be String, not Number"));
     }
   }
 
@@ -497,8 +501,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SORT_CLAUSE_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("SortException"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
               startsWith(
@@ -599,7 +602,6 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("SortException"))
           .body("errors[0].errorCode", is("SORT_CLAUSE_VALUE_INVALID"))
           .body(
               "errors[0].message",
@@ -1158,7 +1160,6 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("VECTORIZE_SERVICE_TYPE_UNAVAILABLE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               containsString("unknown model 'random' for service provider 'nvidia'"));

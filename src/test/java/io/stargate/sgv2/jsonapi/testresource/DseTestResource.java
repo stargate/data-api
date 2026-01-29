@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_HOST_PROP;
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP;
+
 import com.google.common.collect.ImmutableMap;
-import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -42,7 +44,7 @@ public class DseTestResource extends StargateTestResource {
     // 21-Apr-2025, tatu: formerly referenced hard-coded images; left here for reference:
     //   to be removed in near future
     // "stargateio/dse-next:4.0.11-591d171ac9c9"
-    // "datastax/dse-server:6.9.16"
+    // "datastax/dse-server:6.9.17"
     // "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd:1.2.3";
 
     // 21-Apr-2025, tatu: [data-api#1952] Load definition from "./docker-compose/.env"
@@ -150,14 +152,20 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put("stargate.jsonapi.embedding.providers.vertexai.enabled", "true");
     propsBuilder.put(
         "stargate.jsonapi.embedding.providers.vertexai.models[0].parameters[0].required", "true");
+
+    // Prefer instance-specific configuration from 'env' to support parallel execution and
+    // isolation. Fall back to global system properties only if instance-specific values are
+    // missing.
     if (this.containerNetworkId.isPresent()) {
-      String host = System.getProperty("stargate.int-test.cassandra.host");
+      String host =
+          env.getOrDefault(CASSANDRA_CQL_HOST_PROP, System.getProperty(CASSANDRA_CQL_HOST_PROP));
       propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
     } else {
-      int port = Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-      propsBuilder.put(
-          "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
+      String port =
+          env.getOrDefault(CASSANDRA_CQL_PORT_PROP, System.getProperty(CASSANDRA_CQL_PORT_PROP));
+      propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-port", port);
     }
+
     if (isDse() || isHcd()) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.local-datacenter", "dc1");
     }

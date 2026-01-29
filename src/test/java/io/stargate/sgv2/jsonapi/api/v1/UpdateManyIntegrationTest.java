@@ -551,7 +551,6 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               containsString(

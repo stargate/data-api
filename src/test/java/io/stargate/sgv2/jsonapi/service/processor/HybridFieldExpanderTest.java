@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -186,7 +186,7 @@ public class HybridFieldExpanderTest {
                    "$hybrid": 123
                }
                """,
-            ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE,
+            RequestException.Code.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE,
             "Unsupported JSON value type for '$hybrid' field: expected String, Object or `null` but received Number (Document 1 of 1)"),
         Arguments.of(
             """
@@ -195,7 +195,7 @@ public class HybridFieldExpanderTest {
                            "$hybrid": [ "abc" ]
                        }
                        """,
-            ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE,
+            RequestException.Code.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE,
             "Unsupported JSON value type for '$hybrid' field: expected String, Object or `null` but received Array (Document 1 of 1)"),
         Arguments.of(
             """
@@ -206,8 +206,8 @@ public class HybridFieldExpanderTest {
                    }
                }
                """,
-            ErrorCodeV1.HYBRID_FIELD_UNKNOWN_SUBFIELDS,
-            "Unrecognized sub-field(s) for '$hybrid' Object: expected '$lexical' and/or '$vectorize' but encountered: 'unknown' (Document 1 of 1)"),
+            RequestException.Code.HYBRID_FIELD_UNKNOWN_SUBFIELDS,
+            "Unknown sub-field(s) for '$hybrid' field: expected '$lexical' and/or '$vectorize' but encountered: 'unknown' (Document 1 of 1)"),
         Arguments.of(
             """
                 {
@@ -217,7 +217,7 @@ public class HybridFieldExpanderTest {
                    }
                 }
                 """,
-            ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE,
+            RequestException.Code.HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE,
             "Unsupported JSON value type for '$hybrid' sub-field: expected String or `null` for '$lexical' but received Number (Document 1 of 1)"),
         Arguments.of(
             """
@@ -228,8 +228,8 @@ public class HybridFieldExpanderTest {
                           "$vectorize": "monkeys like bananas"
                         }
                         """,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()),
+            RequestException.Code.HYBRID_FIELD_CONFLICT,
+            null),
         // Conflict whenever $hybrid is present, even if null, in addition to $lexical and/or
         // $vectorize
         Arguments.of(
@@ -240,8 +240,8 @@ public class HybridFieldExpanderTest {
                               "$vectorize": "monkeys like bananas"
                             }
                             """,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()),
+            RequestException.Code.HYBRID_FIELD_CONFLICT,
+            null),
         // Conflict reported for actual collisions, even if values identical
         Arguments.of(
             """
@@ -254,8 +254,8 @@ public class HybridFieldExpanderTest {
                        "$lexical": "bananas"
                     }
                     """,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()),
+            RequestException.Code.HYBRID_FIELD_CONFLICT,
+            null),
         // Conflict reported even if individual (sub-)fields do not overlap
         Arguments.of(
             """
@@ -267,8 +267,8 @@ public class HybridFieldExpanderTest {
                        }
                     }
                     """,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()),
+            RequestException.Code.HYBRID_FIELD_CONFLICT,
+            null),
         // Conflict whenever $hybrid and $vector are used together
         Arguments.of(
             """
@@ -278,13 +278,13 @@ public class HybridFieldExpanderTest {
                               "$hybrid": "I like cheese"
                             }
                             """,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT,
-            ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()));
+            RequestException.Code.HYBRID_FIELD_CONFLICT,
+            null));
   }
 
   @ParameterizedTest
   @MethodSource("failCases")
-  void hybridFailTest(String inputJson, ErrorCodeV1 errorCode, String errorMessage)
+  void hybridFailTest(String inputJson, RequestException.Code errorCode, String errorMessage)
       throws Exception {
     final JsonNode doc = objectMapper.readTree(inputJson);
 
@@ -295,9 +295,9 @@ public class HybridFieldExpanderTest {
 
     Throwable t =
         catchThrowable(() -> HybridFieldExpander.expandHybridField(mockContext, 0, 1, doc));
-    assertThat(t)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("errorCode", errorCode)
-        .hasMessageContaining(errorMessage);
+    assertThat(t).isNotNull().hasFieldOrPropertyWithValue("code", errorCode.name());
+    if (errorMessage != null) {
+      assertThat(t).hasMessageContaining(errorMessage);
+    }
   }
 }

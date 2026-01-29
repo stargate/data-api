@@ -102,7 +102,7 @@ public class RerankingTaskPage<SchemaT extends TableBasedSchemaObject>
 
       return new RerankingTaskPage<>(
           tasks,
-          CommandResult.multiDocumentBuilder(useErrorObjectV2, requestTracing),
+          CommandResult.multiDocumentBuilder(requestTracing),
           includeScores,
           includeSortVector);
     }

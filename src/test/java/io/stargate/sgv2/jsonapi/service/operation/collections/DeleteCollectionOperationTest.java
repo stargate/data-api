@@ -22,7 +22,6 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -1291,11 +1290,10 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
               assertThat(result.status().get(CommandStatus.DELETED_COUNT)).isEqualTo(1);
               assertThat(result.errors()).isNotNull();
               assertThat(result.errors()).hasSize(1);
-              assertThat(result.errors().get(0).fields().get("errorCode"))
+              assertThat(result.errors().get(0).errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).fields().get(ErrorObjectV2Constants.Fields.TITLE))
-                  .isEqualTo(
-                      "Failed to delete documents with _id ['doc1']: Failed to complete concurrent operations on the database");
+              assertThat(result.errors().get(0).documentIds())
+                  .containsExactlyInAnyOrderElementsOf(List.of(DocumentId.fromString("doc1")));
             });
   }
 
@@ -1477,11 +1475,11 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
               assertThat(result.status().get(CommandStatus.DELETED_COUNT)).isEqualTo(0);
               assertThat(result.errors()).isNotNull();
               assertThat(result.errors()).hasSize(1);
-              assertThat(result.errors().get(0).fields().get("errorCode"))
+              assertThat(result.errors().get(0).errorCode())
                   .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
-              assertThat(result.errors().get(0).fields().get(ErrorObjectV2Constants.Fields.TITLE))
-                  .isEqualTo(
-                      "Failed to delete documents with _id ['doc1', 'doc2']: Failed to complete concurrent operations on the database");
+              assertThat(result.errors().get(0).documentIds())
+                  .containsExactlyInAnyOrderElementsOf(
+                      List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2")));
             });
   }
 

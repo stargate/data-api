@@ -7,6 +7,8 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
@@ -30,9 +32,8 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(401)
           .body("$", responseIsError())
           .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing token, expecting one in the Token header."));
+              "errors[0].errorCode",
+              is(APISecurityException.Code.MISSING_AUTHENTICATION_TOKEN.name()));
     }
 
     @Test
@@ -48,7 +49,6 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("REQUEST_NOT_JSON"))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith(
@@ -70,7 +70,6 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
@@ -97,8 +96,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_UNKNOWN"))
-          .body("errors[0].exceptionClass", is("RequestException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_UNKNOWN.name()))
           .body("errors[0].message", startsWith("Command field 'unknown' not recognized"))
           .body(
               "errors[0].message",
@@ -117,7 +115,6 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
-          .body("errors[0].exceptionClass", is("RequestException"))
           .body(
               "errors[0].message",
               startsWith("Command field 'command' value `null` not valid: must not be null."));

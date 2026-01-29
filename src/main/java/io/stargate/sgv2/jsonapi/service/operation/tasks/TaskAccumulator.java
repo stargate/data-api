@@ -3,8 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -17,8 +16,7 @@ import java.util.function.Supplier;
  * via a subclass. the subclasses are used often called a PageBuilder see {@link TaskPage}
  */
 public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
-  // TODO: remove all of error obj v2 flags, we use it all now
-  protected boolean useErrorObjectV2 = false;
+
   protected RequestTracing requestTracing = null;
 
   protected final TaskGroup<TaskT, SchemaT> tasks = new TaskGroup<>();
@@ -33,9 +31,7 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
     Objects.requireNonNull(accumulator, "accumulator cannot be null");
     Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
-    accumulator
-        .useErrorObjectV2(commandContext.config().get(OperationsConfig.class).extendError())
-        .requestTracing(commandContext.requestTracing());
+    accumulator.requestTracing(commandContext.requestTracing());
     return accumulator;
   }
 
@@ -55,16 +51,6 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
    *     of {@link TaskPage}
    */
   public abstract Supplier<CommandResult> getResults();
-
-  /**
-   * Sets if the error object v2 formatting should be used when building the {@link CommandResult}.
-   */
-  @SuppressWarnings("unchecked")
-  public <SubT extends TaskAccumulator<TaskT, SchemaT>> SubT useErrorObjectV2(
-      boolean useErrorObjectV2) {
-    this.useErrorObjectV2 = useErrorObjectV2;
-    return (SubT) this;
-  }
 
   /**
    * Set the {@link RequestTracing} object for the request. This will be passed to the {@link

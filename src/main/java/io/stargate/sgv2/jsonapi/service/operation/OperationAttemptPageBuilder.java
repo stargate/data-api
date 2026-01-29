@@ -20,8 +20,6 @@ public abstract class OperationAttemptPageBuilder<
         SchemaT extends SchemaObject, AttemptT extends OperationAttempt<AttemptT, SchemaT>>
     extends OperationAttemptAccumulator<SchemaT, AttemptT> {
 
-  protected boolean useErrorObjectV2 = false;
-
   /**
    * Called to turn the accumulated attempts into a {@link CommandResult}.
    *
@@ -29,14 +27,4 @@ public abstract class OperationAttemptPageBuilder<
    *     of {@link OperationAttemptPage}
    */
   public abstract Supplier<CommandResult> getOperationPage();
-
-  /**
-   * Sets if the error object v2 formatting should be used when building the {@link CommandResult}.
-   */
-  @SuppressWarnings("unchecked")
-  public <SubT extends OperationAttemptPageBuilder<SchemaT, AttemptT>> SubT useErrorObjectV2(
-      boolean useErrorObjectV2) {
-    this.useErrorObjectV2 = useErrorObjectV2;
-    return (SubT) this;
-  }
 }

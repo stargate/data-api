@@ -10,8 +10,6 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
@@ -283,15 +281,15 @@ class CreateCollectionCommandResolverTest {
       Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
 
       assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(SchemaException.class)
           .satisfies(
               e -> {
-                JsonApiException exception = (JsonApiException) e;
+                SchemaException exception = (SchemaException) e;
                 assertThat(exception.getMessage())
-                    .isEqualTo(
-                        "Invalid indexing definition: `allow` and `deny` cannot be used together");
-                assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCodeV1.INVALID_INDEXING_DEFINITION);
+                    .containsSequence(
+                        "'createCollection' indexing definition invalid: 'allow' and 'deny' cannot be used together");
+                assertThat(exception.code)
+                    .isEqualTo(SchemaException.Code.INVALID_INDEXING_DEFINITION.name());
               });
     }
 

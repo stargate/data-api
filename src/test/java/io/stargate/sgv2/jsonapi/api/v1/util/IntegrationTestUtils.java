@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.util;
 /** Utilities for integration test. */
 public final class IntegrationTestUtils {
 
+  public static final String CASSANDRA_CQL_HOST_PROP = "stargate.int-test.cassandra.host";
   public static final String CASSANDRA_CQL_PORT_PROP = "stargate.int-test.cassandra.cql-port";
   public static final String CASSANDRA_USERNAME_PROP = "stargate.int-test.cassandra.username";
   public static final String CASSANDRA_PASSWORD_PROP = "stargate.int-test.cassandra.password";

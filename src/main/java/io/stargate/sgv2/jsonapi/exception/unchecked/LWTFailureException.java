@@ -10,7 +10,8 @@ import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
  * read-modify-write pattern for updates and deletes. This marks that CQL said the statement was not
  * applied.
  *
- * <p>Users should not use this raw exception, it should be turned into an Error V2.
+ * <p>Users should not be returned this exception, it should be turned into the appropriate {@link
+ * io.stargate.sgv2.jsonapi.exception.APIException} before being returned to the user.
  */
 public class LWTFailureException extends RuntimeException {
   public LWTFailureException(SimpleStatement statement) {

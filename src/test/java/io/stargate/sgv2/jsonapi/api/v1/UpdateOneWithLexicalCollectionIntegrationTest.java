@@ -322,7 +322,6 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_LEXICAL"))
-          .body("errors[0].exceptionClass", is("UpdateException"))
           .body("errors[0].title", is("Update operator cannot be used on $lexical field"))
           .body("errors[0].message", containsString("command used the update operator: " + opName));
     }

@@ -24,10 +24,11 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -47,7 +48,6 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Response;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -2941,24 +2941,23 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void readFailureException() throws UnknownHostException {
 
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      Node coordinator = mock(Node.class);
-      ConsistencyLevel consistencyLevel = ConsistencyLevel.ONE;
-      int received = 1;
-      int blockFor = 0;
-      int numFailures = 1;
-      boolean dataPresent = false;
+
       Map<InetAddress, Integer> reasonMap = new HashMap<>();
       reasonMap.put(InetAddress.getByName("127.0.0.1"), 0x0000);
+
+      // to properly mock how the QueryExecutor works, we need to push this driver exception
+      // through the error mapper used by the QueryExecutor so we can get the same mapping to an API
+      // error.
+
+      var driverException =
+          new ReadFailureException(
+              mock(Node.class), ConsistencyLevel.ONE, 1, 0, 1, false, reasonMap);
+      var handledException =
+          new CollectionDriverExceptionHandler(VECTOR_COMMAND_CONTEXT.schemaObject(), null)
+              .handle(driverException);
+
       Mockito.when(queryExecutor.executeVectorSearch(eq(requestContext), any(), any(), anyInt()))
-          .thenThrow(
-              new ReadFailureException(
-                  coordinator,
-                  consistencyLevel,
-                  received,
-                  blockFor,
-                  numFailures,
-                  dataPresent,
-                  reasonMap));
+          .thenThrow(handledException);
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
@@ -2983,17 +2982,13 @@ public class FindCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      CommandResult.Error error =
-          ThrowableToErrorMapper.getMapperWithMessageFunction()
-              .apply(failure, failure.getMessage());
-      assertThat(error).isNotNull();
-      assertThat(error.fields().get("errorCode")).isEqualTo("SERVER_READ_FAILED");
-      assertThat(error.fields().get("exceptionClass")).isEqualTo("JsonApiException");
-      assertThat(error.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
-      assertThat(error.message())
-          .startsWith("Database read failed")
-          .endsWith(
-              "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");
+
+      var commandError = CommandErrorFactory.create(failure);
+
+      assertThat(commandError).isNotNull();
+      assertThat(commandError.errorCode())
+          .isEqualTo(DatabaseException.Code.FAILED_READ_REQUEST.name());
+      assertThat(commandError.message()).contains("The number of nodes blocked for was: 0.");
     }
   }
 

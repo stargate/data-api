@@ -9,10 +9,8 @@ import static org.hamcrest.Matchers.containsString;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
-import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
-import io.stargate.sgv2.jsonapi.exception.WarningException;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
@@ -27,6 +25,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class CollectionResourceStatusCode {
+
     @Test
     public void unauthenticated() {
       String json =
@@ -49,8 +48,8 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(401)
           .body("$", responseIsError())
           .body(
-              "errors[0].message",
-              startsWith("Authentication failed for request due to invalid token"));
+              "errors[0].errorCode",
+              equalTo(APISecurityException.Code.UNAUTHENTICATED_REQUEST.name()));
     }
 
     @Test
@@ -74,25 +73,8 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .statusCode(401)
           .body("$", responseIsErrorWithStatus())
           .body(
-              "errors[0].message",
-              startsWith("Authentication failed for request due to invalid token"))
-          .body(
-              "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
-          .body(
-              "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
-          .body(
-              "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
-          .body(
-              "status.warnings[0].message",
-              containsString("The deprecated command is: createNamespace."))
-          .body(
-              "status.warnings[0].message",
-              containsString("The new command to use is: createKeyspace."));
+              "errors[0].errorCode",
+              equalTo(APISecurityException.Code.UNAUTHENTICATED_REQUEST.name()));
       ;
     }
 
@@ -108,6 +90,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               }
             }
             """;
+
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -117,8 +100,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNKNOWN_COLLECTION_OR_TABLE"))
-          .body("errors[0].exceptionClass", is("SchemaException"));
+          .body("errors[0].errorCode", is(SchemaException.Code.COLLECTION_NOT_EXIST.name()));
     }
 
     @Test
@@ -128,20 +110,16 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.HTML)
           .body(
               """
-                                                {
-                                                  "findCollections": { }
-                                                }
-                                                """)
+                {
+                  "findCollections": { }
+                }
+                """)
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(415)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_CONTENT_TYPE"))
-          .body("errors[0].exceptionClass", is("RequestException"))
-          .body(
-              "errors[0].message",
-              startsWith("Request sent with unsupported 'Content-Type' header"));
+          .body("errors[0].errorCode", is(RequestException.Code.UNSUPPORTED_CONTENT_TYPE.name()));
     }
 
     @Test
@@ -237,12 +215,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].message", is(not(blankString())))
-          .body(
-              "errors[0].message",
-              containsString(
-                  "The command tried to use a Keyspace that does not exist in the Database"))
-          .body("errors[0].exceptionClass", is("SchemaException"));
+          .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_KEYSPACE.name()));
     }
 
     @Test
@@ -315,15 +288,13 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
               startsWith("Authentication failed for request due to invalid token"))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: createNamespace."))

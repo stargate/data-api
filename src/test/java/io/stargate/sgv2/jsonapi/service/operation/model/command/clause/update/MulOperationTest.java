@@ -9,8 +9,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.MulOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Nested;
@@ -193,11 +191,9 @@ public class MulOperationTest extends UpdateOperationTestBase {
                                   """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $mul requires numeric parameter, got: STRING");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining(": $mul requires numeric parameter, got: String");
     }
 
     // Not legal to try to modify doc id (immutable):
@@ -227,11 +223,10 @@ public class MulOperationTest extends UpdateOperationTestBase {
                 oper.updateDocument(doc).modified();
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $mul requires target to be Number; value at 'prop' of type STRING");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.name())
+          .hasMessageContaining(
+              "$mul requires target to be Number; value at 'prop' of type String");
     }
 
     // One odd case: explicit "null" is invalid target
@@ -257,11 +252,10 @@ public class MulOperationTest extends UpdateOperationTestBase {
                 oper.updateDocument(doc).modified();
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $mul requires target to be Number; value at 'subdoc.prop' of type NULL");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.name())
+          .hasMessageContaining(
+              "$mul requires target to be Number; value at 'subdoc.prop' of type Null");
     }
 
     // Test to make sure we know to look for "$"-modifier to help with user errors
@@ -277,12 +271,9 @@ public class MulOperationTest extends UpdateOperationTestBase {
                         """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                  + ": $mul does not support modifiers");
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.name())
+          .hasMessageContaining("$mul does not support modifiers");
     }
   }
 }

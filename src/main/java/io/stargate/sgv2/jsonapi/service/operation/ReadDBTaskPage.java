@@ -147,8 +147,8 @@ public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
 
       var resultBuilder =
           singleResponse
-              ? CommandResult.singleDocumentBuilder(useErrorObjectV2, requestTracing)
-              : CommandResult.multiDocumentBuilder(useErrorObjectV2, requestTracing);
+              ? CommandResult.singleDocumentBuilder(requestTracing)
+              : CommandResult.multiDocumentBuilder(requestTracing);
 
       return new ReadDBTaskPage<>(tasks, resultBuilder, pagingState, includeSortVector, sortVector);
     }

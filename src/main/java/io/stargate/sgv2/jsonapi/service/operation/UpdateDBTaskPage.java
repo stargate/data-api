@@ -54,8 +54,7 @@ public class UpdateDBTaskPage<SchemaT extends TableSchemaObject>
       // when we refactor collections to use the OperationAttempt this will need to support
       // returning a document
       // e.g. for findOneAndDelete, for now it is always status only
-      return new UpdateDBTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing));
+      return new UpdateDBTaskPage<>(tasks, CommandResult.statusOnlyBuilder(requestTracing));
     }
   }
 }

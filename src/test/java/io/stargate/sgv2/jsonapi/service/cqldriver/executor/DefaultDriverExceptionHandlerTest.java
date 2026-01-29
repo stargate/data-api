@@ -17,10 +17,8 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.codec.CodecNotFoundException;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.google.common.base.Strings;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.DatabaseException;
-import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
-import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
+import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -69,10 +67,10 @@ public class DefaultDriverExceptionHandlerTest {
 
     // for now, assumed they always turn into a DatabaseException
     assertThat(handledEx)
-        .as("Handled error is of assertions class")
-        .isOfAnyClassIn(DatabaseException.class);
+        .as("Handled error is of ApiException type")
+        .isInstanceOf(APIException.class);
 
-    DatabaseException apiEx = (DatabaseException) handledEx;
+    APIException apiEx = (APIException) handledEx;
     assertions.runAssertions(TEST_DATA, originalEx, apiEx);
   }
 
@@ -90,30 +88,27 @@ public class DefaultDriverExceptionHandlerTest {
   }
 
   public record Assertions(
-      DatabaseException.Code expectedCode,
+      ErrorCode<?> expectedCode,
       boolean assertSchemaNames,
       boolean assertOrigError,
       boolean assertCql,
       String assertMessage,
       EnumSet<ExceptionFlags> assertExceptionFlags) {
 
-    public static Assertions of(DatabaseException.Code code) {
+    public static Assertions of(ErrorCode<?> code) {
       return new Assertions(code, true, false, false, null, null);
     }
 
-    public static Assertions of(DatabaseException.Code code, String assertMessage) {
+    public static Assertions of(ErrorCode<?> code, String assertMessage) {
       return new Assertions(code, true, false, false, assertMessage, null);
     }
 
-    public static Assertions of(
-        DatabaseException.Code code, EnumSet<ExceptionFlags> assertExceptionFlags) {
+    public static Assertions of(ErrorCode<?> code, EnumSet<ExceptionFlags> assertExceptionFlags) {
       return new Assertions(code, true, false, false, null, assertExceptionFlags);
     }
 
     public static Assertions of(
-        DatabaseException.Code code,
-        String assertMessage,
-        EnumSet<ExceptionFlags> assertExceptionFlags) {
+        ErrorCode<?> code, String assertMessage, EnumSet<ExceptionFlags> assertExceptionFlags) {
       return new Assertions(code, true, false, false, assertMessage, assertExceptionFlags);
     }
 
@@ -250,7 +245,8 @@ public class DefaultDriverExceptionHandlerTest {
             allFailedTwoNodesOneWriteTimeout(),
             Assertions.of(DatabaseException.Code.TIMEOUT_WRITING_DATA)),
         new TestArguments(
-            allFailedTwoNodesAllAuth(), Assertions.of(DatabaseException.Code.UNAUTHORIZED_ACCESS)),
+            allFailedTwoNodesAllAuth(),
+            Assertions.of(APISecurityException.Code.UNAUTHORIZED_ACCESS)),
         new TestArguments(
             allFailedOneRuntime(),
             Assertions.of(

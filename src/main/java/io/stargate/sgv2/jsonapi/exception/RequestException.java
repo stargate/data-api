@@ -27,6 +27,8 @@ public class RequestException extends APIException {
     PROJECTION,
     /** See {@link SchemaException} */
     SCHEMA,
+    /** See {@link APISecurityException} */
+    SECURITY,
     /** See {@link SortException} */
     SORT,
     /** See {@link UpdateException} */
@@ -45,17 +47,23 @@ public class RequestException extends APIException {
     COMMAND_FIELD_UNKNOWN,
     COMMAND_FIELD_VALUE_INVALID,
     COMMAND_UNKNOWN,
+
+    HYBRID_FIELD_CONFLICT,
+    HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE,
+    HYBRID_FIELD_UNKNOWN_SUBFIELDS,
+    HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE,
+
     INVALID_CREATE_COLLECTION_FIELD,
     MISSING_RERANK_QUERY_TEXT,
 
     REQUEST_NOT_JSON,
     REQUEST_STRUCTURE_MISMATCH,
 
-    UNAUTHENTICATED_REQUEST,
     UNSUPPORTED_COLLECTION_COMMAND,
     UNSUPPORTED_CONTENT_TYPE,
     UNSUPPORTED_RERANKING_COMMAND,
-    UNSUPPORTED_TABLE_COMMAND;
+    UNSUPPORTED_TABLE_COMMAND,
+    ;
 
     private final ErrorTemplate<RequestException> template;
 
