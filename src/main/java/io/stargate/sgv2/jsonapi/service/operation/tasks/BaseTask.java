@@ -4,7 +4,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
@@ -513,7 +513,7 @@ public abstract class BaseTask<
         .append("status", status)
         .append("taskId", taskId)
         .append("schemaObject.type", schemaObject.type())
-        .append("schemaObject.name", schemaObject.name())
+        .append("schemaObject.name", schemaObject.identifier())
         .append("retryPolicy", retryPolicy)
         .append("warnings", warnings)
         .append("suppressedWarnings", suppressedWarnings)

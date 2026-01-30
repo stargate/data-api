@@ -11,10 +11,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -64,7 +64,7 @@ public class CommandProcessor {
                     "Starting to process '%s' command for schema object %s"
                         .formatted(
                             command.commandName().getApiName(),
-                            PrettyPrintable.print(commandContext.schemaObject().name())),
+                            PrettyPrintable.print(commandContext.schemaObject().identifier())),
                     commandContext.schemaObject()));
 
     return Uni.createFrom()

@@ -11,10 +11,11 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -33,6 +34,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path(GeneralResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
@@ -40,21 +43,27 @@ import org.jboss.resteasy.reactive.RestResponse;
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
 @Tag(ref = "General")
 public class GeneralResource {
+  private static final Logger LOGGER = LoggerFactory.getLogger(GeneralResource.class);
+
   public static final String BASE_PATH = "/v1";
 
   @Inject private RequestContext requestContext;
 
+  private final SchemaObjectCacheSupplier schemaObjectCacheSupplier;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
   public GeneralResource(
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier,
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory) {
+
+    this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
@@ -98,16 +107,36 @@ public class GeneralResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
 
-    var commandContext =
-        contextBuilderSupplier
-            .getBuilder(new DatabaseSchemaObject())
-            .withCommandName(command.getClass().getSimpleName())
-            .withRequestContext(requestContext)
-            .build();
+    var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
 
-    return meteredCommandProcessor
-        .processCommand(commandContext, command)
-        // map to 2xx unless overridden by error
-        .map(CommandResult::toRestResponse);
+    return schemaObjectCacheSupplier
+        .get()
+        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent(), false)
+        .flatMap(
+            databaseSchemaObject -> {
+              var commandContext =
+                  contextBuilderSupplier
+                      .getBuilder(databaseSchemaObject)
+                      .withCommandName(command.getClass().getSimpleName())
+                      .withRequestContext(requestContext)
+                      .build();
+
+              return meteredCommandProcessor
+                  .processCommand(commandContext, command)
+                  // map to 2xx unless overridden by error
+                  .map(commandResult -> commandResult.toRestResponse())
+                  .onTermination()
+                  .invoke(
+                      () -> {
+                        try {
+                          commandContext.close();
+                        } catch (Exception e) {
+                          LOGGER.error(
+                              "Error closing the command context for requestContext={}",
+                              requestContext,
+                              e);
+                        }
+                      });
+            });
   }
 }

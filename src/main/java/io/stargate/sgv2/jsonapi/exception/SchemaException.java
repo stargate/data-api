@@ -66,6 +66,7 @@ public class SchemaException extends RequestException {
 
     TOO_MANY_COLLECTIONS, // legacy: converted from ErrorCodeV1
     TOO_MANY_INDEXES_FOR_COLLECTION,
+    UNKNOWN_COLLECTION_OR_TABLE,
     UNKNOWN_DATA_TYPE,
     UNKNOWN_INDEX_COLUMN,
     UNKNOWN_INDEX_TYPE,

@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.unchecked.LWTFailureException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
@@ -281,8 +280,12 @@ public record ReadAndUpdateCollectionOperation(
   }
 
   private String buildUpdateQuery(boolean vectorEnabled, boolean lexicalEnabled) {
-    final SchemaObjectName tableName = commandContext.schemaObject().name();
-    return buildUpdateQuery(tableName.keyspace(), tableName.table(), vectorEnabled, lexicalEnabled);
+    var identifier = commandContext.schemaObject().identifier();
+    return buildUpdateQuery(
+        identifier.keyspace().asInternal(),
+        identifier.table().asInternal(),
+        vectorEnabled,
+        lexicalEnabled);
   }
 
   // NOTE: This method is used in the test code (to avoid having to copy query Strings verbatim),
