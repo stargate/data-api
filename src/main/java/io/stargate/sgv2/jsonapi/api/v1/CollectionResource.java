@@ -49,6 +49,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.function.Supplier;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
@@ -206,14 +207,18 @@ public class CollectionResource {
       @PathParam("keyspace") @NotEmpty String keyspace,
       @PathParam("collection") @NotEmpty String collection) {
 
-    var name =
+    var unscopedSchemaIdentifier =
         new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
             cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
-    var forceRefresh = CommandType.DDL.equals(command.commandName().getCommandType());
+    var forceSchemaRefresh = command.commandName().getCommandType().isForceSchemaRefresh();
 
     return schemaObjectCacheSupplier
         .get()
-        .getTableBased(requestContext, name, requestContext.userAgent(), forceRefresh)
+        .getTableBased(
+            requestContext,
+            unscopedSchemaIdentifier,
+            requestContext.userAgent(),
+            forceSchemaRefresh)
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {
@@ -280,6 +285,36 @@ public class CollectionResource {
                           }
                         });
               }
+            })
+        .onItemOrFailure()
+        .transformToUni(
+            (commandResult, throwable) -> {
+              // regardless of success or failure, we refresh schema cache if command says to do so
+              // we have our SchemaObjectCache, but the driver also has a metadata cache so the only
+              // way
+              // to refresh from the DB is to pull schema again, so it tells the driver to refresh
+              // async
+              // cannot tell the driver to invalidate cache of a specific part of the schema
+              Throwable finalThrowable = throwable;
+              CommandResult finalCommandResult = commandResult;
+
+              Supplier<Uni<CommandResult>> commandResultUni =
+                  () ->
+                      finalThrowable == null
+                          ? Uni.createFrom().item(finalCommandResult)
+                          : Uni.createFrom().failure(finalThrowable);
+              if (forceSchemaRefresh) {
+                return schemaObjectCacheSupplier
+                    .get()
+                    .getTableBased(
+                        requestContext,
+                        unscopedSchemaIdentifier,
+                        requestContext.userAgent(),
+                        forceSchemaRefresh)
+                    .onItem()
+                    .transformToUni(so -> commandResultUni.get());
+              }
+              return commandResultUni.get();
             })
         .map(CommandResult::toRestResponse);
   }
