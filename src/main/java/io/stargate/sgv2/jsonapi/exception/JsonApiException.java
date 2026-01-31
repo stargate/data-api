@@ -36,7 +36,6 @@ public class JsonApiException extends RuntimeException {
           add(VECTORIZE_FEATURE_NOT_AVAILABLE);
           add(VECTORIZE_SERVICE_NOT_REGISTERED);
           add(VECTORIZE_SERVICE_TYPE_UNAVAILABLE);
-          add(VECTORIZE_INVALID_AUTHENTICATION_TYPE);
           add(VECTORIZE_CREDENTIAL_INVALID);
         }
       };
@@ -50,13 +49,7 @@ public class JsonApiException extends RuntimeException {
               add(VECTOR_SEARCH_TOO_BIG_VALUE);
             }
           },
-          ErrorScope.SCHEMA,
-          new HashSet<>() {
-            {
-              add(INVALID_REQUEST);
-            }
-          },
-          ErrorScope.EMBEDDING);
+          ErrorScope.SCHEMA);
 
   protected JsonApiException(ErrorCodeV1 errorCode) {
     this(errorCode, errorCode.getMessage(), null);
