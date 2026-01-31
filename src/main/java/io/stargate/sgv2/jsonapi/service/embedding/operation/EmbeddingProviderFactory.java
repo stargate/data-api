@@ -4,6 +4,7 @@ import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -84,8 +85,9 @@ public class EmbeddingProviderFactory {
         ModelProvider.fromApiName(serviceName)
             .orElseThrow(
                 () ->
-                    ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
-                        "unknown service provider '%s'", serviceName));
+                    EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNAVAILABLE.get(
+                        "errorMessage",
+                        "The service provider '%s' is not supported.".formatted(serviceName)));
 
     return create(
         tenant,
@@ -150,8 +152,9 @@ public class EmbeddingProviderFactory {
     EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
         embeddingProvidersConfig.providers().get(serviceConfig.modelProvider().apiName());
     if (providerConfig == null) {
-      throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
-          "unknown service provider '%s'", serviceConfig.modelProvider());
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNAVAILABLE.get(
+          "errorMessage",
+          "The service provider '%s' is not supported.".formatted(serviceConfig.modelProvider()));
     }
 
     EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig =
@@ -160,9 +163,10 @@ public class EmbeddingProviderFactory {
             .findFirst()
             .orElseThrow(
                 () ->
-                    ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
-                        "unknown model '%s' for service provider '%s'",
-                        modelName, serviceConfig.modelProvider()));
+                    EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNAVAILABLE.get(
+                        "errorMessage",
+                        "The model '%s' for service provider '%s' is not supported."
+                            .formatted(modelName, serviceConfig.modelProvider())));
 
     if (operationsConfig.enableEmbeddingGateway()) {
       return new EmbeddingGatewayClient(

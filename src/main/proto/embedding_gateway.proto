@@ -163,7 +163,8 @@ message GetSupportedProvidersResponse {
   // The error response message for the embedding gateway gRPC API
   message ErrorResponse {
     string error_code = 1;
-    string error_message = 2;
+    string error_title = 2;
+    string error_body = 3;
   }
 }
 
@@ -182,7 +183,8 @@ message ValidateCredentialResponse {
 
   message Error {
     string error_code = 1;
-    string error_message = 2;
+    string error_title = 2;
+    string error_body = 3;
   }
 }
 
@@ -285,7 +287,8 @@ message GetSupportedRerankingProvidersResponse {
 
   message ErrorResponse {
     string error_code = 1;
-    string error_message = 2;
+    string error_title = 2;
+    string error_body = 3;
   }
 }
 

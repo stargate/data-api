@@ -36,7 +36,6 @@ public class JsonApiException extends RuntimeException {
           add(VECTORIZE_FEATURE_NOT_AVAILABLE);
           add(VECTORIZE_SERVICE_NOT_REGISTERED);
           add(VECTORIZE_SERVICE_TYPE_UNAVAILABLE);
-          add(VECTORIZE_INVALID_AUTHENTICATION_TYPE);
           add(VECTORIZE_CREDENTIAL_INVALID);
         }
       };
