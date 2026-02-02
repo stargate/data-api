@@ -128,7 +128,7 @@ public class EmbeddingProviderErrorMessageTest {
               "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "Provider: nvidia; HTTP Status: 400; Error Message: {\"object\":\"list\"}");
+              "Provider 'nvidia' returned a HTTP client error with HTTP 400; error message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -141,7 +141,7 @@ public class EmbeddingProviderErrorMessageTest {
               "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "Provider: nvidia; HTTP Status: 503; Error Message: {\"object\":\"list\"}");
+              "Provider 'nvidia' returned a HTTP server error with HTTP 503; error message: {\"object\":\"list\"}");
     }
 
     @Test

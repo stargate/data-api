@@ -2672,7 +2672,7 @@ server-errors:
     code: EMBEDDING_PROVIDER_CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error
     body: |-
-      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      Provider '${provider}' returned a HTTP client error with HTTP ${httpStatus}; error message: ${errorMessage}
       
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_RATE_LIMITED
@@ -2684,7 +2684,7 @@ server-errors:
     code: EMBEDDING_PROVIDER_SERVER_ERROR
     title: The Embedding Provider returned a HTTP server error
     body: |-
-      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      Provider '${provider}' returned a HTTP server error with HTTP ${httpStatus}; error message: ${errorMessage}
       
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_TIMEOUT

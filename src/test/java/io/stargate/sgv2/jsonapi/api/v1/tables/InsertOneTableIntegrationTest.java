@@ -1736,7 +1736,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR,
               EmbeddingProviderException.class,
-              "Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb");
+              "Provider 'openai' returned a HTTP client error with HTTP 401; error message: \"Incorrect API key provided: test_emb");
     }
 
     @Order(2)
@@ -1785,7 +1785,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR,
               EmbeddingProviderException.class,
-              "Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb");
+              "Provider 'openai' returned a HTTP client error with HTTP 401; error message: \"Incorrect API key provided: test_emb");
     }
 
     @Order(3)
@@ -1834,8 +1834,10 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR,
               EmbeddingProviderException.class,
               anyOf(
-                  containsString("Provider: openai; HTTP Status: 401; Error Message: "),
-                  containsString("Provider: jinaAI; HTTP Status: 401; Error Message: ")));
+                  containsString(
+                      "Provider 'openai' returned a HTTP client error with HTTP 401; error message:"),
+                  containsString(
+                      "Provider 'jinaAI' returned a HTTP client error with HTTP 401; error message:")));
     }
   }
 }
