@@ -1796,6 +1796,13 @@ request-errors:
     body: |-
       Vector search is not enabled for collection: ${keyspace}.${table}.
 
+
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME
+    title: Unknown vector search function name
+    body: |-
+      Unknown vector search function name: '${function}'.
+
   - scope: SCHEMA
     code: VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME
     title: Unrecognized vector search source model name

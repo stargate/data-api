@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.cql.builder;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
 import com.datastax.oss.driver.api.core.data.CqlVector;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -296,9 +297,10 @@ public class QueryBuilder {
       case DOT_PRODUCT ->
           functionCalls.add(
               FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_DOT_PRODUCT"));
+        // can this ever occur?
       default ->
-          throw ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
-              "%s", similarityFunction);
+          throw SchemaException.Code.VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME.get(
+              Map.of("function", similarityFunction.name()));
     }
     return this;
   }

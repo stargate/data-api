@@ -45,7 +45,6 @@ public class JsonApiException extends RuntimeException {
       Map.of(
           new HashSet<>() {
             {
-              add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
               add(VECTOR_SEARCH_TOO_BIG_VALUE);
             }
           },

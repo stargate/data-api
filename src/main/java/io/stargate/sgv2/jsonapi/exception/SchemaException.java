@@ -93,6 +93,8 @@ public class SchemaException extends RequestException {
 
     VECTOR_SEARCH_NOT_SUPPORTED, // legacy: converted from ErrorCodeV1
 
+    VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME, // legacy: converted from
+    // ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME
     VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME, // legacy: converted from ErrorCodeV1
 
     // older below - separated because they need to be confirmed

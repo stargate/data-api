@@ -17,15 +17,16 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
-
+  // REMOVE:
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
-
+  // REMOVE:
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
+
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
+  // REMOVE:
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
 
   // NOTE: ones used/referenced by `embedding-gateway`, cannot remove:
