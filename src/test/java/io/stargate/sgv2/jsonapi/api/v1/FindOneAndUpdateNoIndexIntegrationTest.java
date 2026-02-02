@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -232,7 +233,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
           .body(
               "errors[0].message",
               containsString("number of elements an indexable Array (field 'bigArray')"))
@@ -297,7 +298,8 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
             .then()
             .statusCode(200)
             .body("$", responseIsError())
-            .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+            .body(
+                "errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
             .body(
                 "errors[0].message",
                 containsString("number of properties an indexable Object (field 'bigObject')"))

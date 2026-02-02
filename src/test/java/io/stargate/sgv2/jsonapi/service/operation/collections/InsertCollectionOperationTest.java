@@ -19,11 +19,11 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -230,10 +230,11 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message()).isEqualTo("Document already exists with the given _id");
-                assertThat(error.fields())
-                    .containsEntry("exceptionClass", "JsonApiException")
-                    .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
+                assertThat(error.errorCode())
+                    .isEqualTo(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name());
+                assertThat(error.message())
+                    .startsWith(
+                        "Cannot insert the document: a document already exists with given '_id' ('doc1')");
               });
     }
 
@@ -555,11 +556,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
+      // when this error comes out of the query executor, it will have been translated using
+      // CollectionDriverExceptionMapper
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Test break #1"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Test break #1"));
               });
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
@@ -592,12 +599,11 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.message()).contains("Test break #1");
+                assertThat(error.documentIds())
+                    .containsExactlyElementsOf(List.of(DocumentId.fromString("doc1")));
+                assertThat(error.errorCode())
+                    .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
               });
     }
 
@@ -650,11 +656,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 callCount.addAndGet(1);
                 return Uni.createFrom().item(resultOk);
               });
+      // when this error comes out of the query executor, it will have been translated using
+      // CollectionDriverExceptionMapper
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Test break #2"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Test break #2"));
               });
 
       Supplier<CommandResult> execute =
@@ -682,12 +694,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Test break #2");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.message()).contains("Error Message: Test break #2");
+                assertThat(error.errorCode())
+                    .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
               });
     }
 
@@ -735,11 +744,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
+      // when this error comes out of the query executor, it will have been translated using
+      // CollectionDriverExceptionMapper
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount1.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Test break #1"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Test break #1"));
               });
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
@@ -774,12 +789,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.message()).contains("Error Message: Test break #1");
+                assertThat(error.errorCode())
+                    .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
               });
     }
 
@@ -827,17 +839,26 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
+      // when this error comes out of the query executor, it will have been translated using
+      // CollectionDriverExceptionMapper
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount1.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Insert 1 failed"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Insert 1 failed"));
               });
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount2.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Insert 2 failed"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Insert 2 failed"));
               });
 
       Supplier<CommandResult> execute =
@@ -862,10 +883,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.INSERTED_IDS, List.of());
       assertThat(result.errors())
           .hasSize(2)
-          .extracting(CommandResult.Error::message)
-          .containsExactlyInAnyOrder(
-              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Insert 1 failed",
-              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Insert 2 failed");
+          .extracting(CommandError::message)
+          .anySatisfy(msg -> assertThat(msg).contains("Insert 1 failed"))
+          .anySatisfy(msg -> assertThat(msg).contains("Insert 2 failed"));
     }
   }
 

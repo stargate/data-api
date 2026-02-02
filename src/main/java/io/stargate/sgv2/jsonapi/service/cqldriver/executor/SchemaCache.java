@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.DEFAULT_TENANT;
-
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListenerBase;
@@ -12,12 +10,16 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionFactory;
+import io.stargate.sgv2.jsonapi.service.operation.databases.DatabaseDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Objects;
@@ -111,16 +113,8 @@ public class SchemaCache {
 
     Objects.requireNonNull(namespace, "namespace must not be null");
 
-    // Aaron 1 may 2025 - Based on existing logic I thought we should have a non null tenantId in
-    // all cases other than
-    // when using cassandra as a backend.
-    var resolvedTenantId =
-        (databaseType == DatabaseType.CASSANDRA)
-            ? requestContext.getTenantId().orElse(DEFAULT_TENANT)
-            : requestContext.getTenantId().orElseThrow();
-
     var tableBasedSchemaCache =
-        keyspaceCache.get(new KeyspaceCacheKey(resolvedTenantId, namespace));
+        keyspaceCache.get(new KeyspaceCacheKey(requestContext.tenant(), namespace));
     Objects.requireNonNull(
         tableBasedSchemaCache, "keyspaceCache must not return null tableBasedSchemaCache");
     return tableBasedSchemaCache.getSchemaObject(requestContext, collectionName, forceRefresh);
@@ -128,22 +122,28 @@ public class SchemaCache {
 
   private TableBasedSchemaCache onLoad(SchemaCache.KeyspaceCacheKey key) {
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("onLoad() - tenantId: {}, keyspace: {}", key.tenantId(), key.keyspace());
+      LOGGER.trace("onLoad() - tenant: {}, keyspace: {}", key.tenant(), key.keyspace());
     }
 
     // Cannot get a session from the sessionCacheSupplier in the constructor because
     // it will create a circular call. So need to wait until now to create the QueryExecutor
     // this is OK, only happens when the table is not in the cache
-    var queryExecutor = new QueryExecutor(sessionCacheSupplier.get(), operationsConfig);
+    var queryExecutor =
+        new QueryExecutor(
+            sessionCacheSupplier.get(),
+            operationsConfig,
+            (statement) ->
+                new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(), statement),
+            RequestTracing.NO_OP);
     return tableCacheFactory.create(key.keyspace(), queryExecutor, objectMapper);
   }
 
   /** For testing only - peek to see if the schema object is in the cache without loading it. */
   @VisibleForTesting
-  Optional<SchemaObject> peekSchemaObject(String tenantId, String keyspaceName, String tableName) {
+  Optional<SchemaObject> peekSchemaObject(Tenant tenant, String keyspaceName, String tableName) {
 
     var tableBasedSchemaCache =
-        keyspaceCache.getIfPresent(new KeyspaceCacheKey(tenantId, keyspaceName));
+        keyspaceCache.getIfPresent(new KeyspaceCacheKey(tenant, keyspaceName));
     if (tableBasedSchemaCache != null) {
       return tableBasedSchemaCache.peekSchemaObject(tableName);
     }
@@ -152,48 +152,44 @@ public class SchemaCache {
   ;
 
   /** Removes the table from the cache if present. */
-  void evictTable(String tenantId, String keyspace, String tableName) {
+  void evictTable(Tenant tenant, String keyspace, String tableName) {
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
-          "evictTable() - tenantId: {}, keyspace: {}, tableName: {}",
-          tenantId,
-          keyspace,
-          tableName);
+          "evictTable() - tenant: {}, keyspace: {}, tableName: {}", tenant, keyspace, tableName);
     }
 
-    var tableBasedSchemaCache =
-        keyspaceCache.getIfPresent(new KeyspaceCacheKey(tenantId, keyspace));
+    var tableBasedSchemaCache = keyspaceCache.getIfPresent(new KeyspaceCacheKey(tenant, keyspace));
     if (tableBasedSchemaCache != null) {
       tableBasedSchemaCache.evictCollectionSettingCacheEntry(tableName);
     }
   }
 
-  /** Removes all keyspaces and table entries for the given tenantId from the cache. */
-  void evictAllKeyspaces(String tenantId) {
+  /** Removes all keyspaces and table entries for the given tenant from the cache. */
+  void evictAllKeyspaces(Tenant tenant) {
 
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("evictAllKeyspaces() - tenantId: {}", tenantId);
+      LOGGER.trace("evictAllKeyspaces() - tenant: {}", tenant);
     }
 
-    keyspaceCache.asMap().keySet().removeIf(key -> key.tenantId().equals(tenantId));
+    keyspaceCache.asMap().keySet().removeIf(key -> key.tenant().equals(tenant));
   }
 
   /** Removes the keyspace from the cache if present. */
-  void evictKeyspace(String tenant, String keyspace) {
+  void evictKeyspace(Tenant tenant, String keyspace) {
 
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("evictKeyspace() - tenantId: {}, keyspace: {}", tenant, keyspace);
+      LOGGER.trace("evictKeyspace() - tenant: {}, keyspace: {}", tenant, keyspace);
     }
 
     keyspaceCache.invalidate(new KeyspaceCacheKey(tenant, keyspace));
   }
 
   /** Key for the Keyspace cache, we rely on the record hash and equals */
-  record KeyspaceCacheKey(String tenantId, String keyspace) {
+  record KeyspaceCacheKey(Tenant tenant, String keyspace) {
 
     KeyspaceCacheKey {
-      Objects.requireNonNull(tenantId, "tenantId must not be null");
+      Objects.requireNonNull(tenant, "tenant must not be null");
       Objects.requireNonNull(keyspace, "namespace must not be null");
     }
   }
@@ -209,7 +205,7 @@ public class SchemaCache {
    * created because the listener will first listen for {@link SchemaChangeListener#onSessionReady}
    * and get the tenantID from the session name via {@link Session#getName}.
    *
-   * <p>If the tenantId is not set, null or blank, we log at ERROR rather than throw because the
+   * <p>If the tenant is not set, null or blank, we log at ERROR rather than throw because the
    * callback methods are called on driver async threads and exceptions there are unlikely to be
    * passed back in the request response.
    *
@@ -223,16 +219,17 @@ public class SchemaCache {
 
     private final SchemaCache schemaCache;
 
-    private String tenantId = null;
+    private Tenant tenant = null;
 
     public SchemaCacheSchemaChangeListener(SchemaCache schemaCache) {
       this.schemaCache = Objects.requireNonNull(schemaCache, "schemaCache must not be null");
     }
 
     private boolean hasTenantId(String context) {
-      if (tenantId == null || tenantId.isBlank()) {
+
+      if (tenant == null || tenant.toString().isBlank()) {
         LOGGER.error(
-            "SchemaCacheSchemaChangeListener tenantId is null or blank when expected to be set - {}",
+            "SchemaCacheSchemaChangeListener tenant is null or blank when expected to be set - {}",
             context);
         return false;
       }
@@ -240,19 +237,18 @@ public class SchemaCache {
     }
 
     private void evictTable(String context, TableMetadata tableMetadata) {
+
       if (hasTenantId(context)) {
         schemaCache.evictTable(
-            tenantId,
-            tableMetadata.getKeyspace().asInternal(),
-            tableMetadata.getName().asInternal());
+            tenant, tableMetadata.getKeyspace().asInternal(), tableMetadata.getName().asInternal());
       }
     }
 
     @Override
     public void onSessionReady(@NonNull Session session) {
-      // This is called when the session is ready, we can get the tenantId from the session name
+      // This is called when the session is ready, we can get the tenant from the session name
       // and set it in the listener so we can use it in the other methods.
-      tenantId = session.getName();
+      tenant = TenantFactory.instance().create(session.getName());
       hasTenantId("onSessionReady called but sessionName() is null or blank");
     }
 
@@ -282,7 +278,7 @@ public class SchemaCache {
     @Override
     public void onKeyspaceDropped(@NonNull KeyspaceMetadata keyspace) {
       if (hasTenantId("onKeyspaceDropped")) {
-        schemaCache.evictKeyspace(tenantId, keyspace.getName().asInternal());
+        schemaCache.evictKeyspace(tenant, keyspace.getName().asInternal());
       }
     }
   }
@@ -301,10 +297,10 @@ public class SchemaCache {
     }
 
     @Override
-    public void accept(String tenantId) {
+    public void accept(Tenant tenant) {
       // the sessions are keyed on the tenantID and the credentials, and one session can work with
-      // multiple keyspaces. So we need to evict all the keyspaces for the tenantId
-      schemaCache.evictAllKeyspaces(tenantId);
+      // multiple keyspaces. So we need to evict all the keyspaces for the tenant
+      schemaCache.evictAllKeyspaces(tenant);
     }
   }
 

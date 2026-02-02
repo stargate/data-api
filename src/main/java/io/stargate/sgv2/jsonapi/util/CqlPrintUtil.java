@@ -16,6 +16,10 @@ public abstract class CqlPrintUtil {
   public static final int MAX_VECTOR_SIZE = 5;
 
   public static List<Object> trimmedPositionalValues(SimpleStatement statement) {
+    if (statement == null) {
+      return List.of();
+    }
+
     return statement.getPositionalValues().stream()
         .map(
             value -> {
@@ -41,6 +45,10 @@ public abstract class CqlPrintUtil {
 
   public static String trimmedCql(SimpleStatement statement) {
     // ANN OF [-0.042139724, 0.020535178, 0.06071997, 0.06071997, 0.06071997 ... ]
+    if (statement == null) {
+      return "null";
+    }
+
     var cql = statement.getQuery();
     int start = cql.indexOf("ANN OF [");
     if (start > -1) {

@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -122,11 +120,11 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
           .body(
               "errors[0].message",
-              is(
-                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be empty."));
+              startsWith(
+                  "Command field 'command.name' value `null` not valid: must not be empty."));
     }
   }
 

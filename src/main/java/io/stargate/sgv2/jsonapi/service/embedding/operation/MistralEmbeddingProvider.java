@@ -99,7 +99,6 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
     checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
     var mistralRequest = new MistralEmbeddingRequest(texts, modelName(), "float");
-    // TODO: V2 error
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
 
@@ -126,7 +125,7 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       mistralResponse.usage().prompt_tokens(),
                       mistralResponse.usage().total_tokens(),

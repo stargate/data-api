@@ -47,7 +47,7 @@ public record FindEmbeddingProvidersOperation(
     @Override
     public CommandResult get() {
 
-      return CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
+      return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
           .addStatus(CommandStatus.EXISTING_EMBEDDING_PROVIDERS, embeddingProviders)
           .build();
     }

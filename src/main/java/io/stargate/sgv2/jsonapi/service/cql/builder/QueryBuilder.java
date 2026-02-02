@@ -143,7 +143,7 @@ public class QueryBuilder {
 
     if (orderByAnn != null) {
       if (vectorValue == null) {
-        throw ErrorCodeV1.MISSING_VECTOR_VALUE.toApiException();
+        throw ServerException.internalServerError("Missing the vector value when building cql");
       }
       builder.append(" ORDER BY ").append(orderByAnn).append(" ANN OF ?");
       values.add(vectorValue);
@@ -272,7 +272,7 @@ public class QueryBuilder {
           .append(cqlName(functionCall.getColumnName()));
       if (functionCall.isSimilarityFunction) {
         if (vectorValue == null) {
-          throw ErrorCodeV1.MISSING_VECTOR_VALUE.toApiException();
+          throw ServerException.internalServerError("Missing the vector value when building cql");
         }
         builder.append(", ").append('?');
         values.add(vectorValue);

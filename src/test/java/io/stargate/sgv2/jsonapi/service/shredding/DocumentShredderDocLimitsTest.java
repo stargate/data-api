@@ -15,8 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -69,10 +68,10 @@ public class DocumentShredderDocLimitsTest {
       Exception e = catchException(() -> documentShredder.shred(commandContext(), bigDoc, null));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith("exceeds maximum allowed (" + docLimits.maxSize() + ")");
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name())
+          .hasMessageContaining("exceeds maximum allowed (" + docLimits.maxSize() + ")");
     }
 
     private ObjectNode createBigDoc(int mainProps, int subProps) {
@@ -117,10 +116,10 @@ public class DocumentShredderDocLimitsTest {
       Exception e = catchException(() -> documentShredder.shred(commandContext(), deepDoc, null));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name())
+          .hasMessageContaining(
               "document depth exceeds maximum allowed (" + docLimits.maxDepth() + ")");
     }
   }
@@ -157,10 +156,10 @@ public class DocumentShredderDocLimitsTest {
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name())
+          .hasMessageContaining(
               " number of properties an indexable Object (field 'subdoc') has ("
                   + tooManyProps
                   + ") exceeds maximum allowed ("
@@ -186,10 +185,10 @@ public class DocumentShredderDocLimitsTest {
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name())
+          .hasMessageContaining(
               " total number of indexed properties (2101) in document exceeds maximum allowed ("
                   + docLimits.maxDocumentProperties()
                   + ")");
@@ -235,10 +234,10 @@ public class DocumentShredderDocLimitsTest {
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name())
+          .hasMessageContaining(
               " number of elements an indexable Array (field 'arr') has ("
                   + arraySizeAboveMax
                   + ") exceeds maximum allowed ("
@@ -291,10 +290,10 @@ public class DocumentShredderDocLimitsTest {
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name())
+          .hasMessageContaining(
               "field path length (1003) exceeds maximum allowed ("
                   + docLimits.maxPropertyPathLength()
                   + ") (path ends with '"
@@ -326,10 +325,10 @@ public class DocumentShredderDocLimitsTest {
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name())
+          .hasMessageContaining(
               " String value (field 'arr') length ("
                   + tooLongLength
                   + " bytes) exceeds maximum allowed ("
@@ -358,10 +357,10 @@ public class DocumentShredderDocLimitsTest {
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
-          .hasMessageEndingWith(
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name())
+          .hasMessageContaining(
               " String value (field 'text') length ("
                   + (tooLongCharLength * 3)
                   + " bytes) exceeds maximum allowed ("
@@ -462,10 +461,10 @@ public class DocumentShredderDocLimitsTest {
       // First check at root level
       Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith("field name '" + invalidName + "' starts with '$'");
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageStartingWith("Document field name not valid: ")
+          .hasMessageContaining("field name '" + invalidName + "' starts with '$'");
 
       // And then as a nested field
       final ObjectNode doc2 = objectMapper.createObjectNode();
@@ -474,10 +473,10 @@ public class DocumentShredderDocLimitsTest {
 
       e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith("field name '" + invalidName + "' starts with '$'");
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageStartingWith("Document field name not valid: ")
+          .hasMessageContaining("field name '" + invalidName + "' starts with '$'");
     }
   }
 

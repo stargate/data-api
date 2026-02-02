@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -236,8 +236,9 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                       IDCollectionFilter.Operator.NE, expression.value()));
                               break;
                             default:
-                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                                  "%s", expression.operator());
+                              throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+                                  Map.of(
+                                      "message", "operator '%s'".formatted(expression.operator())));
                           }
                         });
                   });
@@ -264,8 +265,9 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                       (List<Object>) expression.value()));
                               break;
                             default:
-                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                                  "%s", expression.operator());
+                              throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+                                  Map.of(
+                                      "message", "operator '%s'".formatted(expression.operator())));
                           }
                         });
                   });
@@ -541,8 +543,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case LTE:
         return MapCollectionFilter.Operator.LTE;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-            "%s", filterOperator.getOperator());
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "operator '%s'".formatted(filterOperator.getOperator())));
     }
   }
 
@@ -554,8 +556,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NIN:
         return InCollectionFilter.Operator.NIN;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-            "%s", filterOperator.getOperator());
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "operator '%s'".formatted(filterOperator.getOperator())));
     }
   }
 
@@ -567,8 +569,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NE:
         return SetCollectionFilter.Operator.NOT_CONTAINS;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-            "%s", filterOperator.getOperator());
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "operator '%s'".formatted(filterOperator.getOperator())));
     }
   }
 }

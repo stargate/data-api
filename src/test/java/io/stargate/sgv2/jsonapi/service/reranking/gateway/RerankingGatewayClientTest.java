@@ -11,9 +11,9 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelType;
@@ -35,10 +35,12 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class RerankingGatewayClientTest {
 
+  private static final TestConstants testConstants = new TestConstants();
+
   public static final String TESTING_COMMAND_NAME = "test_command";
 
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials("test-tenant", Optional.of("mocked reranking api key"));
+      new RerankingCredentials(testConstants.TENANT, "mocked reranking api key");
 
   private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
           .RequestPropertiesImpl
@@ -83,6 +85,7 @@ public class RerankingGatewayClientTest {
         EmbeddingGateway.ModelUsage.newBuilder()
             .setModelType(EmbeddingGateway.ModelUsage.ModelType.RERANKING)
             .setModelProvider(ModelProvider.NVIDIA.apiName())
+            .setTenantId(testConstants.TENANT.toString())
             .setModelName("llama-3.2-nv-rerankqa-1b-v2")
             .setPromptTokens(10)
             .setTotalTokens(20)
@@ -96,8 +99,8 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
-            Optional.of("default"),
-            Optional.of("default"),
+            testConstants.TENANT,
+            "default",
             rerankService,
             Map.of(),
             TESTING_COMMAND_NAME);
@@ -137,11 +140,10 @@ public class RerankingGatewayClientTest {
         EmbeddingGateway.RerankingResponse.newBuilder();
     EmbeddingGateway.RerankingResponse.ErrorResponse.Builder errorResponseBuilder =
         EmbeddingGateway.RerankingResponse.ErrorResponse.newBuilder();
-    final JsonApiException apiException =
-        ErrorCodeV1.RERANKING_PROVIDER_SERVER_ERROR.toApiException();
-    errorResponseBuilder
-        .setErrorCode(apiException.getErrorCode().name())
-        .setErrorMessage(apiException.getMessage());
+    final SchemaException apiException =
+        SchemaException.Code.RERANKING_PROVIDER_SERVER_ERROR.get(
+            Map.of("errorMessage", "Test fail"));
+    errorResponseBuilder.setErrorCode(apiException.code).setErrorMessage(apiException.getMessage());
     builder.setError(errorResponseBuilder.build());
     when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(builder.build()));
 
@@ -150,8 +152,8 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
-            Optional.of("default"),
-            Optional.of("default"),
+            testConstants.TENANT,
+            "default",
             rerankService,
             Map.of(),
             TESTING_COMMAND_NAME);
@@ -165,12 +167,12 @@ public class RerankingGatewayClientTest {
             .getFailure();
 
     assertThat(result)
-        .isInstanceOf(JsonApiException.class)
+        .isInstanceOf(SchemaException.class)
         .satisfies(
             e -> {
-              JsonApiException exception = (JsonApiException) e;
+              SchemaException exception = (SchemaException) e;
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
-              assertThat(exception.getErrorCode()).isEqualTo(apiException.getErrorCode());
+              assertThat(exception.code).isEqualTo(apiException.code);
             });
   }
 }

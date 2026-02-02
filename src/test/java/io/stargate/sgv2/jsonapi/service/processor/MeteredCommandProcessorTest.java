@@ -15,15 +15,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Response;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,16 +32,18 @@ import org.mockito.Mockito;
 public class MeteredCommandProcessorTest {
   @Inject MeteredCommandProcessor meteredCommandProcessor;
   @InjectMock protected CommandProcessor commandProcessor;
-  @InjectMock protected RequestContext dataApiRequestInfo;
+  @InjectMock protected RequestContext requestContext;
   @Inject ObjectMapper objectMapper;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
+  TenantFactory tenantFactory;
 
   @BeforeEach
   public void beforeEach() {
     commandContext = testConstants.collectionContext();
+    tenantFactory = TenantFactory.instance();
   }
 
   @Nested
@@ -62,17 +62,17 @@ public class MeteredCommandProcessorTest {
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
 
-      CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP).build();
+      CommandResult commandResult = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
+
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
           .atMost(Duration.ofMinutes(1));
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+
       List<String> httpMetrics =
           metrics
               .lines()
@@ -91,10 +91,10 @@ public class MeteredCommandProcessorTest {
                 lines.forEach(
                     line -> {
                       assertThat(line).contains("command=\"CountDocumentsCommand\"");
-                      assertThat(line).contains("tenant=\"test-tenant\"");
+                      assertThat(line)
+                          .contains("tenant=\"%s".formatted(testConstants.TENANT.toString()));
                       assertThat(line).contains("error=\"false\"");
                       assertThat(line).contains("error_code=\"NA\"");
-                      assertThat(line).contains("error_class=\"NA\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
               });
@@ -113,22 +113,19 @@ public class MeteredCommandProcessorTest {
 
       FindCommand countCommand = objectMapper.readValue(json, FindCommand.class);
 
-      Map<String, Object> fields = new HashMap<>();
-      fields.put("exceptionClass", "TestExceptionClass");
-      CommandResult.Error error =
-          new CommandResult.Error("message", fields, fields, Response.Status.OK);
-      CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(error)
-              .build();
+      // easier to create an Exception and build the error from it, it will include tags etc
+      var exception =
+          ServerException.Code.INTERNAL_SERVER_ERROR.get("errorMessage", "test error details");
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(exception).build();
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
           .atMost(Duration.ofMinutes(1));
+
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
       List<String> httpMetrics =
           metrics
@@ -150,10 +147,12 @@ public class MeteredCommandProcessorTest {
                 lines.forEach(
                     line -> {
                       assertThat(line).contains("command=\"FindCommand\"");
-                      assertThat(line).contains("tenant=\"test-tenant\"");
+                      assertThat(line)
+                          .contains("tenant=\"%s".formatted(testConstants.TENANT.toString()));
+
                       assertThat(line).contains("error=\"true\"");
-                      assertThat(line).contains("error_code=\"unknown\"");
-                      assertThat(line).contains("error_class=\"TestExceptionClass\"");
+                      assertThat(line)
+                          .contains("error_code=\"" + exception.fullyQualifiedCode() + "\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
               });
@@ -172,22 +171,25 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
-      Map<String, Object> fields = new HashMap<>();
-      fields.put("exceptionClass", "TestExceptionClass");
-      fields.put("errorCode", "TestErrorCode");
-      CommandResult.Error error =
-          new CommandResult.Error("message", fields, fields, Response.Status.OK);
-      CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
-              .addCommandResultError(error)
-              .build();
+
+      // easier to create an Exception and build the error from it, it will include tags etc
+      var exception =
+          ServerException.Code.INTERNAL_SERVER_ERROR.get("errorMessage", "test error details");
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(exception).build();
+      ;
+
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
           .atMost(Duration.ofMinutes(1));
+
+      // amorton - 14 jan 2026 - there is a timing problem, if we get metrics too quickly they are
+      // not ready
+      Thread.sleep(1000);
+
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
       List<String> httpMetrics =
           metrics
@@ -208,10 +210,11 @@ public class MeteredCommandProcessorTest {
                 lines.forEach(
                     line -> {
                       assertThat(line).contains("command=\"CountDocumentsCommand\"");
-                      assertThat(line).contains("tenant=\"test-tenant\"");
+                      assertThat(line)
+                          .contains("tenant=\"%s".formatted(testConstants.TENANT.toString()));
                       assertThat(line).contains("error=\"true\"");
-                      assertThat(line).contains("error_code=\"TestErrorCode\"");
-                      assertThat(line).contains("error_class=\"TestExceptionClass\"");
+                      assertThat(line)
+                          .contains("error_code=\"" + exception.fullyQualifiedCode() + "\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
               });

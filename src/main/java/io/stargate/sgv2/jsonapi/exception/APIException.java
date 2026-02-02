@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
@@ -32,8 +33,7 @@ import java.util.*;
  *       combination.
  *   <li>Decide on the {@link ExceptionFlags}, describe the condition that was observed so the API
  *       layer can decide which remediation to perform (for example recycle a session).
- *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body
- *       body.
+ *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body.
  *   <li>Add the error code to the Code enum for the Exception class, such as {@link
  *       FilterException.Code} or {@link RequestException.Code} with the same name. When the enum is
  *       instantiated at JVM start the error template is loaded.
@@ -42,8 +42,8 @@ import java.util.*;
  *
  * To get the Error to be returned in the {@link
  * io.stargate.sgv2.jsonapi.api.model.command.CommandResult} use a {@link
- * APIExceptionCommandErrorBuilder} all the logic for mapping to the API is in there to keep it out
- * of the core exception classes.
+ * io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder} and the {@link
+ * CommandErrorFactory}
  */
 public abstract class APIException extends RuntimeException implements Recordable {
 
@@ -149,7 +149,7 @@ public abstract class APIException extends RuntimeException implements Recordabl
   /**
    * Overrides to return the {@link #body} of the error. Using the body as this is effectively the
    * message, the structure we want to return to the in the API JSON comes from {@link
-   * APIExceptionCommandErrorBuilder}
+   * CommandErrorFactory}
    *
    * @return
    */

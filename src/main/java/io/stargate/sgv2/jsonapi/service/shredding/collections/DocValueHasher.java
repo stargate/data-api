@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.shredding.collections;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
@@ -203,6 +202,10 @@ public class DocValueHasher {
     } else if (value instanceof Byte b) {
       return booleanValue(Byte.compare(true_byte, b) == 0).hash();
     }
-    throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException("%s", value.getClass());
+    // Should never happen so we are ok to fail in drastic way
+    throw ServerException.Code.INTERNAL_SERVER_ERROR.get(
+        Map.of(
+            "errorMessage",
+            "Unrecognized Java type `" + value.getClass().getName() + "` to calculate hash on"));
   }
 }

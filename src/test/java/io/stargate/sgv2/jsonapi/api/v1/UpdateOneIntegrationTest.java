@@ -2,13 +2,11 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -539,11 +537,13 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
             """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PATH"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name()))
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported update operation path: update path ('price&usd') is not a valid path."));
+                  "Unsupported update operation path: update path ('price&usd') is not valid: The ampersand character"));
     }
   }
 
@@ -1645,12 +1645,11 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           }
           """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
           .body(
               "errors[0].message",
-              is(
-                  "Request invalid: field 'command.updateClause' value `null` not valid. Problem: must not be null."));
+              startsWith(
+                  "Command field 'command.updateClause' value `null` not valid: must not be null."));
     }
 
     @Test
@@ -1669,7 +1668,9 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
               }
               """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name()))
           .body(
               "errors[0].message",
               containsString(

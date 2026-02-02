@@ -13,7 +13,7 @@ LOGLEVEL=INFO
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
 
-DSETAG="6.9.15"
+DSETAG="6.9.17"
 DSEIMAGE="cr.dtsx.io/datastax/dse-server"
 DSEONLY="false"
 DSENODES=1

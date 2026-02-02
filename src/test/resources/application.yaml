@@ -1,9 +1,6 @@
 stargate:
   debug:
     enabled: true
-  feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig
-    flags:  # Ok to leave out features that have no default value (enabled or disabled)
-      tables:
 
 # change test port from 8081 (used by other SG services)
 quarkus:
@@ -18,7 +15,7 @@ quarkus:
     category:
       # production log level for this category is DEBUG, way too noisy for tests
       'io.stargate':
-        level: WARN
+        level: INFO
       'io.stargate.sgv2.jsonapi.service.cqldriver':
         level: INFO
       # Suppress reflection hierarchy warnings for external dependencies not in Jandex

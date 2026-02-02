@@ -88,12 +88,7 @@ public class DataVectorizerService {
     return new DataVectorizer(
         embeddingProvider,
         objectMapper.getNodeFactory(),
-        commandContext
-            .requestContext()
-            .getEmbeddingCredentialsSupplier()
-            .create(
-                commandContext.requestContext(),
-                embeddingProvider == null ? null : embeddingProvider.providerConfig()),
+        commandContext.requestContext().getEmbeddingCredentials(),
         commandContext.schemaObject());
   }
 

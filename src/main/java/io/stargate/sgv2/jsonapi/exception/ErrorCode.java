@@ -82,6 +82,19 @@ public interface ErrorCode<T extends APIException> {
   }
 
   /**
+   * By-pass factory method needed when translating from gRPC into proper exception instance:
+   * message is pre-formatted and needs to by-pass formatting.
+   */
+  default T withPreformattedMessage(String formattedMessage) {
+    return withPreformattedMessage(EnumSet.noneOf(ExceptionFlags.class), formattedMessage);
+  }
+
+  default T withPreformattedMessage(
+      EnumSet<ExceptionFlags> exceptionFlags, String formattedMessage) {
+    return template().withPreformattedMessage(exceptionFlags, formattedMessage);
+  }
+
+  /**
    * ENUM Implementers must return a non-null {@link ErrorTemplate} that is used to build an
    * instance of the Exception the code represents.
    *

@@ -4,7 +4,7 @@ package io.stargate.sgv2.jsonapi.exception;
  * Base for any errors that are from the {@link ErrorFamily#REQUEST} family, these are errors
  * related to the structure of the request.
  *
- * <p>Scope are defined in {@lnk Scope} and each represents a subclass of this class.
+ * <p>Scope are defined in {@link Scope} and each represents a subclass of this class.
  *
  * <p>The {@link Code} in this class is for error codes that do not have a scope.
  *
@@ -27,6 +27,8 @@ public class RequestException extends APIException {
     PROJECTION,
     /** See {@link SchemaException} */
     SCHEMA,
+    /** See {@link APISecurityException} */
+    SECURITY,
     /** See {@link SortException} */
     SORT,
     /** See {@link UpdateException} */
@@ -41,10 +43,27 @@ public class RequestException extends APIException {
   }
 
   public enum Code implements ErrorCode<RequestException> {
+    COMMAND_ACCEPTS_NO_OPTIONS,
+    COMMAND_FIELD_UNKNOWN,
+    COMMAND_FIELD_VALUE_INVALID,
+    COMMAND_UNKNOWN,
+
+    HYBRID_FIELD_CONFLICT,
+    HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE,
+    HYBRID_FIELD_UNKNOWN_SUBFIELDS,
+    HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE,
+
+    INVALID_CREATE_COLLECTION_FIELD,
     MISSING_RERANK_QUERY_TEXT,
-    UNSUPPORTED_TABLE_COMMAND,
+
+    REQUEST_NOT_JSON,
+    REQUEST_STRUCTURE_MISMATCH,
+
     UNSUPPORTED_COLLECTION_COMMAND,
-    UNSUPPORTED_RERANKING_COMMAND;
+    UNSUPPORTED_CONTENT_TYPE,
+    UNSUPPORTED_RERANKING_COMMAND,
+    UNSUPPORTED_TABLE_COMMAND,
+    ;
 
     private final ErrorTemplate<RequestException> template;
 

@@ -28,7 +28,6 @@ stargate:
   feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig
     flags:  # Ok to leave out features that have no default value (enabled or disabled)
       lexical:
-      tables:
 
   # custom grpc settings
   grpc:
@@ -121,6 +120,9 @@ quarkus:
         level: INFO
       'io.stargate':
         level: DEBUG
+      # noisy for ITs (which run with prod, not test, settings)
+      'io.stargate.sgv2.jsonapi.service.operation':
+        level: INFO
 
     min-level: trace
 

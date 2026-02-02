@@ -53,8 +53,7 @@ public class SchemaDBTaskPage<TaskT extends SchemaDBTask<SchemaT>, SchemaT exten
 
     @Override
     public Supplier<CommandResult> getResults() {
-      return new SchemaDBTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing));
+      return new SchemaDBTaskPage<>(tasks, CommandResult.statusOnlyBuilder(requestTracing));
     }
   }
 }

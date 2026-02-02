@@ -1,9 +1,5 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
-import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
-
-@ConfigMapping(prefix = "stargate.jsonapi.http")
 public interface HttpConstants {
 
   /** Data API Authentication token header name. */
@@ -26,25 +22,4 @@ public interface HttpConstants {
 
   /** Bearer prefix for the API key. */
   String BEARER_PREFIX_FOR_API_KEY = "Bearer ";
-
-  @WithDefault(AUTHENTICATION_TOKEN_HEADER_NAME)
-  String authToken();
-
-  /**
-   * @return Embedding service header name for token.
-   */
-  @WithDefault(EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME)
-  String embeddingApiKey();
-
-  /**
-   * @return Embedding service header name for access id.
-   */
-  @WithDefault(EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME)
-  String embeddingAccessId();
-
-  /**
-   * @return Embedding service header name for secret id.
-   */
-  @WithDefault(EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME)
-  String embeddingSecretId();
 }
