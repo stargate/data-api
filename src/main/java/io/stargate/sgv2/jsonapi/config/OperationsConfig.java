@@ -65,12 +65,6 @@ public interface OperationsConfig {
   boolean enableEmbeddingGateway();
 
   /**
-   * @return Flag to extend error response with additional information.
-   */
-  @WithDefault("true")
-  boolean extendError();
-
-  /**
    * @return Defines the maximum limit of document read to perform in memory sorting <code>10000
    *     </code>.
    */
@@ -220,6 +214,7 @@ public interface OperationsConfig {
     List<String> cassandraEndPoints();
 
     /** Cassandra port (when type is {@link DatabaseType#CASSANDRA}) */
+    @Nullable
     @WithDefault("9042")
     int cassandraPort();
 

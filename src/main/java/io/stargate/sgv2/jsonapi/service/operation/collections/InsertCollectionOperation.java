@@ -6,6 +6,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
@@ -228,7 +229,9 @@ public record InsertCollectionOperation(
                   return Uni.createFrom().item(doc.id());
                 }
                 return Uni.createFrom()
-                    .failure(ErrorCodeV1.DOCUMENT_ALREADY_EXISTS.toApiException());
+                    .failure(
+                        DocumentException.Code.DOCUMENT_ALREADY_EXISTS.get(
+                            Map.of("id", doc.id().toString())));
               }
             });
   }

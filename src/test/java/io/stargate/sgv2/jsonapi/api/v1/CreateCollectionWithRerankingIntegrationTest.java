@@ -300,7 +300,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'rerank' is disabled, but 'rerank.service' configuration is provided"));
+                  "'createCollection' command option(s) invalid: 'rerank' is disabled, but 'rerank.service' configuration is provided"));
     }
 
     @Test
@@ -315,7 +315,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'enabled' is required property for 'rerank' Object value"));
+                  "'createCollection' command option(s) invalid: 'enabled' is required property for 'rerank' Object value"));
     }
 
     @Test
@@ -338,7 +338,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: Provider name is required for reranking service configuration"));
+                  "'createCollection' command option(s) invalid: Provider name is required for reranking service configuration"));
     }
 
     @Test
@@ -363,7 +363,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: Reranking provider 'unknown' is not supported"));
+                  "'createCollection' command option(s) invalid: Reranking provider 'unknown' is not supported"));
     }
 
     @Test
@@ -388,7 +388,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: Model name is required for reranking provider 'nvidia'"));
+                  "'createCollection' command option(s) invalid: Model name is required for reranking provider 'nvidia'"));
     }
 
     @Test
@@ -414,7 +414,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: Model 'unknown' is not supported by reranking provider 'nvidia'"));
+                  "'createCollection' command option(s) invalid: Model 'unknown' is not supported by reranking provider 'nvidia'"));
     }
 
     @Test
@@ -443,7 +443,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: Reranking provider 'nvidia' currently only supports 'NONE' or 'HEADER' authentication types. No authentication parameters should be provided."));
+                  "'createCollection' command option(s) invalid: Reranking provider 'nvidia' currently only supports 'NONE' or 'HEADER' authentication types. No authentication parameters should be provided."));
     }
 
     @Test

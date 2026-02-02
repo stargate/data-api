@@ -93,8 +93,6 @@ public class EmbeddingDeferredAction implements DeferredAction, Recordable {
    */
   private void validateVector(float[] vector) {
 
-    // TODO: Move to a V2 error
-
     if (vector.length != dimension) {
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",

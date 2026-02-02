@@ -262,16 +262,11 @@ jobs:
       matrix:
         image: [jsonapi]
 
-    env:
-      # not a newest version, this reflects riptano action target version
-      # 22-Jul-2025, tatu: pre-2.0.0 no longer supported, use current latest
-      COSIGN_VERSION: v2.5.3
-
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
         with:
-          cosign-release: ${COSIGN_VERSION}
+          cosign-release: v2.5.3
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -331,7 +326,7 @@ jobs:
           ./mvnw -B -ntp xml-format:xml-format fmt:format
 
       - name: Version bump PR
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         env:
           GITHUB_TOKEN:
         with:

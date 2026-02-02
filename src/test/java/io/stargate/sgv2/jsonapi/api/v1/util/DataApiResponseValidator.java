@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
@@ -161,7 +161,6 @@ public class DataApiResponseValidator {
   public DataApiResponseValidator hasSingleApiError(ErrorCodeV1 errorCode) {
     return body("$", responseIsError)
         .body("errors", hasSize(1))
-        .body("errors[0].exceptionClass", is("JsonApiException"))
         .body("errors[0].errorCode", is(errorCode.name()));
   }
 
@@ -188,7 +187,6 @@ public class DataApiResponseValidator {
 
     return body("$", responseIsError)
         .body("errors", hasSize(1))
-        .body("errors[0].exceptionClass", is(errorClass.getSimpleName()))
         .body("errors[0].errorCode", is(errorCode.toString()));
   }
 
@@ -227,8 +225,7 @@ public class DataApiResponseValidator {
     return body("$", responseIsError)
         .body("errors", hasSize(1))
         .body("errors[0].errorCode", is(expected.code))
-        .body("errors[0].message", is(expected.body))
-        .body("errors[0].exceptionClass", is(expected.getClass().getSimpleName()));
+        .body("errors[0].message", is(expected.body));
   }
 
   // // // API-aware validation: non-error content // // //
@@ -260,12 +257,11 @@ public class DataApiResponseValidator {
         body("status.warnings", hasSize(1))
             .body(
                 "status.warnings[0]",
-                hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+                hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
             .body(
                 "status.warnings[0]",
-                hasEntry(
-                    ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
-            .body("status.warnings[0]", hasEntry(ErrorObjectV2Constants.Fields.CODE, code.name()));
+                hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+            .body("status.warnings[0]", hasEntry(ErrorConstants.Fields.CODE, code.name()));
 
     for (String snippet : messageSnippet) {
       validator = validator.body("status.warnings[0].message", containsString(snippet));
@@ -278,14 +274,13 @@ public class DataApiResponseValidator {
     var validator =
         body(
                 "status.warnings[%s]".formatted(position),
-                hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+                hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
             .body(
                 "status.warnings[%s]".formatted(position),
-                hasEntry(
-                    ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+                hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
             .body(
                 "status.warnings[%s]".formatted(position),
-                hasEntry(ErrorObjectV2Constants.Fields.CODE, code.name()));
+                hasEntry(ErrorConstants.Fields.CODE, code.name()));
 
     for (String snippet : messageSnippet) {
       validator =
@@ -302,13 +297,13 @@ public class DataApiResponseValidator {
     return body("status.warnings", hasSize(1))
         .body(
             "status.warnings[0]",
-            hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+            hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
         .body(
             "status.warnings[0]",
-            hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+            hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
         .body(
             "status.warnings[0]",
-            hasEntry(ErrorObjectV2Constants.Fields.CODE, warningExceptionCode.name()));
+            hasEntry(ErrorConstants.Fields.CODE, warningExceptionCode.name()));
   }
 
   public DataApiResponseValidator hasStatusOK() {

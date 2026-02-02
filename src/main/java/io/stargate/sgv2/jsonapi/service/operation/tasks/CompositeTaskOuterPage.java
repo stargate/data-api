@@ -68,8 +68,7 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
 
       // If not failure, we get the result from the lastTaskAccumulator so this command builder is
       // ignored
-      return new CompositeTaskOuterPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing));
+      return new CompositeTaskOuterPage<>(tasks, CommandResult.statusOnlyBuilder(requestTracing));
     }
   }
 }

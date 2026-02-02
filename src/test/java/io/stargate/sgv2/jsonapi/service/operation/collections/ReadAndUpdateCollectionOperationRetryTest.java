@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
@@ -27,6 +28,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
@@ -376,10 +378,9 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         .singleElement()
         .satisfies(
             error -> {
-              assertThat(error.fields()).containsEntry("errorCode", "CONCURRENCY_FAILURE");
-              assertThat(error.message())
-                  .isEqualTo(
-                      "Failed to update documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
+              assertThat(error.errorCode())
+                  .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
+              assertThat(error.documentIds()).containsExactly(DocumentId.fromString("doc1"));
             });
   }
 
@@ -527,10 +528,9 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         .singleElement()
         .satisfies(
             error -> {
-              assertThat(error.fields()).containsEntry("errorCode", "CONCURRENCY_FAILURE");
-              assertThat(error.message())
-                  .isEqualTo(
-                      "Failed to update documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
+              assertThat(error.errorCode())
+                  .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
+              assertThat(error.documentIds()).containsExactly(DocumentId.fromString("doc1"));
             });
   }
 
@@ -713,10 +713,10 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         .singleElement()
         .satisfies(
             error -> {
-              assertThat(error.fields()).containsEntry("errorCode", "CONCURRENCY_FAILURE");
-              assertThat(error.message())
-                  .isEqualTo(
-                      "Failed to update documents with _id ['doc1']: Unable to complete transaction due to concurrent transactions");
+              assertThat(error.errorCode())
+                  .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
+              assertThat(result.errors().get(0).documentIds())
+                  .containsExactly(DocumentId.fromString("doc1"));
             });
   }
 
@@ -927,11 +927,12 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
                   .isEqualTo(0);
               assertThat(commandResultSupplier.errors()).isNotNull();
               assertThat(commandResultSupplier.errors()).hasSize(1);
-              assertThat(commandResultSupplier.errors().get(0).fields().get("errorCode"))
-                  .isEqualTo("CONCURRENCY_FAILURE");
-              assertThat(commandResultSupplier.errors().get(0).message())
-                  .isEqualTo(
-                      "Failed to update documents with _id ['doc1', 'doc2']: Unable to complete transaction due to concurrent transactions");
+              assertThat(commandResultSupplier.errors().get(0).errorCode())
+                  .isEqualTo(DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.name());
+              assertThat(commandResultSupplier.errors().get(0).documentIds())
+                  .containsOnly(
+                      DocumentId.fromString("doc1"),
+                      DocumentId.fromString("doc2")); // order undefined
             });
   }
 }

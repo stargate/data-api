@@ -108,6 +108,6 @@ public class GeneralResource {
     return meteredCommandProcessor
         .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.toRestResponse());
+        .map(CommandResult::toRestResponse);
   }
 }

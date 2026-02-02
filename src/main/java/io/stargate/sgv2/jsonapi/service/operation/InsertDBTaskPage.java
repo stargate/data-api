@@ -2,11 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
@@ -110,10 +106,11 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
           new InsertionResult(task.docRowID().orElseThrow(), InsertionStatus.OK, null);
     }
 
-    List<CommandResult.Error> seenErrors = new ArrayList<>();
+    List<CommandError> seenErrors = new ArrayList<>();
     // Second: failed insertions; output in order of insertion
     for (var task : tasks.errorTasks()) {
-      var cmdError = resultBuilder.throwableToCommandError(task.failure().orElseThrow());
+
+      var cmdError = CommandErrorFactory.create(task.failure().orElseThrow());
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
       // either one exists, use it; or if not, add it and use the new index.
@@ -134,26 +131,17 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
           new InsertionResult(task.docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
     }
 
-    seenErrors.forEach(resultBuilder::addCommandResultError);
+    resultBuilder.addCommandError(seenErrors);
     resultBuilder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
     maybeAddSchema(CommandStatus.PRIMARY_KEY_SCHEMA);
   }
 
-  /**
-   * Custom indexOf method that ignores the id field when used with Error Object v2 because it is
-   * different for every error.
-   */
-  private int indexOf(List<CommandResult.Error> seenErrors, CommandResult.Error searchError) {
+  /** Custom indexOf method that ignores the id of the errors as they are unique */
+  private int indexOf(List<CommandError> seenErrors, CommandError searchError) {
 
+    var predicate = searchError.nonIdentityMatcher();
     for (int i = 0; i < seenErrors.size(); i++) {
-      var seenError = seenErrors.get(i);
-      var fields1 = new HashMap<>(seenError.fields());
-      var fields2 = new HashMap<>(searchError.fields());
-      fields1.remove(ErrorObjectV2Constants.Fields.ID);
-      fields2.remove(ErrorObjectV2Constants.Fields.ID);
-      fields1.put(ErrorObjectV2Constants.Fields.MESSAGE, seenError.message());
-      fields2.put(ErrorObjectV2Constants.Fields.MESSAGE, searchError.message());
-      if (fields1.equals(fields2)) {
+      if (predicate.test(seenErrors.get(i))) {
         return i;
       }
     }
@@ -186,9 +174,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
     public InsertDBTaskPage<SchemaT> getResults() {
 
       return new InsertDBTaskPage<>(
-          tasks,
-          CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing),
-          returnDocumentResponses);
+          tasks, CommandResult.statusOnlyBuilder(requestTracing), returnDocumentResponses);
     }
   }
 }

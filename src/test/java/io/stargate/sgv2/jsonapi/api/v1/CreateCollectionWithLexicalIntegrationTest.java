@@ -273,7 +273,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'enabled' is required property for 'lexical'"));
+                  "'createCollection' command option(s) invalid: 'enabled' is required property for 'lexical'"));
     }
 
     @Test

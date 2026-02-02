@@ -7,6 +7,8 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
@@ -30,9 +32,8 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(401)
           .body("$", responseIsError())
           .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing token, expecting one in the Token header."));
+              "errors[0].errorCode",
+              is(APISecurityException.Code.MISSING_AUTHENTICATION_TOKEN.name()));
     }
 
     @Test
@@ -47,12 +48,11 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
+          .body("errors[0].errorCode", is("REQUEST_NOT_JSON"))
           .body(
               "errors[0].message",
-              startsWith("Request invalid, cannot parse as JSON: underlying problem:"))
-          .body("errors[0].message", containsString("Unrecognized token 'wrong'"));
+              startsWith(
+                  "Request not valid JSON, problem: Unrecognized token 'wrong': was expecting (JSON String, Number, Array, Object"));
     }
 
     @Test
@@ -70,12 +70,14 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are ["));
+                  "Command 'unknownCommand' is not a Collection Command recognized by Data API."))
+          .body(
+              "errors[0].message",
+              containsString("Data API supports following Collection Commands: [alterTable,"));
     }
 
     @Test
@@ -94,13 +96,12 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
-          .body("errors[0].message", startsWith("Request invalid, unrecognized JSON field"))
-          .body("errors[0].message", containsString("\"unknown\" not one of known fields"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_UNKNOWN.name()))
+          .body("errors[0].message", startsWith("Command field 'unknown' not recognized"))
           .body(
               "errors[0].message",
-              containsString("(\"filter\", \"options\", \"projection\", \"sort\")"));
+              containsString(
+                  "not one of known fields ('filter', 'options', 'projection', 'sort')"));
     }
 
     @Test
@@ -113,11 +114,10 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
           .body(
               "errors[0].message",
-              startsWith("Request invalid: field 'command' value `null` not valid"));
+              startsWith("Command field 'command' value `null` not valid: must not be null."));
     }
   }
 }

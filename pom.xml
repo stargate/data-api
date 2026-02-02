@@ -3,14 +3,14 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.35-SNAPSHOT</version>
+  <version>1.0.36-SNAPSHOT</version>
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <!-- 14-oct-2025, aaron: Updated to latest Quarkus for security fixes in netty -->
-    <!-- 10-nov-2025, tatu: Updated to latest Quarkus -->
-    <quarkus.platform.version>3.29.2</quarkus.platform.version>
+    <!-- 23-jan-2026, tatu: Updated to latest Quarkus -->
+    <quarkus.platform.version>3.30.8</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <!-- 17-Oct-2025, tatu: Although quarkus-bom provides for Mockito version,
@@ -32,7 +32,7 @@
     <!-- When updating please change defaults in the DseTestResource class -->
     <!-- 14-Mar-2025, tatu: default to DSE-6.9 (was "dse-next") -->
     <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-    <cassandra.version>6.9.16</cassandra.version>
+    <cassandra.version>6.9.17</cassandra.version>
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
     <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
@@ -41,7 +41,6 @@
     <!-- Defaults are for DSE which does not support (full) lexical feature set so: -->
     <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
-    <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
     <driver.version>4.17.0</driver.version>
     <!-- Compiler -->
@@ -282,9 +281,14 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.github.docker-java</groupId>
+      <artifactId>docker-java-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.22.0</version>
+      <version>3.27.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -346,7 +350,6 @@
             <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
             <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
             <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
-            <testing.containers.use-coordinator>false</testing.containers.use-coordinator>
           </systemPropertyVariables>
           <excludes>
             <exclude>**/*IntegrationTest.*</exclude>
@@ -424,6 +427,8 @@
             </goals>
             <configuration>
               <systemPropertyVariables>
+                <!-- Pass JaCoCo agent args to Quarkus application JVM for @QuarkusIntegrationTest coverage -->
+                <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
@@ -433,7 +438,6 @@
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
                 <maven.home>${maven.home}</maven.home>
-                <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>
@@ -444,6 +448,7 @@
       </plugin>
       <!-- 02-Dec-2025, tatu: [data-api#2270] Enable Code Coverage generation
              (for Unit Tests)
+           08-Dec-2025, tatu: [data-api#2287] Add Integration Test coverage
         -->
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -470,11 +475,83 @@
               <goal>report</goal>
             </goals>
           </execution>
+          <!-- Integration test coverage -->
+          <execution>
+            <id>prepare-agent-integration</id>
+            <goals>
+              <goal>prepare-agent-integration</goal>
+            </goals>
+            <configuration>
+              <!-- Integration tests write to separate file -->
+              <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+            </configuration>
+          </execution>
+          <execution>
+            <id>report-integration</id>
+            <phase>post-integration-test</phase>
+            <goals>
+              <goal>report-integration</goal>
+            </goals>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
+              <outputDirectory>${project.build.directory}/site/jacoco-it</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
   <profiles>
+    <!-- Profile to enable JaCoCo extension for integration tests -->
+    <profile>
+      <id>jacoco-it</id>
+      <dependencies>
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-jacoco</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <testResources>
+          <testResource>
+            <directory>src/test/resources</directory>
+            <filtering>false</filtering>
+          </testResource>
+        </testResources>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>configure-jacoco-it</id>
+                <phase>process-test-resources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/test/resources</directory>
+                      <includes>
+                        <include>application.yaml</include>
+                      </includes>
+                      <filtering>true</filtering>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <properties>
+        <!-- Configure quarkus-jacoco to use IT coverage file -->
+        <quarkus.jacoco.data-file>target/jacoco-it.exec</quarkus.jacoco.data-file>
+      </properties>
+    </profile>
     <profile>
       <id>dse69-it</id>
       <activation>
@@ -484,9 +561,8 @@
       </activation>
       <properties>
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>6.9.16</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>6.9.17</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
-        <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
         <!-- No lexical-sort on DSE: -->
@@ -506,7 +582,6 @@
         <stargate.int-test.cassandra.image>559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd</stargate.int-test.cassandra.image>
         <stargate.int-test.cassandra.image-tag>1.2.3</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
-        <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
         <!-- HCD does have lexical-sort: -->

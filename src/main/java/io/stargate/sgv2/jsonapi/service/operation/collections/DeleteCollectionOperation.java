@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -8,8 +10,8 @@ import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.exception.unchecked.LWTFailureException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
@@ -59,7 +61,7 @@ public record DeleteCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext requestContext, QueryExecutor queryExecutor) {
     final AtomicBoolean moreData = new AtomicBoolean(false);
     final String delete = buildDeleteQuery();
     AtomicInteger totalCount = new AtomicInteger(0);
@@ -72,7 +74,7 @@ public record DeleteCollectionOperation(
             stateRef -> {
               Uni<CollectionReadOperation.FindResponse> docsToDelete =
                   findCollectionOperation()
-                      .getDocuments(dataApiRequestInfo, queryExecutor, stateRef.get(), null);
+                      .getDocuments(requestContext, queryExecutor, stateRef.get(), null);
               return docsToDelete
                   .onItem()
                   .invoke(findResponse -> stateRef.set(findResponse.pageState()));
@@ -104,39 +106,47 @@ public record DeleteCollectionOperation(
         .onItem()
         .transformToUniAndMerge(
             document -> {
-              return deleteDocument(dataApiRequestInfo, queryExecutor, delete, document)
+              return deleteDocument(requestContext, queryExecutor, delete, document)
                   // Retry `retryLimit` times in case of LWT failure
-                  .onFailure(LWTException.class)
+                  .onFailure(LWTFailureException.class)
                   .recoverWithUni(
                       () -> {
                         return Uni.createFrom()
                             .item(document)
                             .flatMap(
                                 prevDoc -> {
-                                  return readDocumentAgain(
-                                          dataApiRequestInfo, queryExecutor, prevDoc)
+                                  return readDocumentAgain(requestContext, queryExecutor, prevDoc)
                                       .onItem()
                                       // Try deleting the document
                                       .transformToUni(
                                           reReadDocument ->
                                               deleteDocument(
-                                                  dataApiRequestInfo,
+                                                  requestContext,
                                                   queryExecutor,
                                                   delete,
                                                   reReadDocument));
                                 })
-                            .onFailure(LWTException.class)
+                            .onFailure(LWTFailureException.class)
                             .retry()
                             // because it's already run twice before this
                             // check.
-                            .atMost(retryLimit - 1);
+                            .atMost(retryLimit - 1)
+                            // AJM - GH #2309 - this means we failed all retries to get the LWT to
+                            // apply
+                            // we now need to create the error to return to the user
+                            .onFailure(LWTFailureException.class)
+                            .transform(
+                                error -> {
+                                  throw DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.get(
+                                      errVars(commandContext().schemaObject()));
+                                });
                       })
                   .onItemOrFailure()
                   .transform(
                       (deleted, error) ->
                           Tuple3.of(
                               deleted != null ? deleted.getItem1() : false,
-                              error,
+                              maybeWrapThrowable(error),
                               error == null
                                       && deleted != null
                                       && deleted.getItem2() != null
@@ -156,6 +166,14 @@ public record DeleteCollectionOperation(
               return new DeleteOperationPage(
                   deletedInformation, moreData.get(), returnDocumentInResponse, deleteLimit == 1);
             });
+  }
+
+  private static APIException maybeWrapThrowable(Throwable throwable) {
+    return switch (throwable) {
+      case null -> null;
+      case APIException apiException -> apiException;
+      default -> ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(throwable));
+    };
   }
 
   private ReadDocument applyProjection(ReadDocument document) {
@@ -218,9 +236,8 @@ public record DeleteCollectionOperation(
                             // In case of successful document delete
                             return Tuple2.of(true, document);
                           } else {
-                            // In case of successful document delete
-
-                            throw new LWTException(ErrorCodeV1.CONCURRENCY_FAILURE);
+                            // In case of failed document delete
+                            throw new LWTFailureException(deleteStatement);
                           }
                         });
               }

@@ -24,11 +24,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
@@ -208,16 +207,11 @@ public class CollectionResource {
         .transformToUni(
             (schemaObject, throwable) -> {
               if (throwable != null) {
-
-                // We failed to get the schema object, or failed to build it.
-                Throwable error = throwable;
-                if (throwable instanceof RuntimeException && throwable.getCause() != null) {
-                  error = throwable.getCause();
-                } else if (error instanceof JsonApiException jsonApiException) {
-                  return Uni.createFrom().failure(jsonApiException);
-                }
-                // otherwise use generic for now
-                return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
+                return Uni.createFrom()
+                    .item(
+                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                            .addThrowable(throwable)
+                            .build());
               } else {
                 // TODO No need for the else clause here, simplify
 
@@ -244,18 +238,14 @@ public class CollectionResource {
                 if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
                   embeddingProvider =
                       embeddingProviderFactory.create(
-                          requestContext.getTenantId(),
-                          requestContext.getCassandraToken(),
+                          requestContext.tenant(),
+                          requestContext.authToken(),
                           vectorColDef.vectorizeDefinition().provider(),
                           vectorColDef.vectorizeDefinition().modelName(),
                           vectorColDef.vectorSize(),
                           vectorColDef.vectorizeDefinition().parameters(),
                           vectorColDef.vectorizeDefinition().authentication(),
                           command.getClass().getSimpleName());
-                  requestContext
-                      .getEmbeddingCredentialsSupplier()
-                      .withAuthConfigFromCollection(
-                          vectorColDef.vectorizeDefinition().authentication());
                 }
 
                 var commandContext =
@@ -269,6 +259,6 @@ public class CollectionResource {
                 return meteredCommandProcessor.processCommand(commandContext, command);
               }
             })
-        .map(commandResult -> commandResult.toRestResponse());
+        .map(CommandResult::toRestResponse);
   }
 }

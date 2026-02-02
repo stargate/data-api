@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
@@ -16,8 +16,10 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class RerankingProviderTest {
 
+  private static final TestConstants testConstants = new TestConstants();
+
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials("test-tenant", Optional.of("mocked reranking api key"));
+      new RerankingCredentials(testConstants.TENANT, "mocked reranking api key");
 
   @Test
   @SuppressWarnings("unchecked")

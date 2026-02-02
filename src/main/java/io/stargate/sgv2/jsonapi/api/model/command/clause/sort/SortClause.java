@@ -2,14 +2,11 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Internal model for the sort clause that can be used in the commands.
@@ -128,8 +125,8 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     // validate each path in sortExpressions
     for (SortExpression sortExpression : sortExpressions) {
       if (!indexingProjector.isPathIncluded(sortExpression.getPath())) {
-        throw ErrorCodeV1.UNINDEXED_SORT_PATH.toApiException(
-            "sort path '%s' is not indexed", sortExpression.getPath());
+        throw SortException.Code.SORT_CLAUSE_PATH_UNINDEXED.get(
+            Map.of("path", sortExpression.getPath()));
       }
       // `SortClauseDeserializer` looks for binary value and adds it as SortExpression irrespective
       // of field name to support ANN search for tables. There is no access to SchemaObject in the
@@ -139,9 +136,13 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
               || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(
                   sortExpression.getPath()))
           && sortExpression.hasVector()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "Sorting by embedding vector values for the collection requires `%s` field. Provided field name: `%s`.",
-            DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, sortExpression.getPath());
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of(
+                "problem",
+                "sorting by embedding vector values for the collection requires `%s` field. Provided field name: '%s'"
+                    .formatted(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+                        sortExpression.getPath())));
       }
     }
   }

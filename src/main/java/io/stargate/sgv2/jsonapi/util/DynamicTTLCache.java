@@ -4,10 +4,10 @@ import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineStatsCounter;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -149,8 +149,8 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
           .map(ValueHolder::value);
     }
 
-    // Calling get() on the cache will return a CompletionStage, which will not be null however it
-    // is
+    // Calling get() on the cache will return a CompletionStage
+    // which will not be null however it is
     // technically possible for the value loader to return a completed stage that has a null value
     // so extra check just in case.
     return Uni.createFrom()
@@ -364,7 +364,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   protected static class DynamicTTLSupplier {
 
     private final Duration cacheTTL;
-    private final String slaUserAgent;
+    private final UserAgent slaUserAgent;
     private final Duration slaUserTTL;
 
     /**
@@ -376,7 +376,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
      * @param slaUserTTL The TTL to use for SLA users, must be non-null and positive if slaUserAgent
      *     is set.
      */
-    public DynamicTTLSupplier(Duration cacheTTL, String slaUserAgent, Duration slaUserTTL) {
+    public DynamicTTLSupplier(Duration cacheTTL, UserAgent slaUserAgent, Duration slaUserTTL) {
 
       this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
       if (cacheTTL.isNegative() || cacheTTL.isZero()) {
@@ -384,7 +384,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
       }
 
       this.slaUserAgent = slaUserAgent;
-      if (!Strings.isNullOrEmpty(slaUserAgent)) {
+      if (slaUserAgent != null) {
         this.slaUserTTL =
             Objects.requireNonNull(
                 slaUserTTL, "slaUserTTL must not be null is slaUserAgent is set");
@@ -396,7 +396,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
       }
     }
 
-    public Duration ttlForUsageAgent(String userAgent) {
+    public Duration ttlForUsageAgent(UserAgent userAgent) {
       // slaUserAgent can be null
       return slaUserAgent == null || !slaUserAgent.equals(userAgent) ? cacheTTL : slaUserTTL;
     }

@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +23,6 @@ import org.junit.jupiter.api.Test;
 public class InsertManyCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
-  @Inject DocumentShredder documentShredder;
   @Inject InsertManyCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
 

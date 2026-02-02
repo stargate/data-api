@@ -4,7 +4,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertN
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
@@ -528,7 +528,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
+                  RequestException.Code.REQUEST_STRUCTURE_MISMATCH,
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
       // invalidPartitionSortOrderingValueTypeTable
       testCases.add(
@@ -555,7 +555,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           }
                                                         }
                                                       """,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
+                  RequestException.Code.REQUEST_STRUCTURE_MISMATCH,
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
       // invalidColumnTypeTable
       testCases.add(
@@ -611,7 +611,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
+                  RequestException.Code.REQUEST_STRUCTURE_MISMATCH,
                   "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
       // unsupported primitive api types: timeuuid, counter
       testCases.add(
@@ -972,8 +972,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                      }
                   }
                   """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: Service provider 'invalid_service' is not supported")));
+                  SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: Service provider 'invalid_service' is not supported")));
 
       // vector type with invalid model name config
       testCases.add(
@@ -1004,8 +1004,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                      }
                   }
                   """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
+                  SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
 
       // vector type with deprecated model
       testCases.add(
@@ -1094,8 +1094,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                        }
                     }
                     """,
-                  ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS,
-                  "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
+                  SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS,
+                  "'createCollection' command option(s) invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
 
       // unspecified dimension with unspecified vectorize
       testCases.add(
@@ -1219,9 +1219,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                     }
                                 }
                                 """,
-                  // Currently gets converted by handlers to ErrorCodeV1: will be upgraded in future
-                  ErrorCodeV1.INVALID_REQUEST_UNKNOWN_FIELD,
-                  "Request invalid, unrecognized JSON field: column 'id' definition contains unknown field 'favorite_color': not one of recognized fields [type,")));
+                  RequestException.Code.COMMAND_FIELD_UNKNOWN,
+                  "Command field 'favorite_color' not recognized: column 'id' definition contains unknown field 'favorite_color': not one of recognized fields [type,")));
 
       return testCases.stream();
     }

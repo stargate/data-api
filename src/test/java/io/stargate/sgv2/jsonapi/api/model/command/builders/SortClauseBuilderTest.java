@@ -10,7 +10,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -167,8 +168,8 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value can't be empty");
+      assertThat(throwable).isInstanceOf(DocumentException.class);
+      assertThat(throwable.getMessage()).contains("Bad $vector value: cannot be empty Array");
     }
 
     @Test
@@ -182,8 +183,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Value used for sort expression on path '$vector' not valid: vector sort expression needs to be Array value, not Number");
     }
 
     @Test
@@ -197,10 +200,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
           .contains(
-              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vector, Value: {}.");
+              "Value used for sort expression on path '$vector' not valid: only binary vector object values are supported for sorting, not value: {}");
     }
 
     @Test
@@ -214,8 +217,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
+      assertThat(throwable).isInstanceOf(DocumentException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Bad $vector value: needs to be an array containing only Numbers but has a String value (\"abc\")");
     }
 
     @Test
@@ -230,9 +235,9 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("Vector search can't be used with other sort clause");
+          .contains("vector search cannot be used with other sort expressions");
     }
 
     @Test
@@ -263,9 +268,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value, not Number");
     }
 
     @Test
@@ -279,9 +285,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value, not Object");
     }
 
     @Test
@@ -295,9 +302,10 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value");
     }
 
     @Test
@@ -312,9 +320,11 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable.getMessage())
-          .contains("Vector search can't be used with other sort clause");
+          .contains(
+              "Sort clause used by command not valid.\n"
+                  + "Problem: vectorize sort (path '$vectorize') cannot be used with other sort expressions");
     }
 
     @Test
@@ -337,7 +347,7 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
     }
 
     @Test
@@ -358,7 +368,7 @@ class SortClauseBuilderTest {
 
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
     }
 
     @Test
@@ -369,9 +379,10 @@ class SortClauseBuilderTest {
           """;
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable)
-          .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with '$'");
+          .hasMessageContaining(
+              "Path '$gt' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields");
     }
 
     // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
@@ -386,9 +397,10 @@ class SortClauseBuilderTest {
                           {"$hybrid": 1}
                       """));
 
-      assertThat(t).isInstanceOf(JsonApiException.class);
+      assertThat(t).isInstanceOf(SortException.class);
       assertThat(t)
-          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with '$'");
+          .hasMessageContaining(
+              "Path '$hybrid' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')");
     }
 
     // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
@@ -402,9 +414,10 @@ class SortClauseBuilderTest {
                   {"$hybrid": "tokens are tasty"}
               """));
 
-      assertThat(t).isInstanceOf(JsonApiException.class);
+      assertThat(t).isInstanceOf(SortException.class);
       assertThat(t)
-          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with '$'");
+          .hasMessageContaining(
+              "Path '$hybrid' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields ");
     }
 
     @Test
@@ -415,10 +428,10 @@ class SortClauseBuilderTest {
           """;
       Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).isInstanceOf(SortException.class);
       assertThat(throwable)
           .hasMessageContaining(
-              "Invalid sort clause path: sort clause path ('a&b') is not a valid path.");
+              "Path 'a&b' used in sort clause not valid: The ampersand character '&' at position 1 must be followed by either '&' or '.' to form a valid escape sequence");
     }
   }
 

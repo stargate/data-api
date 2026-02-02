@@ -13,9 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -23,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.*;
 
 /**
@@ -71,8 +70,8 @@ public class DataVectorizer {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
           if (document.has(VECTOR_EMBEDDING_FIELD)) {
-            throw ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE.toApiException(
-                "issue in document at position %d", (position + 1));
+            throw SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.get(
+                Map.of("extraDesc", ": issue in document at position " + (position + 1)));
           }
           final JsonNode jsonNode =
               document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
@@ -81,8 +80,12 @@ public class DataVectorizer {
             continue;
           }
           if (!jsonNode.isTextual()) {
-            throw ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
-                "issue in document at position %s", (position + 1));
+            throw DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.get(
+                Map.of(
+                    "errorMessage",
+                    "needs to be String, not %s (issue in document at position %s)"
+                        .formatted(
+                            JsonUtil.nodeTypeAsString(jsonNode), String.valueOf(position + 1))));
           }
 
           String vectorizeData = jsonNode.asText();
@@ -99,8 +102,8 @@ public class DataVectorizer {
 
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProvider == null) {
-          throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              schemaObject.name().table());
+          throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
+              Map.of("table", schemaObject.name().table()));
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -154,6 +157,8 @@ public class DataVectorizer {
       return Uni.createFrom().item(true);
     } catch (JsonApiException e) {
       return Uni.createFrom().failure(e);
+    } catch (APIException e) {
+      return Uni.createFrom().failure(e);
     }
   }
 
@@ -166,8 +171,8 @@ public class DataVectorizer {
    */
   public Uni<float[]> vectorize(String vectorizeContent) {
     if (embeddingProvider == null) {
-      throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-          schemaObject.name().table());
+      throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
+          Map.of("table", schemaObject.name().table()));
     }
     Uni<List<float[]>> vectors =
         embeddingProvider
@@ -210,8 +215,8 @@ public class DataVectorizer {
         return Uni.createFrom().item(true);
       if (sortClause.hasVectorizeSearchClause()) {
         if (embeddingProvider == null) {
-          throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              schemaObject.name().table());
+          throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
+              Map.of("table", schemaObject.name().table()));
         }
         final List<SortExpression> sortExpressions = sortClause.sortExpressions();
         SortExpression expression = sortExpressions.getFirst();
@@ -251,6 +256,8 @@ public class DataVectorizer {
       }
       return Uni.createFrom().item(true);
     } catch (JsonApiException e) {
+      return Uni.createFrom().failure(e);
+    } catch (APIException e) {
       return Uni.createFrom().failure(e);
     }
   }
@@ -298,8 +305,8 @@ public class DataVectorizer {
 
     // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
     if (embeddingProvider == null) {
-      throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-          schemaObject.name().table());
+      throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
+          Map.of("table", schemaObject.name().table()));
     }
 
     return embeddingProvider
