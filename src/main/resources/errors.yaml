@@ -1791,6 +1791,12 @@ request-errors:
       Resend the command using a known metric.
 
   - scope: SCHEMA
+    code: VECTOR_SEARCH_NOT_SUPPORTED
+    title: Vector search not enabled for collection
+    body: |-
+      Vector search is not enabled for collection: ${keyspace}.${table}.
+
+  - scope: SCHEMA
     code: VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME
     title: Unrecognized vector search source model name
     body: |-

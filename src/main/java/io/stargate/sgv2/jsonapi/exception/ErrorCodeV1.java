@@ -17,8 +17,6 @@ public enum ErrorCodeV1 {
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
   EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
-  VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
-
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
 
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),

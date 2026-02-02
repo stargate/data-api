@@ -32,7 +32,6 @@ public class JsonApiException extends RuntimeException {
   private static final Set<ErrorCodeV1> serverFamily =
       new HashSet<>() {
         {
-          add(VECTOR_SEARCH_NOT_SUPPORTED);
           add(VECTORIZE_FEATURE_NOT_AVAILABLE);
           add(VECTORIZE_SERVICE_NOT_REGISTERED);
           add(VECTORIZE_SERVICE_TYPE_UNAVAILABLE);
