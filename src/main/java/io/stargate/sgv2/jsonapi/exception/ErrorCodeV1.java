@@ -12,10 +12,6 @@ public enum ErrorCodeV1 {
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
 
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
-  VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
-
-  VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
-  VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
   ;

@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Arrays;
@@ -1159,10 +1160,12 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTORIZE_SERVICE_TYPE_UNAVAILABLE"))
+          .body(
+              "errors[0].errorCode",
+              is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNAVAILABLE.name()))
           .body(
               "errors[0].message",
-              containsString("unknown model 'random' for service provider 'nvidia'"));
+              containsString("The model 'random' for service provider 'nvidia' is not supported"));
     }
   }
 
