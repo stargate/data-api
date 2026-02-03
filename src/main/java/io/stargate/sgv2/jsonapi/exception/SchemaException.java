@@ -93,7 +93,7 @@ public class SchemaException extends RequestException {
 
     VECTOR_SEARCH_NOT_SUPPORTED, // legacy: converted from ErrorCodeV1
     VECTOR_SEARCH_TOO_BIG_VALUE, // legacy: converted from ErrorCodeV1
-    // 02-Feb-2025, tatu: as this one needed over IllegalArgumentException:
+    // 02-Feb-2025, tatu: is this one needed over IllegalArgumentException?
     VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME, // legacy: converted from
     // ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME
     VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME, // legacy: converted from ErrorCodeV1
