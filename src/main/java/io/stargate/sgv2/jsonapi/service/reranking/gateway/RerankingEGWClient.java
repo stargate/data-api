@@ -99,7 +99,7 @@ public class RerankingEGWClient extends RerankingProvider {
                 // 22-Jan-2026, tatu: This is ugly. But has to be done to work around fragility
                 //   of exception mapping
                 throw SchemaException.Code.valueOf(gatewayResponse.getError().getErrorCode())
-                    .withPreformattedMessage(gatewayResponse.getError().getErrorMessage());
+                    .withPreformattedMessage(gatewayResponse.getError().getErrorBody());
               }
 
               return new BatchedRerankingResponse(
