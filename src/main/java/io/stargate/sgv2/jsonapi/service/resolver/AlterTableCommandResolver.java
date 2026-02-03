@@ -24,8 +24,14 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
+import io.stargate.sgv2.jsonapi.util.recordable.Jsonable;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
@@ -33,6 +39,9 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class AlterTableCommandResolver implements CommandResolver<AlterTableCommand> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(AlterTableCommandResolver.class);
+
+
   @Inject ObjectMapper objectMapper;
   @Inject VectorizeConfigValidator validateVectorize;
 
@@ -416,13 +425,17 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     }
 
     // Should only be dropping config from existing vector columns
-
+    LOGGER.warn("XXXX droppedColumns = {}", droppedColumns);
+    LOGGER.warn("XXX ALL COLS - ALTER {}", Jsonable.toJson(apiTableDef.allColumns()));
+    LOGGER.warn("XXXX PRE KEYS = {}", existingVectorizeDefs.keySet());
     boolean updateVectorize = false;
     for (var identifier : droppedColumns) {
       if (existingVectorizeDefs.remove(identifier) != null) {
         updateVectorize = true;
       }
     }
+
+    LOGGER.warn("XXXX POST KEYS = {}", existingVectorizeDefs.keySet());
 
     if (!updateVectorize) {
       // Nothing to do, there was no vectorize def for the column :)

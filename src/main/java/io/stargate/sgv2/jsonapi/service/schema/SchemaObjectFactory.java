@@ -10,16 +10,21 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.operation.databases.DatabaseDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactory {
+  private static final Logger LOGGER = LoggerFactory.getLogger(SchemaObjectFactory.class);
 
   private static final CollectionTableMatcher IS_COLLECTION_PREDICATE =
       new CollectionTableMatcher();
@@ -133,19 +138,29 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
 
   private Uni<KeyspaceMetadata> getKeyspaceMetadata(
       RequestContext requestContext,
-      UnscopedSchemaObjectIdentifier scopedName,
+      UnscopedSchemaObjectIdentifier unscopedName,
       boolean forceRefresh) {
 
+    LOGGER.warn("XXX SchemaObjectFactory.getKeyspaceMetadata called unscopedName={}, forceRefresh={}",
+        unscopedName, forceRefresh);
     var queryExecutor =
         new CommandQueryExecutor(
             sessionCacheSupplier.get(), requestContext, CommandQueryExecutor.QueryTarget.SCHEMA);
 
+//           .onFailure()
+//        .transform(
+//            throwable ->  {
+//              new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(requestContext.tenant()), null)
+//                  .maybeHandle(throwable);
+//            }
+//        )
+
     return queryExecutor
-        .getKeyspaceMetadata(scopedName.keyspace(), forceRefresh)
+        .getKeyspaceMetadata(unscopedName.keyspace(), forceRefresh)
         .map(
             optKeyspace ->
                 optKeyspace.orElseThrow(
-                    () -> SchemaException.Code.UNKNOWN_KEYSPACE.get(errVars(scopedName))));
+                    () -> SchemaException.Code.UNKNOWN_KEYSPACE.get(errVars(unscopedName))));
   }
 
   static class SchemaObjectTypeMismatchException extends RuntimeException {

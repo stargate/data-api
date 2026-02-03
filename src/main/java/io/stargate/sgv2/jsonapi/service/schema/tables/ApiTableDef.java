@@ -12,11 +12,16 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactory;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.util.recordable.Jsonable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 /**
@@ -25,6 +30,8 @@ import java.util.*;
  * <p>Created by the factories {@link #FROM_TABLE_DESC_FACTORY} and {@link #FROM_CQL_FACTORY}.
  */
 public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiTableDef.class);
+
 
   public static final FromTableDescFactory FROM_TABLE_DESC_FACTORY = new FromTableDescFactory();
   public static final FromCqlFactory FROM_CQL_FACTORY = new FromCqlFactory();
@@ -84,6 +91,9 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
    */
   @Override
   public TableDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
+
+    LOGGER.warn("XXX ALL COLS - LIST {}", Jsonable.toJson(allColumns));
+
 
     // only describe for a DDL command, for the DML commands it only considers the columns that
     // were read, handled in the {@link TableProjection}

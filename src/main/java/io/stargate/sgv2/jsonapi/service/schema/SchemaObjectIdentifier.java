@@ -46,9 +46,10 @@ public class SchemaObjectIdentifier
     this.keyspace = keyspace;
     this.table = table;
 
-    this.fullName =
+    // this is used internally, so using internal name for the type not apiName()
+    this.fullName = type.name() + ":" +
         switch (type) {
-          case DATABASE -> "db:" + tenant;
+          case DATABASE -> tenant;
           case KEYSPACE -> cqlIdentifierToMessageString(keyspace);
             // Note, INDEX and UDT schemaType are not used currently
             // Added for syntax completeness

@@ -329,6 +329,15 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableDropVectorizeSuccess {
     @Test
     public void shouldDropVectorizeForColumns() {
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(true)
+          .wasSuccessful()
+          .body(
+              "status.tables[0].definition.columns.vector_type_2.service.provider",
+              equalTo("mistral"));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("dropVectorize", List.of("vector_type_1"))

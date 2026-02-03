@@ -104,6 +104,12 @@ public class SchemaObjectCache
     };
   }
 
+  @Override
+  protected void beforeForceLoaded(SchemaCacheKey key) {
+    LOGGER.warn("XXX - beforeForceLoaded called for key: {}", key);
+    invalidateAll();
+  }
+
   /**
    * Gets a listener to use with the {@link CqlSessionFactory} to remove the schema cache entries
    * when the DB sends schema change events.
@@ -154,11 +160,9 @@ public class SchemaObjectCache
     // we do not know if this is a collection or a table until we load it, and we
     // cannot change the key once it is loaded, so we need to check both
 
-    // As an optimization, we getifPresent incase the object is a table - we would get a cache miss
-    // for
-    // the collection key, then try to load, then discover it is a table, fail the load, then get
-    // again
-    // and potentially cache hit for the table.
+    // As an optimization, we getIfPresent incase the object is a table - we would get a cache miss
+    // for the collection key, then try to load, then discover it is a table, fail the load, then get
+    // again and potentially cache hit for the table.
 
     if (!forceRefresh) {
 
@@ -183,7 +187,11 @@ public class SchemaObjectCache
       }
     }
 
-    // we do not have a cache hit, or we wanted to force refresh, so we need to load it
+    // XXXX FIX COMMENT ABOUT FORCE ON TABLE
+    // We do not have a cache hit, or we wanted to force refresh.
+    // MUST use force refresh for both keys, because
+    //
+    // so we need to load it
     // force refresh on the collection cache key will cause the cache to load and replace the entry
     // and if we will refresh the driver metadata. So no need to also do that on the table key.
     return get(collectionKey)
@@ -192,8 +200,8 @@ public class SchemaObjectCache
                 .SchemaObjectTypeMismatchException.class)
         .recoverWithUni(
             () -> {
-              if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace(
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(
                     "getTableBased() - collection key load resulted in SchemaObjectTypeMismatchException, retrying collectionKey.identifier: {}, tableKey.identifier: {}",
                     collectionKey.schemaIdentifier,
                     tableKey.schemaIdentifier);
@@ -202,8 +210,8 @@ public class SchemaObjectCache
             })
         .invoke(
             schemaObject -> {
-              if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace(
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(
                     "getTableBased() - loaded schema object with identifier: {}, collectionKey.identifier: {}, tableKey.identifier: {}",
                     schemaObject.identifier(),
                     collectionKey.schemaIdentifier,

@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -783,7 +784,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COLLECTION_NOT_EXIST"))
+          .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_COLLECTION_OR_TABLE.name()))
           .body(
               "errors[0].message",
               containsString("No collection or table with name 'no_such_collection' exists."));

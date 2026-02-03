@@ -2,7 +2,10 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Interface for handling <code>RuntimeException</code> and turning it into something else, normally
@@ -73,6 +76,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
  *     DriverException</code>
  */
 public interface ExceptionHandler<T extends RuntimeException> {
+  Logger LOGGER = LoggerFactory.getLogger(ExceptionHandler.class);
 
   /**
    * Handles the <code>runtimeException</code> returning an exception that can be thrown or
@@ -128,6 +132,11 @@ public interface ExceptionHandler<T extends RuntimeException> {
    * @return A {@link ServerException.Code#UNEXPECTED_SERVER_ERROR}.
    */
   default RuntimeException handleUnhandled(T exception) {
+    LOGGER.warn(
+        "An unhandled Java exception was mapped to {}",
+        ServerException.Code.UNEXPECTED_SERVER_ERROR.name(),
+        exception);
+
     return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(exception));
   }
 }
