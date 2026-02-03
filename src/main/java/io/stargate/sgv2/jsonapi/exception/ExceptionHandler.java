@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.exception;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Interface for handling <code>RuntimeException</code> and turning it into something else, normally
@@ -71,6 +73,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
  *     DriverException</code>
  */
 public interface ExceptionHandler<T extends Throwable> {
+  Logger LOGGER = LoggerFactory.getLogger(ExceptionHandler.class);
 
   /**
    * Handles the <code>throwable</code> returning an exception that can be thrown or otherwise
@@ -126,6 +129,31 @@ public interface ExceptionHandler<T extends Throwable> {
    * @return A {@link ServerException.Code#UNEXPECTED_SERVER_ERROR}.
    */
   default Throwable handleUnhandled(T exception) {
+
+    if (ignoreUnhandledApiException() && exception instanceof APIException apiException) {
+      // it's already one of our internal exceptions, so just return it as-is rather than re-wrap.
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "handleUnhandled() - exception is instance of {}, will not wrap exception. exception.toString()={}",
+            exception.getClass().getName(),
+            exception.toString(),
+            exception);
+      }
+      return apiException;
+    }
+
+    if (LOGGER.isErrorEnabled()) {
+      LOGGER.error(
+          "handleUnhandled() - exception mapper failed to handle exception, wrapping with {}. mapper.class={}, exception.toString()={}",
+          ServerException.Code.UNEXPECTED_SERVER_ERROR,
+          this.getClass().getName(),
+          exception.toString(),
+          exception);
+    }
     return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(exception));
+  }
+
+  default boolean ignoreUnhandledApiException() {
+    return true;
   }
 }

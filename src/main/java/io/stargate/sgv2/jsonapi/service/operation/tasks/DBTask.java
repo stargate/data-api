@@ -122,9 +122,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     return buildDBResultSupplier(commandContext, getCommandQueryExecutor(commandContext));
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   protected Throwable maybeHandleException(
       AsyncResultSetSupplier resultSupplier, Throwable throwable) {

@@ -1483,18 +1483,6 @@ request-errors:
       Reranking provider rate-limited: ${errorMessage}.
 
   - scope: SCHEMA
-    code: RERANKING_PROVIDER_TIMEOUT
-    title: XXX Reranking Provider timed out
-    body: |-
-      The command called an reranking provider to rerank results, but the provider did not respond within the allowed time.
-      
-      The reranking provider was: ${modelProvider}.
-      The HTTP status code was: ${httpStatus}.
-      The error message was: ${errorMessage}.
-      
-      ${SNIPPET.RETRY}
-
-  - scope: SCHEMA
     code: RERANKING_PROVIDER_AUTHENTICATION_KEY_NOT_PROVIDED
     title: Reranking provider has no authentication key
     body: |-
@@ -2337,8 +2325,11 @@ server-errors:
       Error Message: ${errorMessage}
       
       ${SNIPPET.RETRY_UNKNOWN}
+  
 
-  # DATABASE scope server errors
+  # ================================================================================================================
+  # Family: SERVER         Scope: DATABASE
+  # ================================================================================================================
 
   - scope: DATABASE
     code: CORRUPTED_COLLECTION_SCHEMA
@@ -2629,8 +2620,12 @@ server-errors:
       The write type was: ${writeType}.
       
       ${SNIPPET.RETRY}
+  
 
-  # EMBEDDING scope server errors
+  # ================================================================================================================
+  # Family: SERVER         Scope: EMBEDDING
+  # ================================================================================================================
+
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_GATEWAY_NOT_AVAILABLE
     title: Embedding Gateway not available
@@ -2723,3 +2718,20 @@ server-errors:
     body: |-
       The Embedding Provider returned an unexpected response.
       Underlying problem: ${errorMessage}.
+
+
+# ================================================================================================================
+# Family: SERVER         Scope: RERANKING
+# ================================================================================================================
+
+  - scope: RERANKING
+    code: RERANKING_PROVIDER_TIMEOUT
+    title: Reranking Provider timed out
+    body: |-
+      The command called an reranking provider to rerank results, but the provider did not respond within the allowed time.
+      
+      The reranking provider was: ${modelProvider}.
+      The HTTP status code was: ${httpStatus}.
+      The error message was: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}

@@ -232,12 +232,12 @@ public abstract class BaseTask<
    * the final error.
    *
    * @param resultSupplier The {@link ResultSupplierT} returned by the subclass from {@link
-   *                       #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did
-   *                       not start executing or did not get to build a valid statement, e.g. a request error was
-   *                       found during the creation of the task such as invalid data type.
-   * @param throwable      The exception to handle.
+   *     #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did
+   *     not start executing or did not get to build a valid statement, e.g. a request error was
+   *     found during the creation of the task such as invalid data type.
+   * @param throwable The exception to handle.
    * @return The exception to return to the user, if null then the error is swallowed. Generally we
-   * want to turn the exception into a {@link io.stargate.sgv2.jsonapi.exception.APIException}.
+   *     want to turn the exception into a {@link io.stargate.sgv2.jsonapi.exception.APIException}.
    */
   protected abstract Throwable maybeHandleException(
       ResultSupplierT resultSupplier, Throwable throwable);

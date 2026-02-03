@@ -190,7 +190,7 @@ public abstract class ProviderBase {
     var errorMessage = responseErrorMessage(jakartaResponse);
     // this is the main "error" log when the response is an error
     LOGGER.error(
-        "Error response from model provider, modelProvider: {}, modelName:{}, http.status: {}, error: {}",
+        "mapHTTPError() - HTTP Error response from model provider, modelProvider: {}, modelName:{}, http.status: {}, error: {}",
         modelProvider,
         modelName(),
         jakartaResponse.getStatus(),
@@ -198,6 +198,11 @@ public abstract class ProviderBase {
 
     var mappedException = mapHTTPError(jakartaResponse, errorMessage);
     if (mappedException != null) {
+      if (LOGGER.isWarnEnabled()) {
+        LOGGER.warn(
+            "mapHTTPError() - provider HTTP response mapped to mappedException={}",
+            mappedException.toString());
+      }
       return mappedException;
     }
 
