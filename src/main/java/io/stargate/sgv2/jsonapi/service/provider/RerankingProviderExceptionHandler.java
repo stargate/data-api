@@ -15,7 +15,7 @@ public class RerankingProviderExceptionHandler extends DefaultProviderExceptionH
 
     return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
         Map.of(
-            "modelProvider", "ReRanking Model called at-" + modelProvider.apiName(),
+            "provider", "ReRanking Model called at-" + modelProvider.apiName(),
             "httpStatus", "<CLIENT SOCKET TIMEOUT>",
             "errorMessage", "<CLIENT SOCKET TIMEOUT>"));
   }
