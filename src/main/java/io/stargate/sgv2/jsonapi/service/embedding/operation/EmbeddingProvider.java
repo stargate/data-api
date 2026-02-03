@@ -1,14 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME;
-import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_API_KEY_MISSING;
 import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
-import io.stargate.sgv2.jsonapi.exception.ServerException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.*;
@@ -47,7 +44,10 @@ public abstract class EmbeddingProvider extends ProviderBase {
       ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(modelProvider, ModelType.EMBEDDING, new EmbeddingProviderExceptionHandler(modelProvider, ModelType.EMBEDDING));
+    super(
+        modelProvider,
+        ModelType.EMBEDDING,
+        new EmbeddingProviderExceptionHandler(modelProvider, ModelType.EMBEDDING));
 
     this.providerConfig = providerConfig;
     this.modelConfig = modelConfig;
@@ -177,9 +177,12 @@ public abstract class EmbeddingProvider extends ProviderBase {
   protected void checkEmbeddingApiKeyHeader(Optional<String> apiKey) {
 
     if (apiKey.isEmpty()) {
-      throw EMBEDDING_PROVIDER_API_KEY_MISSING.toApiException(
-          "header value `%s` is missing for embedding provider: %s",
-          EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, modelProvider().apiName());
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "message",
+              "'%s' header is missing".formatted(EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME)));
     }
   }
 
@@ -209,47 +212,65 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
     if (jakartaResponse.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
-      return RequestException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
           Map.of(
-              "modelProvider", modelProvider().apiName(),
-              "httpStatus", String.valueOf(jakartaResponse.getStatus()),
-              "errorMessage", errorMessage));
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage",
+              errorMessage));
     }
 
     // Status code == 429
     if (jakartaResponse.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED.get(
+          Map.of(
+              "provider",
+              modelProvider().apiName(),
+              "httpStatus",
+              String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage",
+              errorMessage));
     }
 
     // Status code in 4XX other than 429
     if (jakartaResponse.getStatusInfo().getFamily() == CLIENT_ERROR) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.get(
+          "provider",
+          modelProvider().apiName(),
+          "httpStatus",
+          String.valueOf(jakartaResponse.getStatus()),
+          "errorMessage",
+          errorMessage);
     }
 
     // Status code in 5XX
     if (jakartaResponse.getStatusInfo().getFamily() == Response.Status.Family.SERVER_ERROR) {
-      return ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR.get(
+          "provider",
+          modelProvider().apiName(),
+          "httpStatus",
+          String.valueOf(jakartaResponse.getStatus()),
+          "errorMessage",
+          errorMessage);
     }
 
     // All other errors, Should never happen as all errors are covered above
-    return ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-        "Provider: %s; HTTP Status: %s; Error Message: %s",
-        modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+    return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+        Map.of(
+            "errorMessage",
+            "Provider: %s; HTTP Status: %s; Error Message: %s"
+                .formatted(modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
   }
 
   /** Call this from the subclass when the response from the provider is empty */
   protected void throwEmptyData(Response jakartaResponse) {
-    throw ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-        "Provider: %s; HTTP Status: %s; Error Message: %s",
-        modelProvider().apiName(),
-        jakartaResponse.getStatus(),
-        "ModelProvider returned empty data for model %s".formatted(modelName()));
+    throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+        Map.of(
+            "errorMessage",
+            "Provider: %s; HTTP Status: %s; Error Message: The embedding provider returned empty data for model %s"
+                .formatted(modelProvider().apiName(), jakartaResponse.getStatus(), modelName())));
   }
 
   /**

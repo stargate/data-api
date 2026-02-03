@@ -40,7 +40,7 @@ public class ValidateCredentials {
         embeddingService.validateCredential(validateCredentialRequest.build());
     if (validateCredentialResponse.hasError()) {
       throw ErrorCodeV1.VECTORIZE_CREDENTIAL_INVALID.toApiException(
-          " with error: %s", validateCredentialResponse.getError().getErrorMessage());
+          " with error: %s", validateCredentialResponse.getError().getErrorBody());
     }
     return validateCredentialResponse.getValidity();
   }
