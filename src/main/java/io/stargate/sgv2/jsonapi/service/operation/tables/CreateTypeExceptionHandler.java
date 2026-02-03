@@ -23,7 +23,7 @@ public class CreateTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
   }
 
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
     if (exception.getMessage().contains("already exists")) {
       return SchemaException.Code.CANNOT_ADD_EXISTING_TYPE.get(
           Map.of("existingType", errFmt(udtName)));

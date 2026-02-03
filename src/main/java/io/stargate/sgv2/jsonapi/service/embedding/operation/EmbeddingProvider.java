@@ -44,7 +44,10 @@ public abstract class EmbeddingProvider extends ProviderBase {
       ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(modelProvider, ModelType.EMBEDDING);
+    super(
+        modelProvider,
+        ModelType.EMBEDDING,
+        new EmbeddingProviderExceptionHandler(modelProvider, ModelType.EMBEDDING));
 
     this.providerConfig = providerConfig;
     this.modelConfig = modelConfig;
@@ -203,17 +206,6 @@ public abstract class EmbeddingProvider extends ProviderBase {
     return requestProperties().atMostRetries();
   }
 
-  @Override
-  protected boolean decideRetry(Throwable throwable) {
-
-    var retry =
-        (throwable.getCause() instanceof APIException apiException
-            && apiException.code.equals(
-                EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name()));
-
-    return retry || super.decideRetry(throwable);
-  }
-
   /** Maps an HTTP response to a V1 JsonApiException */
   @Override
   protected RuntimeException mapHTTPError(Response jakartaResponse, String errorMessage) {
@@ -222,7 +214,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
         || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
       return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
           Map.of(
-              "provider",
+              "modelProvider",
               modelProvider().apiName(),
               "httpStatus",
               String.valueOf(jakartaResponse.getStatus()),

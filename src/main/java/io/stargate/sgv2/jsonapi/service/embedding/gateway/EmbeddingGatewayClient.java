@@ -171,7 +171,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
         throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
             Map.of(
-                "provider",
+                "modelProvider",
                 modelProvider().apiName(),
                 "httpStatus",
                 String.valueOf(e.getStatus().getCode()),
