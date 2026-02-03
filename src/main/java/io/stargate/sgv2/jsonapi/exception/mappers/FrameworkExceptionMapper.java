@@ -20,7 +20,6 @@ import jakarta.ws.rs.*;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
@@ -176,11 +175,6 @@ public class FrameworkExceptionMapper {
     return switch (throwable) {
       case APIException ae -> ae;
       case JsonApiException jae -> jae;
-
-        // ##########
-        // WEIRD ONES FROM throwableToErrorMapper
-        // TODO: AARON - why would this happen ? was in old ThrowableToErrorMapper
-      case TimeoutException te -> ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException();
 
         // ##########
         // # QUARKUS ERRORS

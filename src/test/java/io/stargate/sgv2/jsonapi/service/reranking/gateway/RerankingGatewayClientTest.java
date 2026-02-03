@@ -143,7 +143,7 @@ public class RerankingGatewayClientTest {
     final SchemaException apiException =
         SchemaException.Code.RERANKING_PROVIDER_SERVER_ERROR.get(
             Map.of("errorMessage", "Test fail"));
-    errorResponseBuilder.setErrorCode(apiException.code).setErrorMessage(apiException.getMessage());
+    errorResponseBuilder.setErrorCode(apiException.code).setErrorBody(apiException.getMessage());
     builder.setError(errorResponseBuilder.build());
     when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(builder.build()));
 
