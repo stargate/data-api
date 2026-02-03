@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -238,7 +237,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.VectorSearchConfig vector) {
 
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
-      throw ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();
+      throw SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.get();
     }
 
     Integer vectorDimension = vector.dimension();

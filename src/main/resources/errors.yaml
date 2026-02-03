@@ -1821,6 +1821,12 @@ request-errors:
       Invalid credential name for vectorize, with error: ${errorMessage}.
 
   - scope: SCHEMA
+    code: VECTORIZE_FEATURE_NOT_AVAILABLE
+    title: Vectorize feature not available
+    body: |-
+      Vectorize feature is not available in the environment.
+
+  - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_INDEX
     title: Dropped index is not defined in the keyspace schema
     body: |-
