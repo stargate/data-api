@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-
 public class RerankingProviderException extends ServerException {
 
   public static final Scope SCOPE = Scope.RERANKING_PROVIDER;
