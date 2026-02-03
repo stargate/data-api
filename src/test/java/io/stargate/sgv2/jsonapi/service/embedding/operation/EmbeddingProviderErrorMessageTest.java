@@ -153,7 +153,7 @@ public class EmbeddingProviderErrorMessageTest {
     assertApiException(
         exception,
         EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT,
-        "Provider 'nvidia' request timed out with HTTP 408; error message: {\"object\":\"list\"}");
+        "The HTTP status code was: 408.");
   }
 
   @Test

@@ -135,18 +135,6 @@ request-errors:
   # UNSCOPED request errors
 
   - scope:
-    code: EMBEDDING_PROVIDER_TIMEOUT
-    title: XXX Embedding Provider timed out
-    body: |-
-      The command called an Embedding Provider to calculate a vector, but the provider did not respond within the allowed time.
-      
-      The embedding provider was: ${modelProvider}.
-      The HTTP status code was: ${httpStatus}.
-      The error message was: ${errorMessage}.
-      
-      ${SNIPPET.RETRY}
-
-  - scope:
     code: COMMAND_ACCEPTS_NO_OPTIONS
     title: Command accepts no options
     body: |-
@@ -2703,7 +2691,13 @@ server-errors:
     code: EMBEDDING_PROVIDER_TIMEOUT
     title: The Embedding Provider request timed out
     body: |-
-      Provider '${provider}' request timed out with HTTP ${httpStatus}; error message: ${errorMessage}
+      The command called an embedding provider to rerank results, but the provider did not respond within the allowed time.
+      
+      The reranking provider was: ${modelProvider}.
+      The HTTP status code was: ${httpStatus}.
+      The error message was: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_UNAVAILABLE

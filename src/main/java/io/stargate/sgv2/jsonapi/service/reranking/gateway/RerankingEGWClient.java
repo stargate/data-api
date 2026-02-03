@@ -88,7 +88,7 @@ public class RerankingEGWClient extends RerankingProvider {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
         throw RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
             Map.of(
-                "provider",
+                "modelProvider",
                 modelProvider().apiName(),
                 "httpStatus",
                 String.valueOf(e.getStatus().getCode()),

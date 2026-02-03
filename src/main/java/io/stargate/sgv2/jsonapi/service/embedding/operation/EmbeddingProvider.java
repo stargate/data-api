@@ -214,7 +214,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
         || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
       return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
           Map.of(
-              "provider",
+              "modelProvider",
               modelProvider().apiName(),
               "httpStatus",
               String.valueOf(jakartaResponse.getStatus()),
