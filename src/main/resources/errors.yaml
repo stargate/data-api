@@ -1796,6 +1796,11 @@ request-errors:
     body: |-
       Vector search is not enabled for collection: ${keyspace}.${table}.
 
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_TOO_BIG_VALUE
+    title: Vector embedding property too big
+    body: |-
+      Vector embedding property '$vector' length too big: ${length} (max ${maxLength}).
 
   - scope: SCHEMA
     code: VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME

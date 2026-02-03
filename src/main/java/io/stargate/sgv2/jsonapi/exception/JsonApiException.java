@@ -37,16 +37,6 @@ public class JsonApiException extends RuntimeException {
         }
       };
 
-  // map of error codes to error scope
-  private static final Map<Set<ErrorCodeV1>, ErrorScope> errorCodeScopeMap =
-      Map.of(
-          new HashSet<>() {
-            {
-              add(VECTOR_SEARCH_TOO_BIG_VALUE);
-            }
-          },
-          ErrorScope.SCHEMA);
-
   protected JsonApiException(ErrorCodeV1 errorCode) {
     this(errorCode, errorCode.getMessage(), null);
   }
@@ -105,12 +95,6 @@ public class JsonApiException extends RuntimeException {
   }
 
   public ErrorScope getErrorScope() {
-    for (Map.Entry<Set<ErrorCodeV1>, ErrorScope> entry : errorCodeScopeMap.entrySet()) {
-      if (entry.getKey().contains(errorCode)) {
-        return entry.getValue();
-      }
-    }
-
     // decide the scope based in error code pattern
     if (errorCode.name().contains("SCHEMA")) {
       return ErrorScope.SCHEMA;

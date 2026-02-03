@@ -1,13 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import jakarta.ws.rs.core.Response;
-
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
-  /** Embedding provider service error codes. */
-
-  // REMOVE:
-  VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   // REMOVE:
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
 
@@ -29,24 +23,11 @@ public enum ErrorCodeV1 {
     return new JsonApiException(this, getErrorMessage(format, args));
   }
 
-  public JsonApiException toApiException(
-      Response.Status httpStatus, String format, Object... args) {
-    return new JsonApiException(this, getErrorMessage(format, args), null, httpStatus);
-  }
-
-  public JsonApiException toApiException(Throwable cause, String format, Object... args) {
-    return new JsonApiException(this, getErrorMessage(format, args), cause);
-  }
-
   private String getErrorMessage(String format, Object... args) {
     return message + ": " + String.format(format, args);
   }
 
   public JsonApiException toApiException() {
     return new JsonApiException(this, message);
-  }
-
-  public JsonApiException toApiException(Response.Status httpStatus) {
-    return new JsonApiException(this, message, null, httpStatus);
   }
 }
