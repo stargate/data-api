@@ -33,7 +33,6 @@ public class JsonApiException extends RuntimeException {
       new HashSet<>() {
         {
           add(VECTORIZE_FEATURE_NOT_AVAILABLE);
-          add(VECTORIZE_CREDENTIAL_INVALID);
         }
       };
 

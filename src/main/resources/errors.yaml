@@ -1815,6 +1815,12 @@ request-errors:
       Unrecognized vector search source model name: ${errorMessage}.
 
   - scope: SCHEMA
+    code: VECTORIZE_CREDENTIAL_INVALID
+    title: Invalid credential name for vectorize
+    body: |-
+      Invalid credential name for vectorize, with error: ${errorMessage}.
+
+  - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_INDEX
     title: Dropped index is not defined in the keyspace schema
     body: |-
