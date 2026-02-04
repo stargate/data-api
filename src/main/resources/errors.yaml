@@ -2672,7 +2672,7 @@ server-errors:
       Underlying error class: ${errorClass}
       Underlying error message: ${errorMessage}
       
-      ${SNIPPET.RETRY}
+      ${SNIPPET.RETRY_UNKNOWN}
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED
