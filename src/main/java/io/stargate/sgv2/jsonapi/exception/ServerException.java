@@ -23,7 +23,9 @@ public class ServerException extends APIException {
     /** See {@link DatabaseException} */
     DATABASE,
     /** See {@link EmbeddingProviderException} */
-    EMBEDDING_PROVIDER;
+    EMBEDDING_PROVIDER,
+    /** See {@link RerankingProviderException} */
+    RERANKING_PROVIDER;
 
     @Override
     public String scope() {

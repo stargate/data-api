@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.exception;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Interface for handling <code>RuntimeException</code> and turning it into something else, normally
@@ -46,9 +48,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
  *       cause
  * </ul>
  *
- * <p>Users of the interface should call {@link #maybeHandle(RuntimeException)} and then throw or
- * otherwise deal with the object returned, which wil be the original exception or a new one.
- * Example:
+ * <p>Users of the interface should call {@link #maybeHandle(Throwable)} and then throw or otherwise
+ * deal with the object returned, which wil be the original exception or a new one. Example:
  *
  * <pre>
  *
@@ -62,9 +63,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
  *
  * <p>Implementations should override the handle() functions for the errors they care about. The
  * default is for the <code>handle()</code> function to return the object unchanged. If an exception
- * is not changed to a different object then {@link #maybeHandle(RuntimeException)} will call {@link
- * #handleUnhandled(RuntimeException)} as a last chance to change the driver exception into
- * something else.
+ * is not changed to a different object then {@link #maybeHandle(Throwable)} will call {@link
+ * #handleUnhandled(Throwable)} as a last chance to change the driver exception into something else.
  *
  * <p><b>NOTE:</b> Subclass {@link DefaultDriverExceptionHandler} rather than implement this
  * interface directly.
@@ -72,31 +72,32 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
  * @param <T> The base type of the exception that this handler handles, e.g. <code>
  *     DriverException</code>
  */
-public interface ExceptionHandler<T extends RuntimeException> {
+public interface ExceptionHandler<T extends Throwable> {
+  Logger LOGGER = LoggerFactory.getLogger(ExceptionHandler.class);
 
   /**
-   * Handles the <code>runtimeException</code> returning an exception that can be thrown or
-   * otherwise handled.
+   * Handles the <code>throwable</code> returning an exception that can be thrown or otherwise
+   * handled.
    *
-   * @param runtimeException The exception to handle
+   * @param throwable The exception to handle
    * @return The exception to throw or otherwise handle, may be:
    *     <ul>
    *       <li><code>null</code> if null passed in
-   *       <li>The exact <code>runtimeException</code> object if it is not an instance of <code>
+   *       <li>The exact <code>throwable</code> object if it is not an instance of <code>
    *           T</code> using {@link Class#isInstance(Object)}
    *       <li>The handled exception, usually translated into an {@link APIException}
-   *       <li>If not changes by {@link #handle(RuntimeException)}, the exception returned from
-   *           {@link #handleUnhandled(RuntimeException)}
+   *       <li>If not changed by {@link #handle(Throwable)}, the exception returned from {@link
+   *           #handleUnhandled(Throwable)}
    *     </ul>
    */
-  default RuntimeException maybeHandle(RuntimeException runtimeException) {
+  default Throwable maybeHandle(Throwable throwable) {
 
-    if (getExceptionClass().isInstance(runtimeException)) {
-      T t = getExceptionClass().cast(runtimeException);
+    if (getExceptionClass().isInstance(throwable)) {
+      T t = getExceptionClass().cast(throwable);
       var handled = handle(t);
-      return handled == runtimeException ? handleUnhandled(t) : handled;
+      return handled == throwable ? handleUnhandled(t) : handled;
     }
-    return runtimeException;
+    return throwable;
   }
 
   /**
@@ -113,21 +114,46 @@ public interface ExceptionHandler<T extends RuntimeException> {
    *
    * <p>See class description for full responsibilities of this function.
    *
-   * @param exception The exception to handle, of type <code>T</code>
+   * @param throwable The exception to handle, of type <code>T</code>
    * @return The exception passed in, or a new exception to throw or otherwise handle.
    */
-  default RuntimeException handle(T exception) {
-    return exception;
+  default Throwable handle(T throwable) {
+    return throwable;
   }
 
   /**
-   * Called by {@link #maybeHandle(RuntimeException)} when an exception was not changed by any
-   * handler functions.
+   * Called by {@link #maybeHandle(Throwable)} when an exception was not changed by any handler
+   * functions.
    *
    * @param exception The exception that was not handled.
    * @return A {@link ServerException.Code#UNEXPECTED_SERVER_ERROR}.
    */
-  default RuntimeException handleUnhandled(T exception) {
+  default Throwable handleUnhandled(T exception) {
+
+    if (ignoreUnhandledApiException() && exception instanceof APIException apiException) {
+      // it's already one of our internal exceptions, so just return it as-is rather than re-wrap.
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "handleUnhandled() - exception is instance of {}, will not wrap exception. exception.toString()={}",
+            exception.getClass().getName(),
+            exception.toString(),
+            exception);
+      }
+      return apiException;
+    }
+
+    if (LOGGER.isErrorEnabled()) {
+      LOGGER.error(
+          "handleUnhandled() - exception mapper failed to handle exception, wrapping with {}. mapper.class={}, exception.toString()={}",
+          ServerException.Code.UNEXPECTED_SERVER_ERROR,
+          this.getClass().getName(),
+          exception.toString(),
+          exception);
+    }
     return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(exception));
+  }
+
+  default boolean ignoreUnhandledApiException() {
+    return true;
   }
 }

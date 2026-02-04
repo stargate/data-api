@@ -7,6 +7,7 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
@@ -85,8 +86,14 @@ public class RerankingEGWClient extends RerankingProvider {
       gatewayRerankingUni = grpcGatewayService.rerank(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw SchemaException.Code.RERANKING_PROVIDER_TIMEOUT.get(
-            Map.of("errorMessage", e.getMessage()));
+        throw RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
+            Map.of(
+                "modelProvider",
+                modelProvider().apiName(),
+                "httpStatus",
+                String.valueOf(e.getStatus().getCode()),
+                "errorMessage",
+                e.getMessage()));
       }
       throw e;
     }

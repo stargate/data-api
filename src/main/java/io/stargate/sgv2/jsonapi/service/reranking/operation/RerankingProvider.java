@@ -4,6 +4,7 @@ import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
@@ -30,7 +31,10 @@ public abstract class RerankingProvider extends ProviderBase {
   protected RerankingProvider(
       ModelProvider modelProvider,
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
-    super(modelProvider, ModelType.RERANKING);
+    super(
+        modelProvider,
+        ModelType.RERANKING,
+        new RerankingProviderExceptionHandler(modelProvider, ModelType.RERANKING));
 
     this.modelConfig = modelConfig;
 
@@ -121,7 +125,7 @@ public abstract class RerankingProvider extends ProviderBase {
 
     var retry =
         (throwable.getCause() instanceof SchemaException se
-            && se.code.equals(SchemaException.Code.RERANKING_PROVIDER_TIMEOUT.name()));
+            && se.code.equals(RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name()));
 
     return retry || super.decideRetry(throwable);
   }
@@ -131,12 +135,11 @@ public abstract class RerankingProvider extends ProviderBase {
 
     if (jakartaResponse.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || jakartaResponse.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
-      return SchemaException.Code.RERANKING_PROVIDER_TIMEOUT.get(
+      return RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
           Map.of(
-              "errorMessage",
-              "Provider: %s; HTTP Status: %s; Error Message: %s"
-                  .formatted(
-                      modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage)));
+              "modelProvider", modelProvider().apiName(),
+              "httpStatus", String.valueOf(jakartaResponse.getStatus()),
+              "errorMessage", errorMessage));
     }
 
     if (jakartaResponse.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {

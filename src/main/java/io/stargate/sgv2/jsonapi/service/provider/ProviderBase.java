@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -44,10 +45,14 @@ public abstract class ProviderBase {
 
   private final ModelProvider modelProvider;
   private final ModelType modelType;
+  private final ProviderExceptionHandler exceptionHandler;
 
-  protected ProviderBase(ModelProvider modelProvider, ModelType modelType) {
+  protected ProviderBase(
+      ModelProvider modelProvider, ModelType modelType, ProviderExceptionHandler exceptionHandler) {
     this.modelProvider = modelProvider;
     this.modelType = modelType;
+    this.exceptionHandler =
+        Objects.requireNonNull(exceptionHandler, "exceptionHandler cannot be null");
   }
 
   public ModelProvider modelProvider() {
@@ -107,7 +112,11 @@ public abstract class ProviderBase {
         .retry()
         .withBackOff(initialBackOffDuration(), maxBackOffDuration())
         .withJitter(jitter())
-        .atMost(atMostRetries());
+        .atMost(atMostRetries())
+        // after all retry logic, if we have an error we will need to handle it into an API
+        // exception
+        .onFailure()
+        .transform(exceptionHandler::maybeHandle);
   }
 
   /**
@@ -181,7 +190,7 @@ public abstract class ProviderBase {
     var errorMessage = responseErrorMessage(jakartaResponse);
     // this is the main "error" log when the response is an error
     LOGGER.error(
-        "Error response from model provider, modelProvider: {}, modelName:{}, http.status: {}, error: {}",
+        "mapHTTPError() - HTTP Error response from model provider, modelProvider: {}, modelName:{}, http.status: {}, error: {}",
         modelProvider,
         modelName(),
         jakartaResponse.getStatus(),
@@ -189,6 +198,11 @@ public abstract class ProviderBase {
 
     var mappedException = mapHTTPError(jakartaResponse, errorMessage);
     if (mappedException != null) {
+      if (LOGGER.isWarnEnabled()) {
+        LOGGER.warn(
+            "mapHTTPError() - provider HTTP response mapped to mappedException={}",
+            mappedException.toString());
+      }
       return mappedException;
     }
 
