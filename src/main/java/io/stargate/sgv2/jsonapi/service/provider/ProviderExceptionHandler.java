@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
 import io.stargate.sgv2.jsonapi.exception.ExceptionHandler;
+import java.net.UnknownHostException;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -29,6 +30,7 @@ public interface ProviderExceptionHandler extends ExceptionHandler<Throwable> {
   default Throwable handle(Throwable throwable) {
     return switch (throwable) {
       case TimeoutException e -> handle(e);
+      case UnknownHostException e -> handle(e);
       default -> throwable;
     };
   }
@@ -39,6 +41,10 @@ public interface ProviderExceptionHandler extends ExceptionHandler<Throwable> {
 
   /** Vertex normally throws the NoStackTraceException which is a subclass. */
   default Throwable handle(TimeoutException exception) {
+    return exception;
+  }
+
+  default Throwable handle(UnknownHostException exception) {
     return exception;
   }
 }
