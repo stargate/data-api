@@ -2702,7 +2702,7 @@ server-errors:
     code: EMBEDDING_PROVIDER_TIMEOUT
     title: The Embedding Provider request timed out
     body: |-
-      The command called an embedding provider to rerank results, but the provider did not respond within the allowed time.
+      The command called an embedding provider to vectorize text, but the provider did not respond within the allowed time.
       
       The embedding provider was: ${modelProvider}.
       The HTTP status code was: ${httpStatus}.
