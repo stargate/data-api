@@ -92,9 +92,6 @@ public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
   @Override
   public TableDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
 
-    LOGGER.warn("XXX ALL COLS - LIST {}", Jsonable.toJson(allColumns));
-
-
     // only describe for a DDL command, for the DML commands it only considers the columns that
     // were read, handled in the {@link TableProjection}
     if (schemaDescSource != SchemaDescSource.DDL_SCHEMA_OBJECT) {

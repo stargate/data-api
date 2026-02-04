@@ -76,9 +76,9 @@ public class SubdomainTenantResolver implements RequestTenantResolver {
 
         // TODO: this was returned as empty, but we cannot have a missing tenant
         throw new RuntimeException("TODO XXX BANG!");
-        //        if (!matches) {
-        //          return Optional.empty();
-        //        }
+        if (!matches) {
+          return Optional.empty();
+        }
       }
 
       return TenantFactory.instance().create(tenantId);

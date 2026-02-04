@@ -106,7 +106,6 @@ public class SchemaObjectCache
 
   @Override
   protected void beforeForceLoaded(SchemaCacheKey key) {
-    LOGGER.warn("XXX - beforeForceLoaded called for key: {}", key);
     invalidateAll();
   }
 

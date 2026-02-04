@@ -141,8 +141,6 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
       UnscopedSchemaObjectIdentifier unscopedName,
       boolean forceRefresh) {
 
-    LOGGER.warn("XXX SchemaObjectFactory.getKeyspaceMetadata called unscopedName={}, forceRefresh={}",
-        unscopedName, forceRefresh);
     var queryExecutor =
         new CommandQueryExecutor(
             sessionCacheSupplier.get(), requestContext, CommandQueryExecutor.QueryTarget.SCHEMA);

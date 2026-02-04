@@ -211,7 +211,7 @@ public class CollectionResource {
         new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
             cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
     var forceSchemaRefresh = command.commandName().getCommandType().isForceSchemaRefresh();
-    LOGGER.warn("XXXX - ForceRefresh is set to {}", forceSchemaRefresh);
+
     return schemaObjectCacheSupplier
         .get()
         .getTableBased(
@@ -312,6 +312,7 @@ public class CollectionResource {
                         requestContext.userAgent(),
                         forceSchemaRefresh)
                     .onItem()
+                    // TODO XXXX - IGNORE FAILURE
                     .transformToUni(so -> commandResultUni.get());
               }
               return commandResultUni.get();

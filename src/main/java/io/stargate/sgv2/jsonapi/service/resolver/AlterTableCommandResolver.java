@@ -425,18 +425,13 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     }
 
     // Should only be dropping config from existing vector columns
-    LOGGER.warn("XXXX droppedColumns = {}", droppedColumns);
-    LOGGER.warn("XXX ALL COLS - ALTER {}", Jsonable.toJson(apiTableDef.allColumns()));
-    LOGGER.warn("XXXX PRE KEYS = {}", existingVectorizeDefs.keySet());
     boolean updateVectorize = false;
     for (var identifier : droppedColumns) {
       if (existingVectorizeDefs.remove(identifier) != null) {
         updateVectorize = true;
       }
     }
-
-    LOGGER.warn("XXXX POST KEYS = {}", existingVectorizeDefs.keySet());
-
+    
     if (!updateVectorize) {
       // Nothing to do, there was no vectorize def for the column :)
       return List.of();
