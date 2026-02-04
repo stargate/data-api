@@ -2664,6 +2664,17 @@ server-errors:
       Underlying problem: ${errorMessage}
 
   - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_BAD_HOST_NAME
+    title: Bad parameter(s) cause bad provider URL
+    body: |-
+      The bad parameter(s) cause bad host name in Provider URL.
+      The embedding provider was: ${modelProvider}.
+      Underlying error class: ${errorClass}
+      Underlying error message: ${errorMessage}
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED
     title: Authentication header(s) missing from embedding request
     body: |-
@@ -2691,9 +2702,9 @@ server-errors:
     code: EMBEDDING_PROVIDER_TIMEOUT
     title: The Embedding Provider request timed out
     body: |-
-      The command called an embedding provider to rerank results, but the provider did not respond within the allowed time.
+      The command called an embedding provider to vectorize text, but the provider did not respond within the allowed time.
       
-      The reranking provider was: ${modelProvider}.
+      The embedding provider was: ${modelProvider}.
       The HTTP status code was: ${httpStatus}.
       The error message was: ${errorMessage}.
       
