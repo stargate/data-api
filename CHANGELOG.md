@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.0.36](https://github.com/stargate/data-api/tree/v1.0.36) (2026-02-04)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.35...v1.0.36)
+
+**Merged pull requests:**
+
+- Handle `java.net.UnknownHostException` [\#2370](https://github.com/stargate/data-api/pull/2370) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Use the ExceptionMappers pattern to handle socket timeouts from model providers  [\#2369](https://github.com/stargate/data-api/pull/2369) ([amorton](https://github.com/amorton))
+- Convert `EMBEDDING\_` related codes and V1 codes used in EGW to V2 [\#2364](https://github.com/stargate/data-api/pull/2364) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Batch 17 of ErrorCodeV1 removal: update operation codes [\#2363](https://github.com/stargate/data-api/pull/2363) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update AssertJ to 3.27.7 to address a CVE [\#2362](https://github.com/stargate/data-api/pull/2362) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2361](https://github.com/stargate/data-api/pull/2361) ([github-actions[bot]](https://github.com/apps/github-actions))
+- remove the ThrowableToErrorMapper class [\#2353](https://github.com/stargate/data-api/pull/2353) ([amorton](https://github.com/amorton))
+
 ## [v1.0.35](https://github.com/stargate/data-api/tree/v1.0.35) (2026-01-26)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.34...v1.0.35)
