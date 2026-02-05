@@ -25,7 +25,7 @@ public abstract class CqlIdentifierUtil {
   }
 
   public static String cqlIdentifierToMessageString(CqlIdentifier identifier) {
-    return identifier.asCql(true);
+    return identifier == null ? "null" : identifier.asCql(true);
   }
 
   /** Returns the API representation of a CQL identifier. */

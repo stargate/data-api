@@ -12,6 +12,7 @@ import com.datastax.oss.driver.api.core.servererrors.*;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import java.util.*;
 import java.util.function.BiFunction;

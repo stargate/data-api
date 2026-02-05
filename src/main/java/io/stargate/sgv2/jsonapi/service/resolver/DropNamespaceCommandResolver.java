@@ -2,9 +2,9 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropNamespaceCommand;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.DropKeyspaceOperation;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**

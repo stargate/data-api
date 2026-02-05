@@ -50,7 +50,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         }
         """,
         "UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION",
-        "The collection %s.%s does not have vectors enabled.");
+        "The collection \"%s\".%s does not have vectors enabled.");
   }
 
   @Test
@@ -69,7 +69,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         }
         """,
         "UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION",
-        "The collection %s.%s does not have vectorize enabled.");
+        "The collection \"%s\".%s does not have vectorize enabled.");
   }
 
   @Test

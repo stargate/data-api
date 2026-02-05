@@ -8,11 +8,13 @@ import static org.mockito.Mockito.times;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.time.Duration;
 import java.util.Objects;
@@ -28,7 +30,7 @@ public class BaseTaskAssertions<
     ResultT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BaseTaskAssertions.class);
-
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
   public final TaskT task;
   private final CommandContext<SchemaT> commandContext;
 
@@ -40,11 +42,15 @@ public class BaseTaskAssertions<
   /** Mock a table schema object with the given keyspace and table name. */
   public static TableSchemaObject mockTable(String keyspaceName, String tableName) {
     TableSchemaObject mockTable = mock(TableSchemaObject.class);
-
+    when(mockTable.identifier())
+        .thenReturn(
+            SchemaObjectIdentifier.forTable(
+                TEST_CONSTANTS.TENANT,
+                CqlIdentifier.fromInternal(keyspaceName),
+                CqlIdentifier.fromInternal(tableName)));
     when(mockTable.keyspaceName()).thenReturn(CqlIdentifier.fromInternal(keyspaceName));
     when(mockTable.tableName()).thenReturn(CqlIdentifier.fromInternal(tableName));
-    when(mockTable.type()).thenReturn(SchemaObject.SchemaObjectType.TABLE);
-    when(mockTable.name()).thenReturn(new SchemaObjectName(keyspaceName, tableName));
+    when(mockTable.type()).thenReturn(SchemaObjectType.TABLE);
     return mockTable;
   }
 

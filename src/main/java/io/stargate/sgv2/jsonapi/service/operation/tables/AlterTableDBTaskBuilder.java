@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -17,9 +18,8 @@ import java.util.List;
  */
 public class CollectionSettingsV1Reader {
   public CollectionSchemaObject readCollectionSettings(
+      Tenant tenant,
       JsonNode collectionNode,
-      String keyspaceName,
-      String collectionName,
       TableMetadata tableMetadata,
       ObjectMapper objectMapper) {
 
@@ -67,12 +67,14 @@ public class CollectionSettingsV1Reader {
     } else {
       rerankingConfig =
           CollectionRerankDef.fromCommentJson(
-              keyspaceName, collectionName, rerankingNode, objectMapper);
+              tableMetadata.getKeyspace().asInternal(),
+              tableMetadata.getName().asInternal(),
+              rerankingNode,
+              objectMapper);
     }
 
     return new CollectionSchemaObject(
-        keyspaceName,
-        collectionName,
+        tenant,
         tableMetadata,
         idConfig,
         vectorConfig,

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
@@ -30,13 +31,14 @@ import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
+import io.stargate.sgv2.jsonapi.service.schema.UnscopedSchemaObjectIdentifier;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -47,6 +49,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.function.Supplier;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
@@ -59,6 +62,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path(CollectionResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
@@ -66,6 +71,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
 @Tag(ref = "Documents")
 public class CollectionResource {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionResource.class);
 
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}/{collection}";
 
@@ -74,20 +80,23 @@ public class CollectionResource {
   // TODO remove apiFeatureConfig as a property after cleanup for how we get schema from cache
   @Inject private FeaturesConfig apiFeatureConfig;
   @Inject private RequestContext requestContext;
-  @Inject private SchemaCache schemaCache;
 
+  private final SchemaObjectCacheSupplier schemaObjectCacheSupplier;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final EmbeddingProviderFactory embeddingProviderFactory;
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
   public CollectionResource(
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier,
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory) {
+
+    this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
     this.embeddingProviderFactory = embeddingProviderFactory;
     this.meteredCommandProcessor = meteredCommandProcessor;
 
@@ -197,12 +206,19 @@ public class CollectionResource {
       @NotNull @Valid CollectionCommand command,
       @PathParam("keyspace") @NotEmpty String keyspace,
       @PathParam("collection") @NotEmpty String collection) {
-    return schemaCache
-        .getSchemaObject(
+
+    var unscopedSchemaIdentifier =
+        new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
+            cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
+    var forceSchemaRefresh = command.commandName().getCommandType().isForceSchemaRefresh();
+
+    return schemaObjectCacheSupplier
+        .get()
+        .getTableBased(
             requestContext,
-            keyspace,
-            collection,
-            CommandType.DDL.equals(command.commandName().getCommandType()))
+            unscopedSchemaIdentifier,
+            requestContext.userAgent(),
+            forceSchemaRefresh)
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {
@@ -213,19 +229,17 @@ public class CollectionResource {
                             .addThrowable(throwable)
                             .build());
               } else {
-                // TODO No need for the else clause here, simplify
-
                 // TODO: This needs to change, currently it is only checking if there is vectorize
                 // for the $vector column in a collection
 
                 VectorColumnDefinition vectorColDef = null;
-                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                if (schemaObject.type() == SchemaObjectType.COLLECTION) {
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
                           .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
                           .orElse(null);
-                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                } else if (schemaObject.type() == SchemaObjectType.TABLE) {
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
@@ -256,8 +270,51 @@ public class CollectionResource {
                         .withRequestContext(requestContext)
                         .build();
 
-                return meteredCommandProcessor.processCommand(commandContext, command);
+                return meteredCommandProcessor
+                    .processCommand(commandContext, command)
+                    .onTermination()
+                    .invoke(
+                        () -> {
+                          try {
+                            commandContext.close();
+                          } catch (Exception e) {
+                            LOGGER.error(
+                                "Error closing the command context for requestContext={}",
+                                requestContext,
+                                e);
+                          }
+                        });
               }
+            })
+        .onItemOrFailure()
+        .transformToUni(
+            (commandResult, throwable) -> {
+              // regardless of success or failure, we refresh schema cache if command says to do so
+              // we have our SchemaObjectCache, but the driver also has a metadata cache so the only
+              // way
+              // to refresh from the DB is to pull schema again, so it tells the driver to refresh
+              // async
+              // cannot tell the driver to invalidate cache of a specific part of the schema
+              Throwable finalThrowable = throwable;
+              CommandResult finalCommandResult = commandResult;
+
+              Supplier<Uni<CommandResult>> commandResultUni =
+                  () ->
+                      finalThrowable == null
+                          ? Uni.createFrom().item(finalCommandResult)
+                          : Uni.createFrom().failure(finalThrowable);
+              if (forceSchemaRefresh) {
+                return schemaObjectCacheSupplier
+                    .get()
+                    .getTableBased(
+                        requestContext,
+                        unscopedSchemaIdentifier,
+                        requestContext.userAgent(),
+                        forceSchemaRefresh)
+                    .onItem()
+                    .transformToUni(so -> commandResultUni.get());
+              }
+              return commandResultUni.get();
             })
         .map(CommandResult::toRestResponse);
   }

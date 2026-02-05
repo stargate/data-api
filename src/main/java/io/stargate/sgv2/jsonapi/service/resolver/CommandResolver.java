@@ -16,11 +16,14 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.Objects;
 
 /**
@@ -165,7 +168,7 @@ public interface CommandResolver<C extends Command> {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ServerException.internalServerError(
         "%s Command does not support operating on Keyspaces, target was %s"
-            .formatted(command.getClass().getSimpleName(), ctx.schemaObject().name()));
+            .formatted(command.getClass().getSimpleName(), ctx.schemaObject().identifier()));
   }
 
   /**
@@ -180,7 +183,7 @@ public interface CommandResolver<C extends Command> {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ServerException.internalServerError(
         "%s Command does not support operating on Databases, target was %s"
-            .formatted(command.getClass().getSimpleName(), ctx.schemaObject().name()));
+            .formatted(command.getClass().getSimpleName(), ctx.schemaObject().identifier()));
   }
 
   /**

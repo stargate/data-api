@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.ArrayList;
 import java.util.List;
 

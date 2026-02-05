@@ -72,7 +72,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   @Inject DocumentShredder documentShredder;
   @Inject ObjectMapper objectMapper;
   @Inject DataVectorizerService dataVectorizerService;
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -87,8 +87,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME,
-                null,
+                COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -191,7 +190,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument =
-          documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id);
+          documentShredder.shred(COMMAND_VECTOR_CONTEXT, jsonNode, tx_id);
       SimpleStatement stmt2 = vectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);

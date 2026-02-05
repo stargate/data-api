@@ -11,13 +11,14 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Arrays;
@@ -91,10 +92,13 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
       this.message = message;
       this.tableMetadata = tableMetadata;
+      var TEST_CONSTANT = new TestConstants();
       this.analyzer =
           new WhereCQLClauseAnalyzer(
-              TableSchemaObject.from(tableMetadata, new ObjectMapper()), statementType);
-      this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+              TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper()),
+              statementType);
+      this.tableSchemaObject =
+          TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper());
       this.expression =
           new LogicalExpressionTestData.ExpressionBuilder<>(this, expression, tableMetadata);
     }

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -22,9 +23,8 @@ import java.util.List;
  */
 public class CollectionSettingsV0Reader {
   public CollectionSchemaObject readCollectionSettings(
+      Tenant tenant,
       JsonNode commentConfigNode,
-      String keyspaceName,
-      String collectionName,
       TableMetadata tableMetadata,
       boolean vectorEnabled,
       int vectorSize,
@@ -48,8 +48,7 @@ public class CollectionSettingsV0Reader {
       indexingConfig = CollectionIndexingConfig.fromJson(indexing);
     }
     return new CollectionSchemaObject(
-        keyspaceName,
-        collectionName,
+        tenant,
         tableMetadata,
         IdConfig.defaultIdConfig(),
         vectorConfig,

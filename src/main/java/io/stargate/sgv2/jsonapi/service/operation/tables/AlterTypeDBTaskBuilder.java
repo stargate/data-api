@@ -3,9 +3,9 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 
 /**

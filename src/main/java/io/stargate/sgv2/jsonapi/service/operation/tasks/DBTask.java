@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,7 +186,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     // , improve later
     return new CommandQueryExecutor(
         commandContext.cqlSessionCache(),
-        new CommandQueryExecutor.DBRequestContext(commandContext),
+        commandContext.requestContext(),
         CommandQueryExecutor.QueryTarget.TABLE);
   }
 
