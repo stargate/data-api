@@ -174,7 +174,6 @@ public class FrameworkExceptionMapper {
   public static RuntimeException translateThrowable(Throwable throwable) {
     return switch (throwable) {
       case APIException ae -> ae;
-      case JsonApiException jae -> jae;
 
         // ##########
         // # QUARKUS ERRORS

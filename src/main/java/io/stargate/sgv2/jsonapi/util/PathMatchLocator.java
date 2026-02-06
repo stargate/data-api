@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import java.util.Map;
@@ -67,9 +67,9 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
    *
    * @param dotPath Path that uses dot-notation
    * @return Locator instance
-   * @throws JsonApiException if dotPath invalid (empty path segment(s))
+   * @throws APIException if dotPath invalid (empty path segment(s))
    */
-  public static PathMatchLocator forPath(String dotPath) throws JsonApiException {
+  public static PathMatchLocator forPath(String dotPath) throws APIException {
     return new PathMatchLocator(dotPath, splitAndVerify(dotPath));
   }
 
@@ -222,7 +222,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     return context;
   }
 
-  private static DocumentPath splitAndVerify(String dotPath) throws JsonApiException {
+  private static DocumentPath splitAndVerify(String dotPath) throws APIException {
     DocumentPath path;
     try {
       path = DocumentPath.from(dotPath);
@@ -242,7 +242,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     return -1;
   }
 
-  private JsonApiException cantCreatePropertyPath(String fullPath, String prop, JsonNode context) {
+  private APIException cantCreatePropertyPath(String fullPath, String prop, JsonNode context) {
     throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.get(
         Map.of(
             "errorMessage",
