@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
@@ -48,7 +48,7 @@ public class VectorizeConfigValidator {
    * @param userVectorDimension The dimension specified by the user, may be null.
    * @return The dimension to be used for the vector, should be from the internal configuration. It
    *     will be used for auto populate the vector dimension
-   * @throws JsonApiException If the service configuration is invalid or unsupported.
+   * @throws APIException If the service configuration is invalid or unsupported.
    */
   public Integer validateService(VectorizeConfig userConfig, Integer userVectorDimension) {
     // Only for internal tests
@@ -86,7 +86,7 @@ public class VectorizeConfigValidator {
    *
    * @param userConfig The configuration provided by the user specifying the vector search provider.
    * @return The configuration for the embedding provider, if valid.
-   * @throws JsonApiException If the provider is not supported or not enabled.
+   * @throws APIException If the provider is not supported or not enabled.
    */
   private EmbeddingProvidersConfig.EmbeddingProviderConfig getAndValidateProviderConfig(
       VectorizeConfig userConfig) {
@@ -125,7 +125,7 @@ public class VectorizeConfigValidator {
    *
    * @param userConfig The vectorize configuration provided by the user.
    * @param providerConfig The embedding provider configuration.
-   * @throws JsonApiException If the user authentication is invalid.
+   * @throws APIException If the user authentication is invalid.
    */
   private void validateAuthentication(
       VectorizeConfig userConfig, EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
@@ -204,7 +204,7 @@ public class VectorizeConfigValidator {
    * @param userConfig The vector search configuration provided by the user.
    * @param providerConfig The configuration of the embedding provider which includes model and
    *     provider-level parameters.
-   * @throws JsonApiException if any unconfigured parameters are provided, required parameters are
+   * @throws APIException if any unconfigured parameters are provided, required parameters are
    *     missing, or if an error occurs due to no parameters being configured but some are provided
    *     by the user.
    */
@@ -289,7 +289,7 @@ public class VectorizeConfigValidator {
    * @param expectedParamConfig The expected configuration for the parameter which includes its
    *     expected type.
    * @param userParamValue The value of the parameter provided by the user.
-   * @throws JsonApiException if the type of the parameter provided by the user does not match the
+   * @throws APIException if the type of the parameter provided by the user does not match the
    *     expected type.
    */
   private void validateParameterType(
@@ -324,7 +324,7 @@ public class VectorizeConfigValidator {
    * @param providerConfig the configuration of the embedding provider
    * @param userVectorDimension the vector dimension provided by the user, or null if not provided
    * @return the validated vector dimension to be used for the model
-   * @throws JsonApiException if the model name is not found, or if the dimension is invalid
+   * @throws APIException if the model name is not found, or if the dimension is invalid
    */
   private Integer validateModelAndDimension(
       VectorizeConfig userConfig,
@@ -392,7 +392,7 @@ public class VectorizeConfigValidator {
    * @param param the parameter configuration containing validation constraints
    * @param userVectorDimension the vector dimension provided by the user
    * @return the appropriate vector dimension based on parameter configuration
-   * @throws JsonApiException if the user-provided dimension is not valid
+   * @throws APIException if the user-provided dimension is not valid
    */
   private Integer validateRangeDimension(
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig param,

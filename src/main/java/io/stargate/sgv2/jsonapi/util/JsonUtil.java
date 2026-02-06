@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Utf8;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
@@ -116,9 +116,9 @@ public class JsonUtil {
    *
    * @param json JSON value to check
    * @return Date extracted, if given valid EJSON-encoded Date value; or {@code null} if not
-   *     EJSON-like; or {@link JsonApiException} for malformed EJSON value
-   * @throws JsonApiException If value indicates it would be EJSON-encoded date (by key) but has
-   *     invalid value part (not number)
+   *     EJSON-like
+   * @throws APIException If value indicates it would be EJSON-encoded date (by key) but has invalid
+   *     value part (not number)
    */
   public static Date extractEJsonDate(JsonNode json, Object path) {
     if (json.isObject() && json.size() == 1) {

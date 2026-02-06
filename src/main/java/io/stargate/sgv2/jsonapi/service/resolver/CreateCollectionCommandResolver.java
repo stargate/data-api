@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -230,12 +230,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    *     command.
    * @return The validated and potentially modified (adding default vector dimension) vector search
    *     configuration.
-   * @throws JsonApiException If vector search is disabled globally or the user configuration is
+   * @throws APIException If vector search is disabled globally or the user configuration is
    *     invalid.
    */
   private CreateCollectionCommand.Options.VectorSearchConfig validateVectorOptions(
       CreateCollectionCommand.Options.VectorSearchConfig vector) {
-
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
       throw SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.get();
     }

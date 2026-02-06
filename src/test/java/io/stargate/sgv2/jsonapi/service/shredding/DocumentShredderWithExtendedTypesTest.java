@@ -376,7 +376,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-an-oid\")");
     }
@@ -398,7 +398,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got (\"not-a-uuid\")");
 
@@ -414,7 +414,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got ({})");
     }

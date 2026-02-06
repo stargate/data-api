@@ -164,8 +164,6 @@ public class DataVectorizer {
                 });
       }
       return Uni.createFrom().item(true);
-    } catch (JsonApiException e) {
-      return Uni.createFrom().failure(e);
     } catch (APIException e) {
       return Uni.createFrom().failure(e);
     }
@@ -271,8 +269,6 @@ public class DataVectorizer {
                 });
       }
       return Uni.createFrom().item(true);
-    } catch (JsonApiException e) {
-      return Uni.createFrom().failure(e);
     } catch (APIException e) {
       return Uni.createFrom().failure(e);
     }

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProviderConfigProducer;
@@ -276,7 +276,7 @@ public class CollectionRerankDef {
    * @param rerankingDesc The reranking configuration received from API input (may be null)
    * @param providerConfigs The reranking configuration yaml for available reranking providers
    * @return A validated CollectionRerankDef object
-   * @throws JsonApiException if the configuration is invalid
+   * @throws APIException if the configuration is invalid
    */
   public static CollectionRerankDef fromApiDesc(
       boolean isRerankingEnabledForAPI,
@@ -362,7 +362,7 @@ public class CollectionRerankDef {
    * @param provider The reranking provider name.
    * @param rerankingProvidersConfig The configuration containing all available reranking providers.
    * @return The validated provider configuration.
-   * @throws JsonApiException If the provider is null, not found, or not enabled.
+   * @throws APIException If the provider is null, not found, or not enabled.
    */
   private static RerankingProvidersConfig.RerankingProviderConfig getAndValidateProviderConfig(
       String provider, RerankingProvidersConfig rerankingProvidersConfig) {
@@ -398,7 +398,7 @@ public class CollectionRerankDef {
    * @param modelName The name of the reranking model to validate.
    * @param rerankingProviderConfig The configuration for the specified reranking provider.
    * @return The validated model name if it passes all checks.
-   * @throws JsonApiException If the model name is null or not supported by the provider.
+   * @throws APIException If the model name is null or not supported by the provider.
    */
   private static String validateModel(
       String provider,
@@ -452,7 +452,7 @@ public class CollectionRerankDef {
    * @param authentication The reranking authentication details.
    * @param rerankingProviderConfig The configuration for the specified reranking provider.
    * @return The validated authentication map.
-   * @throws JsonApiException If authentication parameters are provided when none are expected.
+   * @throws APIException If authentication parameters are provided when none are expected.
    */
   private static Map<String, String> validateAuthentication(
       String provider,
@@ -487,7 +487,7 @@ public class CollectionRerankDef {
    * @param parameters The reranking parameters (expected to be null or empty).
    * @param rerankingProviderConfig The configuration for the specified reranking provider.
    * @return The validated parameters map (null or empty for currently supported providers).
-   * @throws JsonApiException If parameters are provided when none are expected.
+   * @throws APIException If parameters are provided when none are expected.
    */
   private static Map<String, Object> validateParameters(
       String provider,
