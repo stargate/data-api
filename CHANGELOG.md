@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.0.37](https://github.com/stargate/data-api/tree/v1.0.37) (2026-02-05)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.36...v1.0.37)
+
+**Merged pull requests:**
+
+- FIX \#2374 force tenant id to lower case [\#2375](https://github.com/stargate/data-api/pull/2375) ([amorton](https://github.com/amorton))
+- FIX \#2372 remove placeholder that threw exception [\#2373](https://github.com/stargate/data-api/pull/2373) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2371](https://github.com/stargate/data-api/pull/2371) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.36](https://github.com/stargate/data-api/tree/v1.0.36) (2026-02-04)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.35...v1.0.36)
