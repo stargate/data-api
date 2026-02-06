@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -24,6 +23,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.Map;
 
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
@@ -237,7 +237,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.VectorSearchConfig vector) {
 
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
-      throw ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();
+      throw SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.get();
     }
 
     Integer vectorDimension = vector.dimension();
@@ -286,8 +286,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             "message", "The 'dimension' can not be null if 'service' is not provided");
       }
       if (vectorDimension > documentLimitsConfig.maxVectorEmbeddingLength()) {
-        throw ErrorCodeV1.VECTOR_SEARCH_TOO_BIG_VALUE.toApiException(
-            "%d (max %d)", vectorDimension, documentLimitsConfig.maxVectorEmbeddingLength());
+        throw SchemaException.Code.VECTOR_SEARCH_TOO_BIG_VALUE.get(
+            Map.of(
+                "length",
+                String.valueOf(vectorDimension),
+                "maxLength",
+                String.valueOf(documentLimitsConfig.maxVectorEmbeddingLength())));
       }
       vector =
           new CreateCollectionCommand.Options.VectorSearchConfig(

@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.bpodgursky.jbool_expressions.Expression;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
@@ -368,8 +370,8 @@ public record FindCollectionOperation(
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
           .failure(
-              ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-                  "%s", commandContext().schemaObject().name().table()));
+              SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.get(
+                  errVars(commandContext().schemaObject())));
     }
 
     // get FindResponse

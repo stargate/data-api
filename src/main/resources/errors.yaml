@@ -1785,10 +1785,40 @@ request-errors:
       Resend the command using a known metric.
 
   - scope: SCHEMA
+    code: VECTOR_SEARCH_NOT_SUPPORTED
+    title: Vector search not enabled for collection
+    body: |-
+      Vector search is not enabled for collection: ${keyspace}.${table}.
+
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_TOO_BIG_VALUE
+    title: Vector embedding property too big
+    body: |-
+      Vector embedding property '$vector' length too big: ${length} (max ${maxLength}).
+
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME
+    title: Unknown vector search function name
+    body: |-
+      Unknown vector search function name: '${function}'.
+
+  - scope: SCHEMA
     code: VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME
     title: Unrecognized vector search source model name
     body: |-
       Unrecognized vector search source model name: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: VECTORIZE_CREDENTIAL_INVALID
+    title: Invalid credential name for vectorize
+    body: |-
+      Invalid credential name for vectorize, with error: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: VECTORIZE_FEATURE_NOT_AVAILABLE
+    title: Vectorize feature not available
+    body: |-
+      Vectorize feature is not available in the environment.
 
   - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_INDEX

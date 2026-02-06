@@ -90,7 +90,14 @@ public class SchemaException extends RequestException {
     UNSUPPORTED_VECTOR_DIMENSION,
     UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES,
 
+    VECTOR_SEARCH_NOT_SUPPORTED, // legacy: converted from ErrorCodeV1
+    VECTOR_SEARCH_TOO_BIG_VALUE, // legacy: converted from ErrorCodeV1
+    // 02-Feb-2025, tatu: is this one needed over IllegalArgumentException?
+    VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME, // legacy: converted from
+    // ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME
     VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME, // legacy: converted from ErrorCodeV1
+    VECTORIZE_CREDENTIAL_INVALID, // legacy: converted from ErrorCodeV1
+    VECTORIZE_FEATURE_NOT_AVAILABLE, // legacy: converted from ErrorCodeV1
 
     // older below - separated because they need to be confirmed
     INVALID_KEYSPACE,

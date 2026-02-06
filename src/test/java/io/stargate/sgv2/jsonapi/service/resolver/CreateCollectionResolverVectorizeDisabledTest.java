@@ -9,8 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
@@ -50,8 +49,8 @@ public class CreateCollectionResolverVectorizeDisabledTest {
                 createCollectionCommandResolver.resolveCommand(
                     testConstants.keyspaceContext(), command));
     assertThat(e)
-        .isInstanceOf(JsonApiException.class)
-        .hasMessageStartingWith(ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
+        .hasFieldOrPropertyWithValue(
+            "code", SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.name());
   }
 
   @Test
@@ -73,7 +72,7 @@ public class CreateCollectionResolverVectorizeDisabledTest {
                 findEmbeddingProvidersCommandResolver.resolveCommand(
                     testConstants.databaseContext(), command));
     assertThat(e)
-        .isInstanceOf(JsonApiException.class)
-        .hasMessageStartingWith(ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
+        .hasFieldOrPropertyWithValue(
+            "code", SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.name());
   }
 }

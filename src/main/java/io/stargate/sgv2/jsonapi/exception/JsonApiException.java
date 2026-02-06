@@ -28,27 +28,6 @@ public class JsonApiException extends RuntimeException {
 
   private final ErrorScope errorScope;
 
-  // some error codes should be classified as "SERVER" family but do not have any pattern
-  private static final Set<ErrorCodeV1> serverFamily =
-      new HashSet<>() {
-        {
-          add(VECTOR_SEARCH_NOT_SUPPORTED);
-          add(VECTORIZE_FEATURE_NOT_AVAILABLE);
-          add(VECTORIZE_CREDENTIAL_INVALID);
-        }
-      };
-
-  // map of error codes to error scope
-  private static final Map<Set<ErrorCodeV1>, ErrorScope> errorCodeScopeMap =
-      Map.of(
-          new HashSet<>() {
-            {
-              add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
-              add(VECTOR_SEARCH_TOO_BIG_VALUE);
-            }
-          },
-          ErrorScope.SCHEMA);
-
   protected JsonApiException(ErrorCodeV1 errorCode) {
     this(errorCode, errorCode.getMessage(), null);
   }
@@ -98,21 +77,13 @@ public class JsonApiException extends RuntimeException {
   }
 
   public ErrorFamily getErrorFamily() {
-    if (serverFamily.contains(errorCode)
-        || errorCode.name().startsWith("SERVER")
-        || errorCode.name().startsWith("EMBEDDING")) {
+    if (errorCode.name().startsWith("SERVER") || errorCode.name().startsWith("EMBEDDING")) {
       return ErrorFamily.SERVER;
     }
     return ErrorFamily.REQUEST;
   }
 
   public ErrorScope getErrorScope() {
-    for (Map.Entry<Set<ErrorCodeV1>, ErrorScope> entry : errorCodeScopeMap.entrySet()) {
-      if (entry.getKey().contains(errorCode)) {
-        return entry.getValue();
-      }
-    }
-
     // decide the scope based in error code pattern
     if (errorCode.name().contains("SCHEMA")) {
       return ErrorScope.SCHEMA;
