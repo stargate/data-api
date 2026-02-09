@@ -79,7 +79,7 @@ public class RequestContext implements LoggingMDCContext {
     this.rerankingCredentials =
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext)
             .map(s -> new RerankingCredentials(tenant, normalizeOptionalString(s)))
-            .orElseGet(() -> new RerankingCredentials(tenant, ""));
+            .orElseGet(() -> new RerankingCredentials(tenant, authToken));
   }
 
   private static String generateRequestId() {
