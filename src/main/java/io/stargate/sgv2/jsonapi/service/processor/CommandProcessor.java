@@ -126,8 +126,8 @@ public class CommandProcessor {
 
   /**
    * Handles failures that occur during the command processing pipeline. It attempts to convert
-   * known exceptions (APIException, JsonApiException) into a {@link CommandResult} supplier, and
-   * logs other unexpected exceptions.
+   * known exceptions (APIException) into a {@link CommandResult} supplier, and logs other
+   * unexpected exceptions.
    *
    * @param commandContext The command context.
    * @param originalCommand The initial command that was being processed.

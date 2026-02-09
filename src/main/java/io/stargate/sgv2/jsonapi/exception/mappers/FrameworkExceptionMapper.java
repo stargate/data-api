@@ -158,7 +158,7 @@ public class FrameworkExceptionMapper {
   }
 
   /**
-   * Translate a Throwable into an appropriate APIException or JsonApiException.
+   * Translate a Throwable into an appropriate APIException.
    *
    * <p>NOTES: this code is refactored from the old ThrowableToErrorMapper class, it is missing
    * specific handling befor below because I could not see how they triggered(amorton 26 jan 2026):
