@@ -206,7 +206,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
     return requestProperties().atMostRetries();
   }
 
-  /** Maps an HTTP response to a V1 JsonApiException */
+  /** Maps an HTTP response to an APIException */
   @Override
   protected RuntimeException mapHTTPError(Response jakartaResponse, String errorMessage) {
 

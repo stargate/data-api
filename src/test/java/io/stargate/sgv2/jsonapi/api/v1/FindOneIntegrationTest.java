@@ -804,7 +804,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               "{ \"findOne\": { \"filter\" : {\"_id\": {\"$uuid\": \"not-an-uuid\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -817,7 +817,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               "{ \"findOne\": { \"filter\" : {\"_id\": {\"$objectId\": \"bogus\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
           .body(
               "errors[0].message",
               containsString(

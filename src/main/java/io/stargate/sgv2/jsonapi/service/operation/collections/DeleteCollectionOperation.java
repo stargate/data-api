@@ -207,15 +207,15 @@ public record DeleteCollectionOperation(
    * @param query
    * @param doc
    * @return Uni<Tuple2<Boolean, ReadDocument>> where boolean `true` if deleted successfully, else
-   *     `false` if data changed and no longer match the conditions and throws JsonApiException if
-   *     LWT failure. ReadDocument is the document that was deleted.
+   *     `false` if data changed and no longer match the conditions and throws APIException if LWT
+   *     failure. ReadDocument is the document that was deleted.
    */
   private Uni<Tuple2<Boolean, ReadDocument>> deleteDocument(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
       ReadDocument doc)
-      throws JsonApiException {
+      throws APIException {
     return Uni.createFrom()
         .item(doc)
         // Read again if retryAttempt >`0`

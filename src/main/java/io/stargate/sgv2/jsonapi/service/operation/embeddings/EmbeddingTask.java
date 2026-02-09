@@ -143,9 +143,8 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
                       Recordable.copyOf(vectorizeTexts)));
 
       // The EmbeddingProviders use EmbeddingProviderErrorMapper and turn errors from the providers
-      // into Error V1 JsonApiException structure, this will be attached to the task if we let it
-      // bubble
-      // out of here.
+      // into APIException structure, this will be attached to the task if we let it
+      // bubble out of here.
       return supplier
           .get()
           .onItem()
