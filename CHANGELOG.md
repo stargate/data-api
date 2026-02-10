@@ -1,5 +1,18 @@
 # Changelog
 
+## [v1.0.38](https://github.com/stargate/data-api/tree/v1.0.38) (2026-02-10)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.37...v1.0.38)
+
+**Merged pull requests:**
+
+- quick fixes to follow \#2380 [\#2384](https://github.com/stargate/data-api/pull/2384) ([amorton](https://github.com/amorton))
+- Bump aws-actions/configure-aws-credentials from 5 to 6 in the github-actions group [\#2382](https://github.com/stargate/data-api/pull/2382) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Fallback to auth token if a reranking key is not provided [\#2381](https://github.com/stargate/data-api/pull/2381) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix \#2379: remove ErrorCodeV1, JsonApiException types, usage [\#2380](https://github.com/stargate/data-api/pull/2380) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2376](https://github.com/stargate/data-api/pull/2376) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Batch \#18 of \#2285: Vector\(ize\) error code removal -- LAST ErrorCodeV1 entries! [\#2368](https://github.com/stargate/data-api/pull/2368) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.37](https://github.com/stargate/data-api/tree/v1.0.37) (2026-02-05)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.36...v1.0.37)
