@@ -184,6 +184,9 @@ public interface DocumentId extends DocRowIdentifer {
   }
 
   static DocumentId fromExtensionType(JsonExtensionType extType, JsonNode valueNode) {
+    // Unpacking the ejson type will throw errors about bad ejson types,
+    // but we want an error code about a bad document ID, so catch
+    // and translate.
     try {
       Object rawId = JsonUtil.extractExtendedValueUnwrapped(extType, valueNode);
       return new ExtensionTypeId(extType, String.valueOf(rawId));

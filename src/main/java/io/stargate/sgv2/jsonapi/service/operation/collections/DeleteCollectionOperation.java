@@ -214,8 +214,7 @@ public record DeleteCollectionOperation(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
-      ReadDocument doc)
-      throws APIException {
+      ReadDocument doc) {
     return Uni.createFrom()
         .item(doc)
         // Read again if retryAttempt >`0`

@@ -69,7 +69,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
    * @return Locator instance
    * @throws APIException if dotPath invalid (empty path segment(s))
    */
-  public static PathMatchLocator forPath(String dotPath) throws APIException {
+  public static PathMatchLocator forPath(String dotPath) {
     return new PathMatchLocator(dotPath, splitAndVerify(dotPath));
   }
 
@@ -222,7 +222,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     return context;
   }
 
-  private static DocumentPath splitAndVerify(String dotPath) throws APIException {
+  private static DocumentPath splitAndVerify(String dotPath) {
     DocumentPath path;
     try {
       path = DocumentPath.from(dotPath);

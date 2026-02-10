@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
-import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import java.util.Map;
 
@@ -58,8 +57,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       JavaType baseType,
       String subTypeId,
       TypeIdResolver idResolver,
-      String failureMsg)
-      throws APIException {
+      String failureMsg) {
     final String rawCommandClassString = baseType.getRawClass().getName();
     String baseCommand =
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
