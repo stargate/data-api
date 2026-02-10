@@ -36,8 +36,7 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
    * @throws APIException if the response fails the validation
    */
   @Override
-  public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
-      throws APIException {
+  public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
     // If the status is 0, it means something went wrong (maybe a timeout). Directly return and pass
     // the error to the client
     if (responseContext.getStatus() == 0) {
