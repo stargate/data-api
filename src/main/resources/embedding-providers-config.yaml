@@ -280,7 +280,7 @@ stargate:
           url: https://api.cohere.ai/v1/
           supported-authentications:
             NONE:
-              enabled: false
+              enabled: true
             HEADER:
               enabled: true
               tokens:
@@ -298,6 +298,8 @@ stargate:
               vector-dimension: 1024
             - name: embed-english-v2.0
               vector-dimension: 4096
+            - name: embed-multilingual-v3.0
+              vector-dimension: 1024
         nvidia:
           # see https://docs.api.nvidia.com/nim/reference/nvidia-embedding-2b-infer
           display-name: Nvidia
