@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.38-SNAPSHOT</version>
+  <version>1.0.39-SNAPSHOT</version>
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
