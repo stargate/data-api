@@ -23,8 +23,6 @@ public record UpdateCollectionOperationPage(
     String pagingState)
     implements Supplier<CommandResult> {
 
-  private static final String ERROR = "Failed to update documents with _id %s: %s";
-
   @Override
   public CommandResult get() {
     final DocumentId[] upsertedId = new DocumentId[1];

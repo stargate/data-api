@@ -21,7 +21,7 @@ public class ValidateCredentials {
   @ConfigProperty(name = "quarkus.grpc.clients.\"embedding\".port")
   private int port;
 
-  private ManagedChannel channel = null;
+  private ManagedChannel channel;
 
   @Inject RequestContext dataApiRequestInfo;
 

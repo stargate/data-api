@@ -390,14 +390,13 @@ public record FindCollectionOperation(
   }
 
   /**
-   * A operation method which can return FindResponse instead of CommandResult. This method will be
+   * An operation method which can return FindResponse instead of CommandResult. This method will be
    * used by other commands which needs a document to be read.
    *
    * @param queryExecutor
    * @param pageState
-   * @param additionalIdFilter Used if a additional id filter need to be added to already available
+   * @param additionalIdFilter Used if an additional id filter need to be added to already available
    *     filters
-   * @return
    */
   public Uni<FindResponse> getDocuments(
       RequestContext dataApiRequestInfo,
@@ -452,10 +451,8 @@ public record FindCollectionOperation(
   }
 
   /**
-   * A operation method which can return ReadDocument with an empty document, if the filter
-   * condition has _id filter it will return document with this field added
-   *
-   * @return
+   * An operation method which can return ReadDocument with an empty document, if the filter
+   * condition has _id filter it will return document with this field added.
    */
   public ReadDocument getNewDocument() {
 
@@ -468,21 +465,19 @@ public record FindCollectionOperation(
       var currentDbLogicalExpression = stack.pop();
 
       for (DBFilterBase filter : dbLogicalExpression.filters()) {
-        // every filter must be a collection filter, because we are making a new document and we
-        // only do this for docs
-        if (filter instanceof IDCollectionFilter) {
-          IDCollectionFilter idFilter = (IDCollectionFilter) filter;
+        // every filter must be a collection filter, because we are making a new document,
+        // and we only do this for docs
+        if (filter instanceof IDCollectionFilter idFilter) {
           documentId = idFilter.getSingularDocumentId();
           idFilter
               .updateForNewDocument(objectMapper().getNodeFactory())
               .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-        } else if (filter instanceof CollectionFilter) {
-          CollectionFilter collectionFilter = (CollectionFilter) filter;
+        } else if (filter instanceof CollectionFilter collectionFilter) {
           collectionFilter
               .updateForNewDocument(objectMapper().getNodeFactory())
               .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
         } else {
-          ServerException.internalServerError(
+          throw ServerException.internalServerError(
               "Unsupported filter type in getNewDocument: %s"
                   .formatted(filter.getClass().getName()));
         }
@@ -496,7 +491,6 @@ public record FindCollectionOperation(
   /**
    * Builds select query based on filters and additionalIdFilter overrides.
    *
-   * @param additionalIdFilter
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
@@ -621,9 +615,7 @@ public record FindCollectionOperation(
    */
   public record OrderBy(String column, boolean ascending) {
     /**
-     * Returns index column name with field name as entry key like query_text_values['username']
-     *
-     * @return
+     * @return index column name with field name as entry key like query_text_values['username']
      */
     public List<String> getOrderingColumns() {
       return sortIndexColumns.stream()

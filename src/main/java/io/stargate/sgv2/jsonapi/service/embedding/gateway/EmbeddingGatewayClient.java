@@ -16,9 +16,6 @@ import java.util.*;
 
 /** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient extends EmbeddingProvider {
-
-  private static final String DEFAULT_TENANT_ID = "default";
-
   /** Map to the value of `x-embedding-api-key` in the header */
   private static final String EMBEDDING_API_KEY = "EMBEDDING_API_KEY";
 
@@ -31,15 +28,12 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   /** Map to the value of `Token` in the header */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
-  private ServiceConfigStore.ServiceRequestProperties requestProperties;
+  private final Tenant tenant;
+  private final String authToken;
+  private final EmbeddingService grpcGatewayClient;
+  private final Map<String, String> authentication;
+  private final String commandName;
 
-  private Tenant tenant;
-  private String authToken;
-  private EmbeddingService grpcGatewayClient;
-  Map<String, String> authentication;
-  private String commandName;
-
-  /** */
   public EmbeddingGatewayClient(
       ModelProvider modelProvider,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
@@ -162,7 +156,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setProviderContext(contextBuilder.build())
             .build();
 
-    // aaron 17 June 2025 - unsure why this error handled was not in the uni pipleine below
+    // aaron 17 June 2025 - unsure why this error handled was not in the uni pipeline below
     // kept it as is when refactoring
     Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
     try {

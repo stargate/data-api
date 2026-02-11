@@ -47,7 +47,7 @@ public class VectorizeConfigValidator {
    * @param userConfig The user input vectorize service configuration.
    * @param userVectorDimension The dimension specified by the user, may be null.
    * @return The dimension to be used for the vector, should be from the internal configuration. It
-   *     will be used for auto populate the vector dimension
+   *     will be used for autopopulating the vector dimension
    * @throws APIException If the service configuration is invalid or unsupported.
    */
   public Integer validateService(VectorizeConfig userConfig, Integer userVectorDimension) {

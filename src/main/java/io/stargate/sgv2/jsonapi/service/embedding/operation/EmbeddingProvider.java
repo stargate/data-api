@@ -18,9 +18,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** A provider for Embedding models , using {@link ModelType#EMBEDDING} */
+/** A provider for Embedding models, using {@link ModelType#EMBEDDING} */
 public abstract class EmbeddingProvider extends ProviderBase {
-
   protected static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingProvider.class);
 
   // IMPORTANT: all of these config objects have some form of a request properties config,
@@ -79,7 +78,6 @@ public abstract class EmbeddingProvider extends ProviderBase {
    * @param texts List of texts to be vectorized
    * @param embeddingCredentials embeddingCredentials required for the provider
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
-   * @return VectorResponse
    */
   public abstract Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
@@ -87,11 +85,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType);
 
-  /**
-   * returns the maximum batch size supported by the provider
-   *
-   * @return
-   */
+  /** returns the maximum batch size supported by the provider */
   public int maxBatchSize() {
     return requestProperties().maxBatchSize();
   }

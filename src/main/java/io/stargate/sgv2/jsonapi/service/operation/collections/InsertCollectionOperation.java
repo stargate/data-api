@@ -41,49 +41,12 @@ public record InsertCollectionOperation(
     this(commandContext, insertions, false, false, false);
   }
 
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext,
-  //      List<WritableShreddedDocument> documents,
-  //      boolean ordered,
-  //      boolean offlineMode,
-  //      boolean returnDocumentResponses) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        CollectionInsertAttempt.from(documents),
-  //        ordered,
-  //        offlineMode,
-  //        returnDocumentResponses);
-  //  }
-  //
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext,
-  //      List<WritableShreddedDocument> documents,
-  //      boolean ordered,
-  //      boolean returnDocumentResponses) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        CollectionInsertAttempt.from(documents),
-  //        ordered,
-  //        false,
-  //        returnDocumentResponses);
-  //  }
-  //
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext, WritableShreddedDocument document) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
-  //        false,
-  //        false,
-  //        false);
-  //  }
-
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
-    if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
+    if (!vectorEnabled && insertions.stream().anyMatch(CollectionInsertAttempt::hasVectorValues)) {
       throw SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.get(
           errVars(commandContext().schemaObject()));
     }
@@ -133,7 +96,7 @@ public record InsertCollectionOperation(
         // if no failures reduce to the op page
         .collect()
         .in(
-            () -> new InsertOperationPage(insertions, returnDocumentResponses()),
+            () -> new InsertOperationPage<>(insertions, returnDocumentResponses()),
             (insertPage, insertAttempt) -> {
               insertPage.registerCompletedAttempt(insertAttempt);
               insertAttempt
@@ -147,12 +110,7 @@ public record InsertCollectionOperation(
         // in case upstream propagated FailFastInsertException
         // return collected result
         .onFailure(FailFastInsertException.class)
-        .recoverWithItem(
-            e -> {
-              // safe to cast, asserted class in onFailure
-              FailFastInsertException failFastInsertException = (FailFastInsertException) e;
-              return failFastInsertException.result;
-            })
+        .recoverWithItem(e -> e.result)
 
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
@@ -186,10 +144,8 @@ public record InsertCollectionOperation(
         // then reduce here
         .collect()
         .in(
-            () -> new InsertOperationPage(insertions, returnDocumentResponses()),
-            (agg, in) -> {
-              agg.registerCompletedAttempt(in);
-            })
+            () -> new InsertOperationPage<>(insertions, returnDocumentResponses()),
+            InsertOperationPage::registerCompletedAttempt)
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
   }
