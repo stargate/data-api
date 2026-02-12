@@ -483,12 +483,12 @@ public class DocumentUpdaterTest {
               (ObjectNode)
                   objectMapper.readTree(
                       """
-                                                                        {
-                                                                          "_id": "2",
-                                                                          "location": "New York",
-                                                                          "new_data" : 40
-                                                                       }
-                                                                    """));
+                                {
+                                  "_id": "2",
+                                  "location": "New York",
+                                  "new_data" : 40
+                               }
+                            """));
       Throwable t =
           catchThrowable(
               () -> {
@@ -501,7 +501,7 @@ public class DocumentUpdaterTest {
           .hasFieldOrPropertyWithValue(
               "code", DocumentException.Code.DOCUMENT_REPLACE_DIFFERENT_DOCID.name())
           .hasMessageStartingWith(
-              "The replace document and document resolved using filter have different '_id's: \"2\" (replace document) vs. \"1\" (document");
+              "The replace document and document resolved using filter have different '_id's: StringId('2') (replace document) vs. StringId('1') (document that filter matches).");
     }
 
     @Test
