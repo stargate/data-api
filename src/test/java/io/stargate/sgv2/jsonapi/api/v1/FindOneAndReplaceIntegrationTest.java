@@ -256,6 +256,54 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body("data.documents[0]", jsonEquals(expected));
     }
 
+    /** document does not exist, we upsert a new one, it has a numeric ID See GH issue #2378 */
+    @Test
+    public void withUpsertNewIdNumeric() {
+
+      insertDoc(
+          """
+          {
+            "_id": 1,
+            "hello": "world"
+          }""");
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+              "findOneAndReplace": {
+                "filter": {
+                  "_id": 3
+                },
+                "replacement": {
+                  "_id": 3,
+                  "hallo": "welt"
+                },
+                "options": {
+                  "upsert": true,
+                  "returnDocument": "after"
+                }
+              }
+            }
+          """)
+          .body("$", responseIsFindAndSuccess())
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("status.upsertedId", is(3))
+          .body("data.document._id", is(3));
+
+      // assert state after update
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+              "find": {
+                "filter" : {"hallo": "welt"}
+              }
+            }
+            """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]._id", is(3));
+    }
+
     @Test
     public void withUpsertNewId() {
       final String newId = "new-id-1234";
@@ -356,7 +404,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body(
               "errors[0].message",
               startsWith(
-                  "The replace document and document resolved using filter have different '_id's: \"doc4\" (replace document) vs. \"doc3\" (document"));
+                  "The replace document and document resolved using filter have different '_id's: StringId('doc4') (replace document) vs. StringId('doc3') (document that filter matches)."));
     }
 
     @Test
