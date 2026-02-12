@@ -67,11 +67,10 @@ public class ExpressionBuilder {
     }
     return inSplit.stream()
         .map(
-            idCondition -> {
-              return (expressionWithoutId == null)
-                  ? Variable.of(idCondition)
-                  : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId);
-            })
+            idCondition ->
+                (expressionWithoutId == null)
+                    ? Variable.of(idCondition)
+                    : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId))
         .collect(Collectors.toList());
   }
 

@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -444,7 +443,7 @@ public record FindCollectionOperation(
       default -> {
         return Uni.createFrom()
             .failure(
-                ServerException.internalServerError(
+                new IllegalArgumentException(
                     "Unsupported find operation read type `%s`".formatted(readType)));
       }
     }
@@ -477,7 +476,7 @@ public record FindCollectionOperation(
               .updateForNewDocument(objectMapper().getNodeFactory())
               .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
         } else {
-          throw ServerException.internalServerError(
+          throw new IllegalArgumentException(
               "Unsupported filter type in getNewDocument: %s"
                   .formatted(filter.getClass().getName()));
         }
