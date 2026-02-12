@@ -39,7 +39,7 @@ public interface OperationsConfig {
    * Defines the default maximum documents to insert setting for {@code InsertMany} command;
    * defaults to 100
    */
-  public static final int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
+  int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
 
   /**
    * @return Defines the default document page size, defaults to <code>20</code>.
@@ -214,7 +214,6 @@ public interface OperationsConfig {
     List<String> cassandraEndPoints();
 
     /** Cassandra port (when type is {@link DatabaseType#CASSANDRA}) */
-    @Nullable
     @WithDefault("9042")
     int cassandraPort();
 
@@ -271,9 +270,6 @@ public interface OperationsConfig {
     @WithConverter(ConsistencyLevelConverter.class)
     ConsistencyLevel serialConsistency();
 
-    /**
-     * @return Settings for the consistency level.
-     */
     interface ConsistencyConfig {
 
       /**

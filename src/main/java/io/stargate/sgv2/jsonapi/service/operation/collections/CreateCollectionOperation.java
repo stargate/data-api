@@ -327,8 +327,7 @@ public record CreateCollectionOperation(
             res -> {
               if (!res) {
                 // amorton - 13 jan 2026 - this is bad, the old code would swallow the error for
-                // creating the
-                // table and indexes, will need to improve later.
+                // creating the table and indexes, will need to improve later.
 
                 // table creation failure or index creation failure
                 // HACK - remove when re-writing this class
@@ -396,14 +395,7 @@ public record CreateCollectionOperation(
         CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(throwable).build();
   }
 
-  /**
-   * Create indexes for collections in ordered. This is to avoid schema change conflicts.
-   *
-   * @param queryExecutor
-   * @param dataApiRequestInfo
-   * @param indexStatements
-   * @return
-   */
+  /** Create indexes for collections in ordered. This is to avoid schema change conflicts. */
   private Multi<AsyncResultSet> createIndexOrdered(
       QueryExecutor queryExecutor,
       RequestContext dataApiRequestInfo,
@@ -417,14 +409,7 @@ public record CreateCollectionOperation(
         .concatenate();
   }
 
-  /**
-   * Create indexes for collections in parallel. TO speed up the CI actions.
-   *
-   * @param queryExecutor
-   * @param dataApiRequestInfo
-   * @param indexStatements
-   * @return
-   */
+  /** Create indexes for collections in parallel. Only used to speed up the CI actions. */
   private Multi<AsyncResultSet> createIndexParallel(
       QueryExecutor queryExecutor,
       RequestContext dataApiRequestInfo,
@@ -470,11 +455,10 @@ public record CreateCollectionOperation(
             e ->
                 // This is unlikely to happen for delete collection though
                 // Also return with TOO_MANY_INDEXES exception
-                (Supplier<CommandResult>)
-                    () ->
-                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-                            .addThrowable(exception)
-                            .build());
+                () ->
+                    CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                        .addThrowable(exception)
+                        .build());
   }
 
   /**

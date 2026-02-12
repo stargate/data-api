@@ -132,7 +132,8 @@ public class EmbeddingProviderFactory {
 
     if (serviceConfig.modelProvider().equals(ModelProvider.CUSTOM)) {
       // CUSTOM is for test only, but we cannot really check that here
-      // checking this and existing because the rest of the function is validating models etc exist.
+      // checking this and existing because the rest of the function is validating models etc.
+      // exist.
       Optional<Class<?>> clazz = serviceConfig.implementationClass();
       if (clazz.isEmpty()) {
         throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNAVAILABLE.get(

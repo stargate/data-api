@@ -10,8 +10,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Subclass of {@link DefaultDriverExceptionHandler} for working with {@link
@@ -24,10 +22,6 @@ import org.slf4j.LoggerFactory;
  */
 public class CollectionDriverExceptionHandler
     extends DefaultDriverExceptionHandler<CollectionSchemaObject> {
-
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(CollectionDriverExceptionHandler.class);
-
   private static final List<String> CORRUPTED_COLLECTION_MESSAGES =
       List.of(
           "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING",

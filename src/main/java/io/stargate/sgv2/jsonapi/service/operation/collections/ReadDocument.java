@@ -12,10 +12,10 @@ import java.util.function.Supplier;
 /**
  * Represents a document read from the database
  *
- * @param id Document Id identifying the document
+ * @param id Document id identifying the document
  * @param txnId Unique UUID resenting point in time of a document, used for LWT transactions. This
  *     will be missing when the Document was created for an upsert, and there is code in the {@link
- *     ReadAndUpdateCollectionOperation} that uses this as the market. Optuonal is used to allow for
+ *     ReadAndUpdateCollectionOperation} that uses this as the market. Optional is used to allow for
  *     the case where the document is from upsert
  * @param docSupplier JsonNode representation of the document
  * @param sortColumns List<JsonNode> Serialized sort column value
@@ -45,15 +45,6 @@ public record ReadDocument(
     return new ReadDocument(
         Optional.ofNullable(id), Optional.ofNullable(txnId), docSupplier, sortColumns);
   }
-
-  //  public ReadDocument replaceDocSupplier(Supplier<JsonNode> docSupplier) {
-  //    // TODO: the old code would let this happen
-  //    return new ReadDocument(id, txnId, docSupplier, sortColumns);
-  //  }
-  //
-  //  public ReadDocument replaceDocSupplier(JsonNode doc) {
-  //    return replaceDocSupplier(() -> doc);
-  //  }
 
   @Override
   public JsonNode get() {
