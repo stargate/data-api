@@ -4,7 +4,7 @@ import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
@@ -183,13 +183,18 @@ public record WritableShreddedDocument(
               }
               break;
           }
-          throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-              "invalid value (%s) for extended JSON type '%s' (path '%s')",
-              obj.iterator().next(), obj.fieldNames().next(), path);
+          throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "invalid value (%s) for extended JSON type '%s' (path '%s')"
+                      .formatted(obj.iterator().next(), obj.fieldNames().next(), path)));
         }
         // Otherwise it's either unsupported of malformed EJSON-encoded value; fail
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "unrecognized extended JSON type '%s' (path '%s')", obj.fieldNames().next(), path);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "unrecognized extended JSON type '%s' (path '%s')"
+                    .formatted(obj.fieldNames().next(), path)));
       }
 
       addKey(path);
@@ -300,7 +305,10 @@ public record WritableShreddedDocument(
       for (int i = 0; i < vector.size(); i++) {
         JsonNode element = vector.get(i);
         if (!element.isNumber()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+          throw DocumentException.Code.SHRED_BAD_VECTOR_VALUE.get(
+              Map.of(
+                  "nodeType", JsonUtil.nodeTypeAsString(element),
+                  "nodeValue", element.toString()));
         }
         arrayVals[i] = element.floatValue();
       }
@@ -315,7 +323,8 @@ public record WritableShreddedDocument(
       try {
         queryVectorValues = CqlVectorUtil.bytesToFloats(binaryVector);
       } catch (IllegalArgumentException e) {
-        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(e.getMessage());
+        throw DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.get(
+            Map.of("errorMessage", e.getMessage()));
       }
     }
 

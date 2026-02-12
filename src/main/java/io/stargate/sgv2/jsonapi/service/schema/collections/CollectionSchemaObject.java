@@ -16,7 +16,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
@@ -325,8 +326,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         commentConfigNode = objectMapper.readTree(comment);
       } catch (JacksonException e) {
         // This should never happen, already check if vectorize is a valid JSON
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            e, "Invalid JSON in Table comment for Collection, problem: %s", e.getMessage());
+        throw ServerException.internalServerError(
+            "Invalid JSON in Table comment for Collection, problem: " + e.getMessage());
       }
       // new table comment design from schema_version v1, with collection as top-level key
       JsonNode collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);
@@ -334,15 +335,22 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         final JsonNode schemaVersionNode =
             collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY);
         if (schemaVersionNode == null) {
-          throw ErrorCodeV1.INVALID_SCHEMA_VERSION.toApiException();
+          throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
+              Map.of("collectionName", collectionName, "schemaVersion", "<null>"));
         }
-        switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
+        int schemaVersion = collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt();
+        switch (schemaVersion) {
           case 1:
             return new CollectionSettingsV1Reader()
                 .readCollectionSettings(
                     collectionNode, keyspaceName, collectionName, tableMetadata, objectMapper);
           default:
-            throw ErrorCodeV1.INVALID_SCHEMA_VERSION.toApiException();
+            throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
+                Map.of(
+                    "collectionName",
+                    collectionName,
+                    "schemaVersion",
+                    String.valueOf(schemaVersion)));
         }
       } else {
         // backward compatibility for old indexing table comment

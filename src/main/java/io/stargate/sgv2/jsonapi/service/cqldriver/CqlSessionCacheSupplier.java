@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
@@ -15,8 +16,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 /**
  * Factory for creating a singleton {@link CQLSessionCache} instance that is configured via CDI.
  *
- * <p>We use this factory so the cache itself is not a CDI bean. For one so it does not have all
- * that extra overhead, and because there construction is a bit more complicated.
+ * <p>We use this factory so the cache itself is not a CDI bean. So it does not have all that extra
+ * overhead, and because there construction is a bit more complicated.
  */
 @ApplicationScoped
 public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
@@ -48,7 +49,6 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
     var sessionFactory =
         new CqlSessionFactory(
             applicationName,
-            dbConfig.type(),
             dbConfig.localDatacenter(),
             dbConfig.cassandraEndPoints(),
             dbConfig.cassandraPort(),
@@ -58,7 +58,7 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
         new CQLSessionCache(
             dbConfig.sessionCacheMaxSize(),
             Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
-            operationsConfig.slaUserAgent().orElse(null),
+            operationsConfig.slaUserAgent().map(UserAgent::new).orElse(null),
             Duration.ofSeconds(dbConfig.slaSessionCacheTtlSeconds()),
             credentialsFactory,
             sessionFactory,

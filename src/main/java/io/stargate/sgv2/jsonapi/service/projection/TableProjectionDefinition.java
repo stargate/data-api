@@ -1,7 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.projection;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,12 +46,12 @@ public class TableProjectionDefinition {
       return INCLUDE_ALL_PROJECTOR;
     }
     if (!projectionDefinition.isObject()) {
-      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
-          "must be OBJECT, was %s", projectionDefinition.getNodeType());
+      throw ProjectionException.Code.UNSUPPORTED_PROJECTION_DEFINITION.get(
+          Map.of("$projectionValueType", JsonUtil.nodeTypeAsString(projectionDefinition)));
     }
     // Special cases: "star-include/exclude"
     if (projectionDefinition.size() == 1) {
-      Map.Entry<String, JsonNode> entry = projectionDefinition.fields().next();
+      Map.Entry<String, JsonNode> entry = projectionDefinition.properties().iterator().next();
       if ("*".equals(entry.getKey())) {
         boolean includeAll = extractIncludeOrExclude(entry.getKey(), entry.getValue());
         if (includeAll) {
@@ -66,20 +67,18 @@ public class TableProjectionDefinition {
     List<String> columnNames = new ArrayList<>();
     boolean inclusionProjection = false;
 
-    var it = projectionDefinition.fields();
-    while (it.hasNext()) {
-      var entry = it.next();
+    for (var entry : projectionDefinition.properties()) {
       String path = entry.getKey();
 
       if (path.isEmpty()) {
-        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-            "empty paths (and path segments) not allowed");
+        throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+            Map.of("errorMessage", "empty paths (and path segments) not allowed"));
       }
 
       // Special rule for "*": only allowed as single root-level entry;
       if ("*".equals(path)) {
-        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-            "wildcard ('*') only allowed as the only root-level path");
+        throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+            Map.of("errorMessage", "wildcard ('*') only allowed as the only root-level path"));
       }
       JsonNode value = entry.getValue();
       boolean addInclusion = extractIncludeOrExclude(path, value);
@@ -90,11 +89,13 @@ public class TableProjectionDefinition {
         inclusionProjection = addInclusion;
       } else if (inclusionProjection != addInclusion) {
         if (addInclusion) {
-          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-              "cannot include '%s' on exclusion projection", path);
+          throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+              Map.of(
+                  "errorMessage", "cannot include '%s' on exclusion projection".formatted(path)));
         } else {
-          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-              "cannot exclude '%s' on inclusion projection", path);
+          throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+              Map.of(
+                  "errorMessage", "cannot exclude '%s' on inclusion projection".formatted(path)));
         }
       }
       columnNames.add(path);
@@ -150,12 +151,18 @@ public class TableProjectionDefinition {
       return value.booleanValue();
     }
     if (value.isObject()) {
-      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-          "path ('%s') value cannot be OBJECT: nesting not supported for Tables", path);
+      throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+          Map.of(
+              "errorMessage",
+              "path ('%s') value cannot be Object: nesting not supported for Tables"
+                  .formatted(path)));
     }
 
     // Unknown JSON node type; error
-    throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-        "path ('%s') value must be NUMBER or BOOLEAN, was %s", path, value.getNodeType());
+    throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+        Map.of(
+            "errorMessage",
+            "path ('%s') value must be Number or Boolean, was %s"
+                .formatted(path, JsonUtil.nodeTypeAsString(value))));
   }
 }

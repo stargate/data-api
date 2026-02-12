@@ -1,12 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.builder.JsonTerm;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
+import java.util.Map;
 import java.util.Objects;
 
 /** Filter for the map columns we have in the super shredding table. */
@@ -128,8 +129,8 @@ public abstract class MapCollectionFilter<T> extends CollectionFilter {
             BuiltConditionPredicate.LTE,
             new JsonTerm(key, value));
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-            "Map operation '%s' on column '%s'", operator, columnName);
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "map operator '%s' on column '%s'".formatted(operator, columnName)));
     }
   }
 }

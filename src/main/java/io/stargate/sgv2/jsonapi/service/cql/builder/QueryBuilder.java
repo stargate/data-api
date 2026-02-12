@@ -3,13 +3,15 @@ package io.stargate.sgv2.jsonapi.service.cql.builder;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
 import com.datastax.oss.driver.api.core.data.CqlVector;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -84,7 +86,7 @@ public class QueryBuilder {
 
   public QueryBuilder as(String alias) {
     if (functionCalls.isEmpty()) {
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+      throw ServerException.internalServerError(
           "as() method cannot be called without a preceding function call");
     }
     // the alias is set for the last function call
@@ -118,7 +120,7 @@ public class QueryBuilder {
     if (isSelect) {
       return selectQuery();
     }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+    throw ServerException.internalServerError(
         "Unsupported cql query type in QueryBuilder (isSelect=false)");
   }
 
@@ -142,7 +144,7 @@ public class QueryBuilder {
 
     if (orderByAnn != null) {
       if (vectorValue == null) {
-        throw ErrorCodeV1.MISSING_VECTOR_VALUE.toApiException();
+        throw ServerException.internalServerError("Missing the vector value when building cql");
       }
       builder.append(" ORDER BY ").append(orderByAnn).append(" ANN OF ?");
       values.add(vectorValue);
@@ -236,8 +238,8 @@ public class QueryBuilder {
         sb.append(condition.predicate.getCql()).append("?");
       }
       default ->
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Unsupported expression type %s", outerExpression.getExprType());
+          throw ServerException.internalServerError(
+              "Unsupported expression type " + outerExpression.getExprType());
     }
   }
 
@@ -271,7 +273,7 @@ public class QueryBuilder {
           .append(cqlName(functionCall.getColumnName()));
       if (functionCall.isSimilarityFunction) {
         if (vectorValue == null) {
-          throw ErrorCodeV1.MISSING_VECTOR_VALUE.toApiException();
+          throw ServerException.internalServerError("Missing the vector value when building cql");
         }
         builder.append(", ").append('?');
         values.add(vectorValue);
@@ -295,9 +297,10 @@ public class QueryBuilder {
       case DOT_PRODUCT ->
           functionCalls.add(
               FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_DOT_PRODUCT"));
+        // can this ever occur?
       default ->
-          throw ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
-              "%s", similarityFunction);
+          throw SchemaException.Code.VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME.get(
+              Map.of("function", similarityFunction.name()));
     }
     return this;
   }

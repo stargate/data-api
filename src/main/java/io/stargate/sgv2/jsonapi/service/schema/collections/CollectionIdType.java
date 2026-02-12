@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 
 /** Collection Id Type enum, UNDEFINED represents unwrapped id */
 public enum CollectionIdType {
@@ -20,7 +20,9 @@ public enum CollectionIdType {
       case "uuidv6" -> UUID_V6;
       case "uuidv7" -> UUID_V7;
       case "" -> UNDEFINED;
-      default -> throw ErrorCodeV1.INVALID_ID_TYPE.toApiException(idType);
+      default ->
+          throw ServerException.internalServerError(
+              "Invalid Collection _id type: '%s'".formatted(idType));
     };
   }
 

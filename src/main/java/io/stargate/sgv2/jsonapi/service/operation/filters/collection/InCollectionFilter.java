@@ -5,7 +5,8 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
@@ -69,8 +70,7 @@ public class InCollectionFilter extends CollectionFilter {
 
   @Override
   public BuiltCondition get() {
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "For IN filter we always use getALL() method");
+    throw ServerException.internalServerError("For IN filter we always use getALL() method");
   }
 
   public List<BuiltCondition> getAll() {
@@ -160,16 +160,16 @@ public class InCollectionFilter extends CollectionFilter {
                         new JsonTerm(DOC_ID, strId));
                 conditions.add(condition);
               } else {
-                throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
-                    "Unsupported _id $nin operand value: %s", docIdValue);
+                throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
+                    Map.of("message", "Unsupported '$nin' operand value: " + docIdValue));
               }
             }
           }
           return conditions;
         }
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-            "Unsupported %s column operation %s", getPath(), operator);
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "'%s' column operator '%s'".formatted(getPath(), operator)));
     }
   }
 }

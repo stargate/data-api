@@ -1,0 +1,89 @@
+package io.stargate.sgv2.jsonapi.service.operation.collections;
+
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import java.util.List;
+
+/**
+ * Subclass of {@link DefaultDriverExceptionHandler} for working with {@link
+ * io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject}.
+ *
+ * <p>The class may be used directly when working with a Collection and there are no specific
+ * exception handling for the command, or it may be subclassed by exception handlers for a command
+ * that have specific exception handling such as for {@link CreateIndexExceptionHandler} (for a
+ * table)
+ */
+public class CollectionDriverExceptionHandler
+    extends DefaultDriverExceptionHandler<CollectionSchemaObject> {
+  private static final List<String> CORRUPTED_COLLECTION_MESSAGES =
+      List.of(
+          "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING",
+          "ANN ordering by vector requires the column to be indexed");
+
+  public CollectionDriverExceptionHandler(
+      CollectionSchemaObject schemaObject, SimpleStatement statement) {
+    super(schemaObject, statement);
+  }
+
+  // ========================================================================
+  // QueryValidationException and subclasses
+  // - this is a subclass CoordinatorException but that is abstract
+  // ========================================================================
+
+  @Override
+  public Throwable handle(InvalidQueryException exception) {
+
+    for (var msg : CORRUPTED_COLLECTION_MESSAGES) {
+      if (exception.getMessage().contains(msg)) {
+        return DatabaseException.Code.CORRUPTED_COLLECTION_SCHEMA.get(
+            errVars(schemaObject, exception));
+      }
+    }
+
+    // [data-api#2068]: Need to convert Lexical-value-too-big failure to something more meaningful
+    // TODO: how to get the actual size ? https://github.com/stargate/data-api/issues/2068
+    if (exception
+        .getMessage()
+        .contains(
+            "analyzed size for column query_lexical_value exceeds the cumulative limit for index")) {
+      return DocumentException.Code.LEXICAL_CONTENT_TOO_LONG.get(errVars(schemaObject, exception));
+    }
+
+    // Diff error messages for using Bind Markers (we use in API) or Literals. Bind markers first
+    // below.
+    // From CqlVectorTest.invalidNumberOfDimensionsVariableWidth() in DS Cassandra
+    // When too few elements in vector
+    //  "Not enough bytes to read a vector<float, 2>"
+    //  "Invalid vector literal for value of type vector<float, 2>; expected 2 elements, but given
+    // 1"
+    // When too many elements in vector
+    //  "Unexpected 2 extraneous bytes after vector<float, 2> value"
+    //  "Invalid vector literal for value of type vector<float, 2>; expected 2 elements, but given
+    // 3"
+    // Only common text is "vector<float,"
+    if (exception.getMessage().contains("vector<float,")) {
+
+      var configVectorLength =
+          schemaObject
+              .vectorConfig()
+              .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+              .map(c -> String.valueOf(c.vectorSize()));
+
+      return DocumentException.Code.INVALID_VECTOR_LENGTH.get(
+          errVars(
+              schemaObject,
+              exception,
+              map -> {
+                map.put("configVectorLength", configVectorLength.orElse("unknown"));
+              }));
+    }
+    return super.handle(exception);
+  }
+}

@@ -27,7 +27,7 @@ class CreateKeyspaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateNamespaceCommandResolver resolver;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<DatabaseSchemaObject> commandContext;
 
@@ -283,7 +283,7 @@ class CreateKeyspaceCommandResolverTest {
 
     @Test
     public void createKeyspaceWithNameTooLong() throws Exception {
-      String name = RandomStringUtils.randomAlphabetic(49);
+      String name = RandomStringUtils.insecure().nextAlphabetic(49);
       String json =
               """
             {

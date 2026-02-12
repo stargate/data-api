@@ -6,8 +6,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Utf8;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
+import org.apache.commons.text.WordUtils;
 import org.bson.types.ObjectId;
 
 public class JsonUtil {
@@ -32,9 +34,14 @@ public class JsonUtil {
     if (node == null) {
       return "<null>";
     }
-    String typeDesc = node.getNodeType().toString();
-    // We know all are longer than 1 character, upper case, so:
-    return typeDesc.substring(0, 1) + typeDesc.substring(1).toLowerCase();
+    return nodeTypeAsString(node.getNodeType());
+  }
+
+  public static String nodeTypeAsString(JsonNodeType nodeType) {
+    if (nodeType == null) {
+      return "<null>";
+    }
+    return WordUtils.capitalizeFully(nodeType.toString());
   }
 
   /**
@@ -69,8 +76,8 @@ public class JsonUtil {
         }
         ObjectNode ob1 = (ObjectNode) node1;
         ObjectNode ob2 = (ObjectNode) node2;
-        Iterator<Map.Entry<String, JsonNode>> it1 = ob1.fields();
-        Iterator<Map.Entry<String, JsonNode>> it2 = ob2.fields();
+        Iterator<Map.Entry<String, JsonNode>> it1 = ob1.properties().iterator();
+        Iterator<Map.Entry<String, JsonNode>> it2 = ob2.properties().iterator();
 
         while (it1.hasNext()) {
           Map.Entry<String, JsonNode> entry1 = it1.next();
@@ -109,9 +116,9 @@ public class JsonUtil {
    *
    * @param json JSON value to check
    * @return Date extracted, if given valid EJSON-encoded Date value; or {@code null} if not
-   *     EJSON-like; or {@link JsonApiException} for malformed EJSON value
-   * @throws JsonApiException If value indicates it would be EJSON-encoded date (by key) but has
-   *     invalid value part (not number)
+   *     EJSON-like
+   * @throws APIException If value indicates it would be EJSON-encoded date (by key) but has invalid
+   *     value part (not number)
    */
   public static Date extractEJsonDate(JsonNode json, Object path) {
     if (json.isObject() && json.size() == 1) {
@@ -121,9 +128,11 @@ public class JsonUtil {
           return new Date(value.longValue());
         }
         // Otherwise we have an error case
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "Date (%s) needs to have NUMBER value, has %s (path '%s')",
-            EJSON_VALUE_KEY_DATE, value.getNodeType(), path);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "Date (%s) needs to have Number value, had %s (path '%s')"
+                    .formatted(EJSON_VALUE_KEY_DATE, JsonUtil.nodeTypeAsString(value), path)));
       }
     }
     return null;
@@ -259,21 +268,26 @@ public class JsonUtil {
   private static void failOnInvalidExtendedValue(JsonExtensionType etype, JsonNode value) {
     switch (etype) {
       case EJSON_DATE:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be an epoch timestamp, instead got (%s)",
-            etype.encodedName(), value);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "'%s' value has to be an epoch timestamp, instead got (%s)"
+                    .formatted(etype.encodedName(), value)));
       case OBJECT_ID:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
-            etype.encodedName(), value);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)"
+                    .formatted(etype.encodedName(), value)));
       case UUID:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be 36-character UUID String, instead got (%s)",
-            etype.encodedName(), value);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "'%s' value has to be 36-character UUID String, instead got (%s)"
+                    .formatted(etype.encodedName(), value)));
     }
     // should never happen
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unrecognized JsonExtensionType: %s", etype);
+    throw ServerException.internalServerError("Unrecognized JsonExtensionType: " + etype);
   }
 
   /**
@@ -307,13 +321,16 @@ public class JsonUtil {
 
     float[] arrayVals = new float[arrayNode.size()];
     if (arrayNode.isEmpty()) {
-      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+      throw DocumentException.Code.SHRED_BAD_VECTOR_SIZE.get();
     }
 
     for (int i = 0; i < arrayNode.size(); i++) {
       JsonNode element = arrayNode.get(i);
       if (!element.isNumber()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+        throw DocumentException.Code.SHRED_BAD_VECTOR_VALUE.get(
+            Map.of(
+                "nodeType", nodeTypeAsString(element),
+                "nodeValue", element.toString()));
       }
       arrayVals[i] = element.floatValue();
     }

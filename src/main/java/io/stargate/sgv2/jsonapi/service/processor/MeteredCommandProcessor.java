@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
-import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.ERROR_CODE;
-import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.EXCEPTION_CLASS;
 import static io.stargate.sgv2.jsonapi.config.constants.LoggingConstants.*;
 
 import com.fasterxml.jackson.core.JacksonException;
@@ -15,10 +13,14 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.util.ClassUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,13 +54,6 @@ public class MeteredCommandProcessor {
   private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
   private final CommandLevelLoggingConfig commandLevelLoggingConfig;
 
-  // Pre-computed common tags for efficiency
-  private final Tag errorTrue;
-  private final Tag errorFalse;
-  private final Tag tenantUnknown;
-  private final Tag defaultErrorCode;
-  private final Tag defaultErrorClass;
-
   @Inject
   public MeteredCommandProcessor(
       CommandProcessor commandProcessor,
@@ -71,13 +66,6 @@ public class MeteredCommandProcessor {
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     this.tenantConfig = metricsConfig.tenantRequestCounter();
     this.commandLevelLoggingConfig = commandLevelLoggingConfig;
-
-    // Pre-compute common tags for efficiency
-    errorTrue = Tag.of(tenantConfig.errorTag(), "true");
-    errorFalse = Tag.of(tenantConfig.errorTag(), "false");
-    tenantUnknown = Tag.of(tenantConfig.tenantTag(), UNKNOWN_VALUE);
-    defaultErrorCode = Tag.of(jsonApiMetricsConfig.errorCode(), NA);
-    defaultErrorClass = Tag.of(jsonApiMetricsConfig.errorClass(), NA);
   }
 
   /**
@@ -98,7 +86,7 @@ public class MeteredCommandProcessor {
     // Set up logging context (MDC)
     // use MDC to populate logs as needed(namespace,collection,tenantId)
     commandContext.schemaObject().name().addToMDC();
-    MDC.put("tenantId", commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE));
+    MDC.put("tenantId", commandContext.requestContext().tenant().toString());
 
     // --- Defer Command Processing (from PR2076) ---
     // We wrap the call to `commandProcessor.processCommand` in `Uni.createFrom().deferred()`
@@ -169,7 +157,7 @@ public class MeteredCommandProcessor {
     CommandLog commandLog =
         new CommandLog(
             command.getClass().getSimpleName(),
-            commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE),
+            commandContext.requestContext().tenant(),
             commandContext.schemaObject().name().keyspace(),
             commandContext.schemaObject().name().table(),
             commandContext.schemaObject().type().name(),
@@ -238,8 +226,7 @@ public class MeteredCommandProcessor {
     Set<String> allowedTenants =
         commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
     if (!allowedTenants.contains(ALL_TENANTS)
-        && !allowedTenants.contains(
-            commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE))) {
+        && !allowedTenants.contains(commandContext.requestContext().tenant().toString())) {
       // Logging disabled for this tenant
       return false;
     }
@@ -268,50 +255,42 @@ public class MeteredCommandProcessor {
    */
   private <T extends SchemaObject> Tags getCustomTags(
       CommandContext<T> commandContext, Command command, CommandResult result) {
-    // --- Basic Tags ---
-    // Identify the command being executed and the tenant associated with the request
-    Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    String tenant = commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE);
-    Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
 
-    // --- Error Tags ---
-    // Determine if the command resulted in an error and capture details
-    Tag errorTag = errorFalse;
-    Tag errorClassTag = defaultErrorClass;
-    Tag errorCodeTag = defaultErrorCode;
+    List<Tag> tags = new ArrayList<>();
+
+    tags.add(Tag.of(jsonApiMetricsConfig.command(), ClassUtils.classSimpleName(command)));
+    tags.add(Tag.of(tenantConfig.tenantTag(), commandContext.requestContext().tenant().toString()));
+
+    // amorton - 12 jan - old code checked if result is null, so keeping, I think this could happen
+    // if an exception is thrown out of the command processor.
     if (result != null && null != result.errors() && !result.errors().isEmpty()) {
-      errorTag = errorTrue;
-      // Extract details from the first error object's metric fields.
-      // TODO: Assumption use the first error is representative for metrics?
-      var metricFields = result.errors().getFirst().fieldsForMetricsTag();
-
-      // Safely extract error class and code, defaulting to UNKNOWN_VALUE
-      String errorClass = (String) metricFields.getOrDefault(EXCEPTION_CLASS, UNKNOWN_VALUE);
-      errorClassTag = Tag.of(jsonApiMetricsConfig.errorClass(), errorClass);
-      String errorCode = (String) metricFields.getOrDefault(ERROR_CODE, UNKNOWN_VALUE);
-      errorCodeTag = Tag.of(jsonApiMetricsConfig.errorCode(), errorCode);
+      // is error
+      tags.add(ExceptionMetrics.TAG_ERROR_TRUE);
+      // let error bubble, there must be a first error
+      tags.addAll(result.errors().stream().findFirst().get().metricTags());
+    } else {
+      tags.add(ExceptionMetrics.TAG_ERROR_FALSE);
+      tags.add(ExceptionMetrics.TAG_ERROR_CODE_NOT_APPLICABLE);
     }
 
     // --- Schema Feature Tags ---
     // Indicate if the collection/table has vector search enabled in its schema
-    Tag vectorEnabled =
+    tags.add(
         Tag.of(
             jsonApiMetricsConfig.vectorEnabled(),
-            Boolean.toString(commandContext.schemaObject().vectorConfig().vectorEnabled()));
+            Boolean.toString(commandContext.schemaObject().vectorConfig().vectorEnabled())));
 
     // --- Sort Type Tag ---
     // Determine the type of sorting used (if any), primarily for FindCommand.
     // NOTE: This logic might need refinement or replacement when CommandFeatures is fully
     // integrated, especially for FindAndRerankCommand.
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
-    Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
+    tags.add(Tag.of(jsonApiMetricsConfig.sortType(), sortType.name()));
 
     // --- Command Feature Usage Tags ---
-    Tags commandFeatureTags = commandContext.commandFeatures().getTags();
+    tags.addAll(commandContext.commandFeatures().getTags().stream().toList());
 
-    // --- Combine All Tags ---
-    return commandFeatureTags.and(
-        commandTag, tenantTag, errorTag, errorClassTag, errorCodeTag, vectorEnabled, sortTypeTag);
+    return Tags.of(tags);
   }
 
   /**

@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -22,16 +22,16 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
   }
 
   public static AddToSetOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
-
     List<Action> updates = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : args.properties()) {
       final String name = validateUpdatePath(UpdateOperator.ADD_TO_SET, entry.getKey());
       // At main level we must have field name (no modifiers)
       if (looksLikeModifier(name)) {
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-            "$addToSet requires field names at main level, found modifier: %s", name);
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+            Map.of(
+                "errorMessage",
+                "$addToSet requires field names at main level, found modifier: %s"
+                    .formatted(name)));
       }
       // But within field value modifiers are allowed: if there's one, all must be modifiers
       JsonNode value = entry.getValue();
@@ -50,9 +50,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
     // We really only support "$each" but traverse in case more added in future
     JsonNode eachArg = null;
 
-    Iterator<Map.Entry<String, JsonNode>> it = actionDef.fields();
-    while (it.hasNext()) {
-      Map.Entry<String, JsonNode> entry = it.next();
+    for (Map.Entry<String, JsonNode> entry : actionDef.properties()) {
       final String modifier = entry.getKey();
       final JsonNode arg = entry.getValue();
 
@@ -60,21 +58,28 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
         case "$each":
           eachArg = arg;
           if (!eachArg.isArray()) {
-            throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-                "$addToSet modifier $each requires ARRAY argument, found: %s",
-                eachArg.getNodeType());
+            throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+                Map.of(
+                    "errorMessage",
+                    "$addToSet modifier $each requires Array argument, found: %s"
+                        .formatted(JsonUtil.nodeTypeAsString(eachArg))));
           }
           break;
 
         default:
-          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
-              "$addToSet only supports $each modifier; trying to use '%s'", modifier);
+          throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.get(
+              Map.of(
+                  "errorMessage",
+                  "$addToSet only supports $each modifier; trying to use '%s'"
+                      .formatted(modifier)));
       }
     }
     // For now should not be possible to occur but once we add other modifiers could:
     if (eachArg == null) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-          "$addToSet modifiers can only be used with $each modifier; none included");
+      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+          Map.of(
+              "errorMessage",
+              "$addToSet modifiers can only be used with $each modifier; none included"));
     }
 
     return new Action(PathMatchLocator.forPath(propName), eachArg, true);
@@ -105,9 +110,11 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
       } else if (node.isArray()) { // Already array? Append
         array = (ArrayNode) node;
       } else { // Something else? fail
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
-            "$addToSet requires target to be ARRAY; value at '%s' of type %s",
-            action.locator().path(), node.getNodeType());
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.get(
+            Map.of(
+                "errorMessage",
+                "$addToSet requires target to be Array; value at '%s' of type %s"
+                    .formatted(action.locator().path(), JsonUtil.nodeTypeAsString(node))));
       }
 
       final JsonNode toAdd = action.value;

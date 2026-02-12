@@ -10,12 +10,12 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -43,8 +43,11 @@ public class DataVectorizerTest {
   private final TestEmbeddingProvider testEmbeddingProvider =
       TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER;
   private final EmbeddingProvider testService = testEmbeddingProvider;
+  private static final TestConstants testConstants = new TestConstants();
+
   private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());
+      new EmbeddingCredentials(
+          testConstants.TENANT, Optional.empty(), Optional.empty(), Optional.empty());
 
   private CollectionSchemaObject collectionSettings = null;
 
@@ -131,11 +134,11 @@ public class DataVectorizerTest {
                 .awaitFailure()
                 .getFailure();
         assertThat(failure)
-            .isInstanceOf(JsonApiException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE)
+            .isInstanceOf(DocumentException.class)
             .hasFieldOrPropertyWithValue(
-                "message",
-                "$vectorize value needs to be text value: issue in document at position 1");
+                "code", DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name())
+            .hasMessageContaining(
+                "Invalid $vectorize value: needs to be String, not Number (issue in document at position 1)");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -184,10 +187,11 @@ public class DataVectorizerTest {
                 .getFailure();
         assertThat(failure)
             .isNotNull()
-            .isInstanceOf(JsonApiException.class)
+            .isInstanceOf(SchemaException.class)
+            .hasFieldOrPropertyWithValue(
+                "code", SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.name())
             .withFailMessage(
-                "$vectorize` and `$vector` can't be used together, issue in document at position 1")
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE);
+                "'$vector' and '$vectorize' cannot be used together: issue in document at position 1");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -210,7 +214,7 @@ public class DataVectorizerTest {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       0,
                       0,
@@ -240,12 +244,10 @@ public class DataVectorizerTest {
               .awaitFailure()
               .getFailure();
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.name())
+          .hasMessageContaining(
+              "Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
     }
 
     @Test
@@ -284,12 +286,10 @@ public class DataVectorizerTest {
               .awaitFailure()
               .getFailure();
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.name())
+          .hasMessageContaining(
+              "Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");
     }
   }
 

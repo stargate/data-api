@@ -858,7 +858,7 @@ None.
 | Response Elements | Description                                                                  |
 | ----------------- |------------------------------------------------------------------------------|
 | `status`          | Status has `collections` field with array of the available collection names. |
-| `errors`          | If the provided keyspace does not exist, return `KEYSPACE_DOES_NOT_EXIST`.   |
+| `errors`          | Present if errors occur.                                                     |
 
 
 ### findOneAndReplace Command

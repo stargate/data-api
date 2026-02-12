@@ -5,15 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
@@ -28,11 +27,11 @@ import org.junit.jupiter.api.Test;
 @WithTestResource(EmbeddingClientTestResource.class)
 public class OpenAiEmbeddingClientTest {
 
-  @Inject EmbeddingProvidersConfig embeddingProvidersConfig;
+  private final TestConstants testConstants = new TestConstants();
 
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(
-          "test-tenant", Optional.of("test"), Optional.empty(), Optional.empty());
+          testConstants.TENANT, Optional.of("test"), Optional.empty(), Optional.empty());
 
   private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
@@ -149,11 +148,11 @@ public class OpenAiEmbeddingClientTest {
               "some data");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
+          .hasFieldOrPropertyWithValue(
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
+              "Provider 'openai' returned a HTTP client error with HTTP 401; error message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -165,11 +164,11 @@ public class OpenAiEmbeddingClientTest {
               "some data");
 
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
+          .hasFieldOrPropertyWithValue(
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name())
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
+              "Provider 'openai' returned a HTTP client error with HTTP 401; error message: {\"object\":\"list\"}");
     }
   }
 }

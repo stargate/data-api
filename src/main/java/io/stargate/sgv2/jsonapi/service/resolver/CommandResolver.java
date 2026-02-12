@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -14,8 +13,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -164,9 +163,9 @@ public interface CommandResolver<C extends Command> {
   default Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "%s Command does not support operating on Keyspaces, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name());
+    throw ServerException.internalServerError(
+        "%s Command does not support operating on Keyspaces, target was %s"
+            .formatted(command.getClass().getSimpleName(), ctx.schemaObject().name()));
   }
 
   /**
@@ -179,9 +178,9 @@ public interface CommandResolver<C extends Command> {
   default Operation<DatabaseSchemaObject> resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "%s Command does not support operating on Databases, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name());
+    throw ServerException.internalServerError(
+        "%s Command does not support operating on Databases, target was %s"
+            .formatted(command.getClass().getSimpleName(), ctx.schemaObject().name()));
   }
 
   /**
@@ -210,7 +209,7 @@ public interface CommandResolver<C extends Command> {
     // that
     // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.tenant().toString());
     Tags tags = Tags.of(commandTag, tenantTag);
 
     getIndexUsageTags(dbLogicalExpression, baseIndexUsage);

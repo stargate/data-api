@@ -88,7 +88,6 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
         new AzureOpenAIEmbeddingRequest(
             texts.toArray(new String[texts.size()]), modelName(), dimension);
 
-    // TODO: V2 error
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
     // NOTE: NO "Bearer " prefix with API key for Azure
     var accessToken = embeddingCredentials.apiKey().get();
@@ -116,7 +115,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       azureResponse.usage().prompt_tokens(),
                       azureResponse.usage().total_tokens(),
@@ -126,11 +125,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
             });
   }
 
-  /**
-   * REST client interface for the Azure Open AI Embedding Service.
-   *
-   * <p>..
-   */
+  /** REST client interface for the Azure Open AI Embedding Service. */
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   @RegisterProvider(ProviderHttpInterceptor.class)
@@ -143,21 +138,13 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
         @HeaderParam("api-key") String accessToken, AzureOpenAIEmbeddingRequest request);
   }
 
-  /**
-   * Request structure of the Azure Open AI REST service.
-   *
-   * <p>..
-   */
+  /** Request structure of the Azure Open AI REST service. */
   public record AzureOpenAIEmbeddingRequest(
       String[] input,
       String model,
       @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
 
-  /**
-   * Response structure of the Azure Open AI REST service.
-   *
-   * <p>..
-   */
+  /** Response structure of the Azure Open AI REST service. */
   @JsonIgnoreProperties(ignoreUnknown = true)
   private record AzureOpenAIEmbeddingResponse(
       String object, Data[] data, String model, Usage usage) {

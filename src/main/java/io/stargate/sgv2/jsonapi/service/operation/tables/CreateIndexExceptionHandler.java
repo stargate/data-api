@@ -23,7 +23,7 @@ public class CreateIndexExceptionHandler extends TableDriverExceptionHandler {
   }
 
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
 
     // AlreadyExistsException is only used for tables and keyspaces, so have to still do a string
     // test :(

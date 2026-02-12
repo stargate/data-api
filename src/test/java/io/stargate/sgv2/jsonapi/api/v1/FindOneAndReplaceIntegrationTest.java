@@ -2,15 +2,11 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
@@ -360,7 +356,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body(
               "errors[0].message",
               startsWith(
-                  "The replace document and document resolved using filter have different _id"));
+                  "The replace document and document resolved using filter have different '_id's: \"doc4\" (replace document) vs. \"doc3\" (document"));
     }
 
     @Test
@@ -613,10 +609,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
       givenHeadersPostJsonThenOk(json)
           .body("errors", hasSize(1))
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
           .body(
               "errors[0].message",
-              startsWith("Document size limitation violated: Number value length"));
+              containsString("Document size limitation violated: Number value length"));
     }
   }
 

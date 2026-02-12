@@ -11,7 +11,6 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -22,26 +21,22 @@ class InsertOneCommandTest {
 
   @Inject Validator validator;
 
-  @Nested
-  class Validation {
-
-    @Test
-    public void noDocument() throws Exception {
-      String json =
-          """
+  @Test
+  public void noDocument() throws Exception {
+    String json =
+        """
           {
             "insertOne": {
             }
           }
           """;
 
-      InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
-      Set<ConstraintViolation<InsertOneCommand>> result = validator.validate(command);
+    InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
+    Set<ConstraintViolation<InsertOneCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("must not be null");
   }
 }

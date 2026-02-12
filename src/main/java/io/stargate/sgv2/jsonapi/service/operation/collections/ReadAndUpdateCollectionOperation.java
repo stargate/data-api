@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Multi;
@@ -7,7 +9,9 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.unchecked.LWTFailureException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -60,7 +64,7 @@ public record ReadAndUpdateCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
-    final AtomicReference pageStateReference = new AtomicReference();
+    final AtomicReference<String> pageStateReference = new AtomicReference<>();
     final AtomicInteger matchedCount = new AtomicInteger(0);
     final AtomicInteger modifiedCount = new AtomicInteger(0);
     Uni<CollectionReadOperation.FindResponse> docsToUpdate =
@@ -73,16 +77,16 @@ public record ReadAndUpdateCollectionOperation(
             findResponse -> {
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
-              if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
+              if (upsert() && docs.isEmpty() && matchedCount.get() == 0) {
                 // TODO: creating the new document here, with the defaults from the filter, makes it
-                // harder because
-                // the new document created here may nto have an _id if there was none in the
-                // filter. A better approach
-                // may be to have the documentUpdater create the upsert document totally in once
-                // place. Currently creating the
-                // upsert document is in multiple places. To do this we would create
-                // UpdateOperations from the filter and
-                // give them to the document updated when it is created.
+                // harder because the new document created here may nto have an _id if there was
+                // none
+                // in the filter. A better approach may be to have the documentUpdater create
+                // the upsert document totally in once place.
+                // Currently creating to upsert document is in multiple places. To do this we would
+                // create
+                // UpdateOperations from the filter and give them to the document updated when it is
+                // created.
                 return Multi.createFrom().item(findCollectionOperation().getNewDocument());
               } else {
                 matchedCount.addAndGet(docs.size());
@@ -93,7 +97,7 @@ public record ReadAndUpdateCollectionOperation(
         .transformToUniAndConcatenate(
             readDocument ->
                 processUpdate(dataApiRequestInfo, readDocument, queryExecutor, modifiedCount)
-                    .onFailure(LWTException.class)
+                    .onFailure(LWTFailureException.class)
                     .recoverWithUni(
                         () -> {
                           // Retry `retryLimit` times in case of LWT failure
@@ -114,7 +118,7 @@ public record ReadAndUpdateCollectionOperation(
                                                     queryExecutor,
                                                     modifiedCount));
                                   })
-                              .onFailure(LWTException.class)
+                              .onFailure(LWTFailureException.class)
                               .retry()
                               // because it's already run twice before this
                               // check.
@@ -122,8 +126,16 @@ public record ReadAndUpdateCollectionOperation(
                               .onFailure()
                               .recoverWithItem(
                                   error -> {
+                                    // AJM - GH #2309 - this means we failed all retries to get the
+                                    // LWT to apply
+                                    // we now need to create the error to return to the user, and we
+                                    // track these
+                                    // per document we are trying to update.
+                                    var dbError =
+                                        DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.get(
+                                            errVars(commandContext().schemaObject()));
                                     return new UpdatedDocument(
-                                        readDocument.id().orElseThrow(), false, null, error);
+                                        readDocument.id().orElseThrow(), false, null, dbError);
                                   });
                         }))
         .collect()
@@ -144,7 +156,7 @@ public record ReadAndUpdateCollectionOperation(
                   modifiedCount.get(),
                   updates,
                   returnDocumentInResponse(),
-                  (String) pageStateReference.get());
+                  pageStateReference.get());
             });
   }
 
@@ -201,7 +213,8 @@ public record ReadAndUpdateCollectionOperation(
                                     vectorizedDocumentUpdaterResponse.document(),
                                     readDocument
                                         .txnId()
-                                        .orElse(null)); // will be empty when this is a upsert'd doc
+                                        .orElse(
+                                            null)); // will be empty when this is an upserted doc
 
                         // Have to do this because shredder adds _id field to the document if it
                         // doesn't exist
@@ -263,7 +276,7 @@ public record ReadAndUpdateCollectionOperation(
               if (result.wasApplied()) {
                 return Uni.createFrom().item(writableShreddedDocument.id());
               } else {
-                throw new LWTException(ErrorCodeV1.CONCURRENCY_FAILURE);
+                throw new LWTFailureException(updateQuery);
               }
             });
   }
@@ -275,7 +288,7 @@ public record ReadAndUpdateCollectionOperation(
 
   // NOTE: This method is used in the test code (to avoid having to copy query Strings verbatim),
   // so it should not be changed to private or non-static
-  protected static String buildUpdateQuery(
+  static String buildUpdateQuery(
       String keyspaceName, String collectionName, boolean vectorEnabled, boolean lexicalEnabled) {
     StringBuilder updateQuery = new StringBuilder(200);
     updateQuery
@@ -341,13 +354,7 @@ IF tx_id = ?
     return SimpleStatement.newInstance(builtQuery, positional.toArray(new Object[0]));
   }
 
-  /**
-   * Utility method to read the document again, in case of lwt error
-   *
-   * @param queryExecutor
-   * @param prevReadDoc
-   * @return
-   */
+  /** Utility method to read the document again, in case of lwt error */
   private Uni<ReadDocument> readDocumentAgain(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
     return findCollectionOperation()
@@ -360,13 +367,17 @@ IF tx_id = ?
         .transform(
             response -> {
               if (!response.docs().isEmpty()) {
-                return response.docs().get(0);
-              } else {
-                // If data changed and doesn't satisfy filter conditions
-                return null;
+                return response.docs().getFirst();
               }
+              // If data changed and doesn't satisfy filter conditions
+              return null;
             });
   }
 
-  record UpdatedDocument(DocumentId id, boolean upserted, JsonNode document, Throwable error) {}
+  /**
+   * Container for the status of updating a document, callers should wrap any throwable that is not
+   * a {@link APIException} into a {@link
+   * io.stargate.sgv2.jsonapi.exception.ServerException.Code#UNEXPECTED_SERVER_ERROR}
+   */
+  record UpdatedDocument(DocumentId id, boolean upserted, JsonNode document, APIException error) {}
 }

@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
@@ -29,9 +29,7 @@ public class ExpressionBuilder {
     // since we have outer implicit and in the filter
     Expression<BuiltCondition> expressionWithoutId =
         buildExpressionRecursive(dbLogicalExpression, additionalIdFilter, idFilters);
-    List<Expression<BuiltCondition>> expressions =
-        buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
-    return expressions;
+    return buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
   }
 
   // buildExpressionWithId only handles IDFilter ($eq, $ne, $in)
@@ -40,21 +38,20 @@ public class ExpressionBuilder {
       Expression<BuiltCondition> expressionWithoutId,
       List<IDCollectionFilter> idFilters) {
     if (idFilters.size() > 1) {
-      throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
+      throw FilterException.Code.FILTER_MULTIPLE_ID_FILTER.get();
     }
     if (idFilters.isEmpty()
         && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter
       if (expressionWithoutId == null) {
         // no valid non_id filters (eg. "name":{"$nin" : []} ) and no id filter
         return Collections.singletonList(null); // should find everything
-      } else {
-        return List.of(expressionWithoutId);
       }
+      return List.of(expressionWithoutId);
     }
 
     // have an idFilter
     IDCollectionFilter idFilter =
-        additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
+        additionalIdFilter != null ? additionalIdFilter : idFilters.getFirst();
 
     // _id: {$in: []} should find nothing in the entire query
     // since _id can not work with $or, entire $and should find nothing
@@ -64,19 +61,16 @@ public class ExpressionBuilder {
 
     // idFilter's operator is IN/EQ/NE, for both, split into n query logic
     List<BuiltCondition> inSplit =
-        idFilters.isEmpty() ? new ArrayList<>() : idFilters.get(0).getAll();
+        idFilters.isEmpty() ? new ArrayList<>() : idFilters.getFirst().getAll();
     if (additionalIdFilter != null) {
       inSplit = additionalIdFilter.getAll(); // override the existed id filter
     }
     return inSplit.stream()
         .map(
-            idCondition -> {
-              Expression<BuiltCondition> newExpression =
-                  expressionWithoutId == null
-                      ? Variable.of(idCondition)
-                      : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId);
-              return newExpression;
-            })
+            idCondition ->
+                (expressionWithoutId == null)
+                    ? Variable.of(idCondition)
+                    : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId))
         .collect(Collectors.toList());
   }
 

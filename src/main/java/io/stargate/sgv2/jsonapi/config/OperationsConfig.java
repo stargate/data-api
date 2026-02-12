@@ -39,7 +39,7 @@ public interface OperationsConfig {
    * Defines the default maximum documents to insert setting for {@code InsertMany} command;
    * defaults to 100
    */
-  public static final int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
+  int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
 
   /**
    * @return Defines the default document page size, defaults to <code>20</code>.
@@ -63,12 +63,6 @@ public interface OperationsConfig {
    */
   @WithDefault("false")
   boolean enableEmbeddingGateway();
-
-  /**
-   * @return Flag to extend error response with additional information.
-   */
-  @WithDefault("true")
-  boolean extendError();
 
   /**
    * @return Defines the maximum limit of document read to perform in memory sorting <code>10000
@@ -276,9 +270,6 @@ public interface OperationsConfig {
     @WithConverter(ConsistencyLevelConverter.class)
     ConsistencyLevel serialConsistency();
 
-    /**
-     * @return Settings for the consistency level.
-     */
     interface ConsistencyConfig {
 
       /**

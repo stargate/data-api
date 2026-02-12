@@ -9,6 +9,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
@@ -93,11 +94,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                   .formatted(tooHighDimension))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SEARCH_TOO_BIG_VALUE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(SchemaException.Code.VECTOR_SEARCH_TOO_BIG_VALUE.name()))
           .body(
               "errors[0].message",
-              startsWith(
+              containsString(
                   "Vector embedding property '$vector' length too big: "
                       + tooHighDimension
                       + " (max "
@@ -123,12 +123,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                 """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
-              containsString(
-                  "Problem: function name can only be 'dot_product', 'cosine' or 'euclidean'"));
+              containsString("function name can only be 'dot_product', 'cosine' or 'euclidean'"));
     }
   }
 
@@ -304,9 +302,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("$", responseIsWritePartialSuccess())
           .body("status", jsonEquals("{'insertedIds':[]}"))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vector value can't be empty"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name()))
+          .body("errors[0].message", containsString("Bad $vector value: cannot be empty Array"));
     }
 
     @Test
@@ -331,9 +328,11 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("$", responseIsWritePartialSuccess())
           .body("status", jsonEquals("{'insertedIds':[]}"))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vector value needs to be array of numbers"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_VALUE.name()))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad $vector value: needs to be an array containing only Numbers but has a String value"));
     }
 
     @Test
@@ -465,12 +464,13 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.name()))
           .body(
               "errors[0].message",
-              is(
-                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@' (code 0x40) in base64 content"));
+              containsString(
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper; not valid Base64-encoded String: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@'"));
     }
 
     @Test
@@ -488,12 +488,13 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.name()))
           .body(
               "errors[0].message",
-              is(
-                  "Bad binary vector value to shred: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed"));
+              containsString(
+                  "Bad binary vector value to shred: Unsupported JSON value type in EJSON $binary wrapper (Number): only String allowed"));
     }
 
     @Test
@@ -511,12 +512,13 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_VECTOR_TYPE"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_DOCUMENT_VECTOR_TYPE.name()))
           .body(
               "errors[0].message",
-              is(
-                  "Bad $vector document type to shred : The key for the $vector object must be '$binary'"));
+              containsString(
+                  "Bad $vector value to shred: the key for the $vector Object must be '$binary', not 'binary'"));
     }
 
     @Test
@@ -534,11 +536,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.name()))
           .body(
               "errors[0].message",
-              is(
+              containsString(
                   "Bad binary vector value to shred: binary value to decode is not a multiple of 4 bytes long (3 bytes)"));
     }
 
@@ -561,12 +564,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              is(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause = (InvalidQueryException) Not enough bytes to read a vector<float, 5>"));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
     }
   }
 
@@ -935,9 +933,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].message", is("$vector value can't be empty"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name()))
+          .body("errors[0].message", containsString("Bad $vector value: cannot be empty Array"));
     }
 
     @Test
@@ -961,9 +958,11 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].message", is("$vector value needs to be array of numbers"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_VALUE.name()))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad $vector value: needs to be an array containing only Numbers but has a String value"));
     }
 
     @Test
@@ -986,11 +985,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
-              endsWith("limit options should not be greater than 1000 for vector search."));
+              containsString("limit options should not be greater than 1000 for vector search."));
     }
 
     @Test
@@ -1013,10 +1011,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
-              "errors[0].message", endsWith("skip options should not be used with vector search."));
+              "errors[0].message",
+              containsString("skip options should not be used with vector search."));
     }
   }
 
@@ -1087,9 +1085,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].message", is("$vector value can't be empty"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name()))
+          .body("errors[0].message", containsString("Bad $vector value: cannot be empty Array"));
     }
 
     @Test
@@ -1110,12 +1107,15 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_QUERY"))
-          .body(
+          .body("errors[0].errorCode", is(DatabaseException.Code.INVALID_DATABASE_QUERY.name()))
+          .body( // amorton - 20 jan - 2026 - keping the message checks because the error code is
+              // very high level
               "errors[0].message",
-              oneOf(
-                  "Zero and near-zero vectors cannot be indexed or queried with cosine similarity",
-                  "Zero vectors cannot be indexed or queried with cosine similarity"));
+              anyOf(
+                  containsString(
+                      "Zero and near-zero vectors cannot be indexed or queried with cosine similarity"),
+                  containsString(
+                      "Zero vectors cannot be indexed or queried with cosine similarity")));
     }
 
     @Test
@@ -1136,9 +1136,11 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].message", is("$vector value needs to be array of numbers"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_VECTOR_VALUE.name()))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad $vector value: needs to be an array containing only Numbers but has a String value"));
     }
 
     // Vector columns can only use ANN, not regular filtering
@@ -1159,12 +1161,11 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body(
               "errors[0].message",
               containsString(
-                  "Cannot filter on '$vector' field using operator $eq: only $exists is supported"));
+                  "cannot filter on '$vector' field using operator '$eq': only '$exists' is supported"));
     }
   }
 
@@ -1624,11 +1625,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
 
       // Insert data with $vector array size greater than vector index defined size.
       givenHeadersAndJson(
@@ -1651,11 +1648,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
     }
 
     @Test
@@ -1680,11 +1673,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
 
       // Insert data with $vector array size greater than vector index defined size.
       givenHeadersAndJson(
@@ -1705,11 +1694,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body("errors[0].errorCode", is(DocumentException.Code.INVALID_VECTOR_LENGTH.name()));
     }
   }
 

@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.shredding.collections;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -45,8 +45,8 @@ public class DocValueHasher {
       case STRING -> stringValue(value.textValue()).hash();
 
       default -> // case BINARY, MISSING, POJO -- should these ever occur?
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
+          throw ServerException.internalServerError(
+              "Unsupported `JsonNodeType` in input document, `%s`".formatted(value.getNodeType()));
     };
   }
 
@@ -152,9 +152,7 @@ public class DocValueHasher {
 
     // Actual implementation would actually use iterated over values;
     // we will traverse to exercise caching for tests but not really use:
-    Iterator<Map.Entry<String, JsonNode>> it = n.fields();
-    while (it.hasNext()) {
-      Map.Entry<String, JsonNode> entry = it.next();
+    for (Map.Entry<String, JsonNode> entry : n.properties()) {
       sb.append(LINE_SEPARATOR).append(entry.getKey());
       DocValueHash childHash = hash(entry.getValue());
       sb.append(LINE_SEPARATOR).append(childHash.hash());
@@ -204,6 +202,10 @@ public class DocValueHasher {
     } else if (value instanceof Byte b) {
       return booleanValue(Byte.compare(true_byte, b) == 0).hash();
     }
-    throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException("%s", value.getClass());
+    // Should never happen so we are ok to fail in drastic way
+    throw ServerException.Code.INTERNAL_SERVER_ERROR.get(
+        Map.of(
+            "errorMessage",
+            "Unrecognized Java type `" + value.getClass().getName() + "` to calculate hash on"));
   }
 }

@@ -1,12 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
-
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -93,12 +93,12 @@ public class EmbeddingDeferredAction implements DeferredAction, Recordable {
    */
   private void validateVector(float[] vector) {
 
-    // TODO: Move to a V2 error
-
     if (vector.length != dimension) {
-      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-          vectorizeDefinition.provider(), dimension, vector.length);
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+          Map.of(
+              "errorMessage",
+              "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'"
+                  .formatted(vectorizeDefinition.provider(), dimension, vector.length)));
     }
   }
 

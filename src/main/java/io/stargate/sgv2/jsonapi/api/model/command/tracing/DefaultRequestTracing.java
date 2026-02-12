@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.tracing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,7 @@ public class DefaultRequestTracing extends RequestTracing {
 
   private final TraceSession session;
 
-  public DefaultRequestTracing(String requestId, String tenantId, boolean includeData) {
+  public DefaultRequestTracing(String requestId, Tenant tenantId, boolean includeData) {
     super(true);
 
     Objects.requireNonNull(requestId, "requestId must not be null");

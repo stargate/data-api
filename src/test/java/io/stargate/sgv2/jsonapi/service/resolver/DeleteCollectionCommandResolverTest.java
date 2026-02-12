@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionCo
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -24,7 +23,7 @@ class DeleteCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DeleteCollectionCommandResolver resolver;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<KeyspaceSchemaObject> commandContext;
 
@@ -33,13 +32,10 @@ class DeleteCollectionCommandResolverTest {
     commandContext = testConstants.keyspaceContext();
   }
 
-  @Nested
-  class ResolveCommand {
-
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPath() throws Exception {
+    String json =
+        """
           {
             "deleteCollection": {
               "name" : "my_collection"
@@ -47,16 +43,15 @@ class DeleteCollectionCommandResolverTest {
           }
           """;
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              DeleteCollectionCollectionOperation.class,
-              op -> {
-                assertThat(op.name()).isEqualTo("my_collection");
-                assertThat(op.context()).isEqualTo(commandContext);
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            DeleteCollectionCollectionOperation.class,
+            op -> {
+              assertThat(op.name()).isEqualTo("my_collection");
+              assertThat(op.context()).isEqualTo(commandContext);
+            });
   }
 }

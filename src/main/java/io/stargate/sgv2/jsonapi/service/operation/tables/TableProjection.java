@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
@@ -151,8 +150,11 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
       try {
         codec = JSONCodecRegistries.DEFAULT_REGISTRY.codecToJSON(table.tableMetadata(), column);
       } catch (MissingJSONCodecException e) {
-        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-            "Column '%s' has unsupported type '%s'", columnName, column.getType().toString());
+        throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+            Map.of(
+                "errorMessage",
+                "column '%s' has unsupported type '%s'"
+                    .formatted(columnName, column.getType().toString())));
       }
       try {
         final Object columnValue = row.getObject(i);
@@ -172,17 +174,16 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
           }
           default -> {
             nonNullCount++;
-            result.put(columnName, codec.toJSON(objectMapper, columnValue));
+            result.set(columnName, codec.toJSON(objectMapper, columnValue));
           }
         }
 
       } catch (ToJSONCodecException e) {
-        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-            e,
-            "Column '%s' has invalid value of type '%s': failed to convert to JSON: %s",
-            columnName,
-            column.getType().toString(),
-            e.getMessage());
+        throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+            Map.of(
+                "errorMessage",
+                "column '%s' has invalid value of type '%s'; failed to convert to JSON: %s."
+                    .formatted(columnName, column.getType().toString(), e.getMessage())));
       }
     }
 

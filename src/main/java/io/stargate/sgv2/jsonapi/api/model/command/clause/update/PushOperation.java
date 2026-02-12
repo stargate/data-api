@@ -3,7 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
@@ -22,17 +23,16 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
   }
 
   public static PushOperation construct(ObjectNode args) {
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = args.fields();
-
     List<Action> updates = new ArrayList<>();
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> entry = fieldIter.next();
+    for (Map.Entry<String, JsonNode> entry : args.properties()) {
       // First verify update operation allowed for path (not for _id, $lexical/$vector/$vectorize)
       final String name = validateUpdatePath(UpdateOperator.PUSH, entry.getKey());
       // At main level we must have field name (no modifiers)
       if (looksLikeModifier(name)) {
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-            "$push requires field names at main level, found modifier: %s", name);
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+            Map.of(
+                "errorMessage",
+                "$push requires field names at main level, found modifier: %s".formatted(name)));
       }
       // But within field value modifiers are allowed: if there's one, all must be modifiers
       JsonNode value = entry.getValue();
@@ -53,9 +53,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
     JsonNode eachArg = null;
     Integer position = null;
 
-    Iterator<Map.Entry<String, JsonNode>> it = actionDef.fields();
-    while (it.hasNext()) {
-      Map.Entry<String, JsonNode> entry = it.next();
+    for (Map.Entry<String, JsonNode> entry : actionDef.properties()) {
       final String modifier = entry.getKey();
       final JsonNode arg = entry.getValue();
 
@@ -63,35 +61,47 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
         case "$each":
           eachArg = arg;
           if (!eachArg.isArray()) {
-            throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-                "$push modifier $each requires ARRAY argument, found: %s", eachArg.getNodeType());
+            throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+                Map.of(
+                    "errorMessage",
+                    "$push modifier $each requires Array argument, found: %s"
+                        .formatted(JsonUtil.nodeTypeAsString(eachArg))));
           }
           break;
         case "$position":
           // Mongo requires number
           if (!arg.isNumber()) {
-            throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-                "$push modifier $position requires (integral) NUMBER argument, found: %s",
-                arg.getNodeType());
+            throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+                Map.of(
+                    "errorMessage",
+                    "$push modifier $position requires (integral) Number argument, found: %s"
+                        .formatted(JsonUtil.nodeTypeAsString(arg))));
           }
           // but floating-point won't do either:
           if (!arg.isIntegralNumber()) {
-            throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-                "$push modifier $position requires Integer NUMBER argument, instead got: %s",
-                arg.asText());
+            throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+                Map.of(
+                    "errorMessage",
+                    "$push modifier $position requires Integer Number argument, instead got: %s"
+                        .formatted(arg.asText())));
           }
           position = arg.intValue();
           break;
 
         default:
-          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
-              "$push only supports $each and $position currently; trying to use '%s'", modifier);
+          throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.get(
+              Map.of(
+                  "errorMessage",
+                  "$push only supports $each and $position currently; trying to use '%s'"
+                      .formatted(modifier)));
       }
     }
     // For now should not be possible to occur but once we add other modifiers could:
     if (eachArg == null) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-          "$push modifiers can only be used with $each modifier; none included");
+      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+          Map.of(
+              "errorMessage",
+              "$push modifiers can only be used with $each modifier; none included"));
     }
 
     return new Action(PathMatchLocator.forPath(propName), eachArg, true, position);
@@ -124,9 +134,11 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
       } else if (node.isArray()) { // Already array? Append
         array = (ArrayNode) node;
       } else { // Something else? fail
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
-            "$push requires target to be ARRAY; value at '%s' of type %s",
-            target.fullPath(), node.getNodeType());
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.get(
+            Map.of(
+                "errorMessage",
+                "$push requires target to be Array; value at '%s' of type %s"
+                    .formatted(target.fullPath(), JsonUtil.nodeTypeAsString(node))));
       }
       // Regular add or $each?
       if (action.each) {

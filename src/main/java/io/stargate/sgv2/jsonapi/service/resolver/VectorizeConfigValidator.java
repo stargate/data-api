@@ -2,8 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
@@ -48,8 +47,8 @@ public class VectorizeConfigValidator {
    * @param userConfig The user input vectorize service configuration.
    * @param userVectorDimension The dimension specified by the user, may be null.
    * @return The dimension to be used for the vector, should be from the internal configuration. It
-   *     will be used for auto populate the vector dimension
-   * @throws JsonApiException If the service configuration is invalid or unsupported.
+   *     will be used for autopopulating the vector dimension
+   * @throws APIException If the service configuration is invalid or unsupported.
    */
   public Integer validateService(VectorizeConfig userConfig, Integer userVectorDimension) {
     // Only for internal tests
@@ -87,15 +86,15 @@ public class VectorizeConfigValidator {
    *
    * @param userConfig The configuration provided by the user specifying the vector search provider.
    * @return The configuration for the embedding provider, if valid.
-   * @throws JsonApiException If the provider is not supported or not enabled.
+   * @throws APIException If the provider is not supported or not enabled.
    */
   private EmbeddingProvidersConfig.EmbeddingProviderConfig getAndValidateProviderConfig(
       VectorizeConfig userConfig) {
     EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
         embeddingProvidersConfig.providers().get(userConfig.provider());
     if (providerConfig == null || !providerConfig.enabled()) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "Service provider '%s' is not supported", userConfig.provider());
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          "message", "Service provider '%s' is not supported".formatted(userConfig.provider()));
     }
     return providerConfig;
   }
@@ -126,7 +125,7 @@ public class VectorizeConfigValidator {
    *
    * @param userConfig The vectorize configuration provided by the user.
    * @param providerConfig The embedding provider configuration.
-   * @throws JsonApiException If the user authentication is invalid.
+   * @throws APIException If the user authentication is invalid.
    */
   private void validateAuthentication(
       VectorizeConfig userConfig, EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
@@ -171,9 +170,10 @@ public class VectorizeConfigValidator {
 
       // If neither 'NONE' nor 'HEADER' authentication type is enabled, throw an exception
       if (!noneEnabled && !headerEnabled) {
-        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "Service provider '%s' does not support either 'NONE' or 'HEADER' authentication types.",
-            userConfig.provider());
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+            "message",
+            "Service provider '%s' does not support either 'NONE' or 'HEADER' authentication types."
+                .formatted(userConfig.provider()));
       }
     } else {
       // User has provided authentication details. Validate each key against the provider's accepted
@@ -181,9 +181,10 @@ public class VectorizeConfigValidator {
       for (Map.Entry<String, String> userAuth : userConfig.authentication().entrySet()) {
         // Check if the key is accepted by the provider
         if (!acceptedKeys.contains(userAuth.getKey())) {
-          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "Service provider '%s' does not support authentication key '%s'",
-              userConfig.provider(), userAuth.getKey());
+          throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+              "message",
+              "Service provider '%s' does not support authentication key '%s'"
+                  .formatted(userConfig.provider(), userAuth.getKey()));
         }
 
         // Validate the credential name from secret service
@@ -203,7 +204,7 @@ public class VectorizeConfigValidator {
    * @param userConfig The vector search configuration provided by the user.
    * @param providerConfig The configuration of the embedding provider which includes model and
    *     provider-level parameters.
-   * @throws JsonApiException if any unconfigured parameters are provided, required parameters are
+   * @throws APIException if any unconfigured parameters are provided, required parameters are
    *     missing, or if an error occurs due to no parameters being configured but some are provided
    *     by the user.
    */
@@ -248,9 +249,10 @@ public class VectorizeConfigValidator {
         .forEach(
             userParamName -> {
               if (!expectedParamNames.contains(userParamName)) {
-                throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                    "Unexpected parameter '%s' for the provider '%s' provided",
-                    userParamName, userConfig.provider());
+                throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+                    "message",
+                    "Unexpected parameter '%s' for the provider '%s' provided"
+                        .formatted(userParamName, userConfig.provider()));
               }
             });
 
@@ -262,9 +264,10 @@ public class VectorizeConfigValidator {
         expectedParamConfig -> {
           if (expectedParamConfig.required()
               && !userParameters.containsKey(expectedParamConfig.name())) {
-            throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                "Required parameter '%s' for the provider '%s' missing",
-                expectedParamConfig.name(), userConfig.provider());
+            throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+                "message",
+                "Required parameter '%s' for the provider '%s' missing"
+                    .formatted(expectedParamConfig.name(), userConfig.provider()));
           }
           if (userParameters.containsKey(expectedParamConfig.name())) {
             parametersToValidate.add(expectedParamConfig);
@@ -286,7 +289,7 @@ public class VectorizeConfigValidator {
    * @param expectedParamConfig The expected configuration for the parameter which includes its
    *     expected type.
    * @param userParamValue The value of the parameter provided by the user.
-   * @throws JsonApiException if the type of the parameter provided by the user does not match the
+   * @throws APIException if the type of the parameter provided by the user does not match the
    *     expected type.
    */
   private void validateParameterType(
@@ -306,9 +309,10 @@ public class VectorizeConfigValidator {
                 && !(userParamValue instanceof Boolean);
 
     if (typeMismatch) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "The provided parameter '%s' type is incorrect. Expected: '%s'",
-          expectedParamConfig.name(), expectedParamType.getApiName());
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          "message",
+          "The provided parameter '%s' type is incorrect. Expected: '%s'"
+              .formatted(expectedParamConfig.name(), expectedParamType.getApiName()));
     }
   }
 
@@ -320,7 +324,7 @@ public class VectorizeConfigValidator {
    * @param providerConfig the configuration of the embedding provider
    * @param userVectorDimension the vector dimension provided by the user, or null if not provided
    * @return the validated vector dimension to be used for the model
-   * @throws JsonApiException if the model name is not found, or if the dimension is invalid
+   * @throws APIException if the model name is not found, or if the dimension is invalid
    */
   private Integer validateModelAndDimension(
       VectorizeConfig userConfig,
@@ -331,8 +335,9 @@ public class VectorizeConfigValidator {
     // 1. huggingfaceDedicated does not require model, but requires dimension
     if (userConfig.provider().equals(ModelProvider.HUGGINGFACE_DEDICATED.apiName())) {
       if (userVectorDimension == null) {
-        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "'dimension' is needed for provider %s", ModelProvider.HUGGINGFACE_DEDICATED.apiName());
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+            "message",
+            "'dimension' is needed for provider " + ModelProvider.HUGGINGFACE_DEDICATED.apiName());
       }
     }
 
@@ -345,9 +350,10 @@ public class VectorizeConfigValidator {
       if (userVectorDimension == null) {
         return configVectorDimension; // Use model's dimension if user hasn't specified any
       } else if (!configVectorDimension.equals(userVectorDimension)) {
-        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "The provided dimension value '%s' doesn't match the model's supported dimension value '%s'",
-            userVectorDimension, configVectorDimension);
+        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+            "message",
+            "The provided dimension value '%s' doesn't match the model's supported dimension value '%s'"
+                .formatted(userVectorDimension, configVectorDimension));
       }
       return configVectorDimension;
     }
@@ -365,17 +371,18 @@ public class VectorizeConfigValidator {
       VectorizeConfig userConfig, EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
 
     if (userConfig.modelName() == null) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'modelName' is needed for provider %s", userConfig.provider());
+      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          "message", "'modelName' is needed for provider %s" + userConfig.provider());
     }
     return providerConfig.models().stream()
         .filter(m -> m.name().equals(userConfig.modelName()))
         .findFirst()
         .orElseThrow(
             () ->
-                ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                    "Model name '%s' for provider '%s' is not supported",
-                    userConfig.modelName(), userConfig.provider()));
+                SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+                    "message",
+                    "Model name '%s' for provider '%s' is not supported"
+                        .formatted(userConfig.modelName(), userConfig.provider())));
   }
 
   /**
@@ -385,7 +392,7 @@ public class VectorizeConfigValidator {
    * @param param the parameter configuration containing validation constraints
    * @param userVectorDimension the vector dimension provided by the user
    * @return the appropriate vector dimension based on parameter configuration
-   * @throws JsonApiException if the user-provided dimension is not valid
+   * @throws APIException if the user-provided dimension is not valid
    */
   private Integer validateRangeDimension(
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig param,
@@ -406,9 +413,11 @@ public class VectorizeConfigValidator {
       case NUMERIC_RANGE -> {
         if (userVectorDimension < validationValues.get(0)
             || userVectorDimension > validationValues.get(1)) {
-          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "The provided dimension value (%d) is not within the supported numeric range [%d, %d]",
-              userVectorDimension, validationValues.get(0), validationValues.get(1));
+          throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+              "message",
+              "The provided dimension value (%d) is not within the supported numeric range [%d, %d]"
+                  .formatted(
+                      userVectorDimension, validationValues.get(0), validationValues.get(1)));
         }
       }
       case OPTIONS -> {
@@ -416,9 +425,10 @@ public class VectorizeConfigValidator {
           String validatedValuesStr =
               String.join(
                   ", ", validationValues.stream().map(Object::toString).toArray(String[]::new));
-          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "The provided dimension value '%s' is not within the supported options [%s]",
-              userVectorDimension, validatedValuesStr);
+          throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+              "message",
+              "The provided dimension value '%s' is not within the supported options [%s]"
+                  .formatted(userVectorDimension, validatedValuesStr));
         }
       }
     }

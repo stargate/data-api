@@ -85,7 +85,6 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
         new VertexEmbeddingRequest(
             texts.stream().map(VertexEmbeddingRequest.Content::new).toList());
 
-    // TODO: V2 error
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
 
@@ -117,7 +116,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
               // https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#response_body
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       total_tokens,
                       total_tokens,

@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.servererrors.AlreadyExistsException;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.keyspaces.KeyspaceDriverExceptionHandler;
 import java.util.Map;
 import java.util.Objects;
 
@@ -24,7 +25,7 @@ public class CreateTableExceptionHandler extends KeyspaceDriverExceptionHandler 
   }
 
   @Override
-  public RuntimeException handle(AlreadyExistsException exception) {
+  public Throwable handle(AlreadyExistsException exception) {
     return SchemaException.Code.CANNOT_ADD_EXISTING_TABLE.get(
         Map.of("existingTable", errFmt(tableName)));
   }
@@ -38,7 +39,7 @@ public class CreateTableExceptionHandler extends KeyspaceDriverExceptionHandler 
    * </ul>
    */
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
     if (exception.getMessage().contains("Unknown type")) {
       return SchemaException.Code.UNKNOWN_USER_DEFINED_TYPE.get(
           Map.of("driverMessage", exception.getMessage()));

@@ -4,12 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import io.smallrye.mutiny.tuples.Tuple3;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,12 +23,11 @@ import java.util.stream.Collectors;
  * @param moreData - if `true` means more documents available in DB for the provided condition
  */
 public record DeleteOperationPage(
-    List<Tuple3<Boolean, Throwable, ReadDocument>> deletedInformation,
+    List<Tuple3<Boolean, APIException, ReadDocument>> deletedInformation,
     boolean moreData,
     boolean returnDocument,
     boolean singleDocument)
     implements Supplier<CommandResult> {
-  private static final String ERROR = "Failed to delete documents with _id %s: %s";
 
   @Override
   public CommandResult get() {
@@ -45,18 +42,18 @@ public record DeleteOperationPage(
       // aaron - this is a giant hack 21 oct 2024
       if (returnDocument()) {
         if (singleDocument()) {
-          return CommandResult.singleDocumentBuilder(false, RequestTracing.NO_OP)
+          return CommandResult.singleDocumentBuilder(RequestTracing.NO_OP)
               .addStatus(CommandStatus.DELETED_COUNT, 0)
               .addDocument(null)
               .build();
         } else {
-          return CommandResult.multiDocumentBuilder(false, RequestTracing.NO_OP)
+          return CommandResult.multiDocumentBuilder(RequestTracing.NO_OP)
               .addStatus(CommandStatus.DELETED_COUNT, 0)
               .addDocument(null)
               .build();
         }
       } else {
-        return CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
+        return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
             .addStatus(CommandStatus.DELETED_COUNT, -1)
             .build();
       }
@@ -70,7 +67,7 @@ public record DeleteOperationPage(
     List<JsonNode> deletedDoc = new ArrayList<>();
 
     // aggregate the errors by error code or error class
-    Multimap<String, Tuple3<Boolean, Throwable, ReadDocument>> groupedErrorDeletes =
+    Multimap<String, Tuple3<Boolean, APIException, ReadDocument>> groupedErrorDeletes =
         ArrayListMultimap.create();
     deletedInformation.forEach(
         deletedData -> {
@@ -78,26 +75,26 @@ public record DeleteOperationPage(
             deletedDoc.add(deletedData.getItem3().get());
           }
           if (deletedData.getItem2() != null) {
-            String key = ExceptionUtil.getThrowableGroupingKey(deletedData.getItem2());
-            groupedErrorDeletes.put(key, deletedData);
+            groupedErrorDeletes.put(deletedData.getItem2().code, deletedData);
           }
         });
 
     // Create error by error code or error class
-    List<CommandResult.Error> errors = new ArrayList<>(groupedErrorDeletes.size());
+    List<CommandError> errors = new ArrayList<>(groupedErrorDeletes.size());
+
     groupedErrorDeletes
         .keySet()
         .forEach(
             key -> {
-              final Collection<Tuple3<Boolean, Throwable, ReadDocument>> deletedDocuments =
+              Collection<Tuple3<Boolean, APIException, ReadDocument>> deletedDocuments =
                   groupedErrorDeletes.get(key);
-              final List<DocumentId> documentIds =
+              List<DocumentId> documentIds =
                   deletedDocuments.stream()
                       .map(deletes -> deletes.getItem3().id().orElseThrow())
                       .collect(Collectors.toList());
               errors.add(
-                  ExceptionUtil.getError(
-                      ERROR, documentIds, deletedDocuments.stream().findFirst().get().getItem2()));
+                  CommandErrorFactory.create(
+                      deletedDocuments.stream().findFirst().get().getItem2(), documentIds));
             });
 
     // return the result
@@ -108,19 +105,19 @@ public record DeleteOperationPage(
     CommandResultBuilder builder = null;
     if (returnDocument()) {
       if (singleDocument()) {
-        builder = CommandResult.singleDocumentBuilder(false, RequestTracing.NO_OP);
+        builder = CommandResult.singleDocumentBuilder(RequestTracing.NO_OP);
       } else {
-        builder = CommandResult.multiDocumentBuilder(false, RequestTracing.NO_OP);
+        builder = CommandResult.multiDocumentBuilder(RequestTracing.NO_OP);
       }
       // aaron - ok to add the list to the builder as I assume there will only be one id single doc
       // return.
       // the builder will fail if we created single doc and then added more than one
       builder.addDocuments(deletedDoc);
     } else {
-      builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
+      builder = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
     }
 
-    builder.addStatus(CommandStatus.DELETED_COUNT, deletedCount).addCommandResultError(errors);
+    builder.addStatus(CommandStatus.DELETED_COUNT, deletedCount).addCommandError(errors);
     if (moreData) {
       builder.addStatus(CommandStatus.MORE_DATA, true);
     }

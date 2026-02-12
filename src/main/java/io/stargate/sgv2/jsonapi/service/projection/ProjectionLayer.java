@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import java.util.*;
 
@@ -71,8 +71,11 @@ class ProjectionLayer {
       try {
         path = DocumentPath.from(fullPath);
       } catch (IllegalArgumentException e) {
-        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-            "projection path ('%s') is not a valid path. " + e.getMessage(), fullPath);
+        throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+            Map.of(
+                "errorMessage",
+                "projection path ('%s') is not a valid path: %s."
+                    .formatted(fullPath, e.getMessage())));
       }
       buildPath(failOnOverlap, fullPath, root, path);
     }
@@ -135,8 +138,11 @@ class ProjectionLayer {
     try {
       path = DocumentPath.from(fullPath);
     } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-          "projection path ('%s') is not a valid path. " + e.getMessage(), fullPath);
+      throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+          Map.of(
+              "errorMessage",
+              "projection path ('%s') is not a valid path: %s"
+                  .formatted(fullPath, e.getMessage())));
     }
     final int last = path.getSegmentsSize() - 1;
     for (int i = 0; i < last; ++i) {
@@ -210,8 +216,10 @@ class ProjectionLayer {
     try {
       p = DocumentPath.from(path);
     } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-          "projection path ('%s') is not a valid path. " + e.getMessage(), path);
+      throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+          Map.of(
+              "errorMessage",
+              "projection path ('%s') is not a valid path: %s.".formatted(path, e.getMessage())));
     }
     return isPathIncluded(p, 0);
   }
@@ -254,7 +262,7 @@ class ProjectionLayer {
     // 2. Match, non-terminal -> continue checking recursively
     // 3. No match, prune (remove)
 
-    var it = subtree.fields();
+    var it = subtree.properties().iterator();
     while (it.hasNext()) {
       var entry = it.next();
       ProjectionLayer nextLayer = nextLayers.get(entry.getKey());
@@ -324,8 +332,10 @@ class ProjectionLayer {
   }
 
   void reportPathConflict(String fullPath1, String fullPath2) {
-    throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-        "projection path conflict between '%s' and '%s'", fullPath1, fullPath2);
+    throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+        Map.of(
+            "errorMessage",
+            "projection path conflict between '%s' and '%s'".formatted(fullPath1, fullPath2)));
   }
 
   @Override

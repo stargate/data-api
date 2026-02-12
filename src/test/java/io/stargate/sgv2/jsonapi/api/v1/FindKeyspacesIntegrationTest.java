@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
@@ -67,20 +67,16 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .body("status.warnings", hasSize(1))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: findNamespaces."))

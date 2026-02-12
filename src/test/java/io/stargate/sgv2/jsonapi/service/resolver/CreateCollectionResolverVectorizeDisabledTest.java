@@ -9,10 +9,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -21,15 +19,12 @@ public class CreateCollectionResolverVectorizeDisabledTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateCollectionCommandResolver createCollectionCommandResolver;
   @Inject FindEmbeddingProvidersCommandResolver findEmbeddingProvidersCommandResolver;
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
-  @Nested
-  class ResolveCommand {
-
-    @Test
-    public void vectorizeSearchDisabled() throws Exception {
-      String json =
-          """
+  @Test
+  public void vectorizeSearchDisabled() throws Exception {
+    String json =
+        """
                 {
                     "createCollection": {
                         "name": "my_collection",
@@ -47,38 +42,37 @@ public class CreateCollectionResolverVectorizeDisabledTest {
                 }
               """;
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Exception e =
-          catchException(
-              () ->
-                  createCollectionCommandResolver.resolveCommand(
-                      testConstants.keyspaceContext(), command));
-      assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith(ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
-    }
+    CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+    Exception e =
+        catchException(
+            () ->
+                createCollectionCommandResolver.resolveCommand(
+                    testConstants.keyspaceContext(), command));
+    assertThat(e)
+        .hasFieldOrPropertyWithValue(
+            "code", SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.name());
+  }
 
-    @Test
-    public void findEmbeddingProvidersWithVectorizeSearchDisabled() throws Exception {
-      // TODO: This test should be moved, these are rests for create collection NOT for
-      // findEmbeddingProviders.
+  @Test
+  public void findEmbeddingProvidersWithVectorizeSearchDisabled() throws Exception {
+    // TODO: This test should be moved, these are rests for create collection NOT for
+    // findEmbeddingProviders.
 
-      String json =
-          """
+    String json =
+        """
                   {
                       "findEmbeddingProviders": {}
                   }
                   """;
-      FindEmbeddingProvidersCommand command =
-          objectMapper.readValue(json, FindEmbeddingProvidersCommand.class);
-      Exception e =
-          catchException(
-              () ->
-                  findEmbeddingProvidersCommandResolver.resolveCommand(
-                      testConstants.databaseContext(), command));
-      assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith(ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
-    }
+    FindEmbeddingProvidersCommand command =
+        objectMapper.readValue(json, FindEmbeddingProvidersCommand.class);
+    Exception e =
+        catchException(
+            () ->
+                findEmbeddingProvidersCommandResolver.resolveCommand(
+                    testConstants.databaseContext(), command));
+    assertThat(e)
+        .hasFieldOrPropertyWithValue(
+            "code", SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.name());
   }
 }
