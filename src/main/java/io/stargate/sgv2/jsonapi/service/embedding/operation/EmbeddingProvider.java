@@ -94,7 +94,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
   protected boolean decideRetry(Throwable throwable) {
     boolean retry =
         throwable instanceof EmbeddingProviderException epe
-            && epe.code.equals(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name());
+            && EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name().equals(epe.code);
     return retry || super.decideRetry(throwable);
   }
 

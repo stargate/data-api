@@ -124,7 +124,7 @@ public abstract class RerankingProvider extends ProviderBase {
   protected boolean decideRetry(Throwable throwable) {
     boolean retry =
         throwable instanceof RerankingProviderException rpe
-            && rpe.code.equals(RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name());
+            && RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name().equals(rpe.code);
     return retry || super.decideRetry(throwable);
   }
 
