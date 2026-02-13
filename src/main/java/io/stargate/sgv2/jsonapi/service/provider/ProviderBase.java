@@ -103,7 +103,7 @@ public abstract class ProviderBase {
         // Catch *any* web exception from jakarta rest client
         .onFailure(WebApplicationException.class)
         // and recover with the jakarta response, so we can translate to API exception
-        .recoverWithItem(ex -> ((WebApplicationException) ex).getResponse())
+        .recoverWithItem(ex -> ex.getResponse())
         .onItem()
         // handle the response, throws if there is an error
         .transform(this::handleHTTPResponse)
@@ -125,7 +125,7 @@ public abstract class ProviderBase {
    * <p>Subclasses should normally override, and then call the base if they do not want to retry.
    *
    * @param throwable Exception, either the API Exception mapped from the jakarta response. Or any
-   *     other error if the rest client throws non WebApplicationException
+   *     other error if the rest client throws non-WebApplicationException
    * @return <code>true</code> if the operation should be retried, <code>false</code> otherwise.
    */
   protected boolean decideRetry(Throwable throwable) {

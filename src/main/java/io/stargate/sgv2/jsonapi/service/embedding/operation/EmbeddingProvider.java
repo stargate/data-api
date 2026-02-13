@@ -90,9 +90,17 @@ public abstract class EmbeddingProvider extends ProviderBase {
     return requestProperties().maxBatchSize();
   }
 
+  @Override
+  protected boolean decideRetry(Throwable throwable) {
+    boolean retry =
+        throwable instanceof EmbeddingProviderException epe
+            && EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name().equals(epe.code);
+    return retry || super.decideRetry(throwable);
+  }
+
   /**
-   * Use this to get the properties for the request, including the URL , see comment at the top of
-   * class
+   * Use this to get the properties for the request, including the URL, see comment at the top of
+   * class.
    */
   protected ServiceConfigStore.ServiceRequestProperties requestProperties() {
     return serviceConfig.requestProperties();
