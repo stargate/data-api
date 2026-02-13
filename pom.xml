@@ -4,7 +4,6 @@
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.39-SNAPSHOT</version>
-  <!-- test change -->
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
