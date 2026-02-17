@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "name": "all-vectorize-workflow",
+    "kind": "workflow"
+  },
+  "jobs": [
+    {
+      "meta": {
+        "name": "open-ai-vectorize"
+      },
+      "fromEnvironment": {
+        "x-embedding-api-key": "x-embedding-api-key"
+      },
+      "variables": {
+        "Token": "Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh",
+        "PROVIDER": "openai",
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+      },
+      "matrix": {
+        "MODEL": [
+          "text-embedding-3-small",
+          "text-embedding-3-large",
+          "text-embedding-ada-002"
+        ]
+      },
+      "tests": [
+        "vectorize-header-auth"
+      ]
+    },
+    {
+      "meta": {
+        "name": "voyageAI-vectorize"
+      },
+      "fromEnvironment": {
+        "x-embedding-api-key": "voyageAI_KEY"
+      },
+      "variables": {
+        "Token": "Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh",
+        "PROVIDER": "voyageAI",
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+      },
+      "matrix": {
+        "MODEL": [
+          "voyage-large-2-instruct",
+          "voyage-law-2",
+          "voyage-code-2",
+          "voyage-large-2",
+          "voyage-2"
+        ]
+      },
+      "tests": [
+        "vectorize-header-auth"
+      ]
+    }
+  ]
+}

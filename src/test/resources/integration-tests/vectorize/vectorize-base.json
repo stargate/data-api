@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "name": "vectorize-base",
+    "kind" : "test"
+  },
+  "setup": [
+    {
+      "insertOne": {
+        "document": {
+          "_id": "Inception",
+          "name": "Inception",
+          "genre": "Science Fiction",
+          "artist": [
+            "Leonardo DiCaprio"
+          ],
+          "$vectorize": "Inception is a science fiction action film about a professional thief who steals information by infiltrating the subconscious, entering people's dreams. He is offered a chance to have his criminal history erased as payment for implanting another person's idea into a target's subconscious."
+        }
+      }
+    },
+    {
+      "insertMany": {
+        "documents": [
+          {
+            "_id": "The Shawshank Redemption",
+            "name": "The Shawshank Redemption",
+            "genre": "Drama",
+            "artist": [
+              "Tim Robbins",
+              "Morgan Freeman"
+            ],
+            "$vectorize": "The Shawshank Redemption is a drama film about a banker who is sentenced to life in Shawshank State Penitentiary for the murder of his wife and her lover. He forms a bond with a fellow prisoner and manages to maintain his dignity and sense of hope in the face of unjust treatment."
+          },
+          {
+            "_id": "The Godfather",
+            "name": "The Godfather",
+            "genre": "Crime",
+            "artist": [
+              "Marlon Brando",
+              "Al Pacino"
+            ],
+            "$vectorize": "The Godfather is a crime film about the aging patriarch of an organized crime dynasty who transfers control of his clandestine empire to his reluctant son. The film follows the family under the patriarch's youngest son, Michael, as he becomes increasingly involved in the family business."
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "name": "findByVectorize",
+      "request": {
+        "find": {
+          "sort": {
+            "$vectorize": "I love movies!"
+          }
+        }
+      },
+      "asserts": {
+        "response.isFindSuccess": null,
+        "documents.count": 3
+      }
+    },
+    {
+      "name": "findOneAndUpdate",
+      "request": {
+        "findOneAndUpdate": {
+          "sort": {
+            "$vectorize": "Inception is a science fiction action film"
+          },
+          "update": {
+            "$set": {
+              "status": "active"
+            }
+          },
+          "options": {
+            "returnDocument": "after"
+          }
+        }
+      },
+      "asserts": {
+      }
+    }
+  ]
+}
