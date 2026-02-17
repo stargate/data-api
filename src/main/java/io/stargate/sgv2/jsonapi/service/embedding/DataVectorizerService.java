@@ -20,7 +20,7 @@ import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProviderWrapper;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -73,18 +73,17 @@ public class DataVectorizerService {
   public <T extends SchemaObject> DataVectorizer constructDataVectorizer(
       CommandContext<T> commandContext) {
 
-    EmbeddingProvider embeddingProvider =
+    MeteredEmbeddingProviderWrapper embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(
                 provider ->
-                    new MeteredEmbeddingProvider(
+                    new MeteredEmbeddingProviderWrapper(
                         meterRegistry,
                         jsonApiMetricsConfig,
                         commandContext.requestContext(),
                         provider,
                         commandContext.commandName()))
             .orElse(null);
-
     return new DataVectorizer(
         embeddingProvider,
         objectMapper.getNodeFactory(),

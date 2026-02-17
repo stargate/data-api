@@ -21,15 +21,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides a metered version of an {@link EmbeddingProvider}, adding metrics collection to the
+ * Provides a metered wrapper over an {@link EmbeddingProvider}, adding metrics collection to the
  * embedding process. This class is designed to wrap around an existing {@link EmbeddingProvider} to
  * collect and report various metrics, such as the duration of vectorization calls and the size of
  * input texts.
  */
-public class MeteredEmbeddingProvider extends EmbeddingProvider {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MeteredEmbeddingProvider.class);
-
-  private static final String UNKNOWN_TENANT_ID = "unknown";
+public class MeteredEmbeddingProviderWrapper {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(MeteredEmbeddingProviderWrapper.class);
 
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
@@ -37,33 +36,17 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
   private final EmbeddingProvider embeddingProvider;
   private final String commandName;
 
-  public MeteredEmbeddingProvider(
+  public MeteredEmbeddingProviderWrapper(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       RequestContext requestContext,
       EmbeddingProvider embeddingProvider,
       String commandName) {
-    // aaron 9 June 2025 - we need to remove this "metered" design pattern, for now just pass the
-    // config through
-    super(
-        embeddingProvider.modelProvider(),
-        embeddingProvider.providerConfig,
-        embeddingProvider.modelConfig,
-        embeddingProvider.serviceConfig,
-        embeddingProvider.dimension,
-        embeddingProvider.vectorizeServiceParameters);
-
-    this.meterRegistry = meterRegistry;
-    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    this.requestContext = requestContext;
-    this.embeddingProvider = embeddingProvider;
-    this.commandName = commandName;
-  }
-
-  @Override
-  protected String errorMessageJsonPtr() {
-    // not used we are just passing through
-    return "";
+    this.meterRegistry = Objects.requireNonNull(meterRegistry);
+    this.jsonApiMetricsConfig = Objects.requireNonNull(jsonApiMetricsConfig);
+    this.requestContext = Objects.requireNonNull(requestContext);
+    this.embeddingProvider = Objects.requireNonNull(embeddingProvider);
+    this.commandName = Objects.requireNonNull(commandName);
   }
 
   /**
@@ -75,12 +58,10 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    * @param embeddingRequestType the type of embedding request, influencing how texts are processed.
    * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
-  @Override
-  public Uni<BatchedEmbeddingResponse> vectorize(
-      int batchId,
+  public Uni<EmbeddingProvider.BatchedEmbeddingResponse> vectorize(
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
-      EmbeddingRequestType embeddingRequestType) {
+      EmbeddingProvider.EmbeddingRequestType embeddingRequestType) {
 
     Objects.requireNonNull(texts, "texts must not be null");
     Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
@@ -125,7 +106,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
               List<float[]> result = new ArrayList<>();
 
               ModelUsage aggregatedModelUsage = null;
-              for (BatchedEmbeddingResponse vectorizedBatch : vectorizedBatches) {
+              for (EmbeddingProvider.BatchedEmbeddingResponse vectorizedBatch : vectorizedBatches) {
 
                 aggregatedModelUsage =
                     aggregatedModelUsage == null
@@ -134,7 +115,8 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
                 // create the final ordered result
                 result.addAll(vectorizedBatch.embeddings());
               }
-              var embeddingResponse = new BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
+              var embeddingResponse =
+                  new EmbeddingProvider.BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
               if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace(
                     "Vectorize call completed, aggregatedModelUsage: {}",
@@ -149,11 +131,9 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
                         MetricsConstants.MetricNames.VECTORIZE_CALL_DURATION_METRIC, tags)));
   }
 
-  @Override
   public int maxBatchSize() {
-    return embeddingProvider.maxBatchSize() == 0
-        ? Integer.MAX_VALUE
-        : embeddingProvider.maxBatchSize();
+    final int max = embeddingProvider.maxBatchSize();
+    return (max == 0) ? Integer.MAX_VALUE : max;
   }
 
   /**
