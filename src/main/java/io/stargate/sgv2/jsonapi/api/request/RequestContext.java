@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import com.google.common.annotations.VisibleForTesting;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
@@ -53,6 +54,38 @@ public class RequestContext implements LoggingMDCContext {
     this.embeddingCredentials = null;
     this.rerankingCredentials = null;
     this.httpHeaders = null;
+  }
+
+  /**
+   * Constructor for non-JAX-RS HTTP contexts (e.g., MCP Streamable HTTP) where JAX-RS {@link
+   * SecurityContext} is not available but Quarkus {@link SecurityIdentity} is. Uses the same
+   * resolution logic as the CDI constructor.
+   */
+  public RequestContext(
+      RoutingContext routingContext,
+      SecurityIdentity securityIdentity,
+      Instance<RequestTenantResolver> tenantResolver,
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
+
+    this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
+
+    // Token from SecurityIdentity principal (same as PrincipalTokenResolver logic)
+    this.authToken =
+        normalizeOptionalString(
+            securityIdentity.getPrincipal() != null
+                ? securityIdentity.getPrincipal().getName()
+                : null);
+    this.requestId = generateRequestId();
+    this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
+    this.tenant = tenantResolver.get().resolve(routingContext, null);
+
+    this.embeddingCredentials =
+        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(tenant, routingContext);
+
+    this.rerankingCredentials =
+        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext)
+            .map(s -> new RerankingCredentials(tenant, normalizeOptionalString(s)))
+            .orElseGet(() -> new RerankingCredentials(tenant, authToken));
   }
 
   @Inject

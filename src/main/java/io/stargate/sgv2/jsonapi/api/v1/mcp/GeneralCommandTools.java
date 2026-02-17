@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindKeyspacesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRerankingProvidersCommand;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 
 /**
@@ -41,7 +42,7 @@ public class GeneralCommandTools {
     }
 
     var command = new CreateKeyspaceCommand(name, options);
-    var context = helper.buildGeneralContext("CreateKeyspaceCommand");
+    var context = helper.buildGeneralContext(command);
     return helper.processCommand(context, command);
   }
 
@@ -50,7 +51,7 @@ public class GeneralCommandTools {
       @ToolArg(description = "Name of the keyspace to drop") String name) {
 
     var command = new DropKeyspaceCommand(name);
-    var context = helper.buildGeneralContext("DropKeyspaceCommand");
+    var context = helper.buildGeneralContext(command);
     return helper.processCommand(context, command);
   }
 
@@ -58,7 +59,7 @@ public class GeneralCommandTools {
   public Uni<String> findKeyspaces() {
 
     var command = new FindKeyspacesCommand();
-    var context = helper.buildGeneralContext("FindKeyspacesCommand");
+    var context = helper.buildGeneralContext(command);
     return helper.processCommand(context, command);
   }
 
@@ -67,6 +68,7 @@ public class GeneralCommandTools {
       @ToolArg(
               description =
                   "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.")
+          @Nullable
           String filterModelStatus) {
 
     FindEmbeddingProvidersCommand.Options options = null;
@@ -75,7 +77,7 @@ public class GeneralCommandTools {
     }
 
     var command = new FindEmbeddingProvidersCommand(options);
-    var context = helper.buildGeneralContext("FindEmbeddingProvidersCommand");
+    var context = helper.buildGeneralContext(command);
     return helper.processCommand(context, command);
   }
 
@@ -92,7 +94,7 @@ public class GeneralCommandTools {
     }
 
     var command = new FindRerankingProvidersCommand(options);
-    var context = helper.buildGeneralContext("FindRerankingProvidersCommand");
+    var context = helper.buildGeneralContext(command);
     return helper.processCommand(context, command);
   }
 }

@@ -7,16 +7,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandType;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
@@ -28,8 +29,11 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 /**
  * Shared helper for MCP tool providers. Provides command context building and command execution via
@@ -43,7 +47,12 @@ public class McpToolsHelper {
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final EmbeddingProviderFactory embeddingProviderFactory;
   private final SchemaCache schemaCache;
-  private final RequestContext requestContext;
+
+  // Per-request dependencies for creating RequestContext in MCP (non-JAX-RS) context
+  private final Provider<RoutingContext> routingContextProvider;
+  private final Provider<SecurityIdentity> securityIdentityProvider;
+  private final Instance<RequestTenantResolver> tenantResolver;
+  private final Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver;
 
   @Inject
   public McpToolsHelper(
@@ -55,12 +64,19 @@ public class McpToolsHelper {
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory,
       SchemaCache schemaCache,
-      RequestContext requestContext) {
+      Provider<RoutingContext> routingContextProvider,
+      Provider<SecurityIdentity> securityIdentityProvider,
+      Instance<RequestTenantResolver> tenantResolver,
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
     this.objectMapper = objectMapper;
     this.meteredCommandProcessor = meteredCommandProcessor;
     this.embeddingProviderFactory = embeddingProviderFactory;
     this.schemaCache = schemaCache;
-    this.requestContext = requestContext;
+
+    this.routingContextProvider = routingContextProvider;
+    this.securityIdentityProvider = securityIdentityProvider;
+    this.tenantResolver = tenantResolver;
+    this.embeddingCredentialsResolver = embeddingCredentialsResolver;
 
     this.contextBuilderSupplier =
         CommandContext.builderSupplier()
@@ -70,6 +86,19 @@ public class McpToolsHelper {
             .withEmbeddingProviderFactory(embeddingProviderFactory)
             .withRerankingProviderFactory(rerankingProviderFactory)
             .withMeterRegistry(meterRegistry);
+  }
+
+  /**
+   * Create a {@link RequestContext} for the current MCP request. Uses the MCP-specific constructor
+   * that resolves the auth token from {@link SecurityIdentity} instead of JAX-RS {@link
+   * jakarta.ws.rs.core.SecurityContext}.
+   */
+  private RequestContext createRequestContext() {
+    return new RequestContext(
+        routingContextProvider.get(),
+        securityIdentityProvider.get(),
+        tenantResolver,
+        embeddingCredentialsResolver);
   }
 
   // ---- JSON parsing helpers ----
@@ -134,21 +163,25 @@ public class McpToolsHelper {
   // ---- Command context building ----
 
   /** Build a CommandContext for database-level (general) commands. */
-  public CommandContext<?> buildGeneralContext(String commandName) {
+  public CommandContext<?> buildGeneralContext(GeneralCommand command) {
+    RequestContext requestContext = createRequestContext();
     return contextBuilderSupplier
         .getBuilder(new DatabaseSchemaObject())
-        .withCommandName(commandName)
+        .withCommandName(command.getClass().getSimpleName())
         .withRequestContext(requestContext)
+        .withApiFeatures(ApiFeatures.empty())
         .build();
   }
 
   /** Build a CommandContext for keyspace-level commands. */
   public CommandContext<?> buildKeyspaceContext(String keyspace, String commandName) {
+    RequestContext requestContext = createRequestContext();
     return contextBuilderSupplier
         .getBuilder(new KeyspaceSchemaObject(keyspace))
         .withEmbeddingProvider(null)
         .withCommandName(commandName)
         .withRequestContext(requestContext)
+        .withApiFeatures(ApiFeatures.empty())
         .build();
   }
 
@@ -159,6 +192,7 @@ public class McpToolsHelper {
    */
   public Uni<CommandContext<?>> buildCollectionContext(
       String keyspace, String collection, Command command) {
+    RequestContext requestContext = createRequestContext();
     boolean isDdl = CommandType.DDL.equals(command.commandName().getCommandType());
 
     return schemaCache
@@ -199,6 +233,7 @@ public class McpToolsHelper {
                   .withEmbeddingProvider(embeddingProvider)
                   .withCommandName(command.getClass().getSimpleName())
                   .withRequestContext(requestContext)
+                  .withApiFeatures(ApiFeatures.empty())
                   .build();
             });
   }
@@ -213,9 +248,7 @@ public class McpToolsHelper {
    * @return Uni of JSON result string
    */
   public Uni<String> processCommand(CommandContext<?> context, Command command) {
-    return meteredCommandProcessor
-        .processCommand(context, command)
-        .map(result -> serializeResult(result));
+    return meteredCommandProcessor.processCommand(context, command).map(this::serializeResult);
   }
 
   /**
