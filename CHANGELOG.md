@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.0.39](https://github.com/stargate/data-api/tree/v1.0.39) (2026-02-17)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.38...v1.0.39)
+
+**Merged pull requests:**
+
+- Refactor `MeteredEmbeddingProvider` to be only wrapper, not sub-class, renamed as `MeteredEmbeddingProviderWrapper` [\#2397](https://github.com/stargate/data-api/pull/2397) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix Docker/test-containers version problem by raising client version from 1.32 to 1.44 [\#2395](https://github.com/stargate/data-api/pull/2395) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2392: `EmbeddingProvider` and `RerankingProvider` `decideRetry\(\)` buggy [\#2393](https://github.com/stargate/data-api/pull/2393) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2378 use DocumentId when checking replacement [\#2390](https://github.com/stargate/data-api/pull/2390) ([amorton](https://github.com/amorton))
+- Minor IDE warnings clean up [\#2389](https://github.com/stargate/data-api/pull/2389) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2336: update DSE 6.9 to 6.9.18 [\#2388](https://github.com/stargate/data-api/pull/2388) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2386](https://github.com/stargate/data-api/pull/2386) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.38](https://github.com/stargate/data-api/tree/v1.0.38) (2026-02-10)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.37...v1.0.38)
