@@ -27,7 +27,8 @@ import org.slf4j.LoggerFactory;
  * input texts.
  */
 public class MeteredEmbeddingProviderWrapper {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MeteredEmbeddingProviderWrapper.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(MeteredEmbeddingProviderWrapper.class);
 
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
