@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindKeyspacesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRerankingProvidersCommand;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.NotEmpty;
 
 /**
  * MCP tool provider for database-level (general) commands. These correspond to the {@link
@@ -48,7 +49,7 @@ public class GeneralCommandTools {
 
   @Tool(description = "Drop (delete) a keyspace from the database")
   public Uni<String> dropKeyspace(
-      @ToolArg(description = "Name of the keyspace to drop") String name) {
+      @ToolArg(description = "Name of the keyspace to drop") @NotEmpty String name) {
 
     var command = new DropKeyspaceCommand(name);
     var context = helper.buildGeneralContext(command);
@@ -86,6 +87,7 @@ public class GeneralCommandTools {
       @ToolArg(
               description =
                   "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.")
+          @Nullable
           String filterModelStatus) {
 
     FindRerankingProvidersCommand.Options options = null;
