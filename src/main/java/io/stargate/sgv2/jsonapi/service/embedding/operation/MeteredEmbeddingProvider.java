@@ -58,7 +58,6 @@ public class MeteredEmbeddingProvider {
    * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
   public Uni<EmbeddingProvider.BatchedEmbeddingResponse> vectorize(
-      int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingProvider.EmbeddingRequestType embeddingRequestType) {
@@ -132,9 +131,8 @@ public class MeteredEmbeddingProvider {
   }
 
   public int maxBatchSize() {
-    return embeddingProvider.maxBatchSize() == 0
-        ? Integer.MAX_VALUE
-        : embeddingProvider.maxBatchSize();
+    final int max = embeddingProvider.maxBatchSize();
+    return (max == 0) ? Integer.MAX_VALUE : max;
   }
 
   /**

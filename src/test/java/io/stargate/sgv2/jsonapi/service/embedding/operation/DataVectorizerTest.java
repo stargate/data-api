@@ -66,11 +66,15 @@ public class DataVectorizerTest {
   }
 
   private MeteredEmbeddingProvider meteredEmbeddingProvider() {
+    return meteredEmbeddingProvider(testEmbeddingProvider);
+  }
+
+  private MeteredEmbeddingProvider meteredEmbeddingProvider(EmbeddingProvider p) {
     return new MeteredEmbeddingProvider(
         meterRegistry,
         metricsConfig,
         commandContext.requestContext(),
-        testEmbeddingProvider,
+        p,
         commandContext.commandName());
   }
 
@@ -232,7 +236,7 @@ public class DataVectorizerTest {
 
     @Test
     public void testWithUnmatchedVectorsNumber() {
-      TestEmbeddingProvider testProvider =
+      TestEmbeddingProvider brokenProvider =
           new TestEmbeddingProvider() {
             @Override
             public Uni<BatchedEmbeddingResponse> vectorize(
@@ -264,11 +268,10 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              meteredEmbeddingProvider(),
+              meteredEmbeddingProvider(brokenProvider),
               objectMapper.getNodeFactory(),
               embeddingCredentials,
               collectionSettings);
-
       Throwable failure =
           dataVectorizer
               .vectorize(documents)

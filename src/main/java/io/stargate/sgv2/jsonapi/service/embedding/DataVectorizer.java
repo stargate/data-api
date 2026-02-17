@@ -109,7 +109,6 @@ public class DataVectorizer {
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
-                    1,
                     vectorizeTexts,
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -186,7 +185,6 @@ public class DataVectorizer {
     Uni<List<float[]>> vectors =
         embeddingProvider
             .vectorize(
-                1,
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -236,7 +234,6 @@ public class DataVectorizer {
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
-                    1,
                     List.of(text),
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
@@ -324,7 +321,7 @@ public class DataVectorizer {
     }
 
     return embeddingProvider
-        .vectorize(1, textsToVectorize, embeddingCredentials, requestType)
+        .vectorize(textsToVectorize, embeddingCredentials, requestType)
         .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings)
         .onItem()
         .transform(
