@@ -65,12 +65,12 @@ public class DataVectorizerTest {
     collectionSettings = commandContext.schemaObject();
   }
 
-  private MeteredEmbeddingProvider meteredEmbeddingProvider() {
+  private MeteredEmbeddingProviderWrapper meteredEmbeddingProvider() {
     return meteredEmbeddingProvider(testEmbeddingProvider);
   }
 
-  private MeteredEmbeddingProvider meteredEmbeddingProvider(EmbeddingProvider p) {
-    return new MeteredEmbeddingProvider(
+  private MeteredEmbeddingProviderWrapper meteredEmbeddingProvider(EmbeddingProvider p) {
+    return new MeteredEmbeddingProviderWrapper(
         meterRegistry,
         metricsConfig,
         commandContext.requestContext(),

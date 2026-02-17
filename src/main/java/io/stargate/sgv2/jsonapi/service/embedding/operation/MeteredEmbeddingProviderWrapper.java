@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
  * collect and report various metrics, such as the duration of vectorization calls and the size of
  * input texts.
  */
-public class MeteredEmbeddingProvider {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MeteredEmbeddingProvider.class);
+public class MeteredEmbeddingProviderWrapper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MeteredEmbeddingProviderWrapper.class);
 
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
@@ -35,7 +35,7 @@ public class MeteredEmbeddingProvider {
   private final EmbeddingProvider embeddingProvider;
   private final String commandName;
 
-  public MeteredEmbeddingProvider(
+  public MeteredEmbeddingProviderWrapper(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       RequestContext requestContext,
