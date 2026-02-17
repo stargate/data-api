@@ -12,7 +12,6 @@
 - Fix \#2378 use DocumentId when checking replacement [\#2390](https://github.com/stargate/data-api/pull/2390) ([amorton](https://github.com/amorton))
 - Minor IDE warnings clean up [\#2389](https://github.com/stargate/data-api/pull/2389) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix \#2336: update DSE 6.9 to 6.9.18 [\#2388](https://github.com/stargate/data-api/pull/2388) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#2386](https://github.com/stargate/data-api/pull/2386) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.38](https://github.com/stargate/data-api/tree/v1.0.38) (2026-02-10)
 
@@ -24,7 +23,6 @@
 - Bump aws-actions/configure-aws-credentials from 5 to 6 in the github-actions group [\#2382](https://github.com/stargate/data-api/pull/2382) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Fallback to auth token if a reranking key is not provided [\#2381](https://github.com/stargate/data-api/pull/2381) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Fix \#2379: remove ErrorCodeV1, JsonApiException types, usage [\#2380](https://github.com/stargate/data-api/pull/2380) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#2376](https://github.com/stargate/data-api/pull/2376) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Batch \#18 of \#2285: Vector\(ize\) error code removal -- LAST ErrorCodeV1 entries! [\#2368](https://github.com/stargate/data-api/pull/2368) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.37](https://github.com/stargate/data-api/tree/v1.0.37) (2026-02-05)
@@ -35,7 +33,6 @@
 
 - FIX \#2374 force tenant id to lower case [\#2375](https://github.com/stargate/data-api/pull/2375) ([amorton](https://github.com/amorton))
 - FIX \#2372 remove placeholder that threw exception [\#2373](https://github.com/stargate/data-api/pull/2373) ([amorton](https://github.com/amorton))
-- Bumping version for next data-api release [\#2371](https://github.com/stargate/data-api/pull/2371) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.36](https://github.com/stargate/data-api/tree/v1.0.36) (2026-02-04)
 
@@ -48,7 +45,6 @@
 - Convert `EMBEDDING\_` related codes and V1 codes used in EGW to V2 [\#2364](https://github.com/stargate/data-api/pull/2364) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Batch 17 of ErrorCodeV1 removal: update operation codes [\#2363](https://github.com/stargate/data-api/pull/2363) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Update AssertJ to 3.27.7 to address a CVE [\#2362](https://github.com/stargate/data-api/pull/2362) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#2361](https://github.com/stargate/data-api/pull/2361) ([github-actions[bot]](https://github.com/apps/github-actions))
 - remove the ThrowableToErrorMapper class [\#2353](https://github.com/stargate/data-api/pull/2353) ([amorton](https://github.com/amorton))
 
 ## [v1.0.35](https://github.com/stargate/data-api/tree/v1.0.35) (2026-01-26)
@@ -132,7 +128,6 @@
 - Update dep to HCD 1.2.3 [\#2205](https://github.com/stargate/data-api/pull/2205) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix \#2202: remove `stargate.version` property, GH action for creating pr for update [\#2203](https://github.com/stargate/data-api/pull/2203) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fixes \#2194: update DSE to 6.9.14 \(from 6.9.13\) [\#2201](https://github.com/stargate/data-api/pull/2201) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#2200](https://github.com/stargate/data-api/pull/2200) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Use Stargate v2.1.0-BETA-32 [\#2195](https://github.com/stargate/data-api/pull/2195) ([github-actions[bot]](https://github.com/apps/github-actions))
 - \[Tables\] insertMany ordered as true, middle faulty row should not fail the whole batch. [\#2193](https://github.com/stargate/data-api/pull/2193) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
@@ -167,7 +162,6 @@
 - Fix \#2175: add error checking for Lexical Table Filter handling [\#2178](https://github.com/stargate/data-api/pull/2178) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix HCD image reference \(staging-\>prod\), simplify script to reduce duplication [\#2174](https://github.com/stargate/data-api/pull/2174) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Bump actions/checkout from 4 to 5 in the github-actions group [\#2173](https://github.com/stargate/data-api/pull/2173) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Bumping version for next data-api release [\#2170](https://github.com/stargate/data-api/pull/2170) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Feature/udt [\#2156](https://github.com/stargate/data-api/pull/2156) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Fix \#2053: add Lexical Filter support for Tables [\#2154](https://github.com/stargate/data-api/pull/2154) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix the proto format problem from the Postman import [\#2114](https://github.com/stargate/data-api/pull/2114) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
@@ -180,7 +174,6 @@
 
 - Revert Docker image build change of \#2162 [\#2169](https://github.com/stargate/data-api/pull/2169) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix cosign action failure for CI [\#2168](https://github.com/stargate/data-api/pull/2168) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#2167](https://github.com/stargate/data-api/pull/2167) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.28](https://github.com/stargate/data-api/tree/v1.0.28) (2025-07-30)
 
@@ -202,7 +195,6 @@
 - Fix \#2143: update to DSE 6.9.11 [\#2155](https://github.com/stargate/data-api/pull/2155) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Test class renaming [\#2153](https://github.com/stargate/data-api/pull/2153) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Remove useless override class [\#2149](https://github.com/stargate/data-api/pull/2149) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#2142](https://github.com/stargate/data-api/pull/2142) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Work on \#2054: add support in API Tables for Lexical Sort [\#2135](https://github.com/stargate/data-api/pull/2135) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - \[Tables Feature\] Filtering support for map, set, list column [\#2079](https://github.com/stargate/data-api/pull/2079) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
@@ -213,7 +205,6 @@
 **Merged pull requests:**
 
 - Updates for EGW to use ModelUsage and bug fixes [\#2140](https://github.com/stargate/data-api/pull/2140) ([amorton](https://github.com/amorton))
-- Bumping version for next data-api release [\#2138](https://github.com/stargate/data-api/pull/2138) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.26](https://github.com/stargate/data-api/tree/v1.0.26) (2025-06-18)
 
@@ -305,7 +296,6 @@
 - Group all metrics classes to new metrics package [\#2021](https://github.com/stargate/data-api/pull/2021) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Fixes \#2011: Validate LexicalConfig [\#2020](https://github.com/stargate/data-api/pull/2020) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fixes \#1952: reduce duplication of HCD image name/tag settings [\#2019](https://github.com/stargate/data-api/pull/2019) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#2018](https://github.com/stargate/data-api/pull/2018) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix, collection DocumentID range filter with different dataType values. [\#2012](https://github.com/stargate/data-api/pull/2012) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Usage metering for embedding and reranking [\#2008](https://github.com/stargate/data-api/pull/2008) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Add metrics for rerank calls [\#2003](https://github.com/stargate/data-api/pull/2003) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
@@ -331,7 +321,6 @@
 - Add IT for \#2013: Add integration tests to ensure backward compatibility on createCollection [\#2015](https://github.com/stargate/data-api/pull/2015) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Fixes \#2013: avoid fail for createCollection wrt legacy collections \(pre-lexical/pre-rerank\) [\#2014](https://github.com/stargate/data-api/pull/2014) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Add simple IT to check that stemming/stop-word config works for $lexical Collection [\#2009](https://github.com/stargate/data-api/pull/2009) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#2007](https://github.com/stargate/data-api/pull/2007) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.24](https://github.com/stargate/data-api/tree/v1.0.24) (2025-04-10)
 
@@ -351,7 +340,6 @@
 - Fixes \#2001 \(limited\) [\#2006](https://github.com/stargate/data-api/pull/2006) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - fixes \#2000 support $includeScores=false [\#2004](https://github.com/stargate/data-api/pull/2004) ([amorton](https://github.com/amorton))
 - Fixes \#1988: validate $hybrid not overlapping with $lexical/$vectorize [\#2002](https://github.com/stargate/data-api/pull/2002) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#1997](https://github.com/stargate/data-api/pull/1997) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fixes \#1990: update to DSE-6.9.8 [\#1996](https://github.com/stargate/data-api/pull/1996) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.23](https://github.com/stargate/data-api/tree/v1.0.23) (2025-04-08)
@@ -463,7 +451,6 @@
 - fix $in filter result document count mismatch limit issue for collection [\#1888](https://github.com/stargate/data-api/pull/1888) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Support Dot in Update Operation [\#1887](https://github.com/stargate/data-api/pull/1887) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Ajm/multi vector tables [\#1884](https://github.com/stargate/data-api/pull/1884) ([amorton](https://github.com/amorton))
-- Bumping version for next data-api release [\#1882](https://github.com/stargate/data-api/pull/1882) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Use Stargate v2.1.0-BETA-22 [\#1878](https://github.com/stargate/data-api/pull/1878) ([github-actions[bot]](https://github.com/apps/github-actions))
 - add non-string key map support for read and write path [\#1876](https://github.com/stargate/data-api/pull/1876) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Multi Vector Refactor [\#1859](https://github.com/stargate/data-api/pull/1859) ([amorton](https://github.com/amorton))
@@ -479,7 +466,6 @@
 **Merged pull requests:**
 
 - fix index analyze options default for non-text and non-ascii index [\#1881](https://github.com/stargate/data-api/pull/1881) ([Yuqi-Du](https://github.com/Yuqi-Du))
-- Bumping version for next data-api release [\#1875](https://github.com/stargate/data-api/pull/1875) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix \#1851: allow use of dotted paths for Sort, test \(no escaping yet\) [\#1874](https://github.com/stargate/data-api/pull/1874) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.21](https://github.com/stargate/data-api/tree/v1.0.21) (2025-02-14)
@@ -628,7 +614,6 @@
 - Add a test for \#1532 to show the problem \(verify solution\) [\#1737](https://github.com/stargate/data-api/pull/1737) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Update Nvidia Embedding URL [\#1734](https://github.com/stargate/data-api/pull/1734) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Add support for Jina-embeddings-v3 [\#1733](https://github.com/stargate/data-api/pull/1733) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
-- Bumping version for next data-api release [\#1723](https://github.com/stargate/data-api/pull/1723) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix \#1589: extract CommandStatus name constants [\#1646](https://github.com/stargate/data-api/pull/1646) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix \#1592: remove duplication of Command Names [\#1645](https://github.com/stargate/data-api/pull/1645) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
@@ -660,7 +645,6 @@
 
 - Ajm/fix 1720 bad order inserted return [\#1722](https://github.com/stargate/data-api/pull/1722) ([amorton](https://github.com/amorton))
 - remove XX from messages [\#1721](https://github.com/stargate/data-api/pull/1721) ([amorton](https://github.com/amorton))
-- Bumping version for next data-api release [\#1717](https://github.com/stargate/data-api/pull/1717) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.19](https://github.com/stargate/data-api/tree/v1.0.19) (2024-11-14)
 
@@ -805,7 +789,6 @@
 - Changes for vector index and code improvement [\#1554](https://github.com/stargate/data-api/pull/1554) ([maheshrajamani](https://github.com/maheshrajamani))
 - Update on tables using OperationAttempt [\#1552](https://github.com/stargate/data-api/pull/1552) ([amorton](https://github.com/amorton))
 - deleteOne deleteMany for tables using OperationAttempt [\#1551](https://github.com/stargate/data-api/pull/1551) ([amorton](https://github.com/amorton))
-- Bumping version for next data-api release [\#1546](https://github.com/stargate/data-api/pull/1546) ([github-actions[bot]](https://github.com/apps/github-actions))
 -   Retry operation when fail due to missing ALLOW FILTERING [\#1525](https://github.com/stargate/data-api/pull/1525) ([amorton](https://github.com/amorton))
 - Use WarningException, expand CommandResultBuilder  [\#1519](https://github.com/stargate/data-api/pull/1519) ([amorton](https://github.com/amorton))
 
