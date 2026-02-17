@@ -239,6 +239,12 @@ public class DataVectorizerTest {
       TestEmbeddingProvider brokenProvider =
           new TestEmbeddingProvider() {
             @Override
+            public int maxBatchSize() {
+              // Must be large enough to avoid per-batch extra vectors
+              return 100;
+            }
+
+            @Override
             public Uni<BatchedEmbeddingResponse> vectorize(
                 int batchId,
                 List<String> texts,
