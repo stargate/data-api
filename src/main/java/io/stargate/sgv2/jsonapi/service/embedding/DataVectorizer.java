@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -29,7 +30,7 @@ import java.util.*;
  * documents, sort clause and update clause.
  */
 public class DataVectorizer {
-  private final EmbeddingProvider embeddingProvider;
+  private final MeteredEmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
   private final EmbeddingCredentials embeddingCredentials;
   private final SchemaObject schemaObject;
@@ -44,11 +45,12 @@ public class DataVectorizer {
    * @param schemaObject - The collection setting for vectorize call
    */
   public DataVectorizer(
-      EmbeddingProvider embeddingProvider,
+      MeteredEmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
       EmbeddingCredentials embeddingCredentials,
       SchemaObject schemaObject) {
-    this.embeddingProvider = embeddingProvider;
+    this.embeddingProvider =
+        Objects.requireNonNull(embeddingProvider, "embeddingProvider must not be null");
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials =
         Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");

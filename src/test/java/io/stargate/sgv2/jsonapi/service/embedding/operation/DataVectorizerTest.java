@@ -6,14 +6,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -38,22 +42,36 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class DataVectorizerTest {
-
-  @Inject ObjectMapper objectMapper;
   private final TestEmbeddingProvider testEmbeddingProvider =
       TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER;
-  private final EmbeddingProvider testService = testEmbeddingProvider;
   private static final TestConstants testConstants = new TestConstants();
+
+  @Inject ObjectMapper objectMapper;
+  @Inject JsonApiMetricsConfig metricsConfig;
+
+  // We need actual working MeterRegistry (or sophisticated mock :) ):
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(
           testConstants.TENANT, Optional.empty(), Optional.empty(), Optional.empty());
 
+  private CommandContext<CollectionSchemaObject> commandContext;
   private CollectionSchemaObject collectionSettings = null;
 
   @BeforeEach
   public void beforeEach() {
-    collectionSettings = testEmbeddingProvider.commandContextWithVectorize().schemaObject();
+    commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    collectionSettings = commandContext.schemaObject();
+  }
+
+  private MeteredEmbeddingProvider meteredEmbeddingProvider() {
+    return new MeteredEmbeddingProvider(
+        meterRegistry,
+        metricsConfig,
+        commandContext.requestContext(),
+        testEmbeddingProvider,
+        commandContext.commandName());
   }
 
   @Nested
@@ -67,7 +85,10 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -94,7 +115,10 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -124,7 +148,10 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
       try {
         Throwable failure =
             dataVectorizer
@@ -153,7 +180,10 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -176,7 +206,10 @@ public class DataVectorizerTest {
       documents.add(document);
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
       try {
         Throwable failure =
             dataVectorizer
@@ -231,7 +264,7 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testProvider,
+              meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
               embeddingCredentials,
               collectionSettings);
@@ -276,7 +309,10 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
 
       Throwable failure =
           dataVectorizer
@@ -303,7 +339,10 @@ public class DataVectorizerTest {
       SortClause sortClause = new SortClause(sortExpressions);
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
       try {
         dataVectorizer.vectorize(sortClause).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -326,7 +365,10 @@ public class DataVectorizerTest {
       arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
       try {
         final float[] testData =
             dataVectorizer.vectorize("test data").subscribe().asCompletionStage().get();
