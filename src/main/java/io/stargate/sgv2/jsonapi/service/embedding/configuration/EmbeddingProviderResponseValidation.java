@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
-
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
@@ -10,6 +9,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  * <p>This filter checks the Content-Type of the response to ensure it is compatible with
  * 'application/json' or 'text/json'. It also verifies the presence of a JSON body in the response.
  *
- * <p>If the response fails the validation, a {@link JsonApiException} is thrown with an appropriate
+ * <p>If the response fails the validation, a {@link APIException} is thrown with an appropriate
  * error message.
  */
 public class EmbeddingProviderResponseValidation implements ClientResponseFilter {
@@ -33,12 +33,10 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
    *
    * @param requestContext the client request context
    * @param responseContext the client response context
-   * @throws JsonApiException if the response fails the validation
+   * @throws APIException if the response fails the validation
    */
   @Override
-  public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
-      throws JsonApiException {
-
+  public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
     // If the status is 0, it means something went wrong (maybe a timeout). Directly return and pass
     // the error to the client
     if (responseContext.getStatus() == 0) {
@@ -53,8 +51,8 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
 
     // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
-      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "No response body from the embedding provider");
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+          Map.of("errorMessage", "No response body from the embedding provider"));
     }
 
     // response should always be JSON; if not, error out, include raw response message for
@@ -72,9 +70,12 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
         logger.error(
             "Cannot convert the provider's error response to string: " + e.getMessage(), e);
       }
-      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'; HTTP Status: %s; The response body is: '%s'.",
-          contentType, responseContext.getStatus(), responseBody);
+
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+          Map.of(
+              "errorMessage",
+              "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'; HTTP Status: %s; The response body is: '%s'."
+                  .formatted(contentType, responseContext.getStatus(), responseBody)));
     }
   }
 }

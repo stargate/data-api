@@ -13,8 +13,8 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -197,13 +197,15 @@ public class EmbeddingGatewayClientTest {
         EmbeddingGateway.EmbeddingResponse.newBuilder();
     EmbeddingGateway.EmbeddingResponse.ErrorResponse.Builder errorResponseBuilder =
         EmbeddingGateway.EmbeddingResponse.ErrorResponse.newBuilder();
-    JsonApiException apiException =
-        ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-            "Error Code : %s response description : %s", 429, "Too Many Requests");
+    APIException apiException =
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED.get(
+            Map.of(
+                "provider", "TEST-MODEL", "httpStatus", "429", "errorMessage", "Slow Down Dude!"));
 
     errorResponseBuilder
-        .setErrorCode(apiException.getErrorCode().name())
-        .setErrorMessage(apiException.getMessage());
+        .setErrorCode(apiException.code)
+        .setErrorTitle(apiException.title)
+        .setErrorBody(apiException.body);
     builder.setError(errorResponseBuilder.build());
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
 
@@ -234,12 +236,12 @@ public class EmbeddingGatewayClientTest {
             .getFailure();
 
     assertThat(result)
-        .isInstanceOf(JsonApiException.class)
+        .isInstanceOf(APIException.class)
         .satisfies(
             e -> {
-              JsonApiException exception = (JsonApiException) e;
+              APIException exception = (APIException) e;
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
-              assertThat(exception.getErrorCode()).isEqualTo(apiException.getErrorCode());
+              assertThat(exception.code).isEqualTo(apiException.code);
             });
   }
 }

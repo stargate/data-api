@@ -97,9 +97,7 @@ public class QueryExecutor {
 
                     yield Uni.createFrom().failure(handler.maybeHandle(rte));
                   }
-                  case Throwable throwable -> {
-                    yield Uni.createFrom().failure(throwable);
-                  }
+                  case Throwable throwable -> Uni.createFrom().failure(throwable);
                   case null -> {
                     DBTraceMessages.maybeCqlTrace(
                         requestTracing,

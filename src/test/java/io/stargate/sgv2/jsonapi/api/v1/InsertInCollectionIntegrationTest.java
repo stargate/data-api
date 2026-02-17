@@ -605,7 +605,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -625,7 +625,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_EJSON_VALUE.name()))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
           .body(
               "errors[0].message",
               containsString(

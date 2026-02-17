@@ -29,9 +29,7 @@ public class ExpressionBuilder {
     // since we have outer implicit and in the filter
     Expression<BuiltCondition> expressionWithoutId =
         buildExpressionRecursive(dbLogicalExpression, additionalIdFilter, idFilters);
-    List<Expression<BuiltCondition>> expressions =
-        buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
-    return expressions;
+    return buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
   }
 
   // buildExpressionWithId only handles IDFilter ($eq, $ne, $in)
@@ -53,7 +51,7 @@ public class ExpressionBuilder {
 
     // have an idFilter
     IDCollectionFilter idFilter =
-        additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
+        additionalIdFilter != null ? additionalIdFilter : idFilters.getFirst();
 
     // _id: {$in: []} should find nothing in the entire query
     // since _id can not work with $or, entire $and should find nothing
@@ -63,19 +61,16 @@ public class ExpressionBuilder {
 
     // idFilter's operator is IN/EQ/NE, for both, split into n query logic
     List<BuiltCondition> inSplit =
-        idFilters.isEmpty() ? new ArrayList<>() : idFilters.get(0).getAll();
+        idFilters.isEmpty() ? new ArrayList<>() : idFilters.getFirst().getAll();
     if (additionalIdFilter != null) {
       inSplit = additionalIdFilter.getAll(); // override the existed id filter
     }
     return inSplit.stream()
         .map(
-            idCondition -> {
-              Expression<BuiltCondition> newExpression =
-                  expressionWithoutId == null
-                      ? Variable.of(idCondition)
-                      : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId);
-              return newExpression;
-            })
+            idCondition ->
+                (expressionWithoutId == null)
+                    ? Variable.of(idCondition)
+                    : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId))
         .collect(Collectors.toList());
   }
 

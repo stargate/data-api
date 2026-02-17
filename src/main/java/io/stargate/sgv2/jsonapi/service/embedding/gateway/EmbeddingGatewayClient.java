@@ -7,21 +7,15 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient extends EmbeddingProvider {
-
-  private static final String DEFAULT_TENANT_ID = "default";
-
   /** Map to the value of `x-embedding-api-key` in the header */
   private static final String EMBEDDING_API_KEY = "EMBEDDING_API_KEY";
 
@@ -34,15 +28,12 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   /** Map to the value of `Token` in the header */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
-  private ServiceConfigStore.ServiceRequestProperties requestProperties;
+  private final Tenant tenant;
+  private final String authToken;
+  private final EmbeddingService grpcGatewayClient;
+  private final Map<String, String> authentication;
+  private final String commandName;
 
-  private Tenant tenant;
-  private String authToken;
-  private EmbeddingService grpcGatewayClient;
-  Map<String, String> authentication;
-  private String commandName;
-
-  /** */
   public EmbeddingGatewayClient(
       ModelProvider modelProvider,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
@@ -165,14 +156,21 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setProviderContext(contextBuilder.build())
             .build();
 
-    // aaron 17 June 2025 - unsure why this error handled was not in the uni pipleine below
+    // aaron 17 June 2025 - unsure why this error handled was not in the uni pipeline below
     // kept it as is when refactoring
     Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
     try {
       embeddingResponse = grpcGatewayClient.embed(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+        throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+            Map.of(
+                "modelProvider",
+                modelProvider().apiName(),
+                "httpStatus",
+                String.valueOf(e.getStatus().getCode()),
+                "errorMessage",
+                e.getMessage()));
       }
       throw e;
     }
@@ -182,9 +180,10 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
         .transform(
             gatewayResponse -> {
               if (gatewayResponse.hasError()) {
-                throw new JsonApiException(
-                    ErrorCodeV1.valueOf(gatewayResponse.getError().getErrorCode()),
-                    gatewayResponse.getError().getErrorMessage());
+                throw new EmbeddingProviderException(
+                    gatewayResponse.getError().getErrorCode(),
+                    gatewayResponse.getError().getErrorTitle(),
+                    gatewayResponse.getError().getErrorBody());
               }
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // but grpc will make sure resp.getEmbeddingsList() is never null

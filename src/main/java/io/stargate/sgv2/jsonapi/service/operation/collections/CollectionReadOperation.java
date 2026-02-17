@@ -66,7 +66,6 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
    * @param jsonProcessingMetricsReporter - reporter to use for reporting JSON read/write metrics
-   * @return
    */
   default Uni<FindResponse> findDocument(
       RequestContext dataApiRequestInfo,
@@ -102,7 +101,7 @@ public interface CollectionReadOperation extends CollectionOperation {
               Iterator<Row> rowIterator = rSet.currentPage().iterator();
               while (--remaining >= 0 && rowIterator.hasNext()) {
                 Row row = rowIterator.next();
-                ReadDocument document = null;
+                ReadDocument document;
                 try {
                   // TODO: Use the field name, not the ordinal for the field this is too brittle
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
@@ -175,7 +174,7 @@ public interface CollectionReadOperation extends CollectionOperation {
   byte true_byte = (byte) 1;
 
   /**
-   * This method reads upto system fixed limit
+   * This method reads up to system fixed limit
    *
    * @param queryExecutor
    * @param queries Multiple queries only in case of `in` condition on `_id` field
@@ -191,7 +190,6 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
    * @param jsonProcessingMetricsReporter - reporter to use for reporting JSON read/write metrics
-   * @return
    */
   default Uni<FindResponse> findOrderDocument(
       RequestContext dataApiRequestInfo,
@@ -255,7 +253,7 @@ public interface CollectionReadOperation extends CollectionOperation {
               }
               List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {
-                ReadDocument document = null;
+                ReadDocument document;
                 Row row = rowIterator.next();
                 List<JsonNode> sortValues = new ArrayList<>(numberOfOrderByColumn);
                 for (int sortColumnCount = 0;
@@ -281,8 +279,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                   columnCounter++;
                   ByteBuffer boolValue = row.getBytesUnsafe(columnCounter);
                   if (boolValue != null) {
-                    sortValues.add(
-                        nodeFactory.booleanNode(Byte.compare(true_byte, boolValue.get(0)) == 0));
+                    sortValues.add(nodeFactory.booleanNode(true_byte == boolValue.get(0)));
                     continue;
                   }
                   // null value
@@ -329,8 +326,10 @@ public interface CollectionReadOperation extends CollectionOperation {
               // begin value to read from the sorted list
               int begin = skip;
 
-              // If the begin index is >= sorted list size, return empty response
-              if (begin >= sortedData.size()) return new FindResponse(List.of(), null);
+              // If the beginning index is >= sorted list size, return empty response
+              if (begin >= sortedData.size()) {
+                return new FindResponse(List.of(), null);
+              }
               // Last index to which we need to read
               int end = Math.min(skip + limit, sortedData.size());
               // Create a sublist of the required rage
@@ -381,10 +380,6 @@ public interface CollectionReadOperation extends CollectionOperation {
   /**
    * Default implementation to run count query and parse the result set, this approach counts by key
    * field
-   *
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
    */
   default Uni<CountResponse> countDocumentsByKey(
       RequestContext dataApiRequestInfo,
@@ -404,19 +399,12 @@ public interface CollectionReadOperation extends CollectionOperation {
                         DatabaseException.Code.COUNT_READ_FAILED.get(
                             Map.of("errorMessage", failure.toString())));
               }
-              getCount(rs, failure, counter);
+              getCount(rs, null, counter);
               return Uni.createFrom().item(new CountResponse(counter.get()));
             });
   }
 
-  /**
-   * Default implementation to run count query and parse the result set
-   *
-   * @param dataApiRequestInfo
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
-   */
+  /** Default implementation to run count query and parse the result set */
   default Uni<CountResponse> countDocuments(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
@@ -441,21 +429,14 @@ public interface CollectionReadOperation extends CollectionOperation {
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
     // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to complete before
-    // returning
-    // and it cannot handle a failure on fetchNextPage - will fix after this PR
+    // returning, and it cannot handle a failure on fetchNextPage - will fix after this PR
     counter.addAndGet(rs.remaining());
     if (rs.hasMorePages()) {
       rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
     }
   }
 
-  /**
-   * Run estimated count query and parse the result set
-   *
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
-   */
+  /** Run estimated count query and parse the result set */
   default Uni<CountResponse> estimateDocumentCount(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
@@ -495,7 +476,7 @@ public interface CollectionReadOperation extends CollectionOperation {
 
       // estimate the total row count by dividing the total partition count by the ratio
       // of the sum of all token ranges to the entire token range, avoiding division by zero
-      // relies on the assumption that the supershredding schema uses one row per partition
+      // relies on the assumption that the super-shredding schema uses one row per partition
       if (totalRangeSize > 0) {
         counter.addAndGet((long) (totalPartitionsCount / (totalRangeSize / TOTAL_TOKEN_RANGE)));
       }

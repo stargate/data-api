@@ -1019,8 +1019,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
       Throwable failure = catchThrowable(() -> operation.execute(requestContext, queryExecutor));
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED);
+          .hasFieldOrPropertyWithValue(
+              "code", SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.name());
     }
   }
 

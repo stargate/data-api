@@ -3,9 +3,10 @@ package io.stargate.sgv2.jsonapi.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -66,9 +67,9 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
    *
    * @param dotPath Path that uses dot-notation
    * @return Locator instance
-   * @throws JsonApiException if dotPath invalid (empty path segment(s))
+   * @throws APIException if dotPath invalid (empty path segment(s))
    */
-  public static PathMatchLocator forPath(String dotPath) throws JsonApiException {
+  public static PathMatchLocator forPath(String dotPath) {
     return new PathMatchLocator(dotPath, splitAndVerify(dotPath));
   }
 
@@ -221,13 +222,15 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     return context;
   }
 
-  private static DocumentPath splitAndVerify(String dotPath) throws JsonApiException {
+  private static DocumentPath splitAndVerify(String dotPath) {
     DocumentPath path;
     try {
       path = DocumentPath.from(dotPath);
     } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
-          "update path ('%s') is not a valid path. " + e.getMessage(), dotPath);
+      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.get(
+          Map.of(
+              "errorMessage",
+              "update path ('%s') is not valid: %s".formatted(dotPath, e.getMessage())));
     }
     return path;
   }
@@ -239,10 +242,12 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     return -1;
   }
 
-  private JsonApiException cantCreatePropertyPath(String fullPath, String prop, JsonNode context) {
-    return ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
-        "cannot create field ('%s') in path '%s'; only OBJECT nodes have properties (got %s)",
-        prop, fullPath, context.getNodeType());
+  private APIException cantCreatePropertyPath(String fullPath, String prop, JsonNode context) {
+    throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.get(
+        Map.of(
+            "errorMessage",
+            "cannot create field ('%s') in path '%s'; only Object nodes have properties (got %s)"
+                .formatted(prop, fullPath, JsonUtil.nodeTypeAsString(context))));
   }
 
   // Needed because Command Resolver unit tests rely on equality checks for Command equality

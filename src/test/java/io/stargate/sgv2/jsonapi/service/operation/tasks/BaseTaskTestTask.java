@@ -28,8 +28,8 @@ public class BaseTaskTestTask
   }
 
   @Override
-  protected RuntimeException maybeHandleException(
-      UniSupplier<String> resultSupplier, RuntimeException runtimeException) {
+  protected Throwable maybeHandleException(
+      UniSupplier<String> resultSupplier, Throwable throwable) {
     throw new RuntimeException("Not implemented");
   }
 }

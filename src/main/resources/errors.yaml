@@ -836,6 +836,42 @@ request-errors:
       Resend the command with valid usage of $push operator.
 
   - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_DATA_TYPE
+    title: Unsupported update data type
+    body: |-
+      Unsupported update data type: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION
+    title: Unsupported update operation
+    body: |-
+      Unsupported update operation: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_MODIFIER
+    title: Unsupported update operation modifier
+    body: |-
+      Unsupported update operation modifier: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_PARAM
+    title: Unsupported update operation parameter
+    body: |-
+      Unsupported update operation parameter: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_PATH
+    title: Unsupported update operation path
+    body: |-
+      Unsupported update operation path: ${errorMessage}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_TARGET
+    title: Unsupported update operation target
+    body: |-
+      Unsupported target JSON value for update operation: ${errorMessage}.
+
+  - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
     title: Primary key columns cannot be updated
     body: |-
@@ -1435,12 +1471,6 @@ request-errors:
       Reranking provider rate-limited: ${errorMessage}.
 
   - scope: SCHEMA
-    code: RERANKING_PROVIDER_TIMEOUT
-    title: Reranking provider timeout
-    body: |-
-      Reranking provider timed out: ${errorMessage}.
-
-  - scope: SCHEMA
     code: RERANKING_PROVIDER_AUTHENTICATION_KEY_NOT_PROVIDED
     title: Reranking provider has no authentication key
     body: |-
@@ -1753,6 +1783,42 @@ request-errors:
       The command attempted to use the metric: ${unknownMetric}.
       
       Resend the command using a known metric.
+
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_NOT_SUPPORTED
+    title: Vector search not enabled for collection
+    body: |-
+      Vector search is not enabled for collection: ${keyspace}.${table}.
+
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_TOO_BIG_VALUE
+    title: Vector embedding property too big
+    body: |-
+      Vector embedding property '$vector' length too big: ${length} (max ${maxLength}).
+
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME
+    title: Unknown vector search function name
+    body: |-
+      Unknown vector search function name: '${function}'.
+
+  - scope: SCHEMA
+    code: VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME
+    title: Unrecognized vector search source model name
+    body: |-
+      Unrecognized vector search source model name: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: VECTORIZE_CREDENTIAL_INVALID
+    title: Invalid credential name for vectorize
+    body: |-
+      Invalid credential name for vectorize, with error: ${errorMessage}.
+
+  - scope: SCHEMA
+    code: VECTORIZE_FEATURE_NOT_AVAILABLE
+    title: Vectorize feature not available
+    body: |-
+      Vectorize feature is not available in the environment.
 
   - scope: SCHEMA
     code: CANNOT_DROP_UNKNOWN_INDEX
@@ -2277,8 +2343,11 @@ server-errors:
       Error Message: ${errorMessage}
       
       ${SNIPPET.RETRY_UNKNOWN}
+  
 
-  # DATABASE scope server errors
+  # ================================================================================================================
+  # Family: SERVER         Scope: DATABASE
+  # ================================================================================================================
 
   - scope: DATABASE
     code: CORRUPTED_COLLECTION_SCHEMA
@@ -2569,8 +2638,12 @@ server-errors:
       The write type was: ${writeType}.
       
       ${SNIPPET.RETRY}
+  
 
-  # EMBEDDING scope server errors
+  # ================================================================================================================
+  # Family: SERVER         Scope: EMBEDDING
+  # ================================================================================================================
+
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_GATEWAY_NOT_AVAILABLE
     title: Embedding Gateway not available
@@ -2579,13 +2652,121 @@ server-errors:
       Underlying problem: ${errorMessage}.
 
   - scope: EMBEDDING_PROVIDER
-    code: CLIENT_ERROR
-    title: The Embedding Provider returned a HTTP client error
+    code: EMBEDDING_GATEWAY_REQUEST_PROCESSING_ERROR
+    title: Embedding Gateway failed to process request
     body: |-
-      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      Embedding Gateway failed to process request
+      Underlying problem: ${errorMessage}.         
 
   - scope: EMBEDDING_PROVIDER
-    code: SERVER_ERROR
+    code: EMBEDDING_GATEWAY_RATE_LIMITED
+    title: Embedding Gateway rate limited the request
+    body: |-
+      Embedding Gateway rate limited the request
+      Underlying problem: ${errorMessage}.   
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_GATEWAY_UNABLE_RESOLVE_AUTHENTICATION_TYPE
+    title: Embedding Gateway unable to resolve authentication type
+    body: |-
+      Embedding Gateway unable to resolve authentication type.
+      Underlying problem: ${errorMessage}.      
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_GATEWAY_UNEXPECTED_RESPONSE
+    title: Embedding Gateway returned an unexpected response.
+    body: |-
+      Embedding Gateway returned an unexpected response.
+      Underlying problem: ${errorMessage}.      
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_REQUEST_ENCODING_ERROR
+    title: Embedding request encoding failure
+    body: |-
+      Internal error: failed to encode embedding request (provider '${provider}', model '${model}').
+      Underlying problem: ${errorMessage} 
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_RESPONSE_DECODING_ERROR
+    title: Embedding request response decoding failure
+    body: |-
+      Internal error: failed to decode response to embedding request (provider '${provider}', model '${model}').
+      Underlying problem: ${errorMessage}
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_BAD_HOST_NAME
+    title: Bad parameter(s) cause bad provider URL
+    body: |-
+      The bad parameter(s) cause bad host name in Provider URL.
+      The embedding provider was: ${modelProvider}.
+      Underlying error class: ${errorClass}
+      Underlying error message: ${errorMessage}
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED
+    title: Authentication header(s) missing from embedding request
+    body: |-
+      Missing authentication header(s) from embedding request (provider '${provider}'): ${message}').
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error
     body: |-
-      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      Provider '${provider}' returned a HTTP client error with HTTP ${httpStatus}; error message: ${errorMessage}
+      
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_RATE_LIMITED
+    title: Embedding provider rate limited the request
+    body: |-
+      Provider '${provider}' rate limited the request with HTTP ${httpStatus}; error message: ${errorMessage}
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_SERVER_ERROR
+    title: The Embedding Provider returned a HTTP server error
+    body: |-
+      Provider '${provider}' returned a HTTP server error with HTTP ${httpStatus}; error message: ${errorMessage}
+      
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_TIMEOUT
+    title: The Embedding Provider request timed out
+    body: |-
+      The command called an embedding provider to vectorize text, but the provider did not respond within the allowed time.
+      
+      The embedding provider was: ${modelProvider}.
+      The HTTP status code was: ${httpStatus}.
+      The error message was: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_UNAVAILABLE
+    title: The Embedding Provider is unavailable
+    body: |-
+      The Embedding Provider is unavailable
+      Underlying problem: ${errorMessage}
+
+  - scope: EMBEDDING_PROVIDER
+    code: EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE
+    title: The Embedding Provider returned an unexpected response
+    body: |-
+      The Embedding Provider returned an unexpected response.
+      Underlying problem: ${errorMessage}.
+
+
+# ================================================================================================================
+# Family: SERVER         Scope: RERANKING
+# ================================================================================================================
+
+  - scope: RERANKING
+    code: RERANKING_PROVIDER_TIMEOUT
+    title: Reranking Provider timed out
+    body: |-
+      The command called an reranking provider to rerank results, but the provider did not respond within the allowed time.
+      
+      The reranking provider was: ${modelProvider}.
+      The HTTP status code was: ${httpStatus}.
+      The error message was: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}

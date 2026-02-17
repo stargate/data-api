@@ -216,7 +216,7 @@ jobs:
 
       # build and push Astra image to Amazon ECR
       - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.ECR_FEDERATED_ROLE }}
           aws-region: us-east-1
@@ -262,19 +262,14 @@ jobs:
       matrix:
         image: [jsonapi]
 
-    env:
-      # not a newest version, this reflects riptano action target version
-      # 22-Jul-2025, tatu: pre-2.0.0 no longer supported, use current latest
-      COSIGN_VERSION: v2.5.3
-
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
         with:
-          cosign-release: ${COSIGN_VERSION}
+          cosign-release: v2.5.3
 
       - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.ECR_FEDERATED_ROLE }}
           aws-region: us-east-1

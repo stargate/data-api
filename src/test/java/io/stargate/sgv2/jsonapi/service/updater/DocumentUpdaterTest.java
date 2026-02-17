@@ -13,8 +13,6 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
@@ -262,8 +260,9 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION)
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION.name())
           .hasMessageStartingWith(
               "Unsupported update operation: Invalid update operator 'location' (must start with '$')");
     }
@@ -281,8 +280,9 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION)
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION.name())
           .hasMessageStartingWith(
               "Unsupported update operation: Unsupported update operator '$pullAll'");
     }
@@ -337,8 +337,8 @@ public class DocumentUpdaterTest {
                         (ObjectNode) objectMapper.readTree("{\"unsetField\":1, \"common\":1}")));
               });
       assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
           .hasMessageContaining(
               "update operators '$set' and '$unset' must not refer to same path: 'common'");
     }
@@ -355,8 +355,8 @@ public class DocumentUpdaterTest {
                           UpdateOperator.MUL,
                           (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}"))));
       assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
           .hasMessageContaining(
               "update operators '$inc' and '$mul' must not refer to same path: 'root.x'");
     }
@@ -371,8 +371,8 @@ public class DocumentUpdaterTest {
                           UpdateOperator.SET,
                           (ObjectNode) objectMapper.readTree("{\"root.1\":-7, \"root\":[ ]}"))));
       assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
           .hasMessageContaining(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.1' ($set)");
     }
@@ -397,8 +397,8 @@ public class DocumentUpdaterTest {
           }
           """))));
       assertThat(t)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
           .hasMessageContaining(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.a' ($set)");
     }
@@ -483,12 +483,12 @@ public class DocumentUpdaterTest {
               (ObjectNode)
                   objectMapper.readTree(
                       """
-                                                                        {
-                                                                          "_id": "2",
-                                                                          "location": "New York",
-                                                                          "new_data" : 40
-                                                                       }
-                                                                    """));
+                                {
+                                  "_id": "2",
+                                  "location": "New York",
+                                  "new_data" : 40
+                               }
+                            """));
       Throwable t =
           catchThrowable(
               () -> {
@@ -501,7 +501,7 @@ public class DocumentUpdaterTest {
           .hasFieldOrPropertyWithValue(
               "code", DocumentException.Code.DOCUMENT_REPLACE_DIFFERENT_DOCID.name())
           .hasMessageStartingWith(
-              "The replace document and document resolved using filter have different '_id's: \"2\" (replace document) vs. \"1\" (document");
+              "The replace document and document resolved using filter have different '_id's: StringId('2') (replace document) vs. StringId('1') (document that filter matches).");
     }
 
     @Test
@@ -594,9 +594,11 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .satisfies(
               secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
+                // Normalize by re-parsing to convert FloatNode to DoubleNode (Jackson parses
+                // JSON numbers as DoubleNode by default, but vectors come as FloatNode)
+                assertThat(
+                        objectMapper.readTree(
+                            objectMapper.writeValueAsString(secondResponseNode.document())))
                     .isEqualTo(expectedData2);
                 assertThat(secondResponseNode.modified()).isEqualTo(true); // modified $vector
               });
@@ -795,7 +797,7 @@ public class DocumentUpdaterTest {
                                 "_id": "1",
                                 "location": "London",
                                 "$vector": [0.25,0.25,0.25],
-                                "$vectorize": "London is rainy1"
+                                "$vectorize": "London is rainy"
                           }
                           """;
       JsonNode expectedData2 = objectMapper.readTree(expected2);
@@ -803,9 +805,10 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .satisfies(
               secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
+                // Normalize by re-parsing to convert FloatNode to DoubleNode
+                assertThat(
+                        objectMapper.readTree(
+                            objectMapper.writeValueAsString(secondResponseNode.document())))
                     .isEqualTo(expectedData2);
                 assertThat(secondResponseNode.modified()).isEqualTo(true);
               });
@@ -973,9 +976,10 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .satisfies(
               secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
+                // Normalize by re-parsing to convert FloatNode to DoubleNode
+                assertThat(
+                        objectMapper.readTree(
+                            objectMapper.writeValueAsString(secondResponseNode.document())))
                     .isEqualTo(expectedData2);
                 assertThat(secondResponseNode.modified()).isEqualTo(true);
                 // modified $vector
@@ -1223,9 +1227,10 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .satisfies(
               secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
+                // Normalize by re-parsing to convert FloatNode to DoubleNode
+                assertThat(
+                        objectMapper.readTree(
+                            objectMapper.writeValueAsString(secondResponseNode.document())))
                     .isEqualTo(expectedData2);
                 assertThat(secondResponseNode.modified()).isEqualTo(true);
                 // modified $vector

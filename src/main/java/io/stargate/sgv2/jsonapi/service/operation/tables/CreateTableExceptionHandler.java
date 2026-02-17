@@ -25,7 +25,7 @@ public class CreateTableExceptionHandler extends KeyspaceDriverExceptionHandler 
   }
 
   @Override
-  public RuntimeException handle(AlreadyExistsException exception) {
+  public Throwable handle(AlreadyExistsException exception) {
     return SchemaException.Code.CANNOT_ADD_EXISTING_TABLE.get(
         Map.of("existingTable", errFmt(tableName)));
   }
@@ -39,7 +39,7 @@ public class CreateTableExceptionHandler extends KeyspaceDriverExceptionHandler 
    * </ul>
    */
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
     if (exception.getMessage().contains("Unknown type")) {
       return SchemaException.Code.UNKNOWN_USER_DEFINED_TYPE.get(
           Map.of("driverMessage", exception.getMessage()));

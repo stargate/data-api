@@ -36,9 +36,9 @@ public class TenantTests {
   @Test
   public void astraDbCreation() {
 
-    var lowercase = Tenant.create(DatabaseType.ASTRA, "aa11zz");
+    var lowercase = Tenant.create(DatabaseType.ASTRA, "AA11ZZ");
     assertThat(lowercase.databaseType()).isEqualTo(DatabaseType.ASTRA);
-    assertThat(lowercase.toString()).isEqualTo("AA11ZZ");
+    assertThat(lowercase.toString()).isEqualTo("aa11zz");
   }
 
   @Test
@@ -98,18 +98,18 @@ public class TenantTests {
   @Test
   public void recordTo() {
 
-    var tenant = Tenant.create(DatabaseType.ASTRA, "Tenant-123");
+    var tenant = Tenant.create(DatabaseType.ASTRA, "tenant-123");
 
     assertThat(PrettyPrintable.pprint(tenant))
         .as("Recording to pretty print")
-        .contains("tenantId", "TENANT-123")
+        .contains("tenantId", "tenant-123")
         .contains("databaseType", DatabaseType.ASTRA.name());
 
     var tenantJson = Jsonable.toJson(tenant);
     var expected = JsonNodeFactory.instance.objectNode();
     // Top level node with the class name
     var contents = expected.withObjectProperty("Tenant");
-    contents.put("tenantId", "TENANT-123");
+    contents.put("tenantId", "tenant-123");
     contents.put("databaseType", DatabaseType.ASTRA.name());
 
     assertThat(tenantJson).as("Recording to JSON").isEqualTo(expected);

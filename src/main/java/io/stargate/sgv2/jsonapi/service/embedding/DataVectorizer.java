@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.embedding;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
-import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -125,11 +124,15 @@ public class DataVectorizer {
 
                   // check if we get back the same number of vectors that we asked for
                   if (vectorData.size() != vectorizeTexts.size()) {
-                    throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-                        "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
-                        collectionVectorDefinition.vectorizeDefinition().provider(),
-                        vectorizeTexts.size(),
-                        vectorData.size());
+                    throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE
+                        .get(
+                            Map.of(
+                                "errorMessage",
+                                "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'"
+                                    .formatted(
+                                        collectionVectorDefinition.vectorizeDefinition().provider(),
+                                        vectorizeTexts.size(),
+                                        vectorData.size())));
                   }
                   for (int vectorPosition = 0;
                       vectorPosition < vectorData.size();
@@ -139,11 +142,17 @@ public class DataVectorizer {
                     float[] vector = vectorData.get(vectorPosition);
                     // check if all vectors have the expected size
                     if (vector.length != collectionVectorDefinition.vectorSize()) {
-                      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-                          "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          collectionVectorDefinition.vectorizeDefinition().provider(),
-                          collectionVectorDefinition.vectorSize(),
-                          vector.length);
+                      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE
+                          .get(
+                              Map.of(
+                                  "errorMessage",
+                                  "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'"
+                                      .formatted(
+                                          collectionVectorDefinition
+                                              .vectorizeDefinition()
+                                              .provider(),
+                                          collectionVectorDefinition.vectorSize(),
+                                          vector.length)));
                     }
                     final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
                     for (float listValue : vector) {
@@ -155,8 +164,6 @@ public class DataVectorizer {
                 });
       }
       return Uni.createFrom().item(true);
-    } catch (JsonApiException e) {
-      return Uni.createFrom().failure(e);
     } catch (APIException e) {
       return Uni.createFrom().failure(e);
     }
@@ -194,11 +201,14 @@ public class DataVectorizer {
               float[] vector = vectorData.get(0);
               // check if vector have the expected size
               if (vector.length != collectionVectorDefinition.vectorSize()) {
-                throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-                    "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                    collectionVectorDefinition.vectorizeDefinition().provider(),
-                    collectionVectorDefinition.vectorSize(),
-                    vector.length);
+                throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+                    Map.of(
+                        "errorMessage",
+                        "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'"
+                            .formatted(
+                                collectionVectorDefinition.vectorizeDefinition().provider(),
+                                collectionVectorDefinition.vectorSize(),
+                                vector.length)));
               }
               return vector;
             });
@@ -241,11 +251,15 @@ public class DataVectorizer {
                       vectorConfig.getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
                   // check if vector have the expected size
                   if (vector.length != collectionVectorDefinition.vectorSize()) {
-                    throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-                        "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        collectionVectorDefinition.vectorizeDefinition().provider(),
-                        collectionVectorDefinition.vectorSize(),
-                        vector.length);
+                    throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE
+                        .get(
+                            Map.of(
+                                "errorMessage",
+                                "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'"
+                                    .formatted(
+                                        collectionVectorDefinition.vectorizeDefinition().provider(),
+                                        collectionVectorDefinition.vectorSize(),
+                                        vector.length)));
                   }
                   // 12-Jun-2025, tatu: Important! Due to original bad design, we need to allow
                   //   replacing of vectorize sort with resolved vector sort:
@@ -255,8 +269,6 @@ public class DataVectorizer {
                 });
       }
       return Uni.createFrom().item(true);
-    } catch (JsonApiException e) {
-      return Uni.createFrom().failure(e);
     } catch (APIException e) {
       return Uni.createFrom().failure(e);
     }
@@ -317,9 +329,11 @@ public class DataVectorizer {
             vectorData -> {
               // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
               if (vectorData.size() != textsToVectorize.size()) {
-                throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-                    "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
-                    providerName, textsToVectorize.size(), vectorData.size());
+                throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+                    Map.of(
+                        "errorMessage",
+                        "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'"
+                            .formatted(providerName, textsToVectorize.size(), vectorData.size())));
               }
               return vectorData;
             });
@@ -376,11 +390,14 @@ public class DataVectorizer {
     private void validateVector(float[] vector) {
       // Copied from vectorize(List<JsonNode> documents) above leaving as is for now - aaron
       if (vector.length != vectorType.getDimension()) {
-        throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-            "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-            vectorType.getVectorizeDefinition().provider(),
-            vectorType.getDimension(),
-            vector.length);
+        throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+            Map.of(
+                "errorMessage",
+                "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'"
+                    .formatted(
+                        vectorType.getVectorizeDefinition().provider(),
+                        vectorType.getDimension(),
+                        vector.length)));
       }
     }
 

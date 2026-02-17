@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -7,7 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -39,51 +41,14 @@ public record InsertCollectionOperation(
     this(commandContext, insertions, false, false, false);
   }
 
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext,
-  //      List<WritableShreddedDocument> documents,
-  //      boolean ordered,
-  //      boolean offlineMode,
-  //      boolean returnDocumentResponses) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        CollectionInsertAttempt.from(documents),
-  //        ordered,
-  //        offlineMode,
-  //        returnDocumentResponses);
-  //  }
-  //
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext,
-  //      List<WritableShreddedDocument> documents,
-  //      boolean ordered,
-  //      boolean returnDocumentResponses) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        CollectionInsertAttempt.from(documents),
-  //        ordered,
-  //        false,
-  //        returnDocumentResponses);
-  //  }
-  //
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext, WritableShreddedDocument document) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
-  //        false,
-  //        false,
-  //        false);
-  //  }
-
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
-    if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
-      throw ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-          commandContext().schemaObject().name().table());
+    if (!vectorEnabled && insertions.stream().anyMatch(CollectionInsertAttempt::hasVectorValues)) {
+      throw SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.get(
+          errVars(commandContext().schemaObject()));
     }
     // create json doc write metrics
     if (commandContext.jsonProcessingMetricsReporter() != null) {
@@ -131,7 +96,7 @@ public record InsertCollectionOperation(
         // if no failures reduce to the op page
         .collect()
         .in(
-            () -> new InsertOperationPage(insertions, returnDocumentResponses()),
+            () -> new InsertOperationPage<>(insertions, returnDocumentResponses()),
             (insertPage, insertAttempt) -> {
               insertPage.registerCompletedAttempt(insertAttempt);
               insertAttempt
@@ -145,12 +110,7 @@ public record InsertCollectionOperation(
         // in case upstream propagated FailFastInsertException
         // return collected result
         .onFailure(FailFastInsertException.class)
-        .recoverWithItem(
-            e -> {
-              // safe to cast, asserted class in onFailure
-              FailFastInsertException failFastInsertException = (FailFastInsertException) e;
-              return failFastInsertException.result;
-            })
+        .recoverWithItem(e -> e.result)
 
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
@@ -184,10 +144,8 @@ public record InsertCollectionOperation(
         // then reduce here
         .collect()
         .in(
-            () -> new InsertOperationPage(insertions, returnDocumentResponses()),
-            (agg, in) -> {
-              agg.registerCompletedAttempt(in);
-            })
+            () -> new InsertOperationPage<>(insertions, returnDocumentResponses()),
+            InsertOperationPage::registerCompletedAttempt)
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
   }

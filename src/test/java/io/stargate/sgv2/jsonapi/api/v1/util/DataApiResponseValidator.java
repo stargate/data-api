@@ -152,20 +152,10 @@ public class DataApiResponseValidator {
     }
   }
 
-  // // // API-aware validation: status, error codes // // //
+  // // // API-aware validation: status, error codes
 
   public DataApiResponseValidator hasNoErrors() {
     return body("$", responseIsSuccess);
-  }
-
-  public DataApiResponseValidator hasSingleApiError(ErrorCodeV1 errorCode) {
-    return body("$", responseIsError)
-        .body("errors", hasSize(1))
-        .body("errors[0].errorCode", is(errorCode.name()));
-  }
-
-  public DataApiResponseValidator hasSingleApiError(ErrorCodeV1 errorCode, String messageSnippet) {
-    return hasSingleApiError(errorCode, containsString(messageSnippet));
   }
 
   // aaron 19-oct-2024 added while redoing a lot of errors, we still need to cleanup the error code
@@ -175,11 +165,6 @@ public class DataApiResponseValidator {
         .body("errors", hasSize(1))
         .body("errors[0].errorCode", is(errorCode))
         .body("errors[0].message", containsString(messageSnippet));
-  }
-
-  public DataApiResponseValidator hasSingleApiError(
-      ErrorCodeV1 errorCode, Matcher<String> messageMatcher) {
-    return hasSingleApiError(errorCode).body("errors[0].message", messageMatcher);
   }
 
   public <T extends APIException> DataApiResponseValidator hasSingleApiError(

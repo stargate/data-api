@@ -6,16 +6,13 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Value that represents details of MongoDB {@code _id} column: the primary key of all Documents
@@ -184,10 +181,13 @@ public interface DocumentId extends DocRowIdentifer {
   }
 
   static DocumentId fromExtensionType(JsonExtensionType extType, JsonNode valueNode) {
+    // Unpacking the ejson type will throw errors about bad ejson types,
+    // but we want an error code about a bad document ID, so catch
+    // and translate.
     try {
       Object rawId = JsonUtil.extractExtendedValueUnwrapped(extType, valueNode);
       return new ExtensionTypeId(extType, String.valueOf(rawId));
-    } catch (JsonApiException e) {
+    } catch (APIException e) {
       throw DocumentException.Code.SHRED_BAD_DOCID_TYPE.get(Map.of("errorMessage", e.getMessage()));
     }
   }
