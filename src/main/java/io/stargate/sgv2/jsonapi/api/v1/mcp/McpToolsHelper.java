@@ -169,7 +169,6 @@ public class McpToolsHelper {
         .getBuilder(new DatabaseSchemaObject())
         .withCommandName(command.getClass().getSimpleName())
         .withRequestContext(requestContext)
-        .withApiFeatures(ApiFeatures.empty())
         .build();
   }
 
