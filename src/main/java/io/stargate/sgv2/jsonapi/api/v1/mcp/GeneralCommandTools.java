@@ -30,7 +30,6 @@ public class GeneralCommandTools {
 
     CreateKeyspaceCommand.Options options = null;
     if (replicationClass != null && !replicationClass.isBlank()) {
-      var replication = new CreateKeyspaceCommand.Replication();
       // Use Jackson deserialization for full command construction
       String optionsJson =
           "{\"replication\": {\"class\": \"%s\"%s}}"

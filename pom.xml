@@ -162,6 +162,11 @@
       <artifactId>quarkus-mcp-server-http</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkiverse.mcp</groupId>
+      <artifactId>quarkus-mcp-server-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
     </dependency>
