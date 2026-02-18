@@ -77,7 +77,8 @@ public class GeneralResource {
               schema = @Schema(anyOf = {CreateKeyspaceCommand.class}),
               examples = {
                 @ExampleObject(ref = "createKeyspace"),
-                @ExampleObject(ref = "createKeyspaceWithReplication"),
+                @ExampleObject(ref = "createKeyspaceWithSimpleStrategy"),
+                @ExampleObject(ref = "createKeyspaceWithNetworkTopologyStrategy"),
                 @ExampleObject(ref = "findKeyspaces"),
                 @ExampleObject(ref = "dropKeyspace"),
               }))
