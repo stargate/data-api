@@ -126,6 +126,15 @@ quarkus:
 
     min-level: trace
 
+  # MCP PoC
+  mcp:
+    server:
+      traffic-logging:
+        enabled: true
+        text-limit: 500
+      sse:
+        root-path: /v1/mcp
+
   # built-in micrometer properties
   micrometer:
     # exports at prometheus default path
