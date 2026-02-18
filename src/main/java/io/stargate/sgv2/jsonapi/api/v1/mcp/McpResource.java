@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -40,7 +39,8 @@ public class McpResource {
   private final EmbeddingProviderFactory embeddingProviderFactory;
   private final SchemaCache schemaCache;
 
-  // Per-request dependencies for creating RequestContext in MCP (non-JAX-RS) context
+  // Per-request dependencies for creating RequestContext in MCP (non-JAX-RS)
+  // context
   private final Provider<RoutingContext> routingContextProvider;
   private final Provider<SecurityIdentity> securityIdentityProvider;
   private final Instance<RequestTenantResolver> tenantResolver;
@@ -94,14 +94,17 @@ public class McpResource {
   }
 
   /**
-   * Process a general or keyspace command and return the JSON-serialized result string.
+   * Process a general or keyspace command and return the CommandResult directly.
+   *
+   * <p>The Quarkus MCP Server framework automatically encodes the {@link CommandResult} to JSON via
+   * its built-in encoder (Jackson), so no manual serialization is needed.
    *
    * @param context The command context (from buildGeneralContext or buildKeyspaceContext)
    * @param command The command to execute
-   * @return Uni of JSON result string
+   * @return Uni of CommandResult
    */
-  public Uni<String> processCommand(CommandContext<?> context, Command command) {
-    return meteredCommandProcessor.processCommand(context, command).map(this::serializeResult);
+  public Uni<CommandResult> processCommand(CommandContext<?> context, Command command) {
+    return meteredCommandProcessor.processCommand(context, command);
   }
 
   /**
@@ -115,17 +118,5 @@ public class McpResource {
         securityIdentityProvider.get(),
         tenantResolver,
         embeddingCredentialsResolver);
-  }
-
-  private String serializeResult(CommandResult result) {
-    try {
-      return objectMapper.writeValueAsString(result);
-    } catch (JsonProcessingException e) {
-      LOG.error("Unable to serialize CommandResult instance {} to JSON.", result, e);
-
-      return "{\"errors\":[{\"message\":\"Failed to serialize command result: "
-          + e.getMessage()
-          + "\"}]}";
-    }
   }
 }
