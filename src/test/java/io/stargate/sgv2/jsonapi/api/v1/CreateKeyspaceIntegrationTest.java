@@ -94,7 +94,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
     }
 
     @Test
-    public final void withReplicationFactor() {
+    public final void withSimpleStrategy() {
       givenHeadersAndJson(
                   """
           {
@@ -119,14 +119,39 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
     }
 
     @Test
+    public final void withNetworkTopologyStrategy() {
+      givenHeadersAndJson(
+                  """
+          {
+            "createKeyspace": {
+              "name": "%s",
+              "options": {
+                "replication": {
+                  "class": "NetworkTopologyStrategy",
+                  "dc1" : 3
+                }
+              }
+            }
+          }
+          """
+                  .formatted(DB_NAME))
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+    }
+
+    @Test
     public void invalidCommand() {
       givenHeadersAndJson(
               """
-                      {
-                        "createKeyspace": {
-                        }
-                      }
-                      """)
+              {
+                "createKeyspace": {
+                }
+              }
+              """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -216,7 +241,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
     }
 
     @Test
-    public final void withReplicationFactor() {
+    public final void withSimpleStrategy() {
       givenHeadersAndJson(
                   """
           {
@@ -254,7 +279,47 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body(
               "status.warnings[0].message",
               containsString("The new command to use is: createKeyspace."));
-      ;
+    }
+
+    @Test
+    public final void withNetworkTopologyStrategy() {
+      givenHeadersAndJson(
+                  """
+          {
+            "createNamespace": {
+              "name": "%s",
+              "options": {
+                "replication": {
+                  "class": "NetworkTopologyStrategy",
+                  "dc1" : 3
+                }
+              }
+            }
+          }
+          """
+                  .formatted(DB_NAME))
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1))
+          .body("status.warnings", hasSize(1))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: createNamespace."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: createKeyspace."));
     }
 
     @Test
