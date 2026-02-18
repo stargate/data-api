@@ -1,0 +1,22 @@
+{
+  "targets": [
+    {
+      "name": "local",
+      "backend": "cassandra",
+      "connection": {
+        "domain": "http://localhost",
+        "port": 8181,
+        "basePath": "/v1"
+      }
+    },
+    {
+      "name": "astra-dev",
+      "backend": "astra",
+      "connection": {
+        "domain": "http://localhost",
+        "port": 8181,
+        "basePath": "/v1/json"
+      }
+    }
+  ]
+}

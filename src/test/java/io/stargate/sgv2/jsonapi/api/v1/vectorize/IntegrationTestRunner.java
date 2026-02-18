@@ -34,7 +34,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassa
 import static org.hamcrest.Matchers.*;
 
 public class IntegrationTestRunner extends RunnerBase {
-  private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationEnv.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationTestRunner.class);
 
 
   // keyspace automatically created in this test
@@ -43,12 +43,14 @@ public class IntegrationTestRunner extends RunnerBase {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final ITCollection itCollection;
+  private final IntegrationTarget target;
   private final IntegrationTest test;
   private final IntegrationEnv env;
 
   public IntegrationTestRunner(
-      ITCollection itCollection, IntegrationTest test, IntegrationEnv env) {
+      ITCollection itCollection, IntegrationTarget target,  IntegrationTest test, IntegrationEnv env) {
     this.itCollection = itCollection;
+    this.target = target;
     this.test = test;
     this.env = env;
   }
@@ -60,94 +62,22 @@ public class IntegrationTestRunner extends RunnerBase {
 
   public void run() {
 
-    createKeyspace(keyspaceName);
-
+    LOGGER.info("Starting Integration Test with env={}", env);
     for (TestRequest setupRequest : test.setup()) {
-
-      var requestWithEnv = setupRequest.withEnvironment(env);
-      var requestSpec = setupRequest(requestWithEnv);
-      var response = executeRequest(setupRequest, requestSpec);
-      assertSetup(setupRequest, requestWithEnv, response);
+      target.apiRequest(setupRequest, env).executeWithSuccess();
     }
 
     for (TestItem testItem : test.tests()) {
 
-      var requestWithEnv = testItem.request().withEnvironment(env);
-      var requestSpec = setupRequest(requestWithEnv);
-      var response = executeRequest(testItem.request(), requestSpec);
+      var resp = target.apiRequest(testItem.request(), env).execute();
+      testAssertions(testItem, resp);
+    }
 
-      testAssertions(testItem, response);
+    for (TestRequest setupRequest : test.cleanup()) {
+      target.apiRequest(setupRequest, env).executeWithSuccess();
     }
   }
 
-  protected void createKeyspace(String keyspace) {
-    String json =
-        """
-            {
-              "createKeyspace": {
-                "name": "%s"
-              }
-            }
-            """
-            .formatted(keyspace);
-
-    jsonRequest()
-        .body(json)
-        .when()
-        .post(GeneralResource.BASE_PATH)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsDDLSuccess())
-        .body("status.ok", is(1));
-  }
-
-  private RequestSpecification setupRequest(ObjectNode request) {
-
-    String requestString;
-    try {
-      requestString = OBJECT_MAPPER.writeValueAsString(request);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-
-    return jsonRequest()
-        .body(requestString).when();
-  }
-
-  private ValidatableResponse executeRequest(
-      TestRequest testRequest, RequestSpecification requestSpec) {
-
-    if (testRequest.commandName().getTargets().contains(CommandTarget.COLLECTION) || testRequest.commandName().getTargets().contains(CommandTarget.TABLE)){
-      return requestSpec
-          .post(CollectionResource.BASE_PATH, keyspaceName, env.vars().get("COLLECTION_NAME"))
-          .then()
-          .log().all();
-    }
-
-    if (testRequest.commandName().getTargets().contains(CommandTarget.KEYSPACE) ){
-      return requestSpec.post(KeyspaceResource.BASE_PATH, keyspaceName).then().log().all();
-    }
-    throw new IllegalArgumentException("Do not know how to execute command: " + testRequest.commandName());
-
-  }
-
-  private void assertSetup(
-      TestRequest testRequest, ObjectNode requestWithEnv, ValidatableResponse response) {
-    response.statusCode(200);
-
-    switch (testRequest.commandName()) {
-      case INSERT_ONE, INSERT_MANY -> {
-        response
-            .body("$", responseIsWriteSuccess())
-            .body("status.insertedIds[0]", not(emptyString()));
-      }
-      case DELETE_COLLECTION, CREATE_COLLECTION -> {
-        response
-            .body("$", responseIsDDLSuccess())
-            .body("status.ok", is(1));
-      }
-    }
-  }
 
   private void testAssertions (TestItem testItem, ValidatableResponse response) {
 

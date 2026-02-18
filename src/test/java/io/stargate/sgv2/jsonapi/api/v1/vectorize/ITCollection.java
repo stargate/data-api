@@ -53,11 +53,11 @@ public class ITCollection {
     return (IntegrationWorkflow) itFile.element();
   }
 
-  public IntegrationTest testsFirstByName(String name) {
-    return testsByName(name).getFirst();
+  public IntegrationTest testFirstByName(String name) {
+    return testByName(name).getFirst();
   }
 
-  public List<IntegrationTest> testsByName(String name) {
+  public List<IntegrationTest> testByName(String name) {
     var path = "$.meta[?(@.name == '%s')]".formatted(name);
 
     return match(ITElement.ITElementKind.TEST, path).stream()

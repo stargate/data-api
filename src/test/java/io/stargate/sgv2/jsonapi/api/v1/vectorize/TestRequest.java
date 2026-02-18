@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -12,6 +14,8 @@ import java.util.UUID;
 import org.apache.commons.text.StringSubstitutor;
 
 public record TestRequest(@JsonIgnore UUID requestId, ObjectNode request) {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
   public TestRequest(ObjectNode request) {
@@ -42,12 +46,19 @@ public record TestRequest(@JsonIgnore UUID requestId, ObjectNode request) {
 
   public ObjectNode withEnvironment(IntegrationEnv env) {
     ObjectNode updated = request.deepCopy();
-    var subs = new StringSubstitutor(env.vars()).setEnableUndefinedVariableException(true);
-
-    walk(updated, subs);
+    walk(updated, env.substitutor());
     return updated;
   }
 
+  public static TestRequest fromJson(String json) {
+
+    try {
+      return  new TestRequest((ObjectNode) OBJECT_MAPPER.readTree(json));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+
+  }
   private static void walk(ObjectNode obj, StringSubstitutor subs) {
     obj.properties()
         .forEach(

@@ -19,9 +19,8 @@ public record IntegrationJob(
   private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationJob.class);
 
 
-  public List<IntegrationEnv> allEnvironments() {
-
-    Map<String, String> fromEnv = new HashMap<>();
+  public IntegrationEnv withoutMatrix(){
+    var fromEnv = new IntegrationEnv();
     for (Map.Entry<String, String> entry : fromEnvironment.entrySet()) {
       var value = System.getenv(entry.getValue());
       if (value== null) {
@@ -30,33 +29,42 @@ public record IntegrationJob(
       fromEnv.put(entry.getKey(), value);
     }
 
+    var fromVariables = new IntegrationEnv(variables);
+
+    return fromEnv.clone().put(fromVariables);
+  }
+  public List<IntegrationEnv> allEnvironments() {
+
+    var fromEnv = new IntegrationEnv();
+    for (Map.Entry<String, String> entry : fromEnvironment.entrySet()) {
+      var value = System.getenv(entry.getValue());
+      if (value== null) {
+        throw new RuntimeException("Environment variable " + entry.getValue() + " is undefined");
+      }
+      fromEnv.put(entry.getKey(), value);
+    }
+
+    var fromVariables = new IntegrationEnv(variables);
+
     // TODO: handle more matrix
-    var modelList = matrix.get("MODEL");
-
-    List<Map<String, String>> allMatrix = new ArrayList<>();
-    modelList.forEach(
+    List<IntegrationEnv> fromMatrix = new ArrayList<>();
+    matrix.get("MODEL").forEach(
         model -> {
-          var env = new HashMap<String, String>();
+          var env = new IntegrationEnv();
           env.put("MODEL", model);
-          allMatrix.add(env);
+          fromMatrix.add(env);
         });
 
-    List<IntegrationEnv> envs = new ArrayList<>();
-    allMatrix.forEach(
-        matrix -> {
-          matrix.putAll(variables);
-          matrix.putAll(fromEnv);
+    List<IntegrationEnv> allEnvs = new ArrayList<>();
+    for (var matrixEnv : fromMatrix) {
 
-          LOGGER.info("XXX ENV BEFORE SUBS {}", matrix);
-          var subs = new StringSubstitutor(matrix).setEnableUndefinedVariableException(true);
-          matrix.forEach((key, value) -> {
-            matrix.put(key, subs.replace(value));
-          });
+      var completeEnv = fromEnv
+          .clone()
+          .put(fromVariables)
+          .put(matrixEnv);
+      allEnvs.add(completeEnv);
+    }
 
-          LOGGER.info("XXX ENV AFTER SUBS {}", matrix);
-          var env = new IntegrationEnv(matrix);
-          envs.add(env);
-        });
-    return envs;
+    return allEnvs;
   }
 }

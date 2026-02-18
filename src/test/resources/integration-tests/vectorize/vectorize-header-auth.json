@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "vectorize-header-auth",
-    "kind" : "test"
+    "kind": "test"
   },
   "setup": [
     {
@@ -25,6 +25,13 @@
   "tests": [
     {
       "$include": "vectorize-base"
+    }
+  ],
+  "cleanup": [
+    {
+      "deleteCollection": {
+        "name": "${COLLECTION_NAME}"
+      }
     }
   ]
 }
