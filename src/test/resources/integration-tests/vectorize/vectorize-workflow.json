@@ -59,7 +59,7 @@
     {
       "meta": {
         "name": "jinaAI-vectorize",
-        "tags": []
+        "tags": ["disabled"]
       },
       "fromEnvironment": {
         "x-embedding-api-key": "jinaAI_KEY"

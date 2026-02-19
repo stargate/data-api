@@ -1,20 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
-import io.restassured.specification.RequestSpecification;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
-import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
-import io.stargate.sgv2.jsonapi.api.v1.GeneralResource;
-import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.AssertionFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.ITAssertion;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,15 +12,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
-import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraPassword;
-import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraUsername;
-import static org.hamcrest.Matchers.*;
 
 public class IntegrationTestRunner extends RunnerBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationTestRunner.class);
@@ -67,10 +50,8 @@ public class IntegrationTestRunner extends RunnerBase {
       target.apiRequest(setupRequest, env).executeWithSuccess();
     }
 
-    for (TestItem testItem : test.tests()) {
+    for (TestCase testItem : test.tests()) {
 
-      var resp = target.apiRequest(testItem.request(), env).execute();
-      testAssertions(testItem, resp);
     }
 
     for (TestRequest setupRequest : test.cleanup()) {
@@ -78,8 +59,21 @@ public class IntegrationTestRunner extends RunnerBase {
     }
   }
 
+  private TestResult runTest(TestCase testItem, IntegrationEnv env) {
 
-  private void testAssertions (TestItem testItem, ValidatableResponse response) {
+    AssertionError textException;
+    ValidatableResponse response;
+    try {
+      response = target.apiRequest(testItem.request(), env).execute();
+      testAssertions(testItem, response);
+    }
+    catch (AssertionError ae){
+      textException = ae;
+    }
+
+    response.extract().
+  }
+  private void testAssertions (TestCase testItem, ValidatableResponse response) {
 
     for (Map.Entry<String, JsonNode> entry : testItem.asserts().properties()){
       var args = entry.getValue();     // null / 3 / {...}

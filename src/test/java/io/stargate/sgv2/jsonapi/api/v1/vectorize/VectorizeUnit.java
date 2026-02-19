@@ -23,37 +23,37 @@ public class VectorizeUnit {
 
 
     // SEQUENTIAL
-//    integrationTarget.workflowStarting(workflow);
-//    try {
-//      for (var job : jobs) {
-//        LOGGER.info("Starting job {}", job.meta());
-//        new IntegrationJobRunner(integrationTarget, itCollection, job).run();
-//      }
-//    } finally {
-//      integrationTarget.workflowFinished(workflow);
-//    }
-
-      // Parallel
-    int maxConcurrentJobs = 2;
     integrationTarget.workflowStarting(workflow);
     try {
-      var executor = java.util.concurrent.Executors.newFixedThreadPool(maxConcurrentJobs);
-      try {
-        var futures = jobs.stream()
-            .map(job -> java.util.concurrent.CompletableFuture.runAsync(() -> {
-              LOGGER.info("Starting job {}", job.meta());
-              new IntegrationJobRunner(integrationTarget, itCollection, job).run();
-            }, executor))
-            .toList();
-
-        // wait for all, fail if any failed
-        futures.forEach(java.util.concurrent.CompletableFuture::join);
-      } finally {
-        executor.shutdown();
+      for (var job : jobs) {
+        LOGGER.info("Starting job {}", job.meta());
+        new IntegrationJobRunner(integrationTarget, itCollection, job).run();
       }
     } finally {
       integrationTarget.workflowFinished(workflow);
     }
+
+      // Parallel
+//    int maxConcurrentJobs = 2;
+//    integrationTarget.workflowStarting(workflow);
+//    try {
+//      var executor = java.util.concurrent.Executors.newFixedThreadPool(maxConcurrentJobs);
+//      try {
+//        var futures = jobs.stream()
+//            .map(job -> java.util.concurrent.CompletableFuture.runAsync(() -> {
+//              LOGGER.info("Starting job {}", job.meta());
+//              new IntegrationJobRunner(integrationTarget, itCollection, job).run();
+//            }, executor))
+//            .toList();
+//
+//        // wait for all, fail if any failed
+//        futures.forEach(java.util.concurrent.CompletableFuture::join);
+//      } finally {
+//        executor.shutdown();
+//      }
+//    } finally {
+//      integrationTarget.workflowFinished(workflow);
+//    }
 
   }
 }
