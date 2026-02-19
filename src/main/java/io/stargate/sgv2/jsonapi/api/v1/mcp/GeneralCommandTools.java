@@ -20,9 +20,9 @@ public class GeneralCommandTools {
 
   @Inject McpResource mcpResource;
 
-  @Tool(description = "Create a new keyspace in the database")
+  @Tool(description = "Command that creates a keyspace.")
   public Uni<CommandResult> createKeyspace(
-      @ToolArg(description = "Name of the keyspace to create") String name,
+      @ToolArg(description = "Required name of the new Keyspace") String name,
       @ToolArg(description = "Options for creating a new keyspace.", required = false)
           CreateKeyspaceCommand.Options options) {
 
@@ -31,16 +31,16 @@ public class GeneralCommandTools {
     return mcpResource.processCommand(context, command);
   }
 
-  @Tool(description = "Drop (delete) a keyspace from the database")
+  @Tool(description = "Command that deletes a Keyspace.")
   public Uni<CommandResult> dropKeyspace(
-      @ToolArg(description = "Name of the keyspace to drop") @NotEmpty String name) {
+      @ToolArg(description = "Required name of the Keyspace to remove") @NotEmpty String name) {
 
     var command = new DropKeyspaceCommand(name);
     var context = mcpResource.buildGeneralContext(command);
     return mcpResource.processCommand(context, command);
   }
 
-  @Tool(description = "List all keyspaces in the database")
+  @Tool(description = "Command that lists all available keyspaces")
   public Uni<CommandResult> findKeyspaces() {
 
     var command = new FindKeyspacesCommand();
@@ -48,7 +48,7 @@ public class GeneralCommandTools {
     return mcpResource.processCommand(context, command);
   }
 
-  @Tool(description = "List available embedding (vectorize) providers and their models")
+  @Tool(description = "Lists the available Embedding Providers for this database.")
   public Uni<CommandResult> findEmbeddingProviders(
       @ToolArg(
               description =
@@ -61,18 +61,13 @@ public class GeneralCommandTools {
     return mcpResource.processCommand(context, command);
   }
 
-  @Tool(description = "List available reranking providers and their models")
+  @Tool(description = "Lists the available Reranking Providers for this database.")
   public Uni<CommandResult> findRerankingProviders(
       @ToolArg(
               description =
                   "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
               required = false)
-          String filterModelStatus) {
-
-    FindRerankingProvidersCommand.Options options = null;
-    if (filterModelStatus != null && !filterModelStatus.isBlank()) {
-      options = new FindRerankingProvidersCommand.Options(filterModelStatus);
-    }
+          FindRerankingProvidersCommand.Options options) {
 
     var command = new FindRerankingProvidersCommand(options);
     var context = mcpResource.buildGeneralContext(command);
