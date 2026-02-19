@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindKeyspacesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRerankingProvidersCommand;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotEmpty;
-import javax.annotation.Nullable;
 
 /**
  * MCP tool provider for database-level (general) commands. These correspond to the {@link
@@ -24,11 +23,7 @@ public class GeneralCommandTools {
   @Tool(description = "Create a new keyspace in the database")
   public Uni<CommandResult> createKeyspace(
       @ToolArg(description = "Name of the keyspace to create") String name,
-      @ToolArg(
-              description =
-                  "Keyspace options including replication settings. "
-                      + "Example: {\"replication\": {\"class\": \"SimpleStrategy\", \"replication_factor\": 1}}")
-          @Nullable
+      @ToolArg(description = "Options for creating a new keyspace.", required = false)
           CreateKeyspaceCommand.Options options) {
 
     var command = new CreateKeyspaceCommand(name, options);
@@ -57,14 +52,9 @@ public class GeneralCommandTools {
   public Uni<CommandResult> findEmbeddingProviders(
       @ToolArg(
               description =
-                  "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.")
-          @Nullable
-          String filterModelStatus) {
-
-    FindEmbeddingProvidersCommand.Options options = null;
-    if (filterModelStatus != null && !filterModelStatus.isBlank()) {
-      options = new FindEmbeddingProvidersCommand.Options(filterModelStatus);
-    }
+                  "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
+              required = false)
+          FindEmbeddingProvidersCommand.Options options) {
 
     var command = new FindEmbeddingProvidersCommand(options);
     var context = mcpResource.buildGeneralContext(command);
@@ -75,8 +65,8 @@ public class GeneralCommandTools {
   public Uni<CommandResult> findRerankingProviders(
       @ToolArg(
               description =
-                  "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.")
-          @Nullable
+                  "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
+              required = false)
           String filterModelStatus) {
 
     FindRerankingProvidersCommand.Options options = null;

@@ -32,11 +32,6 @@ public record CreateKeyspaceCommand(
    *     use {@code replication_factor} (integer). For {@code NetworkTopologyStrategy}, use
    *     datacenter names as keys with replication factor as values (e.g. {@code "dc1": 3}).
    */
-  @Schema(
-      description =
-          "Cassandra based replication settings. "
-              + "For SimpleStrategy, use {\"class\": \"SimpleStrategy\", \"replication_factor\": N}. "
-              + "For NetworkTopologyStrategy, use {\"class\": \"NetworkTopologyStrategy\", \"datacenter_name\": N, ...}.")
   public record Replication(
       @NotNull
           @Pattern(regexp = "SimpleStrategy|NetworkTopologyStrategy")
