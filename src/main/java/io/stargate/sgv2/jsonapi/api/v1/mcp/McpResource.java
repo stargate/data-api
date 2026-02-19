@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class McpResource {
 
-  private static final Logger LOG = LoggerFactory.getLogger(McpResource.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(McpResource.class);
 
   private final ObjectMapper objectMapper;
   private final MeteredCommandProcessor meteredCommandProcessor;
@@ -61,6 +61,8 @@ public class McpResource {
       Instance<RequestTenantResolver> tenantResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
 
+    // TODO: these vars are needed to replicate what we do in GeneralResource, KeyspaceResource,
+    // etc. We should refactor to avoid duplication later.
     this.objectMapper = objectMapper;
     this.meteredCommandProcessor = meteredCommandProcessor;
     this.embeddingProviderFactory = embeddingProviderFactory;

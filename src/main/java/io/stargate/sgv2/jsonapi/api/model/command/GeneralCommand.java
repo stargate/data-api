@@ -15,9 +15,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
   @JsonSubTypes.Type(value = CreateNamespaceCommand.class), // deprecated
   @JsonSubTypes.Type(value = DropKeyspaceCommand.class),
   @JsonSubTypes.Type(value = DropNamespaceCommand.class), // deprecated
+  @JsonSubTypes.Type(value = FindEmbeddingProvidersCommand.class),
   @JsonSubTypes.Type(value = FindKeyspacesCommand.class),
   @JsonSubTypes.Type(value = FindNamespacesCommand.class), // deprecated
-  @JsonSubTypes.Type(value = FindEmbeddingProvidersCommand.class),
   @JsonSubTypes.Type(value = FindRerankingProvidersCommand.class),
 })
 public interface GeneralCommand extends Command {}

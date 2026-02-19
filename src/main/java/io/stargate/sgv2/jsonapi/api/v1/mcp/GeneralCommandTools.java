@@ -27,8 +27,7 @@ public class GeneralCommandTools {
           CreateKeyspaceCommand.Options options) {
 
     var command = new CreateKeyspaceCommand(name, options);
-    var context = mcpResource.buildGeneralContext(command);
-    return mcpResource.processCommand(context, command);
+    return mcpResource.processCommand(mcpResource.buildGeneralContext(command), command);
   }
 
   @Tool(description = "Command that deletes a Keyspace.")
@@ -36,16 +35,14 @@ public class GeneralCommandTools {
       @ToolArg(description = "Required name of the Keyspace to remove") @NotEmpty String name) {
 
     var command = new DropKeyspaceCommand(name);
-    var context = mcpResource.buildGeneralContext(command);
-    return mcpResource.processCommand(context, command);
+    return mcpResource.processCommand(mcpResource.buildGeneralContext(command), command);
   }
 
   @Tool(description = "Command that lists all available keyspaces")
   public Uni<CommandResult> findKeyspaces() {
 
     var command = new FindKeyspacesCommand();
-    var context = mcpResource.buildGeneralContext(command);
-    return mcpResource.processCommand(context, command);
+    return mcpResource.processCommand(mcpResource.buildGeneralContext(command), command);
   }
 
   @Tool(description = "Lists the available Embedding Providers for this database.")
@@ -57,8 +54,7 @@ public class GeneralCommandTools {
           FindEmbeddingProvidersCommand.Options options) {
 
     var command = new FindEmbeddingProvidersCommand(options);
-    var context = mcpResource.buildGeneralContext(command);
-    return mcpResource.processCommand(context, command);
+    return mcpResource.processCommand(mcpResource.buildGeneralContext(command), command);
   }
 
   @Tool(description = "Lists the available Reranking Providers for this database.")
@@ -70,7 +66,6 @@ public class GeneralCommandTools {
           FindRerankingProvidersCommand.Options options) {
 
     var command = new FindRerankingProvidersCommand(options);
-    var context = mcpResource.buildGeneralContext(command);
-    return mcpResource.processCommand(context, command);
+    return mcpResource.processCommand(mcpResource.buildGeneralContext(command), command);
   }
 }
