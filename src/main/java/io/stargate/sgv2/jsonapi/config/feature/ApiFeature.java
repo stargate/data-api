@@ -51,6 +51,16 @@ public enum ApiFeature {
   RERANKING("reranking", false),
 
   /**
+   * MCP feature flag: if enabled, the API will expose MCP tools and capabilities.
+   *
+   * <p>If disabled, processing MCP commands will fail with {@link
+   * SchemaException.Code#MCP_FEATURE_NOT_ENABLED}.
+   *
+   * <p>Disabled by default.
+   */
+  MCP("mcp", false),
+
+  /**
    * The request will return a trace of the processing that includes a message of the steps taken,
    * but excludes the data of the message which can be large.
    */

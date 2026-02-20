@@ -55,6 +55,8 @@ public class SchemaException extends RequestException {
     MISSING_FIELDS_FOR_TYPE_CREATION,
     MISSING_PARTITION_COLUMNS,
 
+    MCP_FEATURE_NOT_ENABLED,
+
     RERANKING_FEATURE_NOT_ENABLED, // legacy: converted from ErrorCodeV1
     RERANKING_SERVICE_TYPE_UNAVAILABLE, // legacy: converted from ErrorCodeV1
     RERANKING_PROVIDER_UNEXPECTED_RESPONSE, // legacy: converted from ErrorCodeV1
