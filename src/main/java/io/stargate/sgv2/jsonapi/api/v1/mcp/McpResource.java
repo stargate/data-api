@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkiverse.mcp.server.MetaKey;
+import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
@@ -9,6 +11,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.mappers.FrameworkExceptionMapper;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
@@ -21,6 +26,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +67,8 @@ public class McpResource {
       Instance<RequestTenantResolver> tenantResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
 
-    // TODO: these vars are needed to replicate what we do in GeneralResource, KeyspaceResource,
-    // etc. We should refactor to avoid duplication later.
+    // TODO: these vars are needed to replicate what we do in GeneralResource,
+    // KeyspaceResource, etc. We should refactor to avoid duplication later.
     this.objectMapper = objectMapper;
     this.meteredCommandProcessor = meteredCommandProcessor;
     this.embeddingProviderFactory = embeddingProviderFactory;
@@ -105,8 +111,43 @@ public class McpResource {
    * @param command The command to execute
    * @return Uni of CommandResult
    */
-  public Uni<CommandResult> processCommand(CommandContext<?> context, Command command) {
-    return meteredCommandProcessor.processCommand(context, command);
+  public Uni<ToolResponse> processCommand(CommandContext<?> context, Command command) {
+
+    if (!context.apiFeatures().isFeatureEnabled(ApiFeature.MCP)) {
+      var exception = SchemaException.Code.MCP_FEATURE_NOT_ENABLED.get();
+      CommandResult errorResult =
+          CommandResult.statusOnlyBuilder(context.requestTracing()).addThrowable(exception).build();
+      return Uni.createFrom().item(new ToolResponse(true, null, errorResult.errors(), Map.of()));
+    }
+
+    return meteredCommandProcessor
+        .processCommand(context, command)
+        .onFailure()
+        .recoverWithItem(
+            throwable -> {
+              // any Throwable from meteredCommandProcessor will be mapped using
+              // FrameworkExceptionMapper.translateThrowable(throwable) to a
+              // CommandResult with a logged exception before final transformation to ToolResponse.
+              RuntimeException apiException =
+                  FrameworkExceptionMapper.translateThrowable(throwable);
+              return CommandResult.statusOnlyBuilder(context.requestTracing())
+                  .addThrowable(apiException)
+                  .build();
+            })
+        .map(
+            result -> {
+              // Success: structuredContent = the whole result data payload
+              if (result.errors() == null || result.errors().isEmpty()) {
+                return ToolResponse.structuredSuccess(result);
+              }
+
+              // Error: isError=true, structuredContent=errors array, _meta = status (if present)
+              Map<MetaKey, Object> meta = null;
+              if (result.status() != null && !result.status().isEmpty()) {
+                meta = Map.of(MetaKey.of("status"), result.status());
+              }
+              return new ToolResponse(true, null, result.errors(), meta);
+            });
   }
 
   /**
