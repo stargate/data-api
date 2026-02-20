@@ -122,18 +122,6 @@ public class McpResource {
 
     return meteredCommandProcessor
         .processCommand(context, command)
-        .onFailure()
-        .recoverWithItem(
-            throwable -> {
-              // any Throwable from meteredCommandProcessor will be mapped using
-              // FrameworkExceptionMapper.translateThrowable(throwable) to a
-              // CommandResult with a logged exception before final transformation to ToolResponse.
-              RuntimeException apiException =
-                  FrameworkExceptionMapper.translateThrowable(throwable);
-              return CommandResult.statusOnlyBuilder(context.requestTracing())
-                  .addThrowable(apiException)
-                  .build();
-            })
         .map(
             result -> {
               // Success: structuredContent = the whole result data payload
