@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = CreateCollectionCommand.class),
-  @JsonSubTypes.Type(value = FindCollectionsCommand.class),
-  @JsonSubTypes.Type(value = DeleteCollectionCommand.class)
+  @JsonSubTypes.Type(value = DeleteCollectionCommand.class),
+  @JsonSubTypes.Type(value = FindCollectionsCommand.class)
 })
 public interface CollectionOnlyCommand extends KeyspaceCommand {}
