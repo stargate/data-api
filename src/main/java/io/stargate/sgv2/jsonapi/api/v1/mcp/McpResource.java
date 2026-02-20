@@ -15,8 +15,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
@@ -98,6 +97,26 @@ public class McpResource {
         .withCommandName(command.getClass().getSimpleName())
         .withRequestContext(createRequestContext())
         .build();
+  }
+
+  /**
+   * Build a CommandContext for database-level (general) commands. similar to {@link
+   * io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource}
+   */
+  public CommandContext<?> buildKeyspaceContext(String keyspace, KeyspaceCommand command) {
+    return contextBuilderSupplier
+        .getBuilder(new KeyspaceSchemaObject(keyspace))
+        .withCommandName(command.getClass().getSimpleName())
+        .withRequestContext(createRequestContext())
+        .build();
+  }
+
+  public CommandContext<?> buildCollectionContext(
+      String keyspace, String collection, CollectionCommand command) {
+
+    RequestContext requestContext = createRequestContext();
+
+    return null;
   }
 
   /**
