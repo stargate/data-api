@@ -30,7 +30,7 @@ import java.util.*;
  * documents, sort clause and update clause.
  */
 public class DataVectorizer {
-  private final MeteredEmbeddingProviderWrapper embeddingProvider;
+  private final MeteredEmbeddingProviderWrapper embeddingProviderWrapper;
   private final JsonNodeFactory nodeFactory;
   private final EmbeddingCredentials embeddingCredentials;
   private final SchemaObject schemaObject;
@@ -38,19 +38,19 @@ public class DataVectorizer {
   /**
    * Constructor
    *
-   * @param embeddingProvider - Service client based on embedding service configuration set for the
-   *     table
+   * @param embeddingProviderWrapper - Service client based on embedding service configuration set
+   *     for the table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
    * @param embeddingCredentials - Credentials for the embedding service
    * @param schemaObject - The collection setting for vectorize call
    */
   public DataVectorizer(
-      MeteredEmbeddingProviderWrapper embeddingProvider,
+      MeteredEmbeddingProviderWrapper embeddingProviderWrapper,
       JsonNodeFactory nodeFactory,
       EmbeddingCredentials embeddingCredentials,
       SchemaObject schemaObject) {
     // 16-Feb-2026, tatu: This can be null, apparently
-    this.embeddingProvider = embeddingProvider;
+    this.embeddingProviderWrapper = embeddingProviderWrapper;
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials =
         Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
@@ -102,12 +102,12 @@ public class DataVectorizer {
       }
 
       if (!vectorizeTexts.isEmpty()) {
-        if (embeddingProvider == null) {
+        if (embeddingProviderWrapper == null) {
           throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
               Map.of("table", schemaObject.name().table()));
         }
         Uni<List<float[]>> vectors =
-            embeddingProvider
+            embeddingProviderWrapper
                 .vectorize(
                     vectorizeTexts,
                     embeddingCredentials,
@@ -178,12 +178,12 @@ public class DataVectorizer {
    * @return Uni<float[]> - result vector float array
    */
   public Uni<float[]> vectorize(String vectorizeContent) {
-    if (embeddingProvider == null) {
+    if (embeddingProviderWrapper == null) {
       throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
           Map.of("table", schemaObject.name().table()));
     }
     Uni<List<float[]>> vectors =
-        embeddingProvider
+        embeddingProviderWrapper
             .vectorize(
                 List.of(vectorizeContent),
                 embeddingCredentials,
@@ -224,7 +224,7 @@ public class DataVectorizer {
       if (sortClause == null || sortClause.sortExpressions().isEmpty())
         return Uni.createFrom().item(true);
       if (sortClause.hasVectorizeSearchClause()) {
-        if (embeddingProvider == null) {
+        if (embeddingProviderWrapper == null) {
           throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
               Map.of("table", schemaObject.name().table()));
         }
@@ -232,7 +232,7 @@ public class DataVectorizer {
         SortExpression expression = sortExpressions.getFirst();
         String text = expression.getVectorize();
         Uni<List<float[]>> vectors =
-            embeddingProvider
+            embeddingProviderWrapper
                 .vectorize(
                     List.of(text),
                     embeddingCredentials,
@@ -315,12 +315,12 @@ public class DataVectorizer {
       EmbeddingProvider.EmbeddingRequestType requestType) {
 
     // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
-    if (embeddingProvider == null) {
+    if (embeddingProviderWrapper == null) {
       throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
           Map.of("table", schemaObject.name().table()));
     }
 
-    return embeddingProvider
+    return embeddingProviderWrapper
         .vectorize(textsToVectorize, embeddingCredentials, requestType)
         .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings)
         .onItem()
