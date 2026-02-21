@@ -6,10 +6,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.smallrye.mutiny.Uni;
-import io.stargate.embedding.gateway.EmbeddingGateway;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -26,15 +27,20 @@ import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class SyncServiceClient {
+  private static final Logger logger = LoggerFactory.getLogger(SyncServiceClient.class);
 
   @Inject SyncServiceOperationConfiguration syncServiceConfiguration;
 
-  private static final Logger logger = LoggerFactory.getLogger(SyncServiceClient.class);
+  @Inject RequestContext dataApiRequestInfo;
 
   @RestClient SyncService syncService;
 
-  public Uni<EmbeddingGateway.ValidateCredentialResponse> validateKey(
-      String token, String tenant, String provider, String key) {
+  public Uni<Boolean> validateKey(String provider, String key) {
+    return validateKey(
+        dataApiRequestInfo.authToken(), dataApiRequestInfo.tenant().toString(), provider, key);
+  }
+
+  private Uni<Boolean> validateKey(String token, String tenant, String provider, String key) {
     return syncService
         .valid("Bearer " + token, UUID.randomUUID().toString(), tenant, provider, key)
         .onFailure(
@@ -51,6 +57,11 @@ public class SyncServiceClient {
         .atMost(syncServiceConfiguration.retry().maxRetries())
         .map(
             res -> {
+              if (res.errors() != null && !res.errors().isEmpty()) {
+                var firstError = res.errors().getFirst();
+                throw SchemaException.Code.VECTORIZE_CREDENTIAL_INVALID.get(
+                    Map.of("errorMessage", "(%s): %s", firstError.errorId(), firstError.message()));
+              }
               boolean validity = true;
               if (res.credentials() == null || res.credentials().isEmpty()) {
                 validity = false;
@@ -59,21 +70,7 @@ public class SyncServiceClient {
                   validity &= entry.getValue();
                 }
               }
-              final EmbeddingGateway.ValidateCredentialResponse.Builder responseBuilder =
-                  EmbeddingGateway.ValidateCredentialResponse.newBuilder();
-              responseBuilder.setValidity(validity);
-
-              if (res.errors() != null && !res.errors().isEmpty()) {
-                final EmbeddingGateway.ValidateCredentialResponse.Error.Builder errorBuilder =
-                    EmbeddingGateway.ValidateCredentialResponse.Error.newBuilder();
-                responseBuilder.setError(
-                    errorBuilder
-                        .setErrorCode(res.errors().get(0).errorId())
-                        .setErrorTitle(res.errors().get(0).errorId())
-                        .setErrorBody(res.errors().get(0).message())
-                        .build());
-              }
-              return responseBuilder.build();
+              return validity;
             });
   }
 
@@ -100,18 +97,14 @@ public class SyncServiceClient {
             res -> {
               Map<String, String> credentials = res.credentials();
               if (res.errors() != null && !res.errors().isEmpty()) {
-                logger.error(
-                    String.format(
-                        "Credential error from SyncService : (%s) %s ",
-                        res.errors().get(0).errorId(), res.errors().get(0).message()));
-
+                var firstError = res.errors().getFirst();
+                final String msg =
+                    "Credential error from SyncService: (%s) %s"
+                        .formatted(firstError.errorId(), firstError.message());
+                logger.error(msg);
                 throw EmbeddingProviderException.Code
                     .EMBEDDING_GATEWAY_UNABLE_RESOLVE_AUTHENTICATION_TYPE
-                    .get(
-                        "errorMessage",
-                        "Credential error from SyncService : (%s) %s "
-                            .formatted(
-                                res.errors().get(0).errorId(), res.errors().get(0).message()));
+                    .get("errorMessage", msg);
               }
               return credentials;
             });
