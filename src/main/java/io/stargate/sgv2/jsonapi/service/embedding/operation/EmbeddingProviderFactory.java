@@ -99,7 +99,7 @@ public class EmbeddingProviderFactory {
         commandName);
   }
 
-  public EmbeddingProvider create(
+  private EmbeddingProvider create(
       Tenant tenant,
       String authToken,
       ModelProvider modelProvider,

@@ -204,11 +204,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             });
   }
 
-  /**
-   * Return MAX_VALUE because the batching is done inside EGW
-   *
-   * @return
-   */
+  /** Return MAX_VALUE because the batching is done inside EGW */
   @Override
   public int maxBatchSize() {
     return Integer.MAX_VALUE;
