@@ -29,7 +29,6 @@ public class CollectionCommandTools {
       @ToolArg(description = "options", required = false) FindCommand.Options options) {
 
     var command = new FindCommand(filter, projection, sort, options);
-    return mcpResource.processCommand(
-        mcpResource.buildCollectionContext(keyspace, collection, command), command);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 }

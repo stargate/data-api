@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkiverse.mcp.server.MetaKey;
@@ -8,6 +10,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
@@ -16,6 +19,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
@@ -111,12 +115,75 @@ public class McpResource {
         .build();
   }
 
-  public CommandContext<?> buildCollectionContext(
+  /**
+   * Process a collection-level command. This is fully asynchronous as it needs to resolve the
+   * SchemaObject dynamically from the SchemaCache, configure Vector search context if applicable,
+   * before delegating execution to processCommand.
+   */
+  public Uni<ToolResponse> processCollectionCommand(
       String keyspace, String collection, CollectionCommand command) {
 
     RequestContext requestContext = createRequestContext();
 
-    return null;
+    return schemaCache
+        .getSchemaObject(
+            requestContext,
+            keyspace,
+            collection,
+            CommandType.DDL.equals(command.commandName().getCommandType()))
+        .onItemOrFailure()
+        .transformToUni(
+            (schemaObject, throwable) -> {
+              if (throwable != null) {
+                // If schema resolution or authorization fails, return an error ToolResponse
+                CommandResult errorResult =
+                    CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                        .addThrowable(throwable)
+                        .build();
+                return Uni.createFrom()
+                    .item(new ToolResponse(true, null, errorResult.errors(), Map.of()));
+              } else {
+                VectorColumnDefinition vectorColDef = null;
+                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                          .orElse(null);
+                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getFirstVectorColumnWithVectorizeDefinition()
+                          .orElse(null);
+                }
+
+                EmbeddingProvider embeddingProvider = null;
+
+                if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
+                  embeddingProvider =
+                      embeddingProviderFactory.create(
+                          requestContext.tenant(),
+                          requestContext.authToken(),
+                          vectorColDef.vectorizeDefinition().provider(),
+                          vectorColDef.vectorizeDefinition().modelName(),
+                          vectorColDef.vectorSize(),
+                          vectorColDef.vectorizeDefinition().parameters(),
+                          vectorColDef.vectorizeDefinition().authentication(),
+                          command.getClass().getSimpleName());
+                }
+
+                var commandContext =
+                    contextBuilderSupplier
+                        .getBuilder(schemaObject)
+                        .withEmbeddingProvider(embeddingProvider)
+                        .withCommandName(command.getClass().getSimpleName())
+                        .withRequestContext(requestContext)
+                        .build();
+
+                return processCommand(commandContext, command);
+              }
+            });
   }
 
   /**
