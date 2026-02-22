@@ -7,9 +7,8 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
-import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
-import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 
 import java.util.Map;
@@ -29,29 +28,24 @@ public class APIRequest {
   private static String DB_PATH  = "/";
 
   private final Connection connection;
-  private final TestRequest testRequest;
-  private final IntegrationEnv env;
+  private final IntegrationEnv integrationEnv;
+  private final ObjectNode request;
 
-  public APIRequest( Connection connection, TestRequest testRequest, IntegrationEnv  env ) {
+  public APIRequest(Connection connection, IntegrationEnv integrationEnv, ObjectNode request ) {
+
     this.connection = connection;
-    this.testRequest = testRequest;
-    this.env = env;
+    this.integrationEnv = integrationEnv;
+    this.request = request;
   }
 
-  public ValidatableResponse execute(){
+  public APIResponse execute(){
 
-    var requestWithEnv = testRequest.withEnvironment(env);
-    var requestSpec = requestSpec(requestWithEnv);
-    return executeRequest(requestSpec);
+    var requestSpec = requestSpec();
+    return new APIResponse(this, executeRequest(requestSpec));
   }
 
-  public ValidatableResponse executeWithSuccess(){
-    var resp = execute();
-    assertSuccess(resp);
-    return resp;
-  }
 
-  private RequestSpecification requestSpec(ObjectNode request) {
+  private RequestSpecification requestSpec() {
 
     String requestString;
     try {
@@ -66,20 +60,20 @@ public class APIRequest {
 
   private ValidatableResponse executeRequest(RequestSpecification requestSpec) {
 
-    var commandName = testRequest.commandName();
+    var commandName = TestCommand.commandName(request);
     Response response;
     if (commandName.getTargets().contains(CommandTarget.COLLECTION) || commandName.getTargets().contains(CommandTarget.TABLE)){
       response = requestSpec
-          .post(COLLECTION_PATH, env.requiredValue("KEYSPACE_NAME"), env.requiredValue("COLLECTION_NAME"));
+          .post(COLLECTION_PATH, integrationEnv.requiredValue("KEYSPACE_NAME"), integrationEnv.requiredValue("COLLECTION_NAME"));
     }
     else if (commandName.getTargets().contains(CommandTarget.KEYSPACE) ){
-      response =  requestSpec.post(KEYSPACE_PATH, env.requiredValue("KEYSPACE_NAME"));
+      response =  requestSpec.post(KEYSPACE_PATH, integrationEnv.requiredValue("KEYSPACE_NAME"));
     }
     else if(commandName.getTargets().contains(CommandTarget.DATABASE)){
       response =  requestSpec.post(DB_PATH);
     }
     else {
-      throw new IllegalArgumentException("Do not know how to execute command: " + testRequest.commandName());
+      throw new IllegalArgumentException("Do not know how to execute command: " + commandName);
     }
 
     return response
@@ -90,9 +84,9 @@ public class APIRequest {
 
     return Map.of(
         HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-        env.requiredValue("Token"),
+        integrationEnv.requiredValue("Token"),
         HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-        env.requiredValue("x-embedding-api-key"));
+        integrationEnv.requiredValue("x-embedding-api-key"));
   }
 
   public RequestSpecification jsonRequest(){
@@ -107,20 +101,4 @@ public class APIRequest {
 
   }
 
-  private void assertSuccess(ValidatableResponse response) {
-    response.statusCode(200);
-
-    switch (testRequest.commandName()) {
-      case INSERT_ONE, INSERT_MANY -> {
-        response
-            .body("$", responseIsWriteSuccess())
-            .body("status.insertedIds[0]", not(emptyString()));
-      }
-      case DELETE_COLLECTION, CREATE_COLLECTION -> {
-        response
-            .body("$", responseIsDDLSuccess())
-            .body("status.ok", is(1));
-      }
-    }
-  }
 }

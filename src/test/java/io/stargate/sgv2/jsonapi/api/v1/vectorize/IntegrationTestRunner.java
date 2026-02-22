@@ -1,18 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.restassured.response.ValidatableResponse;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.ITAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.BodyAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 
@@ -27,95 +20,73 @@ public class IntegrationTestRunner extends RunnerBase {
 
   private final ITCollection itCollection;
   private final IntegrationTarget target;
-  private final IntegrationTest test;
-  private final IntegrationEnv env;
+  private final IntegrationTest integrationTest;
+  private final IntegrationEnv integrationEnv;
 
   public IntegrationTestRunner(
-      ITCollection itCollection, IntegrationTarget target,  IntegrationTest test, IntegrationEnv env) {
+      ITCollection itCollection, IntegrationTarget target,  IntegrationTest integrationTest, IntegrationEnv integrationEnv) {
     this.itCollection = itCollection;
     this.target = target;
-    this.test = test;
-    this.env = env;
+    this.integrationTest = integrationTest;
+    this.integrationEnv = integrationEnv;
   }
 
   @Override
   protected IntegrationEnv integrationEnv() {
-    return env;
+    return integrationEnv;
   }
 
   public void run() {
 
-    LOGGER.info("Starting Integration Test with env={}", env);
-    for (TestRequest setupRequest : test.setup()) {
-      target.apiRequest(setupRequest, env).executeWithSuccess();
-    }
+    LOGGER.info("Starting Integration Test with env={}", integrationEnv);
+    for (TestCommand setupCommand : integrationTest.setup()) {
+      var setupRequest = new TestRequest(setupCommand, target, integrationEnv, TestAssertion.forSuccess(setupCommand.commandName()));
 
-    for (TestCase testItem : test.tests()) {
+      var setupResponse = setupRequest.execute();
+      var testCaseResult = setupResponse.validate(integrationTest, null);
 
-    }
-
-    for (TestRequest setupRequest : test.cleanup()) {
-      target.apiRequest(setupRequest, env).executeWithSuccess();
-    }
-  }
-
-  private TestResult runTest(TestCase testItem, IntegrationEnv env) {
-
-    AssertionError textException;
-    ValidatableResponse response;
-    try {
-      response = target.apiRequest(testItem.request(), env).execute();
-      testAssertions(testItem, response);
-    }
-    catch (AssertionError ae){
-      textException = ae;
-    }
-
-    response.extract().
-  }
-  private void testAssertions (TestCase testItem, ValidatableResponse response) {
-
-    for (Map.Entry<String, JsonNode> entry : testItem.asserts().properties()){
-      var args = entry.getValue();     // null / 3 / {...}
-
-      var assertFactory = findAssertionFactory(entry.getKey());
-      ITAssertion itAssertion;
-      try {
-        itAssertion = (ITAssertion)assertFactory.invoke(null, args);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        throw new RuntimeException(e);
+      if (testCaseResult.failed()){
+        LOGGER.warn("TestSetup FAILED: test.name={}, testCase.name={}, failedAssertion={}, error={}",
+            testCaseResult.integrationTest().meta().name(), "NULL", testCaseResult.failedAssertion(), String.valueOf(testCaseResult.error()));
+      }
+      else{
+        LOGGER.info("TestSetup PASSED: test.name={}, testCase.name={}",
+            testCaseResult.integrationTest().meta().name(), "NULL");
       }
 
-      LOGGER.info("XXX Running test assertion key={}, value={}", entry.getKey(), entry.getValue().toString());
-      response.body(itAssertion.bodyPath(), itAssertion.matcher());
+    }
+
+    for (TestCase testCase : integrationTest.tests()) {
+      var testRequest = new TestRequest(testCase.command(), target, integrationEnv, TestAssertion.buildAssertions(testCase));
+      var testResponse = testRequest.execute();
+      var testCaseResult = testResponse.validate(integrationTest, testCase);
+
+      if (testCaseResult.failed()){
+        LOGGER.warn("TestCase FAILED: test.name={}, testCase.name={}, failedAssertion={}, error={}",
+            testCaseResult.integrationTest().meta().name(),testCaseResult.testCase().name(), testCaseResult.failedAssertion(), String.valueOf(testCaseResult.error()));
+      }
+      else{
+        LOGGER.info("TestCase PASSED: test.name={}, testCase.name={}",
+            testCaseResult.integrationTest().meta().name(),testCaseResult.testCase().name());
+      }
+    }
+
+    for (TestCommand cleanupCommand : integrationTest.cleanup()) {
+
+      var cleanupRequest = new TestRequest(cleanupCommand, target, integrationEnv, TestAssertion.forSuccess(cleanupCommand.commandName()));
+
+      var cleanupResponse = cleanupRequest.execute();
+      var testCaseResult = cleanupResponse.validate(integrationTest, null);
+
+      if (testCaseResult.failed()){
+        LOGGER.warn("TestCleanup FAILED: test.name={}, testCase.name={}, failedAssertion={}, error={}",
+            testCaseResult.integrationTest().meta().name(), "NULL", testCaseResult.failedAssertion().toString(), testCaseResult.error().toString());
+      }
+      else{
+        LOGGER.info("TestCleanup PASSED: test.name={}, testCase.name={}",
+            testCaseResult.integrationTest().meta().name(), "NULL");
+      }
     }
   }
 
-  private Method findAssertionFactory(String key){
-    // "response.isFindSuccess"
-
-    int dot = key.indexOf('.');
-    String typeName = key.substring(0, dot);
-    String funcName   = key.substring(dot + 1);
-
-    String qualifiedTypeName =
-        "io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions."
-            + Character.toUpperCase(typeName.charAt(0))
-            + typeName.substring(1).toLowerCase();
-
-    try {
-      Class<?> cls = Class.forName(qualifiedTypeName);
-
-      var factoryMethod = Arrays.stream(cls.getMethods())
-              .filter(m -> m.getName().equalsIgnoreCase(funcName))
-              .filter(m -> Modifier.isStatic(m.getModifiers()))
-              .findFirst()
-              .orElseThrow();
-
-
-      return factoryMethod;
-    } catch (ReflectiveOperationException e) {
-      throw new RuntimeException("Invalid assertion: " + key, e);
-    }
-  }
 }

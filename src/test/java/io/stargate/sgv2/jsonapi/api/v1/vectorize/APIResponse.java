@@ -4,6 +4,5 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.restassured.response.ValidatableResponse;
 
 public record APIResponse (APIRequest apiRequest,
-                           ObjectNode actualRequest,
-                           ValidatableResponse response) {
+                           ValidatableResponse validatableResponse) {
 }

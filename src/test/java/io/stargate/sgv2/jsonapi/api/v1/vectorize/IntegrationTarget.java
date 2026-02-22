@@ -23,8 +23,8 @@ public class IntegrationTarget {
     return target.connection();
   }
 
-  public APIRequest apiRequest(TestRequest testRequest, IntegrationEnv  env){
-    return new APIRequest(target.connection(), testRequest, env);
+  public APIRequest apiRequest(TestCommand testCommand, IntegrationEnv  env){
+    return new APIRequest(target.connection(),  env, testCommand.withEnvironment(env));
   }
 
   public void workflowStarting(IntegrationWorkflow workflow){ }

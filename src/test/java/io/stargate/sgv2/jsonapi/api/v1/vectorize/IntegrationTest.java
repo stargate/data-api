@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 import java.util.ArrayList;
 import java.util.List;
 
-public record IntegrationTest(ITMetadata meta, List<TestRequest> setup, List<TestCase> tests, List<TestRequest> cleanup)
+public record IntegrationTest(ITMetadata meta, List<TestCommand> setup, List<TestCase> tests, List<TestCommand> cleanup)
     implements ITElement {
 
   @Override
@@ -13,14 +13,14 @@ public record IntegrationTest(ITMetadata meta, List<TestRequest> setup, List<Tes
 
   public void expand(ITCollection itCollection) {
 
-    List<TestRequest> expandedSetup = new ArrayList<>();
-    for (TestRequest request : setup) {
-        if (request.request().has("$include")){
-          var includedTest = itCollection.testFirstByName(request.request().get("$include").textValue());
+    List<TestCommand> expandedSetup = new ArrayList<>();
+    for (TestCommand command : setup) {
+        if (command.includeFrom() != null){
+          var includedTest = itCollection.testFirstByName(command.includeFrom());
           expandedSetup.addAll(includedTest.setup());
         }
         else {
-          expandedSetup.add(request);
+          expandedSetup.add(command);
         }
     }
     setup.clear();

@@ -47,7 +47,7 @@
   "tests": [
     {
       "name": "findByVectorize",
-      "request": {
+      "command": {
         "find": {
           "sort": {
             "$vectorize": "I love movies!"
@@ -61,7 +61,7 @@
     },
     {
       "name": "findOneAndUpdate",
-      "request": {
+      "command": {
         "findOneAndUpdate": {
           "sort": {
             "$vectorize": "Inception is a science fiction action film"
@@ -77,6 +77,20 @@
         }
       },
       "asserts": {
+        "response.isFindAndSuccess": null,
+        "documents.isExactly": {
+          "_id": "Inception",
+          "name": "Inception",
+          "genre": "Science Fiction",
+          "artist": [
+            "Leonardo DiCaprio"
+          ],
+          "status": "active"
+        },
+        "status.isExactly" : {
+          "matchedCount": 1,
+          "modifiedCount": 1
+        }
       }
     }
   ]

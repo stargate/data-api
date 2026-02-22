@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public record TestCase(
 
     String name,
-    TestRequest request,
+    TestCommand command,
     ObjectNode asserts,
     @JsonProperty("$include")
     String include) {}
