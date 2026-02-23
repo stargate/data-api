@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.BodyAssertion;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,37 +11,32 @@ public class IntegrationTestRunner extends RunnerBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationTestRunner.class);
 
 
-  // keyspace automatically created in this test
-  protected static final String keyspaceName =
-      "ks" + RandomStringUtils.insecure().nextAlphanumeric(16);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private final ITCollection itCollection;
-  private final IntegrationTarget target;
-  private final IntegrationTest integrationTest;
-  private final IntegrationEnv integrationEnv;
+  private final TestPlan testPlan;
+  private final TestSuite testSuite;
+  private final TestEnvironment testEnvironment;
 
   public IntegrationTestRunner(
-      ITCollection itCollection, IntegrationTarget target,  IntegrationTest integrationTest, IntegrationEnv integrationEnv) {
-    this.itCollection = itCollection;
-    this.target = target;
-    this.integrationTest = integrationTest;
-    this.integrationEnv = integrationEnv;
+      TestPlan testPlan, TestSuite testSuite, TestEnvironment testEnvironment) {
+    this.testPlan = testPlan;
+    this.testSuite = testSuite;
+    this.testEnvironment = testEnvironment;
   }
 
   @Override
-  protected IntegrationEnv integrationEnv() {
-    return integrationEnv;
+  protected TestEnvironment integrationEnv() {
+    return testEnvironment;
   }
 
   public void run() {
 
-    LOGGER.info("Starting Integration Test with env={}", integrationEnv);
-    for (TestCommand setupCommand : integrationTest.setup()) {
-      var setupRequest = new TestRequest(setupCommand, target, integrationEnv, TestAssertion.forSuccess(setupCommand.commandName()));
+    LOGGER.info("Starting Integration Test with env={}", testEnvironment);
+    for (TestCommand setupCommand : testSuite.setup()) {
+      var setupRequest = new TestRequest(setupCommand, testPlan.target(), testEnvironment, TestAssertion.forSuccess(setupCommand.commandName()));
 
       var setupResponse = setupRequest.execute();
-      var testCaseResult = setupResponse.validate(integrationTest, null);
+      var testCaseResult = setupResponse.validate(testSuite, null);
 
       if (testCaseResult.failed()){
         LOGGER.warn("TestSetup FAILED: test.name={}, testCase.name={}, failedAssertion={}, error={}",
@@ -56,10 +49,10 @@ public class IntegrationTestRunner extends RunnerBase {
 
     }
 
-    for (TestCase testCase : integrationTest.tests()) {
-      var testRequest = new TestRequest(testCase.command(), target, integrationEnv, TestAssertion.buildAssertions(testCase));
+    for (TestCase testCase : testSuite.tests()) {
+      var testRequest = new TestRequest(testCase.command(), testPlan.target(), testEnvironment, TestAssertion.buildAssertions(testCase));
       var testResponse = testRequest.execute();
-      var testCaseResult = testResponse.validate(integrationTest, testCase);
+      var testCaseResult = testResponse.validate(testSuite, testCase);
 
       if (testCaseResult.failed()){
         LOGGER.warn("TestCase FAILED: test.name={}, testCase.name={}, failedAssertion={}, error={}",
@@ -71,12 +64,12 @@ public class IntegrationTestRunner extends RunnerBase {
       }
     }
 
-    for (TestCommand cleanupCommand : integrationTest.cleanup()) {
+    for (TestCommand cleanupCommand : testSuite.cleanup()) {
 
-      var cleanupRequest = new TestRequest(cleanupCommand, target, integrationEnv, TestAssertion.forSuccess(cleanupCommand.commandName()));
+      var cleanupRequest = new TestRequest(cleanupCommand, testPlan.target(), testEnvironment, TestAssertion.forSuccess(cleanupCommand.commandName()));
 
       var cleanupResponse = cleanupRequest.execute();
-      var testCaseResult = cleanupResponse.validate(integrationTest, null);
+      var testCaseResult = cleanupResponse.validate(testSuite, null);
 
       if (testCaseResult.failed()){
         LOGGER.warn("TestCleanup FAILED: test.name={}, testCase.name={}, failedAssertion={}, error={}",

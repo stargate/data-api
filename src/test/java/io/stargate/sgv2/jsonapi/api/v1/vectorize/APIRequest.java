@@ -7,16 +7,12 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
-import static org.hamcrest.Matchers.*;
 
 
 public class APIRequest {
@@ -28,10 +24,10 @@ public class APIRequest {
   private static String DB_PATH  = "/";
 
   private final Connection connection;
-  private final IntegrationEnv integrationEnv;
+  private final TestEnvironment integrationEnv;
   private final ObjectNode request;
 
-  public APIRequest(Connection connection, IntegrationEnv integrationEnv, ObjectNode request ) {
+  public APIRequest(Connection connection, TestEnvironment integrationEnv, ObjectNode request ) {
 
     this.connection = connection;
     this.integrationEnv = integrationEnv;

@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -9,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 
-import java.util.UUID;
 import org.apache.commons.text.StringSubstitutor;
 
 public class TestCommand  {
@@ -86,7 +84,7 @@ public class TestCommand  {
     return name;
   }
 
-  public ObjectNode withEnvironment(IntegrationEnv env) {
+  public ObjectNode withEnvironment(TestEnvironment env) {
     ObjectNode updated = request.deepCopy();
     walk(updated, env.substitutor());
     return updated;

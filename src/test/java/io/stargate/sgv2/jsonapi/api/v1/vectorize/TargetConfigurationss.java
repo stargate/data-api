@@ -11,14 +11,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public record Targets(List<Target> targets) {
+public record TargetConfigurationss(List<TargetConfiguration> targets) {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
 
-  public Targets{
+  public TargetConfigurationss {
     Set<String> seen = new HashSet<String>();
-    for  (Target target : targets) {
+    for  (TargetConfiguration target : targets) {
       if (seen.contains(target.name())) {
         throw new IllegalArgumentException("target name already exists: " + target.name() );
       }
@@ -26,15 +26,15 @@ public record Targets(List<Target> targets) {
     }
   }
 
-  public Target target(String name) {
+  public TargetConfiguration configuration(String name) {
     return targets.stream().filter(target -> target.name().equals(name)).findFirst().orElseThrow(() -> new IllegalArgumentException("target name not found: " + name));
   }
 
-  static Targets loadAll(String path) {
+  static TargetConfigurationss loadAll(String path) {
     final Path dir = resourceDir(path);
 
     try {
-      return MAPPER.readValue(dir.toFile(), Targets.class);
+      return MAPPER.readValue(dir.toFile(), TargetConfigurationss.class);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

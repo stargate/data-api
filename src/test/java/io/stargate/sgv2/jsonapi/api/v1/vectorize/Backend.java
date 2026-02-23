@@ -2,16 +2,19 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
 public abstract class Backend {
 
-  public void workflowStarting(IntegrationTarget integrationTarget, IntegrationWorkflow workflow) { }
+  public void updateJobForTarget(Job job){
+  }
 
-  public void workflowFinished(IntegrationTarget integrationTarget, IntegrationWorkflow workflow) { }
+  public void workflowStarting(TestPlan testPlan, Workflow workflow) { }
 
-  public void jobStarting(IntegrationTarget integrationTarget, IntegrationJob job) { }
+  public void workflowFinished(TestPlan testPlan, Workflow workflow) { }
 
-  public void jobFinished(IntegrationTarget integrationTarget, IntegrationJob job) { }
+  public void jobStarting(TestPlan testPlan, Job job) { }
 
-  public void testStarting(IntegrationTarget integrationTarget, IntegrationTest test, IntegrationEnv env) { }
+  public void jobFinished(TestPlan testPlan, Job job) { }
 
-  public void testFinished(IntegrationTarget integrationTarget, IntegrationTest test, IntegrationEnv env) { }
+  public void testStarting(TestPlan testPlan, TestSuite test, TestEnvironment env) { }
+
+  public void testFinished(TestPlan testPlan, TestSuite test, TestEnvironment env) { }
 }
 

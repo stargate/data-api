@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.BodyAssertion;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
 
 public record TestResponse(
@@ -9,11 +8,11 @@ public record TestResponse(
     APIResponse apiResponse
 ) {
 
-  public TestCaseResult validate(IntegrationTest integrationTest, TestCase testCase){
-    return validate(integrationTest, testCase, false);
+  public TestCaseResult validate(TestSuite integrationTest, TestCase testCase){
+    return validate(integrationTest, testCase, true);
   }
 
-  public TestCaseResult validate(IntegrationTest integrationTest, TestCase testCase, boolean throwOnError) {
+  public TestCaseResult validate(TestSuite integrationTest, TestCase testCase, boolean throwOnError) {
 
     AssertionError assertionError = null;
     TestAssertion failedAssertion = null;

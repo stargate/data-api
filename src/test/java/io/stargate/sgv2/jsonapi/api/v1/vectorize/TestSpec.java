@@ -1,14 +1,14 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-public interface ITElement {
+public interface TestSpec {
 
-  ITElementKind kind();
+  TestSpecKind kind();
 
-  ITMetadata meta();
+  TestSpecMeta meta();
 
   //  void setJson(JsonNode json);
 
-  enum ITElementKind {
+  enum TestSpecKind {
     TEST,
     WORKFLOW
   }

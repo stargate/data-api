@@ -1,10 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.BodyAssertion;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
 
 public record TestCaseResult(
-    IntegrationTest integrationTest,
+    TestSuite integrationTest,
     TestCase testCase, // Nullable
     TestResponse testResponse,
     AssertionError error,

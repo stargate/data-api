@@ -1,8 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
 import org.apache.commons.text.StringSubstitutor;
-import org.apache.commons.text.lookup.StringLookup;
 import org.apache.commons.text.lookup.StringLookupFactory;
+import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,33 +12,49 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
-public class IntegrationEnv{
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationEnv.class);
+public class TestEnvironment {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestEnvironment.class);
   private static final Pattern PATTERN_NOT_WORD_CHARS = Pattern.compile("\\W+");
 
   private static final Set<String> SCHEMA_IDENTIFIER = Set.of("KEYSPACE_NAME", "COLLECTION_NAME");
 
   private final Map<String, String> vars = new HashMap<>();
 
-  public IntegrationEnv(){
+  public TestEnvironment(){
     this(new HashMap<>());
   }
 
-  public IntegrationEnv(Map<String, String> vars) {
+  public TestEnvironment(Map<String, String> vars) {
     this.vars.putAll(vars);
   }
 
-  private IntegrationEnv(IntegrationEnv other){
+  public DynamicContainer testNode(TestPlan testPlan, TestSuite testSuite) {
+
+    var desc = "TestEnv: %s ".formatted(this);
+
+    var envNodes = Stream.of(
+        dynamicTest("Running TestSuite", () -> new IntegrationTestRunner( testPlan, testSuite, this).run())
+    );
+
+    return DynamicContainer.dynamicContainer(
+            desc,
+            testPlan.addLifecycle(testSuite, this, envNodes));
+  }
+
+  private TestEnvironment(TestEnvironment other){
     this.vars.putAll(other.vars);
   }
 
-  public IntegrationEnv clone(){
-    return new IntegrationEnv(this);
+  public TestEnvironment clone(){
+    return new TestEnvironment(this);
   }
 
-  public IntegrationEnv put(IntegrationEnv other){
+  public TestEnvironment put(TestEnvironment other){
     this.vars.putAll(other.vars);
     return this;
   }
@@ -50,7 +67,7 @@ public class IntegrationEnv{
     if (vars.containsKey(name)){
       return get(name);
     }
-    throw new RuntimeException(String.format("Required env var %s not found", name));
+    throw new RuntimeException(String.format("Required env var not found name:%s, defined: %s", name, String.join(", ", vars.keySet())));
   }
 
   public StringSubstitutor substitutor(){

@@ -19,64 +19,68 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class ITCollection {
+/**
+ * Collection of all the test spec files read for this execution.
+ */
+public class SpecFiles {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final Configuration config =
+  private static final Configuration JSON_PATH_CONFIG =
       Configuration.builder()
           .jsonProvider(new JacksonJsonNodeJsonProvider())
           .mappingProvider(new JacksonMappingProvider())
           .build();
 
-  List<ITFile> itFiles;
+  List<SpecFile> specFiles;
 
-  private ITCollection(List<ITFile> itFiles) {
-    this.itFiles = itFiles;
-    for (ITFile file : itFiles) {
-     if (file.element() instanceof IntegrationTest it){
+  private SpecFiles(List<SpecFile> specFiles) {
+    this.specFiles = specFiles;
+
+    for (SpecFile file : specFiles) {
+     if (file.spec() instanceof TestSuite it){
        it.expand(this);
      }
     }
   }
 
-  public IntegrationWorkflow workflowFirstByName(String name) {
+  public Workflow workflowFirstByName(String name) {
     var path = "$.meta[?(@.name == '%s')]".formatted(name);
 
     var itFile =
-        match(ITElement.ITElementKind.WORKFLOW, path).stream()
+        match(TestSpec.TestSpecKind.WORKFLOW, path).stream()
             .findFirst()
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
                         "No IT file found with meta.name == '%s'".formatted(name)));
-    return (IntegrationWorkflow) itFile.element();
+    return (Workflow) itFile.spec();
   }
 
-  public IntegrationTest testFirstByName(String name) {
+  public TestSuite testFirstByName(String name) {
     return testByName(name).getFirst();
   }
 
-  public List<IntegrationTest> testByName(String name) {
+  public List<TestSuite> testByName(String name) {
     var path = "$.meta[?(@.name == '%s')]".formatted(name);
 
-    return match(ITElement.ITElementKind.TEST, path).stream()
-        .map(itFile -> (IntegrationTest) itFile.element())
+    return match(TestSpec.TestSpecKind.TEST, path).stream()
+        .map(itFile -> (TestSuite) itFile.spec())
         .toList();
   }
 
-  private List<ITFile> byKind(ITElement.ITElementKind kind) {
-    return itFiles.stream().filter(itFile -> itFile.element().kind() == kind).toList();
+  public Stream<SpecFile> byKind(TestSpec.TestSpecKind kind) {
+    return specFiles.stream().filter(itFile -> itFile.spec().kind() == kind);
   }
 
-  private List<ITFile> match(ITElement.ITElementKind kind, String jsonPath) {
+  private List<SpecFile> match(TestSpec.TestSpecKind kind, String jsonPath) {
     var compiled = JsonPath.compile(jsonPath);
 
-    return byKind(kind).stream().filter(itFile -> hasMatch(itFile.root(), compiled)).toList();
+    return byKind(kind).filter(itFile -> hasMatch(itFile.root(), compiled)).toList();
   }
 
   private boolean hasMatch(JsonNode root, JsonPath compiled) {
-    var pathResult = JsonPath.using(config).parse(root).read(compiled);
+    var pathResult = JsonPath.using(JSON_PATH_CONFIG).parse(root).read(compiled);
 
     return switch (pathResult) {
       case null -> false;
@@ -88,24 +92,24 @@ public class ITCollection {
     };
   }
 
-  static ITCollection loadAll(String path) {
+  static SpecFiles loadAll(String path) {
     final Path dir = resourceDir(path);
 
-    List<ITFile> itFiles = new ArrayList<>();
+    List<SpecFile> itFiles = new ArrayList<>();
 
     try (Stream<Path> s = Files.walk(dir)) {
       itFiles =
           s.filter(Files::isRegularFile)
               .filter(p -> p.getFileName().toString().endsWith(".json"))
-              .map(ITCollection::loadOne)
+              .map(SpecFiles::loadOne)
               .toList();
     } catch (IOException e) {
       throw new UncheckedIOException("Failed reading test resources under: " + dir, e);
     }
-    return new ITCollection(itFiles);
+    return new SpecFiles(itFiles);
   }
 
-  private static ITFile loadOne(Path file) {
+  private static SpecFile loadOne(Path file) {
     try {
       var root = MAPPER.readTree(file.toFile());
 
@@ -117,12 +121,12 @@ public class ITCollection {
       var kind = kindNode.asText();
       var element =
           switch (kind.toUpperCase()) {
-            case "TEST" -> MAPPER.treeToValue(root, IntegrationTest.class);
-            case "WORKFLOW" -> MAPPER.treeToValue(root, IntegrationWorkflow.class);
+            case "TEST" -> MAPPER.treeToValue(root, TestSuite.class);
+            case "WORKFLOW" -> MAPPER.treeToValue(root, Workflow.class);
             default ->
                 throw new IllegalArgumentException("Unknown meta.kind '" + kind + "' in " + file);
           };
-      return new ITFile(element, root);
+      return new SpecFile(element, root);
     } catch (IOException e) {
       throw new UncheckedIOException("Failed parsing JSON file: " + file, e);
     }

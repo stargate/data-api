@@ -56,7 +56,7 @@
       },
       "asserts": {
         "response.isFindSuccess": null,
-        "documents.count": 4
+        "documents.count": 3
       }
     },
     {

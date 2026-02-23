@@ -1,17 +1,34 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import org.junit.jupiter.api.DynamicContainer;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
-public record IntegrationTest(ITMetadata meta, List<TestCommand> setup, List<TestCase> tests, List<TestCommand> cleanup)
-    implements ITElement {
+import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+
+public record TestSuite(TestSpecMeta meta, List<TestCommand> setup, List<TestCase> tests, List<TestCommand> cleanup)
+    implements TestSpec {
 
   @Override
-  public ITElementKind kind() {
-    return ITElementKind.TEST;
+  public TestSpecKind kind() {
+    return TestSpecKind.TEST;
   }
 
-  public void expand(ITCollection itCollection) {
+  public DynamicContainer testNode(TestPlan testPlan, List<TestEnvironment> allEnvs) {
+
+    var desc = "TestSuite: %s ".formatted(
+        meta.name());
+
+    return dynamicContainer(
+            desc,
+            allEnvs.stream()
+                .map(testEnv -> testEnv.testNode(testPlan, this))
+        );
+  }
+
+  public void expand(SpecFiles itCollection) {
 
     List<TestCommand> expandedSetup = new ArrayList<>();
     for (TestCommand command : setup) {

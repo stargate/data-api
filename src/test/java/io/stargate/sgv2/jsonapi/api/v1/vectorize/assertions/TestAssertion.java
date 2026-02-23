@@ -26,7 +26,7 @@ public interface TestAssertion {
       case INSERT_ONE, INSERT_MANY -> {
         assertions.add(Response.isWriteSuccess(null));
       }
-      case DELETE_COLLECTION, CREATE_COLLECTION -> {
+      case CREATE_KEYSPACE, DROP_KEYSPACE, CREATE_NAMESPACE, DROP_NAMESPACE, DELETE_COLLECTION, CREATE_COLLECTION -> {
         assertions.add(Response.isDDLSuccess(null));
       }
     }
