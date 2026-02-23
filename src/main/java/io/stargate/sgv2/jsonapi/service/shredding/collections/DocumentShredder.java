@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
@@ -70,6 +71,7 @@ public class DocumentShredder {
         doc,
         txId,
         ctx.schemaObject().indexingProjector(),
+        ctx.requestContext().tenant(),
         ctx.commandName(),
         ctx.schemaObject(),
         null);
@@ -95,6 +97,7 @@ public class DocumentShredder {
         doc,
         txId,
         ctx.schemaObject().indexingProjector(),
+        ctx.requestContext().tenant(),
         ctx.commandName(),
         ctx.schemaObject(),
         docIdToReturn);
@@ -104,6 +107,7 @@ public class DocumentShredder {
       JsonNode doc,
       UUID txId,
       IndexingProjector indexProjector,
+      Tenant tenant,
       String commandName,
       CollectionSchemaObject collectionSettings,
       AtomicReference<DocumentId> docIdToReturn) {
@@ -128,9 +132,11 @@ public class DocumentShredder {
     new FullDocValidator(documentLimits).validate(docWithId);
 
     // Need to re-serialize document now that _id is normalized.
-    // Also unifies escaping and gets rid of pretty-printing (if any) to save storage space.
+    // Also unifies escaping and gets rid of pretty-printing (if any) to save
+    // storage space.
     try {
-      // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
+      // Important! Must use configured ObjectMapper for serialization, NOT
+      // JsonNode.toString()
       // (to use configuration we specify wrt serialization)
       docJson = objectMapper.writeValueAsString(docWithId);
     } catch (JacksonException e) { // should never happen but signature exposes it
@@ -142,14 +148,17 @@ public class DocumentShredder {
 
     // Create json bytes written metrics
     if (jsonProcessingMetricsReporter != null) {
-      jsonProcessingMetricsReporter.reportJsonWriteBytesMetrics(commandName, docJson.length());
+      jsonProcessingMetricsReporter.reportJsonWriteBytesMetrics(
+          tenant, commandName, docJson.length());
     }
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
 
-    // Before value validation, indexing, may need to drop "non-indexed" properties. But if so,
-    // need to ensure we do not modify original document, so let's create a copy (may need
+    // Before value validation, indexing, may need to drop "non-indexed" properties.
+    // But if so,
+    // need to ensure we do not modify original document, so let's create a copy
+    // (may need
     // to be returned as "after" Document)
     ObjectNode indexableDocument;
 
@@ -164,7 +173,8 @@ public class DocumentShredder {
     // and now we can finally validate (String) value lengths
     new IndexableValueValidator(documentLimits).validate(indexableDocument);
 
-    // And finally let's traverse the document to actually "shred" (build index properties)
+    // And finally let's traverse the document to actually "shred" (build index
+    // properties)
     new ShreddingTraverser(b).traverse(indexableDocument);
 
     WritableShreddedDocument shreddedDoc = b.build();
@@ -196,7 +206,8 @@ public class DocumentShredder {
     if (idNode == null) {
       idNode = generateDocumentId(collectionSettings);
     }
-    // Either way we need to construct actual document with _id as the first property;
+    // Either way we need to construct actual document with _id as the first
+    // property;
     // unfortunately there is no way to reorder properties in-place.
     final ObjectNode docWithIdAsFirstProperty = objectMapper.createObjectNode();
     docWithIdAsFirstProperty.set(DocumentConstants.Fields.DOC_ID, idNode);
@@ -480,7 +491,8 @@ public class DocumentShredder {
      */
     public void traverse(JsonNode doc) {
       final JsonPath.Builder pathBuilder = JsonPath.rootBuilder();
-      // NOTE: main level is handled a bit differently; no callbacks for Objects or Arrays,
+      // NOTE: main level is handled a bit differently; no callbacks for Objects or
+      // Arrays,
       // only for the (rare) case of atomic values. Just traversal.
 
       if (doc.isObject()) {

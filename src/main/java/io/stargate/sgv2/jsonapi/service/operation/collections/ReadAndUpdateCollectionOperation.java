@@ -78,14 +78,17 @@ public record ReadAndUpdateCollectionOperation(
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
               if (upsert() && docs.isEmpty() && matchedCount.get() == 0) {
-                // TODO: creating the new document here, with the defaults from the filter, makes it
+                // TODO: creating the new document here, with the defaults from the filter,
+                // makes it
                 // harder because the new document created here may nto have an _id if there was
                 // none
                 // in the filter. A better approach may be to have the documentUpdater create
                 // the upsert document totally in once place.
-                // Currently creating to upsert document is in multiple places. To do this we would
+                // Currently creating to upsert document is in multiple places. To do this we
+                // would
                 // create
-                // UpdateOperations from the filter and give them to the document updated when it is
+                // UpdateOperations from the filter and give them to the document updated when
+                // it is
                 // created.
                 return Multi.createFrom().item(findCollectionOperation().getNewDocument());
               } else {
@@ -146,11 +149,16 @@ public record ReadAndUpdateCollectionOperation(
               // create json doc read/write metrics
               commandContext
                   .jsonProcessingMetricsReporter()
-                  .reportJsonReadDocsMetrics(commandContext().commandName(), matchedCount.get());
+                  .reportJsonReadDocsMetrics(
+                      commandContext().requestContext().tenant(),
+                      commandContext().commandName(),
+                      matchedCount.get());
               commandContext
                   .jsonProcessingMetricsReporter()
                   .reportJsonWrittenDocsMetrics(
-                      commandContext().commandName(), modifiedCount.get());
+                      commandContext().requestContext().tenant(),
+                      commandContext().commandName(),
+                      modifiedCount.get());
               return new UpdateCollectionOperationPage(
                   matchedCount.get(),
                   modifiedCount.get(),
@@ -286,7 +294,8 @@ public record ReadAndUpdateCollectionOperation(
     return buildUpdateQuery(tableName.keyspace(), tableName.table(), vectorEnabled, lexicalEnabled);
   }
 
-  // NOTE: This method is used in the test code (to avoid having to copy query Strings verbatim),
+  // NOTE: This method is used in the test code (to avoid having to copy query
+  // Strings verbatim),
   // so it should not be changed to private or non-static
   static String buildUpdateQuery(
       String keyspaceName, String collectionName, boolean vectorEnabled, boolean lexicalEnabled) {
@@ -299,16 +308,16 @@ public record ReadAndUpdateCollectionOperation(
         .append("\" SET ")
         .append(
             """
-tx_id = now(),
-exist_keys = ?,
-array_size = ?,
-array_contains = ?,
-query_bool_values = ?,
-query_dbl_values = ?,
-query_text_values = ?,
-query_null_values = ?,
-query_timestamp_values = ?,
-""");
+                tx_id = now(),
+                exist_keys = ?,
+                array_size = ?,
+                array_contains = ?,
+                query_bool_values = ?,
+                query_dbl_values = ?,
+                query_text_values = ?,
+                query_null_values = ?,
+                query_timestamp_values = ?,
+                """);
     if (vectorEnabled) {
       updateQuery.append("\nquery_vector_value = ?,");
     }
@@ -317,10 +326,10 @@ query_timestamp_values = ?,
     }
     updateQuery.append(
         """
-doc_json  = ?
-WHERE key = ?
-IF tx_id = ?
-""");
+            doc_json  = ?
+            WHERE key = ?
+            IF tx_id = ?
+            """);
 
     return updateQuery.toString();
   }
@@ -330,7 +339,8 @@ IF tx_id = ?
       WritableShreddedDocument doc,
       boolean vectorEnabled,
       boolean lexicalEnabled) {
-    // Note: must match the order in query string constructed with `buildUpdateQuery()`
+    // Note: must match the order in query string constructed with
+    // `buildUpdateQuery()`
     // Build dynamically due to number of permutations
     List<Object> positional = new ArrayList<>(16); // from 12 to 14 entries currently
 

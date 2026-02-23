@@ -12,6 +12,7 @@ import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -49,7 +50,8 @@ public interface CollectionReadOperation extends CollectionOperation {
   double MAX_TOKEN = Math.pow(2, 63) - 1;
   double MIN_TOKEN = Math.pow(-2, 63);
 
-  // TODO: the default implementations in here are only used on single classes, they should not be
+  // TODO: the default implementations in here are only used on single classes,
+  // they should not be
   // here
 
   /**
@@ -78,6 +80,7 @@ public interface CollectionReadOperation extends CollectionOperation {
       DocumentProjector projection,
       int limit,
       boolean vectorSearch,
+      Tenant tenant,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     return Multi.createFrom()
@@ -109,7 +112,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                     // create metrics
                     // TODO Use the column names!
                     jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                        commandName, row.getString(2).length());
+                        tenant, commandName, row.getString(2).length());
 
                     if (projection.doIncludeSimilarityScore()) {
                       float score = row.getFloat(3); // similarity_score
@@ -204,6 +207,7 @@ public interface CollectionReadOperation extends CollectionOperation {
       int errorLimit,
       DocumentProjector projection,
       boolean vectorSearch,
+      Tenant tenant,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
@@ -299,7 +303,8 @@ public interface CollectionReadOperation extends CollectionOperation {
                   // missing value
                   sortValues.add(nodeFactory.missingNode());
                 }
-                // Create ReadDocument with document id, grpc value for doc json and list of sort
+                // Create ReadDocument with document id, grpc value for doc json and list of
+                // sort
                 // values
                 document =
                     ReadDocument.from(
@@ -310,7 +315,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                         sortValues);
                 documents.add(document);
                 jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                    commandName, row.getString(2).length());
+                    tenant, commandName, row.getString(2).length());
               }
               return Uni.createFrom().item(documents);
             })
@@ -428,8 +433,10 @@ public interface CollectionReadOperation extends CollectionOperation {
   }
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
-    // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to complete before
-    // returning, and it cannot handle a failure on fetchNextPage - will fix after this PR
+    // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to
+    // complete before
+    // returning, and it cannot handle a failure on fetchNextPage - will fix after
+    // this PR
     counter.addAndGet(rs.remaining());
     if (rs.hasMorePages()) {
       rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
@@ -474,9 +481,12 @@ public interface CollectionReadOperation extends CollectionOperation {
         totalPartitionsCount += row.getLong("partitions_count");
       }
 
-      // estimate the total row count by dividing the total partition count by the ratio
-      // of the sum of all token ranges to the entire token range, avoiding division by zero
-      // relies on the assumption that the super-shredding schema uses one row per partition
+      // estimate the total row count by dividing the total partition count by the
+      // ratio
+      // of the sum of all token ranges to the entire token range, avoiding division
+      // by zero
+      // relies on the assumption that the super-shredding schema uses one row per
+      // partition
       if (totalRangeSize > 0) {
         counter.addAndGet((long) (totalPartitionsCount / (totalRangeSize / TOTAL_TOKEN_RANGE)));
       }

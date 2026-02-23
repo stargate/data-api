@@ -378,11 +378,15 @@ public record FindCollectionOperation(
         // map the response to result
         .map(
             docs -> {
-              // TODO: why is this here and not higher up where it can happen for any command result
+              // TODO: why is this here and not higher up where it can happen for any command
+              // result
               // ?
               commandContext
                   .jsonProcessingMetricsReporter()
-                  .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
+                  .reportJsonReadDocsMetrics(
+                      commandContext.requestContext().tenant(),
+                      commandContext().commandName(),
+                      docs.docs().size());
               return new ReadOperationPage(
                   docs.docs(), singleResponse, docs.pageState(), includeSortVector(), vector());
             });
@@ -421,6 +425,7 @@ public record FindCollectionOperation(
             maxSortReadLimit(),
             projection(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
@@ -437,6 +442,7 @@ public record FindCollectionOperation(
             projection,
             limit(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
@@ -464,7 +470,8 @@ public record FindCollectionOperation(
       var currentDbLogicalExpression = stack.pop();
 
       for (DBFilterBase filter : dbLogicalExpression.filters()) {
-        // every filter must be a collection filter, because we are making a new document,
+        // every filter must be a collection filter, because we are making a new
+        // document,
         // and we only do this for docs
         if (filter instanceof IDCollectionFilter idFilter) {
           documentId = idFilter.getSingularDocumentId();

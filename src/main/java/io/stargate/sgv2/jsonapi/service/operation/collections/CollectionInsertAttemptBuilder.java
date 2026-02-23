@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -14,8 +15,10 @@ public class CollectionInsertAttemptBuilder
 
   private final DocumentShredder documentShredder;
   private final CollectionSchemaObject collectionSchemaObject;
+  private final Tenant tenant;
 
-  // TODO: remove commandName - we only need commandName for handing to the shredder to report
+  // TODO: remove commandName - we only need commandName for handing to the
+  // shredder to report
   // metics
   private final String commandName;
 
@@ -25,11 +28,13 @@ public class CollectionInsertAttemptBuilder
   public CollectionInsertAttemptBuilder(
       CollectionSchemaObject collectionSchemaObject,
       DocumentShredder documentShredder,
+      Tenant tenant,
       String commandName) {
     this.collectionSchemaObject =
         Objects.requireNonNull(collectionSchemaObject, "collectionSchemaObject must not be null");
     this.documentShredder =
         Objects.requireNonNull(documentShredder, "documentShredder must not be null");
+    this.tenant = tenant;
     this.commandName = commandName;
   }
 
@@ -46,6 +51,7 @@ public class CollectionInsertAttemptBuilder
               jsonNode,
               null,
               collectionSchemaObject.indexingProjector(),
+              tenant,
               commandName,
               collectionSchemaObject,
               docIdRef);
@@ -58,7 +64,8 @@ public class CollectionInsertAttemptBuilder
     var attempt =
         new CollectionInsertAttempt(
             collectionSchemaObject, insertPosition, docId, shreddedDocument);
-    // OK to always call maybeAddFailure, if the exception is null it will be ignored
+    // OK to always call maybeAddFailure, if the exception is null it will be
+    // ignored
     return (CollectionInsertAttempt) attempt.maybeAddFailure(exception);
   }
 }
