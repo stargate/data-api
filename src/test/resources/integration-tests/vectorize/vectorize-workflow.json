@@ -10,10 +10,11 @@
         "tags": []
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "x-embedding-api-key"
+        "x-embedding-api-key": "x-embedding-api-key",
+        "Token": "Token"
       },
       "variables": {
-        "Token": "Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh",
+
         "PROVIDER": "openai",
         "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
       },
@@ -36,10 +37,11 @@
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "voyageAI_KEY"
+        "x-embedding-api-key": "voyageAI_KEY",
+        "Token" : "Token"
+
       },
       "variables": {
-        "Token": "Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh",
         "PROVIDER": "voyageAI",
         "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
       },
@@ -62,10 +64,10 @@
         "tags": ["disabled"]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "jinaAI_KEY"
+        "x-embedding-api-key": "jinaAI_KEY",
+        "Token" : "Token"
       },
       "variables": {
-        "Token": "Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh",
         "PROVIDER": "jinaAI",
         "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
       },

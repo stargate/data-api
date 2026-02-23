@@ -6,6 +6,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import static io.stargate.sgv2.jsonapi.api.v1.vectorize.TestEnvironment.toSafeSchemaIdentifier;
 
+/**
+ * Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh
+ */
 public class CassandraBackend extends Backend {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
