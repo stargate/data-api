@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProviderWrapper;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -29,7 +30,7 @@ import java.util.*;
  * documents, sort clause and update clause.
  */
 public class DataVectorizer {
-  private final EmbeddingProvider embeddingProvider;
+  private final MeteredEmbeddingProviderWrapper embeddingProvider;
   private final JsonNodeFactory nodeFactory;
   private final EmbeddingCredentials embeddingCredentials;
   private final SchemaObject schemaObject;
@@ -44,10 +45,11 @@ public class DataVectorizer {
    * @param schemaObject - The collection setting for vectorize call
    */
   public DataVectorizer(
-      EmbeddingProvider embeddingProvider,
+      MeteredEmbeddingProviderWrapper embeddingProvider,
       JsonNodeFactory nodeFactory,
       EmbeddingCredentials embeddingCredentials,
       SchemaObject schemaObject) {
+    // 16-Feb-2026, tatu: This can be null, apparently
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials =
@@ -89,7 +91,7 @@ public class DataVectorizer {
 
           String vectorizeData = jsonNode.asText();
           if (vectorizeData.isBlank()) {
-            ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, (String) null);
+            ((ObjectNode) document).putNull(VECTOR_EMBEDDING_FIELD);
             continue;
           }
 
@@ -107,7 +109,6 @@ public class DataVectorizer {
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
-                    1,
                     vectorizeTexts,
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -184,7 +185,6 @@ public class DataVectorizer {
     Uni<List<float[]>> vectors =
         embeddingProvider
             .vectorize(
-                1,
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -234,7 +234,6 @@ public class DataVectorizer {
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
-                    1,
                     List.of(text),
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
@@ -322,7 +321,7 @@ public class DataVectorizer {
     }
 
     return embeddingProvider
-        .vectorize(1, textsToVectorize, embeddingCredentials, requestType)
+        .vectorize(textsToVectorize, embeddingCredentials, requestType)
         .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings)
         .onItem()
         .transform(
