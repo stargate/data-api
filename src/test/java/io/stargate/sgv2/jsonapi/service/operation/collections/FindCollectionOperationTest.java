@@ -198,7 +198,9 @@ public class FindCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"jsonBytesReadCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, should be one
