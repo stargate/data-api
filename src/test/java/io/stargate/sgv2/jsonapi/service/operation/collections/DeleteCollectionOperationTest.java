@@ -251,7 +251,9 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
                   line -> {
                     assertThat(line).contains("command=\"jsonBytesReadDeleteCommand\"");
                     assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                    assertThat(line).contains("tenant=\"unknown\"");
+                    assertThat(line)
+                        .contains(
+                            "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                   });
             });
     // verify count metric -- command called once, should be one

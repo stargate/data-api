@@ -341,7 +341,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"jsonDocsWrittenInsertManyCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(commandContext.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
