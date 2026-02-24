@@ -17,8 +17,7 @@ public class CollectionInsertAttemptBuilder
   private final CollectionSchemaObject collectionSchemaObject;
   private final Tenant tenant;
 
-  // TODO: remove commandName - we only need commandName for handing to the
-  // shredder to report
+  // TODO: remove commandName - we only need commandName for handing to the shredder to report
   // metics
   private final String commandName;
 
@@ -64,8 +63,7 @@ public class CollectionInsertAttemptBuilder
     var attempt =
         new CollectionInsertAttempt(
             collectionSchemaObject, insertPosition, docId, shreddedDocument);
-    // OK to always call maybeAddFailure, if the exception is null it will be
-    // ignored
+    // OK to always call maybeAddFailure, if the exception is null it will be ignored
     return (CollectionInsertAttempt) attempt.maybeAddFailure(exception);
   }
 }

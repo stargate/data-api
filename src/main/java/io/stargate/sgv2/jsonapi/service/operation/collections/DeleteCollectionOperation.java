@@ -83,8 +83,7 @@ public record DeleteCollectionOperation(
         // Documents read until pageState available, max records read is deleteLimit + 1
         .whilst(findResponse -> findResponse.pageState() != null)
 
-        // Get the deleteLimit # of documents to be delete and set moreData flag true if
-        // extra
+        // Get the deleteLimit # of documents to be delete and set moreData flag true if extra
         // document is read.
         .onItem()
         .transformToMulti(

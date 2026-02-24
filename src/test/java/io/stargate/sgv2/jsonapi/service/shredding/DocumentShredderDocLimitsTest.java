@@ -280,8 +280,7 @@ public class DocumentShredderDocLimitsTest {
     @Test
     public void allowNotTooLongPath() {
       final ObjectNode doc = objectMapper.createObjectNode();
-      // Create 3-levels, 300 chars each, so 902 chars (3 names, 2 dots); below 1000
-      // max
+      // Create 3-levels, 300 chars each, so 902 chars (3 names, 2 dots); below 1000 max
       ObjectNode ob1 = doc.putObject("abcde".repeat(60));
       ObjectNode ob2 = ob1.putObject("defgh".repeat(60));
       ObjectNode ob3 = ob2.putObject("hijkl".repeat(60));
@@ -293,8 +292,7 @@ public class DocumentShredderDocLimitsTest {
     @Test
     public void catchTooLongPaths() {
       final ObjectNode doc = objectMapper.createObjectNode();
-      // Create 3-levels, 300 chars each, for 900 + 2 and then one last segment of 100
-      // char
+      // Create 3-levels, 300 chars each, for 900 + 2 and then one last segment of 100 char
       ObjectNode ob1 = doc.putObject("abcde".repeat(60));
       ObjectNode ob2 = ob1.putObject("defgh".repeat(60));
       ObjectNode ob3 = ob2.putObject("hijkl".repeat(60));

@@ -50,8 +50,7 @@ public interface CollectionReadOperation extends CollectionOperation {
   double MAX_TOKEN = Math.pow(2, 63) - 1;
   double MIN_TOKEN = Math.pow(-2, 63);
 
-  // TODO: the default implementations in here are only used on single classes,
-  // they should not be
+  // TODO: the default implementations in here are only used on single classes, they should not be
   // here
 
   /**
@@ -303,8 +302,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                   // missing value
                   sortValues.add(nodeFactory.missingNode());
                 }
-                // Create ReadDocument with document id, grpc value for doc json and list of
-                // sort
+                // Create ReadDocument with document id, grpc value for doc json and list of sort
                 // values
                 document =
                     ReadDocument.from(
@@ -433,10 +431,8 @@ public interface CollectionReadOperation extends CollectionOperation {
   }
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
-    // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to
-    // complete before
-    // returning, and it cannot handle a failure on fetchNextPage - will fix after
-    // this PR
+    // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to complete before
+    // returning, and it cannot handle a failure on fetchNextPage - will fix after this PR
     counter.addAndGet(rs.remaining());
     if (rs.hasMorePages()) {
       rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
@@ -481,12 +477,9 @@ public interface CollectionReadOperation extends CollectionOperation {
         totalPartitionsCount += row.getLong("partitions_count");
       }
 
-      // estimate the total row count by dividing the total partition count by the
-      // ratio
-      // of the sum of all token ranges to the entire token range, avoiding division
-      // by zero
-      // relies on the assumption that the super-shredding schema uses one row per
-      // partition
+      // estimate the total row count by dividing the total partition count by the ratio
+      // of the sum of all token ranges to the entire token range, avoiding division by zero
+      // relies on the assumption that the super-shredding schema uses one row per partition
       if (totalRangeSize > 0) {
         counter.addAndGet((long) (totalPartitionsCount / (totalRangeSize / TOTAL_TOKEN_RANGE)));
       }

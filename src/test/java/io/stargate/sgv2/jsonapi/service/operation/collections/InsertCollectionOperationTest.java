@@ -559,11 +559,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      // when this error comes out of the query executor, it will have been translated
-      // using
+      // when this error comes out of the query executor, it will have been translated using
       // CollectionDriverExceptionMapper
-      // they tend to pull a lof of info from the cause exception, so we simulate that
-      // here
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
@@ -661,11 +659,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 callCount.addAndGet(1);
                 return Uni.createFrom().item(resultOk);
               });
-      // when this error comes out of the query executor, it will have been translated
-      // using
+      // when this error comes out of the query executor, it will have been translated using
       // CollectionDriverExceptionMapper
-      // they tend to pull a lof of info from the cause exception, so we simulate that
-      // here
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
@@ -751,11 +747,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      // when this error comes out of the query executor, it will have been translated
-      // using
+      // when this error comes out of the query executor, it will have been translated using
       // CollectionDriverExceptionMapper
-      // they tend to pull a lof of info from the cause exception, so we simulate that
-      // here
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
@@ -848,11 +842,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      // when this error comes out of the query executor, it will have been translated
-      // using
+      // when this error comes out of the query executor, it will have been translated using
       // CollectionDriverExceptionMapper
-      // they tend to pull a lof of info from the cause exception, so we simulate that
-      // here
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
       when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {

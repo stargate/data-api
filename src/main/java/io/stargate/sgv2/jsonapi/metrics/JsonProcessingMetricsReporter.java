@@ -67,6 +67,8 @@ public class JsonProcessingMetricsReporter {
   }
 
   private Tags getCustomTags(Tenant tenant, String commandName) {
+    // TODO: This is a bug? Added null check to match previous optional behavior
+    // Not making tenant refactor PR too large
     Tag tenantTag =
         Tag.of(tenantConfig.tenantTag(), tenant == null ? UNKNOWN_VALUE : tenant.toString());
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);

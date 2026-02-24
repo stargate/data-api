@@ -228,8 +228,7 @@ public record InsertCollectionOperation(
     }
     insertQuery.append(")");
     if (!offlineMode) {
-      // The offline mode SSTableWriter does not support conditional inserts, so it
-      // can not have the
+      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
       // IF NOT EXISTS clause
       insertQuery.append(" IF NOT EXISTS");
     }
@@ -257,8 +256,7 @@ public record InsertCollectionOperation(
     positional.add(CQLBindValues.getDoubleMapValues(doc.queryNumberValues()));
     positional.add(CQLBindValues.getStringMapValues(doc.queryTextValues()));
     positional.add(CQLBindValues.getSetValue(doc.queryNullValues()));
-    // The offline SSTableWriter component expects the timestamp as a Date object
-    // instead of
+    // The offline SSTableWriter component expects the timestamp as a Date object instead of
     // Instant for Date data type
     positional.add(
         offlineMode

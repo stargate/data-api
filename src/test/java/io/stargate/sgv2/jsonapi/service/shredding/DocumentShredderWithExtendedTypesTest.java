@@ -212,8 +212,7 @@ public class DocumentShredderWithExtendedTypesTest {
       // Legacy UUID generated as "plain" String id
       assertThat(docId).isInstanceOf(DocumentId.StringId.class);
 
-      // should be auto-generated ObjectId: verify by constructing from String
-      // representation:
+      // should be auto-generated ObjectId: verify by constructing from String representation:
       UUID typedId = UUIDUtil.uuid(((DocumentId.StringId) docId).key());
       assertThat(typedId).isNotNull();
       List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("value"));
@@ -253,8 +252,7 @@ public class DocumentShredderWithExtendedTypesTest {
       DocumentId docId = doc.id();
       assertThat(docId).isInstanceOf(DocumentId.ExtensionTypeId.class);
 
-      // should be auto-generated ObjectId: verify by constructing from String
-      // representation:
+      // should be auto-generated ObjectId: verify by constructing from String representation:
       ObjectId typedId = new ObjectId(((DocumentId.ExtensionTypeId) docId).valueAsString());
       assertThat(typedId).isNotNull();
       List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("value"));
@@ -311,8 +309,7 @@ public class DocumentShredderWithExtendedTypesTest {
       DocumentId docId = doc.id();
       assertThat(docId).isInstanceOf(DocumentId.ExtensionTypeId.class);
 
-      // should be auto-generated UUID of version 4: verify by constructing from
-      // String
+      // should be auto-generated UUID of version 4: verify by constructing from String
       // representation
       UUID typedId = UUIDUtil.uuid(((DocumentId.ExtensionTypeId) docId).valueAsString());
       assertThat(typedId.version()).isEqualTo(uuidVersion);
