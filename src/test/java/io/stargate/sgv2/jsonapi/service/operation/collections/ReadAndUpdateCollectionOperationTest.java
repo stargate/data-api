@@ -364,7 +364,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadNoWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
@@ -424,7 +426,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadNoWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
@@ -650,7 +654,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadAndWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
@@ -709,7 +715,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadAndWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, should be one

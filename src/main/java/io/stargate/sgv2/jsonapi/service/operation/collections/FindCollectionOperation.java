@@ -378,11 +378,14 @@ public record FindCollectionOperation(
         // map the response to result
         .map(
             docs -> {
-              // TODO: why is this here and not higher up where it can happen for any command result
-              // ?
+              // TODO: why is this here and not higher up where it can happen for any command
+              // result?
               commandContext
                   .jsonProcessingMetricsReporter()
-                  .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
+                  .reportJsonReadDocsMetrics(
+                      commandContext.requestContext().tenant(),
+                      commandContext().commandName(),
+                      docs.docs().size());
               return new ReadOperationPage(
                   docs.docs(), singleResponse, docs.pageState(), includeSortVector(), vector());
             });
@@ -421,6 +424,7 @@ public record FindCollectionOperation(
             maxSortReadLimit(),
             projection(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
@@ -437,6 +441,7 @@ public record FindCollectionOperation(
             projection,
             limit(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
