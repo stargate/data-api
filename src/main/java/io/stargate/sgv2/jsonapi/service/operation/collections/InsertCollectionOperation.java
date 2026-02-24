@@ -54,7 +54,10 @@ public record InsertCollectionOperation(
     if (commandContext.jsonProcessingMetricsReporter() != null) {
       commandContext
           .jsonProcessingMetricsReporter()
-          .reportJsonWrittenDocsMetrics(commandContext().commandName(), insertions.size());
+          .reportJsonWrittenDocsMetrics(
+              commandContext().requestContext().tenant(),
+              commandContext().commandName(),
+              insertions.size());
     }
     if (ordered) {
       return insertOrdered(dataApiRequestInfo, queryExecutor, vectorEnabled, insertions);
