@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * This represents the response for a delete operation.
@@ -91,7 +90,7 @@ public record DeleteOperationPage(
               List<DocumentId> documentIds =
                   deletedDocuments.stream()
                       .map(deletes -> deletes.getItem3().id().orElseThrow())
-                      .collect(Collectors.toList());
+                      .toList();
               errors.add(
                   CommandErrorFactory.create(
                       deletedDocuments.stream().findFirst().get().getItem2(), documentIds));

@@ -148,9 +148,7 @@ public record FindEmbeddingProvidersOperation(
 
       // reconstruct each parameter for lowercase parameter type
       List<ParameterConfigResponse> parametersResponse =
-          sourceModelConfig.parameters().stream()
-              .map(ParameterConfigResponse::toResponse)
-              .collect(Collectors.toList());
+          sourceModelConfig.parameters().stream().map(ParameterConfigResponse::toResponse).toList();
 
       return new ModelConfigResponse(
           sourceModelConfig.name(),

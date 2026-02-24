@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerF
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Base for classes that resolve a {@link UpdateOperator} for a table.
@@ -119,6 +118,6 @@ public abstract class TableUpdateOperatorResolver {
         new CqlNamedValueContainerFactory(tableSchemaObject, codecRegistry, errorStrategy)
             .create(jsonNamedValues);
 
-    return allColumns.values().stream().map(assignmentSupplier).collect(Collectors.toList());
+    return allColumns.values().stream().map(assignmentSupplier).toList();
   }
 }

@@ -235,60 +235,64 @@ public class JsonUtil {
   }
 
   private static Object tryExtractExtendedFromUnwrapped(JsonExtensionType etype, JsonNode value) {
-    switch (etype) {
-      case EJSON_DATE:
-        if (value.isIntegralNumber() && value.canConvertToLong()) {
-          return new Date(value.longValue());
-        }
-        break;
-      case OBJECT_ID:
+    return switch (etype) {
+      case EJSON_DATE ->
+          (value.isIntegralNumber() && value.canConvertToLong())
+              ? new Date(value.longValue())
+              : null;
+      case OBJECT_ID -> {
         try {
-          return new ObjectId(value.asText());
+          yield new ObjectId(value.asText());
         } catch (IllegalArgumentException e) {
+          yield null;
         }
-        break;
-      case UUID:
+      }
+      case UUID -> {
         try {
-          return java.util.UUID.fromString(value.asText());
+          yield java.util.UUID.fromString(value.asText());
         } catch (IllegalArgumentException e) {
+          yield null;
         }
-        break;
-      case BINARY:
+      }
+      case BINARY -> {
         // For some formats we may get actual Binary; for JSON it's Text (JSON String):
         if (value.isBinary() || value.isTextual()) {
           try {
-            return value.binaryValue();
+            yield value.binaryValue();
           } catch (IOException e) {
+            yield null;
           }
+        } else {
+          yield null;
         }
-        break;
-    }
-    return null;
+      }
+    };
   }
 
   private static void failOnInvalidExtendedValue(JsonExtensionType etype, JsonNode value) {
-    switch (etype) {
-      case EJSON_DATE:
-        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
-            Map.of(
-                "errorMessage",
-                "'%s' value has to be an epoch timestamp, instead got (%s)"
-                    .formatted(etype.encodedName(), value)));
-      case OBJECT_ID:
-        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
-            Map.of(
-                "errorMessage",
-                "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)"
-                    .formatted(etype.encodedName(), value)));
-      case UUID:
-        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
-            Map.of(
-                "errorMessage",
-                "'%s' value has to be 36-character UUID String, instead got (%s)"
-                    .formatted(etype.encodedName(), value)));
-    }
-    // should never happen
-    throw ServerException.internalServerError("Unrecognized JsonExtensionType: " + etype);
+    throw switch (etype) {
+      case EJSON_DATE ->
+          DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "'%s' value has to be an epoch timestamp, instead got (%s)"
+                      .formatted(etype.encodedName(), value)));
+      case OBJECT_ID ->
+          DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)"
+                      .formatted(etype.encodedName(), value)));
+      case UUID ->
+          DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "'%s' value has to be 36-character UUID String, instead got (%s)"
+                      .formatted(etype.encodedName(), value)));
+      case BINARY ->
+          // should never happen
+          ServerException.internalServerError("Unrecognized JsonExtensionType: " + etype);
+    };
   }
 
   /**

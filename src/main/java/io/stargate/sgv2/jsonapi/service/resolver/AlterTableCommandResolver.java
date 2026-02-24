@@ -133,7 +133,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         addedColumns.values().stream()
             .filter(apiTableDef.allColumns()::contains)
             .sorted(ApiColumnDef.NAME_COMPARATOR)
-            .collect(Collectors.toList());
+            .toList();
 
     if (!duplicateColumns.isEmpty()) {
       throw SchemaException.Code.CANNOT_ADD_EXISTING_COLUMNS.get(

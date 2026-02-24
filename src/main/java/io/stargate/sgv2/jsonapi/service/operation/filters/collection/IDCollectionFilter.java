@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /** Filters db documents based on a document id field value */
 public class IDCollectionFilter extends CollectionFilter {
@@ -100,7 +99,7 @@ public class IDCollectionFilter extends CollectionFilter {
                       BuiltConditionPredicate.EQ,
                       new JsonTerm(CQLBindValues.getDocumentIdValue(v)));
                 })
-            .collect(Collectors.toList());
+            .toList();
       default:
         throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
             Map.of("message", "id column operator '%s'".formatted(operator.name())));

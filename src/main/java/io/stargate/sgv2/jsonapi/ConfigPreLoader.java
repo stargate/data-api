@@ -8,7 +8,6 @@ import jakarta.enterprise.event.Observes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
@@ -92,6 +91,6 @@ public class ConfigPreLoader {
                 throw new RuntimeException("Failed to load class: " + ci.name(), e);
               }
             })
-        .collect(Collectors.toList());
+        .collect(java.util.stream.Collectors.toList());
   }
 }
