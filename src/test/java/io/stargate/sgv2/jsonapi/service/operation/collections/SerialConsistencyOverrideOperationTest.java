@@ -71,7 +71,10 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       CommandContext<CollectionSchemaObject> context, List<JsonNode> documents) {
     var builder =
         new CollectionInsertAttemptBuilder(
-            context.schemaObject(), documentShredder, context.commandName());
+            context.schemaObject(),
+            documentShredder,
+            context.requestContext().tenant(),
+            context.commandName());
     return documents.stream().map(builder::build).toList();
   }
 
@@ -182,16 +185,16 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
     public void insert() throws Exception {
       String document =
           """
-              {
-                "_id": "doc1",
-                "text": "user1",
-                "number" : 10,
-                "boolean": true,
-                "nullval" : null,
-                "array" : ["a", "b"],
-                "sub_doc" : {"col": "val"}
-              }
-              """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT, jsonNode);
@@ -257,11 +260,11 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       UUID tx_id = UUID.randomUUID();
       String doc1 =
           """
-                      {
-                        "_id": "doc1",
-                        "username": "user1"
-                      }
-                      """;
+          {
+            "_id": "doc1",
+            "username": "user1"
+          }
+          """;
 
       final ColumnDefinitions keyTxIdDocColumns =
           buildColumnDefs(
@@ -282,12 +285,12 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       String doc1Updated =
           """
-                          {
-                            "_id": "doc1",
-                            "username": "user1",
-                            "name" : "test"
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "username": "user1",
+            "name" : "test"
+          }
+          """;
 
       final String updateCql =
           ReadAndUpdateCollectionOperation.buildUpdateQuery(

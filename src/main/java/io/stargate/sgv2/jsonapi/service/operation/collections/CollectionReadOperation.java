@@ -12,6 +12,7 @@ import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -78,6 +79,7 @@ public interface CollectionReadOperation extends CollectionOperation {
       DocumentProjector projection,
       int limit,
       boolean vectorSearch,
+      Tenant tenant,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     return Multi.createFrom()
@@ -109,7 +111,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                     // create metrics
                     // TODO Use the column names!
                     jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                        commandName, row.getString(2).length());
+                        tenant, commandName, row.getString(2).length());
 
                     if (projection.doIncludeSimilarityScore()) {
                       float score = row.getFloat(3); // similarity_score
@@ -204,6 +206,7 @@ public interface CollectionReadOperation extends CollectionOperation {
       int errorLimit,
       DocumentProjector projection,
       boolean vectorSearch,
+      Tenant tenant,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
@@ -310,7 +313,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                         sortValues);
                 documents.add(document);
                 jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                    commandName, row.getString(2).length());
+                    tenant, commandName, row.getString(2).length());
               }
               return Uni.createFrom().item(documents);
             })

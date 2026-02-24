@@ -42,7 +42,8 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     final boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
 
     var builder =
-        new CollectionInsertAttemptBuilder(ctx.schemaObject(), documentShredder, ctx.commandName());
+        new CollectionInsertAttemptBuilder(
+            ctx.schemaObject(), documentShredder, ctx.requestContext().tenant(), ctx.commandName());
     var attempts = command.documents().stream().map(builder::build).toList();
 
     return new InsertCollectionOperation(ctx, attempts, ordered, false, returnDocumentResponses);

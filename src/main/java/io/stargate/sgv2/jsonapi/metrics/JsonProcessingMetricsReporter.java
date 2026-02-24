@@ -4,7 +4,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -22,60 +22,55 @@ public class JsonProcessingMetricsReporter {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
-  private final RequestContext requestContext;
   private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
 
   @Inject
   public JsonProcessingMetricsReporter(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
-      RequestContext requestContext,
       MetricsConfig metricsConfig) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    this.requestContext = requestContext;
     tenantConfig = metricsConfig.tenantRequestCounter();
   }
 
-  public void reportJsonWriteBytesMetrics(String commandName, long docJsonSize) {
+  public void reportJsonWriteBytesMetrics(Tenant tenant, String commandName, long docJsonSize) {
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.jsonBytesWritten())
-            .tags(getCustomTags(commandName))
+            .tags(getCustomTags(tenant, commandName))
             .register(meterRegistry);
     ds.record(docJsonSize);
   }
 
-  public void reportJsonReadBytesMetrics(String commandName, long docJsonSize) {
+  public void reportJsonReadBytesMetrics(Tenant tenant, String commandName, long docJsonSize) {
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.jsonBytesRead())
-            .tags(getCustomTags(commandName))
+            .tags(getCustomTags(tenant, commandName))
             .register(meterRegistry);
     ds.record(docJsonSize);
   }
 
-  public void reportJsonWrittenDocsMetrics(String commandName, int docCount) {
+  public void reportJsonWrittenDocsMetrics(Tenant tenant, String commandName, int docCount) {
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.jsonDocsWritten())
-            .tags(getCustomTags(commandName))
+            .tags(getCustomTags(tenant, commandName))
             .register(meterRegistry);
     ds.record(docCount);
   }
 
-  public void reportJsonReadDocsMetrics(String commandName, int docCount) {
+  public void reportJsonReadDocsMetrics(Tenant tenant, String commandName, int docCount) {
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.jsonDocsRead())
-            .tags(getCustomTags(commandName))
+            .tags(getCustomTags(tenant, commandName))
             .register(meterRegistry);
     ds.record(docCount);
   }
 
-  private Tags getCustomTags(String commandName) {
+  private Tags getCustomTags(Tenant tenant, String commandName) {
     // TODO: This is a bug? Added null check to match previous optional behavior
     // Not making tenant refactor PR too large
     Tag tenantTag =
-        Tag.of(
-            tenantConfig.tenantTag(),
-            requestContext.tenant() == null ? UNKNOWN_VALUE : requestContext.tenant().toString());
+        Tag.of(tenantConfig.tenantTag(), tenant == null ? UNKNOWN_VALUE : tenant.toString());
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     return Tags.of(commandTag, tenantTag);
   }
