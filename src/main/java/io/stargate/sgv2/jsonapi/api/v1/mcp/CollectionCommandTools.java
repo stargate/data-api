@@ -8,6 +8,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import jakarta.inject.Inject;
 
 /**
@@ -29,6 +30,16 @@ public class CollectionCommandTools {
       @ToolArg(description = "options", required = false) FindCommand.Options options) {
 
     var command = new FindCommand(filter, projection, sort, options);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
+
+  @Tool(description = "Command that inserts a single JSON document to a collection.")
+  public Uni<ToolResponse> insertOne(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection") String collection,
+      @ToolArg(description = "JSON document to insert.") JsonNode document) {
+
+    var command = new InsertOneCommand(document);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 }
