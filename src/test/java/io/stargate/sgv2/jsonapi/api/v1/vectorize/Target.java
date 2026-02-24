@@ -1,6 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import org.junit.jupiter.api.DynamicNode;
+
 import java.util.HashMap;
+import java.util.Optional;
 
 public class Target {
 
@@ -35,16 +38,24 @@ public class Target {
     return new APIRequest(targetConfiguration.connection(),  env, testCommand.withEnvironment(env));
   }
 
-  public void workflowStarting(TestPlan testPlan, Workflow workflow){ }
-  public void workflowFinished(TestPlan testPlan,Workflow workflow){ }
-
-  public void jobStarting(TestPlan testPlan,Job job){
-    backend.jobStarting(testPlan, job);
+  public Optional<DynamicNode> beforeWorkflow(TestPlan testPlan, Workflow workflow){
+    return backend.beforeWorkflow(testPlan, workflow);
   }
-  public void jobFinished(TestPlan testPlan,Job job){
-    backend.jobFinished(testPlan, job);
+  public Optional<DynamicNode>  afterWorkflow(TestPlan testPlan,Workflow workflow){
+    return backend.afterWorkflow(testPlan, workflow);
   }
 
-  public void testRunStarting(TestPlan testPlan,TestSuite test, TestEnvironment env){ }
-  public void testRunFinished(TestPlan testPlan,TestSuite test, TestEnvironment env){ }
+  public Optional<DynamicNode>  beforeJob(TestPlan testPlan,Job job){
+    return backend.beforeJob(testPlan, job);
+  }
+  public Optional<DynamicNode>  afterJob(TestPlan testPlan,Job job){
+    return backend.afterJob(testPlan, job);
+  }
+
+  public Optional<DynamicNode>  beforeTestSuite(TestPlan testPlan,TestSuite test, TestEnvironment env){
+    return backend.beforeTestSuite(testPlan, test, env);
+  }
+  public Optional<DynamicNode>  afterTestSuite(TestPlan testPlan,TestSuite test, TestEnvironment env){
+    return backend.afterTestSuite(testPlan, test, env);
+  }
 }

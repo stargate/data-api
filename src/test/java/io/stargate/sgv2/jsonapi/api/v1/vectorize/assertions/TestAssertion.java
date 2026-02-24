@@ -2,60 +2,83 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.APIResponse;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCase;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestResponse;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-public interface TestAssertion {
+public record TestAssertion(
+    String name,
+    JsonNode args,
+    AssertionMatcher matcher
+) {
 
-  void run(APIResponse apiResponse);
+  public void run(TestResponse testResponse) {
 
-  static List<TestAssertion> forSuccess(CommandName commandName) {
+    try{
+      matcher.match(testResponse.apiResponse());
+    }
+    catch (AssertionError e) {
+      System.out.printf("Failed Assertion: name=%s, args=%s", name, args);
+      throw e;
+    }
+    catch (Exception e) {
+      System.out.printf("Error In Assertion: name=%s, args=%s", name, args);
+      throw e;
+    }
+  }
+  public static List<TestAssertion> forSuccess(CommandName commandName) {
 
-    List<TestAssertion> assertions = new ArrayList<>();
-    assertions.add(StatusCode.success(null));
+    var builder = Stream.<AssertionDefinition>builder()
+        .add(new AssertionDefinition("Statuscode.success", null));
 
     switch (commandName) {
       case INSERT_ONE, INSERT_MANY -> {
-        assertions.add(Response.isWriteSuccess(null));
+        builder.add(new AssertionDefinition("Response.isWriteSuccess", null));
       }
       case CREATE_KEYSPACE, DROP_KEYSPACE, CREATE_NAMESPACE, DROP_NAMESPACE, DELETE_COLLECTION, CREATE_COLLECTION -> {
-        assertions.add(Response.isDDLSuccess(null));
+        builder.add(new AssertionDefinition("Response.isDDLSuccess", null));
       }
     }
-    return assertions;
+    return buildAssertions(builder.build());
   }
 
 
-  public static List<TestAssertion> buildAssertions (TestCase testCase) {
+  public static List<TestAssertion> buildAssertions(TestCase testCase) {
 
-    List<TestAssertion> testAssertions = new ArrayList<>();
-    for (Map.Entry<String, JsonNode> entry : testCase.asserts().properties()){
-      var args = entry.getValue();
-
-      var assertFactory = findAssertionFactory(entry.getKey());
-      try {
-        testAssertions.add((BodyAssertion)assertFactory.invoke(null, args));
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    return testAssertions;
+    return buildAssertions(testCase.asserts().properties().stream()
+        .map(AssertionDefinition::create));
   }
 
-  private static Method findAssertionFactory(String key){
+  private static List<TestAssertion> buildAssertions(Stream<AssertionDefinition> defs) {
+
+    return defs.map(
+        def -> {
+          var assertFactory = findAssertionFactory(def.name());
+          AssertionMatcher matcher;
+          try {
+            matcher = (AssertionMatcher) assertFactory.invoke(null, def.args());
+          } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+          }
+          return new TestAssertion(def.name(), def.args(), matcher);
+        }
+    ).toList();
+
+  }
+
+  private static Method findAssertionFactory(String key) {
     // "validatableResponse.isFindSuccess"
 
     int dot = key.indexOf('.');
     String typeName = key.substring(0, dot);
-    String funcName   = key.substring(dot + 1);
+    String funcName = key.substring(dot + 1);
 
     String qualifiedTypeName =
         "io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions."
@@ -76,6 +99,14 @@ public interface TestAssertion {
     } catch (ReflectiveOperationException e) {
       throw new RuntimeException("Invalid assertion: " + key, e);
     }
+  }
+
+  private record AssertionDefinition(String name, JsonNode args) {
+
+    static AssertionDefinition create(Map.Entry<String, JsonNode> def) {
+      return new AssertionDefinition(def.getKey(), def.getValue());
+    }
+
   }
 
 }

@@ -1,20 +1,36 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import org.junit.jupiter.api.DynamicNode;
+
+import java.util.Optional;
+
 public abstract class Backend {
 
   public void updateJobForTarget(Job job){
   }
 
-  public void workflowStarting(TestPlan testPlan, Workflow workflow) { }
+  public Optional<DynamicNode> beforeWorkflow(TestPlan testPlan, Workflow workflow) {
+    return Optional.empty();
+  }
 
-  public void workflowFinished(TestPlan testPlan, Workflow workflow) { }
+  public Optional<DynamicNode> afterWorkflow(TestPlan testPlan, Workflow workflow) {
+    return Optional.empty();
+  }
 
-  public void jobStarting(TestPlan testPlan, Job job) { }
+  public Optional<DynamicNode> beforeJob(TestPlan testPlan, Job job) {
+    return Optional.empty();
+  }
 
-  public void jobFinished(TestPlan testPlan, Job job) { }
+  public Optional<DynamicNode> afterJob(TestPlan testPlan, Job job) {
+    return Optional.empty();
+  }
 
-  public void testStarting(TestPlan testPlan, TestSuite test, TestEnvironment env) { }
+  public Optional<DynamicNode> beforeTestSuite(TestPlan testPlan, TestSuite test, TestEnvironment env) {
+    return Optional.empty();
+  }
 
-  public void testFinished(TestPlan testPlan, TestSuite test, TestEnvironment env) { }
+  public Optional<DynamicNode> afterTestSuite(TestPlan testPlan, TestSuite test, TestEnvironment env) {
+    return Optional.empty();
+  }
 }
 

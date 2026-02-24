@@ -7,20 +7,20 @@ import static org.hamcrest.Matchers.hasSize;
 
 public class Response {
 
-  public static TestAssertion isFindSuccess(JsonNode args) {
+  public static AssertionMatcher isFindSuccess(JsonNode args) {
     return new BodyAssertion("$", responseIsFindSuccess());
   }
 
-  public static TestAssertion isFindAndSuccess(JsonNode args) {
+  public static AssertionMatcher isFindAndSuccess(JsonNode args) {
     return new BodyAssertion("$", responseIsFindAndSuccess());
   }
 
 
-  public static TestAssertion isWriteSuccess(JsonNode args) {
+  public static AssertionMatcher isWriteSuccess(JsonNode args) {
     return new BodyAssertion("$", responseIsWriteSuccess());
   }
 
-  public static TestAssertion isDDLSuccess(JsonNode args) {
+  public static AssertionMatcher isDDLSuccess(JsonNode args) {
     return new BodyAssertion("$", responseIsDDLSuccess());
   }
 

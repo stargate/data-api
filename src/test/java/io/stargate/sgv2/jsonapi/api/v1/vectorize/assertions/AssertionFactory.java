@@ -5,5 +5,5 @@ import com.fasterxml.jackson.databind.JsonNode;
 @FunctionalInterface
 public interface AssertionFactory {
 
-  TestAssertion create(JsonNode args);
+  AssertionMatcher create(JsonNode args);
 }

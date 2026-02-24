@@ -4,7 +4,9 @@ import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
@@ -52,36 +54,46 @@ public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows
     target.updateJobForTarget(job);
   }
 
+  private  static Optional<DynamicContainer> containerIfPresent(String namePrefix, TestSpecMeta meta, Optional<DynamicNode> dynamicNode){
+    return dynamicNode
+        .map(
+            node -> dynamicContainer(namePrefix + ": " + meta.name(), Stream.of(node))
+        );
+  }
+
+  private static Stream<DynamicNode> streamIfPresent(Optional<DynamicContainer> container){
+    return container.stream().flatMap(Stream::of);
+  }
+
+  private static Stream<DynamicNode> lifecycleNodes(String namePrefix, TestSpecMeta meta, Supplier<Optional<DynamicNode>> nodeSupplier){
+    var targetDynamicNode = nodeSupplier.get();
+    return streamIfPresent(containerIfPresent(namePrefix, meta, targetDynamicNode));
+  }
+
   public Stream<? extends DynamicNode> addLifecycle(Workflow workflow, Stream<? extends DynamicNode> dynamicNodes){
 
-    var starting = dynamicTest("Workflow Starting: %s".formatted(workflow.meta().name()), () -> target.workflowStarting(this,workflow));
-    var finished = dynamicTest("Workflow Finished: %s".formatted(workflow.meta().name()), () -> target.workflowFinished(this,workflow));
-
     return Stream.concat(
-        Stream.of(starting),
-        Stream.concat(dynamicNodes, Stream.of(finished))
+        lifecycleNodes("Before Workflow", workflow.meta(), () -> target.beforeWorkflow(this, workflow)),
+        Stream.concat(dynamicNodes,
+            lifecycleNodes("After Workflow", workflow.meta(), () -> target.afterWorkflow(this, workflow)))
     );
   }
 
   public Stream<? extends DynamicNode> addLifecycle(Job job, Stream<? extends DynamicNode> dynamicNodes){
 
-    var starting = dynamicTest("Job Starting: %s".formatted(job.meta().name()), () -> target.jobStarting(this,job));
-    var finished = dynamicTest("Job Finished: %s".formatted(job.meta().name()), () -> target.jobFinished(this,job));
-
     return Stream.concat(
-        Stream.of(starting),
-        Stream.concat(dynamicNodes, Stream.of(finished))
+        lifecycleNodes("Before Job", job.meta(), () -> target.beforeJob(this, job)),
+        Stream.concat(dynamicNodes,
+            lifecycleNodes("After Job", job.meta(), () -> target.afterJob(this, job)))
     );
   }
 
   public Stream<? extends DynamicNode> addLifecycle(TestSuite testSuite, TestEnvironment environment, Stream<? extends DynamicNode> dynamicNodes){
 
-    var starting = dynamicTest("TestRun Starting: %s".formatted(testSuite.meta().name()), () -> target.testRunStarting(this,testSuite, environment));
-    var finished = dynamicTest("TestRun Finished: %s".formatted(testSuite.meta().name()), () -> target.testRunFinished(this,testSuite, environment));
-
     return Stream.concat(
-        Stream.of(starting),
-        Stream.concat(dynamicNodes, Stream.of(finished))
+        lifecycleNodes("Before TestSuite", testSuite.meta(), () -> target.beforeTestSuite(this, testSuite, environment)),
+        Stream.concat(dynamicNodes,
+            lifecycleNodes("After TestSuite", testSuite.meta(), () -> target.afterTestSuite(this, testSuite, environment)))
     );
   }
 }

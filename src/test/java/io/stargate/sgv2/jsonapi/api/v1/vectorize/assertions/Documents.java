@@ -7,12 +7,12 @@ import static org.hamcrest.Matchers.hasSize;
 
 public class Documents {
 
-  public static TestAssertion count(JsonNode args) {
+  public static AssertionMatcher count(JsonNode args) {
     var expectedCount = args.asInt();
     return new BodyAssertion("data.documents", hasSize(expectedCount));
   }
 
-  public static TestAssertion isExactly(JsonNode args) {
+  public static AssertionMatcher isExactly(JsonNode args) {
     return new BodyAssertion("data.document", jsonEquals(args));
   }
 }

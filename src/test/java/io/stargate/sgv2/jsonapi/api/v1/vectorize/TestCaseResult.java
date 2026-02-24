@@ -1,13 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.AssertionMatcher;
 
 public record TestCaseResult(
     TestSuite integrationTest,
     TestCase testCase, // Nullable
     TestResponse testResponse,
     AssertionError error,
-    TestAssertion failedAssertion
+    AssertionMatcher failedAssertion
 ) {
 
   public boolean failed(){

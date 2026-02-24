@@ -1,9 +1,15 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import static io.restassured.RestAssured.given;
+import org.junit.jupiter.api.DynamicNode;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.function.Executable;
 
-public abstract class RunnerBase {
+import java.util.Collection;
+import java.util.List;
 
-  protected abstract TestEnvironment integrationEnv();
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+
+public abstract class RunnerBase implements Executable {
+
 
 }

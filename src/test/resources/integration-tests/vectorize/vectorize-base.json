@@ -46,7 +46,7 @@
   ],
   "tests": [
     {
-      "name": "findByVectorize",
+      "name": "basic findMany",
       "command": {
         "find": {
           "sort": {
@@ -56,7 +56,7 @@
       },
       "asserts": {
         "response.isFindSuccess": null,
-        "documents.count": 3
+        "documents.count": 4
       }
     },
     {

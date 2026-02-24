@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.AssertionMatcher;
 
 public record TestResponse(
     TestRequest testRequest,
@@ -8,28 +8,28 @@ public record TestResponse(
     APIResponse apiResponse
 ) {
 
-  public TestCaseResult validate(TestSuite integrationTest, TestCase testCase){
-    return validate(integrationTest, testCase, true);
-  }
-
-  public TestCaseResult validate(TestSuite integrationTest, TestCase testCase, boolean throwOnError) {
-
-    AssertionError assertionError = null;
-    TestAssertion failedAssertion = null;
-    for (var testAssertion : testRequest.testAssertions()){
-      try{
-        testAssertion.run(apiResponse);
-      }
-      catch(AssertionError e){
-        if (throwOnError){
-          throw e;
-        }
-
-        failedAssertion = testAssertion;
-        assertionError = e;
-        break;
-      }
-    }
-    return new TestCaseResult(integrationTest, testCase, this  , assertionError, failedAssertion);
-  }
+//  public TestCaseResult validate(TestSuite integrationTest, TestCase testCase){
+//    return validate(integrationTest, testCase, true);
+//  }
+//
+//  public TestCaseResult validate(TestSuite testSuite, TestCase testCase, boolean throwOnError) {
+//
+//    AssertionError assertionError = null;
+//    AssertionMatcher failedAssertion = null;
+//    for (var testAssertion : testRequest.testAssertions()){
+//      try{
+//        testAssertion.run(apiResponse);
+//      }
+//      catch(AssertionError e){
+//        if (throwOnError){
+//          throw e;
+//        }
+//
+//        failedAssertion = testAssertion;
+//        assertionError = e;
+//        break;
+//      }
+//    }
+//    return new TestCaseResult(testSuite, testCase, this  , assertionError, failedAssertion);
+//  }
 }

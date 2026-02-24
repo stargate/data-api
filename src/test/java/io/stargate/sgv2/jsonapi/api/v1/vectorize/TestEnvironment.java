@@ -3,12 +3,10 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
 import org.junit.jupiter.api.DynamicContainer;
-import org.junit.jupiter.api.DynamicTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -35,15 +33,32 @@ public class TestEnvironment {
 
   public DynamicContainer testNode(TestPlan testPlan, TestSuite testSuite) {
 
-    var desc = "TestEnv: %s ".formatted(this);
+    var desc = "TestEnv: %s ".formatted(description());
 
-    var envNodes = Stream.of(
-        dynamicTest("Running TestSuite", () -> new IntegrationTestRunner( testPlan, testSuite, this).run())
-    );
+    var envNodes = testSuite.testNodesForEnvironment(testPlan, this).stream();
 
     return DynamicContainer.dynamicContainer(
             desc,
             testPlan.addLifecycle(testSuite, this, envNodes));
+  }
+
+  private String description(){
+    return vars.entrySet().stream()
+        .filter(
+            entry -> {
+              var name = entry.getKey().toUpperCase();
+              if (SCHEMA_IDENTIFIER.contains(name)){
+                return false; // schema names not usually interesting
+              }
+              if (name.contains("KEY") || name.contains("API") || name.contains("TOKEN")){
+                return false; // assume security
+              }
+              return true;
+            }
+        )
+        .sorted(Map.Entry.comparingByKey())
+        .toList()
+        .toString();
   }
 
   private TestEnvironment(TestEnvironment other){
