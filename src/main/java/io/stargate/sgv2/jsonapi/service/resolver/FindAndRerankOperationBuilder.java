@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,7 +235,7 @@ class FindAndRerankOperationBuilder {
         rerankAccumulator,
         deferredCommandResults.stream()
             .map(RerankingTask.DeferredCommandWithSource::deferredRead)
-            .collect(Collectors.toUnmodifiableList()));
+            .collect(java.util.stream.Collectors.toUnmodifiableList()));
   }
 
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(

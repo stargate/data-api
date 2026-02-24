@@ -96,7 +96,7 @@ public class RerankingProviderConfigProducer {
     var defaultProviders =
         rerankingProvidersConfig.providers().entrySet().stream()
             .filter(entry -> entry.getValue().isDefault())
-            .collect(Collectors.toList());
+            .toList();
 
     if (defaultProviders.size() != 1) {
       throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
@@ -119,7 +119,7 @@ public class RerankingProviderConfigProducer {
                         .filter(
                             RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
                         .map(model -> Map.entry(entry.getKey(), model)))
-            .collect(Collectors.toList());
+            .toList();
 
     if (allDefaultModels.size() != 1) {
       throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
