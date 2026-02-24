@@ -21,9 +21,6 @@ import org.apache.commons.text.WordUtils;
 import org.bson.types.ObjectId;
 
 public class JsonUtil {
-  @Deprecated // Call JsonExtensionType.EJSON_DATE.encodedName() directly instead
-  private static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
-
   /**
    * Helper method for producing "pretty" type description for given {@link JsonNode} value.
    *
@@ -122,7 +119,7 @@ public class JsonUtil {
    */
   public static Date extractEJsonDate(JsonNode json, Object path) {
     if (json.isObject() && json.size() == 1) {
-      JsonNode value = json.get(EJSON_VALUE_KEY_DATE);
+      JsonNode value = json.get(JsonExtensionType.EJSON_DATE.encodedName());
       if (value != null) {
         if (value.isIntegralNumber() && value.canConvertToLong()) {
           return new Date(value.longValue());
@@ -132,7 +129,10 @@ public class JsonUtil {
             Map.of(
                 "errorMessage",
                 "Date (%s) needs to have Number value, had %s (path '%s')"
-                    .formatted(EJSON_VALUE_KEY_DATE, JsonUtil.nodeTypeAsString(value), path)));
+                    .formatted(
+                        JsonExtensionType.EJSON_DATE.encodedName(),
+                        JsonUtil.nodeTypeAsString(value),
+                        path)));
       }
     }
     return null;
@@ -144,7 +144,7 @@ public class JsonUtil {
    */
   public static Date tryExtractEJsonDate(JsonNode json) {
     if (json.isObject() && json.size() == 1) {
-      JsonNode value = json.get(EJSON_VALUE_KEY_DATE);
+      JsonNode value = json.get(JsonExtensionType.EJSON_DATE.encodedName());
       if (value != null) {
         if (value.isIntegralNumber() && value.canConvertToLong()) {
           return new Date(value.longValue());
@@ -160,12 +160,12 @@ public class JsonUtil {
 
   public static ObjectNode createEJSonDate(JsonNodeCreator f, long timestamp) {
     ObjectNode json = f.objectNode();
-    json.put(EJSON_VALUE_KEY_DATE, timestamp);
+    json.put(JsonExtensionType.EJSON_DATE.encodedName(), timestamp);
     return json;
   }
 
   public static Map<String, Object> createEJSonDateAsMap(long timestamp) {
-    return Map.of(EJSON_VALUE_KEY_DATE, timestamp);
+    return Map.of(JsonExtensionType.EJSON_DATE.encodedName(), timestamp);
   }
 
   public static ObjectNode createJsonExtensionValue(
@@ -179,7 +179,8 @@ public class JsonUtil {
   }
 
   public static Date createDateFromDocumentId(DocumentId documentId) {
-    return new Date((Long) ((Map) documentId.value()).get(EJSON_VALUE_KEY_DATE));
+    return new Date(
+        (Long) ((Map) documentId.value()).get(JsonExtensionType.EJSON_DATE.encodedName()));
   }
 
   public static JsonExtensionType findJsonExtensionType(JsonNode jsonValue) {

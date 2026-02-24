@@ -95,24 +95,17 @@ public abstract class CollectionFilter extends DBFilterBase {
   }
 
   protected static JsonNode toJsonNode(JsonNodeFactory nodeFactory, Object value) {
-
-    // TODO: this is a lot easier using switch pattern matching
-    if (value instanceof DocumentId) {
-      return toJsonNode(nodeFactory, (DocumentId) value);
-    } else if (value instanceof String) {
-      return toJsonNode(nodeFactory, (String) value);
-    } else if (value instanceof BigDecimal) {
-      return toJsonNode(nodeFactory, (BigDecimal) value);
-    } else if (value instanceof Boolean) {
-      return toJsonNode(nodeFactory, (Boolean) value);
-    } else if (value instanceof Date) {
-      return toJsonNode(nodeFactory, (Date) value);
-    } else if (value == null) {
-      return nodeFactory.nullNode();
-    } else {
-      throw ServerException.internalServerError(
-          "Unexpected Object class for CollectionFilter: " + value.getClass().getName());
-    }
+    return switch (value) {
+      case null -> nodeFactory.nullNode();
+      case DocumentId id -> toJsonNode(nodeFactory, id);
+      case String s -> toJsonNode(nodeFactory, s);
+      case BigDecimal bd -> toJsonNode(nodeFactory, bd);
+      case Boolean b -> toJsonNode(nodeFactory, b);
+      case Date d -> toJsonNode(nodeFactory, d);
+      default ->
+          throw ServerException.internalServerError(
+              "Unexpected Object class for CollectionFilter: " + value.getClass().getName());
+    };
   }
 
   protected static JsonNode toJsonNode(JsonNodeFactory nodeFactory, List<Object> listValues) {

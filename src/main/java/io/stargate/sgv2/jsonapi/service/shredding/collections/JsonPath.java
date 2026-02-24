@@ -99,8 +99,7 @@ public final class JsonPath implements Comparable<JsonPath> {
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
-    if (o instanceof JsonPath) {
-      JsonPath other = (JsonPath) o;
+    if (o instanceof JsonPath other) {
       return (arrayElement == other.arrayElement) && encodedPath.equals(other.encodedPath);
     }
     return false;

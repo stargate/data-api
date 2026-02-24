@@ -254,8 +254,8 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
-    if (!(o instanceof PathMatchLocator)) return false;
-    return dotPath.equals(((PathMatchLocator) o).dotPath);
+    if (!(o instanceof PathMatchLocator pml)) return false;
+    return dotPath.equals(pml.dotPath);
   }
 
   @Override

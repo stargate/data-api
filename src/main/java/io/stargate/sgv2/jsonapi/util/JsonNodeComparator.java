@@ -150,27 +150,16 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
   }
 
   private int typePriority(JsonNodeType type, JsonNode node) {
-    switch (type) {
-      case MISSING:
-        return 0;
-      case NULL:
-        return 1;
-      case NUMBER:
-        return 2;
-      case STRING:
-        return 3;
-      case OBJECT:
-        return 4;
-      case ARRAY:
-        return 5;
-      case BOOLEAN:
-        return 6;
-      case POJO:
-        if (((POJONode) node).getPojo() instanceof Date) {
-          return 7;
-        }
-      default:
-        return 8;
-    }
+    return switch (type) {
+      case MISSING -> 0;
+      case NULL -> 1;
+      case NUMBER -> 2;
+      case STRING -> 3;
+      case OBJECT -> 4;
+      case ARRAY -> 5;
+      case BOOLEAN -> 6;
+      case POJO -> (node instanceof POJONode pojo && pojo.getPojo() instanceof Date) ? 7 : 8;
+      default -> 8;
+    };
   }
 }
