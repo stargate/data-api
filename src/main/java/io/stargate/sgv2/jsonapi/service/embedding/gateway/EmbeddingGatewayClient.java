@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.util.ClassUtils;
 import java.util.*;
 
 /** Grpc client for embedding gateway service */
@@ -73,7 +74,6 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    * @param texts List of texts to be vectorized
    * @param embeddingCredentials Credentials required for the provider
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
-   * @return
    */
   @Override
   public Uni<BatchedEmbeddingResponse> vectorize(
@@ -89,30 +89,35 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     if (vectorizeServiceParameters != null) {
       vectorizeServiceParameters.forEach(
           (key, value) -> {
-            if (value instanceof String)
+            if (value instanceof String str) {
               gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
-                      .setStrValue((String) value)
+                      .setStrValue(str)
                       .build());
-            else if (value instanceof Integer)
+            } else if (value instanceof Integer I) {
               gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
-                      .setIntValue((Integer) value)
+                      .setIntValue(I)
                       .build());
-            else if (value instanceof Float)
+            } else if (value instanceof Float F) {
               gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
-                      .setFloatValue((Float) value)
+                      .setFloatValue(F)
                       .build());
-            else if (value instanceof Boolean)
+            } else if (value instanceof Boolean B) {
               gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
-                      .setBoolValue((Boolean) value)
+                      .setBoolValue(B)
                       .build());
+            } else {
+              throw new IllegalArgumentException(
+                  "Unknown service parameter type for key '%s': %s"
+                      .formatted(key, ClassUtils.classSimpleName(value)));
+            }
           });
     }
 
@@ -204,11 +209,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             });
   }
 
-  /**
-   * Return MAX_VALUE because the batching is done inside EGW
-   *
-   * @return
-   */
+  /** Return MAX_VALUE because the batching is done inside EGW */
   @Override
   public int maxBatchSize() {
     return Integer.MAX_VALUE;

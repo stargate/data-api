@@ -158,8 +158,7 @@ public class DocumentProjector {
   // Mostly for deserialization tests
   @Override
   public boolean equals(Object o) {
-    if (o instanceof DocumentProjector) {
-      DocumentProjector other = (DocumentProjector) o;
+    if (o instanceof DocumentProjector other) {
       return (this.inclusion == other.inclusion)
           && (this.includeSimilarityScore == other.includeSimilarityScore)
           && Objects.equals(this.rootLayer, other.rootLayer);

@@ -27,7 +27,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindCollectionOperation(
@@ -622,9 +621,7 @@ public record FindCollectionOperation(
      * @return index column name with field name as entry key like query_text_values['username']
      */
     public List<String> getOrderingColumns() {
-      return sortIndexColumns.stream()
-          .map(col -> col.formatted(column()))
-          .collect(Collectors.toList());
+      return sortIndexColumns.stream().map(col -> col.formatted(column())).toList();
     }
   }
 }

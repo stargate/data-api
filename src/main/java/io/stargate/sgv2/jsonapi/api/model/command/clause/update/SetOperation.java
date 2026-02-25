@@ -134,7 +134,7 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   // Needed because some unit tests check for equality
   @Override
   public boolean equals(Object o) {
-    return (o instanceof SetOperation) && Objects.equals(this.actions, ((SetOperation) o).actions);
+    return (o instanceof SetOperation s) && Objects.equals(this.actions, s.actions);
   }
 
   record Action(PathMatchLocator locator, JsonNode value) implements ActionWithLocator {}

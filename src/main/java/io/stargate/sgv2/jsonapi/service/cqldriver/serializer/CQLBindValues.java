@@ -40,7 +40,7 @@ public class CQLBindValues {
   }
 
   public static List<String> getListValue(List<?> from) {
-    return from.stream().map(val -> val.toString()).collect(Collectors.toList());
+    return from.stream().map(val -> val.toString()).toList();
   }
 
   public static Map<String, String> getStringMapValues(Map<JsonPath, String> from) {
