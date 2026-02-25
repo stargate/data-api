@@ -1,107 +1,66 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCase;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCommand;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestResponse;
+import org.junit.jupiter.api.DynamicNode;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-public record TestAssertion(
-    String name,
-    JsonNode args,
-    AssertionMatcher matcher
-) {
+public interface TestAssertion {
 
-  public void run(TestResponse testResponse) {
+  String name();
 
-    try{
-      matcher.match(testResponse.apiResponse());
-    }
-    catch (AssertionError e) {
-      System.out.printf("Failed Assertion: name=%s, args=%s", name, args);
-      throw e;
-    }
-    catch (Exception e) {
-      System.out.printf("Error In Assertion: name=%s, args=%s", name, args);
-      throw e;
-    }
-  }
-  public static List<TestAssertion> forSuccess(CommandName commandName) {
+  JsonNode args();
+
+  void run(TestResponse testResponse);
+
+  DynamicNode testNodes(AtomicReference<TestResponse> testResponse);
+
+
+  static List<TestAssertion> forSuccess(TestCommand testCommand) {
 
     var builder = Stream.<AssertionDefinition>builder()
-        .add(new AssertionDefinition("Statuscode.success", null));
+        .add(new AssertionDefinition("Response.isSuccess", null));
 
-    switch (commandName) {
-      case INSERT_ONE, INSERT_MANY -> {
-        builder.add(new AssertionDefinition("Response.isWriteSuccess", null));
-      }
-      case CREATE_KEYSPACE, DROP_KEYSPACE, CREATE_NAMESPACE, DROP_NAMESPACE, DELETE_COLLECTION, CREATE_COLLECTION -> {
-        builder.add(new AssertionDefinition("Response.isDDLSuccess", null));
-      }
-    }
-    return buildAssertions(builder.build());
+    return buildAssertions(testCommand, builder.build());
   }
 
+  static List<TestAssertion> buildAssertions(TestCase testCase) {
 
-  public static List<TestAssertion> buildAssertions(TestCase testCase) {
-
-    return buildAssertions(testCase.asserts().properties().stream()
-        .map(AssertionDefinition::create));
+    var defs = testCase.asserts().properties().stream()
+        .map(AssertionDefinition::create);
+    return buildAssertions(testCase.command(), defs);
   }
 
-  private static List<TestAssertion> buildAssertions(Stream<AssertionDefinition> defs) {
+  static List<TestAssertion> buildAssertions(TestCommand testCommand, List<AssertionDefinition> defs) {
+
+    return buildAssertions(testCommand, defs.stream());
+  }
+
+  static List<TestAssertion> buildAssertions(TestCommand testCommand, Stream<AssertionDefinition> defs) {
 
     return defs.map(
-        def -> {
-          var assertFactory = findAssertionFactory(def.name());
-          AssertionMatcher matcher;
-          try {
-            matcher = (AssertionMatcher) assertFactory.invoke(null, def.args());
-          } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-          }
-          return new TestAssertion(def.name(), def.args(), matcher);
-        }
+        def -> buildAssertion(testCommand, def)
     ).toList();
-
   }
 
-  private static Method findAssertionFactory(String key) {
-    // "validatableResponse.isFindSuccess"
+  private static TestAssertion buildAssertion(TestCommand testCommand, AssertionDefinition def) {
 
-    int dot = key.indexOf('.');
-    String typeName = key.substring(0, dot);
-    String funcName = key.substring(dot + 1);
-
-    String qualifiedTypeName =
-        "io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions."
-            + Character.toUpperCase(typeName.charAt(0))
-            + typeName.substring(1).toLowerCase();
-
-    try {
-      Class<?> cls = Class.forName(qualifiedTypeName);
-
-      var factoryMethod = Arrays.stream(cls.getMethods())
-          .filter(m -> m.getName().equalsIgnoreCase(funcName))
-          .filter(m -> Modifier.isStatic(m.getModifiers()))
-          .findFirst()
-          .orElseThrow();
-
-
-      return factoryMethod;
-    } catch (ReflectiveOperationException e) {
-      throw new RuntimeException("Invalid assertion: " + key, e);
-    }
+    return switch (AssertionMatcher.FACTORY_REGISTRY.get(def.name())) {
+      case AssertionMatcher.AssertionMatcherFactory factory ->
+          new SingleTestAssertion(def.name(), def.args(), factory.apply(testCommand, def.args()));
+      case AssertionMatcher.TestAssertionContainerFactory factory ->
+          new TestAssertionContainer(def.name(), def.args(), factory.apply(testCommand, def.args));
+      default -> throw new IllegalStateException("Unknown TestAssertionFactory: " + def.name());
+    };
   }
 
-  private record AssertionDefinition(String name, JsonNode args) {
+  record AssertionDefinition(String name, JsonNode args) {
 
     static AssertionDefinition create(Map.Entry<String, JsonNode> def) {
       return new AssertionDefinition(def.getKey(), def.getValue());

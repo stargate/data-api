@@ -34,15 +34,7 @@ public record TestRequest(
 
     // tests for each assertion
     var assertionTests = testAssertions().stream().map(
-        testAssertion ->
-          dynamicTest(testAssertion.name(), () -> {
-                var resp = atomicResponse.get();
-                if (resp == null) {
-                  throw new IllegalStateException("Response is null");
-                }
-                testAssertion.run(resp);
-              }
-          ))
+        testAssertion -> testAssertion.testNodes(atomicResponse))
         .toList();
 
     // if we have assertion tests, put them in a container

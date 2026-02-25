@@ -40,7 +40,7 @@ public class CassandraBackend extends Backend {
     var env = job.withoutMatrix(testPlan);
     var setupRequest = new TestRequest(
          env.substitutor().replace("createKeyspace: ${KEYSPACE_NAME}"),
-        command, testPlan.target(), env, TestAssertion.forSuccess(command.commandName()));
+        command, testPlan.target(), env, TestAssertion.forSuccess(command));
 
     return Optional.of(setupRequest.testNodes());
   }
@@ -59,7 +59,7 @@ public class CassandraBackend extends Backend {
     var env = job.withoutMatrix(testPlan);
     var setupRequest = new TestRequest(
         env.substitutor().replace("dropKeyspace: ${KEYSPACE_NAME}"),
-        command, testPlan.target(), job.withoutMatrix(testPlan), TestAssertion.forSuccess(command.commandName()));
+        command, testPlan.target(), job.withoutMatrix(testPlan), TestAssertion.forSuccess(command));
 
     return Optional.of(setupRequest.testNodes());
   }

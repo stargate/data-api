@@ -1,0 +1,47 @@
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestResponse;
+import org.junit.jupiter.api.DynamicNode;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+
+public record TestAssertionContainer(
+    String name,
+    JsonNode args,
+    List<TestAssertion> assertions
+) implements TestAssertion {
+
+  @Override
+  public void run(TestResponse testResponse) {
+    for  (TestAssertion assertion : assertions) {
+      try{
+        assertion.run(testResponse);
+      }
+      catch (AssertionError e) {
+        System.out.printf("Failed Assertion Container: name=%s, args=%s\n\t Caused By: name=%s, args=%s", name, args,
+            assertion.name(), assertion.args());
+        throw e;
+      }
+      catch (Exception e) {
+        System.out.printf("Error In Assertion Container: name=%s, args=%s\n\t Caused By: name=%s, args=%s", name, args,
+            assertion.name(), assertion.args());
+        throw e;
+      }
+    }
+  }
+
+  @Override
+  public DynamicNode testNodes(AtomicReference<TestResponse> testResponse) {
+
+    var childs = assertions.stream()
+        .map(assertion -> assertion.testNodes(testResponse))
+        .toList();
+
+    return dynamicContainer(name, childs);
+  }
+}

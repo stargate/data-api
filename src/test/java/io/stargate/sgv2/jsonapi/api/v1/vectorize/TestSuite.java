@@ -39,7 +39,7 @@ public record TestSuite(TestSpecMeta meta, List<TestCommand> setup, List<TestCas
       for (TestCommand setupCommand : setup()) {
         var setupRequest = new TestRequest(
             "SetupRequest[%s]: %s".formatted(i++, setupCommand.commandName()),
-            setupCommand, testPlan.target(), testEnvironment, TestAssertion.forSuccess(setupCommand.commandName()));
+            setupCommand, testPlan.target(), testEnvironment, TestAssertion.forSuccess(setupCommand));
 
         nodes.add(setupRequest.testNodes());
       }
@@ -51,7 +51,7 @@ public record TestSuite(TestSpecMeta meta, List<TestCommand> setup, List<TestCas
     for (TestCommand cleanupCommand : cleanup()) {
       var cleanupRequest = new TestRequest(
           "CleanupRequest[%s]: %s".formatted(i++, cleanupCommand.commandName()),
-          cleanupCommand, testPlan.target(), testEnvironment, TestAssertion.forSuccess(cleanupCommand.commandName()));
+          cleanupCommand, testPlan.target(), testEnvironment, TestAssertion.forSuccess(cleanupCommand));
       nodes.add(cleanupRequest.testNodes());
     }
 
