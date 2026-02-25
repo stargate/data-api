@@ -193,8 +193,8 @@ public class VectorizeConfigValidator {
 
         // Validate the credential name from secret service
         // already append the .providerKey to the value in CreateCollectionCommand
-        // NOTE: method is expected to signal failure by throwing Exception -- return
-        // value is discarded here.
+        // !!! 24-Feb-2026, tatu: NOTE: method seems to be expected to signal failure by
+        //   throwing Exception as return value is discarded here. Is this correct?
         if (operationsConfig.enableEmbeddingGateway()) {
           validateCredentials.validate(userConfig.provider(), userAuth.getValue());
         } else {
