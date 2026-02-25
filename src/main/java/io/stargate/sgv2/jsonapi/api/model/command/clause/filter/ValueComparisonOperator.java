@@ -31,28 +31,19 @@ public enum ValueComparisonOperator implements FilterOperator {
 
   @Override
   public FilterOperator invert() {
-    switch (this) {
-      case EQ:
-        return NE;
-      case NE:
-        return EQ;
-      case IN:
-        return NIN;
-      case NIN:
-        return IN;
-      case GT:
-        return LTE;
-      case GTE:
-        return LT;
-      case LT:
-        return GTE;
-      case LTE:
-        return GT;
-      case MATCH:
+    return switch (this) {
+      case EQ -> NE;
+      case NE -> EQ;
+      case IN -> NIN;
+      case NIN -> IN;
+      case GT -> LTE;
+      case GTE -> LT;
+      case LT -> GTE;
+      case LTE -> GT;
         // No way to do "not matches" (not supported by database)
-        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
-            Map.of("message", "cannot use '$not' to invert '$match' operator"));
-    }
-    return this;
+      case MATCH ->
+          throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+              Map.of("message", "cannot use '$not' to invert '$match' operator"));
+    };
   }
 }

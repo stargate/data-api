@@ -231,7 +231,7 @@ public class VectorizeConfigValidator {
                                     .name()
                                     .equals(
                                         "vectorDimension")) // Exclude 'vectorDimension' parameter
-                        .collect(Collectors.toList()))
+                        .toList())
             .get();
     // Add all model level parameters
     allParameters.addAll(modelParameters);

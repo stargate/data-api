@@ -141,8 +141,8 @@ public class InCollectionFilter extends CollectionFilter {
           // can not use stream here, since lambda parameter casting is not allowed
           List<BuiltCondition> conditions = new ArrayList<>();
           for (Object value : values) {
-            if (value instanceof DocumentId) {
-              Object docIdValue = ((DocumentId) value).value();
+            if (value instanceof DocumentId docId) {
+              Object docIdValue = docId.value();
               if (docIdValue instanceof BigDecimal numberId) {
                 this.collectionIndexUsage.numberIndexTag = true;
                 BuiltCondition condition =

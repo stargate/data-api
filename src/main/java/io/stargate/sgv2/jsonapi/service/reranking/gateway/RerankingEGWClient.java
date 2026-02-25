@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /** Grpc client to make reranking Grpc requests to reranking API inside EmbeddingGatewayService */
 public class RerankingEGWClient extends RerankingProvider {
@@ -113,7 +112,7 @@ public class RerankingEGWClient extends RerankingProvider {
                   batchId,
                   gatewayResponse.getRanksList().stream()
                       .map(rank -> new Rank(rank.getIndex(), rank.getScore()))
-                      .collect(Collectors.toList()),
+                      .toList(),
                   createModelUsage(gatewayResponse.getModelUsage()));
             });
   }
