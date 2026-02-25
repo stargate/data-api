@@ -28,6 +28,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,24 +203,30 @@ public class McpResource {
       var exception = SchemaException.Code.MCP_FEATURE_NOT_ENABLED.get();
       CommandResult errorResult =
           CommandResult.statusOnlyBuilder(context.requestTracing()).addThrowable(exception).build();
-      return Uni.createFrom().item(new ToolResponse(true, null, errorResult.errors(), Map.of()));
+      return Uni.createFrom()
+          .item(
+              new ToolResponse(true, List.of(), Map.of("errors", errorResult.errors()), Map.of()));
     }
 
     return meteredCommandProcessor
         .processCommand(context, command)
         .map(
             result -> {
-              // Success: structuredContent = the whole result data payload
-              if (result.errors() == null || result.errors().isEmpty()) {
-                return ToolResponse.structuredSuccess(result);
-              }
+              boolean hasErrors = result.errors() != null && !result.errors().isEmpty();
 
-              // Error: isError=true, structuredContent=errors array, _meta = status (if present)
-              Map<MetaKey, Object> meta = null;
-              if (result.status() != null && !result.status().isEmpty()) {
-                meta = Map.of(MetaKey.of("status"), result.status());
-              }
-              return new ToolResponse(true, null, result.errors(), meta);
+              // Map "status" in CommandResult to _meta in ToolResponse
+              Map<MetaKey, Object> meta =
+                  (result.status() != null && !result.status().isEmpty())
+                      ? Map.of(MetaKey.of("status"), result.status())
+                      : null;
+
+              // Map "errors" or "data" to structuredContent
+              // Also, structuredContent is expected to be a Record (a plain JSON object {})
+              return new ToolResponse(
+                  hasErrors,
+                  List.of(),
+                  hasErrors ? Map.of("errors", result.errors()) : result.data(),
+                  meta);
             });
   }
 
