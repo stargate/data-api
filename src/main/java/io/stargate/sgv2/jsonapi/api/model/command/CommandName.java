@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -104,7 +103,7 @@ public enum CommandName {
   public static List<CommandName> filterByTarget(CommandTarget target) {
     return Stream.of(values())
         .filter(commandName -> commandName.getTargets().contains(target))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   public interface Names {

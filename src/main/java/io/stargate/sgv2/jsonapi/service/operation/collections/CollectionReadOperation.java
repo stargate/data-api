@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * ReadOperation interface which all find command operations will use. It also provides the
@@ -362,7 +361,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                             return ReadDocument.from(
                                 readDoc.id().orElse(null), readDoc.txnId().orElse(null), data);
                           })
-                      .collect(Collectors.toList());
+                      .toList();
               return new FindResponse(responseDocuments, null);
             });
   }
