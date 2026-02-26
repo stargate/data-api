@@ -24,6 +24,10 @@ public class UDTTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TABLE = "udt_table";
 
+  // [data-api#2410]: UDT with inet-typed field
+  private static final String INET_TYPE_NAME = "address_with_inet";
+  private static final String INET_TABLE = "udt_inet_table";
+
   @BeforeAll
   public static void createTypeAndTable() {
 
@@ -63,9 +67,25 @@ public class UDTTableIntegrationTest extends AbstractTableIntegrationTestBase {
                         Map.of("type", "userDefined", "udtName", TYPE_NAME)))),
             "id")
         .wasSuccessful();
+
+    // [data-api#2410]: Create UDT with inet field and table using it
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createType(INET_TYPE_NAME, Map.of("city", "text", "ip", "inet"));
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            INET_TABLE,
+            Map.ofEntries(
+                Map.entry("id", "text"),
+                Map.entry("info", Map.of("type", "userDefined", "udtName", INET_TYPE_NAME))),
+            "id")
+        .wasSuccessful();
   }
 
   @Nested
+  @Order(1)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   // Note, AlterTable shares same logic for handling UDT colum  n, won't test it here.
   class CreateTable {
@@ -214,83 +234,8 @@ public class UDTTableIntegrationTest extends AbstractTableIntegrationTestBase {
     }
   }
 
-  // [data-api#2410]: Test for UDT with inet-typed field
   @Nested
   @Order(2)
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class WriteAndReadUdtWithInet {
-
-    private static final String INET_TYPE_NAME = "address_with_inet";
-    private static final String INET_TABLE = "udt_inet_table";
-
-    private static final String ROW_INET =
-        """
-            {
-                 "id": "row_inet_1",
-                 "info": {
-                     "city": "New York",
-                     "ip": "192.168.1.1"
-                 }
-            }
-        """;
-
-    @BeforeAll
-    public static void createInetTypeAndTable() {
-      // Create a UDT that has an inet field
-      assertNamespaceCommand(keyspaceName)
-          .templated()
-          .createType(INET_TYPE_NAME, Map.of("city", "text", "ip", "inet"));
-
-      // Create a table using that UDT
-      assertNamespaceCommand(keyspaceName)
-          .templated()
-          .createTable(
-              INET_TABLE,
-              Map.ofEntries(
-                  Map.entry("id", "text"),
-                  Map.entry("info", Map.of("type", "userDefined", "udtName", INET_TYPE_NAME))),
-              "id")
-          .wasSuccessful();
-    }
-
-    @Test
-    @Order(1)
-    public void insertAndReadUdtWithInet() {
-      assertTableCommand(keyspaceName, INET_TABLE)
-          .templated()
-          .insertOne(ROW_INET)
-          .wasSuccessful()
-          .hasInsertedIds(List.of("row_inet_1"));
-
-      assertTableCommand(keyspaceName, INET_TABLE)
-          .templated()
-          .find(Map.of("id", "row_inet_1"), null, null, null)
-          .wasSuccessful()
-          .hasDocumentInPosition(0, ROW_INET);
-    }
-
-    @Test
-    @Order(2)
-    public void insertUdtWithInvalidInet() {
-      String invalidInetRow =
-          """
-              {
-                   "id": "row_inet_invalid",
-                   "info": {
-                       "city": "Boston",
-                       "ip": "not-an-ip"
-                   }
-              }
-          """;
-      assertTableCommand(keyspaceName, INET_TABLE)
-          .templated()
-          .insertOne(invalidInetRow)
-          .hasSingleApiError(
-              DocumentException.Code.INVALID_COLUMN_VALUES, DocumentException.class, "inet");
-    }
-  }
-
-  @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class WriteAndRead {
 
@@ -701,6 +646,57 @@ public class UDTTableIntegrationTest extends AbstractTableIntegrationTestBase {
           .wasSuccessful()
           .hasDocuments(1)
           .hasDocumentUnknowingPosition(ROW_1);
+    }
+  }
+
+  // [data-api#2410]: Test for UDT with inet-typed field
+  @Nested
+  @Order(3)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class WriteAndReadUdtWithInet {
+    @Test
+    @Order(1)
+    public void insertAndReadUdtWithInet() {
+      final String ROW_INET =
+          """
+                        {
+                             "id": "row_inet_1",
+                             "info": {
+                                 "city": "New York",
+                                 "ip": "192.168.1.1"
+                             }
+                        }
+                    """;
+      assertTableCommand(keyspaceName, INET_TABLE)
+          .templated()
+          .insertOne(ROW_INET)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("row_inet_1"));
+
+      assertTableCommand(keyspaceName, INET_TABLE)
+          .templated()
+          .find(Map.of("id", "row_inet_1"), null, null, null)
+          .wasSuccessful()
+          .hasDocumentInPosition(0, ROW_INET);
+    }
+
+    @Test
+    @Order(2)
+    public void insertUdtWithInvalidInet() {
+      assertTableCommand(keyspaceName, INET_TABLE)
+          .templated()
+          .insertOne(
+              """
+                        {
+                             "id": "row_inet_invalid",
+                             "info": {
+                                 "city": "Boston",
+                                 "ip": "not-an-ip"
+                             }
+                        }
+                    """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES, DocumentException.class, "inet");
     }
   }
 }
