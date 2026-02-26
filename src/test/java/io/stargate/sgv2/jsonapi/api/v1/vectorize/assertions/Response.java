@@ -26,23 +26,20 @@ public class Response {
   /**
    * Checks the hTTP status AND the shape of the response doc
    */
-  public static List<TestAssertion> isSuccess(TestCommand testCommand, JsonNode args) {
+  public static AssertionMatcher isSuccess(TestCommand testCommand, JsonNode args) {
 
     var commandName = testCommand.commandName();
-    var responseDocMatcher =  switch (commandName.getCommandType()){
-      case DDL -> new TestAssertion.AssertionDefinition( "Response.isDDLSuccess", null);
+    return switch (commandName.getCommandType()){
+      case DDL -> isDDLSuccess(testCommand, args);
       case DML   ->
          switch (commandName) {
-           case FIND_ONE, FIND -> new TestAssertion.AssertionDefinition( "Response.isFindSuccess", null);
-           case FIND_ONE_AND_DELETE, FIND_ONE_AND_REPLACE, FIND_ONE_AND_UPDATE -> new TestAssertion.AssertionDefinition( "Response.isFindAndSuccess", null);
-           case INSERT_ONE, INSERT_MANY -> new TestAssertion.AssertionDefinition( "Response.isWriteSuccess", null);
+           case FIND_ONE, FIND -> Response.isFindSuccess(testCommand, args);
+           case FIND_ONE_AND_DELETE, FIND_ONE_AND_REPLACE, FIND_ONE_AND_UPDATE -> Response.isFindAndSuccess(testCommand, args);
+           case INSERT_ONE, INSERT_MANY -> Response.isWriteSuccess(testCommand, args);
            default -> throw new IllegalStateException("No isSuccess mapping for command name: " + commandName);
          };
       case ADMIN -> throw new IllegalStateException("No isSuccess mapping for command name: " + commandName);
     };
-
-
-    return TestAssertion.buildAssertions(testCommand, List.of(new TestAssertion.AssertionDefinition("Http.success", null), responseDocMatcher));
   }
 
   public static AssertionMatcher isFindSuccess(TestCommand testCommand, JsonNode args) {

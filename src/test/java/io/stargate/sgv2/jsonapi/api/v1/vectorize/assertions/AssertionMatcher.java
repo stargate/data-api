@@ -69,6 +69,18 @@ public interface AssertionMatcher {
 
     public AssertionFactory<?> get(String name){
       var normalName = name.toLowerCase();
+
+      int pos = normalName.indexOf('.');
+      if (pos < 0){
+        throw new IllegalArgumentException("Name must have a dot: " + name);
+      }
+      var type = normalName.substring(0, pos);
+      var func = normalName.substring(pos + 1);
+
+      if (type.equals( "template")) {
+        return TemplatedAssertions.getFactory(func);
+      }
+
       var factoryMethod = factoryMethods.get(normalName);
       if (factoryMethod == null) {
         loadClassFor(name);

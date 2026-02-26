@@ -25,7 +25,7 @@ public interface TestAssertion {
   static List<TestAssertion> forSuccess(TestCommand testCommand) {
 
     var builder = Stream.<AssertionDefinition>builder()
-        .add(new AssertionDefinition("Response.isSuccess", null));
+        .add(new AssertionDefinition("template.isSuccess", null));
 
     return buildAssertions(testCommand, builder.build());
   }
@@ -49,7 +49,7 @@ public interface TestAssertion {
     ).toList();
   }
 
-  private static TestAssertion buildAssertion(TestCommand testCommand, AssertionDefinition def) {
+  public static TestAssertion buildAssertion(TestCommand testCommand, AssertionDefinition def) {
 
     return switch (AssertionMatcher.FACTORY_REGISTRY.get(def.name())) {
       case AssertionMatcher.AssertionMatcherFactory factory ->

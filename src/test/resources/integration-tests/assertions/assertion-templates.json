@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "name": "assertions-templates",
+    "kind": "assertionTemplate"
+  },
+  "templates": {
+    "isSuccess":  {
+      "http.success" : null,
+      "response.isSuccess": null
+    }
+  }
+}

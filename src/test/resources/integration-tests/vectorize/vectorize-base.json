@@ -55,7 +55,7 @@
         }
       },
       "asserts": {
-        "response.isSuccess": null,
+        "template.isSuccess": null,
         "documents.count": 3
       }
     },
@@ -77,7 +77,7 @@
         }
       },
       "asserts": {
-        "response.isFindAndSuccess": null,
+        "response.isSuccess": null,
         "documents.isExactly": {
           "_id": "Inception",
           "name": "Inception",

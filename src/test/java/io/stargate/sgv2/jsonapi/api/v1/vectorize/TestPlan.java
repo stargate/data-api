@@ -1,8 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.AssertionTemplates;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -13,7 +16,6 @@ import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows){
-
 
   public static TestPlan  create(String targetName, List<String> workflows){
     var targetConfigs = TargetConfigurationss.loadAll("integration-tests/targets/targets.json");
