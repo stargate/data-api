@@ -16,7 +16,7 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class UDTIntegrationTest extends AbstractTableIntegrationTestBase {
+public class UDTTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TYPE_NAME = "address";
 
