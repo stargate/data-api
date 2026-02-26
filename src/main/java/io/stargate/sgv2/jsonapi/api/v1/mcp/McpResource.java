@@ -105,7 +105,7 @@ public class McpResource {
   }
 
   /**
-   * Build a CommandContext for database-level (general) commands. similar to {@link
+   * Build a CommandContext for keyspace-level (keyspace) commands. similar to {@link
    * io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource}
    */
   public CommandContext<?> buildKeyspaceContext(String keyspace, KeyspaceCommand command) {

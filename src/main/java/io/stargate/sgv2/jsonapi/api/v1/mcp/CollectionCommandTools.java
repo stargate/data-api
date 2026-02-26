@@ -36,7 +36,7 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(description = "Find a single document in a collection matching a filter")
+  @Tool(description = "Command that finds JSON documents from a collection.")
   public Uni<ToolResponse> find(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection") String collection,
