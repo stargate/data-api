@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkiverse.mcp.server.MetaKey;
@@ -8,6 +10,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
@@ -15,8 +18,8 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
@@ -25,6 +28,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +105,89 @@ public class McpResource {
   }
 
   /**
+   * Build a CommandContext for keyspace-level (keyspace) commands. similar to {@link
+   * io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource}
+   */
+  public CommandContext<?> buildKeyspaceContext(String keyspace, KeyspaceCommand command) {
+    return contextBuilderSupplier
+        .getBuilder(new KeyspaceSchemaObject(keyspace))
+        .withCommandName(command.getClass().getSimpleName())
+        .withRequestContext(createRequestContext())
+        .build();
+  }
+
+  /**
+   * Process a collection-level command. This is fully asynchronous as it needs to resolve the
+   * SchemaObject dynamically from the SchemaCache, configure Vector search context if applicable,
+   * before delegating execution to processCommand.
+   */
+  public Uni<ToolResponse> processCollectionCommand(
+      String keyspace, String collection, CollectionCommand command) {
+
+    RequestContext requestContext = createRequestContext();
+
+    return schemaCache
+        .getSchemaObject(
+            requestContext,
+            keyspace,
+            collection,
+            CommandType.DDL.equals(command.commandName().getCommandType()))
+        .onItemOrFailure()
+        .transformToUni(
+            (schemaObject, throwable) -> {
+              if (throwable != null) {
+                // If schema resolution or authorization fails, return an error ToolResponse
+                CommandResult errorResult =
+                    CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                        .addThrowable(throwable)
+                        .build();
+                return Uni.createFrom()
+                    .item(new ToolResponse(true, null, errorResult.errors(), Map.of()));
+              } else {
+                VectorColumnDefinition vectorColDef = null;
+                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                          .orElse(null);
+                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getFirstVectorColumnWithVectorizeDefinition()
+                          .orElse(null);
+                }
+
+                EmbeddingProvider embeddingProvider = null;
+
+                if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
+                  embeddingProvider =
+                      embeddingProviderFactory.create(
+                          requestContext.tenant(),
+                          requestContext.authToken(),
+                          vectorColDef.vectorizeDefinition().provider(),
+                          vectorColDef.vectorizeDefinition().modelName(),
+                          vectorColDef.vectorSize(),
+                          vectorColDef.vectorizeDefinition().parameters(),
+                          vectorColDef.vectorizeDefinition().authentication(),
+                          command.getClass().getSimpleName());
+                }
+
+                var commandContext =
+                    contextBuilderSupplier
+                        .getBuilder(schemaObject)
+                        .withEmbeddingProvider(embeddingProvider)
+                        .withCommandName(command.getClass().getSimpleName())
+                        .withRequestContext(requestContext)
+                        .build();
+
+                return processCommand(commandContext, command);
+              }
+            });
+  }
+
+  /**
    * Process a general or keyspace command and return the CommandResult directly.
    *
    * <p>The Quarkus MCP Server framework automatically encodes the {@link CommandResult} to JSON via
@@ -116,24 +203,30 @@ public class McpResource {
       var exception = SchemaException.Code.MCP_FEATURE_NOT_ENABLED.get();
       CommandResult errorResult =
           CommandResult.statusOnlyBuilder(context.requestTracing()).addThrowable(exception).build();
-      return Uni.createFrom().item(new ToolResponse(true, null, errorResult.errors(), Map.of()));
+      return Uni.createFrom()
+          .item(
+              new ToolResponse(true, List.of(), Map.of("errors", errorResult.errors()), Map.of()));
     }
 
     return meteredCommandProcessor
         .processCommand(context, command)
         .map(
             result -> {
-              // Success: structuredContent = the whole result data payload
-              if (result.errors() == null || result.errors().isEmpty()) {
-                return ToolResponse.structuredSuccess(result);
-              }
+              boolean hasErrors = result.errors() != null && !result.errors().isEmpty();
 
-              // Error: isError=true, structuredContent=errors array, _meta = status (if present)
-              Map<MetaKey, Object> meta = null;
-              if (result.status() != null && !result.status().isEmpty()) {
-                meta = Map.of(MetaKey.of("status"), result.status());
-              }
-              return new ToolResponse(true, null, result.errors(), meta);
+              // Map "status" in CommandResult to _meta in ToolResponse
+              Map<MetaKey, Object> meta =
+                  (result.status() != null && !result.status().isEmpty())
+                      ? Map.of(MetaKey.of("status"), result.status())
+                      : null;
+
+              // Map "errors" or "data" to structuredContent
+              // Also, structuredContent is expected to be a Record (a plain JSON object {})
+              return new ToolResponse(
+                  hasErrors,
+                  List.of(),
+                  hasErrors ? Map.of("errors", result.errors()) : result.data(),
+                  meta);
             });
   }
 

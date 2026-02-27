@@ -650,6 +650,27 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
               "errors[0].message",
               containsString("Bad type for '_id' field: unrecognized JSON extension type"));
     }
+
+    // [#2366] Sending _id as a plain (non-EJSON) Object should give a clear error, not
+    //   SERVER_UNHANDLED_ERROR
+    @Test
+    @Order(9)
+    public void failInsertDocWithPlainObjectAsDocId() {
+      String doc =
+          """
+              {
+                "_id": { "buffer": { "0": 105, "1": 120 } },
+                "value": 42
+              }
+          """;
+      givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .body("$", responseIsWritePartialSuccess())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
+          .body(
+              "errors[0].message",
+              containsString("Document Id must be a JSON String, Number, Boolean"));
+    }
   }
 
   @Nested
@@ -1560,6 +1581,41 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("status.documentResponses[2]", is(Map.of("_id", "doc3", "status", "OK")));
 
       verifyDocCount(2);
+    }
+
+    // [#2366] Sending _id as a plain (non-EJSON) Object in insertMany should give a clear
+    //   error, not SERVER_UNHANDLED_ERROR
+    @Test
+    public void failInsertManyWithPlainObjectAsDocId() {
+      givenHeadersPostJsonThenOk(
+              """
+              {
+                "insertMany": {
+                  "documents": [
+                    {
+                      "text": "Some text content",
+                      "_id": {
+                        "buffer": {
+                          "0": 105, "1": 120, "2": 241, "3": 2
+                        }
+                      }
+                    }
+                  ],
+                  "options": {
+                    "returnDocumentResponses": true,
+                    "ordered": false
+                  }
+                }
+              }
+              """)
+          .body("$", responseIsWritePartialSuccess())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
+          .body(
+              "errors[0].message",
+              containsString("Document Id must be a JSON String, Number, Boolean"));
+
+      verifyDocCount(0);
     }
 
     @Test
