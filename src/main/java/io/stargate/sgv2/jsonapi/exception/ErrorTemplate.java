@@ -133,7 +133,12 @@ public record ErrorTemplate<T extends APIException>(
     allValues.replaceAll((k, v) -> replaceIfNull(v));
 
     // set so IllegalArgumentException thrown if template var missing a value
-    var subs = new StringSubstitutor(allValues).setEnableUndefinedVariableException(true);
+    // Disable substitution in values so user-provided strings containing "${...}" are not
+    // interpreted as template variables (see data-api#2401)
+    var subs =
+        new StringSubstitutor(allValues)
+            .setEnableUndefinedVariableException(true)
+            .setDisableSubstitutionInValues(true);
 
     String msg;
     try {
