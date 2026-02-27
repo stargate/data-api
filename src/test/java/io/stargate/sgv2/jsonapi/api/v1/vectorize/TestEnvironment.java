@@ -110,7 +110,8 @@ public class TestEnvironment {
 
     var newValue = PATTERN_NOT_WORD_CHARS.matcher(name).replaceAll("_");
     if (newValue.length() > 48){
-      throw new RuntimeException("Schema Identifier longer than 48 characters %s=%s".formatted(name,newValue));
+      return newValue.substring(0, 47);
+//      throw new RuntimeException("Schema Identifier longer than 48 characters orginalName=%s, afterNormalisation==%s".formatted(name,newValue));
     }
     return newValue;
   }

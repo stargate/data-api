@@ -27,14 +27,28 @@ public class TemplatedAssertions {
       throw  new IllegalArgumentException("Assertion template is not an object: " + templateName);
     }
 
-    return new AssertionMatcher.TestAssertionContainerFactory(){
-      @Override
-      public List<TestAssertion> apply(TestCommand testCommand, JsonNode jsonNode) {
-        return templateObject.properties().stream()
+    return switch (templateName.toLowerCase()) {
+      case "issuccess" ->
+          (AssertionMatcher.TestAssertionContainerFactory) (testCommand, args) -> {
+            var commandTemplate = templateObject.get(testCommand.commandName().getApiName());
+            if (commandTemplate == null) {
+              throw new IllegalArgumentException(
+                  "isSuccess Assertion template not found for command: "
+                      + testCommand.commandName().getApiName());
+            }
+            return runTemplate((ObjectNode) commandTemplate, testCommand, args);
+          };
+      default ->
+          throw new IllegalArgumentException(
+              "Assertion template not found: " + templateName);
+    };
+  }
+
+  private static List<TestAssertion> runTemplate(ObjectNode template, TestCommand testCommand, JsonNode args) {
+    return template.properties().stream()
             .map(entry -> new TestAssertion.AssertionDefinition(entry.getKey(), entry.getValue()))
             .map(def -> TestAssertion.buildAssertion(testCommand, def))
             .toList();
-      }
-    };
   }
+
 }

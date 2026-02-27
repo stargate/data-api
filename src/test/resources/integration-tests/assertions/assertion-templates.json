@@ -4,9 +4,51 @@
     "kind": "assertionTemplate"
   },
   "templates": {
-    "isSuccess":  {
-      "http.success" : null,
-      "response.isSuccess": null
+    "isSuccess": {
+      "createCollection": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "createKeyspace": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "deleteCollection": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "dropKeyspace": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "find": {
+        "http.success": null,
+        "response.isFindSuccess": null
+      },
+      "findOne": {
+        "http.success": null,
+        "response.isFindSuccess": null
+      },
+      "insertOne": {
+        "http.success": null,
+        "response.isWriteSuccess": null
+      },
+      "insertMany": {
+        "http.success": null,
+        "response.isWriteSuccess": null
+      },
+      "findOneAndDelete": {
+        "http.success": null,
+        "response.isFindAndSuccess": null
+      },
+      "findOneAndReplace": {
+        "http.success": null,
+        "response.isFindAndSuccess": null
+      },
+      "findOneAndUpdate": {
+        "http.success": null,
+        "response.isFindAndSuccess": null
+      }
     }
   }
 }

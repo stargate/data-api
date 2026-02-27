@@ -77,7 +77,7 @@
         }
       },
       "asserts": {
-        "response.isSuccess": null,
+        "template.isSuccess": null,
         "documents.isExactly": {
           "_id": "Inception",
           "name": "Inception",
