@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.egw.SyncServiceClient;
+import io.stargate.sgv2.jsonapi.syncservice.SyncServiceClient;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;

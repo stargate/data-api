@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.egw.SyncServiceClient;
+import io.stargate.sgv2.jsonapi.syncservice.SyncServiceClient;
 import java.util.*;
 
 /**

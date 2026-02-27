@@ -4,7 +4,7 @@ import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.egw.SyncServiceClient;
+import io.stargate.sgv2.jsonapi.syncservice.SyncServiceClient;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;

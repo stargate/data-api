@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.egw;
+package io.stargate.sgv2.jsonapi.syncservice;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

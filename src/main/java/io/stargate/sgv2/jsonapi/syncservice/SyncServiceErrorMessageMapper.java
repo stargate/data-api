@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.egw;
+package io.stargate.sgv2.jsonapi.syncservice;
 
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import jakarta.ws.rs.core.Response;

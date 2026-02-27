@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.egw;
+package io.stargate.sgv2.jsonapi.syncservice;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
