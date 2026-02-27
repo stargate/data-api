@@ -214,8 +214,8 @@ public class ErrorTemplateTest extends ConfiguredErrorTest {
             });
   }
 
-  // [data-api#2401]: variable values containing "${...}" must not be treated as template variables
-  // (both correctness problem and possibly safety risk)
+  // [data-api#2401]: variable values containing "${...}" must not be treated as
+  // template variables (both correctness problem and possibly safety risk)
   @Test
   public void templateVarValueWithDollarCurlyBrace() {
 

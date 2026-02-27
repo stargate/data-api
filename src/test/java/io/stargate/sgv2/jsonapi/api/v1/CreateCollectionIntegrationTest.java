@@ -557,6 +557,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
 
     // [data-api#2401]: name with "${...}" should produce UNSUPPORTED_SCHEMA_NAME, not HTTP 500
+    // NOTE: more thorough testing in `ErrorTemplateTest` unit test
     @Test
     public void failCreateCollectionWithDollarCurlyBraceName() {
       givenHeadersPostJsonThenOk(
@@ -564,21 +565,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                         {
                           "createCollection": {
                             "name": "${car}"
-                          }
-                        }
-                        """)
-          .body("$", responseIsError())
-          .body("errors[0].errorCode", is(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name()));
-    }
-
-    // [data-api#2401]: name with "${LANGUAGE}" (uppercase) should also produce proper error
-    @Test
-    public void failCreateCollectionWithDollarCurlyBraceNameUppercase() {
-      givenHeadersPostJsonThenOk(
-              """
-                        {
-                          "createCollection": {
-                            "name": "udt_member_${LANGUAGE}"
                           }
                         }
                         """)
