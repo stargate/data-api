@@ -5,6 +5,8 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.syncservice.SyncServiceClient;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A decorator that wraps a direct {@link EmbeddingProvider} and resolves shared-secret credentials
@@ -16,6 +18,9 @@ import java.util.*;
  * entry in the authentication map, then passing the resolved credentials to the delegate provider.
  */
 public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(SyncServiceCredentialResolvingProvider.class);
 
   private static final String PROVIDER_KEY = "providerKey";
   private static final String ACCESS_ID = "accessId";
@@ -100,11 +105,19 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
   }
 
   private EmbeddingCredentials buildEmbeddingCredentials(Map<String, String> resolved) {
-    return new EmbeddingCredentials(
-        tenant,
-        Optional.ofNullable(resolved.get(PROVIDER_KEY)),
-        Optional.ofNullable(resolved.get(ACCESS_ID)),
+    var apiKey = Optional.ofNullable(resolved.get(PROVIDER_KEY));
+    var accessId = Optional.ofNullable(resolved.get(ACCESS_ID));
+    var secretId =
         Optional.ofNullable(
-            resolved.containsKey(SECRET_KEY) ? resolved.get(SECRET_KEY) : resolved.get(SECRET_ID)));
+            resolved.containsKey(SECRET_KEY) ? resolved.get(SECRET_KEY) : resolved.get(SECRET_ID));
+
+    if (!resolved.isEmpty() && apiKey.isEmpty() && accessId.isEmpty() && secretId.isEmpty()) {
+      LOGGER.warn(
+          "SyncService returned credentials with unrecognized keys {} for provider '{}'"
+              + "; none matched expected keys (accessId, providerKey, secretId, secretKey)",
+          resolved.keySet(),
+          modelProvider().apiName());
+    }
+    return new EmbeddingCredentials(tenant, apiKey, accessId, secretId);
   }
 }
