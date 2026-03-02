@@ -32,6 +32,7 @@
       "meta": {
         "name": "voyageAI-vectorize",
         "tags": [
+          "disabled"
         ]
       },
       "fromEnvironment": {
@@ -59,6 +60,7 @@
       "meta": {
         "name": "jinaAI-vectorize",
         "tags": [
+          "disabled"
         ]
       },
       "fromEnvironment": {
@@ -85,7 +87,9 @@
     {
       "meta": {
         "name": "huggingface-non-dedicated-vectorize",
-        "tags": []
+        "tags": [
+          "disabled"
+        ]
       },
       "fromEnvironment": {
         "x-embedding-api-key": "huggingface_KEY",
@@ -112,7 +116,9 @@
     {
       "meta": {
         "name": "mistral-vectorize",
-        "tags": []
+        "tags": [
+          "disabled"
+        ]
       },
       "fromEnvironment": {
         "x-embedding-api-key": "mistral_KEY",
@@ -134,7 +140,9 @@
     {
       "meta": {
         "name": "upstageAI-vectorize",
-        "tags": []
+        "tags": [
+          "disabled"
+        ]
       },
       "fromEnvironment": {
         "x-embedding-api-key": "upstageAI_KEY",
@@ -156,7 +164,9 @@
     {
       "meta": {
         "name": "nvidia-vectorize",
-        "tags": []
+        "tags": [
+          "disabled"
+        ]
       },
       "fromEnvironment": {
         "x-embedding-api-key": "Token",

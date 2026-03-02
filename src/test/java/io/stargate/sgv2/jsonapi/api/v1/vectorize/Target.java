@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuite;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.Workflow;
 import org.junit.jupiter.api.DynamicNode;
 
 import java.util.HashMap;
@@ -52,7 +54,7 @@ public class Target {
     return backend.afterJob(testPlan, job);
   }
 
-  public Optional<DynamicNode>  beforeTestSuite(TestPlan testPlan,TestSuite test, TestEnvironment env){
+  public Optional<DynamicNode>  beforeTestSuite(TestPlan testPlan, TestSuite test, TestEnvironment env){
     return backend.beforeTestSuite(testPlan, test, env);
   }
   public Optional<DynamicNode>  afterTestSuite(TestPlan testPlan,TestSuite test, TestEnvironment env){

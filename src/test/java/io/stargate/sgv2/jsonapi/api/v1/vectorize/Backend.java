@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuite;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.Workflow;
 import org.junit.jupiter.api.DynamicNode;
 
 import java.util.Optional;

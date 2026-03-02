@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

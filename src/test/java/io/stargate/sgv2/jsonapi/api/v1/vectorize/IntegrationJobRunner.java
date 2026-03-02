@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import java.util.ArrayList;
-import java.util.List;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.SpecFiles;
 
 public class IntegrationJobRunner {
 

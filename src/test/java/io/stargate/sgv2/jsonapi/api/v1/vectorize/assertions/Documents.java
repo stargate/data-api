@@ -16,7 +16,7 @@ import static org.hamcrest.Matchers.hasSize;
 public class Documents {
 
   static {
-    AssertionMatcher.FACTORY_REGISTRY.register(Documents.class);
+    AssertionFactory.REGISTRY.register(Documents.class);
   }
 
   public static AssertionMatcher count(TestCommand testCommand, JsonNode args) {

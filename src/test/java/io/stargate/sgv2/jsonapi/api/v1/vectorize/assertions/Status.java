@@ -8,7 +8,7 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 public class Status {
 
   static {
-    AssertionMatcher.FACTORY_REGISTRY.register(Status.class);
+    AssertionFactory.REGISTRY.register(Status.class);
   }
 
 

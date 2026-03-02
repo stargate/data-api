@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSpecKind;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSpecMeta;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuite;
 import org.junit.jupiter.api.DynamicContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -39,14 +41,14 @@ public record Job(
   }
 
   public Stream<TestSuite> testSuites(TestPlan testPlan) {
-    List<TestSuite> allTests = new ArrayList<>();
+    Stream.Builder<TestSuite> allTests =  Stream.builder();
     tests()
         .forEach(
             testName -> {
-              allTests.addAll(testPlan.specFiles().testByName(testName));
+               testPlan.specFiles().byNameAsType(TestSuite.class, testName).forEach(allTests) ;
             });
 
-    return allTests.stream();
+    return allTests.build();
   }
   public TestEnvironment withoutMatrix(TestPlan testPlan) {
 

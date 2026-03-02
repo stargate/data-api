@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.hasSize;
 public class Response {
 
   static {
-    AssertionMatcher.FACTORY_REGISTRY.register(Response.class);
+    AssertionFactory.REGISTRY.register(Response.class);
   }
 
   /**

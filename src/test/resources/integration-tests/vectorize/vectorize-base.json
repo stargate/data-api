@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "vectorize-base",
-    "kind" : "test"
+    "kind" : "test_suite"
   },
   "setup": [
     {
@@ -55,8 +55,8 @@
         }
       },
       "asserts": {
-        "template.isSuccess": null,
-        "documents.count": 3
+        "Templated.isSuccess": null,
+        "Documents.count": 3
       }
     },
     {
@@ -77,8 +77,8 @@
         }
       },
       "asserts": {
-        "template.isSuccess": null,
-        "documents.isExactly": {
+        "Templated.isSuccess": null,
+        "Documents.isExactly": {
           "_id": "Inception",
           "name": "Inception",
           "genre": "Science Fiction",
@@ -87,7 +87,7 @@
           ],
           "status": "active"
         },
-        "status.isExactly" : {
+        "Status.isExactly" : {
           "matchedCount": 1,
           "modifiedCount": 1
         }

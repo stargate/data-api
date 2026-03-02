@@ -1,11 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.AssertionTemplates;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.*;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -21,14 +19,14 @@ public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows
     var targetConfigs = TargetConfigurationss.loadAll("integration-tests/targets/targets.json");
     var target = new Target(targetConfigs.configuration(targetName));
 
-    var specFiles = SpecFiles.loadAll("integration-tests/vectorize");
+    var specFiles = SpecFiles.loadAll(List.of("integration-tests/vectorize", "integration-tests/assertions/assertion-templates.json"));
 
     return new  TestPlan(target, specFiles, Set.copyOf(workflows));
   }
 
   public Stream<Workflow> selectedWorkflows(){
 
-    return specFiles.byKind(TestSpec.TestSpecKind.WORKFLOW)
+    return specFiles.byKind(TestSpecKind.WORKFLOW)
         .filter(specFile ->
           workflows.isEmpty() || workflows.contains(specFile.spec().meta().name())
         )

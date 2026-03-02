@@ -15,11 +15,11 @@ public record TestCase(
     String include) {
 
 
-    DynamicContainer testNodesForEnvironment(TestPlan  testPlan, TestEnvironment testEnvironment) {
+    public DynamicContainer testNodesForEnvironment(TestPlan  testPlan, TestEnvironment testEnvironment) {
 
         var testRequest = new TestRequest(
             "TestCase: name=%s".formatted(name, command.commandName()),
-            command(), testPlan.target(), testEnvironment, TestAssertion.buildAssertions(this));
+            command(), testPlan.target(), testEnvironment, TestAssertion.buildAssertions(testPlan,  this));
 
         return testRequest.testNodes();
     }

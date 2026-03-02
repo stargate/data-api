@@ -4,13 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCommand;
 import org.apache.http.HttpStatus;
 
+import static io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.DescribableAssertionMatcher.described;
+
 public class Http {
 
   static {
-    AssertionMatcher.FACTORY_REGISTRY.register(Http.class);
+    AssertionFactory.REGISTRY.register(Http.class);
   }
 
   public static AssertionMatcher success(TestCommand testCommand, JsonNode args){
-    return apiResponse -> apiResponse.validatableResponse().statusCode(HttpStatus.SC_OK);
+    return described("http status is groovy", apiResponse -> apiResponse.validatable().statusCode(HttpStatus.SC_OK));
+//    return apiResponse -> apiResponse.validatable().statusCode(HttpStatus.SC_OK);
   }
 }
