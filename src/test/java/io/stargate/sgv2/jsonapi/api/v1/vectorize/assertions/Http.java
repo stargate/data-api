@@ -14,6 +14,5 @@ public class Http {
 
   public static AssertionMatcher success(TestCommand testCommand, JsonNode args){
     return described("http status is groovy", apiResponse -> apiResponse.validatable().statusCode(HttpStatus.SC_OK));
-//    return apiResponse -> apiResponse.validatable().statusCode(HttpStatus.SC_OK);
   }
 }
