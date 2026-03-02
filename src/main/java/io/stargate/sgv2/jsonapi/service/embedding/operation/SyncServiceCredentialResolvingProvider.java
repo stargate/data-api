@@ -78,15 +78,26 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
 
   /**
    * Resolves credentials by calling SyncService for each entry in the authentication map. Each
-   * entry's key is the accepted credential name (e.g. "providerKey"), and the value is the
-   * credential reference name stored in SyncService.
+   * entry's key is the accepted token name (e.g. "providerKey"), and the value is the credential
+   * reference name stored in SyncService (e.g. "my-openai-cred").
+   *
+   * <p>The SyncService response map is keyed by the credential reference name, so we extract the
+   * resolved secret using the credential name as key (matching EGW's EmbeddingServiceImpl
+   * behavior).
    */
   private Uni<EmbeddingCredentials> resolveCredentials() {
     String providerName = modelProvider().apiName();
 
+    // Build parallel SyncService calls and track which accepted token name each one is for
+    List<String> acceptedNames = new ArrayList<>();
+    List<String> credNames = new ArrayList<>();
     List<Uni<Map<String, String>>> resolveUnis = new ArrayList<>();
-    for (String credName : authentication.values()) {
-      resolveUnis.add(syncServiceClient.getCredential(authToken, tenant, providerName, credName));
+
+    for (Map.Entry<String, String> entry : authentication.entrySet()) {
+      acceptedNames.add(entry.getKey());
+      credNames.add(entry.getValue());
+      resolveUnis.add(
+          syncServiceClient.getCredential(authToken, tenant, providerName, entry.getValue()));
     }
 
     return Uni.join()
@@ -94,30 +105,46 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
         .andFailFast()
         .map(
             results -> {
-              Map<String, String> allCredentials = new HashMap<>();
-              for (Map<String, String> credMap : results) {
+              // For each resolved result, extract the secret using the credential name as key
+              // (SyncService response is keyed by credential reference name, not accepted name)
+              Map<String, String> resolvedByAcceptedName = new HashMap<>();
+              for (int i = 0; i < results.size(); i++) {
+                Map<String, String> credMap = results.get(i);
                 if (credMap != null) {
-                  allCredentials.putAll(credMap);
+                  String credName = credNames.get(i);
+                  String acceptedName = acceptedNames.get(i);
+                  String resolvedValue = credMap.get(credName);
+                  if (resolvedValue != null) {
+                    resolvedByAcceptedName.put(acceptedName, resolvedValue);
+                  } else {
+                    LOGGER.warn(
+                        "SyncService response for credential '{}' (provider '{}') did not contain"
+                            + " expected key '{}'; available keys: {}",
+                        credName,
+                        providerName,
+                        credName,
+                        credMap.keySet());
+                  }
                 }
               }
-              return buildEmbeddingCredentials(allCredentials);
+              return buildEmbeddingCredentials(resolvedByAcceptedName);
             });
   }
 
-  private EmbeddingCredentials buildEmbeddingCredentials(Map<String, String> resolved) {
-    var apiKey = Optional.ofNullable(resolved.get(PROVIDER_KEY));
-    var accessId = Optional.ofNullable(resolved.get(ACCESS_ID));
+  /**
+   * Maps resolved credential values (keyed by accepted token name) to {@link EmbeddingCredentials}.
+   * The accepted token names come from the provider's SHARED_SECRET config (e.g. "providerKey",
+   * "accessId", "secretKey").
+   */
+  private EmbeddingCredentials buildEmbeddingCredentials(
+      Map<String, String> resolvedByAcceptedName) {
+    var apiKey = Optional.ofNullable(resolvedByAcceptedName.get(PROVIDER_KEY));
+    var accessId = Optional.ofNullable(resolvedByAcceptedName.get(ACCESS_ID));
     var secretId =
         Optional.ofNullable(
-            resolved.containsKey(SECRET_KEY) ? resolved.get(SECRET_KEY) : resolved.get(SECRET_ID));
-
-    if (!resolved.isEmpty() && apiKey.isEmpty() && accessId.isEmpty() && secretId.isEmpty()) {
-      LOGGER.warn(
-          "SyncService returned credentials with unrecognized keys {} for provider '{}'"
-              + "; none matched expected keys (accessId, providerKey, secretId, secretKey)",
-          resolved.keySet(),
-          modelProvider().apiName());
-    }
+            resolvedByAcceptedName.containsKey(SECRET_KEY)
+                ? resolvedByAcceptedName.get(SECRET_KEY)
+                : resolvedByAcceptedName.get(SECRET_ID));
     return new EmbeddingCredentials(tenant, apiKey, accessId, secretId);
   }
 }
