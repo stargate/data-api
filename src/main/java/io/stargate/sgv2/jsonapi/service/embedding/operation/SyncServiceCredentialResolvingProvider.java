@@ -67,8 +67,20 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
+    // Match EGW behavior: if caller already provided credentials via headers, use those
+    // directly and skip SyncService resolution
+    if (hasHeaderCredentials(embeddingCredentials)) {
+      return delegate.vectorize(batchId, texts, embeddingCredentials, embeddingRequestType);
+    }
+
     return resolveCredentials()
         .flatMap(resolved -> delegate.vectorize(batchId, texts, resolved, embeddingRequestType));
+  }
+
+  private static boolean hasHeaderCredentials(EmbeddingCredentials creds) {
+    return creds.apiKey().isPresent()
+        || creds.accessId().isPresent()
+        || creds.secretId().isPresent();
   }
 
   @Override
