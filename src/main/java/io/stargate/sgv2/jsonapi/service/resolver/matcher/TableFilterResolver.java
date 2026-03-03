@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.BinaryTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
@@ -69,7 +70,8 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
       for (FilterOperation<?> op : expr.getFilterOperations()) {
         if (op.operand() != null && op.operand().type() == JsonType.SUB_DOC) {
           String path = expr.getPath();
-          var columnOpt = tableSchemaObject.tableMetadata().getColumn(path);
+          var cqlId = CqlIdentifierUtil.cqlIdentifierFromUserInput(path);
+          var columnOpt = tableSchemaObject.tableMetadata().getColumn(cqlId);
           String columnType = columnOpt.map(col -> col.getType().toString()).orElse("unknown");
           throw FilterException.Code.INVALID_FILTER_COLUMN_VALUES.get(
               errVars(
