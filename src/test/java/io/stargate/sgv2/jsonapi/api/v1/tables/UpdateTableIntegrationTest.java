@@ -445,6 +445,47 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
   }
 
   // ==================================================================================================================
+  // Issue #2275: Misleading error when filtering primitive column by object value
+  // ==================================================================================================================
+
+  /**
+   * Test for <a href="https://github.com/stargate/data-api/issues/2275">#2275</a>: filtering a
+   * primitive text column (part of primary key) with an object value should produce a clear
+   * FilterException about the value type mismatch, not a misleading "Server internal error: Filter
+   * type not supported, unable to resolve to a filtering strategy".
+   */
+  @Test
+  public void filterPrimitiveColumnWithObjectValue() {
+    // Filter uses an object value for a text primary key column -- simulates the
+    // incorrect BSON serialization described in the issue
+    var filterJSON =
+        """
+                    {
+                      "partition-key-1": {
+                        "buffer": {
+                          "0": 105,
+                          "1": 49,
+                          "2": 174
+                        }
+                      },
+                      "partition-key-2": "partition-key-2-value-default",
+                      "clustering-key-1": "clustering-key-1-value-default",
+                      "clustering-key-2": "clustering-key-2-value-default",
+                      "clustering-key-3": "clustering-key-3-value-default"
+                    }
+                """;
+    var updateClauseJSON = SET_UPDATE_CLAUSE_TEMPLATE.formatted("updated_value", "updated_value");
+
+    // Should produce a FilterException (not ServerException.INTERNAL_SERVER_ERROR)
+    // with a message indicating that the object value is not valid for the text column
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(filterJSON, updateClauseJSON)
+        .hasSingleApiError(FilterException.Code.INVALID_FILTER_COLUMN_VALUES, FilterException.class)
+        .hasNoWarnings();
+  }
+
+  // ==================================================================================================================
   // UpdateMany not (yet?) supported
   // ==================================================================================================================
 

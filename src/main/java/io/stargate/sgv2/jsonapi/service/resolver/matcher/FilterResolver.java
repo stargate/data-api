@@ -1,10 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
 import java.util.Objects;
@@ -62,7 +70,52 @@ public abstract class FilterResolver<
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
 
-    final DBLogicalExpression dbLogicalExpression = matchRules.apply(commandContext, command);
-    return WithWarnings.of(dbLogicalExpression);
+    try {
+      final DBLogicalExpression dbLogicalExpression = matchRules.apply(commandContext, command);
+      return WithWarnings.of(dbLogicalExpression);
+    } catch (ServerException e) {
+      if (commandContext.schemaObject() instanceof TableSchemaObject tableSchemaObject) {
+        throw buildTableFilterError(commandContext, command, tableSchemaObject, e);
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * When a table filter fails to match any rule, inspect the filter to find columns with
+   * incompatible value types (e.g. SUB_DOC for a primitive column) and throw a descriptive {@link
+   * FilterException} instead of a generic server error.
+   */
+  private FilterException buildTableFilterError(
+      CommandContext<SchemaT> commandContext,
+      CmdT command,
+      TableSchemaObject tableSchemaObject,
+      ServerException cause) {
+    FilterClause filterClause = command.filterClause(commandContext);
+    if (filterClause != null && !filterClause.isEmpty()) {
+      for (ComparisonExpression expr : filterClause.logicalExpression().comparisonExpressions) {
+        boolean hasSubDoc =
+            expr.getFilterOperations().stream()
+                .anyMatch(op -> op.operand() != null && op.operand().type() == JsonType.SUB_DOC);
+        if (hasSubDoc) {
+          String path = expr.getPath();
+          var columnOpt = tableSchemaObject.tableMetadata().getColumn(path);
+          String columnType = columnOpt.map(col -> col.getType().toString()).orElse("unknown");
+          throw FilterException.Code.INVALID_FILTER_COLUMN_VALUES.get(
+              errVars(
+                  tableSchemaObject,
+                  m -> {
+                    m.put(
+                        "allColumns",
+                        errFmtColumnMetadata(
+                            tableSchemaObject.tableMetadata().getColumns().values()));
+                    m.put("invalidColumn", path);
+                    m.put("columnType", columnType);
+                  }));
+        }
+      }
+    }
+    // If we couldn't identify a specific problematic column, re-throw original
+    throw cause;
   }
 }
