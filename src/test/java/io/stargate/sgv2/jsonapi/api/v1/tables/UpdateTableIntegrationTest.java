@@ -481,7 +481,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(filterJSON, updateClauseJSON)
-        .hasSingleApiError(FilterException.Code.INVALID_FILTER_COLUMN_VALUES, FilterException.class)
+        .hasSingleApiError(FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE, FilterException.class)
         .hasNoWarnings();
   }
 

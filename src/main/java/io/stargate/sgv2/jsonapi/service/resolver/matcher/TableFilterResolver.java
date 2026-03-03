@@ -1,27 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.BinaryTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
@@ -44,59 +35,10 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
   private static final Object DYNAMIC_GROUP_IN = new Object();
   private static final Object DYNAMIC_MAP_SET_LIST_GROUP = new Object();
   private static final Object DYNAMIC_MATCH_GROUP = new Object();
+  private static final Object DYNAMIC_SUB_DOC_GROUP = new Object();
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
-  }
-
-  @Override
-  public WithWarnings<DBLogicalExpression> resolve(
-      CommandContext<TableSchemaObject> commandContext, CmdT command) {
-    validateFilterValueTypes(commandContext, command);
-    return super.resolve(commandContext, command);
-  }
-
-  /**
-   * Validates that filter values use types supported by tables. Tables do not support JSON Object
-   * (SUB_DOC) values as filter operands for primitive columns. Throws early with a descriptive
-   * {@link FilterException} rather than letting the match rules fail with a generic server error.
-   */
-  private void validateFilterValueTypes(
-      CommandContext<TableSchemaObject> commandContext, CmdT command) {
-    FilterClause filterClause = command.filterClause(commandContext);
-    if (filterClause == null || filterClause.isEmpty()) {
-      return;
-    }
-    var tableSchemaObject = commandContext.schemaObject();
-    validateLogicalExpression(filterClause.logicalExpression(), tableSchemaObject);
-  }
-
-  private void validateLogicalExpression(
-      LogicalExpression expression, TableSchemaObject tableSchemaObject) {
-    for (ComparisonExpression expr : expression.comparisonExpressions) {
-      for (FilterOperation<?> op : expr.getFilterOperations()) {
-        if (op.operand() != null && op.operand().type() == JsonType.SUB_DOC) {
-          String path = expr.getPath();
-          var cqlId = CqlIdentifierUtil.cqlIdentifierFromUserInput(path);
-          var columnOpt = tableSchemaObject.tableMetadata().getColumn(cqlId);
-          String columnType = columnOpt.map(col -> col.getType().toString()).orElse("unknown");
-          throw FilterException.Code.INVALID_FILTER_COLUMN_VALUES.get(
-              errVars(
-                  tableSchemaObject,
-                  m -> {
-                    m.put(
-                        "allColumns",
-                        errFmtColumnMetadata(
-                            tableSchemaObject.tableMetadata().getColumns().values()));
-                    m.put("invalidColumn", path);
-                    m.put("columnType", columnType);
-                  }));
-        }
-      }
-    }
-    for (LogicalExpression nested : expression.logicalExpressions) {
-      validateLogicalExpression(nested, tableSchemaObject);
-    }
   }
 
   @Override
@@ -177,7 +119,20 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ArrayComparisonOperator.NOTANY),
             JsonType.ARRAY)
         .capture(DYNAMIC_MATCH_GROUP) // For $match operator
-        .compareValues("*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING);
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING)
+        // Capture SUB_DOC (JSON Object values) so they don't cause a generic server error;
+        // the findDynamic handler will throw a descriptive FilterException instead.
+        .capture(DYNAMIC_SUB_DOC_GROUP)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.SUB_DOC);
     return matchRules;
   }
 
@@ -192,6 +147,22 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
     // TODO: How do we know what the CmdT of the JsonLiteral<CmdT> from .value() is ?
     BiConsumer<CaptureGroups, DBLogicalExpression> consumer =
         (captureGroups, dbLogicalExpression) -> {
+          // Reject JSON Object (SUB_DOC) values: tables do not support them as filter operands
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_SUB_DOC_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> subDocGroup = (CaptureGroup<Object>) captureGroup;
+                    subDocGroup.consumeAllCaptures(
+                        expression -> {
+                          throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
+                              "message",
+                              "JSON Object values are not supported as table column filter values, filter column '"
+                                  + expression.path()
+                                  + "'");
+                        });
+                  });
+
           captureGroups
               .getGroupIfPresent(DYNAMIC_TEXT_GROUP)
               .ifPresent(

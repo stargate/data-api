@@ -409,7 +409,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                           }
                       """)
           .hasSingleApiError(
-              FilterException.Code.INVALID_FILTER_COLUMN_VALUES, FilterException.class);
+              FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE, FilterException.class);
     }
   }
 }
