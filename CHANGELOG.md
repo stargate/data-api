@@ -18,7 +18,6 @@
 - Add feature support and map the CommandResult to ToolResponse [\#2403](https://github.com/stargate/data-api/pull/2403) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Add MCP support for general commands [\#2402](https://github.com/stargate/data-api/pull/2402) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Refactor `createKeyspace` command [\#2400](https://github.com/stargate/data-api/pull/2400) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
-- Bumping version for next data-api release [\#2399](https://github.com/stargate/data-api/pull/2399) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Add Tenant id header to gpu plane requests [\#2359](https://github.com/stargate/data-api/pull/2359) ([Jack-Byrne](https://github.com/Jack-Byrne))
 
 ## [v1.0.39](https://github.com/stargate/data-api/tree/v1.0.39) (2026-02-17)
