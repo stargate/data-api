@@ -7,7 +7,7 @@
     {
       "meta": {
         "name": "open-ai-vectorize",
-        "tags": []
+        "tags": ["disable"]
       },
       "fromEnvironment": {
         "x-embedding-api-key": "x_embedding_api_key",
@@ -32,7 +32,6 @@
       "meta": {
         "name": "voyageAI-vectorize",
         "tags": [
-          "disabled"
         ]
       },
       "fromEnvironment": {

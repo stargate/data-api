@@ -1,8 +1,12 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.backends;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.AssertionMatcher;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.Job;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCommand;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestRequest;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.DynamicNode;
 
@@ -26,7 +30,7 @@ public class CassandraBackend extends Backend {
   }
 
   @Override
-  public Optional<DynamicNode> beforeJob(TestPlan testPlan, Job job) {
+  public Optional<DynamicNode> beforeJob(TestPlan testPlan, TestUri.Builder uriBuilder, Job job) {
 
     var command = TestCommand.fromJson(
         """
@@ -42,11 +46,11 @@ public class CassandraBackend extends Backend {
          env.substitutor().replace("createKeyspace: ${KEYSPACE_NAME}"),
         command, testPlan.target(), env, TestAssertion.forSuccess( testPlan, command));
 
-    return Optional.of(setupRequest.testNodes());
+    return Optional.of(setupRequest.testNodes(uriBuilder));
   }
 
   @Override
-  public Optional<DynamicNode> afterJob(TestPlan testPlan, Job job) {
+  public Optional<DynamicNode> afterJob(TestPlan testPlan, TestUri.Builder uriBuilder,Job job) {
     var command = TestCommand.fromJson(
         """
            {
@@ -61,6 +65,6 @@ public class CassandraBackend extends Backend {
         env.substitutor().replace("dropKeyspace: ${KEYSPACE_NAME}"),
         command, testPlan.target(), job.withoutMatrix(testPlan), TestAssertion.forSuccess(testPlan,command));
 
-    return Optional.of(setupRequest.testNodes());
+    return Optional.of(setupRequest.testNodes(uriBuilder));
   }
 }

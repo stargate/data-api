@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestResponse;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import org.hamcrest.SelfDescribing;
 import org.hamcrest.StringDescription;
@@ -34,8 +35,9 @@ public record SingleTestAssertion(
   }
 
   @Override
-  public DynamicNode testNodes(AtomicReference<TestResponse> testResponse) {
+  public DynamicNode testNodes(TestUri.Builder uriBuilder, AtomicReference<TestResponse> testResponse) {
 
+    uriBuilder.addSegment(TestUri.Segment.ASSERTION, name());
     var original = (matcher instanceof Describable d) ?
       d.describe()
         :

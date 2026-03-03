@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.AssertionMatcher;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
 import org.junit.jupiter.api.DynamicContainer;
 
 public record TestCase(
@@ -15,13 +16,13 @@ public record TestCase(
     String include) {
 
 
-    public DynamicContainer testNodesForEnvironment(TestPlan  testPlan, TestEnvironment testEnvironment) {
+    public DynamicContainer testNodesForEnvironment(TestPlan  testPlan, TestUri.Builder uriBuilder, TestEnvironment testEnvironment) {
 
         var testRequest = new TestRequest(
             "TestCase: name=%s".formatted(name, command.commandName()),
             command(), testPlan.target(), testEnvironment, TestAssertion.buildAssertions(testPlan,  this));
 
-        return testRequest.testNodes();
+        return testRequest.testNodes(uriBuilder);
     }
 
 }

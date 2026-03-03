@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSpecKind;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSpecMeta;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuite;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
 import org.junit.jupiter.api.DynamicContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,9 @@ public record Job(
   private static final Logger LOGGER = LoggerFactory.getLogger(Job.class);
 
 
-  public DynamicContainer testNode(TestPlan testPlan) {
+  public DynamicContainer testNode(TestPlan testPlan, TestUri.Builder uriBuilder) {
+
+    uriBuilder.addSegment(TestUri.Segment.JOB, meta.name());
 
     var desc = "Job: %s ".formatted(
         meta.name());
@@ -33,11 +36,12 @@ public record Job(
     testPlan.updateJobForTarget(this);
     var allEnvs = allEnvironments(testPlan);
     var testSuiteNodes =  testSuites(testPlan)
-        .map(testSuite -> testSuite.testNode(testPlan, allEnvs));
+        .map(testSuite -> testSuite.testNode(testPlan, uriBuilder.clone(), allEnvs));
 
     return  dynamicContainer(
             desc,
-            testPlan.addLifecycle(this, testSuiteNodes));
+            uriBuilder.build().uri(),
+            testPlan.addLifecycle(uriBuilder.clone(),this, testSuiteNodes));
   }
 
   public Stream<TestSuite> testSuites(TestPlan testPlan) {

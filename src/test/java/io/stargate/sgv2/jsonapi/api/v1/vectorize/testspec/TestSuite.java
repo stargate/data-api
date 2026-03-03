@@ -15,40 +15,47 @@ public record TestSuite(TestSpecMeta meta, List<TestCommand> setup, List<TestCas
     implements TestSpec {
 
 
-  public DynamicContainer testNode(TestPlan testPlan, List<TestEnvironment> allEnvs) {
+  public DynamicContainer testNode(TestPlan testPlan, TestUri.Builder uriBuilder,  List<TestEnvironment> allEnvs) {
+
+    uriBuilder.addSegment(TestUri.Segment.SUITE, meta().name());
 
     var desc = "TestSuite: %s ".formatted(
         meta.name());
 
     return dynamicContainer(
         desc,
+        uriBuilder.build().uri(),
         allEnvs.stream()
-            .map(testEnv -> testEnv.testNode(testPlan, this))
+            .map(testEnv -> testEnv.testNode(testPlan, uriBuilder.clone(), this))
     );
   }
 
-  public Collection<? extends DynamicNode> testNodesForEnvironment(TestPlan testPlan, TestEnvironment testEnvironment) {
+  public Collection<? extends DynamicNode> testNodesForEnvironment(TestPlan testPlan, TestUri.Builder uriBuilder, TestEnvironment testEnvironment) {
 
     List<DynamicNode> nodes = new ArrayList<>();
 
     int i = 1;
+    var setupUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.STAGE, "setup");
+
     for (TestCommand setupCommand : setup()) {
       var setupRequest = new TestRequest(
           "SetupRequest[%s]: %s".formatted(i++, setupCommand.commandName()),
           setupCommand, testPlan.target(), testEnvironment, TestAssertion.forSuccess(testPlan, setupCommand));
 
-      nodes.add(setupRequest.testNodes());
+      nodes.add(setupRequest.testNodes(setupUriBuilder.clone()));
     }
 
+    var testUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.STAGE, "test");
     for (var testCase : tests()) {
-      nodes.add(testCase.testNodesForEnvironment(testPlan, testEnvironment));
+      nodes.add(testCase.testNodesForEnvironment(testPlan, testUriBuilder.clone(),  testEnvironment));
     }
 
+    var cleanupUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.STAGE, "cleanup");
     for (TestCommand cleanupCommand : cleanup()) {
       var cleanupRequest = new TestRequest(
           "CleanupRequest[%s]: %s".formatted(i++, cleanupCommand.commandName()),
           cleanupCommand, testPlan.target(), testEnvironment, TestAssertion.forSuccess(testPlan,cleanupCommand));
-      nodes.add(cleanupRequest.testNodes());
+      nodes.add(cleanupRequest.testNodes(cleanupUriBuilder.clone()));
     }
 
     return nodes;

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuite;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
 import org.junit.jupiter.api.DynamicContainer;
@@ -31,15 +32,17 @@ public class TestEnvironment {
     this.vars.putAll(vars);
   }
 
-  public DynamicContainer testNode(TestPlan testPlan, TestSuite testSuite) {
+  public DynamicContainer testNode(TestPlan testPlan, TestUri.Builder uriBuilder, TestSuite testSuite) {
 
-    var desc = "TestEnv: %s ".formatted(description());
+    var d = description();
+    uriBuilder.addSegment(TestUri.Segment.ENV, d);
+    var desc = "TestEnv: %s ".formatted(d);
 
-    var envNodes = testSuite.testNodesForEnvironment(testPlan, this).stream();
+    var envNodes = testSuite.testNodesForEnvironment(testPlan, uriBuilder.clone(), this).stream();
 
     return DynamicContainer.dynamicContainer(
             desc,
-            testPlan.addLifecycle(testSuite, this, envNodes));
+            testPlan.addLifecycle(uriBuilder.clone(), testSuite, this, envNodes));
   }
 
   private String description(){

@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestResponse;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.AssertionTemplateSpec;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.SpecFiles;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
 import org.assertj.core.api.AssertFactory;
 import org.junit.jupiter.api.DynamicNode;
 
@@ -24,7 +25,7 @@ public interface TestAssertion {
 
   void run(TestResponse testResponse);
 
-  DynamicNode testNodes(AtomicReference<TestResponse> testResponse);
+  DynamicNode testNodes(TestUri.Builder uriBuilder, AtomicReference<TestResponse> testResponse);
 
 
   static List<TestAssertion> forSuccess(TestPlan testPlan, TestCommand testCommand) {

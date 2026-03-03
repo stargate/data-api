@@ -18,17 +18,19 @@ public record Workflow(TestSpecMeta meta, List<Job> jobs) implements TestSpec {
   }
 
 
-  public DynamicContainer testNode(TestPlan testPlan) {
+  public DynamicContainer testNode(TestPlan testPlan, TestUri.Builder uriBuilder) {
 
+    uriBuilder.addSegment(TestUri.Segment.WORKFLOW, meta().name());
     var desc = "Workflow: %s ".formatted(
         meta.name());
 
     var jobNodes = activeJobs()
-        .map(job -> job.testNode(testPlan));
+        .map(job -> job.testNode(testPlan, uriBuilder.clone()));
 
     return dynamicContainer(
             desc,
-            testPlan.addLifecycle(this, jobNodes));
+            uriBuilder.build().uri(),
+            testPlan.addLifecycle(uriBuilder.clone(), this,  jobNodes));
   }
 
 }
