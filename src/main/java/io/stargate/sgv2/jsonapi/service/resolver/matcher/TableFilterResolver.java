@@ -1,12 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ArrayComparisonOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.BinaryTableFilter;
@@ -37,6 +39,55 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
+  }
+
+  @Override
+  public WithWarnings<DBLogicalExpression> resolve(
+      CommandContext<TableSchemaObject> commandContext, CmdT command) {
+    validateFilterValueTypes(commandContext, command);
+    return super.resolve(commandContext, command);
+  }
+
+  /**
+   * Validates that filter values use types supported by tables. Tables do not support JSON Object
+   * (SUB_DOC) values as filter operands for primitive columns. Throws early with a descriptive
+   * {@link FilterException} rather than letting the match rules fail with a generic server error.
+   */
+  private void validateFilterValueTypes(
+      CommandContext<TableSchemaObject> commandContext, CmdT command) {
+    FilterClause filterClause = command.filterClause(commandContext);
+    if (filterClause == null || filterClause.isEmpty()) {
+      return;
+    }
+    var tableSchemaObject = commandContext.schemaObject();
+    validateLogicalExpression(filterClause.logicalExpression(), tableSchemaObject);
+  }
+
+  private void validateLogicalExpression(
+      LogicalExpression expression, TableSchemaObject tableSchemaObject) {
+    for (ComparisonExpression expr : expression.comparisonExpressions) {
+      for (FilterOperation<?> op : expr.getFilterOperations()) {
+        if (op.operand() != null && op.operand().type() == JsonType.SUB_DOC) {
+          String path = expr.getPath();
+          var columnOpt = tableSchemaObject.tableMetadata().getColumn(path);
+          String columnType = columnOpt.map(col -> col.getType().toString()).orElse("unknown");
+          throw FilterException.Code.INVALID_FILTER_COLUMN_VALUES.get(
+              errVars(
+                  tableSchemaObject,
+                  m -> {
+                    m.put(
+                        "allColumns",
+                        errFmtColumnMetadata(
+                            tableSchemaObject.tableMetadata().getColumns().values()));
+                    m.put("invalidColumn", path);
+                    m.put("columnType", columnType);
+                  }));
+        }
+      }
+    }
+    for (LogicalExpression nested : expression.logicalExpressions) {
+      validateLogicalExpression(nested, tableSchemaObject);
+    }
   }
 
   @Override

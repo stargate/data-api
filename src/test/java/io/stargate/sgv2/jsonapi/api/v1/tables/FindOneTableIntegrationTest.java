@@ -398,7 +398,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
               """
                           {
                               "filter": {
-                                "id": {
+                                "_id": {
                                   "buffer": {
                                     "0": 105,
                                     "1": 49,
