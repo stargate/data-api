@@ -9,8 +9,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Nested;
@@ -429,11 +427,10 @@ public class SetOperationTest extends UpdateOperationTestBase {
 
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": cannot create field ('x') in path 'a.x'; only OBJECT nodes have properties (got NULL)");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name())
+          .hasMessageContaining(
+              "cannot create field ('x') in path 'a.x'; only Object nodes have properties (got Null)");
     }
 
     @Test
@@ -445,11 +442,10 @@ public class SetOperationTest extends UpdateOperationTestBase {
 
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": cannot create field ('x') in path 'array.x.y.z'; only OBJECT nodes have properties (got ARRAY)");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name())
+          .hasMessageContaining(
+              "cannot create field ('x') in path 'array.x.y.z'; only Object nodes have properties (got Array)");
     }
   }
 }

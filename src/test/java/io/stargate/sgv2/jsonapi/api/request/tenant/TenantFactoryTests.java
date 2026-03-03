@@ -47,6 +47,6 @@ public class TenantFactoryTests {
 
     assertThat(tenant).isNotNull();
     assertThat(tenant.databaseType()).isEqualTo(DatabaseType.ASTRA);
-    assertThat(tenant.toString()).isEqualTo("ABC");
+    assertThat(tenant.toString()).isEqualTo("abc");
   }
 }

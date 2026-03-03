@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import java.util.Collections;
 import java.util.Comparator;
@@ -95,8 +94,8 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    */
   protected static String validateNonModifierPath(UpdateOperator oper, String path) {
     if (looksLikeModifier(path)) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
-          "%s does not support modifiers", oper.apiName());
+      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.get(
+          Map.of("errorMessage", "%s does not support modifiers".formatted(oper.apiName())));
     }
     return path;
   }

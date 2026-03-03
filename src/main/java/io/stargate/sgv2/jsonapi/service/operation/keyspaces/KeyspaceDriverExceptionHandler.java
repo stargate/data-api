@@ -28,7 +28,7 @@ public class KeyspaceDriverExceptionHandler
   // ========================================================================
 
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
 
     // [data-api#1900]: Need to convert Lexical-index creation failure to something more meaningful
     if (exception.getMessage().contains("Invalid analyzer config")) {

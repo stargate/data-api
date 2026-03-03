@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public record UpdateCollectionOperationPage(
     int matchedCount,
@@ -22,8 +21,6 @@ public record UpdateCollectionOperationPage(
     boolean returnDocs,
     String pagingState)
     implements Supplier<CommandResult> {
-
-  private static final String ERROR = "Failed to update documents with _id %s: %s";
 
   @Override
   public CommandResult get() {
@@ -60,7 +57,7 @@ public record UpdateCollectionOperationPage(
               final Collection<ReadAndUpdateCollectionOperation.UpdatedDocument> updatedDocuments =
                   groupedErrorUpdates.get(key);
               final List<DocumentId> documentIds =
-                  updatedDocuments.stream().map(update -> update.id()).collect(Collectors.toList());
+                  updatedDocuments.stream().map(update -> update.id()).toList();
               errors.add(
                   CommandErrorFactory.create(
                       updatedDocuments.stream().findFirst().get().error(), documentIds));

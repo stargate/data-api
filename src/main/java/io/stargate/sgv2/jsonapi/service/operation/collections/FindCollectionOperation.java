@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.bpodgursky.jbool_expressions.Expression;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,8 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.ServerException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -26,7 +27,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindCollectionOperation(
@@ -368,8 +368,8 @@ public record FindCollectionOperation(
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
           .failure(
-              ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-                  "%s", commandContext().schemaObject().name().table()));
+              SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.get(
+                  errVars(commandContext().schemaObject())));
     }
 
     // get FindResponse
@@ -377,25 +377,27 @@ public record FindCollectionOperation(
         // map the response to result
         .map(
             docs -> {
-              // TODO: why is this here and not higher up where it can happen for any command result
-              // ?
+              // TODO: why is this here and not higher up where it can happen for any command
+              // result?
               commandContext
                   .jsonProcessingMetricsReporter()
-                  .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
+                  .reportJsonReadDocsMetrics(
+                      commandContext.requestContext().tenant(),
+                      commandContext().commandName(),
+                      docs.docs().size());
               return new ReadOperationPage(
                   docs.docs(), singleResponse, docs.pageState(), includeSortVector(), vector());
             });
   }
 
   /**
-   * A operation method which can return FindResponse instead of CommandResult. This method will be
+   * An operation method which can return FindResponse instead of CommandResult. This method will be
    * used by other commands which needs a document to be read.
    *
    * @param queryExecutor
    * @param pageState
-   * @param additionalIdFilter Used if a additional id filter need to be added to already available
+   * @param additionalIdFilter Used if an additional id filter need to be added to already available
    *     filters
-   * @return
    */
   public Uni<FindResponse> getDocuments(
       RequestContext dataApiRequestInfo,
@@ -421,6 +423,7 @@ public record FindCollectionOperation(
             maxSortReadLimit(),
             projection(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
@@ -437,23 +440,22 @@ public record FindCollectionOperation(
             projection,
             limit(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
       default -> {
         return Uni.createFrom()
             .failure(
-                ServerException.internalServerError(
+                new IllegalArgumentException(
                     "Unsupported find operation read type `%s`".formatted(readType)));
       }
     }
   }
 
   /**
-   * A operation method which can return ReadDocument with an empty document, if the filter
-   * condition has _id filter it will return document with this field added
-   *
-   * @return
+   * An operation method which can return ReadDocument with an empty document, if the filter
+   * condition has _id filter it will return document with this field added.
    */
   public ReadDocument getNewDocument() {
 
@@ -466,21 +468,19 @@ public record FindCollectionOperation(
       var currentDbLogicalExpression = stack.pop();
 
       for (DBFilterBase filter : dbLogicalExpression.filters()) {
-        // every filter must be a collection filter, because we are making a new document and we
-        // only do this for docs
-        if (filter instanceof IDCollectionFilter) {
-          IDCollectionFilter idFilter = (IDCollectionFilter) filter;
+        // every filter must be a collection filter, because we are making a new document,
+        // and we only do this for docs
+        if (filter instanceof IDCollectionFilter idFilter) {
           documentId = idFilter.getSingularDocumentId();
           idFilter
               .updateForNewDocument(objectMapper().getNodeFactory())
               .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-        } else if (filter instanceof CollectionFilter) {
-          CollectionFilter collectionFilter = (CollectionFilter) filter;
+        } else if (filter instanceof CollectionFilter collectionFilter) {
           collectionFilter
               .updateForNewDocument(objectMapper().getNodeFactory())
               .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
         } else {
-          ServerException.internalServerError(
+          throw new IllegalArgumentException(
               "Unsupported filter type in getNewDocument: %s"
                   .formatted(filter.getClass().getName()));
         }
@@ -494,7 +494,6 @@ public record FindCollectionOperation(
   /**
    * Builds select query based on filters and additionalIdFilter overrides.
    *
-   * @param additionalIdFilter
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
@@ -619,14 +618,10 @@ public record FindCollectionOperation(
    */
   public record OrderBy(String column, boolean ascending) {
     /**
-     * Returns index column name with field name as entry key like query_text_values['username']
-     *
-     * @return
+     * @return index column name with field name as entry key like query_text_values['username']
      */
     public List<String> getOrderingColumns() {
-      return sortIndexColumns.stream()
-          .map(col -> col.formatted(column()))
-          .collect(Collectors.toList());
+      return sortIndexColumns.stream().map(col -> col.formatted(column())).toList();
     }
   }
 }

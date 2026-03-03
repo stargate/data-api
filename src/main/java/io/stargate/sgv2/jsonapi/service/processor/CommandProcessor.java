@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -127,8 +126,8 @@ public class CommandProcessor {
 
   /**
    * Handles failures that occur during the command processing pipeline. It attempts to convert
-   * known exceptions (APIException, JsonApiException) into a {@link CommandResult} supplier, and
-   * logs other unexpected exceptions.
+   * known exceptions (APIException) into a {@link CommandResult} supplier, and logs other
+   * unexpected exceptions.
    *
    * @param commandContext The command context.
    * @param originalCommand The initial command that was being processed.
@@ -146,14 +145,6 @@ public class CommandProcessor {
         maybeEvictSession(commandContext, apiException);
 
         yield () -> resultBuilder.addThrowable(apiException).build();
-      }
-      case JsonApiException jsonApiException -> {
-        // old error objects, old comment below
-        // Note: JsonApiException means that JSON API itself handled the situation
-        // (created, or wrapped the exception) -- should not be logged (have already
-        // been logged if necessary)
-        maybeEvictSession(commandContext, jsonApiException.getCause());
-        yield () -> resultBuilder.addThrowable(jsonApiException).build();
       }
       default -> {
         // Old error handling below, to be replaced eventually (aaron aug 28 2024)

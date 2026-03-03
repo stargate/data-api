@@ -155,11 +155,10 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   }
 
   @Override
-  protected RuntimeException maybeHandleException(
-      CompositeTaskResultSupplier<InnerTaskT, SchemaT> resultSupplier,
-      RuntimeException runtimeException) {
+  protected Throwable maybeHandleException(
+      CompositeTaskResultSupplier<InnerTaskT, SchemaT> resultSupplier, Throwable throwable) {
     // return the same error, so it will be associated with the task
-    return runtimeException;
+    return throwable;
   }
 
   @Override

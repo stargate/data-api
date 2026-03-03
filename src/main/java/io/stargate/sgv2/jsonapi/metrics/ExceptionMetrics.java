@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.metrics;
 
 import io.micrometer.core.instrument.Tag;
 import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.List;
 
 public class ExceptionMetrics {
@@ -22,11 +21,5 @@ public class ExceptionMetrics {
 
     // These tags must be backwards compatible with how we tracked before
     return List.of(Tag.of(TAG_NAME_ERROR_CODE, apiException.fullyQualifiedCode()));
-  }
-
-  public static List<Tag> tagsFor(JsonApiException legacyException) {
-
-    // These tags must be backwards compatible with how we tracked before
-    return List.of(Tag.of(TAG_NAME_ERROR_CODE, legacyException.getFullyQualifiedErrorCode()));
   }
 }

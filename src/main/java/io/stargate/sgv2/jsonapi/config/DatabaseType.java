@@ -29,7 +29,7 @@ public enum DatabaseType {
 
   public String normalizeValidateTenantId(String tenantId) {
 
-    var normalized = normalizeOptionalString(tenantId).toUpperCase();
+    var normalized = normalizeOptionalString(tenantId);
 
     // For multi-tenant databases, must not be empty
     if (!singleTenant && normalized.isEmpty()) {
@@ -37,7 +37,7 @@ public enum DatabaseType {
           "DatabaseType %s is multi-tenant, tenantId must not be empty".formatted(this.name()));
     }
 
-    return normalizeOptionalString(tenantId).toUpperCase();
+    return normalized;
   }
 
   /**

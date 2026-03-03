@@ -14,13 +14,22 @@ import org.eclipse.microprofile.config.spi.Converter;
 
 // TODO: SOME DOCUMENTATION FOR WHAT THIS IS MEANT TO DO!!!
 public interface EmbeddingProvidersConfig {
-
-  // TODO: WHAT IS THE KEY FOR THIS MAP ?????
-  Map<String, EmbeddingProviderConfig> providers();
-
   @Nullable
   @Inject
   CustomConfig custom();
+
+  @ConfigMapping(prefix = "stargate.jsonapi.custom.embedding")
+  interface CustomConfig {
+    @WithDefault("false")
+    boolean enabled();
+
+    @Nullable
+    @WithConverter(ClassNameResolver.class)
+    Optional<Class<?>> clazz();
+  }
+
+  // TODO: WHAT IS THE KEY FOR THIS MAP ?????
+  Map<String, EmbeddingProviderConfig> providers();
 
   interface EmbeddingProviderConfig {
     @JsonProperty
@@ -33,14 +42,15 @@ public interface EmbeddingProvidersConfig {
     @JsonProperty
     Optional<String> url();
 
-    /** a boolean to flag if the Astra token should be passed through to the provider. */
+    /** Whether the Astra token should be passed through to the provider. */
     @JsonProperty
     @WithDefault("false")
     boolean authTokenPassThroughForNoneAuth();
 
     /**
-     * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
-     * the DataAPI supports (i.e. the key of map can only be HEADER, SHARED_SECRET or NONE).
+     * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only auth
+     * techniques the DataAPI supports (i.e. the key of map can only be HEADER, SHARED_SECRET or
+     * NONE).
      */
     @JsonProperty
     Map<AuthenticationType, AuthenticationConfig> supportedAuthentications();
@@ -52,8 +62,8 @@ public interface EmbeddingProvidersConfig {
     }
 
     /**
-     * enabled() is a JSON boolean to flag if this technique is supported. If false the rest of the
-     * object has no impact. Any technique not listed is also not supported for the provider.
+     * enabled() is a JSON boolean to flag if this auth technique is supported. If false the rest of
+     * the object has no impact. Any technique not listed is also not supported for the provider.
      *
      * <p>tokens() is a list of token mappings, that map from the name accepted by the Data API to
      * how they are forwarded to the provider. The provider information is included for the code,
@@ -170,8 +180,6 @@ public interface EmbeddingProvidersConfig {
        * if a model supports 3 different dimensions. If options are present the only allowed values
        * for the parameter are those in the options list. If not present, null, or an empty array
        * any value of the correct type is accepted.
-       *
-       * @return
        */
       @Nullable
       @JsonProperty
@@ -294,16 +302,6 @@ public interface EmbeddingProvidersConfig {
         return apiName;
       }
     }
-  }
-
-  @ConfigMapping(prefix = "stargate.jsonapi.custom.embedding")
-  interface CustomConfig {
-    @WithDefault("false")
-    boolean enabled();
-
-    @Nullable
-    @WithConverter(ClassNameResolver.class)
-    Optional<Class<?>> clazz();
   }
 
   class ClassNameResolver implements Converter<Class<?>> {

@@ -184,28 +184,25 @@ public class DocValueHasher {
 
   private static final byte true_byte = (byte) 1;
 
+  @SuppressWarnings("unchecked")
   public DocValueHash getHash(Object value) {
-    if (value == null) {
-      return nullValue().hash();
-    } else if (value instanceof String) {
-      return stringValue((String) value).hash();
-    } else if (value instanceof BigDecimal) {
-      return numberValue((BigDecimal) value).hash();
-    } else if (value instanceof Boolean) {
-      return booleanValue((Boolean) value).hash();
-    } else if (value instanceof Instant) {
-      return timestampValue(new Date(((Instant) value).toEpochMilli())).hash();
-    } else if (value instanceof List) {
-      return arrayHash((List<Object>) value);
-    } else if (value instanceof Map) {
-      return objectHash((Map<String, Object>) value);
-    } else if (value instanceof Byte b) {
-      return booleanValue(Byte.compare(true_byte, b) == 0).hash();
-    }
-    // Should never happen so we are ok to fail in drastic way
-    throw ServerException.Code.INTERNAL_SERVER_ERROR.get(
-        Map.of(
-            "errorMessage",
-            "Unrecognized Java type `" + value.getClass().getName() + "` to calculate hash on"));
+    return switch (value) {
+      case null -> nullValue().hash();
+      case String s -> stringValue(s).hash();
+      case BigDecimal bd -> numberValue(bd).hash();
+      case Boolean b -> booleanValue(b).hash();
+      case Instant i -> timestampValue(new Date(i.toEpochMilli())).hash();
+      case List<?> l -> arrayHash((List<Object>) l);
+      case Map<?, ?> m -> objectHash((Map<String, Object>) m);
+      case Byte b -> booleanValue(Byte.compare(true_byte, b) == 0).hash();
+      default ->
+          // Should never happen so we are ok to fail in drastic way
+          throw ServerException.Code.INTERNAL_SERVER_ERROR.get(
+              Map.of(
+                  "errorMessage",
+                  "Unrecognized Java type `"
+                      + value.getClass().getName()
+                      + "` to calculate hash on"));
+    };
   }
 }

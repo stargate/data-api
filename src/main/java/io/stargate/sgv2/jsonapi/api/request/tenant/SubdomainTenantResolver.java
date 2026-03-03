@@ -72,13 +72,10 @@ public class SubdomainTenantResolver implements RequestTenantResolver {
 
       // if regex defined check
       if (null != validationPattern) {
-        boolean matches = validationPattern.matcher(tenantId).matches();
-
-        // TODO: this was returned as empty, but we cannot have a missing tenant
-        throw new RuntimeException("TODO XXX BANG!");
-        //        if (!matches) {
-        //          return Optional.empty();
-        //        }
+        if (!validationPattern.matcher(tenantId).matches()) {
+          // it's up to the tenant factory to know what to do with null
+          return TenantFactory.instance().create(null);
+        }
       }
 
       return TenantFactory.instance().create(tenantId);

@@ -52,11 +52,11 @@ public class DocumentShredderWithExtendedTypesTest {
       final String valueUUID = defaultTestUUID2().toString();
       final String inputJson =
               """
-                      { "_id" : {"$uuid": "%s"},
-                        "name" : "Bob",
-                        "extraId" : {"$uuid": "%s"}
-                      }
-                      """
+          { "_id" : {"$uuid": "%s"},
+            "name" : "Bob",
+            "extraId" : {"$uuid": "%s"}
+          }
+          """
               .formatted(idUUID, valueUUID);
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
@@ -104,11 +104,11 @@ public class DocumentShredderWithExtendedTypesTest {
       final String valueObjectId = defaultTestObjectId2().toString();
       final String inputJson =
               """
-                          { "_id" : {"$objectId": "%s"},
-                            "name" : "Bob",
-                            "objectId2" : {"$objectId": "%s"}
-                          }
-                          """
+          { "_id" : {"$objectId": "%s"},
+            "name" : "Bob",
+            "objectId2" : {"$objectId": "%s"}
+          }
+          """
               .formatted(idObjectId, valueObjectId);
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
@@ -154,11 +154,11 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleWithoutId() throws Exception {
       final String inputJson =
           """
-                      {
-                        "age" : 39,
-                        "name" : "Chuck"
-                      }
-                      """;
+          {
+            "age" : 39,
+            "name" : "Chuck"
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
 
@@ -203,6 +203,7 @@ public class DocumentShredderWithExtendedTypesTest {
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
+              null,
               "test",
               CollectionSchemaObject.MISSING.withIdType(CollectionIdType.UNDEFINED),
               null);
@@ -243,6 +244,7 @@ public class DocumentShredderWithExtendedTypesTest {
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
+              null,
               "test",
               CollectionSchemaObject.MISSING.withIdType(CollectionIdType.OBJECT_ID),
               null);
@@ -299,6 +301,7 @@ public class DocumentShredderWithExtendedTypesTest {
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
+              null,
               "test",
               CollectionSchemaObject.MISSING.withIdType(idType),
               null);
@@ -339,11 +342,11 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleBinaryVector() throws Exception {
       final String inputJson =
           """
-                  {
-                    "age" : 39,
-                    "$vector": {"$binary": "PoAAAD6AAAA+gAAAPoAAAD6AAAA="}
-                  }
-                  """;
+          {
+            "age" : 39,
+            "$vector": {"$binary": "PoAAAD6AAAA+gAAAPoAAAD6AAAA="}
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
 
@@ -364,10 +367,10 @@ public class DocumentShredderWithExtendedTypesTest {
     public void docInvalidObjectAsDocId() {
       final String inputJson =
           """
-                              { "_id" : {"$objectId": "not-an-oid"},
-                                "name" : "Bob"
-                              }
-                              """;
+          { "_id" : {"$objectId": "not-an-oid"},
+            "name" : "Bob"
+          }
+          """;
       Throwable t =
           catchThrowable(
               () ->
@@ -376,7 +379,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-an-oid\")");
     }
@@ -386,10 +389,10 @@ public class DocumentShredderWithExtendedTypesTest {
       // First, invalid String
       final String inputJson =
           """
-                          { "_id" : {"$uuid": "not-a-uuid"},
-                            "name" : "Bob"
-                          }
-                          """;
+          { "_id" : {"$uuid": "not-a-uuid"},
+            "name" : "Bob"
+          }
+          """;
       Throwable t =
           catchThrowable(
               () ->
@@ -398,7 +401,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got (\"not-a-uuid\")");
 
@@ -414,7 +417,7 @@ public class DocumentShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(DocumentException.class)
-          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got ({})");
     }
@@ -423,8 +426,8 @@ public class DocumentShredderWithExtendedTypesTest {
     public void docUnknownEJSonAsId() {
       final String inputJson =
           """
-                                  { "_id" : {"$unknown": "value"} }
-                                  """;
+          { "_id" : {"$unknown": "value"} }
+          """;
       Throwable t =
           catchThrowable(
               () ->

@@ -11,13 +11,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = FindEmbeddingProvidersCommand.class),
-  @JsonSubTypes.Type(value = FindRerankingProvidersCommand.class),
-  @JsonSubTypes.Type(value = CreateNamespaceCommand.class),
   @JsonSubTypes.Type(value = CreateKeyspaceCommand.class),
-  @JsonSubTypes.Type(value = DropNamespaceCommand.class),
+  @JsonSubTypes.Type(value = CreateNamespaceCommand.class), // deprecated
   @JsonSubTypes.Type(value = DropKeyspaceCommand.class),
-  @JsonSubTypes.Type(value = FindNamespacesCommand.class),
+  @JsonSubTypes.Type(value = DropNamespaceCommand.class), // deprecated
+  @JsonSubTypes.Type(value = FindEmbeddingProvidersCommand.class),
   @JsonSubTypes.Type(value = FindKeyspacesCommand.class),
+  @JsonSubTypes.Type(value = FindNamespacesCommand.class), // deprecated
+  @JsonSubTypes.Type(value = FindRerankingProvidersCommand.class),
 })
 public interface GeneralCommand extends Command {}

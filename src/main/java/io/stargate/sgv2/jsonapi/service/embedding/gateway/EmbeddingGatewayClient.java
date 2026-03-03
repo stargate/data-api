@@ -7,21 +7,16 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import io.stargate.sgv2.jsonapi.util.ClassUtils;
+import java.util.*;
 
 /** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient extends EmbeddingProvider {
-
-  private static final String DEFAULT_TENANT_ID = "default";
-
   /** Map to the value of `x-embedding-api-key` in the header */
   private static final String EMBEDDING_API_KEY = "EMBEDDING_API_KEY";
 
@@ -34,15 +29,12 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   /** Map to the value of `Token` in the header */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
-  private ServiceConfigStore.ServiceRequestProperties requestProperties;
+  private final Tenant tenant;
+  private final String authToken;
+  private final EmbeddingService grpcGatewayClient;
+  private final Map<String, String> authentication;
+  private final String commandName;
 
-  private Tenant tenant;
-  private String authToken;
-  private EmbeddingService grpcGatewayClient;
-  Map<String, String> authentication;
-  private String commandName;
-
-  /** */
   public EmbeddingGatewayClient(
       ModelProvider modelProvider,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
@@ -82,7 +74,6 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    * @param texts List of texts to be vectorized
    * @param embeddingCredentials Credentials required for the provider
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
-   * @return
    */
   @Override
   public Uni<BatchedEmbeddingResponse> vectorize(
@@ -98,30 +89,35 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     if (vectorizeServiceParameters != null) {
       vectorizeServiceParameters.forEach(
           (key, value) -> {
-            if (value instanceof String)
+            if (value instanceof String str) {
               gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
-                      .setStrValue((String) value)
+                      .setStrValue(str)
                       .build());
-            else if (value instanceof Integer)
+            } else if (value instanceof Integer I) {
               gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
-                      .setIntValue((Integer) value)
+                      .setIntValue(I)
                       .build());
-            else if (value instanceof Float)
+            } else if (value instanceof Float F) {
               gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
-                      .setFloatValue((Float) value)
+                      .setFloatValue(F)
                       .build());
-            else if (value instanceof Boolean)
+            } else if (value instanceof Boolean B) {
               gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
-                      .setBoolValue((Boolean) value)
+                      .setBoolValue(B)
                       .build());
+            } else {
+              throw new IllegalArgumentException(
+                  "Unknown service parameter type for key '%s': %s"
+                      .formatted(key, ClassUtils.classSimpleName(value)));
+            }
           });
     }
 
@@ -165,14 +161,21 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setProviderContext(contextBuilder.build())
             .build();
 
-    // aaron 17 June 2025 - unsure why this error handled was not in the uni pipleine below
+    // aaron 17 June 2025 - unsure why this error handled was not in the uni pipeline below
     // kept it as is when refactoring
     Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
     try {
       embeddingResponse = grpcGatewayClient.embed(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+        throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+            Map.of(
+                "modelProvider",
+                modelProvider().apiName(),
+                "httpStatus",
+                String.valueOf(e.getStatus().getCode()),
+                "errorMessage",
+                e.getMessage()));
       }
       throw e;
     }
@@ -182,9 +185,10 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
         .transform(
             gatewayResponse -> {
               if (gatewayResponse.hasError()) {
-                throw new JsonApiException(
-                    ErrorCodeV1.valueOf(gatewayResponse.getError().getErrorCode()),
-                    gatewayResponse.getError().getErrorMessage());
+                throw new EmbeddingProviderException(
+                    gatewayResponse.getError().getErrorCode(),
+                    gatewayResponse.getError().getErrorTitle(),
+                    gatewayResponse.getError().getErrorBody());
               }
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // but grpc will make sure resp.getEmbeddingsList() is never null
@@ -205,11 +209,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             });
   }
 
-  /**
-   * Return MAX_VALUE because the batching is done inside EGW
-   *
-   * @return
-   */
+  /** Return MAX_VALUE because the batching is done inside EGW */
   @Override
   public int maxBatchSize() {
     return Integer.MAX_VALUE;

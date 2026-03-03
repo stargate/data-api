@@ -20,7 +20,7 @@ public record FindEmbeddingProvidersCommand(
       @Nullable
           @Schema(
               description =
-                  "Filter models to include required support status. If omitted the entire Options, only SUPPORTED models are returned, which can be used when creating a new Collection or Table. Available values are SUPPORTED, DEPRECATED, and END_OF_LIFE (case-insensitive). Set to null or an empty string to return all models.",
+                  "Optional filter to select models by required support status. If omitted, only SUPPORTED models are returned (ones which can be used when creating a new Collection or Table). Available values are SUPPORTED, DEPRECATED, and END_OF_LIFE (case-insensitive).",
               type = SchemaType.STRING,
               implementation = String.class)
           @Pattern(regexp = "(?i)^(SUPPORTED|DEPRECATED|END_OF_LIFE)?$")

@@ -13,13 +13,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Tests for {@link DynamicTTLCache}. */
 public class DynamicTTLCacheTests extends CacheTestsBase {
-  private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTTLCacheTests.class);
-
   private final String KEY = "key-" + TEST_CONSTANTS.CORRELATION_ID;
   private final String VALUE = "value-" + TEST_CONSTANTS.CORRELATION_ID;
   private final TestDynamicTTLCache.TestKey CACHE_KEY =

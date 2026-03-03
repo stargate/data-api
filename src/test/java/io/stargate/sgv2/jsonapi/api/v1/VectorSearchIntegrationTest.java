@@ -9,10 +9,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.DatabaseException;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
@@ -97,10 +94,10 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                   .formatted(tooHighDimension))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTOR_SEARCH_TOO_BIG_VALUE"))
+          .body("errors[0].errorCode", is(SchemaException.Code.VECTOR_SEARCH_TOO_BIG_VALUE.name()))
           .body(
               "errors[0].message",
-              startsWith(
+              containsString(
                   "Vector embedding property '$vector' length too big: "
                       + tooHighDimension
                       + " (max "
@@ -1276,7 +1273,9 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", is(notNullValue()))
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTOR"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTOR.name()))
           .body("errors[0].message", containsString("command used the update operator: $push"));
     }
 

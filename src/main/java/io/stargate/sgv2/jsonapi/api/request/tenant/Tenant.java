@@ -37,8 +37,8 @@ public class Tenant implements Recordable {
 
   private Tenant(DatabaseType databaseType, String tenantId) {
     this.databaseType = databaseType;
-    // this is just for sanity checking, the DB Type should have uppercased it
-    this.tenantId = tenantId.toUpperCase();
+    // this is just for sanity checking, keep it lower case
+    this.tenantId = tenantId;
   }
 
   /**
@@ -66,7 +66,7 @@ public class Tenant implements Recordable {
                 "Unsupported single tenant database type: " + databaseType);
       };
     }
-    return new Tenant(databaseType, normalizedValidated);
+    return new Tenant(databaseType, normalizedValidated.toLowerCase());
   }
 
   public DatabaseType databaseType() {

@@ -296,7 +296,9 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -311,7 +313,9 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -334,7 +338,9 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -359,7 +365,9 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -384,7 +392,9 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -410,7 +420,9 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -439,7 +451,9 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -468,7 +482,9 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(

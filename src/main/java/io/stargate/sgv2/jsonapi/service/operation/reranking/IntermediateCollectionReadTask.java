@@ -90,9 +90,9 @@ public class IntermediateCollectionReadTask
   }
 
   @Override
-  protected RuntimeException maybeHandleException(
-      IntermediateReadResultSupplier resultSupplier, RuntimeException runtimeException) {
-    return runtimeException;
+  protected Throwable maybeHandleException(
+      IntermediateReadResultSupplier resultSupplier, Throwable throwable) {
+    return throwable;
   }
 
   @Override

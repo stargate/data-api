@@ -37,8 +37,7 @@ public class JsonTerm extends BuildConditionTerm {
   public boolean equals(Object other) {
     if (other == this) {
       return true;
-    } else if (other instanceof JsonTerm) {
-      JsonTerm that = (JsonTerm) other;
+    } else if (other instanceof JsonTerm that) {
       return Objects.equals(this.value, that.value) && Objects.equals(this.key, that.key);
     } else {
       return false;

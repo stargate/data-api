@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.35-SNAPSHOT</version>
+  <version>1.0.41-SNAPSHOT</version>
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -32,7 +32,7 @@
     <!-- When updating please change defaults in the DseTestResource class -->
     <!-- 14-Mar-2025, tatu: default to DSE-6.9 (was "dse-next") -->
     <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-    <cassandra.version>6.9.17</cassandra.version>
+    <cassandra.version>6.9.18</cassandra.version>
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
     <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
@@ -75,6 +75,14 @@
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>bom</artifactId>
         <version>2.26.31</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- MCP Server BOM for version management -->
+      <dependency>
+        <groupId>io.quarkiverse.mcp</groupId>
+        <artifactId>quarkus-mcp-server-bom</artifactId>
+        <version>1.10.1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -147,6 +155,10 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-logging-json</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkiverse.mcp</groupId>
+      <artifactId>quarkus-mcp-server-http</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -288,7 +300,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.22.0</version>
+      <version>3.27.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -318,6 +330,11 @@
       <groupId>uk.org.webcompere</groupId>
       <artifactId>system-stubs-jupiter</artifactId>
       <version>2.1.8</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkiverse.mcp</groupId>
+      <artifactId>quarkus-mcp-server-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -561,7 +578,7 @@
       </activation>
       <properties>
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>6.9.17</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>6.9.18</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>

@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import java.util.Map;
 
@@ -16,7 +15,7 @@ import java.util.Map;
 @RegisterForReflection
 public interface NoOptionsCommand {
   @JsonProperty("options")
-  default void setOptions(JsonNode value) throws JsonApiException {
+  default void setOptions(JsonNode value) {
     // Empty JSON Object and null are accepted; anything else failure
     if (value.isNull() || (value.isObject() && value.isEmpty())) {
       return;
