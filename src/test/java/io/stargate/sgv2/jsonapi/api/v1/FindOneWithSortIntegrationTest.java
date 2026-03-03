@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -218,7 +219,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   { "find": { "sort" : {"" : 1} } }
                   """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_PATH_INVALID.name()))
           .body(
               "errors[0].message",
               startsWith(
@@ -232,7 +233,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   { "find": { "sort" : {"$gt" : 1} } }
                   """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_PATH_INVALID.name()))
           .body(
               "errors[0].message",
               startsWith(
@@ -246,7 +247,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   { "find": { "sort" : {"a&b" : 1} } }
                   """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_INVALID"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_PATH_INVALID.name()))
           .body(
               "errors[0].message",
               startsWith(

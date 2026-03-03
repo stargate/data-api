@@ -354,7 +354,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", jsonEquals("[]"))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1182,7 +1182,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1324,7 +1324,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body(
               "errors[0].message",
               startsWith("Document size limitation violated: Number value length"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()));
     }
 
     @Test
@@ -1677,7 +1677,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(docs.toString()))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
               containsString(
