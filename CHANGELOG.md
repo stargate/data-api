@@ -1,5 +1,26 @@
 # Changelog
 
+## [v1.0.40](https://github.com/stargate/data-api/tree/v1.0.40) (2026-03-03)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.39...v1.0.40)
+
+**Merged pull requests:**
+
+- Fix \#2342: Ensure all integration tests use ApiException \(v2\) error code Enums [\#2415](https://github.com/stargate/data-api/pull/2415) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bump actions/upload-artifact from 6 to 7 in the github-actions group [\#2414](https://github.com/stargate/data-api/pull/2414) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Fix \#2366: error for bad \_id  \(JSON Object not EJson\) [\#2413](https://github.com/stargate/data-api/pull/2413) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+-  Fix \#2401: template vars in error messages [\#2412](https://github.com/stargate/data-api/pull/2412) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2410: insertOne for table with UDT with inet column fails [\#2411](https://github.com/stargate/data-api/pull/2411) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update to latest ubi8/ubi9 openjdk packages: use full versions [\#2409](https://github.com/stargate/data-api/pull/2409) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Minor code clean up [\#2407](https://github.com/stargate/data-api/pull/2407) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Remove RequestContext from JsonProcessingMetricsReporter [\#2406](https://github.com/stargate/data-api/pull/2406) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- \[MCP\] Add more tool support for Collection related commands [\#2404](https://github.com/stargate/data-api/pull/2404) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add feature support and map the CommandResult to ToolResponse [\#2403](https://github.com/stargate/data-api/pull/2403) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add MCP support for general commands [\#2402](https://github.com/stargate/data-api/pull/2402) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Refactor `createKeyspace` command [\#2400](https://github.com/stargate/data-api/pull/2400) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Bumping version for next data-api release [\#2399](https://github.com/stargate/data-api/pull/2399) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Add Tenant id header to gpu plane requests [\#2359](https://github.com/stargate/data-api/pull/2359) ([Jack-Byrne](https://github.com/Jack-Byrne))
+
 ## [v1.0.39](https://github.com/stargate/data-api/tree/v1.0.39) (2026-02-17)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.38...v1.0.39)
