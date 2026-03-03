@@ -400,7 +400,9 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                 }
                 """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("DOCUMENT_REPLACE_DIFFERENT_DOCID"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.DOCUMENT_REPLACE_DIFFERENT_DOCID.name()))
           .body(
               "errors[0].message",
               startsWith(
