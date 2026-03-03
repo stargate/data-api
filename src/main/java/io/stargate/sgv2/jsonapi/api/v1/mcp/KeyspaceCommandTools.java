@@ -22,8 +22,8 @@ public class KeyspaceCommandTools {
    */
   @Tool(description = "Command that creates a collection.")
   public Uni<ToolResponse> createCollection(
-      @ToolArg(description = "Required name of the existing keyspace") String keyspace,
-      @ToolArg(description = "Required name of the new collection") String collection,
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Name of the new collection") String collection,
       @ToolArg(description = "Configuration options for the collection", required = false)
           CreateCollectionCommand.Options options) {
 
@@ -33,8 +33,8 @@ public class KeyspaceCommandTools {
 
   @Tool(description = "Command that deletes a collection if one exists.")
   public Uni<ToolResponse> deleteCollection(
-      @ToolArg(description = "Required name of the existing Keyspace") String keyspace,
-      @ToolArg(description = "Required name of the existing Collection") String collection) {
+      @ToolArg(description = "Name of the existing Keyspace") String keyspace,
+      @ToolArg(description = "Name of the existing Collection") String collection) {
 
     var command = new DeleteCollectionCommand(collection);
     return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
@@ -42,7 +42,7 @@ public class KeyspaceCommandTools {
 
   @Tool(description = "Command that lists all available collections in a namespace.")
   public Uni<ToolResponse> findCollections(
-      @ToolArg(description = "Required name of the existing Keyspace") String keyspace,
+      @ToolArg(description = "Name of the existing Keyspace") String keyspace,
       @ToolArg(description = "include collection properties.", required = false)
           FindCollectionsCommand.Options options) {
 
@@ -55,8 +55,8 @@ public class KeyspaceCommandTools {
    */
   @Tool(description = "Command that creates an API Table.")
   public Uni<ToolResponse> createTable(
-      @ToolArg(description = "Required name of the existing keyspace") String keyspace,
-      @ToolArg(description = "Required name of the new Table") String table,
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Name of the new Table") String table,
       @ToolArg(description = "Table definition") TableDefinitionDesc definition,
       @ToolArg(description = "Configuration options for the table", required = false)
           CreateTableCommand.Options options) {
@@ -67,9 +67,9 @@ public class KeyspaceCommandTools {
 
   @Tool(description = "Command that drops a table if one exists.")
   public Uni<ToolResponse> dropTable(
-      @ToolArg(description = "Required name of the existing keyspace") String keyspace,
-      @ToolArg(description = "Required name of the Table to remove") String table,
-      @ToolArg(description = "Dropping table command option", required = false)
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Name of the Table to remove") String table,
+      @ToolArg(description = "Optional options for drop command", required = false)
           DropTableCommand.Options options) {
 
     var command = new DropTableCommand(table, options);
@@ -78,7 +78,7 @@ public class KeyspaceCommandTools {
 
   @Tool(description = "Command that lists all available tables in a keyspace")
   public Uni<ToolResponse> listTables(
-      @ToolArg(description = "Required name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Options for the `listTables` command.", required = false)
           ListTablesCommand.Options options) {
 

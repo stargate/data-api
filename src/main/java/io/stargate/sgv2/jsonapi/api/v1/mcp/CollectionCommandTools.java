@@ -27,8 +27,8 @@ public class CollectionCommandTools {
   @Tool(description = "Creates a regular index for a column in a table.")
   public Uni<ToolResponse> createIndex(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "Required name of the new Index") String indexName,
+      @ToolArg(description = "Name of the table") String table,
+      @ToolArg(description = "Name of the new Index") String indexName,
       @ToolArg(description = "Definition of the index to create")
           RegularIndexDefinitionDesc definition,
       @ToolArg(
@@ -42,7 +42,7 @@ public class CollectionCommandTools {
           CreateIndexCommand.CreateIndexCommandOptions options) {
 
     var command = new CreateIndexCommand(indexName, definition, indexType, options);
-    return mcpResource.processCollectionCommand(keyspace, collection, command);
+    return mcpResource.processCollectionCommand(keyspace, table, command);
   }
 
   @Tool(
