@@ -603,7 +603,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SORT_CLAUSE_VALUE_INVALID"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
               startsWith(

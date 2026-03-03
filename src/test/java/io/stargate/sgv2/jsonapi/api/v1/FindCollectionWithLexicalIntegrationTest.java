@@ -11,6 +11,9 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -236,7 +239,9 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.name()))
           .body(
               "errors[0].message",
               containsString("only be used on collections for which Lexical feature is enabled"));
@@ -255,7 +260,9 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.name()))
           .body(
               "errors[0].message",
               containsString("only be used on collections for which Lexical feature is enabled"));
@@ -274,7 +281,7 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SORT_CLAUSE_INVALID"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_INVALID.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -294,7 +301,7 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -317,7 +324,7 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SORT_CLAUSE_INVALID"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_INVALID.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -338,7 +345,7 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -358,7 +365,7 @@ public class FindCollectionWithLexicalIntegrationTest
                 "{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
             .body("$", responseIsError())
             .body("errors", hasSize(1))
-            .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+            .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
             .body(
                 "errors[0].message",
                 containsString(

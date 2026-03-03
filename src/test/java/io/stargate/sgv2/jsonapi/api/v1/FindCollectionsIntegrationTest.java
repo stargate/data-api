@@ -12,6 +12,7 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Assumptions;
@@ -274,7 +275,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNKNOWN_KEYSPACE"))
+          .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_KEYSPACE.name()))
           .body(
               "errors[0].message",
               containsString(

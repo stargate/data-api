@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Assumptions;
@@ -185,7 +186,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -207,7 +210,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -229,7 +234,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -255,7 +262,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -269,7 +278,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -292,7 +303,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
       if (isLexicalAvailableForDB()) {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
-            .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+            .body(
+                "errors[0].errorCode",
+                is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
             // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
             // analyzers
             .body("errors[0].message", containsString("Invalid analyzer config"))
@@ -300,7 +313,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
       } else {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
-            .body("errors[0].errorCode", is("LEXICAL_NOT_AVAILABLE_FOR_DATABASE"));
+            .body(
+                "errors[0].errorCode",
+                is(SchemaException.Code.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.name()));
       }
     }
 
@@ -320,7 +335,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
       if (isLexicalAvailableForDB()) {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
-            .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+            .body(
+                "errors[0].errorCode",
+                is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
             // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
             // analyzers
             .body(
@@ -330,7 +347,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
       } else {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
-            .body("errors[0].errorCode", is("LEXICAL_NOT_AVAILABLE_FOR_DATABASE"));
+            .body(
+                "errors[0].errorCode",
+                is(SchemaException.Code.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.name()));
       }
     }
 
@@ -361,7 +380,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -388,7 +409,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -415,7 +438,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
