@@ -578,7 +578,9 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID.name()))
           .body(
               "errors[0].message",
               containsString("_id field cannot be updated using update operators"));
@@ -619,7 +621,9 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID.name()))
           .body(
               "errors[0].message",
               containsString("_id field cannot be updated using update operators"));
@@ -1464,7 +1468,9 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name()))
           .body(
               "errors[0].message",
               startsWith(

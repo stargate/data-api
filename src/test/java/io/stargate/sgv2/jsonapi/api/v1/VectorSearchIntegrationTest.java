@@ -1273,7 +1273,9 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", is(notNullValue()))
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTOR"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTOR.name()))
           .body("errors[0].message", containsString("command used the update operator: $push"));
     }
 
