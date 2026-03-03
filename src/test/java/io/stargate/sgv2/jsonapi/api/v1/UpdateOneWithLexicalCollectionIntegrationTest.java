@@ -10,6 +10,7 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -321,7 +322,9 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
       givenHeadersPostJsonThenOk(updateQuery(updateOperation))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_LEXICAL"))
+          .body(
+              "errors[0].errorCode",
+              is(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_LEXICAL.name()))
           .body("errors[0].title", is("Update operator cannot be used on $lexical field"))
           .body("errors[0].message", containsString("command used the update operator: " + opName));
     }
