@@ -7,7 +7,10 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -135,7 +138,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               "errors[0].message",
               containsString(
                   "The command tried to use a Keyspace that does not exist in the Database"))
-          .body("errors[0].errorCode", is("UNKNOWN_KEYSPACE"));
+          .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_KEYSPACE.name()));
     }
 
     @Test
@@ -153,7 +156,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 }
                 """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SORT_CLAUSE_INVALID"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_INVALID.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -999,7 +1002,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body(
               "errors[0].message",
               containsString("filter expression path ('$gt') cannot start with '$'"));
@@ -1013,7 +1016,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body("errors[0].message", containsString("invalid use of '$eq' operator"));
     }
 
@@ -1023,7 +1026,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
       String json = createJsonStringWithNFilterFields(65);
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].errorCode", is(FilterException.Code.FILTER_FIELDS_LIMIT_VIOLATION.name()))
           .body(
               "errors[0].message",
               containsString(

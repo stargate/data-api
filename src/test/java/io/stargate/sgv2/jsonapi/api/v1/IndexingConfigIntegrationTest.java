@@ -6,6 +6,8 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -179,7 +181,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               }
                 """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.city' is not indexed: cannot filter"));
@@ -199,7 +201,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
             }
             """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString("Collection path '$vector' is not indexed: cannot filter"));
@@ -263,7 +265,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.city' is not indexed: cannot filter"));
@@ -286,7 +288,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.city' is not indexed: cannot filter"));
@@ -307,7 +309,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.city' is not indexed: cannot filter"));
@@ -375,7 +377,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_ID_NOT_INDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_ID_NOT_INDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -424,7 +426,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -449,7 +451,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_ID_NOT_INDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_ID_NOT_INDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -550,7 +552,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString("Collection path 'address.street' is not indexed: cannot filter"));
@@ -575,7 +577,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString("Collection path 'address' is not indexed: cannot filter"));
@@ -603,7 +605,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -650,7 +652,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -680,7 +682,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -710,7 +712,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -756,7 +758,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SORT_CLAUSE_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -797,7 +799,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_INVALID_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -835,7 +837,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_PATH_UNINDEXED"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_PATH_UNINDEXED.name()))
           .body(
               "errors[0].message",
               containsString(
