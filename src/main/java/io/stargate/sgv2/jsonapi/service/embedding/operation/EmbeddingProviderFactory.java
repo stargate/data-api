@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.syncservice.SyncServiceClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -28,6 +29,8 @@ public class EmbeddingProviderFactory {
 
   @GrpcClient("embedding")
   EmbeddingService grpcGatewayClient;
+
+  @Inject SyncServiceClient syncServiceClient;
 
   @FunctionalInterface
   interface ProviderConstructor {
@@ -99,7 +102,7 @@ public class EmbeddingProviderFactory {
         commandName);
   }
 
-  public EmbeddingProvider create(
+  private EmbeddingProvider create(
       Tenant tenant,
       String authToken,
       ModelProvider modelProvider,
@@ -190,7 +193,17 @@ public class EmbeddingProviderFactory {
           "ModelProvider does not have a constructor: " + modelProvider);
     }
 
-    return ctor.create(
-        providerConfig, modelConfig, serviceConfig, dimension, vectorizeServiceParameters);
+    var provider =
+        ctor.create(
+            providerConfig, modelConfig, serviceConfig, dimension, vectorizeServiceParameters);
+
+    // Wrap with credential resolver if shared-secret authentication is configured
+    if (authentication != null && !authentication.isEmpty()) {
+      provider =
+          new SyncServiceCredentialResolvingProvider(
+              provider, syncServiceClient, authentication, tenant, authToken);
+    }
+
+    return provider;
   }
 }
