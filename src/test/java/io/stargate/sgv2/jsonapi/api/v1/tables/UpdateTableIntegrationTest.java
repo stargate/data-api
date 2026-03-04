@@ -444,10 +444,6 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRowWithNull));
   }
 
-  // ==================================================================================================================
-  // Issue #2275: Misleading error when filtering primitive column by object value
-  // ==================================================================================================================
-
   /**
    * Test for <a href="https://github.com/stargate/data-api/issues/2275">#2275</a>: filtering a
    * primitive text column (part of primary key) with an object value should produce a clear
@@ -457,7 +453,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
   @Test
   public void filterPrimitiveColumnWithObjectValue() {
     // Filter uses an object value for a text primary key column -- simulates the
-    // incorrect BSON serialization described in the issue
+    // incorrect serialization described in the issue
     var filterJSON =
         """
                     {
