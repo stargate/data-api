@@ -120,8 +120,9 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
             JsonType.ARRAY)
         .capture(DYNAMIC_MATCH_GROUP) // For $match operator
         .compareValues("*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING)
-        // Capture SUB_DOC (JSON Object values) so they don't cause a generic server error;
-        // the findDynamic handler will throw a descriptive FilterException instead.
+        // 04-Mar-2026, tatu: [data-api#2275] Capture SUB_DOC (JSON Object) so they don't cause a
+        // generic server error; findDynamic handler will throw a descriptive FilterException
+        // instead.
         .capture(DYNAMIC_SUB_DOC_GROUP)
         .compareValues(
             "*",
@@ -147,22 +148,6 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
     // TODO: How do we know what the CmdT of the JsonLiteral<CmdT> from .value() is ?
     BiConsumer<CaptureGroups, DBLogicalExpression> consumer =
         (captureGroups, dbLogicalExpression) -> {
-          // Reject JSON Object (SUB_DOC) values: tables do not support them as filter operands
-          captureGroups
-              .getGroupIfPresent(DYNAMIC_SUB_DOC_GROUP)
-              .ifPresent(
-                  captureGroup -> {
-                    CaptureGroup<Object> subDocGroup = (CaptureGroup<Object>) captureGroup;
-                    subDocGroup.consumeAllCaptures(
-                        expression -> {
-                          throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
-                              "message",
-                              "JSON Object values are not supported as table column filter values, filter column '"
-                                  + expression.path()
-                                  + "'");
-                        });
-                  });
-
           captureGroups
               .getGroupIfPresent(DYNAMIC_TEXT_GROUP)
               .ifPresent(
@@ -305,6 +290,23 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   NativeTypeTableFilter.Operator.from(
                                       (ValueComparisonOperator) expression.operator()),
                                   expression.value()));
+                        });
+                  });
+
+          // 04-Mar-2026, tatu: [data-api#2275] Reject JSON Object (SUB_DOC) values: tables
+          // do not support them as filter operands
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_SUB_DOC_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> subDocGroup = (CaptureGroup<Object>) captureGroup;
+                    subDocGroup.consumeAllCaptures(
+                        expression -> {
+                          throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
+                              "message",
+                              "JSON Object values are not supported as table column filter values, filter column '"
+                                  + expression.path()
+                                  + "'");
                         });
                   });
         };
