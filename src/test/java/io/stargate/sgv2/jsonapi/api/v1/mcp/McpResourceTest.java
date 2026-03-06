@@ -118,7 +118,7 @@ class McpResourceTest {
 
   @Test
   void failWithErrorAndStatus() {
-    // Arrange: a result that contains errors
+    // Arrange: a result that contains errors and status
     var commandResult =
         CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
             .addStatus(CommandStatus.INSERTED_IDS, 1)
