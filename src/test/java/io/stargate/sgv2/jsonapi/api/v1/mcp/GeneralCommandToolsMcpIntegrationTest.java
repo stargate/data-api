@@ -40,7 +40,7 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
 
     @Test
     @Order(2)
-    void testFindKeyspaceToolCall() {
+    void testFindKeyspaceToolCallAfterCreateKeyspace() {
       callToolAndAssert(
           CommandName.Names.FIND_KEYSPACES,
           Map.of(),
@@ -70,6 +70,29 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
             assertFalse(response.isError());
             assertNotNull(response._meta());
             assertNull(response.structuredContent());
+          });
+    }
+
+    @Test
+    @Order(2)
+    void testFindKeyspaceToolCallAfterDropKeyspace() {
+      callToolAndAssert(
+          CommandName.Names.FIND_KEYSPACES,
+          Map.of(),
+          response -> {
+            // check mcp response
+            assertFalse(response.isError());
+            assertNotNull(response._meta());
+            assertNull(response.structuredContent());
+
+            // check the new keyspace is there
+            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
+            assertNotNull(status, "Status should not be null");
+            JsonArray keyspaces = status.getJsonArray("keyspaces");
+            assertNotNull(keyspaces, "Keyspaces array should not be null");
+            assertFalse(
+                keyspaces.contains(EXTRA_KEYSPACE),
+                "Keyspace should be dropped and not in the list");
           });
     }
   }
