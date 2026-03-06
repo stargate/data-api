@@ -41,6 +41,10 @@ public abstract class McpIntegrationTestBase {
   /** Shared MCP client instance, connected once per test class. */
   protected McpStreamableTestClient mcpClient;
 
+  /**
+   * Initializes the shared MCP client before all tests in the class. Connects to the local test
+   * server using Streamable HTTP transport with authentication headers.
+   */
   @BeforeAll
   void setUpMcpClient() {
     mcpClient =
@@ -52,6 +56,7 @@ public abstract class McpIntegrationTestBase {
             .connect();
   }
 
+  /** Disconnects and releases the shared MCP client after all tests in the class have run. */
   @AfterAll
   void tearDownMcpClient() {
     if (mcpClient != null) {
@@ -99,9 +104,10 @@ public abstract class McpIntegrationTestBase {
         response -> assertFalse(response.isError()));
   }
 
-  protected void dropCollection(String keyspace, String collection) {
+  /** Delete a collection via the MCP deleteCollection tool */
+  protected void deleteCollection(String keyspace, String collection) {
     callToolAndAssert(
-        "dropCollection",
+        "deleteCollection",
         Map.of("keyspace", keyspace, "collection", collection),
         response -> assertFalse(response.isError()));
   }
