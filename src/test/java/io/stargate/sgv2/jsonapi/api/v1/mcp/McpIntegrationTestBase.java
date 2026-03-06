@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkiverse.mcp.server.test.McpAssured;
@@ -80,19 +80,30 @@ public abstract class McpIntegrationTestBase {
   }
 
   /** Create a keyspace via the MCP createKeyspace tool. */
-  protected void createKeyspace(String name) {
-    callToolExpectSuccess("createKeyspace", Map.of("name", name));
+  protected void createKeyspace(String keyspace) {
+    callToolAndAssert(
+        "createKeyspace", Map.of("name", keyspace), response -> assertFalse(response.isError()));
   }
 
   /** Drop a keyspace via the MCP dropKeyspace tool. */
-  protected void dropKeyspace(String name) {
-    callToolExpectSuccess("dropKeyspace", Map.of("name", name));
+  protected void dropKeyspace(String keyspace) {
+    callToolAndAssert(
+        "dropKeyspace", Map.of("name", keyspace), response -> assertFalse(response.isError()));
   }
 
   /** Create a collection via the MCP createCollection tool. */
   protected void createCollection(String keyspace, String collection) {
-    callToolExpectSuccess(
-        "createCollection", Map.of("keyspace", keyspace, "collection", collection));
+    callToolAndAssert(
+        "createCollection",
+        Map.of("keyspace", keyspace, "collection", collection),
+        response -> assertFalse(response.isError()));
+  }
+
+  protected void dropCollection(String keyspace, String collection) {
+    callToolAndAssert(
+        "dropCollection",
+        Map.of("keyspace", keyspace, "collection", collection),
+        response -> assertFalse(response.isError()));
   }
 
   /**
@@ -105,10 +116,5 @@ public abstract class McpIntegrationTestBase {
   protected void callToolAndAssert(
       String toolName, Map<String, Object> args, Consumer<ToolResponse> assertFn) {
     mcpClient.when().toolsCall(toolName, args, assertFn).thenAssertResults();
-  }
-
-  /** Execute an MCP tool call expecting success (no error) using the shared client. */
-  protected void callToolExpectSuccess(String toolName, Map<String, Object> args) {
-    callToolAndAssert(toolName, args, response -> assertThat(response.isError()).isFalse());
   }
 }

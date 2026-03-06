@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.quarkiverse.mcp.server.MetaKey;
@@ -35,6 +36,7 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
             assertFalse(response.isError());
             assertNotNull(response._meta());
             assertNull(response.structuredContent());
+            assertThat(response.content()).isEmpty();
           });
     }
 
@@ -74,7 +76,7 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
     }
 
     @Test
-    @Order(2)
+    @Order(4)
     void testFindKeyspaceToolCallAfterDropKeyspace() {
       callToolAndAssert(
           CommandName.Names.FIND_KEYSPACES,
@@ -85,7 +87,7 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
             assertNotNull(response._meta());
             assertNull(response.structuredContent());
 
-            // check the new keyspace is there
+            // check the new keyspace is dropped
             var status = (JsonObject) response._meta().get(MetaKey.of("status"));
             assertNotNull(status, "Status should not be null");
             JsonArray keyspaces = status.getJsonArray("keyspaces");
