@@ -25,10 +25,10 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class McpIntegrationTestBase {
 
-  private static final String MCP_PATH = "/v1/mcp";
+  protected static final String MCP_PATH = "/v1/mcp";
 
   /** MCP Assured cannot automatically resolve the URI (like Rest Assured) */
-  private static final String MCP_HOSTNAME = "http://localhost:";
+  protected static final String MCP_HOSTNAME = "http://localhost:";
 
   /** Test keyspace name, with a random suffix for isolation. */
   protected final String keyspaceName =
