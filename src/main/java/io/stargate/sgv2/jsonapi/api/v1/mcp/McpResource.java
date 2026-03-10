@@ -142,7 +142,9 @@ public class McpResource {
                         .addThrowable(throwable)
                         .build();
                 return Uni.createFrom()
-                    .item(new ToolResponse(true, null, errorResult.errors(), Map.of()));
+                    .item(
+                        new ToolResponse(
+                            true, List.of(), Map.of("errors", errorResult.errors()), Map.of()));
               } else {
                 VectorColumnDefinition vectorColDef = null;
                 if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
@@ -218,7 +220,7 @@ public class McpResource {
               Map<MetaKey, Object> meta =
                   (result.status() != null && !result.status().isEmpty())
                       ? Map.of(MetaKey.of("status"), result.status())
-                      : null;
+                      : Map.of();
 
               // Map "errors" or "data" to structuredContent
               // Also, structuredContent is expected to be a Record (a plain JSON object {})

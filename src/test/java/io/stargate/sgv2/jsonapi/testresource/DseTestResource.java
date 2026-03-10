@@ -113,6 +113,11 @@ public class DseTestResource extends StargateTestResource {
     return "true";
   }
 
+  // By default, we enable the feature flag for MCP
+  public String getFeatureFlagMcp() {
+    return "true";
+  }
+
   @Override
   public Map<String, String> start() {
     Map<String, String> env = super.start();
@@ -138,6 +143,12 @@ public class DseTestResource extends StargateTestResource {
     String featureFlagReranking = getFeatureFlagReranking();
     if (featureFlagReranking != null) {
       propsBuilder.put("stargate.feature.flags.reranking", featureFlagReranking);
+    }
+
+    // MCP feature flag:
+    String featureFlagMcp = getFeatureFlagMcp();
+    if (featureFlagMcp != null) {
+      propsBuilder.put("stargate.feature.flags.mcp", featureFlagMcp);
     }
 
     propsBuilder.put(
