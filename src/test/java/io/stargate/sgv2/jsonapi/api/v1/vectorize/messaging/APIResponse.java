@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.messaging;
 
 import io.restassured.response.ValidatableResponse;
 

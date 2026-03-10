@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "name": "targets",
+    "kind": "targets"
+  },
   "targets": [
     {
       "name": "local",
@@ -22,7 +26,7 @@
       "name": "astra-dev",
       "backend": "astra",
       "connection": {
-        "domain": "https://830c0231-8c79-4212-b148-8c4bd467c917-us-west-2.apps.astra-dev.datastax.com",
+        "domain": "https://2637a6ae-d489-498a-a740-69362af254ef-us-west-2.apps.astra-dev.datastax.com",
         "port": 443,
         "basePath": "/api/json/v1"
       }

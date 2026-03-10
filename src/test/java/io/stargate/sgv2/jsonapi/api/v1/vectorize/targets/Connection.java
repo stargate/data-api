@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.targets;
 
 public record Connection(
     String domain,

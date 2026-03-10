@@ -17,7 +17,7 @@ public class VectorizeAstra {
   @TestFactory
   Stream<DynamicContainer> jobs() {
 
-    var testPlan = TestPlan.create("astra-dev", List.of("all-vectorize-workflow"));
+    var testPlan = TestPlan.create("astra-dev", List.of("all-vectorize-workflow"), false);
 
     return testPlan.testNode();
 

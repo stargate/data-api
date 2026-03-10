@@ -1,11 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCommand;
-
-import java.util.List;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.hamcrest.Matchers.hasSize;

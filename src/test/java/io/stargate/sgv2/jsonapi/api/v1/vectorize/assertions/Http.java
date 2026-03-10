@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCommand;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import org.apache.http.HttpStatus;
 
 import static io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.DescribableAssertionMatcher.described;

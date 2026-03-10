@@ -1,15 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestResponse;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
-import org.hamcrest.SelfDescribing;
-import org.hamcrest.StringDescription;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunResponse;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.DynamicTestExecutable;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import org.junit.jupiter.api.DynamicNode;
 
-import java.lang.reflect.Executable;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -21,7 +17,7 @@ public record SingleTestAssertion(
     AssertionMatcher matcher
 ) implements TestAssertion {
 
-  public void run(TestResponse testResponse) {
+  public void run(TestRunResponse testResponse) {
 
     try {
       matcher.match(testResponse.apiResponse());
@@ -35,41 +31,25 @@ public record SingleTestAssertion(
   }
 
   @Override
-  public DynamicNode testNodes(TestUri.Builder uriBuilder, AtomicReference<TestResponse> testResponse) {
+  public DynamicNode testNodes(TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse) {
 
-    uriBuilder.addSegment(TestUri.Segment.ASSERTION, name());
-    var original = (matcher instanceof Describable d) ?
+    var matcherDesc = (matcher instanceof Describable d) ?
       d.describe()
         :
-        null;
+        "";
 
-    var truncated =  ( original != null && original.length() > 60) ?
-         original.substring(0, 57) + "..."
-        :
-        original;
-
-    var testDesc = truncated == null ?
-      name()
-      :
-      "%s [%s]".formatted(name(), truncated);
-
-    // if we truncated the description of the test, we then want to pipe to std out when running
-    // because it will not be full in the test tree
-    var stdoutMessage = (original != null && !Objects.equals(truncated, original)) ?
-        "%s [%s]".formatted(name(), original)
-        :
-        null;
-
-    return dynamicTest(testDesc, () -> {
+    var executable = new DynamicTestExecutable(
+        "%s [%s]".formatted(name(), matcherDesc),
+        uriBuilder.addSegment(TestUri.Segment.ASSERTION, name()),
+        () -> {
           var resp = testResponse.get();
           if (resp == null) {
             throw new IllegalStateException("Response is null");
           }
-          if (stdoutMessage != null) {
-            System.out.printf(stdoutMessage);
-          }
           run(resp);
         }
     );
+
+    return executable.testNode();
   }
 }

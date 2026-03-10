@@ -1,11 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCommand;
-
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

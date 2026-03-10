@@ -1,6 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
-
-import io.stargate.sgv2.jsonapi.service.operation.builder.LiteralTerm;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
 import java.net.URI;
 import java.util.*;
@@ -38,7 +36,6 @@ public record TestUri(
   }
 
   public enum Scheme {
-    TESTPLAN,
     TESTRUN;
 
     public String pathName() {
@@ -138,7 +135,7 @@ public record TestUri(
     }
 
     public Builder clone(){
-      return new Builder(scheme, segmentValues);
+      return new Builder(scheme, new ArrayList<>(segmentValues));
     }
 
     public TestUri build() {

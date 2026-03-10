@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import org.apache.commons.text.StringSubstitutor;
 
 public class TestCommand  {
@@ -84,7 +85,7 @@ public class TestCommand  {
     return name;
   }
 
-  public ObjectNode withEnvironment(TestEnvironment env) {
+  public ObjectNode withEnvironment(TestRunEnv env) {
     ObjectNode updated = request.deepCopy();
     walk(updated, env.substitutor());
     return updated;

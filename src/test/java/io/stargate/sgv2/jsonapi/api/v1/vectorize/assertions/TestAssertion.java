@@ -1,19 +1,16 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCase;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCommand;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCase;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestResponse;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunResponse;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.AssertionTemplateSpec;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.SpecFiles;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
-import org.assertj.core.api.AssertFactory;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import org.junit.jupiter.api.DynamicNode;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -23,9 +20,9 @@ public interface TestAssertion {
 
   JsonNode args();
 
-  void run(TestResponse testResponse);
+  void run(TestRunResponse testResponse);
 
-  DynamicNode testNodes(TestUri.Builder uriBuilder, AtomicReference<TestResponse> testResponse);
+  DynamicNode testNodes(TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse);
 
 
   static List<TestAssertion> forSuccess(TestPlan testPlan, TestCommand testCommand) {

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.messaging;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +8,9 @@ import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.targets.Connection;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 
 import java.util.Map;
@@ -24,10 +27,10 @@ public class APIRequest {
   private static String DB_PATH  = "/";
 
   private final Connection connection;
-  private final TestEnvironment integrationEnv;
+  private final TestRunEnv integrationEnv;
   private final ObjectNode request;
 
-  public APIRequest(Connection connection, TestEnvironment integrationEnv, ObjectNode request ) {
+  public APIRequest(Connection connection, TestRunEnv integrationEnv, ObjectNode request ) {
 
     this.connection = connection;
     this.integrationEnv = integrationEnv;

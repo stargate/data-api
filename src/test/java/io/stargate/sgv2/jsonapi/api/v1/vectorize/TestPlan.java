@@ -1,7 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.targets.Target;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.Job;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.*;
-import org.eclipse.aether.util.artifact.OverlayArtifactTypeRegistry;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 
@@ -12,26 +15,29 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows){
+public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled){
 
   public static TestPlan  create(String targetName, List<String> workflows){
-    var targetConfigs = TargetConfigurationss.loadAll("integration-tests/targets/targets.json");
+    return create(targetName, workflows, true);
+  }
+
+  public static TestPlan  create(String targetName, List<String> workflows, boolean ignoreDisabled){
+    var targetConfigs = TargetsSpec.loadAll("integration-tests/targets/targets.json");
     var target = new Target(targetConfigs.configuration(targetName));
 
     var specFiles = SpecFiles.loadAll(List.of("integration-tests/vectorize", "integration-tests/assertions/assertion-templates.json"));
 
-    return new  TestPlan(target, specFiles, Set.copyOf(workflows));
+    return new  TestPlan(target, specFiles, Set.copyOf(workflows), ignoreDisabled);
   }
 
-  public Stream<Workflow> selectedWorkflows(){
+  public Stream<WorkflowSpec> selectedWorkflows(){
 
     return specFiles.byKind(TestSpecKind.WORKFLOW)
         .filter(specFile ->
           workflows.isEmpty() || workflows.contains(specFile.spec().meta().name())
         )
-        .map(testSpec -> (Workflow) testSpec.spec());
+        .map(testSpec -> (WorkflowSpec) testSpec.spec());
   }
 
   public Stream<DynamicContainer> testNode() {
@@ -50,7 +56,7 @@ public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows
             desc,
             uriBuilder.build().uri(),
             selectedWorkflows()
-                .map(workflow -> workflow.testNode(this, uriBuilder.clone()))
+                .map(workflow -> workflow.testNode(this, uriBuilder.clone(), ignoreDisabled))
         )
     );
   }
@@ -75,7 +81,7 @@ public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows
     return streamIfPresent(containerIfPresent(uriBuilder, namePrefix, meta, targetDynamicNode));
   }
 
-  public Stream<? extends DynamicNode> addLifecycle(TestUri.Builder uriBuilder, Workflow workflow, Stream<? extends DynamicNode> dynamicNodes){
+  public Stream<? extends DynamicNode> addLifecycle(TestUri.Builder uriBuilder, WorkflowSpec workflow, Stream<? extends DynamicNode> dynamicNodes){
 
     var beforeUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "before-workflow");
     var afterUriBuilder =  uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "after-workflow");
@@ -99,7 +105,7 @@ public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows
     );
   }
 
-  public Stream<? extends DynamicNode> addLifecycle(TestUri.Builder uriBuilder, TestSuite testSuite, TestEnvironment environment, Stream<? extends DynamicNode> dynamicNodes){
+  public Stream<? extends DynamicNode> addLifecycle(TestUri.Builder uriBuilder, TestSuiteSpec testSuite, TestRunEnv environment, Stream<? extends DynamicNode> dynamicNodes){
 
     var beforeUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "before-test-suite");
     var afterUriBuilder =  uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "after-test-suite");

@@ -27,7 +27,7 @@ public class SpecFiles {
     this.specFiles = specFiles;
 
     for (SpecFile file : specFiles) {
-     if (file.spec() instanceof TestSuite it){
+     if (file.spec() instanceof TestSuiteSpec it){
        it.expand(this);
      }
     }
@@ -92,8 +92,9 @@ public class SpecFiles {
       var element =
           switch (TestSpecKind.valueOf(kindNode.asText().toUpperCase())) {
             case ASSERTION_TEMPLATE -> MAPPER.treeToValue(root, AssertionTemplateSpec.class);
-            case TEST_SUITE -> MAPPER.treeToValue(root, TestSuite.class);
-            case WORKFLOW -> MAPPER.treeToValue(root, Workflow.class);
+            case TARGETS ->  MAPPER.treeToValue(root, TargetsSpec.class);
+            case TEST_SUITE -> MAPPER.treeToValue(root, TestSuiteSpec.class);
+            case WORKFLOW -> MAPPER.treeToValue(root, WorkflowSpec.class);
 
           };
       return new SpecFile(file, element, root);

@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.APIResponse;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.messaging.APIResponse;
 import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
 

@@ -1,18 +1,18 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize.backends;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.targets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.Job;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestCommand;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.Job;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestRequest;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunRequest;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.DynamicNode;
 
 import java.util.Optional;
 
-import static io.stargate.sgv2.jsonapi.api.v1.vectorize.TestEnvironment.toSafeSchemaIdentifier;
+import static io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv.toSafeSchemaIdentifier;
 
 /**
  * Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh
@@ -42,7 +42,7 @@ public class CassandraBackend extends Backend {
             """);
 
     var env = job.withoutMatrix(testPlan);
-    var setupRequest = new TestRequest(
+    var setupRequest = new TestRunRequest(
          env.substitutor().replace("createKeyspace: ${KEYSPACE_NAME}"),
         command, testPlan.target(), env, TestAssertion.forSuccess( testPlan, command));
 
@@ -50,7 +50,7 @@ public class CassandraBackend extends Backend {
   }
 
   @Override
-  public Optional<DynamicNode> afterJob(TestPlan testPlan, TestUri.Builder uriBuilder,Job job) {
+  public Optional<DynamicNode> afterJob(TestPlan testPlan, TestUri.Builder uriBuilder, Job job) {
     var command = TestCommand.fromJson(
         """
            {
@@ -61,7 +61,7 @@ public class CassandraBackend extends Backend {
             """);
 
     var env = job.withoutMatrix(testPlan);
-    var setupRequest = new TestRequest(
+    var setupRequest = new TestRunRequest(
         env.substitutor().replace("dropKeyspace: ${KEYSPACE_NAME}"),
         command, testPlan.target(), job.withoutMatrix(testPlan), TestAssertion.forSuccess(testPlan,command));
 

@@ -1,7 +1,7 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuite;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuiteSpec;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
 import org.junit.jupiter.api.DynamicContainer;
@@ -15,24 +15,24 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-public class TestEnvironment {
+public class TestRunEnv {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestEnvironment.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestRunEnv.class);
   private static final Pattern PATTERN_NOT_WORD_CHARS = Pattern.compile("\\W+");
 
   private static final Set<String> SCHEMA_IDENTIFIER = Set.of("KEYSPACE_NAME", "COLLECTION_NAME");
 
   private final Map<String, String> vars = new HashMap<>();
 
-  public TestEnvironment(){
+  public TestRunEnv(){
     this(new HashMap<>());
   }
 
-  public TestEnvironment(Map<String, String> vars) {
+  public TestRunEnv(Map<String, String> vars) {
     this.vars.putAll(vars);
   }
 
-  public DynamicContainer testNode(TestPlan testPlan, TestUri.Builder uriBuilder, TestSuite testSuite) {
+  public DynamicContainer testNode(TestPlan testPlan, TestUri.Builder uriBuilder, TestSuiteSpec testSuite) {
 
     var d = description();
     uriBuilder.addSegment(TestUri.Segment.ENV, d);
@@ -64,15 +64,15 @@ public class TestEnvironment {
         .toString();
   }
 
-  private TestEnvironment(TestEnvironment other){
+  private TestRunEnv(TestRunEnv other){
     this.vars.putAll(other.vars);
   }
 
-  public TestEnvironment clone(){
-    return new TestEnvironment(this);
+  public TestRunEnv clone(){
+    return new TestRunEnv(this);
   }
 
-  public TestEnvironment put(TestEnvironment other){
+  public TestRunEnv put(TestRunEnv other){
     this.vars.putAll(other.vars);
     return this;
   }

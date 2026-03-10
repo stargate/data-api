@@ -1,9 +1,8 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSpecKind;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSpecMeta;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuite;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestUri;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import org.junit.jupiter.api.DynamicContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,19 +43,19 @@ public record Job(
             testPlan.addLifecycle(uriBuilder.clone(),this, testSuiteNodes));
   }
 
-  public Stream<TestSuite> testSuites(TestPlan testPlan) {
-    Stream.Builder<TestSuite> allTests =  Stream.builder();
+  public Stream<TestSuiteSpec> testSuites(TestPlan testPlan) {
+    Stream.Builder<TestSuiteSpec> allTests =  Stream.builder();
     tests()
         .forEach(
             testName -> {
-               testPlan.specFiles().byNameAsType(TestSuite.class, testName).forEach(allTests) ;
+               testPlan.specFiles().byNameAsType(TestSuiteSpec.class, testName).forEach(allTests) ;
             });
 
     return allTests.build();
   }
-  public TestEnvironment withoutMatrix(TestPlan testPlan) {
+  public TestRunEnv withoutMatrix(TestPlan testPlan) {
 
-    var fromEnv = new TestEnvironment();
+    var fromEnv = new TestRunEnv();
 
     for (Map.Entry<String, String> entry : fromEnvironment.entrySet()) {
       var value = System.getenv(entry.getValue());
@@ -66,13 +65,13 @@ public record Job(
       fromEnv.put(entry.getKey(), value);
     }
 
-    var fromVariables = new TestEnvironment(variables);
+    var fromVariables = new TestRunEnv(variables);
 
     return fromEnv.clone().put(fromVariables);
   }
-  public List<TestEnvironment> allEnvironments(TestPlan testPlan) {
+  public List<TestRunEnv> allEnvironments(TestPlan testPlan) {
 
-    var fromEnv = new TestEnvironment();
+    var fromEnv = new TestRunEnv();
 
     for (Map.Entry<String, String> entry : fromEnvironment.entrySet()) {
       var value = System.getenv(entry.getValue());
@@ -82,18 +81,18 @@ public record Job(
       fromEnv.put(entry.getKey(), value);
     }
 
-    var fromVariables = new TestEnvironment(variables);
+    var fromVariables = new TestRunEnv(variables);
 
     // TODO: handle more matrix
-    List<TestEnvironment> fromMatrix = new ArrayList<>();
+    List<TestRunEnv> fromMatrix = new ArrayList<>();
     matrix.get("MODEL").forEach(
         model -> {
-          var env = new TestEnvironment();
+          var env = new TestRunEnv();
           env.put("MODEL", model);
           fromMatrix.add(env);
         });
 
-    List<TestEnvironment> allEnvs = new ArrayList<>();
+    List<TestRunEnv> allEnvs = new ArrayList<>();
     for (var matrixEnv : fromMatrix) {
 
       var completeEnv = fromEnv

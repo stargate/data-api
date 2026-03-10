@@ -1,9 +1,10 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.AssertionMatcher;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.messaging.APIRequest;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.messaging.APIResponse;
 
-public record TestResponse(
-    TestRequest testRequest,
+public record TestRunResponse(
+    TestRunRequest testRequest,
     APIRequest apiRequest,
     APIResponse apiResponse
 ) {

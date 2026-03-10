@@ -1,5 +1,6 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -11,12 +12,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public record TargetConfigurationss(List<TargetConfiguration> targets) {
+public record TargetsSpec(
+    TestSpecMeta meta,
+    List<TargetConfiguration> targets)
+    implements TestSpec {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = new ObjectMapper()
+      .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
 
-  public TargetConfigurationss {
+  public TargetsSpec {
     Set<String> seen = new HashSet<String>();
     for  (TargetConfiguration target : targets) {
       if (seen.contains(target.name())) {
@@ -30,11 +35,11 @@ public record TargetConfigurationss(List<TargetConfiguration> targets) {
     return targets.stream().filter(target -> target.name().equals(name)).findFirst().orElseThrow(() -> new IllegalArgumentException("target name not found: " + name));
   }
 
-  static TargetConfigurationss loadAll(String path) {
+  public static TargetsSpec loadAll(String path) {
     final Path dir = resourceDir(path);
 
     try {
-      return MAPPER.readValue(dir.toFile(), TargetConfigurationss.class);
+      return MAPPER.readValue(dir.toFile(), TargetsSpec.class);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
