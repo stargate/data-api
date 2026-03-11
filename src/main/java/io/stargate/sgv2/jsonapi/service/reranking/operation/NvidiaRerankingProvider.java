@@ -106,7 +106,9 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             TRUNCATE_PASSAGE);
 
     final long callStartNano = System.nanoTime();
-    return retryHTTPCall(nvidiaClient.rerank(accessToken, nvidiaRequest))
+    return retryHTTPCall(
+            nvidiaClient.rerank(
+                accessToken, rerankingCredentials.tenant().toString(), nvidiaRequest))
         .onItem()
         .transform(
             jakartaResponse -> {
@@ -144,7 +146,9 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     @POST
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<Response> rerank(
-        @HeaderParam("Authorization") String accessToken, NvidiaRerankingRequest request);
+        @HeaderParam("Authorization") String accessToken,
+        @HeaderParam("tenant-id") String tenantId,
+        NvidiaRerankingRequest request);
   }
 
   /**

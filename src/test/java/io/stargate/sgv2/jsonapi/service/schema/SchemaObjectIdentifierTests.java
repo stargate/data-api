@@ -33,7 +33,7 @@ public class SchemaObjectIdentifierTests {
     var identifier = SchemaObjectIdentifier.forDatabase(tenant);
     assertThat(identifier.fullName())
         .as("fullName should be db:<tenant>")
-        .isEqualTo("db:" + tenant);
+        .isEqualTo(SchemaObjectType.DATABASE.name() + ":" + tenant);
 
     assertThat(identifier.type())
         .as("type should be DATABASE")
@@ -67,7 +67,9 @@ public class SchemaObjectIdentifierTests {
 
     var keyspace = CqlIdentifier.fromCql("ks");
     var identifier = SchemaObjectIdentifier.forKeyspace(tenant, keyspace);
-    assertThat(identifier.fullName()).as("fullName should equal keyspace name").isEqualTo("ks");
+    assertThat(identifier.fullName())
+        .as("fullName should equal keyspace name")
+        .isEqualTo(SchemaObjectType.KEYSPACE.name() + ":ks");
 
     assertThat(identifier.type())
         .as("type should be KEYSPACE")
@@ -114,7 +116,7 @@ public class SchemaObjectIdentifierTests {
     var identifier = SchemaObjectIdentifier.forCollection(tenant, keyspace, collection);
     assertThat(identifier.fullName())
         .as("fullName should be keyspace.collection")
-        .isEqualTo("ks.col");
+        .isEqualTo(SchemaObjectType.COLLECTION.name() + ":ks.col");
 
     assertThat(identifier.type())
         .as("type should be COLLECTION")
@@ -156,7 +158,9 @@ public class SchemaObjectIdentifierTests {
 
     var table = CqlIdentifier.fromCql("tbl");
     var identifier = SchemaObjectIdentifier.forTable(tenant, keyspace, table);
-    assertThat(identifier.fullName()).as("fullName should be keyspace.table").isEqualTo("ks.tbl");
+    assertThat(identifier.fullName())
+        .as("fullName should be keyspace.table")
+        .isEqualTo(SchemaObjectType.TABLE.name() + ":ks.tbl");
 
     assertThat(identifier.type()).as("type should be TABLE").isEqualTo(SchemaObjectType.TABLE);
 
@@ -182,7 +186,7 @@ public class SchemaObjectIdentifierTests {
         .isEqualTo(SchemaObjectType.TABLE);
     assertThat(fromTable.fullName())
         .as("should extract fullName from metadata for TABLE")
-        .isEqualTo("ks.tbl");
+        .isEqualTo(SchemaObjectType.TABLE.name() + ":ks.tbl");
 
     var fromCollection =
         SchemaObjectIdentifier.fromTableMetadata(SchemaObjectType.COLLECTION, tenant, metadata);
@@ -191,7 +195,7 @@ public class SchemaObjectIdentifierTests {
         .isEqualTo(SchemaObjectType.COLLECTION);
     assertThat(fromCollection.fullName())
         .as("should extract fullName from metadata for COLLECTION")
-        .isEqualTo("ks.tbl");
+        .isEqualTo(SchemaObjectType.COLLECTION.name() + ":ks.tbl");
 
     assertThatThrownBy(
             () ->

@@ -332,8 +332,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
-                  name = "createKeyspaceWithReplication",
-                  summary = "`CreateKeyspace` command with replication",
+                  name = "createKeyspaceWithSimpleStrategy",
+                  summary = "`CreateKeyspace` command with SimpleStrategy",
                   value =
                       """
                       {
@@ -348,6 +348,25 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                         }
                       }
                       """),
+              @ExampleObject(
+                  name = "createKeyspaceWithNetworkTopologyStrategy",
+                  summary = "`CreateKeyspace` command with NetworkTopologyStrategy",
+                  value =
+                      """
+                            {
+                              "createKeyspace": {
+                                  "name": "cycling",
+                                  "options": {
+                                      "replication": {
+                                          "class": "NetworkTopologyStrategy",
+                                          "dc_1" : 3,
+                                          "dc_2" : 2,
+                                          "dc_3" : 1
+                                      }
+                                  }
+                              }
+                            }
+                            """),
               @ExampleObject(
                   name = "findKeyspaces",
                   summary = "`FindKeyspaces` command",

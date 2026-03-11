@@ -42,9 +42,9 @@ public class MetricsTenantDeactivationConsumerTests {
 
   @Test
   void testTenantMetricRemovalLifecycle() {
-    final String tenant1 = "TENANT1";
-    final String tenant2 = "TENANT2";
-    final String tenant3 = "TENANT3";
+    final String tenant1 = "tenant-1";
+    final String tenant2 = "tenant-2";
+    final String tenant3 = "tenant-3";
     final String counterMetrics = "counterMetrics";
     final String summaryMetrics = "summaryMetrics";
     final String timerMetrics = "timerMetrics";

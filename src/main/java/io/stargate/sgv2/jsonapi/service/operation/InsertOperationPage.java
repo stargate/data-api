@@ -128,7 +128,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
       }
       results[failedInsertion.position()] =
           new InsertionResult(
-              failedInsertion.docRowID().orElseThrow(), InsertionStatus.ERROR, errorIdx);
+              failedInsertion.docRowID().orElse(null), InsertionStatus.ERROR, errorIdx);
     }
 
     // And third, if any, skipped insertions; those that were not attempted (f.ex due
@@ -137,7 +137,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
       if (null == results[i]) {
         results[i] =
             new InsertionResult(
-                allInsertions.get(i).docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
+                allInsertions.get(i).docRowID().orElse(null), InsertionStatus.SKIPPED, null);
       }
     }
     builder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));

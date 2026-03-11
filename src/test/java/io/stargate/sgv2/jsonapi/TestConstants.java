@@ -96,7 +96,7 @@ public class TestConstants {
   /**
    * Collection Schema to use if all information missing: Vector not configured, no Lexical enabled
    */
-  public final CollectionSchemaObject MISSING;
+  public final CollectionSchemaObject MISSING_COLLECTION;
 
   // ============================================================
   // Schema Objects
@@ -210,7 +210,7 @@ public class TestConstants {
     KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
     DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject(TENANT);
 
-    MISSING =
+    MISSING_COLLECTION =
         new CollectionSchemaObject(
             COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),

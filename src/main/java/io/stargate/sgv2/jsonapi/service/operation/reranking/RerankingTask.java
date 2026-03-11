@@ -123,9 +123,9 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected RuntimeException maybeHandleException(
-      RerankingResultSupplier resultSupplier, RuntimeException runtimeException) {
-    return runtimeException;
+  protected Throwable maybeHandleException(
+      RerankingResultSupplier resultSupplier, Throwable throwable) {
+    return throwable;
   }
 
   @Override

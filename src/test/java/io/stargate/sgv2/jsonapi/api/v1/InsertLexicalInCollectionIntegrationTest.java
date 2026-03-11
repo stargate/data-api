@@ -365,7 +365,9 @@ public class InsertLexicalInCollectionIntegrationTest
             """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE"))
+          .body(
+              "errors[0].errorCode",
+              is(RequestException.Code.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -391,7 +393,9 @@ public class InsertLexicalInCollectionIntegrationTest
             """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("HYBRID_FIELD_UNKNOWN_SUBFIELDS"))
+          .body(
+              "errors[0].errorCode",
+              is(RequestException.Code.HYBRID_FIELD_UNKNOWN_SUBFIELDS.name()))
           .body(
               "errors[0].message",
               containsString(

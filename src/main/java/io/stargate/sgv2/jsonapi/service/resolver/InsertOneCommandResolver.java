@@ -38,7 +38,8 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
       CommandContext<CollectionSchemaObject> ctx, InsertOneCommand command) {
 
     var builder =
-        new CollectionInsertAttemptBuilder(ctx.schemaObject(), documentShredder, ctx.commandName());
+        new CollectionInsertAttemptBuilder(
+            ctx.schemaObject(), documentShredder, ctx.requestContext().tenant(), ctx.commandName());
 
     var attemps = List.of(builder.build(command.document()));
     return new InsertCollectionOperation(ctx, attemps, false, false, false);

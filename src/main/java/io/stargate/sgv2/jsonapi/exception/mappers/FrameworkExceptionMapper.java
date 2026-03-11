@@ -20,7 +20,6 @@ import jakarta.ws.rs.*;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
@@ -159,7 +158,7 @@ public class FrameworkExceptionMapper {
   }
 
   /**
-   * Translate a Throwable into an appropriate APIException or JsonApiException.
+   * Translate a Throwable into an appropriate APIException.
    *
    * <p>NOTES: this code is refactored from the old ThrowableToErrorMapper class, it is missing
    * specific handling befor below because I could not see how they triggered(amorton 26 jan 2026):
@@ -175,12 +174,6 @@ public class FrameworkExceptionMapper {
   public static RuntimeException translateThrowable(Throwable throwable) {
     return switch (throwable) {
       case APIException ae -> ae;
-      case JsonApiException jae -> jae;
-
-        // ##########
-        // WEIRD ONES FROM throwableToErrorMapper
-        // TODO: AARON - why would this happen ? was in old ThrowableToErrorMapper
-      case TimeoutException te -> ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException();
 
         // ##########
         // # QUARKUS ERRORS

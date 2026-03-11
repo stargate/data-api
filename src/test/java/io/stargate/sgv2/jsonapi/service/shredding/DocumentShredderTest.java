@@ -42,7 +42,7 @@ public class DocumentShredderTest {
   @Inject DocumentShredder documentShredder;
   @InjectMock protected RequestContext dataApiRequestInfo;
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   @Nested
   class OkCases {
@@ -50,14 +50,14 @@ public class DocumentShredderTest {
     public void shredSimpleWithId() throws Exception {
       final String inputJson =
           """
-                      { "_id" : "abc",
-                        "name" : "Bob",
-                        "values" : [ 1, 2 ],
-                        "extra_stuff" : true,
-                        "nullable" : null,
-                        "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
-                      }
-                      """;
+          { "_id" : "abc",
+            "name" : "Bob",
+            "values" : [ 1, 2 ],
+            "extra_stuff" : true,
+            "nullable" : null,
+            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromString("abc"));
@@ -123,11 +123,11 @@ public class DocumentShredderTest {
     public void shredSimpleWithoutId() throws Exception {
       final String inputJson =
           """
-                      {
-                        "age" : 39,
-                        "name" : "Chuck"
-                      }
-                      """;
+          {
+            "age" : 39,
+            "name" : "Chuck"
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
 
@@ -164,10 +164,10 @@ public class DocumentShredderTest {
     public void shredSimpleWithBooleanId() throws Exception {
       final String inputJson =
           """
-                      { "_id" : true,
-                        "name" : "Bob"
-                      }
-                      """;
+          { "_id" : true,
+            "name" : "Bob"
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromBoolean(true));
@@ -189,10 +189,10 @@ public class DocumentShredderTest {
     public void shredSimpleWithNumberId() throws Exception {
       final String inputJson =
           """
-                      { "_id" : 123,
-                        "name" : "Bob"
-                      }
-                      """;
+          { "_id" : 123,
+            "name" : "Bob"
+          }
+          """;
       final JsonNode inputDoc = fromJson(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(123L)));
@@ -226,14 +226,14 @@ public class DocumentShredderTest {
     public void shredOverlappingPaths() throws JsonProcessingException {
       final String inputJson =
           """
-              {
-                "_id" : "doc1",
-                "price": {
-                  "usd": 5
-                },
-                "price.usd": 8.5
-              }
-              """;
+          {
+            "_id" : "doc1",
+            "price": {
+              "usd": 5
+            },
+            "price.usd": 8.5
+          }
+          """;
       WritableShreddedDocument doc =
           documentShredder.shred(commandContext(), fromJson(inputJson), null);
 
@@ -275,11 +275,11 @@ public class DocumentShredderTest {
     void simpleLexicalString() throws Exception {
       final String inputJson =
           """
-                          { "_id" : "lex1",
-                            "$lexical": "bag of words",
-                            "value": 3
-                          }
-                          """;
+          { "_id" : "lex1",
+            "$lexical": "bag of words",
+            "value": 3
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromString("lex1"));
@@ -309,10 +309,10 @@ public class DocumentShredderTest {
     void simpleLexicalNull() throws Exception {
       final String inputJson =
           """
-                          { "_id" : "lex-null",
-                            "$lexical": null
-                          }
-                          """;
+          { "_id" : "lex-null",
+            "$lexical": null
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromString("lex-null"));
@@ -341,10 +341,10 @@ public class DocumentShredderTest {
     void badLexicalObject() throws Exception {
       final String inputJson =
           """
-                      { "_id" : "lex1",
-                        "$lexical": { "value": "bag of words" }
-                      }
-                      """;
+          { "_id" : "lex1",
+            "$lexical": { "value": "bag of words" }
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       Throwable t = catchThrowable(() -> documentShredder.shred(commandContext(), inputDoc, null));
       assertThat(t)
@@ -363,14 +363,14 @@ public class DocumentShredderTest {
       final long testTimestamp = defaultTestDate().getTime();
       final String inputJson =
               """
-              {
-                "_id" : 123,
-                "name" : "Bob",
-                "datetime" : {
-                  "$date" : %d
-                }
-              }
-              """
+          {
+            "_id" : 123,
+            "name" : "Bob",
+            "datetime" : {
+              "$date" : %d
+            }
+          }
+          """
               .formatted(testTimestamp);
       final JsonNode inputDoc = fromJson(inputJson);
       WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
@@ -589,25 +589,31 @@ public class DocumentShredderTest {
     public void shredWithIndexAllowSome() throws Exception {
       final String inputJson =
           """
-                          { "_id" : 123,
-                            "name" : "Bob",
-                            "values" : [ 1, 2 ],
-                            "metadata": {
-                               "x": 28,
-                               "y" :12
-                            },
-                            "nullable" : null,
-                            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ],
-                            "$vectorize" : "some data"
-                          }
-                          """;
+          { "_id" : 123,
+            "name" : "Bob",
+            "values" : [ 1, 2 ],
+            "metadata": {
+               "x": 28,
+               "y" :12
+            },
+            "nullable" : null,
+            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ],
+            "$vectorize" : "some data"
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       IndexingProjector indexProjector =
           IndexingProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", testConstants.MISSING, null);
+              inputDoc,
+              null,
+              indexProjector,
+              null,
+              "testCommand",
+              TEST_CONSTANTS.MISSING_COLLECTION,
+              null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -657,18 +663,18 @@ public class DocumentShredderTest {
       String str = new String(arr);
       final String inputJson =
               """
-                              { "_id" : 123,
-                                "name" : "Bob",
-                                "values" : [ 1, 2 ],
-                                "metadata": {
-                                   "x": 28,
-                                   "y" :12
-                                },
-                                "nullable" : null,
-                                "$vector" : [ 0.11, 0.22, 0.33, 0.44 ],
-                                "$vectorize" : "%s"
-                              }
-                              """
+          { "_id" : 123,
+            "name" : "Bob",
+            "values" : [ 1, 2 ],
+            "metadata": {
+               "x": 28,
+               "y" :12
+            },
+            "nullable" : null,
+            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ],
+            "$vectorize" : "%s"
+          }
+          """
               .formatted(str);
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       IndexingProjector indexProjector =
@@ -676,7 +682,13 @@ public class DocumentShredderTest {
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", testConstants.MISSING, null);
+              inputDoc,
+              null,
+              indexProjector,
+              null,
+              "testCommand",
+              TEST_CONSTANTS.MISSING_COLLECTION,
+              null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -723,23 +735,29 @@ public class DocumentShredderTest {
     public void shredWithIndexAllowAll() throws Exception {
       final String inputJson =
           """
-                { "_id" : 123,
-                  "name" : "Bob",
-                  "values" : [ 1, 2 ],
-                  "metadata": {
-                     "x": 28
-                  },
-                  "nullable" : null,
-                  "$vector" : [ 0.25, -0.5 ]
-                }
-                """;
+          { "_id" : 123,
+            "name" : "Bob",
+            "values" : [ 1, 2 ],
+            "metadata": {
+               "x": 28
+            },
+            "nullable" : null,
+            "$vector" : [ 0.25, -0.5 ]
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       IndexingProjector indexProjector =
           IndexingProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", testConstants.MISSING, null);
+              inputDoc,
+              null,
+              indexProjector,
+              null,
+              "testCommand",
+              TEST_CONSTANTS.MISSING_COLLECTION,
+              null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -780,24 +798,30 @@ public class DocumentShredderTest {
     public void shredWithIndexDenySome() throws Exception {
       final String inputJson =
           """
-              { "_id" : 123,
-                "name" : "Bob",
-                "values" : [ 1, 2 ],
-                "metadata": {
-                   "x": 28,
-                   "y" :12
-                },
-                "nullable" : null,
-                "$vector" : [ 0.11, 0.22, 0.33, 0.44 ],
-                "$vectorize" : "sample data"
-              }
-              """;
+          { "_id" : 123,
+            "name" : "Bob",
+            "values" : [ 1, 2 ],
+            "metadata": {
+               "x": 28,
+               "y" :12
+            },
+            "nullable" : null,
+            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ],
+            "$vectorize" : "sample data"
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       IndexingProjector indexProjector =
           IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("name", "values")));
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", testConstants.MISSING, null);
+              inputDoc,
+              null,
+              indexProjector,
+              null,
+              "testCommand",
+              TEST_CONSTANTS.MISSING_COLLECTION,
+              null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -844,23 +868,29 @@ public class DocumentShredderTest {
     public void shredWithIndexDenyAll() throws Exception {
       final String inputJson =
           """
-                  { "_id" : 123,
-                    "name" : "Bob",
-                    "values" : [ 1, 2 ],
-                    "metadata": {
-                       "x": 28
-                    },
-                    "nullable" : null,
-                    "$vectorize" : "sample data",
-                    "$vector" : [ 0.5, 0.25 ]
-                  }
-                  """;
+          { "_id" : 123,
+            "name" : "Bob",
+            "values" : [ 1, 2 ],
+            "metadata": {
+               "x": 28
+            },
+            "nullable" : null,
+            "$vectorize" : "sample data",
+            "$vector" : [ 0.5, 0.25 ]
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       IndexingProjector indexProjector =
           IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("*")));
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", testConstants.MISSING, null);
+              inputDoc,
+              null,
+              indexProjector,
+              null,
+              "testCommand",
+              TEST_CONSTANTS.MISSING_COLLECTION,
+              null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
 
       List<JsonPath> expPaths =
@@ -892,11 +922,11 @@ public class DocumentShredderTest {
       final String hugeString = "abcd".repeat(240_000); // about 960K, close to max doc of 1M
       final String inputJson =
               """
-              { "_id": 1,
-                "name": "Mo",
-                "blob": "%s"
-              }
-              """
+          { "_id": 1,
+            "name": "Mo",
+            "blob": "%s"
+          }
+          """
               .formatted(hugeString);
 
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
@@ -904,7 +934,13 @@ public class DocumentShredderTest {
           IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("blob")));
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", testConstants.MISSING, null);
+              inputDoc,
+              null,
+              indexProjector,
+              null,
+              "testCommand",
+              TEST_CONSTANTS.MISSING_COLLECTION,
+              null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(1)));
       List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"));
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
@@ -934,17 +970,18 @@ public class DocumentShredderTest {
     public void validateJsonBytesWriteMetrics() throws Exception {
       final String inputJson =
           """
-                      {
-                        "name" : "Bob"
-                      }
-                      """;
+          {
+            "name" : "Bob"
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       documentShredder.shred(
           inputDoc,
           null,
           IndexingProjector.identityProjector(),
+          null,
           "jsonBytesWriteCommand",
-          testConstants.MISSING,
+          TEST_CONSTANTS.MISSING_COLLECTION,
           null);
 
       // verify metrics
@@ -987,6 +1024,6 @@ public class DocumentShredderTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
-    return testConstants.collectionContext();
+    return TEST_CONSTANTS.collectionContext();
   }
 }

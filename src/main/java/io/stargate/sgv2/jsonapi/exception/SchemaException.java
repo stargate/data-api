@@ -55,13 +55,14 @@ public class SchemaException extends RequestException {
     MISSING_FIELDS_FOR_TYPE_CREATION,
     MISSING_PARTITION_COLUMNS,
 
+    MCP_FEATURE_NOT_ENABLED,
+
     RERANKING_FEATURE_NOT_ENABLED, // legacy: converted from ErrorCodeV1
     RERANKING_SERVICE_TYPE_UNAVAILABLE, // legacy: converted from ErrorCodeV1
     RERANKING_PROVIDER_UNEXPECTED_RESPONSE, // legacy: converted from ErrorCodeV1
     RERANKING_PROVIDER_CLIENT_ERROR, // legacy: converted from ErrorCodeV1
     RERANKING_PROVIDER_SERVER_ERROR, // legacy: converted from ErrorCodeV1
     RERANKING_PROVIDER_RATE_LIMITED, // legacy: converted from ErrorCodeV1
-    RERANKING_PROVIDER_TIMEOUT, // legacy: converted from ErrorCodeV1
     RERANKING_PROVIDER_AUTHENTICATION_KEY_NOT_PROVIDED, // legacy: converted from ErrorCodeV1
 
     TOO_MANY_COLLECTIONS, // legacy: converted from ErrorCodeV1
@@ -92,7 +93,14 @@ public class SchemaException extends RequestException {
     UNSUPPORTED_VECTOR_DIMENSION,
     UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES,
 
+    VECTOR_SEARCH_NOT_SUPPORTED, // legacy: converted from ErrorCodeV1
+    VECTOR_SEARCH_TOO_BIG_VALUE, // legacy: converted from ErrorCodeV1
+    // 02-Feb-2025, tatu: is this one needed over IllegalArgumentException?
+    VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME, // legacy: converted from
+    // ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME
     VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME, // legacy: converted from ErrorCodeV1
+    VECTORIZE_CREDENTIAL_INVALID, // legacy: converted from ErrorCodeV1
+    VECTORIZE_FEATURE_NOT_AVAILABLE, // legacy: converted from ErrorCodeV1
 
     // older below - separated because they need to be confirmed
     INVALID_KEYSPACE,

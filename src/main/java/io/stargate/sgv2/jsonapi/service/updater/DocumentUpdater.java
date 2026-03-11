@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.updater;
 
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Multi;
@@ -10,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,15 +96,28 @@ public record DocumentUpdater(
   private DocumentUpdaterResponse replace(ObjectNode docToUpdate, boolean docInserted) {
     // Do deep clone so we can remove _id field and check
     ObjectNode compareDoc = docToUpdate.deepCopy();
+
+    // amorton: GH #2378 - we need to compare using the DocumentId because this has the correct type
+    // comparison logic for an _id in a doc. BUT we also need to directly MOVE the JsonNode object
+    // from the replacement document to use later, future work needed to so we can
+    // reliably go back and forth between JsonNode and DocumentId without losing the benefits of
+    // both.
     JsonNode idNode = compareDoc.remove(DocumentConstants.Fields.DOC_ID);
+
     // The replace document cannot specify an _id value that differs from the replaced document.
     if (replaceDocumentId != null && idNode != null) {
-      if (!JsonUtil.equalsOrdered(replaceDocumentId, idNode)) {
+      var replaceDocId = DocumentId.fromJson(replaceDocumentId);
+      var compareDocId = DocumentId.fromJson(idNode);
+
+      if (!replaceDocId.equals(compareDocId)) {
         // throw error id cannot be different
+        // DocumentId implementations only have the value in toString
         throw DocumentException.Code.DOCUMENT_REPLACE_DIFFERENT_DOCID.get(
             Map.of(
-                "replaceId", replaceDocumentId.toString(),
-                "matchedId", idNode.toString()));
+                "replaceId",
+                    "%s(%s)".formatted(classSimpleName(replaceDocId), replaceDocId.toString()),
+                "matchedId",
+                    "%s(%s)".formatted(classSimpleName(compareDocId), compareDocId.toString())));
       }
     }
 

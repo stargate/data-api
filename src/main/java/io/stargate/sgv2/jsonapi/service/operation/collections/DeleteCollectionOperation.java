@@ -65,7 +65,7 @@ public record DeleteCollectionOperation(
     final AtomicBoolean moreData = new AtomicBoolean(false);
     final String delete = buildDeleteQuery();
     AtomicInteger totalCount = new AtomicInteger(0);
-    final int retryAttempt = retryLimit - 2;
+
     // Read the required records to be deleted
     return Multi.createBy()
         .repeating()
@@ -132,8 +132,7 @@ public record DeleteCollectionOperation(
                             // check.
                             .atMost(retryLimit - 1)
                             // AJM - GH #2309 - this means we failed all retries to get the LWT to
-                            // apply
-                            // we now need to create the error to return to the user
+                            // apply we now need to create the error to return to the user
                             .onFailure(LWTFailureException.class)
                             .transform(
                                 error -> {
@@ -162,7 +161,9 @@ public record DeleteCollectionOperation(
               commandContext
                   .jsonProcessingMetricsReporter()
                   .reportJsonReadDocsMetrics(
-                      commandContext().commandName(), deletedInformation.size());
+                      commandContext().requestContext().tenant(),
+                      commandContext().commandName(),
+                      deletedInformation.size());
               return new DeleteOperationPage(
                   deletedInformation, moreData.get(), returnDocumentInResponse, deleteLimit == 1);
             });
@@ -203,19 +204,15 @@ public record DeleteCollectionOperation(
    *
    * <p>[applied] ----------- True
    *
-   * @param queryExecutor
-   * @param query
-   * @param doc
    * @return Uni<Tuple2<Boolean, ReadDocument>> where boolean `true` if deleted successfully, else
-   *     `false` if data changed and no longer match the conditions and throws JsonApiException if
-   *     LWT failure. ReadDocument is the document that was deleted.
+   *     `false` if data changed and no longer match the conditions and throws APIException if LWT
+   *     failure. ReadDocument is the document that was deleted.
    */
   private Uni<Tuple2<Boolean, ReadDocument>> deleteDocument(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
-      ReadDocument doc)
-      throws JsonApiException {
+      ReadDocument doc) {
     return Uni.createFrom()
         .item(doc)
         // Read again if retryAttempt >`0`
@@ -223,7 +220,7 @@ public record DeleteCollectionOperation(
         .transformToUni(
             document -> {
               if (document == null) {
-                return Uni.createFrom().item(Tuple2.of(false, document));
+                return Uni.createFrom().item(Tuple2.of(false, null));
               } else {
                 SimpleStatement deleteStatement = bindDeleteQuery(query, document);
                 return queryExecutor
@@ -235,10 +232,9 @@ public record DeleteCollectionOperation(
                           if (result.wasApplied()) {
                             // In case of successful document delete
                             return Tuple2.of(true, document);
-                          } else {
-                            // In case of failed document delete
-                            throw new LWTFailureException(deleteStatement);
                           }
+                          // In case of failed document delete
+                          throw new LWTFailureException(deleteStatement);
                         });
               }
             });
@@ -257,20 +253,15 @@ public record DeleteCollectionOperation(
         .transform(
             response -> {
               if (!response.docs().isEmpty()) {
-                return response.docs().get(0);
-              } else {
-                // If data changed and doesn't satisfy filter conditions
-                return null;
+                return response.docs().getFirst();
               }
+              // If data changed and doesn't satisfy filter conditions
+              return null;
             });
   }
 
   private static SimpleStatement bindDeleteQuery(String query, ReadDocument doc) {
-    SimpleStatement deleteStatement =
-        SimpleStatement.newInstance(
-            query,
-            CQLBindValues.getDocumentIdValue(doc.id().orElseThrow()),
-            doc.txnId().orElse(null));
-    return deleteStatement;
+    return SimpleStatement.newInstance(
+        query, CQLBindValues.getDocumentIdValue(doc.id().orElseThrow()), doc.txnId().orElse(null));
   }
 }

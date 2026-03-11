@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -44,10 +45,14 @@ public abstract class ProviderBase {
 
   private final ModelProvider modelProvider;
   private final ModelType modelType;
+  private final ProviderExceptionHandler exceptionHandler;
 
-  protected ProviderBase(ModelProvider modelProvider, ModelType modelType) {
+  protected ProviderBase(
+      ModelProvider modelProvider, ModelType modelType, ProviderExceptionHandler exceptionHandler) {
     this.modelProvider = modelProvider;
     this.modelType = modelType;
+    this.exceptionHandler =
+        Objects.requireNonNull(exceptionHandler, "exceptionHandler cannot be null");
   }
 
   public ModelProvider modelProvider() {
@@ -98,7 +103,7 @@ public abstract class ProviderBase {
         // Catch *any* web exception from jakarta rest client
         .onFailure(WebApplicationException.class)
         // and recover with the jakarta response, so we can translate to API exception
-        .recoverWithItem(ex -> ((WebApplicationException) ex).getResponse())
+        .recoverWithItem(ex -> ex.getResponse())
         .onItem()
         // handle the response, throws if there is an error
         .transform(this::handleHTTPResponse)
@@ -107,7 +112,11 @@ public abstract class ProviderBase {
         .retry()
         .withBackOff(initialBackOffDuration(), maxBackOffDuration())
         .withJitter(jitter())
-        .atMost(atMostRetries());
+        .atMost(atMostRetries())
+        // after all retry logic, if we have an error we will need to handle it into an API
+        // exception
+        .onFailure()
+        .transform(exceptionHandler::maybeHandle);
   }
 
   /**
@@ -116,7 +125,7 @@ public abstract class ProviderBase {
    * <p>Subclasses should normally override, and then call the base if they do not want to retry.
    *
    * @param throwable Exception, either the API Exception mapped from the jakarta response. Or any
-   *     other error if the rest client throws non WebApplicationException
+   *     other error if the rest client throws non-WebApplicationException
    * @return <code>true</code> if the operation should be retried, <code>false</code> otherwise.
    */
   protected boolean decideRetry(Throwable throwable) {
@@ -181,7 +190,7 @@ public abstract class ProviderBase {
     var errorMessage = responseErrorMessage(jakartaResponse);
     // this is the main "error" log when the response is an error
     LOGGER.error(
-        "Error response from model provider, modelProvider: {}, modelName:{}, http.status: {}, error: {}",
+        "mapHTTPError() - HTTP Error response from model provider, modelProvider: {}, modelName:{}, http.status: {}, error: {}",
         modelProvider,
         modelName(),
         jakartaResponse.getStatus(),
@@ -189,6 +198,11 @@ public abstract class ProviderBase {
 
     var mappedException = mapHTTPError(jakartaResponse, errorMessage);
     if (mappedException != null) {
+      if (LOGGER.isWarnEnabled()) {
+        LOGGER.warn(
+            "mapHTTPError() - provider HTTP response mapped to mappedException={}",
+            mappedException.toString());
+      }
       return mappedException;
     }
 

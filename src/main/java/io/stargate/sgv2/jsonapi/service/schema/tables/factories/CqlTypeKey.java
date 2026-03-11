@@ -95,10 +95,9 @@ public class CqlTypeKey {
     if (this == obj) {
       return true;
     }
-    if (!(obj instanceof CqlTypeKey)) {
+    if (!(obj instanceof CqlTypeKey other)) {
       return false;
     }
-    CqlTypeKey other = (CqlTypeKey) obj;
     return this.combinedCode == other.combinedCode;
   }
 

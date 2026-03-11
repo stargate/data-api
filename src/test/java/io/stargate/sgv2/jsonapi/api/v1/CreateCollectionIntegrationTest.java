@@ -555,6 +555,22 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
               startsWith(
                   "'createCollection' command referenced unrecognized field(s): Unrecognized field \"unknown\""));
     }
+
+    // [data-api#2401]: name with "${...}" should produce UNSUPPORTED_SCHEMA_NAME, not HTTP 500
+    // NOTE: more thorough testing in `ErrorTemplateTest` unit test
+    @Test
+    public void failCreateCollectionWithDollarCurlyBraceName() {
+      givenHeadersPostJsonThenOk(
+              """
+                        {
+                          "createCollection": {
+                            "name": "${car}"
+                          }
+                        }
+                        """)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name()));
+    }
   }
 
   @Nested
@@ -1193,7 +1209,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
   @Nested
   @Order(6)
-  class CreateCollectionWithEmbeddingServiceTestParameters {
+  class CreateCollectionFailWithEmbeddingServiceTestParameters {
     @Test
     public void failWithMissingRequiredProviderParameters() {
       // create a collection without providing required parameters

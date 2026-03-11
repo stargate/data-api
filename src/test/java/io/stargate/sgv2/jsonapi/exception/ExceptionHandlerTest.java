@@ -170,4 +170,62 @@ public class ExceptionHandlerTest {
                   .isEmpty();
             });
   }
+
+  /**
+   * If called with an {@link APIException}, it should return the same instance if it is not handled
+   * by the implementation.
+   */
+  @Test
+  public void handleAPIExceptionReturnsSameInstance() {
+
+    var originalEx = ServerException.Code.INTERNAL_SERVER_ERROR.get("errorMessage", "testing");
+
+    // No handler for any subclasses, but this handler can handle RuntimeException, which
+    // APIException is
+    var handler =
+        new ExceptionHandler<RuntimeException>() {
+          @Override
+          public Class<RuntimeException> getExceptionClass() {
+            return RuntimeException.class;
+          }
+        };
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
+
+    assertThat(actualEx)
+        .as(
+            "When handling non BaseT exception, of APIException returns the exception object passed")
+        .isSameAs(originalEx);
+  }
+
+  /**
+   * If called with an {@link APIException}, and the {@link
+   * ExceptionHandler#ignoreUnhandledApiException()} == false then we should wrap with a new
+   * instance
+   */
+  @Test
+  public void handleAPIExceptionReturnsDiffInstance() {
+
+    var originalEx = ServerException.Code.INTERNAL_SERVER_ERROR.get("errorMessage", "testing");
+
+    // No handler for any subclasses, but this handler can handle RuntimeException, which
+    // APIException is
+    var handler =
+        new ExceptionHandler<RuntimeException>() {
+          @Override
+          public Class<RuntimeException> getExceptionClass() {
+            return RuntimeException.class;
+          }
+
+          @Override
+          public boolean ignoreUnhandledApiException() {
+            return false;
+          }
+        };
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
+
+    assertThat(actualEx)
+        .as(
+            "When handling non BaseT exception, of APIException wraps when ignoreUnhandledApiException==false")
+        .isNotSameAs(originalEx);
+  }
 }

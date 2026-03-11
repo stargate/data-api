@@ -26,7 +26,7 @@ public record CountCollectionOperation(
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     SimpleStatement simpleStatement = buildSelectQuery();
-    Uni<CountResponse> countResponse = null;
+    Uni<CountResponse> countResponse;
     if (limit == -1)
       countResponse = countDocuments(dataApiRequestInfo, queryExecutor, simpleStatement);
     else countResponse = countDocumentsByKey(dataApiRequestInfo, queryExecutor, simpleStatement);
@@ -48,7 +48,7 @@ public record CountCollectionOperation(
   private SimpleStatement buildSelectQuery() {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(dbLogicalExpression, null);
-    Query query = null;
+    Query query;
     if (limit == -1) {
       query =
           new QueryBuilder()
@@ -56,9 +56,9 @@ public record CountCollectionOperation(
               .count()
               .as("count")
               .from(
-                  commandContext.schemaObject().identifier().keyspace().asInternal(),
-                  commandContext.schemaObject().identifier().table().asInternal())
-              .where(expressions.get(0))
+                  commandContext.schemaObject().identifier().keyspace(),
+                  commandContext.schemaObject().identifier().table())
+              .where(expressions.getFirst())
               .build();
     } else {
       query =
@@ -66,9 +66,9 @@ public record CountCollectionOperation(
               .select()
               .column("key")
               .from(
-                  commandContext.schemaObject().identifier().keyspace().asInternal(),
-                  commandContext.schemaObject().identifier().table().asInternal())
-              .where(expressions.get(0))
+                  commandContext.schemaObject().identifier().keyspace(),
+                  commandContext.schemaObject().identifier().table())
+              .where(expressions.getFirst())
               .limit(limit + 1)
               .build();
     }

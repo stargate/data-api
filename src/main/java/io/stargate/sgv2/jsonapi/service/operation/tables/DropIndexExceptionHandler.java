@@ -23,7 +23,7 @@ public class DropIndexExceptionHandler extends KeyspaceDriverExceptionHandler {
   }
 
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
 
     // Need to wait for the keyspace to have the keyspace metadata to add a list of available
     // indexes

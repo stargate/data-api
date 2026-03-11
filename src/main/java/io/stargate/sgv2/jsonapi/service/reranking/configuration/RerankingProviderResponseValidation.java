@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  * <p>This filter checks the Content-Type of the response to ensure it is compatible with
  * 'application/json' or 'text/json'. It also verifies the presence of a JSON body in the response.
  *
- * <p>If the response fails the validation, a {@link JsonApiException} is thrown with an appropriate
+ * <p>If the response fails the validation, a {@link APIException} is thrown with an appropriate
  * error message.
  */
 public class RerankingProviderResponseValidation implements ClientResponseFilter {
@@ -32,11 +32,11 @@ public class RerankingProviderResponseValidation implements ClientResponseFilter
    *
    * @param requestContext the client request context
    * @param responseContext the client response context
-   * @throws JsonApiException if the response fails the validation
+   * @throws APIException if the response fails the validation
    */
   @Override
   public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
-      throws JsonApiException {
+      throws APIException {
     // If the status is 0, it means something went wrong (maybe a timeout). Directly return and pass
     // the error to the client
     if (responseContext.getStatus() == 0) {

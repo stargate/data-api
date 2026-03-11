@@ -12,17 +12,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactory;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-import io.stargate.sgv2.jsonapi.util.recordable.Jsonable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 /**
  * The APi model for a table in the database.
@@ -31,7 +28,6 @@ import java.util.*;
  */
 public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiTableDef.class);
-
 
   public static final FromTableDescFactory FROM_TABLE_DESC_FACTORY = new FromTableDescFactory();
   public static final FromCqlFactory FROM_CQL_FACTORY = new FromCqlFactory();

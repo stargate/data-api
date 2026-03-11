@@ -235,12 +235,12 @@ public abstract class BaseTask<
    *     #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did
    *     not start executing or did not get to build a valid statement, e.g. a request error was
    *     found during the creation of the task such as invalid data type.
-   * @param runtimeException The exception to handle.
+   * @param throwable The exception to handle.
    * @return The exception to return to the user, if null then the error is swallowed. Generally we
    *     want to turn the exception into a {@link io.stargate.sgv2.jsonapi.exception.APIException}.
    */
-  protected abstract RuntimeException maybeHandleException(
-      ResultSupplierT resultSupplier, RuntimeException runtimeException);
+  protected abstract Throwable maybeHandleException(
+      ResultSupplierT resultSupplier, Throwable throwable);
 
   /**
    * Called when the operation has completed successfully, subclasses should override this method to

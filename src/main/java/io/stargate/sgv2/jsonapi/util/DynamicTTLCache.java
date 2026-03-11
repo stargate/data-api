@@ -142,7 +142,10 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
               (valueHolder) -> {
                 cache.put(key, CompletableFuture.completedFuture(valueHolder));
                 if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("Force loaded value into cache, cacheName={}, holder={}", cacheName,  valueHolder);
+                  LOGGER.debug(
+                      "Force loaded value into cache, cacheName={}, holder={}",
+                      cacheName,
+                      valueHolder);
                 }
               })
           .map(ValueHolder::value);
@@ -166,12 +169,12 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     return Optional.ofNullable(future.join()).map(ValueHolder::value);
   }
 
-  protected void beforeForceLoaded(KeyT key){
-  }
+  protected void beforeForceLoaded(KeyT key) {}
 
-  protected void invalidateAll(){
+  protected void invalidateAll() {
     cache.synchronous().invalidateAll();
   }
+
   protected boolean evict(KeyT key) {
     // Invalidate the key. This will trigger the onKeyRemoved listener,
     // which will close the CqlSession and run other cleanup.

@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import jakarta.enterprise.inject.Produces;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,10 +55,7 @@ public class MicrometerConfiguration {
       return new MeterFilter() {};
     }
 
-    var tags =
-        globalTags.entrySet().stream()
-            .map(e -> Tag.of(e.getKey(), e.getValue()))
-            .collect(Collectors.toList());
+    var tags = globalTags.entrySet().stream().map(e -> Tag.of(e.getKey(), e.getValue())).toList();
 
     // Notes from PR 2003: This producer method globalTagsMeterFilter is typically called only once
     // during the application startup phase by the Micrometer extension when it's collecting all the

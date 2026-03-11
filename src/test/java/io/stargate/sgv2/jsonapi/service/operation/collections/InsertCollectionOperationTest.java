@@ -80,7 +80,10 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       CommandContext<CollectionSchemaObject> context, List<JsonNode> documents) {
     var builder =
         new CollectionInsertAttemptBuilder(
-            context.schemaObject(), documentShredder, context.commandName());
+            context.schemaObject(),
+            documentShredder,
+            context.requestContext().tenant(),
+            context.commandName());
     return documents.stream().map(builder::build).toList();
   }
 
@@ -131,17 +134,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOne() throws Exception {
       String document =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"},
-                            "date_val" : {"$date": 1672531200000 }
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 }
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
@@ -182,16 +185,16 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertDuplicate() throws Exception {
       String doc1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
 
       final JsonNode jsonNode = objectMapper.readTree(doc1);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
@@ -241,28 +244,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertManyOrdered() throws Exception {
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       CommandContext commandContext =
           createCommandContextWithCommandName("jsonDocsWrittenInsertManyCommand");
@@ -337,7 +340,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"jsonDocsWrittenInsertManyCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(commandContext.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
@@ -382,17 +387,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOneRetryLWTCheck() throws Exception {
       String document =
           """
-                                  {
-                                    "_id": "doc1",
-                                    "text": "user1",
-                                    "number" : 10,
-                                    "boolean": true,
-                                    "nullval" : null,
-                                    "array" : ["a", "b"],
-                                    "sub_doc" : {"col": "val"},
-                                    "date_val" : {"$date": 1672531200000 }
-                                  }
-                                  """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 }
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
@@ -436,28 +441,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertManyUnordered() throws Exception {
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -520,28 +525,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       // ordered first insert fails
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -611,28 +616,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       // ordered first insert OK, second fail
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -704,28 +709,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       // unordered one query fail
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -799,28 +804,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       // unordered both queries fail
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -894,18 +899,18 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOneVectorSearch() throws Exception {
       String document =
           """
-        {
-          "_id": "doc1",
-          "text": "user1",
-          "number" : 10,
-          "boolean": true,
-          "nullval" : null,
-          "array" : ["a", "b"],
-          "sub_doc" : {"col": "val"},
-          "date_val" : {"$date": 1672531200000 },
-          "$vector" : [0.11,0.22,0.33,0.44]
-        }
-        """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 },
+            "$vector" : [0.11,0.22,0.33,0.44]
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_VECTOR, jsonNode);
@@ -946,17 +951,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOneVectorEnabledNoVectorData() throws Exception {
       String document =
           """
-        {
-          "_id": "doc1",
-          "text": "user1",
-          "number" : 10,
-          "boolean": true,
-          "nullval" : null,
-          "array" : ["a", "b"],
-          "sub_doc" : {"col": "val"},
-          "date_val" : {"$date": 1672531200000 }
-        }
-        """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 }
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_VECTOR, jsonNode);
@@ -997,18 +1002,18 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOneVectorDisabledWithVectorData() throws Exception {
       String document =
           """
-        {
-          "_id": "doc1",
-          "text": "user1",
-          "number" : 10,
-          "boolean": true,
-          "nullval" : null,
-          "array" : ["a", "b"],
-          "sub_doc" : {"col": "val"},
-          "date_val" : {"$date": 1672531200000 },
-          "$vector" : [0.11,0.22,0.33,0.44]
-        }
-        """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 },
+            "$vector" : [0.11,0.22,0.33,0.44]
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
@@ -1018,8 +1023,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
       Throwable failure = catchThrowable(() -> operation.execute(requestContext, queryExecutor));
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED);
+          .hasFieldOrPropertyWithValue(
+              "code", SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.name());
     }
   }
 

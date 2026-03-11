@@ -74,7 +74,7 @@ public class DefaultDriverExceptionHandlerTest {
     assertions.runAssertions(TEST_DATA, originalEx, apiEx);
   }
 
-  public record TestResult(DriverException originalException, RuntimeException handledException)
+  public record TestResult(DriverException originalException, Throwable handledException)
       implements Recordable {
 
     @Override

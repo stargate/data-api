@@ -24,23 +24,18 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
-import io.stargate.sgv2.jsonapi.util.recordable.Jsonable;
-import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class AlterTableCommandResolver implements CommandResolver<AlterTableCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(AlterTableCommandResolver.class);
-
 
   @Inject ObjectMapper objectMapper;
   @Inject VectorizeConfigValidator validateVectorize;
@@ -142,7 +137,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         addedColumns.values().stream()
             .filter(apiTableDef.allColumns()::contains)
             .sorted(ApiColumnDef.NAME_COMPARATOR)
-            .collect(Collectors.toList());
+            .toList();
 
     if (!duplicateColumns.isEmpty()) {
       throw SchemaException.Code.CANNOT_ADD_EXISTING_COLUMNS.get(
@@ -431,7 +426,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         updateVectorize = true;
       }
     }
-    
+
     if (!updateVectorize) {
       // Nothing to do, there was no vectorize def for the column :)
       return List.of();

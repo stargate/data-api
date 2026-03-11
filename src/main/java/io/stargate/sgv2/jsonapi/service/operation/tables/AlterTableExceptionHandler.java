@@ -29,7 +29,7 @@ public class AlterTableExceptionHandler extends TableDriverExceptionHandler {
    * </ul>
    */
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
     if (exception.getMessage().contains("Unknown type")) {
       return SchemaException.Code.UNKNOWN_USER_DEFINED_TYPE.get(
           Map.of("driverMessage", exception.getMessage()));

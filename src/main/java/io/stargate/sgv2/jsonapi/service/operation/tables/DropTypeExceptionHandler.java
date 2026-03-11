@@ -23,7 +23,7 @@ public class DropTypeExceptionHandler extends KeyspaceDriverExceptionHandler {
   }
 
   @Override
-  public RuntimeException handle(InvalidQueryException exception) {
+  public Throwable handle(InvalidQueryException exception) {
 
     // Example driver message:
     // "Type 'demo.fake' doesn't exist"

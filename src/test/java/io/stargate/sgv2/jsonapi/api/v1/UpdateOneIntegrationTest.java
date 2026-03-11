@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
@@ -1645,7 +1646,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           }
           """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
               startsWith(

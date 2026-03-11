@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * This represents the response for a delete operation.
@@ -37,8 +36,7 @@ public record DeleteOperationPage(
     // when we move to use OperationAttempt for the collection commands we can refactor
     if (deletedInformation == null) {
       // when returnDocument is set this means we are runnning findOneAndDelete, so we have to
-      // return a
-      // data and documents section
+      // return a data and documents section
       // aaron - this is a giant hack 21 oct 2024
       if (returnDocument()) {
         if (singleDocument()) {
@@ -91,7 +89,7 @@ public record DeleteOperationPage(
               List<DocumentId> documentIds =
                   deletedDocuments.stream()
                       .map(deletes -> deletes.getItem3().id().orElseThrow())
-                      .collect(Collectors.toList());
+                      .toList();
               errors.add(
                   CommandErrorFactory.create(
                       deletedDocuments.stream().findFirst().get().getItem2(), documentIds));

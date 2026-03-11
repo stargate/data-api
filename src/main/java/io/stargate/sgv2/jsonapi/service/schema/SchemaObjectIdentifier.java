@@ -47,15 +47,19 @@ public class SchemaObjectIdentifier
     this.table = table;
 
     // this is used internally, so using internal name for the type not apiName()
-    this.fullName = type.name() + ":" +
-        switch (type) {
-          case DATABASE -> tenant;
-          case KEYSPACE -> cqlIdentifierToMessageString(keyspace);
-            // Note, INDEX and UDT schemaType are not used currently
-            // Added for syntax completeness
-          case COLLECTION, TABLE, INDEX, UDT ->
-              cqlIdentifierToMessageString(keyspace) + "." + cqlIdentifierToMessageString(table);
-        };
+    this.fullName =
+        type.name()
+            + ":"
+            + switch (type) {
+              case DATABASE -> tenant;
+              case KEYSPACE -> cqlIdentifierToMessageString(keyspace);
+                // Note, INDEX and UDT schemaType are not used currently
+                // Added for syntax completeness
+              case COLLECTION, TABLE, INDEX, UDT ->
+                  cqlIdentifierToMessageString(keyspace)
+                      + "."
+                      + cqlIdentifierToMessageString(table);
+            };
   }
 
   /** Creates a {@link SchemaObjectIdentifier} for a database. */
