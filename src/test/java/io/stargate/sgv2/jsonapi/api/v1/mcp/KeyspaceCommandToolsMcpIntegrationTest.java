@@ -127,14 +127,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
               "table",
               TABLE_NAME,
               "definition",
-              """
-                  {
-                      "columns": {
-                          "id": "text"
-                      },
-                      "primaryKey": "id"
-                  }
-                  """),
+              Map.of("columns", Map.of("id", "text"), "primaryKey", "id")),
           response -> {
             // status only response, no error, no structureContent, no content
             assertFalse(response.isError());
