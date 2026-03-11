@@ -112,4 +112,92 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
           });
     }
   }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class TableRelatedToolCall {
+    @Test
+    @Order(1)
+    void testCreateTableToolCall() {
+      callToolAndAssert(
+          CommandName.Names.CREATE_TABLE,
+          Map.of(
+              "keyspace",
+              keyspaceName,
+              "table",
+              TABLE_NAME,
+              "definition",
+              """
+                  {
+                      "columns": {
+                          "id": "text"
+                      },
+                      "primaryKey": "id"
+                  }
+                  """),
+          response -> {
+            // status only response, no error, no structureContent, no content
+            assertFalse(response.isError());
+            assertNotNull(response._meta());
+            assertNull(response.structuredContent());
+            assertThat(response.content()).isEmpty();
+          });
+    }
+
+    @Test
+    @Order(2)
+    void testFindTablesToolCallAfterCreateTable() {
+      callToolAndAssert(
+          CommandName.Names.LIST_TABLES,
+          Map.of("keyspace", keyspaceName),
+          response -> {
+            // status only response, no error, no structureContent, no content
+            assertFalse(response.isError());
+            assertNotNull(response._meta());
+            assertNull(response.structuredContent());
+
+            // status data is in _meta
+            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
+            assertNotNull(status, "Status should not be null");
+            JsonArray collections = status.getJsonArray("tables");
+            assertNotNull(collections, "Table array should not be null");
+            assertTrue(collections.contains(TABLE_NAME), "New created Table should be in the list");
+          });
+    }
+
+    @Test
+    @Order(3)
+    void testDropTableToolCall() {
+      callToolAndAssert(
+          CommandName.Names.DROP_TABLE,
+          Map.of("keyspace", keyspaceName, "table", TABLE_NAME),
+          response -> {
+            assertFalse(response.isError());
+            assertNotNull(response._meta());
+            assertNull(response.structuredContent());
+          });
+    }
+
+    @Test
+    @Order(4)
+    void testFindTablesToolCallAfterDropTable() {
+      callToolAndAssert(
+          CommandName.Names.LIST_TABLES,
+          Map.of("keyspace", keyspaceName),
+          response -> {
+            // status only response, no error, no structureContent, no content
+            assertFalse(response.isError());
+            assertNotNull(response._meta());
+            assertNull(response.structuredContent());
+
+            // check the new collection is dropped
+            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
+            assertNotNull(status, "Status should not be null");
+            JsonArray collections = status.getJsonArray("tables");
+            assertNotNull(collections, "Tables array should not be null");
+            assertFalse(
+                collections.contains(TABLE_NAME), "Table should be dropped and not in the list");
+          });
+    }
+  }
 }

@@ -49,11 +49,11 @@ public abstract class McpIntegrationTestBase {
    */
   @BeforeAll
   void setUpMcpClient() {
-      // Extend the default Awaitility timeout for long-lasting operation (e.g. createCollection)
-      // default is 10 seconds
-      Awaitility.setDefaultTimeout(Duration.ofSeconds(30));
+    // Extend the default Awaitility timeout for long-lasting operation (e.g. createCollection)
+    // default is 10 seconds
+    Awaitility.setDefaultTimeout(Duration.ofSeconds(30));
 
-      mcpClient =
+    mcpClient =
         McpAssured.newStreamableClient()
             .setBaseUri(URI.create(MCP_HOSTNAME + getTestPort()))
             .setMcpPath(MCP_PATH)
