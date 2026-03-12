@@ -64,7 +64,9 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   /** Lower priority is more important, used when examining a list of errors from nodes */
   private static int getExceptionPriority(Throwable exception) {
     return switch (exception) {
-      case QueryConsistencyException e -> 0;
+      case AuthenticationException e -> 5;
+      case UnauthorizedException e -> 10;
+      case QueryConsistencyException e -> 20;
       case QueryExecutionException e -> 25;
       case QueryValidationException e -> 50;
       default -> Integer.MAX_VALUE;
