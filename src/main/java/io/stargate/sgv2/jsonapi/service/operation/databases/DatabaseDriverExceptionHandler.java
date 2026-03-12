@@ -14,4 +14,10 @@ public class DatabaseDriverExceptionHandler
       DatabaseSchemaObject schemaObject, SimpleStatement statement) {
     super(schemaObject, statement);
   }
+
+  public DatabaseDriverExceptionHandler(DatabaseSchemaObject schemaObject) {
+    // we use the Database as the schema object when connecting session, so do not have a statement
+    // we will have a statement for the createKeyspace command
+    this(schemaObject, null);
+  }
 }

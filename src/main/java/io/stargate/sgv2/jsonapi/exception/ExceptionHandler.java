@@ -79,25 +79,31 @@ public interface ExceptionHandler<T extends Throwable> {
    * Handles the <code>throwable</code> returning an exception that can be thrown or otherwise
    * handled.
    *
+   * <p><b>NOTE:</b> The input is a Throwable and the output a RuntimeException because things like
+   * <code>>CompletionStage</code> and <code>Uni</code> pass in a Throwable when they pass in
+   * failure. And the point of the handler is to turn that into something we want to throw, which
+   * means it must be a RuntimeException not the Throwable passed in.
+   *
    * @param throwable The exception to handle
    * @return The exception to throw or otherwise handle, may be:
    *     <ul>
    *       <li><code>null</code> if null passed in
-   *       <li>The exact <code>throwable</code> object if it is not an instance of <code>
-   *           T</code> using {@link Class#isInstance(Object)}
    *       <li>The handled exception, usually translated into an {@link APIException}
-   *       <li>If not changed by {@link #handle(Throwable)}, the exception returned from {@link
+   *       <li>If not changed by {@link #handle(Throwable)}, or not an instance of the {@link
+   *           #getExceptionClass()}, the exception returned from {@link
    *           #handleUnhandled(Throwable)}
    *     </ul>
    */
-  default Throwable maybeHandle(Throwable throwable) {
+  default RuntimeException maybeHandle(Throwable throwable) {
 
     if (getExceptionClass().isInstance(throwable)) {
       T t = getExceptionClass().cast(throwable);
       var handled = handle(t);
-      return handled == throwable ? handleUnhandled(t) : handled;
+      if (handled != throwable) {
+        return handled;
+      }
     }
-    return throwable;
+    return handleUnhandled(throwable);
   }
 
   /**
@@ -117,40 +123,40 @@ public interface ExceptionHandler<T extends Throwable> {
    * @param throwable The exception to handle, of type <code>T</code>
    * @return The exception passed in, or a new exception to throw or otherwise handle.
    */
-  default Throwable handle(T throwable) {
-    return throwable;
+  default RuntimeException handle(T throwable) {
+    return handleUnhandled(throwable);
   }
 
   /**
-   * Called by {@link #maybeHandle(Throwable)} when an exception was not changed by any handler
+   * Called by {@link #maybeHandle(Throwable)} when an throwable was not changed by any handler
    * functions.
    *
-   * @param exception The exception that was not handled.
+   * @param throwable The throwable that was not handled.
    * @return A {@link ServerException.Code#UNEXPECTED_SERVER_ERROR}.
    */
-  default Throwable handleUnhandled(T exception) {
+  default RuntimeException handleUnhandled(Throwable throwable) {
 
-    if (ignoreUnhandledApiException() && exception instanceof APIException apiException) {
+    if (ignoreUnhandledApiException() && throwable instanceof APIException apiException) {
       // it's already one of our internal exceptions, so just return it as-is rather than re-wrap.
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace(
-            "handleUnhandled() - exception is instance of {}, will not wrap exception. exception.toString()={}",
-            exception.getClass().getName(),
-            exception.toString(),
-            exception);
+            "handleUnhandled() - throwable is instance of {}, will not wrap throwable. throwable.toString()={}",
+            throwable.getClass().getName(),
+            throwable.toString(),
+            throwable);
       }
       return apiException;
     }
 
     if (LOGGER.isErrorEnabled()) {
       LOGGER.error(
-          "handleUnhandled() - exception mapper failed to handle exception, wrapping with {}. mapper.class={}, exception.toString()={}",
+          "handleUnhandled() - throwable mapper failed to handle throwable, wrapping with {}. mapper.class={}, throwable.toString()={}",
           ServerException.Code.UNEXPECTED_SERVER_ERROR,
           this.getClass().getName(),
-          exception.toString(),
-          exception);
+          throwable.toString(),
+          throwable);
     }
-    return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(exception));
+    return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(throwable));
   }
 
   default boolean ignoreUnhandledApiException() {

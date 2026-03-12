@@ -105,9 +105,18 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * We use this in a few places, in these cases we want to mark the connection as unreliable so it
    * will be recycled.
    */
-  private APIException unexpectedDriverError(DriverException exception) {
+  private APIException unexpectedDriverError(Throwable throwable) {
+    // incase we end up here and we have already translated into an API Exception, do not re-wrap
+    if (throwable instanceof APIException ae) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "unexpectedDriverError() - throwable is already APIException, returning existing error",
+            throwable);
+      }
+      return ae;
+    }
     return DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.get(
-        EnumSet.of(UNRELIABLE_DB_SESSION), errVars(schemaObject, exception));
+        EnumSet.of(UNRELIABLE_DB_SESSION), errVars(schemaObject, throwable));
   }
 
   /**
@@ -116,8 +125,8 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * error from the driver causes a session recycle, so adding UNRELIABLE_DB_SESSION enum here
    */
   @Override
-  public RuntimeException handleUnhandled(DriverException exception) {
-    return unexpectedDriverError(exception);
+  public RuntimeException handleUnhandled(Throwable throwable) {
+    return unexpectedDriverError(throwable);
   }
 
   // ========================================================================
@@ -126,7 +135,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   // ========================================================================
 
   @Override
-  public Throwable handle(AuthenticationDriverException exception) {
+  public RuntimeException handle(AuthenticationDriverException exception) {
     // This is authentication as part of connecting to the DB
     return APISecurityException.Code.UNAUTHENTICATED_REQUEST.get(errVars(schemaObject, exception));
   }
@@ -162,7 +171,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   //    - Should not happen, as we control the protocol version.
 
   @Override
-  public Throwable handle(DriverExecutionException exception) {
+  public RuntimeException handle(DriverExecutionException exception) {
     // see the docs, this is often a wrapper for checked exceptions so re-handle if this is the case
     // otherwise it is unexpected
     return switch (exception.getCause()) {
@@ -172,12 +181,12 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   }
 
   @Override
-  public Throwable handle(ClosedConnectionException exception) {
+  public RuntimeException handle(ClosedConnectionException exception) {
     return unexpectedDriverError(exception);
   }
 
   @Override
-  public Throwable handle(InvalidKeyspaceException exception) {
+  public RuntimeException handle(InvalidKeyspaceException exception) {
     return DatabaseException.Code.UNKNOWN_KEYSPACE.get(errVars(schemaObject, exception));
   }
 
@@ -186,7 +195,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   // ========================================================================
 
   @Override
-  public Throwable handle(AllNodesFailedException exception) {
+  public RuntimeException handle(AllNodesFailedException exception) {
     // Should always be created with errors from calling each node, re-process the most important
     // error
 
@@ -199,9 +208,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
         // found a node specific error that is a driver based
       case DriverException e -> maybeHandle(e);
         // this is a non-driver based exception, so map to generic unexpected driver error
-      case RuntimeException re ->
-          DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.get(
-              EnumSet.of(UNRELIABLE_DB_SESSION), errVars(schemaObject, re));
+      case RuntimeException re -> unexpectedDriverError(re);
         // could not work out what the node error was OR this was a subclass of the
         // AllNodesFailedException
         // this will be the null case, but also need a default label
@@ -211,7 +218,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   }
 
   @Override
-  public Throwable handle(NoNodeAvailableException exception) {
+  public RuntimeException handle(NoNodeAvailableException exception) {
     // this is a special case of AllNodesFailedException where no nodes were available
     return DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE.get(
         EnumSet.of(UNRELIABLE_DB_SESSION), errVars(schemaObject, exception));
@@ -241,7 +248,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * around by trying a different request, but we are not able to give them specific help.
    */
   @Override
-  public Throwable handle(InvalidQueryException exception) {
+  public RuntimeException handle(InvalidQueryException exception) {
     return DatabaseException.Code.INVALID_DATABASE_QUERY.get(
         errVars(
             schemaObject,
@@ -255,7 +262,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   }
 
   @Override
-  public Throwable handle(SyntaxError exception) {
+  public RuntimeException handle(SyntaxError exception) {
     // Really should not happen, we are using the query builder but handle it just incase.
     return DatabaseException.Code.UNSUPPORTED_DATABASE_QUERY.get(
         errVars(
@@ -270,7 +277,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   }
 
   @Override
-  public Throwable handle(UnauthorizedException exception) {
+  public RuntimeException handle(UnauthorizedException exception) {
     return APISecurityException.Code.UNAUTHORIZED_ACCESS.get(errVars(schemaObject, exception));
   }
 
@@ -315,7 +322,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * @return
    */
   @Override
-  public Throwable handle(CASWriteUnknownException exception) {
+  public RuntimeException handle(CASWriteUnknownException exception) {
     return DatabaseException.Code.FAILED_COMPARE_AND_SET.get(
         errVars(
             schemaObject,
@@ -340,7 +347,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * @return
    */
   @Override
-  public Throwable handle(TruncateException exception) {
+  public RuntimeException handle(TruncateException exception) {
     // the error message will include the cause, there is not a nested exception to handle
     return DatabaseException.Code.FAILED_TRUNCATION.get(
         errVars(
@@ -365,7 +372,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * @return
    */
   @Override
-  public Throwable handle(UnavailableException exception) {
+  public RuntimeException handle(UnavailableException exception) {
     return DatabaseException.Code.UNAVAILABLE_DATABASE.get(
         errVars(
             schemaObject,
@@ -399,7 +406,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * </ul>
    */
   @Override
-  public Throwable handle(ReadFailureException exception) {
+  public RuntimeException handle(ReadFailureException exception) {
     var uniqueReasons =
         exception.getReasonMap().values().stream()
             .distinct()
@@ -425,7 +432,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   }
 
   @Override
-  public Throwable handle(ReadTimeoutException exception) {
+  public RuntimeException handle(ReadTimeoutException exception) {
     return DatabaseException.Code.TIMEOUT_READING_DATA.get(
         errVars(
             schemaObject,
@@ -445,7 +452,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * Same reasons as the {@link #handle(ReadFailureException)}, but with some different information
    */
   @Override
-  public Throwable handle(WriteFailureException exception) {
+  public RuntimeException handle(WriteFailureException exception) {
     var uniqueReasons =
         exception.getReasonMap().values().stream()
             .distinct()
@@ -471,7 +478,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   }
 
   @Override
-  public Throwable handle(WriteTimeoutException exception) {
+  public RuntimeException handle(WriteTimeoutException exception) {
     return DatabaseException.Code.TIMEOUT_WRITING_DATA.get(
         errVars(
             schemaObject,

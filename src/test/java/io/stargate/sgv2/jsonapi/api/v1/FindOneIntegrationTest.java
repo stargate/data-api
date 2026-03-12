@@ -788,7 +788,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_COLLECTION_OR_TABLE.name()))
           .body(
               "errors[0].message",
-              containsString("The command tried to get a Collection or Table no_such_collection that does not exist in the Keyspace"));
+              containsString(
+                  "The command tried to get a Collection or Table no_such_collection that does not exist in the Keyspace"));
     }
 
     @Test
