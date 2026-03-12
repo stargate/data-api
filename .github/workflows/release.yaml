@@ -57,23 +57,17 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
   # creates a new release if it's not existing
-  # outputs the upload URL in the release-upload-url output var
   create-release:
     name: Create release
     needs: resolve-tag
     runs-on: ubuntu-latest
-    outputs:
-      release-upload-url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Create release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: ${{needs.resolve-tag.outputs.release-tag}}
-          release_name: Release ${{needs.resolve-tag.outputs.release-tag}}
-          draft: false
-          prerelease: false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.resolve-tag.outputs.release-tag }}"
+          gh release create "$TAG" --title "Release $TAG" --notes "" --verify-tag
 
   # builds and publishes the jar
   publish-jar:
