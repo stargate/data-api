@@ -96,6 +96,9 @@ public interface ExceptionHandler<T extends Throwable> {
    */
   default RuntimeException maybeHandle(Throwable throwable) {
 
+    if (throwable == null) {
+      return null;
+    }
     if (getExceptionClass().isInstance(throwable)) {
       T t = getExceptionClass().cast(throwable);
       var handled = handle(t);
