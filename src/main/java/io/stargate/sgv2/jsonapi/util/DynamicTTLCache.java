@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Caffeine based cache that supports dynamic TTLS based on the key used to access the cache.
+ * A Caffeine based cache that supports dynamic TTLs based on the key used to access the cache.
  *
  * <p>This is used so we can have different TTLs for different user agents accessing the same cache
  * entry. The core of this is implemented in the {@link DynamicExpiryPolicy}, where we look at the
@@ -39,23 +39,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   /**
    * Constructs a new instance of the {@link DynamicTTLCache}.
    *
-   * <p>Use this overload in production code, see other for detailed description of the parameters.
-   */
-  protected DynamicTTLCache(
-      String cacheName,
-      long cacheMaxSize,
-      ValueFactory<KeyT, ValueT> valueFactory,
-      List<DynamicTTLCacheListener<KeyT, ValueT>> listeners,
-      MeterRegistry meterRegistry) {
-    this(cacheName, cacheMaxSize, valueFactory, listeners, meterRegistry, false, null);
-  }
-
-  /**
-   * Constructs a new instance of the {@link DynamicTTLCache}.
-   *
-   * <p>Use this ctor for testing only.
-   *
-   * @param cacheName Name of the cache, used with caffine metrics.
+   * @param cacheName Name of the cache, used with Caffeine metrics.
    * @param cacheMaxSize The maximum size of the cache.
    * @param valueFactory Factory function to call to generate a new value when needed.
    * @param listeners Nullable, optional, list of listeners to call when a key is removed from the

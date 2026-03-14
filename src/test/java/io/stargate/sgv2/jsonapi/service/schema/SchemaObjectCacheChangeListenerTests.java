@@ -118,15 +118,13 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
       // put two tables in from two keyspaces for the tenantFixture we are removing
       // and one from a different tenantFixture
       // table 1 is the one we remove
-      var expectedTable1 =
-          fixture.mockTable(fixture.tenantFixture, TABLE_1_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
       var expectedTable2 =
           fixture.mockTable(fixture.tenantFixture, TABLE_2_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
       var expectedTableOther =
           fixture.mockTable(
               fixture.otherTenantFixture, TABLE_OTHER_IDENTIFIER, TEST_CONSTANTS.USER_AGENT);
 
-      fixture.listener.onSessionReady(fixture.tenantFixture().cqlSession);
+      fixture.listener.onSessionReady(fixture.tenantFixture.cqlSession);
       var operation = cb.apply(fixture.listener);
 
       // only table1 should be removed, the others should still be there

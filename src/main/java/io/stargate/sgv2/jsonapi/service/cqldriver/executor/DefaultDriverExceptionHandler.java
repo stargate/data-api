@@ -106,7 +106,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * will be recycled.
    */
   private APIException unexpectedDriverError(Throwable throwable) {
-    // incase we end up here and we have already translated into an API Exception, do not re-wrap
+    // in case we end up here, and we have already translated into an APIException, do not re-wrap
     if (throwable instanceof APIException ae) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(

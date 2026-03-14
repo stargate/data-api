@@ -159,10 +159,9 @@ public class SchemaObjectCache
     // we do not know if this is a collection or a table until we load it, and we
     // cannot change the key once it is loaded, so we need to check both
 
-    // As an optimization, we getIfPresent incase the object is a table - we would get a cache miss
+    // As an optimization, we getIfPresent in case the object is a table - we would get a cache miss
     // for the collection key, then try to load, then discover it is a table, fail the load, then
-    // get
-    // again and potentially cache hit for the table.
+    // get again and potentially cache hit for the table.
 
     if (!forceRefresh) {
 
