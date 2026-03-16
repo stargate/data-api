@@ -162,7 +162,6 @@ public class KeyspaceResource {
               var commandContext =
                   contextBuilderSupplier
                       .getBuilder(keyspaceSchemaObject)
-                      .withEmbeddingProvider(null)
                       .withCommandName(command.getClass().getSimpleName())
                       .withRequestContext(requestContext)
                       .build();

@@ -63,7 +63,7 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
       embeddingProvider; // to be removed later, this is a single provider
   private final String commandName; // TODO: remove the command name, but it is used in 14 places
 
-  // both per request list of objects that want to update the logging MDC context,
+  // per request list of objects that want to update the logging MDC context,
   // add to this list in the ctor. See {@link #addToMDC()} and {@link #removeFromMDC()}
   private final List<LoggingMDCContext> loggingMDCContexts = new ArrayList<>();
 

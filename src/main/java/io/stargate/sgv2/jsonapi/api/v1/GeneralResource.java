@@ -112,7 +112,7 @@ public class GeneralResource {
 
     return schemaObjectCacheSupplier
         .get()
-        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent(), false)
+        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
         .flatMap(
             databaseSchemaObject -> {
               var commandContext =

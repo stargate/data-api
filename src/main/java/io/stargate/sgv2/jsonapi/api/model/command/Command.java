@@ -37,5 +37,9 @@ public interface Command {
    */
   CommandName commandName();
 
+  default boolean isForceSchemaRefresh() {
+    return commandName().getCommandType().isForceSchemaRefresh();
+  }
+
   default void addCommandFeatures(CommandFeatures commandFeatures) {}
 }

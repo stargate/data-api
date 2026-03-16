@@ -104,7 +104,7 @@ public class McpResource {
 
     return schemaObjectCacheSupplier
         .get()
-        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent(), false)
+        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
         .map(
             databaseSchemaObject ->
                 contextBuilderSupplier
@@ -151,7 +151,6 @@ public class McpResource {
     var unscopedSchemaIdentifier =
         new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
             cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
-    var forceSchemaRefresh = command.commandName().getCommandType().isForceSchemaRefresh();
 
     return schemaObjectCacheSupplier
         .get()
@@ -159,7 +158,7 @@ public class McpResource {
             requestContext,
             unscopedSchemaIdentifier,
             requestContext.userAgent(),
-            forceSchemaRefresh)
+            command.isForceSchemaRefresh())
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {

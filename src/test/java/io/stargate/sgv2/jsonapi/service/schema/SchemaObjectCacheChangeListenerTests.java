@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Tests for the {@link SchemaObjectCache.SchemaCacheSchemaChangeListener} to evict and clear items
- * see XXX for tests on the cache directly.
+ * see {@link io.stargate.sgv2.jsonapi.util.DynamicTTLCacheTests} for tests on the cache directly.
  */
 public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
   private static final Logger LOGGER =

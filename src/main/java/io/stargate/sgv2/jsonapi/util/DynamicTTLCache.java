@@ -119,6 +119,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     Objects.requireNonNull(key, "key must not be null");
 
     if (key.forceRefresh()) {
+      // see comments for beforeForceLoaded
       beforeForceLoaded(key);
       return Uni.createFrom()
           .completionStage(onLoadValue(key, Runnable::run))
@@ -153,6 +154,16 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     return Optional.ofNullable(future.join()).map(ValueHolder::value);
   }
 
+  /**
+   * Called to give the subclass a chance to take action for a key is force loaded.
+   *
+   * <p>Called when the cache is getting a value with forceRefresh set to true, because forceRefresh
+   * is on the key and the key is passed to the loader function. The loader function may be
+   * side-effecting such as for the schema cache. When the schema cache asks the driver to refresh
+   * the driver metadata it refreshes for all tables in the keyspace, and this can lead to the info
+   * in the SchemaObjects being out of sync with what is in the driver metadata. Out SchemaObject is
+   * a cache of what is in the driver metadata
+   */
   protected void beforeForceLoaded(KeyT key) {}
 
   protected void invalidateAll() {

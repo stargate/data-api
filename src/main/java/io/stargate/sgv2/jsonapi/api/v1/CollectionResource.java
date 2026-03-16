@@ -210,7 +210,6 @@ public class CollectionResource {
     var unscopedSchemaIdentifier =
         new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
             cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
-    var forceSchemaRefresh = command.commandName().getCommandType().isForceSchemaRefresh();
 
     return schemaObjectCacheSupplier
         .get()
@@ -218,7 +217,7 @@ public class CollectionResource {
             requestContext,
             unscopedSchemaIdentifier,
             requestContext.userAgent(),
-            forceSchemaRefresh)
+            command.isForceSchemaRefresh())
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {
@@ -303,14 +302,14 @@ public class CollectionResource {
                       finalThrowable == null
                           ? Uni.createFrom().item(finalCommandResult)
                           : Uni.createFrom().failure(finalThrowable);
-              if (forceSchemaRefresh) {
+              if (command.isForceSchemaRefresh()) {
                 return schemaObjectCacheSupplier
                     .get()
                     .getTableBased(
                         requestContext,
                         unscopedSchemaIdentifier,
                         requestContext.userAgent(),
-                        forceSchemaRefresh)
+                        command.isForceSchemaRefresh())
                     .onItem()
                     // TODO XXXX - IGNORE FAILURE
                     .transformToUni(so -> commandResultUni.get());

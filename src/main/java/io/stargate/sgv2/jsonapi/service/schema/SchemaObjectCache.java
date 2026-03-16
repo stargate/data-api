@@ -118,11 +118,9 @@ public class SchemaObjectCache
   }
 
   public Uni<DatabaseSchemaObject> getDatabase(
-      RequestContext requestContext,
-      SchemaObjectIdentifier identifier,
-      UserAgent userAgent,
-      boolean forceRefresh) {
-    return get(requestContext, identifier, userAgent, forceRefresh);
+      RequestContext requestContext, SchemaObjectIdentifier identifier, UserAgent userAgent) {
+    // currently the database schema object does not have keyspace metadata info from the driver
+    return get(requestContext, identifier, userAgent, false);
   }
 
   public Uni<KeyspaceSchemaObject> getKeyspace(
@@ -186,13 +184,10 @@ public class SchemaObjectCache
       }
     }
 
-    // XXXX FIX COMMENT ABOUT FORCE ON TABLE
-    // We do not have a cache hit, or we wanted to force refresh.
-    // MUST use force refresh for both keys, because
-    //
     // so we need to load it
     // force refresh on the collection cache key will cause the cache to load and replace the entry
-    // and if we will refresh the driver metadata. So no need to also do that on the table key.
+    // and we will refresh the driver metadata. So no need to also do that on the table key.
+    // NOTE see also beforeForceLoaded()
     return get(collectionKey)
         .onFailure(
             io.stargate.sgv2.jsonapi.service.schema.SchemaObjectFactory
