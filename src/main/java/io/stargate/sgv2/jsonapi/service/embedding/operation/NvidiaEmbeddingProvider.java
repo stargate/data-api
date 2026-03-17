@@ -32,6 +32,8 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 public class NvidiaEmbeddingProvider extends EmbeddingProvider {
 
   private final NvidiaEmbeddingProviderClient nvidiaClient;
+  private final String baseUrl;
+  private final ServiceConfigStore.ServiceConfig serviceConfig;
 
   public NvidiaEmbeddingProvider(
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
@@ -47,11 +49,40 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
         dimension,
         vectorizeServiceParameters);
 
+    this.serviceConfig = serviceConfig;
+    this.baseUrl = serviceConfig.getBaseUrl(modelName());
     nvidiaClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(serviceConfig.getBaseUrl(modelName())))
+            .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(NvidiaEmbeddingProviderClient.class);
+  }
+
+  /**
+   * Determines the appropriate URL path based on the authentication token type.
+   * JWT tokens use the /portal/ path for proper tenant-id caching in the API Gateway.
+   * AstraCS tokens use the default path.
+   *
+   * @param apiKey the API key (without Bearer prefix)
+   * @return the modified base URL with /portal/ prefix if using JWT, otherwise original URL
+   */
+  private String getUrlForTokenType(String apiKey) {
+    // If it's an AstraCS token, use the default path
+    if (apiKey.startsWith("AstraCS:")) {
+      return baseUrl;
+    }
+    // For JWT tokens, use the /portal/ path for proper tenant-id caching
+    // Replace the path after the domain with /portal/{original-path}
+    try {
+      URI uri = URI.create(baseUrl);
+      String path = uri.getPath();
+      // Add /portal prefix to the path
+      String newPath = "/portal" + (path.startsWith("/") ? path : "/" + path);
+      return uri.getScheme() + "://" + uri.getAuthority() + newPath;
+    } catch (Exception e) {
+      // If URL parsing fails, return original
+      return baseUrl;
+    }
   }
 
   /**
@@ -84,12 +115,20 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
         new NvidiaEmbeddingRequest(
             texts.toArray(new String[texts.size()]), modelName(), input_type);
 
-    // TODO: XXX No token to pass with the nvidia request for now. This will change on main merge
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY;
+    var apiKey = embeddingCredentials.apiKey().get();
+    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + apiKey;
+
+    // Create a new client with the appropriate URL based on token type
+    var targetUrl = getUrlForTokenType(apiKey);
+    var dynamicClient = targetUrl.equals(baseUrl) ? nvidiaClient :
+        QuarkusRestClientBuilder.newBuilder()
+            .baseUri(URI.create(targetUrl))
+            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .build(NvidiaEmbeddingProviderClient.class);
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(
-            nvidiaClient.embed(
+            dynamicClient.embed(
                 accessToken, embeddingCredentials.tenant().toString(), nvidiaRequest))
         .onItem()
         .transform(
