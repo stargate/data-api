@@ -49,8 +49,8 @@ public abstract class McpIntegrationTestBase {
    */
   @BeforeAll
   void setUpMcpClient() {
-    // Extend the default Awaitility timeout for long-lasting operation (e.g. createCollection)
-    // default is 10 seconds
+    // Extend the default Awaitility timeout from 10 to 30 seconds since some operations (e.g.
+    // createCollection) sometimes take longer than 10 seconds
     Awaitility.setDefaultTimeout(Duration.ofSeconds(30));
 
     mcpClient =

@@ -270,7 +270,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
     void testListTypeToolCallAfterAlterType() {
       callToolAndAssert(
           CommandName.Names.LIST_TYPES,
-          Map.of("keyspace", keyspaceName, "options", Map.of("explain", "true")),
+          Map.of("keyspace", keyspaceName, "options", Map.of("explain", true)),
           response -> {
             // status only response, no error, no structureContent, no content
             assertFalse(response.isError());

@@ -42,7 +42,7 @@ public class KeyspaceCommandTools {
     return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that lists all available collections in a namespace.")
+  @Tool(description = "Command that lists all available collections in a keyspace.")
   public Uni<ToolResponse> findCollections(
       @ToolArg(description = "Name of the existing Keyspace") String keyspace,
       @ToolArg(description = "include collection properties.", required = false)
@@ -57,8 +57,8 @@ public class KeyspaceCommandTools {
    */
   @Tool(description = "Command that alters a user defined type.")
   public Uni<ToolResponse> alterType(
-      @ToolArg(description = "Name of the existing keyspace") String keyspace,
-      @ToolArg(description = "Required name of the type") String name,
+      @ToolArg(description = "Keyspace of the type to alter") String keyspace,
+      @ToolArg(description = "Name of the type to alter") String name,
       @ToolArg(description = "Operation to rename fields", required = false)
           RenameTypeFieldsDesc rename,
       @ToolArg(description = "Operation to add fields", required = false) TypeDefinitionDesc add) {
@@ -82,8 +82,8 @@ public class KeyspaceCommandTools {
   @Tool(description = "Command that creates a user defined type.")
   public Uni<ToolResponse> createType(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
-      @ToolArg(description = "Required name of the new type") String name,
-      @ToolArg(description = "type definition") TypeDefinitionDesc definition,
+      @ToolArg(description = "Name of the type to create") String name,
+      @ToolArg(description = "Type definition") TypeDefinitionDesc definition,
       @ToolArg(description = "Configuration options for the command", required = false)
           CreateTypeCommand.Options options) {
 
@@ -94,7 +94,7 @@ public class KeyspaceCommandTools {
   @Tool(description = "Command that drops an index for a column.")
   public Uni<ToolResponse> dropIndex(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
-      @ToolArg(description = "Required name of the Index to remove") String name,
+      @ToolArg(description = "Name of the Index to remove") String name,
       @ToolArg(description = "Dropping index command option.", required = false)
           DropIndexCommand.Options options) {
 
@@ -117,7 +117,7 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> dropType(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Name of the Type to remove") String name,
-      @ToolArg(description = "Optional options for drop command", required = false)
+      @ToolArg(description = "Options for drop command", required = false)
           DropTypeCommand.Options options) {
 
     var command = new DropTypeCommand(name, options);
