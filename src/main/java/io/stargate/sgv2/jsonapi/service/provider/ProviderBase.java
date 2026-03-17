@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -93,6 +94,35 @@ public abstract class ProviderBase {
   protected abstract double jitter();
 
   protected abstract int atMostRetries();
+
+  /**
+   * Determines the appropriate URL path based on the authentication token type.
+   * JWT tokens use the /portal/ path for proper tenant-id caching in the API Gateway.
+   * AstraCS tokens use the default path.
+   *
+   * @param baseUrl the base URL to potentially modify
+   * @param apiKey the API key (without Bearer prefix)
+   * @return the modified base URL with /portal/ prefix if using JWT, otherwise original URL
+   */
+  protected static String getUrlForTokenType(String baseUrl, String apiKey) {
+    // If it's an AstraCS token, use the default path
+    if (apiKey.startsWith("AstraCS:")) {
+      return baseUrl;
+    }
+    // For JWT tokens, use the /portal/ path for proper tenant-id caching
+    // Replace the path after the domain with /portal/{original-path}
+    try {
+      URI uri = URI.create(baseUrl);
+      String path = uri.getPath();
+      // Add /portal prefix to the path
+      String newPath = "/portal" + (path.startsWith("/") ? path : "/" + path);
+      return uri.getScheme() + "://" + uri.getAuthority() + newPath;
+    } catch (Exception e) {
+      // If URL parsing fails, return original
+      LOGGER.warn("Failed to parse URL for token type routing: {}", baseUrl, e);
+      return baseUrl;
+    }
+  }
 
   /**
    * Retries the HTTP call with backoff and jitter, and translates the response to a API exception.
