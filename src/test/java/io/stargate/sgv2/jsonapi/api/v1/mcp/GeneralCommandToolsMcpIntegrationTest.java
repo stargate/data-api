@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
@@ -30,14 +28,7 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
     @Order(1)
     void testCreateKeyspaceToolCall() {
       callToolAndAssert(
-          CommandName.Names.CREATE_KEYSPACE,
-          Map.of("name", EXTRA_KEYSPACE),
-          response -> {
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-            assertThat(response.content()).isEmpty();
-          });
+          CommandName.Names.CREATE_KEYSPACE, Map.of("name", EXTRA_KEYSPACE), assertStatusOnlyOk());
     }
 
     @Test
@@ -46,33 +37,21 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
       callToolAndAssert(
           CommandName.Names.FIND_KEYSPACES,
           Map.of(),
-          response -> {
-            // check mcp response
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-
-            // check the new keyspace is there
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray keyspaces = status.getJsonArray("keyspaces");
-            assertNotNull(keyspaces, "Keyspaces array should not be null");
-            assertTrue(
-                keyspaces.contains(EXTRA_KEYSPACE), "New created Keyspace should be in the list");
-          });
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray keyspaces = status.getJsonArray("keyspaces");
+                assertNotNull(keyspaces, "Keyspaces array should not be null");
+                assertTrue(
+                    keyspaces.contains(EXTRA_KEYSPACE),
+                    "New created Keyspace should be in the list");
+              }));
     }
 
     @Test
     @Order(3)
     void testDropKeyspaceToolCall() {
       callToolAndAssert(
-          CommandName.Names.DROP_KEYSPACE,
-          Map.of("name", EXTRA_KEYSPACE),
-          response -> {
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-          });
+          CommandName.Names.DROP_KEYSPACE, Map.of("name", EXTRA_KEYSPACE), assertStatusOnlyOk());
     }
 
     @Test
@@ -81,45 +60,40 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
       callToolAndAssert(
           CommandName.Names.FIND_KEYSPACES,
           Map.of(),
-          response -> {
-            // check mcp response
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-
-            // check the new keyspace is dropped
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray keyspaces = status.getJsonArray("keyspaces");
-            assertNotNull(keyspaces, "Keyspaces array should not be null");
-            assertFalse(
-                keyspaces.contains(EXTRA_KEYSPACE),
-                "Keyspace should be dropped and not in the list");
-          });
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray keyspaces = status.getJsonArray("keyspaces");
+                assertNotNull(keyspaces, "Keyspaces array should not be null");
+                assertFalse(
+                    keyspaces.contains(EXTRA_KEYSPACE),
+                    "Keyspace should be dropped and not in the list");
+              }));
     }
   }
 
   @Test
   void findEmbeddingProvidersToolCall() {
     callToolAndAssert(
-        "findEmbeddingProviders",
+        CommandName.Names.FIND_EMBEDDING_PROVIDERS,
         Map.of(),
-        response -> {
-          assertFalse(response.isError());
-          assertNotNull(response._meta());
-          assertNull(response.structuredContent());
-        });
+        assertStatusOnlyWithJson(
+            status -> {
+              JsonObject providers = status.getJsonObject("embeddingProviders");
+              assertNotNull(providers, "embeddingProviders should not be null");
+              assertNotNull(providers.getJsonObject("nvidia"), "nvidia provider should be present");
+            }));
   }
 
   @Test
   void findRerankingProvidersToolCall() {
     callToolAndAssert(
-        "findRerankingProviders",
+        CommandName.Names.FIND_RERANKING_PROVIDERS,
         Map.of(),
-        response -> {
-          assertFalse(response.isError());
-          assertNotNull(response._meta());
-          assertNull(response.structuredContent());
-        });
+        assertStatusOnlyWithJson(
+            status -> {
+              JsonObject providers = status.getJsonObject("rerankingProviders");
+              assertNotNull(providers, "rerankingProviders should not be null");
+              assertNotNull(providers.getJsonObject("nvidia"), "nvidia provider should be present");
+            }));
   }
 }
