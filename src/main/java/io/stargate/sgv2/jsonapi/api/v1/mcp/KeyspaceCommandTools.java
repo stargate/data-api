@@ -5,7 +5,9 @@ import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.RenameTypeFieldsDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TypeDefinitionDesc;
 import jakarta.inject.Inject;
 
 /**
@@ -53,6 +55,18 @@ public class KeyspaceCommandTools {
   /**
    * Below are converted from {@link io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand}
    */
+  @Tool(description = "Command that alters a user defined type.")
+  public Uni<ToolResponse> alterType(
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Required name of the type") String name,
+      @ToolArg(description = "Operation to rename fields", required = false)
+          RenameTypeFieldsDesc rename,
+      @ToolArg(description = "Operation to add fields", required = false) TypeDefinitionDesc add) {
+
+    var command = new AlterTypeCommand(name, rename, add);
+    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+  }
+
   @Tool(description = "Command that creates an API Table.")
   public Uni<ToolResponse> createTable(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
@@ -62,6 +76,29 @@ public class KeyspaceCommandTools {
           CreateTableCommand.Options options) {
 
     var command = new CreateTableCommand(table, definition, options);
+    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+  }
+
+  @Tool(description = "Command that creates a user defined type.")
+  public Uni<ToolResponse> createType(
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Required name of the new type") String name,
+      @ToolArg(description = "type definition") TypeDefinitionDesc definition,
+      @ToolArg(description = "Configuration options for the command", required = false)
+          CreateTypeCommand.Options options) {
+
+    var command = new CreateTypeCommand(name, definition, options);
+    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+  }
+
+  @Tool(description = "Command that drops an index for a column.")
+  public Uni<ToolResponse> dropIndex(
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Required name of the Index to remove") String name,
+      @ToolArg(description = "Dropping index command option.", required = false)
+          DropIndexCommand.Options options) {
+
+    var command = new DropIndexCommand(name, options);
     return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
@@ -76,6 +113,17 @@ public class KeyspaceCommandTools {
     return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
+  @Tool(description = "Command that drops a user defined type if one exists.")
+  public Uni<ToolResponse> dropType(
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Name of the Type to remove") String name,
+      @ToolArg(description = "Optional options for drop command", required = false)
+          DropTypeCommand.Options options) {
+
+    var command = new DropTypeCommand(name, options);
+    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+  }
+
   @Tool(description = "Command that lists all available tables in a keyspace")
   public Uni<ToolResponse> listTables(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
@@ -83,6 +131,16 @@ public class KeyspaceCommandTools {
           ListTablesCommand.Options options) {
 
     var command = new ListTablesCommand(options);
+    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+  }
+
+  @Tool(description = "Command that lists all available types in a keyspace")
+  public Uni<ToolResponse> listTypes(
+      @ToolArg(description = "Name of the existing keyspace") String keyspace,
+      @ToolArg(description = "Options for the `listTypes` command.", required = false)
+          ListTypesCommand.Options options) {
+
+    var command = new ListTypesCommand(options);
     return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 }
