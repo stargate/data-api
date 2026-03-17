@@ -9,12 +9,10 @@ import io.quarkiverse.mcp.server.test.McpAssured.McpStreamableTestClient;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.core.MultiMap;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.awaitility.Awaitility;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,10 +47,6 @@ public abstract class McpIntegrationTestBase {
    */
   @BeforeAll
   void setUpMcpClient() {
-    // Extend the default Awaitility timeout for long-lasting operation (e.g. createCollection)
-    // default is 10 seconds
-    Awaitility.setDefaultTimeout(Duration.ofSeconds(30));
-
     mcpClient =
         McpAssured.newStreamableClient()
             .setBaseUri(URI.create(MCP_HOSTNAME + getTestPort()))
