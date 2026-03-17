@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName(CommandName.Names.CREATE_TYPE)
 public record CreateTypeCommand(
     @NotEmpty @Schema(description = "Required name of the new type") String name,
-    @Valid @NotNull @Schema(description = "type definition") TypeDefinitionDesc definition,
+    @Valid @NotNull @Schema(description = "Type definition") TypeDefinitionDesc definition,
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
