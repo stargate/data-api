@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
@@ -46,13 +44,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.CREATE_COLLECTION,
           Map.of("keyspace", keyspaceName, "collection", COLLECTION_NAME),
-          response -> {
-            // status only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-            assertThat(response.content()).isEmpty();
-          });
+          assertStatusOnlyOk());
     }
 
     @Test
@@ -61,21 +53,14 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.FIND_COLLECTIONS,
           Map.of("keyspace", keyspaceName),
-          response -> {
-            // status only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-
-            // status data is in _meta
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray collections = status.getJsonArray("collections");
-            assertNotNull(collections, "Collections array should not be null");
-            assertTrue(
-                collections.contains(COLLECTION_NAME),
-                "New created Collection should be in the list");
-          });
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray collections = status.getJsonArray("collections");
+                assertNotNull(collections, "Collections array should not be null");
+                assertTrue(
+                    collections.contains(COLLECTION_NAME),
+                    "New created Collection should be in the list");
+              }));
     }
 
     @Test
@@ -84,11 +69,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.DELETE_COLLECTION,
           Map.of("keyspace", keyspaceName, "collection", COLLECTION_NAME),
-          response -> {
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-          });
+          assertStatusOnlyOk());
     }
 
     @Test
@@ -97,21 +78,14 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.FIND_COLLECTIONS,
           Map.of("keyspace", keyspaceName),
-          response -> {
-            // status only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-
-            // check the new collection is dropped
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray collections = status.getJsonArray("collections");
-            assertNotNull(collections, "Collections array should not be null");
-            assertFalse(
-                collections.contains(COLLECTION_NAME),
-                "Collection should be dropped and not in the list");
-          });
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray collections = status.getJsonArray("collections");
+                assertNotNull(collections, "Collections array should not be null");
+                assertFalse(
+                    collections.contains(COLLECTION_NAME),
+                    "Collection should be dropped and not in the list");
+              }));
     }
   }
 
@@ -130,13 +104,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
               TABLE_NAME,
               "definition",
               Map.of("columns", Map.of("id", "text"), "primaryKey", "id")),
-          response -> {
-            // status ok only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-            assertThat(response.content()).isEmpty();
-          });
+          assertStatusOnlyOk());
     }
 
     @Test
@@ -145,19 +113,12 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.LIST_TABLES,
           Map.of("keyspace", keyspaceName),
-          response -> {
-            // status only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-
-            // status data is in _meta
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray tables = status.getJsonArray("tables");
-            assertNotNull(tables, "Table array should not be null");
-            assertTrue(tables.contains(TABLE_NAME), "New created Table should be in the list");
-          });
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray tables = status.getJsonArray("tables");
+                assertNotNull(tables, "Table array should not be null");
+                assertTrue(tables.contains(TABLE_NAME), "New created Table should be in the list");
+              }));
     }
 
     @Test
@@ -166,13 +127,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.DROP_TABLE,
           Map.of("keyspace", keyspaceName, "table", TABLE_NAME),
-          response -> {
-            // status ok only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-            assertThat(response.content()).isEmpty();
-          });
+          assertStatusOnlyOk());
     }
 
     @Test
@@ -181,19 +136,13 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.LIST_TABLES,
           Map.of("keyspace", keyspaceName),
-          response -> {
-            // status only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-
-            // check the new table is dropped
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray tables = status.getJsonArray("tables");
-            assertNotNull(tables, "Tables array should not be null");
-            assertFalse(tables.contains(TABLE_NAME), "Table should be dropped and not in the list");
-          });
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray tables = status.getJsonArray("tables");
+                assertNotNull(tables, "Tables array should not be null");
+                assertFalse(
+                    tables.contains(TABLE_NAME), "Table should be dropped and not in the list");
+              }));
     }
   }
 
@@ -212,13 +161,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
               TYPE_NAME,
               "definition",
               Map.of("fields", Map.of("city", "text", "postcode", "int"))),
-          response -> {
-            // status ok only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-            assertThat(response.content()).isEmpty();
-          });
+          assertStatusOnlyOk());
     }
 
     @Test
@@ -227,19 +170,12 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.LIST_TYPES,
           Map.of("keyspace", keyspaceName),
-          response -> {
-            // status only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-
-            // status data is in _meta
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray types = status.getJsonArray("types");
-            assertNotNull(types, "Types array should not be null");
-            assertTrue(types.contains(TYPE_NAME), "New created Type should be in the list");
-          });
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray types = status.getJsonArray("types");
+                assertNotNull(types, "Types array should not be null");
+                assertTrue(types.contains(TYPE_NAME), "New created Type should be in the list");
+              }));
     }
 
     @Test
@@ -256,13 +192,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
               Map.of("fields", Map.of("postcode", "zipcode")),
               "add",
               Map.of("fields", Map.of("is_active", "boolean"))),
-          response -> {
-            // status ok only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-            assertThat(response.content()).isEmpty();
-          });
+          assertStatusOnlyOk());
     }
 
     @Test
@@ -271,26 +201,25 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.LIST_TYPES,
           Map.of("keyspace", keyspaceName, "options", Map.of("explain", true)),
-          response -> {
-            // status only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray types = status.getJsonArray("types");
+                assertNotNull(types, "Types array should not be null");
+                assertFalse(types.isEmpty(), "Types array should not be empty");
 
-            // status data is in _meta
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray types = status.getJsonArray("types");
-            assertNotNull(types, "Types array should not be null");
+                JsonObject fields =
+                    types.getJsonObject(0).getJsonObject("definition").getJsonObject("fields");
 
-            // check the new type is there
-            assertNotNull(
-                types
-                    .getJsonObject(0)
-                    .getJsonObject("definition")
-                    .getJsonObject("fields")
-                    .getJsonObject("is_active"));
-          });
+                // check the field has been renamed ("postcode" -> "zipcode")
+                assertNull(
+                    fields.getJsonObject("postcode"), "Old field 'postcode' should be renamed");
+                assertNotNull(
+                    fields.getJsonObject("zipcode"), "Renamed field 'zipcode' should exist");
+
+                // check the new field was added
+                assertNotNull(
+                    fields.getJsonObject("is_active"), "Added field 'is_active' should exist");
+              }));
     }
 
     @Test
@@ -299,13 +228,7 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.DROP_TYPE,
           Map.of("keyspace", keyspaceName, "name", TYPE_NAME),
-          response -> {
-            // status ok only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-            assertThat(response.content()).isEmpty();
-          });
+          assertStatusOnlyOk());
     }
 
     @Test
@@ -314,20 +237,13 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
       callToolAndAssert(
           CommandName.Names.LIST_TYPES,
           Map.of("keyspace", keyspaceName),
-          response -> {
-            // status only response, no error, no structureContent, no content
-            assertFalse(response.isError());
-            assertNotNull(response._meta());
-            assertNull(response.structuredContent());
-
-            // check the new type is dropped
-            var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-            assertNotNull(status, "Status should not be null");
-            JsonArray types = status.getJsonArray("types");
-            assertNotNull(types, "Types array should not be null");
-            assertFalse(
-                types.contains(TYPE_NAME), "New Type should be dropped and not in the list");
-          });
+          assertStatusOnlyWithJson(
+              status -> {
+                JsonArray types = status.getJsonArray("types");
+                assertNotNull(types, "Types array should not be null");
+                assertFalse(
+                    types.contains(TYPE_NAME), "New Type should be dropped and not in the list");
+              }));
     }
   }
 }
