@@ -9,19 +9,17 @@ import io.micrometer.core.instrument.binder.cache.CaffeineStatsCounter;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Caffeine based cache that supports dynamic TTLS based on the key used to access the cache.
+ * A Caffeine based cache that supports dynamic TTLs based on the key used to access the cache.
  *
  * <p>This is used so we can have different TTLs for different user agents accessing the same cache
  * entry. The core of this is implemented in the {@link DynamicExpiryPolicy}, where we look at the
@@ -41,23 +39,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   /**
    * Constructs a new instance of the {@link DynamicTTLCache}.
    *
-   * <p>Use this overload in production code, see other for detailed description of the parameters.
-   */
-  protected DynamicTTLCache(
-      String cacheName,
-      long cacheMaxSize,
-      ValueFactory<KeyT, ValueT> valueFactory,
-      List<DynamicTTLCacheListener<KeyT, ValueT>> listeners,
-      MeterRegistry meterRegistry) {
-    this(cacheName, cacheMaxSize, valueFactory, listeners, meterRegistry, false, null);
-  }
-
-  /**
-   * Constructs a new instance of the {@link DynamicTTLCache}.
-   *
-   * <p>Use this ctor for testing only.
-   *
-   * @param cacheName Name of the cache, used with caffine metrics.
+   * @param cacheName Name of the cache, used with Caffeine metrics.
    * @param cacheMaxSize The maximum size of the cache.
    * @param valueFactory Factory function to call to generate a new value when needed.
    * @param listeners Nullable, optional, list of listeners to call when a key is removed from the
@@ -137,13 +119,18 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     Objects.requireNonNull(key, "key must not be null");
 
     if (key.forceRefresh()) {
+      // see comments for beforeForceLoaded
+      beforeForceLoaded(key);
       return Uni.createFrom()
           .completionStage(onLoadValue(key, Runnable::run))
           .invoke(
               (valueHolder) -> {
                 cache.put(key, CompletableFuture.completedFuture(valueHolder));
                 if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("Force loaded value into cache, holder={}", valueHolder);
+                  LOGGER.debug(
+                      "Force loaded value into cache, cacheName={}, holder={}",
+                      cacheName,
+                      valueHolder);
                 }
               })
           .map(ValueHolder::value);
@@ -167,6 +154,22 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     return Optional.ofNullable(future.join()).map(ValueHolder::value);
   }
 
+  /**
+   * Called to give the subclass a chance to take action for a key is force loaded.
+   *
+   * <p>Called when the cache is getting a value with forceRefresh set to true, because forceRefresh
+   * is on the key and the key is passed to the loader function. The loader function may be
+   * side-effecting such as for the schema cache. When the schema cache asks the driver to refresh
+   * the driver metadata it refreshes for all tables in the keyspace, and this can lead to the info
+   * in the SchemaObjects being out of sync with what is in the driver metadata. Out SchemaObject is
+   * a cache of what is in the driver metadata
+   */
+  protected void beforeForceLoaded(KeyT key) {}
+
+  protected void invalidateAll() {
+    cache.synchronous().invalidateAll();
+  }
+
   protected boolean evict(KeyT key) {
     // Invalidate the key. This will trigger the onKeyRemoved listener,
     // which will close the CqlSession and run other cleanup.
@@ -176,6 +179,10 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     LOGGER.warn(
         "Explicitly evicted session from cache. Cache Key: {} (entry found: {})", key, entryFound);
     return entryFound;
+  }
+
+  protected void evictIf(Predicate<KeyT> predicate) {
+    cache.synchronous().asMap().keySet().removeIf(predicate);
   }
 
   /**

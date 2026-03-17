@@ -9,7 +9,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCache;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -37,16 +38,15 @@ public class CqlSessionCacheSupplierTests {
     when(operationsConfig.slaUserAgent())
         .thenReturn(Optional.of(TEST_CONSTANTS.SLA_USER_AGENT_NAME));
 
-    // aaron - changes to the schema cache come later
-    var mockSchemaCache = mock(SchemaCache.class);
-    when(mockSchemaCache.getSchemaChangeListener()).thenReturn(mock(SchemaChangeListener.class));
-
-    when(mockSchemaCache.getDeactivatedTenantConsumer())
-        .thenReturn(mock(CQLSessionCache.DeactivatedTenantListener.class));
+    var mockSchemaObjectCacheSupplier = mock(SchemaObjectCacheSupplier.class);
+    var mockSchemaObjectCache = mock(SchemaObjectCache.class);
+    when(mockSchemaObjectCacheSupplier.get()).thenReturn(mockSchemaObjectCache);
+    when(mockSchemaObjectCache.getSchemaChangeListener())
+        .thenReturn(mock(SchemaChangeListener.class));
 
     var factory =
         new CqlSessionCacheSupplier(
-            "testApp", operationsConfig, new SimpleMeterRegistry(), mockSchemaCache);
+            "testApp", operationsConfig, new SimpleMeterRegistry(), mockSchemaObjectCacheSupplier);
 
     var sessionCache1 = factory.get();
     var sessionCache2 = factory.get();

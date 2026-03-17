@@ -1,12 +1,15 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants.TemplateVars;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.UnscopedSchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
@@ -145,6 +148,26 @@ public abstract class ErrorFormatters {
     return errVars(schemaObject, exception, null);
   }
 
+  public static Map<String, String> errVars(UnscopedSchemaObjectIdentifier name) {
+    return errVars(name, null);
+  }
+
+  public static Map<String, String> errVars(
+      UnscopedSchemaObjectIdentifier name, Consumer<Map<String, String>> consumer) {
+
+    Map<String, String> map = new HashMap<>();
+
+    map.put(TemplateVars.KEYSPACE, cqlIdentifierToMessageString(name.keyspace()));
+    map.put(
+        TemplateVars.TABLE,
+        name.objectName() == null ? "" : cqlIdentifierToMessageString(name.objectName()));
+
+    if (consumer != null) {
+      consumer.accept(map);
+    }
+    return map;
+  }
+
   /**
    * Adds variables to a map for the <code>schemaObject</code> and <code>Throwable</code> then calls
    * the consumer to add more.
@@ -179,8 +202,10 @@ public abstract class ErrorFormatters {
     Map<String, String> map = new HashMap<>();
     if (schemaObject != null) {
       map.put(TemplateVars.SCHEMA_TYPE, schemaObject.type().name());
-      map.put(TemplateVars.KEYSPACE, schemaObject.name().keyspace());
-      map.put(TemplateVars.TABLE, schemaObject.name().table());
+      map.put(
+          TemplateVars.KEYSPACE,
+          cqlIdentifierToMessageString(schemaObject.identifier().keyspace()));
+      map.put(TemplateVars.TABLE, cqlIdentifierToMessageString(schemaObject.identifier().table()));
     }
     if (exception != null) {
       map.put(TemplateVars.ERROR_CLASS, exception.getClass().getSimpleName());

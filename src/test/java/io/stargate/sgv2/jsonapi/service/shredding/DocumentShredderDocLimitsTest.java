@@ -42,7 +42,7 @@ public class DocumentShredderDocLimitsTest {
 
   @InjectMock protected RequestContext dataApiRequestInfo;
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // Tests for Document size/depth violations
   @Nested
@@ -147,7 +147,7 @@ public class DocumentShredderDocLimitsTest {
                   indexProjector,
                   null,
                   "testCommand",
-                  CollectionSchemaObject.MISSING,
+                  TEST_CONSTANTS.MISSING_COLLECTION,
                   null))
           .isNotNull();
     }
@@ -234,7 +234,7 @@ public class DocumentShredderDocLimitsTest {
                   indexProjector,
                   null,
                   "testCommand",
-                  CollectionSchemaObject.MISSING,
+                  TEST_CONSTANTS.MISSING_COLLECTION,
                   null))
           .isNotNull();
     }
@@ -503,6 +503,6 @@ public class DocumentShredderDocLimitsTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
-    return testConstants.collectionContext();
+    return TEST_CONSTANTS.collectionContext();
   }
 }

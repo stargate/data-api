@@ -13,11 +13,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.*;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProviderWrapper;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -104,7 +104,7 @@ public class DataVectorizer {
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProviderWrapper == null) {
           throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-              Map.of("table", schemaObject.name().table()));
+              Map.of("table", schemaObject.identifier().table().toString()));
         }
         Uni<List<float[]>> vectors =
             embeddingProviderWrapper
@@ -180,7 +180,7 @@ public class DataVectorizer {
   public Uni<float[]> vectorize(String vectorizeContent) {
     if (embeddingProviderWrapper == null) {
       throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-          Map.of("table", schemaObject.name().table()));
+          Map.of("table", schemaObject.identifier().table().toString()));
     }
     Uni<List<float[]>> vectors =
         embeddingProviderWrapper
@@ -226,7 +226,7 @@ public class DataVectorizer {
       if (sortClause.hasVectorizeSearchClause()) {
         if (embeddingProviderWrapper == null) {
           throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-              Map.of("table", schemaObject.name().table()));
+              Map.of("table", schemaObject.identifier().table().toString()));
         }
         final List<SortExpression> sortExpressions = sortClause.sortExpressions();
         SortExpression expression = sortExpressions.getFirst();
@@ -317,7 +317,7 @@ public class DataVectorizer {
     // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
     if (embeddingProviderWrapper == null) {
       throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-          Map.of("table", schemaObject.name().table()));
+          Map.of("table", schemaObject.identifier().table().toString()));
     }
 
     return embeddingProviderWrapper
