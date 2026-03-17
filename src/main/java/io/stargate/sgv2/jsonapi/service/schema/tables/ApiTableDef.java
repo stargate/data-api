@@ -18,6 +18,8 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactory;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The APi model for a table in the database.
@@ -25,6 +27,7 @@ import java.util.*;
  * <p>Created by the factories {@link #FROM_TABLE_DESC_FACTORY} and {@link #FROM_CQL_FACTORY}.
  */
 public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiTableDef.class);
 
   public static final FromTableDescFactory FROM_TABLE_DESC_FACTORY = new FromTableDescFactory();
   public static final FromCqlFactory FROM_CQL_FACTORY = new FromCqlFactory();

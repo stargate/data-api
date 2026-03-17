@@ -2,9 +2,9 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /** Resolver for the {@link DeleteCollectionCommand}. */

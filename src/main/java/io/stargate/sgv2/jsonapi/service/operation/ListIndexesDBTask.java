@@ -4,10 +4,10 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDefContainer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,10 +43,7 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
     if (!TABLE_MATCHER.test(tableMetadata)) {
       return Optional.empty();
     }
-    var indexesContainer =
-        TableSchemaObject.from(tableMetadata, OBJECT_MAPPER)
-            .apiTableDef()
-            .indexesIncludingUnsupported();
+    var indexesContainer = schemaObject.apiTableDef().indexesIncludingUnsupported();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "indexesForTable() - table: {} indexesContainer: {}",
