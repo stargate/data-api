@@ -36,8 +36,7 @@ public record DeleteOperationPage(
     // when we move to use OperationAttempt for the collection commands we can refactor
     if (deletedInformation == null) {
       // when returnDocument is set this means we are runnning findOneAndDelete, so we have to
-      // return a
-      // data and documents section
+      // return a data and documents section
       // aaron - this is a giant hack 21 oct 2024
       if (returnDocument()) {
         if (singleDocument()) {

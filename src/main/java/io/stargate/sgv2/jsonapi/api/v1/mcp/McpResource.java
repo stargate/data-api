@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -23,6 +24,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -46,8 +48,7 @@ public class McpResource {
   private final MeteredCommandProcessor meteredCommandProcessor;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final EmbeddingProviderFactory embeddingProviderFactory;
-  private final SchemaCache schemaCache;
-
+  private final SchemaObjectCacheSupplier schemaObjectCacheSupplier;
   // Per-request dependencies for creating RequestContext in MCP (non-JAX-RS)
   // context
   private final Provider<RoutingContext> routingContextProvider;
@@ -64,7 +65,7 @@ public class McpResource {
       CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory,
-      SchemaCache schemaCache,
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier,
       Provider<RoutingContext> routingContextProvider,
       Provider<SecurityIdentity> securityIdentityProvider,
       Instance<RequestTenantResolver> tenantResolver,
@@ -75,7 +76,7 @@ public class McpResource {
     this.objectMapper = objectMapper;
     this.meteredCommandProcessor = meteredCommandProcessor;
     this.embeddingProviderFactory = embeddingProviderFactory;
-    this.schemaCache = schemaCache;
+    this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
 
     this.routingContextProvider = routingContextProvider;
     this.securityIdentityProvider = securityIdentityProvider;
@@ -96,24 +97,45 @@ public class McpResource {
    * Build a CommandContext for database-level (general) commands. similar to {@link
    * io.stargate.sgv2.jsonapi.api.v1.GeneralResource}
    */
-  public CommandContext<?> buildGeneralContext(GeneralCommand command) {
-    return contextBuilderSupplier
-        .getBuilder(new DatabaseSchemaObject())
-        .withCommandName(command.getClass().getSimpleName())
-        .withRequestContext(createRequestContext())
-        .build();
+  public Uni<CommandContext<?>> buildDatabaseContext(GeneralCommand command) {
+
+    var requestContext = createRequestContext();
+    var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
+
+    return schemaObjectCacheSupplier
+        .get()
+        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
+        .map(
+            databaseSchemaObject ->
+                contextBuilderSupplier
+                    .getBuilder(databaseSchemaObject)
+                    .withCommandName(command.getClass().getSimpleName())
+                    .withRequestContext(requestContext)
+                    .build());
   }
 
   /**
    * Build a CommandContext for keyspace-level (keyspace) commands. similar to {@link
    * io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource}
    */
-  public CommandContext<?> buildKeyspaceContext(String keyspace, KeyspaceCommand command) {
-    return contextBuilderSupplier
-        .getBuilder(new KeyspaceSchemaObject(keyspace))
-        .withCommandName(command.getClass().getSimpleName())
-        .withRequestContext(createRequestContext())
-        .build();
+  public Uni<CommandContext<?>> buildKeyspaceContext(String keyspace, KeyspaceCommand command) {
+
+    var requestContext = createRequestContext();
+    var keyspaceIdentifier =
+        SchemaObjectIdentifier.forKeyspace(
+            requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
+
+    // Force refresh on all keyspace commands because they are all DDL commands
+    return schemaObjectCacheSupplier
+        .get()
+        .getKeyspace(requestContext, keyspaceIdentifier, requestContext.userAgent(), true)
+        .map(
+            keyspaceSchemaObject ->
+                contextBuilderSupplier
+                    .getBuilder(keyspaceSchemaObject)
+                    .withCommandName(command.getClass().getSimpleName())
+                    .withRequestContext(createRequestContext())
+                    .build());
   }
 
   /**
@@ -124,14 +146,19 @@ public class McpResource {
   public Uni<ToolResponse> processCollectionCommand(
       String keyspace, String collection, CollectionCommand command) {
 
-    RequestContext requestContext = createRequestContext();
+    var requestContext = createRequestContext();
 
-    return schemaCache
-        .getSchemaObject(
+    var unscopedSchemaIdentifier =
+        new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
+            cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
+
+    return schemaObjectCacheSupplier
+        .get()
+        .getTableBased(
             requestContext,
-            keyspace,
-            collection,
-            CommandType.DDL.equals(command.commandName().getCommandType()))
+            unscopedSchemaIdentifier,
+            requestContext.userAgent(),
+            command.isForceSchemaRefresh())
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {
@@ -142,16 +169,18 @@ public class McpResource {
                         .addThrowable(throwable)
                         .build();
                 return Uni.createFrom()
-                    .item(new ToolResponse(true, null, errorResult.errors(), Map.of()));
+                    .item(
+                        new ToolResponse(
+                            true, List.of(), Map.of("errors", errorResult.errors()), Map.of()));
               } else {
                 VectorColumnDefinition vectorColDef = null;
-                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                if (schemaObject.type() == SchemaObjectType.COLLECTION) {
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
                           .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
                           .orElse(null);
-                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                } else if (schemaObject.type() == SchemaObjectType.TABLE) {
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
@@ -182,7 +211,7 @@ public class McpResource {
                         .withRequestContext(requestContext)
                         .build();
 
-                return processCommand(commandContext, command);
+                return processCommand(Uni.createFrom().item(commandContext), command);
               }
             });
   }
@@ -193,23 +222,24 @@ public class McpResource {
    * <p>The Quarkus MCP Server framework automatically encodes the {@link CommandResult} to JSON via
    * its built-in encoder (Jackson), so no manual serialization is needed.
    *
-   * @param context The command context (from buildGeneralContext or buildKeyspaceContext)
+   * @param contextUni The command context (from buildGeneralContext or buildKeyspaceContext)
    * @param command The command to execute
    * @return Uni of CommandResult
    */
-  public Uni<ToolResponse> processCommand(CommandContext<?> context, Command command) {
+  public Uni<ToolResponse> processCommand(Uni<CommandContext<?>> contextUni, Command command) {
 
-    if (!context.apiFeatures().isFeatureEnabled(ApiFeature.MCP)) {
-      var exception = SchemaException.Code.MCP_FEATURE_NOT_ENABLED.get();
-      CommandResult errorResult =
-          CommandResult.statusOnlyBuilder(context.requestTracing()).addThrowable(exception).build();
-      return Uni.createFrom()
-          .item(
-              new ToolResponse(true, List.of(), Map.of("errors", errorResult.errors()), Map.of()));
-    }
-
-    return meteredCommandProcessor
-        .processCommand(context, command)
+    return contextUni
+        .flatMap(
+            context -> {
+              if (!context.apiFeatures().isFeatureEnabled(ApiFeature.MCP)) {
+                return Uni.createFrom()
+                    .item(
+                        CommandResult.statusOnlyBuilder(context.requestTracing())
+                            .addThrowable(SchemaException.Code.MCP_FEATURE_NOT_ENABLED.get())
+                            .build());
+              }
+              return meteredCommandProcessor.processCommand(context, command);
+            })
         .map(
             result -> {
               boolean hasErrors = result.errors() != null && !result.errors().isEmpty();
@@ -218,7 +248,7 @@ public class McpResource {
               Map<MetaKey, Object> meta =
                   (result.status() != null && !result.status().isEmpty())
                       ? Map.of(MetaKey.of("status"), result.status())
-                      : null;
+                      : Map.of();
 
               // Map "errors" or "data" to structuredContent
               // Also, structuredContent is expected to be a Record (a plain JSON object {})

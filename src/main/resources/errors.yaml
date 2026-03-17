@@ -1286,12 +1286,6 @@ request-errors:
       Resend the command using only columns that use the `vector` type.
 
   - scope: SCHEMA
-    code: COLLECTION_NOT_EXIST
-    title: Collection or table does not exist
-    body: |-
-      No collection or table with name '${collection}' exists.
-
-  - scope: SCHEMA
     code: DEPRECATED_AI_MODEL
     title: Cannot use deprecated model.
     body: |-
@@ -1510,6 +1504,16 @@ request-errors:
       The keyspace used by the command: ${keyspace}.
 
       Resend the command using a Keyspace that exists.
+
+  - scope: SCHEMA
+    code: UNKNOWN_COLLECTION_OR_TABLE
+    title: Collection or Table does not exist in the Keyspace
+    body: |-
+      The command tried to get a Collection or Table ${table} that does not exist in the Keyspace ${keyspace}.
+
+      The keyspace has the existing collections or tables: ${allTables}.
+
+      Resend the command using a Collection or Table that exists.
 
   - scope: SCHEMA
     code: UNKNOWN_PARTITION_SORT_COLUMNS

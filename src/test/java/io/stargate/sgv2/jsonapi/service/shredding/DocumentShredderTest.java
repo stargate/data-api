@@ -42,7 +42,7 @@ public class DocumentShredderTest {
   @Inject DocumentShredder documentShredder;
   @InjectMock protected RequestContext dataApiRequestInfo;
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   @Nested
   class OkCases {
@@ -612,7 +612,7 @@ public class DocumentShredderTest {
               indexProjector,
               null,
               "testCommand",
-              CollectionSchemaObject.MISSING,
+              TEST_CONSTANTS.MISSING_COLLECTION,
               null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
@@ -687,7 +687,7 @@ public class DocumentShredderTest {
               indexProjector,
               null,
               "testCommand",
-              CollectionSchemaObject.MISSING,
+              TEST_CONSTANTS.MISSING_COLLECTION,
               null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
@@ -756,7 +756,7 @@ public class DocumentShredderTest {
               indexProjector,
               null,
               "testCommand",
-              CollectionSchemaObject.MISSING,
+              TEST_CONSTANTS.MISSING_COLLECTION,
               null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
@@ -820,7 +820,7 @@ public class DocumentShredderTest {
               indexProjector,
               null,
               "testCommand",
-              CollectionSchemaObject.MISSING,
+              TEST_CONSTANTS.MISSING_COLLECTION,
               null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
@@ -889,7 +889,7 @@ public class DocumentShredderTest {
               indexProjector,
               null,
               "testCommand",
-              CollectionSchemaObject.MISSING,
+              TEST_CONSTANTS.MISSING_COLLECTION,
               null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
 
@@ -939,7 +939,7 @@ public class DocumentShredderTest {
               indexProjector,
               null,
               "testCommand",
-              CollectionSchemaObject.MISSING,
+              TEST_CONSTANTS.MISSING_COLLECTION,
               null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(1)));
       List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"));
@@ -981,7 +981,7 @@ public class DocumentShredderTest {
           IndexingProjector.identityProjector(),
           null,
           "jsonBytesWriteCommand",
-          CollectionSchemaObject.MISSING,
+          TEST_CONSTANTS.MISSING_COLLECTION,
           null);
 
       // verify metrics
@@ -1024,6 +1024,6 @@ public class DocumentShredderTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
-    return testConstants.collectionContext();
+    return TEST_CONSTANTS.collectionContext();
   }
 }

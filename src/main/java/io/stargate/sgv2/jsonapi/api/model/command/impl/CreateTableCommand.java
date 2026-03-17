@@ -20,7 +20,7 @@ public record CreateTableCommand(
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(
-            description = "Configuration options for the collection",
+            description = "Configuration options for the table",
             type = SchemaType.OBJECT,
             implementation = Options.class)
         Options options)
