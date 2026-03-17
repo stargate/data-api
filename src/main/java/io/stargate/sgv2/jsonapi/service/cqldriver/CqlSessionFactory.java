@@ -13,6 +13,8 @@ import com.typesafe.config.ConfigRenderOptions;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
+import io.stargate.sgv2.jsonapi.service.operation.databases.DatabaseDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
@@ -209,6 +211,13 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     // Add optimized CqlVector codec (see [data-api#1775])
     builder = builder.addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
-    return builder.buildAsync();
+    return builder
+        .buildAsync()
+        .exceptionallyCompose(
+            throwable -> {
+              // this will be CompletionException, not the actual cause
+              throw new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant))
+                  .maybeHandle(throwable.getCause());
+            });
   }
 }

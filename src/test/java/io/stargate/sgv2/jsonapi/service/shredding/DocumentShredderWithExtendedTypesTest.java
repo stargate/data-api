@@ -14,9 +14,9 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.*;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -198,6 +198,14 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleWithoutIdGenLegacyUUID() throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      var collectionSchemaObject =
+          new CollectionSchemaObject(
+              testConstants.COLLECTION_IDENTIFIER,
+              new IdConfig(CollectionIdType.UNDEFINED),
+              VectorConfig.NOT_ENABLED_CONFIG,
+              null,
+              CollectionLexicalConfig.configForDisabled(),
+              CollectionRerankDef.configForDisabled());
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
@@ -205,9 +213,8 @@ public class DocumentShredderWithExtendedTypesTest {
               IndexingProjector.identityProjector(),
               null,
               "test",
-              CollectionSchemaObject.MISSING.withIdType(CollectionIdType.UNDEFINED),
+              collectionSchemaObject,
               null);
-
       DocumentId docId = doc.id();
       // Legacy UUID generated as "plain" String id
       assertThat(docId).isInstanceOf(DocumentId.StringId.class);
@@ -239,6 +246,14 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleWithoutIdGenObjectId() throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      var collectionSchemaObject =
+          new CollectionSchemaObject(
+              testConstants.COLLECTION_IDENTIFIER,
+              new IdConfig(CollectionIdType.OBJECT_ID),
+              VectorConfig.NOT_ENABLED_CONFIG,
+              null,
+              CollectionLexicalConfig.configForDisabled(),
+              CollectionRerankDef.configForDisabled());
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
@@ -246,7 +261,7 @@ public class DocumentShredderWithExtendedTypesTest {
               IndexingProjector.identityProjector(),
               null,
               "test",
-              CollectionSchemaObject.MISSING.withIdType(CollectionIdType.OBJECT_ID),
+              collectionSchemaObject,
               null);
 
       DocumentId docId = doc.id();
@@ -296,6 +311,15 @@ public class DocumentShredderWithExtendedTypesTest {
         throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
+
+      var collectionSchemaObject =
+          new CollectionSchemaObject(
+              testConstants.COLLECTION_IDENTIFIER,
+              new IdConfig(idType),
+              VectorConfig.NOT_ENABLED_CONFIG,
+              null,
+              CollectionLexicalConfig.configForDisabled(),
+              CollectionRerankDef.configForDisabled());
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
@@ -303,7 +327,7 @@ public class DocumentShredderWithExtendedTypesTest {
               IndexingProjector.identityProjector(),
               null,
               "test",
-              CollectionSchemaObject.MISSING.withIdType(idType),
+              collectionSchemaObject,
               null);
 
       DocumentId docId = doc.id();
