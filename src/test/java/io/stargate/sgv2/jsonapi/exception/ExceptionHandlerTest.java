@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
 import java.nio.channels.WritePendingException;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,9 +34,9 @@ public class ExceptionHandlerTest {
   }
 
   @Test
-  public void handleNoneBaseTypeReturnsSame() {
+  public void handleNoneBaseTypeReturnsUnexpectedError() {
 
-    var originalEx = new IllegalStateException("original");
+    var originalEx = new IllegalStateException("original exception 123");
 
     // UnsupportedOperationException and IllegalStateException are both direct subclasses of
     // RuntimeException
@@ -50,8 +51,14 @@ public class ExceptionHandlerTest {
     var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
-        .as("When handling non BaseT exception, returns the exception object passed")
-        .isSameAs(originalEx);
+        .as("When handling non BaseT exception, returns Server UNEXPECTED_SERVER_ERROR")
+        .hasMessageContaining("IllegalStateException")
+        .hasMessageContaining("original exception 123")
+        .asInstanceOf(InstanceOfAssertFactories.type(ServerException.class))
+        .satisfies(
+            se -> {
+              assertThat(se.code).isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+            });
   }
 
   /**

@@ -38,7 +38,7 @@ public class CollectionDriverExceptionHandler
   // ========================================================================
 
   @Override
-  public Throwable handle(InvalidQueryException exception) {
+  public RuntimeException handle(InvalidQueryException exception) {
 
     for (var msg : CORRUPTED_COLLECTION_MESSAGES) {
       if (exception.getMessage().contains(msg)) {

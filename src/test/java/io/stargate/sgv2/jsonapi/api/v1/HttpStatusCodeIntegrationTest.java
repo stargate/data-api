@@ -100,7 +100,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is(SchemaException.Code.COLLECTION_NOT_EXIST.name()));
+          .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_COLLECTION_OR_TABLE.name()));
     }
 
     @Test

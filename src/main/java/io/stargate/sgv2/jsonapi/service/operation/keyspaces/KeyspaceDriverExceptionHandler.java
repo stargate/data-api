@@ -4,12 +4,13 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Subclass of {@link DefaultDriverExceptionHandler} for working with {@link KeyspaceSchemaObject}.
+ * Subclass of {@link DefaultDriverExceptionHandler} for working with {@link
+ * io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject}.
  */
 public class KeyspaceDriverExceptionHandler
     extends DefaultDriverExceptionHandler<KeyspaceSchemaObject> {
@@ -28,7 +29,7 @@ public class KeyspaceDriverExceptionHandler
   // ========================================================================
 
   @Override
-  public Throwable handle(InvalidQueryException exception) {
+  public RuntimeException handle(InvalidQueryException exception) {
 
     // [data-api#1900]: Need to convert Lexical-index creation failure to something more meaningful
     if (exception.getMessage().contains("Invalid analyzer config")) {

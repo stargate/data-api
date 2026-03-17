@@ -27,11 +27,11 @@ public interface ProviderExceptionHandler extends ExceptionHandler<Throwable> {
   }
 
   @Override
-  default Throwable handle(Throwable throwable) {
+  default RuntimeException handle(Throwable throwable) {
     return switch (throwable) {
       case TimeoutException e -> handle(e);
       case UnknownHostException e -> handle(e);
-      default -> throwable;
+      default -> handleUnhandled(throwable);
     };
   }
 
@@ -40,11 +40,11 @@ public interface ProviderExceptionHandler extends ExceptionHandler<Throwable> {
   // ========================================================================
 
   /** Vertex normally throws the NoStackTraceException which is a subclass. */
-  default Throwable handle(TimeoutException exception) {
-    return exception;
+  default RuntimeException handle(TimeoutException exception) {
+    return handleUnhandled(exception);
   }
 
-  default Throwable handle(UnknownHostException exception) {
-    return exception;
+  default RuntimeException handle(UnknownHostException exception) {
+    return handleUnhandled(exception);
   }
 }

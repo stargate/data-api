@@ -29,7 +29,7 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
   }
 
   @Override
-  default Throwable handle(DriverException exception) {
+  default RuntimeException handle(DriverException exception) {
     return switch (exception) {
         // checking the subclasses that have children first, the handlers for these should
         // cast for their children
@@ -55,14 +55,14 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
   // which have been remapped to a APIDriverException subclass
   // ========================================================================
 
-  default Throwable handle(APIDriverException exception) {
+  default RuntimeException handle(APIDriverException exception) {
     return switch (exception) {
       case AuthenticationDriverException e -> handle(e);
       default -> exception;
     };
   }
 
-  default Throwable handle(AuthenticationDriverException exception) {
+  default RuntimeException handle(AuthenticationDriverException exception) {
     return exception;
   }
 
@@ -70,35 +70,35 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
   // Direct subclasses of DriverException with no child
   // ========================================================================
 
-  default Throwable handle(ClosedConnectionException exception) {
+  default RuntimeException handle(ClosedConnectionException exception) {
     return exception;
   }
 
-  default Throwable handle(CodecNotFoundException exception) {
+  default RuntimeException handle(CodecNotFoundException exception) {
     return exception;
   }
 
-  default Throwable handle(DriverExecutionException exception) {
+  default RuntimeException handle(DriverExecutionException exception) {
     return exception;
   }
 
-  default Throwable handle(DriverTimeoutException exception) {
+  default RuntimeException handle(DriverTimeoutException exception) {
     return exception;
   }
 
-  default Throwable handle(InvalidKeyspaceException exception) {
+  default RuntimeException handle(InvalidKeyspaceException exception) {
     return exception;
   }
 
-  default Throwable handle(NodeUnavailableException exception) {
+  default RuntimeException handle(NodeUnavailableException exception) {
     return exception;
   }
 
-  default Throwable handle(RequestThrottlingException exception) {
+  default RuntimeException handle(RequestThrottlingException exception) {
     return exception;
   }
 
-  default Throwable handle(UnsupportedProtocolVersionException exception) {
+  default RuntimeException handle(UnsupportedProtocolVersionException exception) {
     return exception;
   }
 
@@ -106,14 +106,14 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
   // AllNodesFailedException and subclasses
   // ========================================================================
 
-  default Throwable handle(AllNodesFailedException exception) {
+  default RuntimeException handle(AllNodesFailedException exception) {
     return switch (exception) {
       case NoNodeAvailableException e -> handle(e);
       default -> exception;
     };
   }
 
-  default Throwable handle(NoNodeAvailableException exception) {
+  default RuntimeException handle(NoNodeAvailableException exception) {
     return exception;
   }
 
@@ -122,7 +122,7 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
   // - this is a subclass CoordinatorException but that is abstract
   // ========================================================================
 
-  default Throwable handle(QueryValidationException exception) {
+  default RuntimeException handle(QueryValidationException exception) {
     return switch (exception) {
       case AlreadyExistsException e -> handle(e);
       case InvalidConfigurationInQueryException e -> handle(e);
@@ -133,23 +133,23 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
     };
   }
 
-  default Throwable handle(AlreadyExistsException exception) {
+  default RuntimeException handle(AlreadyExistsException exception) {
     return exception;
   }
 
-  default Throwable handle(InvalidConfigurationInQueryException exception) {
+  default RuntimeException handle(InvalidConfigurationInQueryException exception) {
     return exception;
   }
 
-  default Throwable handle(InvalidQueryException exception) {
+  default RuntimeException handle(InvalidQueryException exception) {
     return exception;
   }
 
-  default Throwable handle(SyntaxError exception) {
+  default RuntimeException handle(SyntaxError exception) {
     return exception;
   }
 
-  default Throwable handle(UnauthorizedException exception) {
+  default RuntimeException handle(UnauthorizedException exception) {
     return exception;
   }
 
@@ -161,7 +161,7 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
   // QueryConsistencyException and its childs (cannot pattern match on parent and child)
   // ========================================================================
 
-  default Throwable handle(QueryExecutionException exception) {
+  default RuntimeException handle(QueryExecutionException exception) {
     return switch (exception) {
       case BootstrappingException e -> handle(e);
       case CASWriteUnknownException e -> handle(e);
@@ -175,31 +175,31 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
     };
   }
 
-  default Throwable handle(BootstrappingException exception) {
+  default RuntimeException handle(BootstrappingException exception) {
     return exception;
   }
 
-  default Throwable handle(CASWriteUnknownException exception) {
+  default RuntimeException handle(CASWriteUnknownException exception) {
     return exception;
   }
 
-  default Throwable handle(CDCWriteFailureException exception) {
+  default RuntimeException handle(CDCWriteFailureException exception) {
     return exception;
   }
 
-  default Throwable handle(FunctionFailureException exception) {
+  default RuntimeException handle(FunctionFailureException exception) {
     return exception;
   }
 
-  default Throwable handle(OverloadedException exception) {
+  default RuntimeException handle(OverloadedException exception) {
     return exception;
   }
 
-  default Throwable handle(TruncateException exception) {
+  default RuntimeException handle(TruncateException exception) {
     return exception;
   }
 
-  default Throwable handle(UnavailableException exception) {
+  default RuntimeException handle(UnavailableException exception) {
     return exception;
   }
 
@@ -208,7 +208,7 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
   // see commend for the QueryExecutionException section
   // ========================================================================
 
-  default Throwable handle(QueryConsistencyException exception) {
+  default RuntimeException handle(QueryConsistencyException exception) {
     return switch (exception) {
       case ReadFailureException e -> handle(e);
       case ReadTimeoutException e -> handle(e);
@@ -218,19 +218,19 @@ public interface DriverExceptionHandler extends ExceptionHandler<DriverException
     };
   }
 
-  default Throwable handle(ReadFailureException exception) {
+  default RuntimeException handle(ReadFailureException exception) {
     return exception;
   }
 
-  default Throwable handle(ReadTimeoutException exception) {
+  default RuntimeException handle(ReadTimeoutException exception) {
     return exception;
   }
 
-  default Throwable handle(WriteFailureException exception) {
+  default RuntimeException handle(WriteFailureException exception) {
     return exception;
   }
 
-  default Throwable handle(WriteTimeoutException exception) {
+  default RuntimeException handle(WriteTimeoutException exception) {
     return exception;
   }
 }

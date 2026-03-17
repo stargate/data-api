@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cql.builder;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
@@ -53,6 +54,10 @@ public class QueryBuilder {
     this.keyspaceName = keyspace;
     table(table);
     return this;
+  }
+
+  public QueryBuilder from(CqlIdentifier keyspace, CqlIdentifier table) {
+    return from(keyspace.toString(), table.toString());
   }
 
   public QueryBuilder select() {

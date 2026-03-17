@@ -15,8 +15,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.Map;
@@ -170,23 +170,23 @@ class McpResourceTest {
 
   /** Create a mock CommandContext with MCP feature enabled. */
   @SuppressWarnings("unchecked")
-  private CommandContext<?> mockContextWithMcpEnabled() {
+  private Uni<CommandContext<?>> mockContextWithMcpEnabled() {
     CommandContext<DatabaseSchemaObject> ctx = mock(CommandContext.class);
     ApiFeatures features = mock(ApiFeatures.class);
     when(features.isFeatureEnabled(ApiFeature.MCP)).thenReturn(true);
     when(ctx.apiFeatures()).thenReturn(features);
     when(ctx.requestTracing()).thenReturn(RequestTracing.NO_OP);
-    return ctx;
+    return Uni.createFrom().item(ctx);
   }
 
   /** Create a mock CommandContext with MCP feature disabled. */
   @SuppressWarnings("unchecked")
-  private CommandContext<?> mockContextWithMcpDisabled() {
+  private Uni<CommandContext<?>> mockContextWithMcpDisabled() {
     CommandContext<DatabaseSchemaObject> ctx = mock(CommandContext.class);
     ApiFeatures features = mock(ApiFeatures.class);
     when(features.isFeatureEnabled(ApiFeature.MCP)).thenReturn(false);
     when(ctx.apiFeatures()).thenReturn(features);
     when(ctx.requestTracing()).thenReturn(RequestTracing.NO_OP);
-    return ctx;
+    return Uni.createFrom().item(ctx);
   }
 }

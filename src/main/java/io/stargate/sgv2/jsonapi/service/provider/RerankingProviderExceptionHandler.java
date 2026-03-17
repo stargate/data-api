@@ -11,7 +11,7 @@ public class RerankingProviderExceptionHandler extends DefaultProviderExceptionH
   }
 
   @Override
-  public Throwable handle(TimeoutException exception) {
+  public RuntimeException handle(TimeoutException exception) {
 
     return RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
         Map.of(

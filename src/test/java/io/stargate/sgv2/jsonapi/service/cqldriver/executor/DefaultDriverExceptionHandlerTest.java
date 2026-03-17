@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ExceptionFlags.UNRELIABLE_DB_SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -150,8 +149,8 @@ public class DefaultDriverExceptionHandlerTest {
       if (assertSchemaNames) {
         assertThat(handledException)
             .as("Handled error message has the schema names")
-            .hasMessageContaining(errFmt(TEST_DATA.KEYSPACE_NAME))
-            .hasMessageContaining(errFmt(TEST_DATA.TABLE_NAME));
+            .hasMessageContaining(TEST_DATA.testConstants.KEYSPACE_NAME)
+            .hasMessageContaining(TEST_DATA.testConstants.TABLE_NAME);
       }
 
       if (assertOrigError) {
@@ -232,7 +231,7 @@ public class DefaultDriverExceptionHandlerTest {
                 false,
                 false,
                 false,
-                TEST_DATA.KEYSPACE_NAME.asCql(true),
+                TEST_DATA.testConstants.KEYSPACE_NAME,
                 null)),
         new TestArguments(
             new NodeUnavailableException(mockNode("node: monkeys")),
@@ -278,8 +277,8 @@ public class DefaultDriverExceptionHandlerTest {
         new TestArguments(
             new AlreadyExistsException(
                 mockNode("node: monkeys"),
-                TEST_DATA.KEYSPACE_NAME.asCql(true),
-                TEST_DATA.TABLE_NAME.asCql(true)),
+                TEST_DATA.testConstants.KEYSPACE_NAME,
+                TEST_DATA.testConstants.TABLE_NAME),
             Assertions.isUnexpectedDriverException()),
         // InvalidConfigurationInQueryException will happen if we send wrong DDL command
         // not expected
