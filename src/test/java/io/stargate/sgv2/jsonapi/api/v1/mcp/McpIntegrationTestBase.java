@@ -10,6 +10,7 @@ import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkiverse.mcp.server.test.McpAssured.McpStreamableTestClient;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.core.MultiMap;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.net.URI;
 import java.time.Duration;
@@ -137,7 +138,7 @@ public abstract class McpIntegrationTestBase {
   }
 
   /**
-   * Assert base response structure is valid, then apply additional assertions on the status
+   * Assert status only response structure is valid, then apply additional assertions on the status
    * JsonObject extracted from _meta.
    *
    * @param statusAssertions additional assertions to run on the status JsonObject
@@ -152,6 +153,27 @@ public abstract class McpIntegrationTestBase {
       var status = (JsonObject) response._meta().get(MetaKey.of("status"));
       assertNotNull(status, "Status should not be null");
       statusAssertions.accept(status);
+    };
+  }
+
+  /**
+   * Assert error response structure is valid (no meta_ and content), then apply additional
+   * assertions on the error JsonArray extracted from structuredContent.
+   *
+   * @param errorsAssertions additional assertions to run on the error JsonArray
+   */
+  protected Consumer<ToolResponse> assertErrorOnly(Consumer<JsonArray> errorsAssertions) {
+    return response -> {
+      assertThat(response.content()).isEmpty();
+      assertThat(response._meta()).isEmpty();
+      assertTrue(response.isError());
+      assertThat(response.structuredContent()).isNotNull();
+
+      var errors = (JsonObject) response.structuredContent();
+      assertTrue(errors.containsKey("errors"));
+      var errorsArray = errors.getJsonArray("errors");
+      assertThat(errorsArray).isNotEmpty();
+      errorsAssertions.accept(errorsArray);
     };
   }
 
