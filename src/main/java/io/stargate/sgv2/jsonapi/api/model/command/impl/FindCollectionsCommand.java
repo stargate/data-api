@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that lists all available collections in a namespace.")
+@Schema(description = "Command that lists all available collections in a keyspace.")
 @JsonTypeName(CommandName.Names.FIND_COLLECTIONS)
 public record FindCollectionsCommand(Options options) implements CollectionOnlyCommand {
   public record Options(

@@ -1,18 +1,24 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
+import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkiverse.mcp.server.test.McpAssured.McpStreamableTestClient;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.core.MultiMap;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -47,6 +53,10 @@ public abstract class McpIntegrationTestBase {
    */
   @BeforeAll
   void setUpMcpClient() {
+    // Extend the default Awaitility timeout from 10 to 30 seconds since some operations (e.g.
+    // createCollection) sometimes take longer than 10 seconds
+    Awaitility.setDefaultTimeout(Duration.ofSeconds(30));
+
     mcpClient =
         McpAssured.newStreamableClient()
             .setBaseUri(URI.create(MCP_HOSTNAME + getTestPort()))
@@ -86,14 +96,12 @@ public abstract class McpIntegrationTestBase {
 
   /** Create a keyspace via the MCP createKeyspace tool. */
   protected void createKeyspace(String keyspace) {
-    callToolAndAssert(
-        "createKeyspace", Map.of("name", keyspace), response -> assertFalse(response.isError()));
+    callToolAndAssert("createKeyspace", Map.of("name", keyspace), assertStatusOnlyOk());
   }
 
   /** Drop a keyspace via the MCP dropKeyspace tool. */
   protected void dropKeyspace(String keyspace) {
-    callToolAndAssert(
-        "dropKeyspace", Map.of("name", keyspace), response -> assertFalse(response.isError()));
+    callToolAndAssert("dropKeyspace", Map.of("name", keyspace), assertStatusOnlyOk());
   }
 
   /** Create a collection via the MCP createCollection tool. */
@@ -101,7 +109,7 @@ public abstract class McpIntegrationTestBase {
     callToolAndAssert(
         "createCollection",
         Map.of("keyspace", keyspace, "collection", collection),
-        response -> assertFalse(response.isError()));
+        assertStatusOnlyOk());
   }
 
   /** Delete a collection via the MCP deleteCollection tool */
@@ -109,7 +117,64 @@ public abstract class McpIntegrationTestBase {
     callToolAndAssert(
         "deleteCollection",
         Map.of("keyspace", keyspace, "collection", collection),
-        response -> assertFalse(response.isError()));
+        response -> assertStatusOnlyOk());
+  }
+
+  /**
+   * Assert that the response is a successful status-only (ok:1) response with no error, no
+   * structured content, and no text content.
+   */
+  protected Consumer<ToolResponse> assertStatusOnlyOk() {
+    return response -> {
+      assertFalse(response.isError());
+      assertNotNull(response._meta());
+      assertNull(response.structuredContent());
+      assertThat(response.content()).isEmpty();
+
+      var status = (JsonObject) response._meta().get(MetaKey.of("status"));
+      assertNotNull(status, "Status should not be null");
+      assertEquals(1, status.getInteger("ok"), "Status should contain ok:1");
+    };
+  }
+
+  /**
+   * Assert status only response structure is valid, then apply additional assertions on the status
+   * JsonObject extracted from _meta.
+   *
+   * @param statusAssertions additional assertions to run on the status JsonObject
+   */
+  protected Consumer<ToolResponse> assertStatusOnlyWithJson(Consumer<JsonObject> statusAssertions) {
+    return response -> {
+      assertFalse(response.isError());
+      assertNotNull(response._meta());
+      assertNull(response.structuredContent());
+      assertThat(response.content()).isEmpty();
+
+      var status = (JsonObject) response._meta().get(MetaKey.of("status"));
+      assertNotNull(status, "Status should not be null");
+      statusAssertions.accept(status);
+    };
+  }
+
+  /**
+   * Assert error response structure is valid (no meta_ and content), then apply additional
+   * assertions on the error JsonArray extracted from structuredContent.
+   *
+   * @param errorsAssertions additional assertions to run on the error JsonArray
+   */
+  protected Consumer<ToolResponse> assertErrorOnly(Consumer<JsonArray> errorsAssertions) {
+    return response -> {
+      assertThat(response.content()).isEmpty();
+      assertThat(response._meta()).isEmpty();
+      assertTrue(response.isError());
+      assertThat(response.structuredContent()).isNotNull();
+
+      var errors = (JsonObject) response.structuredContent();
+      assertTrue(errors.containsKey("errors"));
+      var errorsArray = errors.getJsonArray("errors");
+      assertThat(errorsArray).isNotEmpty();
+      errorsAssertions.accept(errorsArray);
+    };
   }
 
   /**
