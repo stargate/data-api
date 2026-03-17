@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertG
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -12,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import io.vertx.core.json.JsonObject;
 import java.net.URI;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -51,21 +49,13 @@ public class McpFeatureDisabledIntegrationTest extends McpIntegrationTestBase {
     callToolAndAssert(
         CommandName.Names.FIND_KEYSPACES,
         Map.of(),
-        response -> {
-          // Assert: should be an error with MCP_FEATURE_NOT_ENABLED in structuredContent, no meta_
-          // and content
-          assertThat(response.content()).isEmpty();
-          assertThat(response._meta()).isEmpty();
-          assertTrue(response.isError());
-          assertThat(response.structuredContent()).isNotNull();
-
-          assertThat(response.structuredContent()).isNotNull();
-          var errorContent = (JsonObject) response.structuredContent();
-          assertTrue(errorContent.containsKey("errors"));
-          assertEquals(
-              errorContent.getJsonArray("errors").getJsonObject(0).getString("errorCode"),
-              SchemaException.Code.MCP_FEATURE_NOT_ENABLED.name());
-        });
+        assertErrorOnly(
+            errorsArray -> {
+              assertThat(errorsArray).hasSize(1);
+              assertEquals(
+                  errorsArray.getJsonObject(0).getString("errorCode"),
+                  SchemaException.Code.MCP_FEATURE_NOT_ENABLED.name());
+            }));
   }
 
   @Test
@@ -81,17 +71,7 @@ public class McpFeatureDisabledIntegrationTest extends McpIntegrationTestBase {
     mcpClientWithHeaderEnable
         .when()
         .toolsCall(
-            CommandName.Names.FIND_KEYSPACES,
-            Map.of(),
-            response -> {
-              // Assert: should be no error, and have status in meta_
-              assertFalse(response.isError());
-              assertNotNull(response._meta());
-              assertNull(response.structuredContent());
-
-              var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-              assertNotNull(status, "Status should not be null");
-            })
+            CommandName.Names.CREATE_KEYSPACE, Map.of("name", keyspaceName), assertStatusOnlyOk())
         .thenAssertResults();
   }
 }
