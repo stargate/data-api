@@ -103,11 +103,13 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
     // Create a new client with the appropriate URL based on token type
     var targetUrl = getUrlForTokenType(baseUrl, apiKey);
-    var dynamicClient = targetUrl.equals(baseUrl) ? nvidiaClient :
-        QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(targetUrl))
-            .readTimeout(modelConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(NvidiaRerankingClient.class);
+    var dynamicClient =
+        targetUrl.equals(baseUrl)
+            ? nvidiaClient
+            : QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create(targetUrl))
+                .readTimeout(modelConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+                .build(NvidiaRerankingClient.class);
 
     var nvidiaRequest =
         new NvidiaRerankingRequest(

@@ -93,11 +93,13 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
 
     // Create a new client with the appropriate URL based on token type
     var targetUrl = getUrlForTokenType(baseUrl, apiKey);
-    var dynamicClient = targetUrl.equals(baseUrl) ? nvidiaClient :
-        QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(targetUrl))
-            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(NvidiaEmbeddingProviderClient.class);
+    var dynamicClient =
+        targetUrl.equals(baseUrl)
+            ? nvidiaClient
+            : QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create(targetUrl))
+                .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+                .build(NvidiaEmbeddingProviderClient.class);
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(

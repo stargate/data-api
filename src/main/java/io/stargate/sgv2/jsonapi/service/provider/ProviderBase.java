@@ -96,9 +96,9 @@ public abstract class ProviderBase {
   protected abstract int atMostRetries();
 
   /**
-   * Determines the appropriate URL path based on the authentication token type.
-   * JWT tokens use the /portal/ path for proper tenant-id caching in the API Gateway.
-   * AstraCS tokens use the default path.
+   * Determines the appropriate URL path based on the authentication token type. JWT tokens use the
+   * /portal/ path for proper tenant-id caching in the API Gateway. AstraCS tokens use the default
+   * path.
    *
    * @param baseUrl the base URL to potentially modify
    * @param apiKey the API key (without Bearer prefix)
