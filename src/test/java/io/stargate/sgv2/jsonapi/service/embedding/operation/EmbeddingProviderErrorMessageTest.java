@@ -215,4 +215,38 @@ public class EmbeddingProviderErrorMessageTest {
         EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE,
         "Provider: nvidia; HTTP Status: 200; Error Message: The embedding provider returned empty data for model testModel");
   }
+
+  @Test
+  public void testAstraCSTokenUsesDefaultUrl() {
+    // Test that AstraCS tokens use the default URL without /portal/ prefix
+    String astracsApiKey = "AstraCS:test-token-12345";
+    String baseUrl = "https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/embeddings";
+
+    // Use the static method from ProviderBase to verify URL routing
+    String resultUrl =
+        io.stargate.sgv2.jsonapi.service.provider.ProviderBase.getUrlForTokenType(
+            baseUrl, astracsApiKey);
+
+    assertThat(resultUrl)
+        .as("AstraCS tokens should use the default URL without /portal/ prefix")
+        .isEqualTo(baseUrl);
+  }
+
+  @Test
+  public void testJWTTokenUsesPortalUrl() {
+    // Test that JWT tokens use the /portal/ prefixed URL for proper tenant-id caching
+    String jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc";
+    String baseUrl = "https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/embeddings";
+    String expectedPortalUrl =
+        "https://us-west-2.api-dev.ai.datastax.com/portal/nvidia/v1/embeddings";
+
+    // Use the static method from ProviderBase to verify URL routing
+    String resultUrl =
+        io.stargate.sgv2.jsonapi.service.provider.ProviderBase.getUrlForTokenType(
+            baseUrl, jwtToken);
+
+    assertThat(resultUrl)
+        .as("JWT tokens should use /portal/ prefixed URL for proper API Gateway caching")
+        .isEqualTo(expectedPortalUrl);
+  }
 }

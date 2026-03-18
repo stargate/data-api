@@ -104,9 +104,9 @@ public abstract class ProviderBase {
    * @param apiKey the API key (without Bearer prefix)
    * @return the modified base URL with /portal/ prefix if using JWT, otherwise original URL
    */
-  protected static String getUrlForTokenType(String baseUrl, String apiKey) {
+  public static String getUrlForTokenType(String baseUrl, String apiKey) {
     // If it's an AstraCS token, use the default path
-    if (apiKey.startsWith("AstraCS:")) {
+    if (apiKey != null && apiKey.startsWith("AstraCS:")) {
       return baseUrl;
     }
     // For JWT tokens, use the /portal/ path for proper tenant-id caching
@@ -114,9 +114,24 @@ public abstract class ProviderBase {
     try {
       URI uri = URI.create(baseUrl);
       String path = uri.getPath();
+      String query = uri.getQuery();
+      String fragment = uri.getFragment();
+
       // Add /portal prefix to the path
       String newPath = "/portal" + (path.startsWith("/") ? path : "/" + path);
-      return uri.getScheme() + "://" + uri.getAuthority() + newPath;
+
+      // Reconstruct URL with query and fragment if present
+      StringBuilder result = new StringBuilder();
+      result.append(uri.getScheme()).append("://").append(uri.getAuthority()).append(newPath);
+
+      if (query != null) {
+        result.append("?").append(query);
+      }
+      if (fragment != null) {
+        result.append("#").append(fragment);
+      }
+
+      return result.toString();
     } catch (Exception e) {
       // If URL parsing fails, return original
       LOGGER.warn("Failed to parse URL for token type routing: {}", baseUrl, e);
