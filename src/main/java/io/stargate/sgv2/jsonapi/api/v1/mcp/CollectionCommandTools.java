@@ -11,6 +11,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.TextIndexDefinitionDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -23,6 +25,28 @@ import java.util.List;
 public class CollectionCommandTools {
 
   @Inject McpResource mcpResource;
+
+  @Tool(description = "Command that alters the column definition in a table.")
+  public Uni<ToolResponse> alterTable(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the table") String table,
+      @ToolArg(description = "The alter table operation") AlterTableOperation operation) {
+
+    var command = new AlterTableCommand(operation);
+    return mcpResource.processCollectionCommand(keyspace, table, command);
+  }
+
+  @Tool(
+      description =
+          "Command that returns count of documents in a collection based on the collection.")
+  public Uni<ToolResponse> countDocuments(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection") String collection,
+      @ToolArg(description = "filter", required = false) FilterDefinition filter) {
+
+    var command = new CountDocumentsCommand(filter);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
 
   @Tool(description = "Creates a regular index for a column in a table.")
   public Uni<ToolResponse> createIndex(
@@ -47,6 +71,50 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
+          "Creates an index on a text column that can be used for lexical filtering and sorting.")
+  public Uni<ToolResponse> createTextIndex(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the table") String table,
+      @ToolArg(description = "Name of the new Index") String indexName,
+      @ToolArg(description = "Definition of the index to create")
+          TextIndexDefinitionDesc definition,
+      @ToolArg(
+              description =
+                  "Optional type of the index to create. The only supported value is '"
+                      + ApiIndexType.Constants.TEXT
+                      + "'.",
+              required = false)
+          String indexType,
+      @ToolArg(description = "Options for the command.", required = false)
+          CreateTextIndexCommand.CommandOptions options) {
+
+    var command = new CreateTextIndexCommand(indexName, definition, indexType, options);
+    return mcpResource.processCollectionCommand(keyspace, table, command);
+  }
+
+  @Tool(description = "Creates an index on a vector column that can be used for vector sorting.")
+  public Uni<ToolResponse> createVectorIndex(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the table") String table,
+      @ToolArg(description = "Name of the new Index") String indexName,
+      @ToolArg(description = "Definition of the index to create")
+          VectorIndexDefinitionDesc definition,
+      @ToolArg(
+              description =
+                  "Optional type of the index to create. The only supported value is '"
+                      + ApiIndexType.Constants.VECTOR
+                      + "'.",
+              required = false)
+          String indexType,
+      @ToolArg(description = "Options for the command.", required = false)
+          CreateVectorIndexCommand.CreateVectorIndexCommandOptions options) {
+
+    var command = new CreateVectorIndexCommand(indexName, definition, indexType, options);
+    return mcpResource.processCollectionCommand(keyspace, table, command);
+  }
+
+  @Tool(
+      description =
           "Command that finds documents based on the filter and deletes them from a collection")
   public Uni<ToolResponse> deleteMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
@@ -55,6 +123,18 @@ public class CollectionCommandTools {
           FilterDefinition filterDefinition) {
 
     var command = new DeleteManyCommand(filterDefinition);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
+
+  @Tool(description = "Command that finds a single document and deletes it from a collection")
+  public Uni<ToolResponse> deleteOne(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection/table") String collection,
+      @ToolArg(description = "Filter clause based on which documents are identified")
+          FilterDefinition filter,
+      @ToolArg(description = "Sort clause", required = false) SortDefinition sort) {
+
+    var command = new DeleteOneCommand(filter, sort);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
@@ -99,19 +179,15 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(
-      description =
-          "Command that finds a single JSON document from a table or collection and updates the value provided in the update clause.")
-  public Uni<ToolResponse> updateOne(
+  @Tool(description = "Command that lists all available indexes in a table.")
+  public Uni<ToolResponse> listIndexes(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter") FilterDefinition filter,
-      @ToolArg(description = "update") UpdateClause update,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "options", required = false) UpdateOneCommand.Options options) {
+      @ToolArg(description = "Name of the table") String table,
+      @ToolArg(description = "Options for the `listIndexes` command.", required = false)
+          ListIndexesCommand.Options options) {
 
-    var command = new UpdateOneCommand(filter, update, sort, options);
-    return mcpResource.processCollectionCommand(keyspace, collection, command);
+    var command = new ListIndexesCommand(options);
+    return mcpResource.processCollectionCommand(keyspace, table, command);
   }
 
   @Tool(description = "Command that inserts multiple JSON document to a collection.")
@@ -133,6 +209,21 @@ public class CollectionCommandTools {
       @ToolArg(description = "JSON document to insert") JsonNode document) {
 
     var command = new InsertOneCommand(document);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
+
+  @Tool(
+      description =
+          "Command that finds a single JSON document from a table or collection and updates the value provided in the update clause.")
+  public Uni<ToolResponse> updateOne(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection/table") String collection,
+      @ToolArg(description = "filter") FilterDefinition filter,
+      @ToolArg(description = "update") UpdateClause update,
+      @ToolArg(description = "sort", required = false) SortDefinition sort,
+      @ToolArg(description = "options", required = false) UpdateOneCommand.Options options) {
+
+    var command = new UpdateOneCommand(filter, update, sort, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 }
