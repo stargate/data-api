@@ -165,7 +165,7 @@ public class McpResource {
                     CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
                         .addThrowable(throwable)
                         .build();
-                return Uni.createFrom().item(ToolResponseFactory.create(errorResult));
+                return Uni.createFrom().item(errorResult.toToolResponse());
               } else {
                 VectorColumnDefinition vectorColDef = null;
                 if (schemaObject.type() == SchemaObjectType.COLLECTION) {
@@ -234,7 +234,7 @@ public class McpResource {
               }
               return meteredCommandProcessor.processCommand(context, command);
             })
-        .map(ToolResponseFactory::create);
+        .map(CommandResult::toToolResponse);
   }
 
   /**

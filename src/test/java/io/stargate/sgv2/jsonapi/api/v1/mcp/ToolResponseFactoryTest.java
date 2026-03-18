@@ -13,8 +13,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link ToolResponseFactory#create(CommandResult)} verifying the CommandResult →
- * ToolResponse mapping logic.
+ * Unit tests for {@link CommandResult#toToolResponse()} verifying the CommandResult → ToolResponse
+ * mapping logic.
  */
 class ToolResponseFactoryTest {
 
@@ -27,7 +27,7 @@ class ToolResponseFactoryTest {
             .build();
 
     // Act
-    ToolResponse response = ToolResponseFactory.create(commandResult);
+    ToolResponse response = commandResult.toToolResponse();
 
     // Assert: no error, no content and structuredContent, status should be mapped into _meta
     assertFalse(response.isError());
@@ -47,7 +47,7 @@ class ToolResponseFactoryTest {
             .build();
 
     // Act
-    ToolResponse response = ToolResponseFactory.create(commandResult);
+    ToolResponse response = commandResult.toToolResponse();
 
     // Assert: no error, no content, data in structuredContent, status should be mapped into _meta
     assertFalse(response.isError());
@@ -67,7 +67,7 @@ class ToolResponseFactoryTest {
             .build();
 
     // Act
-    ToolResponse response = ToolResponseFactory.create(commandResult);
+    ToolResponse response = commandResult.toToolResponse();
 
     // Assert: should be an error in structuredContent, no _meta and content
     assertThat(response.content()).isEmpty();
@@ -89,7 +89,7 @@ class ToolResponseFactoryTest {
             .build();
 
     // Act
-    ToolResponse response = ToolResponseFactory.create(commandResult);
+    ToolResponse response = commandResult.toToolResponse();
 
     // Assert: no content, should be an error in structuredContent, and status in _meta
     assertThat(response.content()).isEmpty();
