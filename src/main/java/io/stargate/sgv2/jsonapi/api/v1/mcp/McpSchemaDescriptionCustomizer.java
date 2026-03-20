@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * field-level description resolver for MicroProfile OpenAPI's {@code @Schema} annotation.
  */
 @Singleton
-public class JacksonSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
+public class McpSchemaDescriptionCustomizer implements SchemaGeneratorConfigCustomizer {
 
   @Override
   public void customize(SchemaGeneratorConfigBuilder builder) {
