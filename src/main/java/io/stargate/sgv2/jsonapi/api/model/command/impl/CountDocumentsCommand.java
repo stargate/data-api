@@ -10,9 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition
 import jakarta.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(
-    description =
-        "Command that returns count of documents in a collection based on the collection.")
+@Schema(description = "Command that returns count of documents in a collection")
 @JsonTypeName(CommandName.Names.COUNT_DOCUMENTS)
 public record CountDocumentsCommand(
     @Valid @JsonProperty("filter") FilterDefinition filterDefinition)

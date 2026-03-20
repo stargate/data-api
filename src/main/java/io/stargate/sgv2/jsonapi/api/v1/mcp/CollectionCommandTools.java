@@ -37,9 +37,7 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, table, command);
   }
 
-  @Tool(
-      description =
-          "Command that returns count of documents in a collection based on the collection.")
+  @Tool(description = "Command that returns count of documents in a collection")
   public Uni<ToolResponse> countDocuments(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection") String collection,
@@ -139,9 +137,7 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(
-      description =
-          "Command that returns estimated count of documents in a collection based on the collection.")
+  @Tool(description = "Command that returns estimated count of documents in a collection")
   public Uni<ToolResponse> estimatedDocumentCount(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection") String collection) {
@@ -211,7 +207,7 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Command that finds a single JSON document from a collection and updates the value provided in the update clause.")
+          "Command that finds a single JSON document from a collection and updates the values provided in the update clause.")
   public Uni<ToolResponse> findOneAndUpdate(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -249,7 +245,7 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, table, command);
   }
 
-  @Tool(description = "Command that inserts multiple JSON document to a collection.")
+  @Tool(description = "Command that inserts multiple JSON documents to a collection.")
   public Uni<ToolResponse> insertMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -287,7 +283,7 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Command that finds a single JSON document from a table or collection and updates the value provided in the update clause.")
+          "Command that finds a single JSON document from a table or collection and updates the values provided in the update clause.")
   public Uni<ToolResponse> updateOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
