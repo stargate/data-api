@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
@@ -140,6 +141,17 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
+          "Command that returns estimated count of documents in a collection based on the collection.")
+  public Uni<ToolResponse> estimatedDocumentCount(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection") String collection) {
+
+    var command = new EstimatedDocumentCountCommand();
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
+
+  @Tool(
+      description =
           "Finds documents using using vector and lexical sorting, then reranks the results.")
   public Uni<ToolResponse> findAndRerank(
       @ToolArg(description = "Name of the keyspace") String keyspace,
@@ -163,6 +175,53 @@ public class CollectionCommandTools {
       @ToolArg(description = "options", required = false) FindCommand.Options options) {
 
     var command = new FindCommand(filter, projection, sort, options);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
+
+  @Tool(
+      description =
+          "Command that finds a single JSON document from a collection and deletes it. The deleted document is returned")
+  public Uni<ToolResponse> findOneAndDelete(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection/table") String collection,
+      @ToolArg(description = "filter", required = false) FilterDefinition filter,
+      @ToolArg(description = "sort", required = false) SortDefinition sort,
+      @ToolArg(description = "projection", required = false) JsonNode projection) {
+
+    var command = new FindOneAndDeleteCommand(filter, sort, projection);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
+
+  @Tool(
+      description =
+          "Command that finds a single JSON document from a collection and replaces it with the replacement document.")
+  public Uni<ToolResponse> findOneAndReplace(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection/table") String collection,
+      @ToolArg(description = "filter", required = false) FilterDefinition filter,
+      @ToolArg(description = "sort", required = false) SortDefinition sort,
+      @ToolArg(description = "projection", required = false) JsonNode projection,
+      @ToolArg(description = "replacement") ObjectNode replacement,
+      @ToolArg(description = "options", required = false)
+          FindOneAndReplaceCommand.Options options) {
+
+    var command = new FindOneAndReplaceCommand(filter, sort, projection, replacement, options);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
+
+  @Tool(
+      description =
+          "Command that finds a single JSON document from a collection and updates the value provided in the update clause.")
+  public Uni<ToolResponse> findOneAndUpdate(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection/table") String collection,
+      @ToolArg(description = "filter", required = false) FilterDefinition filter,
+      @ToolArg(description = "projection", required = false) JsonNode projection,
+      @ToolArg(description = "sort", required = false) SortDefinition sort,
+      @ToolArg(description = "update") UpdateClause update,
+      @ToolArg(description = "options", required = false) FindOneAndUpdateCommand.Options options) {
+
+    var command = new FindOneAndUpdateCommand(filter, projection, sort, update, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
@@ -214,11 +273,25 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
+          "Command that finds documents from a collection and updates it with the values provided in the update clause.")
+  public Uni<ToolResponse> updateMany(
+      @ToolArg(description = "Name of the keyspace") String keyspace,
+      @ToolArg(description = "Name of the collection/table") String collection,
+      @ToolArg(description = "filter", required = false) FilterDefinition filter,
+      @ToolArg(description = "update") UpdateClause update,
+      @ToolArg(description = "options", required = false) UpdateManyCommand.Options options) {
+
+    var command = new UpdateManyCommand(filter, update, options);
+    return mcpResource.processCollectionCommand(keyspace, collection, command);
+  }
+
+  @Tool(
+      description =
           "Command that finds a single JSON document from a table or collection and updates the value provided in the update clause.")
   public Uni<ToolResponse> updateOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter") FilterDefinition filter,
+      @ToolArg(description = "filter", required = false) FilterDefinition filter,
       @ToolArg(description = "update") UpdateClause update,
       @ToolArg(description = "sort", required = false) SortDefinition sort,
       @ToolArg(description = "options", required = false) UpdateOneCommand.Options options) {
