@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -51,27 +50,97 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
                 "Alice",
                 "age",
                 25,
+                "city",
+                "NYC",
+                "active",
+                true,
                 "$vector",
                 List.of(0.25, 0.25, 0.25, 0.25, 0.25))),
         assertStatusOnlyWithJson(
             status -> {
               JsonArray insertedIds = status.getJsonArray("insertedIds");
               assertNotNull(insertedIds, "insertedIds should not be null");
-              assertEquals("1", insertedIds.getValue(0), "insertedIds should contain 1");
+              assertTrue(insertedIds.contains("1"));
             }));
   }
 
   @Test
   @Order(2)
-  void testInsertManyToolCall() {}
+  void testInsertManyToolCall() {
+    callToolAndAssert(
+        CommandName.Names.INSERT_MANY,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", collectionName,
+            "documents",
+                List.of(
+                    Map.of(
+                        "_id",
+                        "2",
+                        "name",
+                        "Bob",
+                        "age",
+                        30,
+                        "city",
+                        "LA",
+                        "active",
+                        true,
+                        "$vector",
+                        List.of(0.10, 0.10, 0.10, 0.10, 0.10)),
+                    Map.of(
+                        "_id",
+                        "3",
+                        "name",
+                        "Charlie",
+                        "age",
+                        35,
+                        "city",
+                        "NYC",
+                        "active",
+                        false,
+                        "$vector",
+                        List.of(0.50, 0.50, 0.50, 0.50, 0.50)),
+                    Map.of(
+                        "_id",
+                        "4",
+                        "name",
+                        "Diana",
+                        "age",
+                        28,
+                        "city",
+                        "Chicago",
+                        "active",
+                        true,
+                        "$vector",
+                        List.of(0.75, 0.75, 0.75, 0.75, 0.75)))),
+        assertStatusOnlyWithJson(
+            status -> {
+              JsonArray insertedIds = status.getJsonArray("insertedIds");
+              assertNotNull(insertedIds, "insertedIds should not be null");
+              assertEquals(3, insertedIds.size());
+              assertTrue(insertedIds.contains("2"));
+              assertTrue(insertedIds.contains("3"));
+              assertTrue(insertedIds.contains("4"));
+            }));
+  }
 
   @Test
   @Order(3)
-  void testCountDocumentsToolCall() {}
+  void testCountDocumentsToolCall() {
+    callToolAndAssert(
+        CommandName.Names.COUNT_DOCUMENTS,
+        Map.of("keyspace", keyspaceName, "collection", collectionName),
+        assertStatusOnlyWithJson(status -> assertEquals(4, status.getInteger("count"))));
+  }
 
   @Test
   @Order(3)
-  void testEstimatedDocumentCountToolCall() {}
+  void testEstimatedDocumentCountToolCall() {
+    callToolAndAssert(
+        CommandName.Names.ESTIMATED_DOCUMENT_COUNT,
+        Map.of("keyspace", keyspaceName, "collection", collectionName),
+        assertStatusOnlyWithJson(status -> assertTrue(status.getInteger("count") >= 0)));
+  }
 
   @Test
   @Order(3)
