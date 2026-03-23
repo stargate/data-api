@@ -34,9 +34,9 @@ public record EstimatedDocumentCountCollectionOperation<T extends SchemaObject>(
     return selectFrom("system", "size_estimates")
         .all()
         .whereColumn("keyspace_name")
-        .isEqualTo(literal(commandContext.schemaObject().identifier().keyspace()))
+        .isEqualTo(literal(commandContext.schemaObject().identifier().keyspace().asInternal()))
         .whereColumn("table_name")
-        .isEqualTo(literal(commandContext.schemaObject().identifier().table()))
+        .isEqualTo(literal(commandContext.schemaObject().identifier().table().asInternal()))
         .build();
   }
 }
