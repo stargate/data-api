@@ -1,8 +1,15 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import io.vertx.core.json.JsonArray;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.*;
 
 /**
@@ -28,7 +35,31 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
 
   @Test
   @Order(1)
-  void testInsertOneToolCall() {}
+  void testInsertOneToolCall() {
+    callToolAndAssert(
+        CommandName.Names.INSERT_ONE,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            collectionName,
+            "document",
+            Map.of(
+                "_id",
+                "1",
+                "name",
+                "Alice",
+                "age",
+                25,
+                "$vector",
+                List.of(0.25, 0.25, 0.25, 0.25, 0.25))),
+        assertStatusOnlyWithJson(
+            status -> {
+              JsonArray insertedIds = status.getJsonArray("insertedIds");
+              assertNotNull(insertedIds, "insertedIds should not be null");
+              assertEquals("1", insertedIds.getValue(0), "insertedIds should contain 1");
+            }));
+  }
 
   @Test
   @Order(2)

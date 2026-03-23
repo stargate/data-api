@@ -108,7 +108,13 @@ public abstract class McpIntegrationTestBase {
   protected void createCollection(String keyspace, String collection) {
     callToolAndAssert(
         "createCollection",
-        Map.of("keyspace", keyspace, "collection", collection),
+        Map.of(
+            "keyspace",
+            keyspace,
+            "collection",
+            collection,
+            "options",
+            Map.of("vector", Map.of("dimension", 5))),
         assertStatusOnlyOk());
   }
 
