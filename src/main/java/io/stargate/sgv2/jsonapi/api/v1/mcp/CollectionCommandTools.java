@@ -119,9 +119,9 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
       @ToolArg(description = "Filter clause based on which documents are identified")
-          FilterDefinition filterDefinition) {
+          FilterDefinition filter) {
 
-    var command = new DeleteManyCommand(filterDefinition);
+    var command = new DeleteManyCommand(filter);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 

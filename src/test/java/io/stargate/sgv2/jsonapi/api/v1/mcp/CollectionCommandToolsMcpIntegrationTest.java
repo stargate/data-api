@@ -297,14 +297,46 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(9)
-  void testFindOneAndDeleteToolCall() {}
+  @Order(11)
+  void testFindOneAndDeleteToolCall() {
+    callToolAndAssert(
+        CommandName.Names.FIND_ONE_AND_DELETE,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", collectionName,
+            "filter", Map.of("_id", "4")),
+        assertDataAndStatus(
+            data -> {
+              JsonObject doc = data.getJsonObject("document");
+              assertNotNull(doc);
+              assertEquals("4", doc.getString("_id"));
+            },
+            status -> {
+              assertEquals(1, status.getInteger("deletedCount"));
+            }));
+  }
 
   @Test
-  @Order(9)
-  void testDeleteOneToolCall() {}
+  @Order(12)
+  void testDeleteOneToolCall() {
+    callToolAndAssert(
+        CommandName.Names.DELETE_ONE,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", collectionName,
+            "filter", Map.of("_id", "1")),
+        assertStatusOnlyWithJson(status -> assertEquals(1, status.getInteger("deletedCount"))));
+  }
 
   @Test
-  @Order(9)
-  void testDeleteManyToolCall() {}
+  @Order(13)
+  void testDeleteManyToolCall() {
+    callToolAndAssert(
+        CommandName.Names.DELETE_MANY,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", collectionName,
+            "filter", Map.of("active", true)),
+        assertStatusOnlyWithJson(status -> assertEquals(1, status.getInteger("deletedCount"))));
+  }
 }
