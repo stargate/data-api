@@ -222,7 +222,19 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
             "collection", collectionName,
             "filter", Map.of("_id", "3"),
             "replacement",
-                Map.of("_id", "3", "name", "Charlie_Replaced", "age", 36, "city", "Boston"),
+                Map.of(
+                    "_id",
+                    "3",
+                    "name",
+                    "Charlie_Replaced",
+                    "age",
+                    36,
+                    "city",
+                    "Boston",
+                    "active",
+                    false,
+                    "$vector",
+                    List.of(0.50, 0.50, 0.50, 0.50, 0.50)),
             "options", Map.of("returnDocument", "after")),
         assertDataAndStatus(
             data -> {
@@ -237,28 +249,62 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
             }));
   }
 
-  @Test
-  @Order(9)
-  void testFindOneAndDeleteToolCall() {}
-
   // ????????
   @Test
   @Order(4)
   void testFindAndRerankToolCall() {}
 
   @Test
-  @Order(4)
-  void testUpdateOneToolCall() {}
+  @Order(9)
+  void testUpdateOneToolCall() {
+    callToolAndAssert(
+        CommandName.Names.UPDATE_ONE,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            collectionName,
+            "filter",
+            Map.of("_id", "4"),
+            "update",
+            Map.of("$set", Map.of("active", false))),
+        assertStatusOnlyWithJson(
+            status -> {
+              assertEquals(1, status.getInteger("matchedCount"));
+              assertEquals(1, status.getInteger("modifiedCount"));
+            }));
+  }
 
   @Test
-  @Order(4)
-  void testUpdateManyToolCall() {}
+  @Order(10)
+  void testUpdateManyToolCall() {
+    callToolAndAssert(
+        CommandName.Names.UPDATE_MANY,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            collectionName,
+            "filter",
+            Map.of("active", false),
+            "update",
+            Map.of("$set", Map.of("note", "batch_updated"))),
+        assertStatusOnlyWithJson(
+            status -> {
+              assertEquals(2, status.getInteger("matchedCount"));
+              assertEquals(2, status.getInteger("modifiedCount"));
+            }));
+  }
 
   @Test
-  @Order(4)
+  @Order(9)
+  void testFindOneAndDeleteToolCall() {}
+
+  @Test
+  @Order(9)
   void testDeleteOneToolCall() {}
 
   @Test
-  @Order(4)
+  @Order(9)
   void testDeleteManyToolCall() {}
 }
