@@ -144,7 +144,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(3)
+  @Order(5)
   void testFindOneToolCall() {
     callToolAndAssert(
         CommandName.Names.FIND_ONE,
@@ -167,7 +167,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(4)
+  @Order(6)
   void testFindToolCall() {
     callToolAndAssert(
         CommandName.Names.FIND,
@@ -189,8 +189,24 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(4)
-  void testFindOneAndUpdateToolCall() {}
+  @Order(7)
+  void testFindOneAndUpdateToolCall() {
+    callToolAndAssert(
+        CommandName.Names.FIND_ONE_AND_UPDATE,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", collectionName,
+            "filter", Map.of("_id", "2"),
+            "update", Map.of("$set", Map.of("age", 31)),
+            "options", Map.of("returnDocument", "after")),
+        assertDataOnly(
+            data -> {
+              JsonObject doc = data.getJsonObject("document");
+              assertNotNull(doc);
+              assertEquals("2", doc.getString("_id"));
+              assertEquals(31, doc.getInteger("age"));
+            }));
+  }
 
   @Test
   @Order(4)
