@@ -184,6 +184,22 @@ public abstract class McpIntegrationTestBase {
   }
 
   /**
+   * Assert data only response is valid (no meta_, content and error), then apply additional
+   * assertions on the structuredContent holds the data.
+   */
+  protected Consumer<ToolResponse> assertDataOnly(Consumer<JsonObject> dataAssertions) {
+    return response -> {
+      assertFalse(response.isError());
+      assertThat(response.content()).isEmpty();
+      assertThat(response._meta()).isEmpty();
+      assertNotNull(response.structuredContent());
+
+      var data = (JsonObject) response.structuredContent();
+      dataAssertions.accept(data);
+    };
+  }
+
+  /**
    * Execute an MCP tool call and assert the response using the shared client.
    *
    * @param toolName the MCP tool name to invoke

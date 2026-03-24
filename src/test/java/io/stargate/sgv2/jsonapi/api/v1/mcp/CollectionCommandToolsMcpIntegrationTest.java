@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
@@ -134,7 +135,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(3)
+  @Order(4)
   void testEstimatedDocumentCountToolCall() {
     callToolAndAssert(
         CommandName.Names.ESTIMATED_DOCUMENT_COUNT,
@@ -144,11 +145,48 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
 
   @Test
   @Order(3)
-  void testFindOneToolCall() {}
+  void testFindOneToolCall() {
+    callToolAndAssert(
+        CommandName.Names.FIND_ONE,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            collectionName,
+            "filter",
+            Map.of("active", true, "name", "Alice"),
+            "sort",
+            Map.of("$vector", List.of(0.25, 0.25, 0.25, 0.25, 0.25))),
+        assertDataOnly(
+            data -> {
+              JsonObject doc = data.getJsonObject("document");
+              assertNotNull(doc, "document should not be null");
+              assertEquals("1", doc.getString("_id"));
+              assertEquals("Alice", doc.getString("name"));
+            }));
+  }
 
   @Test
   @Order(4)
-  void testFindToolCall() {}
+  void testFindToolCall() {
+    callToolAndAssert(
+        CommandName.Names.FIND,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            collectionName,
+            "filter",
+            Map.of("city", "NYC"),
+            "sort",
+            Map.of("$vector", List.of(0.25, 0.25, 0.25, 0.25, 0.25))),
+        assertDataOnly(
+            data -> {
+              JsonArray docs = data.getJsonArray("documents");
+              assertNotNull(docs);
+              assertEquals(2, docs.size());
+            }));
+  }
 
   @Test
   @Order(4)
