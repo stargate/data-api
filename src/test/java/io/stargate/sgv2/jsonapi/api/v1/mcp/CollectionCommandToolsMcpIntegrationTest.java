@@ -199,21 +199,46 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
             "filter", Map.of("_id", "2"),
             "update", Map.of("$set", Map.of("age", 31)),
             "options", Map.of("returnDocument", "after")),
-        assertDataOnly(
+        assertDataAndStatus(
             data -> {
               JsonObject doc = data.getJsonObject("document");
               assertNotNull(doc);
               assertEquals("2", doc.getString("_id"));
               assertEquals(31, doc.getInteger("age"));
+            },
+            status -> {
+              assertEquals(1, status.getInteger("matchedCount"));
+              assertEquals(1, status.getInteger("modifiedCount"));
             }));
   }
 
   @Test
-  @Order(4)
-  void testFindOneAndReplaceToolCall() {}
+  @Order(8)
+  void testFindOneAndReplaceToolCall() {
+    callToolAndAssert(
+        CommandName.Names.FIND_ONE_AND_REPLACE,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", collectionName,
+            "filter", Map.of("_id", "3"),
+            "replacement",
+                Map.of("_id", "3", "name", "Charlie_Replaced", "age", 36, "city", "Boston"),
+            "options", Map.of("returnDocument", "after")),
+        assertDataAndStatus(
+            data -> {
+              JsonObject doc = data.getJsonObject("document");
+              assertNotNull(doc);
+              assertEquals("Charlie_Replaced", doc.getString("name"));
+              assertEquals("Boston", doc.getString("city"));
+            },
+            status -> {
+              assertEquals(1, status.getInteger("matchedCount"));
+              assertEquals(1, status.getInteger("modifiedCount"));
+            }));
+  }
 
   @Test
-  @Order(4)
+  @Order(9)
   void testFindOneAndDeleteToolCall() {}
 
   // ????????
