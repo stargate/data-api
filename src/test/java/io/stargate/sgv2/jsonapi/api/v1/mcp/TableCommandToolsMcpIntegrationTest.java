@@ -248,4 +248,80 @@ public class TableCommandToolsMcpIntegrationTest extends McpIntegrationTestBase 
                   "category column schema should exist");
             }));
   }
+
+  @Test
+  @Order(8)
+  void testFindOneToolCall() {
+    // Filter by primary key (id + category)
+    callToolAndAssert(
+        CommandName.Names.FIND_ONE,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", tableName,
+            "filter", Map.of("id", "1", "category", "A")),
+        assertDataAndStatus(
+            data -> {
+              JsonObject doc = data.getJsonObject("document");
+              assertNotNull(doc, "document should not be null");
+              assertEquals("1", doc.getString("id"));
+              assertEquals("A", doc.getString("category"));
+              assertEquals("Alice", doc.getString("name"));
+              assertEquals("NYC", doc.getString("city"));
+              assertEquals(25, doc.getInteger("age"));
+              assertTrue(doc.getBoolean("active"));
+              // Verify vector field is returned as an array
+              JsonArray embedding = doc.getJsonArray("embedding");
+              assertNotNull(embedding, "embedding should not be null");
+              assertEquals(5, embedding.size());
+            },
+            status -> {
+              // Table findOne returns projectionSchema describing all returned columns
+              JsonObject projectionSchema = status.getJsonObject("projectionSchema");
+              assertNotNull(projectionSchema, "projectionSchema should not be null");
+              assertNotNull(projectionSchema.getJsonObject("id"), "id schema should exist");
+              assertNotNull(
+                  projectionSchema.getJsonObject("category"), "category schema should exist");
+              // Verify vector column schema includes dimension and apiSupport
+              JsonObject embeddingSchema = projectionSchema.getJsonObject("embedding");
+              assertNotNull(embeddingSchema, "embedding schema should exist");
+              assertEquals("vector", embeddingSchema.getString("type"));
+              assertEquals(5, embeddingSchema.getInteger("dimension"));
+            }));
+  }
+
+  @Test
+  @Order(9)
+  void testFindToolCall() {
+    // Use the SAI index on "city" to filter rows where city=NYC
+    callToolAndAssert(
+        CommandName.Names.FIND,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", tableName,
+            "filter", Map.of("city", "NYC")),
+        assertDataAndStatus(
+            data -> {
+              JsonArray docs = data.getJsonArray("documents");
+              assertNotNull(docs, "documents should not be null");
+              // Alice (id=1, cat=A) and Charlie (id=3, cat=B) are both in NYC
+              assertEquals(2, docs.size(), "Should find exactly 2 documents in NYC");
+              // Verify returned doc fields are well-formed
+              JsonObject firstDoc = docs.getJsonObject(0);
+              assertNotNull(firstDoc.getString("id"), "id should not be null");
+              assertNotNull(firstDoc.getString("city"), "city should not be null");
+              assertEquals("NYC", firstDoc.getString("city"));
+            },
+            status -> {
+              // Table find also returns projectionSchema
+              JsonObject projectionSchema = status.getJsonObject("projectionSchema");
+              assertNotNull(projectionSchema, "projectionSchema should not be null");
+              assertNotNull(projectionSchema.getJsonObject("id"), "id schema should exist");
+              assertNotNull(projectionSchema.getJsonObject("city"), "city schema should exist");
+              // Verify vector column schema
+              JsonObject embeddingSchema = projectionSchema.getJsonObject("embedding");
+              assertNotNull(embeddingSchema, "embedding schema should exist");
+              assertEquals("vector", embeddingSchema.getString("type"));
+              assertEquals(5, embeddingSchema.getInteger("dimension"));
+            }));
+  }
 }
