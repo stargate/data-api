@@ -324,4 +324,41 @@ public class TableCommandToolsMcpIntegrationTest extends McpIntegrationTestBase 
               assertEquals(5, embeddingSchema.getInteger("dimension"));
             }));
   }
+
+  @Test
+  @Order(10)
+  void testFindWithVectorSortToolCall() {
+    // Use vector sort via the vector index on "embedding"
+    callToolAndAssert(
+        CommandName.Names.FIND,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", tableName,
+            "sort", Map.of("embedding", List.of(0.1, 0.2, 0.3, 0.4, 0.5))),
+        assertDataAndStatus(
+            data -> {
+              JsonArray docs = data.getJsonArray("documents");
+              assertNotNull(docs, "documents should not be null");
+              // All 4 rows should be returned, sorted by vector similarity
+              assertEquals(4, docs.size(), "All 4 documents should be returned via vector sort");
+              // Alice (id=1) has embedding [0.1,0.2,0.3,0.4,0.5], identical to the query vector,
+              // so she should rank first
+              JsonObject firstDoc = docs.getJsonObject(0);
+              assertEquals("1", firstDoc.getString("id"), "Alice should be the closest match");
+              assertEquals("A", firstDoc.getString("category"));
+              // Verify the embedding field is returned and has correct dimension
+              JsonArray embedding = firstDoc.getJsonArray("embedding");
+              assertNotNull(embedding, "embedding should not be null");
+              assertEquals(5, embedding.size());
+            },
+            status -> {
+              // projectionSchema is returned for table find operations
+              JsonObject projectionSchema = status.getJsonObject("projectionSchema");
+              assertNotNull(projectionSchema, "projectionSchema should not be null");
+              JsonObject embeddingSchema = projectionSchema.getJsonObject("embedding");
+              assertNotNull(embeddingSchema, "embedding schema should exist");
+              assertEquals("vector", embeddingSchema.getString("type"));
+              assertEquals(5, embeddingSchema.getInteger("dimension"));
+            }));
+  }
 }
