@@ -108,7 +108,13 @@ public abstract class McpIntegrationTestBase {
   protected void createCollection(String keyspace, String collection) {
     callToolAndAssert(
         "createCollection",
-        Map.of("keyspace", keyspace, "collection", collection),
+        Map.of(
+            "keyspace",
+            keyspace,
+            "collection",
+            collection,
+            "options",
+            Map.of("vector", Map.of("dimension", 5))),
         assertStatusOnlyOk());
   }
 
@@ -174,6 +180,46 @@ public abstract class McpIntegrationTestBase {
       var errorsArray = errors.getJsonArray("errors");
       assertThat(errorsArray).isNotEmpty();
       errorsAssertions.accept(errorsArray);
+    };
+  }
+
+  /**
+   * Assert data only response is valid (no meta_, content and error), then apply additional
+   * assertions on the structuredContent holds the data.
+   *
+   * @param dataAssertions additional assertions to run on the data JsonObject
+   */
+  protected Consumer<ToolResponse> assertDataOnly(Consumer<JsonObject> dataAssertions) {
+    return response -> {
+      assertFalse(response.isError());
+      assertThat(response.content()).isEmpty();
+      assertThat(response._meta()).isEmpty();
+      assertNotNull(response.structuredContent());
+
+      var data = (JsonObject) response.structuredContent();
+      dataAssertions.accept(data);
+    };
+  }
+
+  /**
+   * Assert data and status response is valid (no content and error), then apply additional
+   * assertions on the structuredContent holds the data and meta_ contains the status.
+   *
+   * @param dataAssertions additional assertions to run on the data JsonObject
+   * @param statusAssertions additional assertions to run on the status JsonObject
+   */
+  protected Consumer<ToolResponse> assertDataAndStatus(
+      Consumer<JsonObject> dataAssertions, Consumer<JsonObject> statusAssertions) {
+    return response -> {
+      assertFalse(response.isError());
+      assertThat(response.content()).isEmpty();
+      assertNotNull(response._meta());
+      assertNotNull(response.structuredContent());
+
+      var data = (JsonObject) response.structuredContent();
+      dataAssertions.accept(data);
+      var status = (JsonObject) response._meta().get(MetaKey.of("status"));
+      statusAssertions.accept(status);
     };
   }
 
