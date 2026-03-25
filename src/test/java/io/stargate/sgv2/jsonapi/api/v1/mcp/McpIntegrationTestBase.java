@@ -8,6 +8,7 @@ import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkiverse.mcp.server.test.McpAssured.McpStreamableTestClient;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonArray;
@@ -43,6 +44,10 @@ public abstract class McpIntegrationTestBase {
   /** Test collection name, with a random suffix for isolation. */
   protected final String collectionName =
       "mcp_col_" + RandomStringUtils.insecure().nextAlphanumeric(8).toLowerCase();
+
+  /** Test table name, with a random suffix for isolation. */
+  protected final String tableName =
+      "mcp_tab_" + RandomStringUtils.insecure().nextAlphanumeric(8).toLowerCase();
 
   /** Shared MCP client instance, connected once per test class. */
   protected McpStreamableTestClient mcpClient;
@@ -105,25 +110,34 @@ public abstract class McpIntegrationTestBase {
   }
 
   /** Create a collection via the MCP createCollection tool. */
-  protected void createCollection(String keyspace, String collection) {
+  protected void createCollection(
+      String keyspace, String collection, Map<String, Object> collectionOptions) {
     callToolAndAssert(
-        "createCollection",
-        Map.of(
-            "keyspace",
-            keyspace,
-            "collection",
-            collection,
-            "options",
-            Map.of("vector", Map.of("dimension", 5))),
+        CommandName.Names.CREATE_COLLECTION,
+        Map.of("keyspace", keyspace, "collection", collection, "options", collectionOptions),
         assertStatusOnlyOk());
   }
 
   /** Delete a collection via the MCP deleteCollection tool */
   protected void deleteCollection(String keyspace, String collection) {
     callToolAndAssert(
-        "deleteCollection",
+        CommandName.Names.DELETE_COLLECTION,
         Map.of("keyspace", keyspace, "collection", collection),
         response -> assertStatusOnlyOk());
+  }
+
+  protected void createTable(String keyspace, String table, Map<String, Object> tableDefinition) {
+    callToolAndAssert(
+        CommandName.Names.CREATE_TABLE,
+        Map.of("keyspace", keyspace, "table", table, "definition", tableDefinition),
+        assertStatusOnlyOk());
+  }
+
+  protected void dropTable(String keyspace, String table) {
+    callToolAndAssert(
+        CommandName.Names.DROP_TABLE,
+        Map.of("keyspace", keyspace, "table", table),
+        assertStatusOnlyOk());
   }
 
   /**

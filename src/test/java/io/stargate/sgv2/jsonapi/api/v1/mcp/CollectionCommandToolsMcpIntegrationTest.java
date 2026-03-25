@@ -24,7 +24,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   @BeforeAll
   public void createCollection() {
     createKeyspace(keyspaceName);
-    createCollection(keyspaceName, collectionName);
+    createCollection(keyspaceName, collectionName, Map.of("vector", Map.of("dimension", 5)));
   }
 
   @AfterAll

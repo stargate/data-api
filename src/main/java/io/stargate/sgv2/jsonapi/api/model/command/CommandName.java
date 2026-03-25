@@ -14,7 +14,7 @@ public enum CommandName {
   // they should not be DDL, they are not changing schema, we should add an CommandType.ADMIN for
   // them ?
 
-  ALTER_TABLE(Names.ALTER_TABLE_NAME, CommandType.DDL, CommandTarget.TABLE),
+  ALTER_TABLE(Names.ALTER_TABLE, CommandType.DDL, CommandTarget.TABLE),
   ALTER_TYPE(Names.ALTER_TYPE, CommandType.DDL, CommandTarget.TABLE),
   COUNT_DOCUMENTS(Names.COUNT_DOCUMENTS, CommandType.DML, CommandTarget.COLLECTION),
   CREATE_COLLECTION(Names.CREATE_COLLECTION, CommandType.DDL, CommandTarget.KEYSPACE),
@@ -107,7 +107,7 @@ public enum CommandName {
   }
 
   public interface Names {
-    String ALTER_TABLE_NAME = "alterTable";
+    String ALTER_TABLE = "alterTable";
     String ALTER_TYPE = "alterType";
     String COUNT_DOCUMENTS = "countDocuments";
     String CREATE_COLLECTION = "createCollection";
