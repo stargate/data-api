@@ -1,13 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
@@ -145,6 +145,107 @@ public class TableCommandToolsMcpIntegrationTest extends McpIntegrationTestBase 
               assertTrue(indexes.contains(REGULAR_INDEX_NAME), "Regular index should exist");
               assertTrue(indexes.contains(TEXT_INDEX_NAME), "Text index should exist");
               assertTrue(indexes.contains(VECTOR_INDEX_NAME), "Vector index should exist");
+            }));
+  }
+
+  @Test
+  @Order(6)
+  void testInsertOneToolCall() {
+    callToolAndAssert(
+        CommandName.Names.INSERT_ONE,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            tableName,
+            "document",
+            Map.of(
+                "id", "1",
+                "category", "A",
+                "name", "Alice",
+                "age", 25,
+                "city", "NYC",
+                "active", true,
+                "score", 9.5,
+                "description", "A senior engineer",
+                "embedding", List.of(0.1, 0.2, 0.3, 0.4, 0.5))),
+        assertStatusOnlyWithJson(
+            status -> {
+              // Table insertOne returns composite primary key as a nested array
+              JsonArray insertedIds = status.getJsonArray("insertedIds");
+              assertNotNull(insertedIds, "insertedIds should not be null");
+              assertEquals(1, insertedIds.size());
+              // Each entry is an array of PK values: ["1", "A"]
+              JsonArray pk = insertedIds.getJsonArray(0);
+              assertNotNull(pk, "Primary key array should not be null");
+              assertTrue(pk.contains("1"), "Partition key 'id=1' should be present");
+              assertTrue(pk.contains("A"), "Clustering key 'category=A' should be present");
+              // Verify primaryKeySchema reflects the table's PK columns and types
+              JsonObject primaryKeySchema = status.getJsonObject("primaryKeySchema");
+              assertNotNull(primaryKeySchema, "primaryKeySchema should not be null");
+              assertNotNull(primaryKeySchema.getJsonObject("id"), "id column schema should exist");
+              assertNotNull(
+                  primaryKeySchema.getJsonObject("category"),
+                  "category column schema should exist");
+            }));
+  }
+
+  @Test
+  @Order(7)
+  void testInsertManyToolCall() {
+    callToolAndAssert(
+        CommandName.Names.INSERT_MANY,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            tableName,
+            "documents",
+            List.of(
+                Map.of(
+                    "id", "2",
+                    "category", "A",
+                    "name", "Bob",
+                    "age", 30,
+                    "city", "LA",
+                    "active", true,
+                    "score", 7.0,
+                    "description", "A junior developer",
+                    "embedding", List.of(0.2, 0.3, 0.4, 0.5, 0.6)),
+                Map.of(
+                    "id", "3",
+                    "category", "B",
+                    "name", "Charlie",
+                    "age", 35,
+                    "city", "NYC",
+                    "active", false,
+                    "score", 5.5,
+                    "description", "A senior manager",
+                    "embedding", List.of(0.3, 0.4, 0.5, 0.6, 0.7)),
+                Map.of(
+                    "id", "4",
+                    "category", "B",
+                    "name", "Diana",
+                    "age", 28,
+                    "city", "Chicago",
+                    "active", true,
+                    "score", 8.0,
+                    "description", "A product designer",
+                    "embedding", List.of(0.4, 0.5, 0.6, 0.7, 0.8)))),
+        assertStatusOnlyWithJson(
+            status -> {
+              // Table insertMany also returns insertedIds as array of PK arrays, plus
+              // primaryKeySchema
+              JsonArray insertedIds = status.getJsonArray("insertedIds");
+              assertNotNull(insertedIds, "insertedIds should not be null");
+              assertEquals(3, insertedIds.size(), "All 3 rows should be inserted");
+              // Verify primaryKeySchema is present and well-formed
+              JsonObject primaryKeySchema = status.getJsonObject("primaryKeySchema");
+              assertNotNull(primaryKeySchema, "primaryKeySchema should not be null");
+              assertNotNull(primaryKeySchema.getJsonObject("id"), "id column schema should exist");
+              assertNotNull(
+                  primaryKeySchema.getJsonObject("category"),
+                  "category column schema should exist");
             }));
   }
 }
