@@ -190,6 +190,30 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
 
   @Test
   @Order(7)
+  void testFindAndRerankToolCall() {
+    callToolAndAssert(
+        CommandName.Names.FIND_AND_RERANK,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            collectionName,
+            "sort",
+            Map.of("$hybrid", Map.of("$vector", List.of(0.25, 0.25, 0.25, 0.25, 0.25))),
+            "options",
+            Map.of("rerankQuery", "I like cheese", "rerankOn", "content")),
+        assertDataOnly(
+            data -> {
+              // cannot actually call this command(no reranker), just verify the tool can be called
+              // without error
+              JsonArray docs = data.getJsonArray("documents");
+              assertNotNull(docs);
+              assertEquals(0, docs.size());
+            }));
+  }
+
+  @Test
+  @Order(8)
   void testFindOneAndUpdateToolCall() {
     callToolAndAssert(
         CommandName.Names.FIND_ONE_AND_UPDATE,
@@ -213,7 +237,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(8)
+  @Order(9)
   void testFindOneAndReplaceToolCall() {
     callToolAndAssert(
         CommandName.Names.FIND_ONE_AND_REPLACE,
@@ -249,13 +273,8 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
             }));
   }
 
-  // ????????
   @Test
-  @Order(4)
-  void testFindAndRerankToolCall() {}
-
-  @Test
-  @Order(9)
+  @Order(10)
   void testUpdateOneToolCall() {
     callToolAndAssert(
         CommandName.Names.UPDATE_ONE,
@@ -276,7 +295,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(10)
+  @Order(11)
   void testUpdateManyToolCall() {
     callToolAndAssert(
         CommandName.Names.UPDATE_MANY,
@@ -297,7 +316,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(11)
+  @Order(12)
   void testFindOneAndDeleteToolCall() {
     callToolAndAssert(
         CommandName.Names.FIND_ONE_AND_DELETE,
@@ -317,7 +336,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(12)
+  @Order(13)
   void testDeleteOneToolCall() {
     callToolAndAssert(
         CommandName.Names.DELETE_ONE,
@@ -329,14 +348,14 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   }
 
   @Test
-  @Order(13)
+  @Order(14)
   void testDeleteManyToolCall() {
     callToolAndAssert(
         CommandName.Names.DELETE_MANY,
         Map.of(
             "keyspace", keyspaceName,
             "collection", collectionName,
-            "filter", Map.of("active", true)),
+            "filter", Map.of("active", false)),
         assertStatusOnlyWithJson(status -> assertEquals(1, status.getInteger("deletedCount"))));
   }
 }
