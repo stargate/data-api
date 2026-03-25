@@ -46,7 +46,6 @@ public class TableCommandToolsMcpIntegrationTest extends McpIntegrationTestBase 
   @Test
   @Order(1)
   void testAlterTableAddColumnsToolCall() {
-    // Add a text column "description" and a vector column "embedding" (dim=5)
     callToolAndAssert(
         CommandName.Names.ALTER_TABLE,
         Map.of(
@@ -64,6 +63,59 @@ public class TableCommandToolsMcpIntegrationTest extends McpIntegrationTestBase 
                         Map.of("type", "text"),
                         "embedding",
                         Map.of("type", "vector", "dimension", 5))))),
+        assertStatusOnlyOk());
+  }
+
+  @Test
+  @Order(2)
+  void testCreateIndexToolCall() {
+    callToolAndAssert(
+        CommandName.Names.CREATE_INDEX,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "table",
+            tableName,
+            "indexName",
+            "regular_index",
+            "definition",
+            Map.of("column", "city")),
+        assertStatusOnlyOk());
+  }
+
+  @Test
+  @Order(3)
+  void testCreateTextIndexToolCall() {
+    // Create a text (lexical) index on the "name" column
+    callToolAndAssert(
+        CommandName.Names.CREATE_TEXT_INDEX,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "table",
+            tableName,
+            "indexName",
+            "text_index",
+            "definition",
+            Map.of("column", "name")),
+        assertStatusOnlyOk());
+  }
+
+  @Test
+  @Order(4)
+  void testCreateVectorIndexToolCall() {
+    // Create a vector index on the "embedding" column (added via alterTable in Order 1)
+    callToolAndAssert(
+        CommandName.Names.CREATE_VECTOR_INDEX,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "table",
+            tableName,
+            "indexName",
+            "vector_index",
+            "definition",
+            Map.of("column", "embedding")),
         assertStatusOnlyOk());
   }
 }
