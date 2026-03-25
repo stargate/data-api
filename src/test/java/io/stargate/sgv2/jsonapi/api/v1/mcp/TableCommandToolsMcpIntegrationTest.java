@@ -361,4 +361,51 @@ public class TableCommandToolsMcpIntegrationTest extends McpIntegrationTestBase 
               assertEquals(5, embeddingSchema.getInteger("dimension"));
             }));
   }
+
+  @Test
+  @Order(11)
+  void testUpdateOneToolCall() {
+    // Update score of Bob (id=2, category=A)
+    callToolAndAssert(
+        CommandName.Names.UPDATE_ONE,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            tableName,
+            "filter",
+            Map.of("id", "2", "category", "A"),
+            "update",
+            Map.of("$set", Map.of("score", 7.5, "active", false))),
+        assertStatusOnlyWithJson(
+            status -> {
+              assertEquals(1, status.getInteger("matchedCount"));
+              assertEquals(1, status.getInteger("modifiedCount"));
+            }));
+  }
+
+  @Test
+  @Order(12)
+  void testDeleteOneToolCall() {
+    // Delete Bob (id=2, category=A) by primary key filter
+    callToolAndAssert(
+        CommandName.Names.DELETE_ONE,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", tableName,
+            "filter", Map.of("id", "2", "category", "A")),
+        assertStatusOnlyWithJson(status -> assertEquals(-1, status.getInteger("deletedCount"))));
+  }
+
+  @Test
+  @Order(13)
+  void testDeleteManyToolCall() {
+    // Delete all rows in category=B (Charlie + Diana)
+    callToolAndAssert(
+        CommandName.Names.DELETE_MANY,
+        Map.of(
+            "keyspace", keyspaceName,
+            "collection", tableName),
+        assertStatusOnlyWithJson(status -> assertEquals(-1, status.getInteger("deletedCount"))));
+  }
 }
