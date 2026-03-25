@@ -13,7 +13,7 @@ import java.util.Map;
 import org.junit.jupiter.api.*;
 
 /**
- * MCP integration tests for collection-related command in {@link CollectionCommandTools}. Uses the
+ * MCP integration tests for collection-related commands in {@link CollectionCommandTools}. Uses the
  * Streamable HTTP transport via McpAssured to test collection-level MCP tools end-to-end.
  */
 @QuarkusIntegrationTest
@@ -204,8 +204,8 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
             Map.of("rerankQuery", "I like cheese", "rerankOn", "content")),
         assertDataOnly(
             data -> {
-              // cannot actually call this command(no reranker), just verify the tool can be called
-              // without error
+              // Use an inexistent field "content" in rerankOn, so it will not do the actual rerank
+              // operation(cannot call reranker) and return an empty result
               JsonArray docs = data.getJsonArray("documents");
               assertNotNull(docs);
               assertEquals(0, docs.size());
