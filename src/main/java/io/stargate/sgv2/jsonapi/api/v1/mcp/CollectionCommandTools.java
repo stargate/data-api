@@ -118,7 +118,9 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> deleteMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "Filter clause based on which documents are identified")
+      @ToolArg(
+              description = "Filter clause based on which documents are identified",
+              required = false)
           FilterDefinition filter) {
 
     var command = new DeleteManyCommand(filter);
