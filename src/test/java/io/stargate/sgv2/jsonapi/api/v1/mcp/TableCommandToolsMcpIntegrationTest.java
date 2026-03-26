@@ -408,4 +408,31 @@ public class TableCommandToolsMcpIntegrationTest extends McpIntegrationTestBase 
             "collection", tableName),
         assertStatusOnlyWithJson(status -> assertEquals(-1, status.getInteger("deletedCount"))));
   }
+
+  @Test
+  @Order(17)
+  void testDropIndexToolCall() {
+    // Drop the regular index created earlier
+    // this one is under KeyspaceCommand
+    callToolAndAssert(
+        CommandName.Names.DROP_INDEX,
+        Map.of("keyspace", keyspaceName, "name", REGULAR_INDEX_NAME),
+        assertStatusOnlyOk());
+  }
+
+  @Test
+  @Order(18)
+  void testListIndexesAfterDropIndexToolCall() {
+    // Verify the dropped index is no longer listed
+    callToolAndAssert(
+        CommandName.Names.LIST_INDEXES,
+        Map.of("keyspace", keyspaceName, "table", tableName),
+        assertStatusOnlyWithJson(
+            status -> {
+              JsonArray indexes = status.getJsonArray("indexes");
+              assertNotNull(indexes, "indexes array should not be null");
+              assertFalse(
+                  indexes.contains(REGULAR_INDEX_NAME), "Dropped index should not be in the list");
+            }));
+  }
 }
