@@ -60,6 +60,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 public class NvidiaRerankingProvider extends RerankingProvider {
 
   private final NvidiaRerankingClient nvidiaClient;
+  private final String baseUrl;
 
   /**
    * Nvidia Reranking Service supports truncation or error behavior when the passage is too long.
@@ -76,9 +77,10 @@ public class NvidiaRerankingProvider extends RerankingProvider {
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
     super(ModelProvider.NVIDIA, modelConfig);
 
+    this.baseUrl = modelConfig.url();
     nvidiaClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(modelConfig.url()))
+            .baseUri(URI.create(baseUrl))
             .readTimeout(modelConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(NvidiaRerankingClient.class);
   }
@@ -96,7 +98,18 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     if (rerankingCredentials.apiKey().isEmpty()) {
       throw SchemaException.Code.RERANKING_PROVIDER_AUTHENTICATION_KEY_NOT_PROVIDED.get();
     }
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey();
+    var apiKey = rerankingCredentials.apiKey();
+    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + apiKey;
+
+    // Create a new client with the appropriate URL based on token type
+    var targetUrl = getUrlForTokenType(baseUrl, apiKey);
+    var dynamicClient =
+        targetUrl.equals(baseUrl)
+            ? nvidiaClient
+            : QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create(targetUrl))
+                .readTimeout(modelConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+                .build(NvidiaRerankingClient.class);
 
     var nvidiaRequest =
         new NvidiaRerankingRequest(
@@ -107,7 +120,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
     final long callStartNano = System.nanoTime();
     return retryHTTPCall(
-            nvidiaClient.rerank(
+            dynamicClient.rerank(
                 accessToken, rerankingCredentials.tenant().toString(), nvidiaRequest))
         .onItem()
         .transform(
