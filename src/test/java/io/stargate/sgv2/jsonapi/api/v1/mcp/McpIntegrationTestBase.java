@@ -8,6 +8,7 @@ import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkiverse.mcp.server.test.McpAssured.McpStreamableTestClient;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonArray;
@@ -43,6 +44,10 @@ public abstract class McpIntegrationTestBase {
   /** Test collection name, with a random suffix for isolation. */
   protected final String collectionName =
       "mcp_col_" + RandomStringUtils.insecure().nextAlphanumeric(8).toLowerCase();
+
+  /** Test table name, with a random suffix for isolation. */
+  protected final String tableName =
+      "mcp_tab_" + RandomStringUtils.insecure().nextAlphanumeric(8).toLowerCase();
 
   /** Shared MCP client instance, connected once per test class. */
   protected McpStreamableTestClient mcpClient;
@@ -105,19 +110,34 @@ public abstract class McpIntegrationTestBase {
   }
 
   /** Create a collection via the MCP createCollection tool. */
-  protected void createCollection(String keyspace, String collection) {
+  protected void createCollection(
+      String keyspace, String collection, Map<String, Object> collectionOptions) {
     callToolAndAssert(
-        "createCollection",
-        Map.of("keyspace", keyspace, "collection", collection),
+        CommandName.Names.CREATE_COLLECTION,
+        Map.of("keyspace", keyspace, "collection", collection, "options", collectionOptions),
         assertStatusOnlyOk());
   }
 
   /** Delete a collection via the MCP deleteCollection tool */
   protected void deleteCollection(String keyspace, String collection) {
     callToolAndAssert(
-        "deleteCollection",
+        CommandName.Names.DELETE_COLLECTION,
         Map.of("keyspace", keyspace, "collection", collection),
         response -> assertStatusOnlyOk());
+  }
+
+  protected void createTable(String keyspace, String table, Map<String, Object> tableDefinition) {
+    callToolAndAssert(
+        CommandName.Names.CREATE_TABLE,
+        Map.of("keyspace", keyspace, "table", table, "definition", tableDefinition),
+        assertStatusOnlyOk());
+  }
+
+  protected void dropTable(String keyspace, String table) {
+    callToolAndAssert(
+        CommandName.Names.DROP_TABLE,
+        Map.of("keyspace", keyspace, "table", table),
+        assertStatusOnlyOk());
   }
 
   /**
@@ -174,6 +194,46 @@ public abstract class McpIntegrationTestBase {
       var errorsArray = errors.getJsonArray("errors");
       assertThat(errorsArray).isNotEmpty();
       errorsAssertions.accept(errorsArray);
+    };
+  }
+
+  /**
+   * Assert data only response is valid (no meta_, content and error), then apply additional
+   * assertions on the structuredContent holds the data.
+   *
+   * @param dataAssertions additional assertions to run on the data JsonObject
+   */
+  protected Consumer<ToolResponse> assertDataOnly(Consumer<JsonObject> dataAssertions) {
+    return response -> {
+      assertFalse(response.isError());
+      assertThat(response.content()).isEmpty();
+      assertThat(response._meta()).isEmpty();
+      assertNotNull(response.structuredContent());
+
+      var data = (JsonObject) response.structuredContent();
+      dataAssertions.accept(data);
+    };
+  }
+
+  /**
+   * Assert data and status response is valid (no content and error), then apply additional
+   * assertions on the structuredContent holds the data and meta_ contains the status.
+   *
+   * @param dataAssertions additional assertions to run on the data JsonObject
+   * @param statusAssertions additional assertions to run on the status JsonObject
+   */
+  protected Consumer<ToolResponse> assertDataAndStatus(
+      Consumer<JsonObject> dataAssertions, Consumer<JsonObject> statusAssertions) {
+    return response -> {
+      assertFalse(response.isError());
+      assertThat(response.content()).isEmpty();
+      assertNotNull(response._meta());
+      assertNotNull(response.structuredContent());
+
+      var data = (JsonObject) response.structuredContent();
+      dataAssertions.accept(data);
+      var status = (JsonObject) response._meta().get(MetaKey.of("status"));
+      statusAssertions.accept(status);
     };
   }
 

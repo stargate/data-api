@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
@@ -30,8 +29,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
-import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,10 +165,7 @@ public class McpResource {
                     CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
                         .addThrowable(throwable)
                         .build();
-                return Uni.createFrom()
-                    .item(
-                        new ToolResponse(
-                            true, List.of(), Map.of("errors", errorResult.errors()), Map.of()));
+                return Uni.createFrom().item(errorResult.toToolResponse());
               } else {
                 VectorColumnDefinition vectorColDef = null;
                 if (schemaObject.type() == SchemaObjectType.COLLECTION) {
@@ -240,24 +234,7 @@ public class McpResource {
               }
               return meteredCommandProcessor.processCommand(context, command);
             })
-        .map(
-            result -> {
-              boolean hasErrors = result.errors() != null && !result.errors().isEmpty();
-
-              // Map "status" in CommandResult to _meta in ToolResponse
-              Map<MetaKey, Object> meta =
-                  (result.status() != null && !result.status().isEmpty())
-                      ? Map.of(MetaKey.of("status"), result.status())
-                      : Map.of();
-
-              // Map "errors" or "data" to structuredContent
-              // Also, structuredContent is expected to be a Record (a plain JSON object {})
-              return new ToolResponse(
-                  hasErrors,
-                  List.of(),
-                  hasErrors ? Map.of("errors", result.errors()) : result.data(),
-                  meta);
-            });
+        .map(CommandResult::toToolResponse);
   }
 
   /**

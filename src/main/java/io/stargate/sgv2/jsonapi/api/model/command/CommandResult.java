@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.quarkiverse.mcp.server.MetaKey;
+import io.quarkiverse.mcp.server.ToolResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
@@ -94,6 +96,34 @@ public record CommandResult(
                         RestResponse.ResponseBuilder.create(firstError.httpStatus(), this).build());
 
     return maybeErrorResponse.orElseGet(() -> RestResponse.ok(this));
+  }
+
+  /**
+   * Create a {@link ToolResponse} from this {@link CommandResult} for MCP tool responses.
+   *
+   * <p>Mapping rules:
+   *
+   * <ul>
+   *   <li>{@link #errors()} → {@link ToolResponse#isError()} and error content in {@link
+   *       ToolResponse#structuredContent()}
+   *   <li>{@link #data()} → {@link ToolResponse#structuredContent()} (when no errors)
+   *   <li>{@link #status()} → {@link ToolResponse#_meta()} with key {@code "status"}
+   * </ul>
+   *
+   * @return A new {@link ToolResponse} representing this command result.
+   */
+  public ToolResponse toToolResponse() {
+
+    boolean hasErrors = errors != null && !errors.isEmpty();
+
+    // Map "status" in CommandResult to _meta in ToolResponse
+    Map<MetaKey, Object> meta =
+        (status != null && !status.isEmpty()) ? Map.of(MetaKey.of("status"), status) : Map.of();
+
+    // Map "errors" or "data" to structuredContent
+    // Also, structuredContent is expected to be a Record (a plain JSON object {})
+    return new ToolResponse(
+        hasErrors, List.of(), hasErrors ? Map.of("errors", errors) : data, meta);
   }
 
   /**
