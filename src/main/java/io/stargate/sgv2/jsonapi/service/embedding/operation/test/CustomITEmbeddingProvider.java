@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -127,7 +127,7 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
     // Check if using an EOF model
@@ -137,7 +137,7 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
     if (texts.isEmpty()) {
       var modelUsage =
           createModelUsage(
-              embeddingCredentials.tenant(),
+              requestContext.getEmbeddingCredentials().tenant(),
               ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
               0,
               0,
@@ -146,8 +146,8 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
               0);
       return Uni.createFrom().item(new BatchedEmbeddingResponse(batchId, response, modelUsage));
     }
-    if (embeddingCredentials.apiKey().isEmpty()
-        || !embeddingCredentials.apiKey().get().equals(TEST_API_KEY)) {
+    if (requestContext.getEmbeddingCredentials().apiKey().isEmpty()
+        || !requestContext.getEmbeddingCredentials().apiKey().get().equals(TEST_API_KEY)) {
       return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
     }
 
@@ -170,7 +170,7 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
 
     var modelUsage =
         createModelUsage(
-            embeddingCredentials.tenant(),
+            requestContext.getEmbeddingCredentials().tenant(),
             ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
             0,
             0,

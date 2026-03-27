@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -82,10 +82,10 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
-    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
+    checkEmbeddingApiKeyHeader(requestContext.getEmbeddingCredentials().apiKey());
 
     // TODO: remove the requestTypeQuery and requestTypeIndex from config !
     // aaron 8 June 2025 - this looks like the term to sue for query and index is in config, but
@@ -99,7 +99,9 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
             inputType, texts.toArray(new String[texts.size()]), modelName(), autoTruncate);
 
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
+    var accessToken =
+        HttpConstants.BEARER_PREFIX_FOR_API_KEY
+            + requestContext.getEmbeddingCredentials().apiKey().get();
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(voyageClient.embed(accessToken, voyageRequest))
@@ -125,7 +127,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenant(),
+                      requestContext.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       0,
                       voyageResponse.usage.total_tokens,

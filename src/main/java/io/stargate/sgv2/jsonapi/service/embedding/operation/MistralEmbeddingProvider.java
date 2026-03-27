@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -92,15 +92,17 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
     checkEOLModelUsage();
-    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
+    checkEmbeddingApiKeyHeader(requestContext.getEmbeddingCredentials().apiKey());
 
     var mistralRequest = new MistralEmbeddingRequest(texts, modelName(), "float");
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
+    var accessToken =
+        HttpConstants.BEARER_PREFIX_FOR_API_KEY
+            + requestContext.getEmbeddingCredentials().apiKey().get();
 
     long callStartNano = System.nanoTime();
 
@@ -125,7 +127,7 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenant(),
+                      requestContext.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       mistralResponse.usage().prompt_tokens(),
                       mistralResponse.usage().total_tokens(),

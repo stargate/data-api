@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -68,16 +68,18 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
     checkEOLModelUsage();
-    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
+    checkEmbeddingApiKeyHeader(requestContext.getEmbeddingCredentials().apiKey());
     var huggingFaceRequest =
         new HuggingFaceEmbeddingRequest(texts, new HuggingFaceEmbeddingRequest.Options(true));
 
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
+    var accessToken =
+        HttpConstants.BEARER_PREFIX_FOR_API_KEY
+            + requestContext.getEmbeddingCredentials().apiKey().get();
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(huggingFaceClient.embed(accessToken, huggingFaceRequest))
@@ -113,7 +115,7 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
               // https://huggingface.co/blog/getting-started-with-embeddings
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenant(),
+                      requestContext.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       0,
                       0,

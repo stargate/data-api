@@ -45,13 +45,14 @@ public class RequestContext implements LoggingMDCContext {
 
   /** For testing purposes only. */
   @VisibleForTesting
-  public RequestContext(Tenant tenant, String authToken, UserAgent userAgent) {
+  public RequestContext(
+      Tenant tenant, String authToken, UserAgent userAgent, EmbeddingCredentials credentials) {
 
     this.authToken = authToken;
     this.requestId = generateRequestId();
     this.userAgent = userAgent;
     this.tenant = tenant;
-    this.embeddingCredentials = null;
+    this.embeddingCredentials = credentials;
     this.rerankingCredentials = null;
     this.httpHeaders = null;
   }

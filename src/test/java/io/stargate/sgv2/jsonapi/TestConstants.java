@@ -262,7 +262,7 @@ public class TestConstants {
   }
 
   public RequestContext requestContext() {
-    return new RequestContext(TENANT, AUTH_TOKEN, USER_AGENT);
+    return new RequestContext(TENANT, AUTH_TOKEN, USER_AGENT, EMBEDDING_CREDENTIALS);
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(

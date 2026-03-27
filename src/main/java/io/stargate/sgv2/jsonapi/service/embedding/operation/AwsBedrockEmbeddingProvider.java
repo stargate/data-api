@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.CountingOutputStream;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -60,7 +60,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
     checkEOLModelUsage();
@@ -72,7 +72,8 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
               + texts.size());
     }
 
-    if (embeddingCredentials.accessId().isEmpty() && embeddingCredentials.secretId().isEmpty()) {
+    if (requestContext.getEmbeddingCredentials().accessId().isEmpty()
+        && requestContext.getEmbeddingCredentials().secretId().isEmpty()) {
       throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
           Map.of(
               "provider",
@@ -84,7 +85,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
                       EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME)));
     }
 
-    if (embeddingCredentials.accessId().isEmpty()) {
+    if (requestContext.getEmbeddingCredentials().accessId().isEmpty()) {
       throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
           Map.of(
               "provider",
@@ -93,7 +94,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
               "'%s' header is missing".formatted(EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME)));
     }
 
-    if (embeddingCredentials.secretId().isEmpty()) {
+    if (requestContext.getEmbeddingCredentials().secretId().isEmpty()) {
       throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.get(
           Map.of(
               "provider",
@@ -104,7 +105,8 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
     var awsCreds =
         AwsBasicCredentials.create(
-            embeddingCredentials.accessId().get(), embeddingCredentials.secretId().get());
+            requestContext.getEmbeddingCredentials().accessId().get(),
+            requestContext.getEmbeddingCredentials().secretId().get());
 
     // NOTE: cannot put this client in a resource block for auto close because it will close
     // te connection pool before we pull the async result.
@@ -159,7 +161,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
                     var modelUsage =
                         createModelUsage(
-                            embeddingCredentials.tenant(),
+                            requestContext.tenant(),
                             ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                             bedrockResponse.inputTextTokenCount(),
                             bedrockResponse.inputTextTokenCount(),
