@@ -5,7 +5,7 @@ import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -72,14 +72,14 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    * Vectorize the given list of texts
    *
    * @param texts List of texts to be vectorized
-   * @param embeddingCredentials Credentials required for the provider
+   * @param requestContext Request context
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    */
   @Override
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
     var gatewayRequestParams =
@@ -140,13 +140,16 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setTenantId(tenant.toString())
             .putAuthTokens(DATA_API_TOKEN, authToken);
 
-    embeddingCredentials
+    requestContext
+        .getEmbeddingCredentials()
         .apiKey()
         .ifPresent(v -> contextBuilder.putAuthTokens(EMBEDDING_API_KEY, v));
-    embeddingCredentials
+    requestContext
+        .getEmbeddingCredentials()
         .accessId()
         .ifPresent(v -> contextBuilder.putAuthTokens(EMBEDDING_ACCESS_ID, v));
-    embeddingCredentials
+    requestContext
+        .getEmbeddingCredentials()
         .secretId()
         .ifPresent(v -> contextBuilder.putAuthTokens(EMBEDDING_SECRET_ID, v));
 

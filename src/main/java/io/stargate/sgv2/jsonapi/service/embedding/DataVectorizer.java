@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -32,7 +32,7 @@ import java.util.*;
 public class DataVectorizer {
   private final MeteredEmbeddingProviderWrapper embeddingProviderWrapper;
   private final JsonNodeFactory nodeFactory;
-  private final EmbeddingCredentials embeddingCredentials;
+  private final RequestContext requestContext;
   private final SchemaObject schemaObject;
 
   /**
@@ -41,19 +41,19 @@ public class DataVectorizer {
    * @param embeddingProvider - Service client based on embedding service configuration set for the
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
-   * @param embeddingCredentials - Credentials for the embedding service
+   * @param requestContext - The request context for the vectorize call
    * @param schemaObject - The collection setting for vectorize call
    */
   public DataVectorizer(
       MeteredEmbeddingProviderWrapper embeddingProvider,
       JsonNodeFactory nodeFactory,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       SchemaObject schemaObject) {
     // 16-Feb-2026, tatu: This can be null, apparently
     this.embeddingProviderWrapper = embeddingProvider;
     this.nodeFactory = nodeFactory;
-    this.embeddingCredentials =
-        Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
+    this.requestContext =
+        Objects.requireNonNull(requestContext, "embeddingCredentials must not be null");
     this.schemaObject = schemaObject;
   }
 
@@ -109,9 +109,7 @@ public class DataVectorizer {
         Uni<List<float[]>> vectors =
             embeddingProviderWrapper
                 .vectorize(
-                    vectorizeTexts,
-                    embeddingCredentials,
-                    EmbeddingProvider.EmbeddingRequestType.INDEX)
+                    vectorizeTexts, requestContext, EmbeddingProvider.EmbeddingRequestType.INDEX)
                 .map(res -> res.embeddings());
         return vectors
             .onItem()
@@ -186,7 +184,7 @@ public class DataVectorizer {
         embeddingProviderWrapper
             .vectorize(
                 List.of(vectorizeContent),
-                embeddingCredentials,
+                requestContext,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
             .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings);
     return vectors
@@ -234,9 +232,7 @@ public class DataVectorizer {
         Uni<List<float[]>> vectors =
             embeddingProviderWrapper
                 .vectorize(
-                    List.of(text),
-                    embeddingCredentials,
-                    EmbeddingProvider.EmbeddingRequestType.SEARCH)
+                    List.of(text), requestContext, EmbeddingProvider.EmbeddingRequestType.SEARCH)
                 .map(res -> res.embeddings());
         return vectors
             .onItem()
@@ -321,7 +317,7 @@ public class DataVectorizer {
     }
 
     return embeddingProviderWrapper
-        .vectorize(textsToVectorize, embeddingCredentials, requestType)
+        .vectorize(textsToVectorize, requestContext, requestType)
         .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings)
         .onItem()
         .transform(

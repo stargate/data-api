@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -79,18 +79,18 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
     checkEOLModelUsage();
-    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
+    checkEmbeddingApiKeyHeader(requestContext.getEmbeddingCredentials().apiKey());
     var azureRequest =
         new AzureOpenAIEmbeddingRequest(
             texts.toArray(new String[texts.size()]), modelName(), dimension);
 
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
     // NOTE: NO "Bearer " prefix with API key for Azure
-    var accessToken = embeddingCredentials.apiKey().get();
+    var accessToken = requestContext.getEmbeddingCredentials().apiKey().get();
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(azureClient.embed(accessToken, azureRequest))
@@ -115,7 +115,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenant(),
+                      requestContext.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       azureResponse.usage().prompt_tokens(),
                       azureResponse.usage().total_tokens(),

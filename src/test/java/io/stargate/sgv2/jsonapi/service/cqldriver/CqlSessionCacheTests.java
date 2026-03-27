@@ -336,7 +336,7 @@ public class CqlSessionCacheTests extends CacheTestsBase {
             List.of(listener), LONG_TTL, CACHE_MAX_SIZE, TEST_CONSTANTS.SLA_USER_AGENT, SHORT_TTL);
     var requestContext =
         new RequestContext(
-            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT);
+            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT, null);
 
     // Add a session to the cache and verify it is present
     var actualSession = fixture.cache.getSession(requestContext).await().indefinitely();

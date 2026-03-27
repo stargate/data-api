@@ -6,7 +6,6 @@ import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
@@ -54,17 +53,17 @@ public class MeteredEmbeddingProviderWrapper {
    * call and the size of the input texts.
    *
    * @param texts the list of texts to vectorize.
-   * @param embeddingCredentials the credentials to use for the vectorization call.
+   * @param requestContext the request context containing the credentials required for the provider.
    * @param embeddingRequestType the type of embedding request, influencing how texts are processed.
    * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
   public Uni<EmbeddingProvider.BatchedEmbeddingResponse> vectorize(
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingProvider.EmbeddingRequestType embeddingRequestType) {
 
     Objects.requireNonNull(texts, "texts must not be null");
-    Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
+    Objects.requireNonNull(requestContext, "requestContext must not be null");
     Objects.requireNonNull(embeddingRequestType, "embeddingRequestType type must not be null");
 
     // String bytes metrics for vectorize
@@ -92,7 +91,7 @@ public class MeteredEmbeddingProviderWrapper {
             batch -> {
               // call vectorize by the batch id
               return embeddingProvider.vectorize(
-                  batch.getLeft(), batch.getRight(), embeddingCredentials, embeddingRequestType);
+                  batch.getLeft(), batch.getRight(), requestContext, embeddingRequestType);
             })
         .merge()
         .collect()

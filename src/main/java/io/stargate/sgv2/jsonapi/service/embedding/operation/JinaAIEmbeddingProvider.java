@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -76,11 +76,11 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
     checkEOLModelUsage();
-    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
+    checkEmbeddingApiKeyHeader(requestContext.getEmbeddingCredentials().apiKey());
 
     var jinaRequest =
         new JinaEmbeddingRequest(
@@ -91,7 +91,9 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
             (Boolean) vectorizeServiceParameters.get("late_chunking"));
 
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
+    var accessToken =
+        HttpConstants.BEARER_PREFIX_FOR_API_KEY
+            + requestContext.getEmbeddingCredentials().apiKey().get();
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(jinaClient.embed(accessToken, jinaRequest))
@@ -115,7 +117,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenant(),
+                      requestContext.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       jinaResponse.usage().prompt_tokens(),
                       jinaResponse.usage().total_tokens(),

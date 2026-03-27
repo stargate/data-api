@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -75,7 +75,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
   public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType) {
 
     checkEOLModelUsage();
@@ -84,13 +84,12 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
         new NvidiaEmbeddingRequest(
             texts.toArray(new String[texts.size()]), modelName(), input_type);
 
-    // TODO: XXX No token to pass with the nvidia request for now. This will change on main merge
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY;
+    // always pass Astra token to the Nvidia service
+    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + requestContext.authToken();
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(
-            nvidiaClient.embed(
-                accessToken, embeddingCredentials.tenant().toString(), nvidiaRequest))
+            nvidiaClient.embed(accessToken, requestContext.tenant().toString(), nvidiaRequest))
         .onItem()
         .transform(
             jakartaResponse -> {
@@ -111,7 +110,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenant(),
+                      requestContext.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       nvidiaResponse.usage().prompt_tokens(),
                       nvidiaResponse.usage().total_tokens(),

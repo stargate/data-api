@@ -6,7 +6,6 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
@@ -28,10 +27,6 @@ import org.junit.jupiter.api.Test;
 public class OpenAiEmbeddingClientTest {
 
   private final TestConstants testConstants = new TestConstants();
-
-  private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(
-          testConstants.TENANT, Optional.of("test"), Optional.empty(), Optional.empty());
 
   private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
@@ -85,7 +80,8 @@ public class OpenAiEmbeddingClientTest {
       EmbeddingProvider embeddingProvider, List<String> texts) {
 
     return embeddingProvider
-        .vectorize(1, texts, embeddingCredentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+        .vectorize(
+            1, texts, testConstants.requestContext(), EmbeddingProvider.EmbeddingRequestType.INDEX)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitItem()
@@ -96,7 +92,10 @@ public class OpenAiEmbeddingClientTest {
 
     return embeddingProvider
         .vectorize(
-            1, List.of(text), embeddingCredentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+            1,
+            List.of(text),
+            testConstants.requestContext(),
+            EmbeddingProvider.EmbeddingRequestType.INDEX)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitFailure()

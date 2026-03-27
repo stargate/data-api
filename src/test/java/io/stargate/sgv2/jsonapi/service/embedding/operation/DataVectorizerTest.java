@@ -16,7 +16,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.*;
@@ -34,7 +34,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,10 +50,6 @@ public class DataVectorizerTest {
 
   // We need actual working MeterRegistry (or sophisticated mock :) ):
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-
-  private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(
-          testConstants.TENANT, Optional.empty(), Optional.empty(), Optional.empty());
 
   private CommandContext<CollectionSchemaObject> commandContext;
   private CollectionSchemaObject collectionSettings = null;
@@ -91,7 +86,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
@@ -121,7 +116,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
@@ -154,7 +149,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
       try {
         Throwable failure =
@@ -186,7 +181,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
@@ -212,7 +207,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
       try {
         Throwable failure =
@@ -248,7 +243,7 @@ public class DataVectorizerTest {
             public Uni<BatchedEmbeddingResponse> vectorize(
                 int batchId,
                 List<String> texts,
-                EmbeddingCredentials embeddingCredentials,
+                RequestContext requestContext,
                 EmbeddingRequestType embeddingRequestType) {
               List<float[]> customResponse = new ArrayList<>();
               texts.forEach(t -> customResponse.add(new float[] {0.5f, 0.5f, 0.5f}));
@@ -257,7 +252,7 @@ public class DataVectorizerTest {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenant(),
+                      requestContext.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       0,
                       0,
@@ -276,7 +271,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(brokenProvider),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
       Throwable failure =
           dataVectorizer
@@ -318,7 +313,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
 
       Throwable failure =
@@ -348,7 +343,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
       try {
         dataVectorizer.vectorize(sortClause).subscribe().asCompletionStage().get();
@@ -374,7 +369,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              commandContext.requestContext(),
               collectionSettings);
       try {
         final float[] testData =

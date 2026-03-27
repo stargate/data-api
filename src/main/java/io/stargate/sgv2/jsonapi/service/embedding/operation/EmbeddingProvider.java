@@ -4,7 +4,7 @@ import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_
 import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -76,13 +76,13 @@ public abstract class EmbeddingProvider extends ProviderBase {
    * Vectorizes the given list of texts and returns the embeddings.
    *
    * @param texts List of texts to be vectorized
-   * @param embeddingCredentials embeddingCredentials required for the provider
+   * @param requestContext Request context
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    */
   public abstract Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
+      RequestContext requestContext,
       EmbeddingRequestType embeddingRequestType);
 
   /** returns the maximum batch size supported by the provider */
