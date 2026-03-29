@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.*;
@@ -15,21 +16,26 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CollectionSchemaObjectTest {
+
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
+
   @Test
   public void ensureSingleProjectorCreation() {
+
     CollectionIndexingConfig indexingConfig =
         new CollectionIndexingConfig(new HashSet<>(Arrays.asList("abc")), null);
+
     CollectionSchemaObject settings =
         new CollectionSchemaObject(
-            "namespace",
-            "collectionName",
-            null,
+            TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT.identifier(),
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             indexingConfig,
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
+
     IndexingProjector indexingProj = settings.indexingProjector();
+
     assertThat(indexingProj)
         .isNotNull()
         // Should get the same instance second time due to memoization

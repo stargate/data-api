@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -54,7 +53,10 @@ public record InsertCollectionOperation(
     if (commandContext.jsonProcessingMetricsReporter() != null) {
       commandContext
           .jsonProcessingMetricsReporter()
-          .reportJsonWrittenDocsMetrics(commandContext().commandName(), insertions.size());
+          .reportJsonWrittenDocsMetrics(
+              commandContext().requestContext().tenant(),
+              commandContext().commandName(),
+              insertions.size());
     }
     if (ordered) {
       return insertOrdered(dataApiRequestInfo, queryExecutor, vectorEnabled, insertions);
@@ -198,13 +200,13 @@ public record InsertCollectionOperation(
   public String buildInsertQuery(boolean vectorEnabled) {
     final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
     StringBuilder insertQuery = new StringBuilder(200);
-    final SchemaObjectName tableName = commandContext.schemaObject().name();
+    var tableIdentifier = commandContext.schemaObject().identifier();
 
     insertQuery
         .append("INSERT INTO \"")
-        .append(tableName.keyspace())
+        .append(tableIdentifier.keyspace())
         .append("\".\"")
-        .append(tableName.table())
+        .append(tableIdentifier.table())
         .append("\"")
         .append(
             " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,")

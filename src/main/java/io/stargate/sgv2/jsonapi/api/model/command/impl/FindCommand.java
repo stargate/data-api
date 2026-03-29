@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that finds a single JSON document from a collection.")
+@Schema(description = "Command that finds JSON documents from a collection.")
 @JsonTypeName(CommandName.Names.FIND)
 @CheckFindOption
 public record FindCommand(

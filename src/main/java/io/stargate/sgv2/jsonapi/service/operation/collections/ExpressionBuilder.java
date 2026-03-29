@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ExpressionBuilder {
 
@@ -71,7 +70,7 @@ public class ExpressionBuilder {
                 (expressionWithoutId == null)
                     ? Variable.of(idCondition)
                     : ExpressionUtils.andOf(Variable.of(idCondition), expressionWithoutId))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private static Expression<BuiltCondition> buildExpressionRecursive(

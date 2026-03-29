@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,7 +91,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
               """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_ACCEPTS_NO_OPTIONS.name()))
           .body(
               "errors[0].message",
               startsWith("Command 'deleteOne' does not accept options but some were included."));

@@ -27,7 +27,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindCollectionOperation(
@@ -378,11 +377,14 @@ public record FindCollectionOperation(
         // map the response to result
         .map(
             docs -> {
-              // TODO: why is this here and not higher up where it can happen for any command result
-              // ?
+              // TODO: why is this here and not higher up where it can happen for any command
+              // result?
               commandContext
                   .jsonProcessingMetricsReporter()
-                  .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
+                  .reportJsonReadDocsMetrics(
+                      commandContext.requestContext().tenant(),
+                      commandContext().commandName(),
+                      docs.docs().size());
               return new ReadOperationPage(
                   docs.docs(), singleResponse, docs.pageState(), includeSortVector(), vector());
             });
@@ -421,6 +423,7 @@ public record FindCollectionOperation(
             maxSortReadLimit(),
             projection(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
@@ -437,6 +440,7 @@ public record FindCollectionOperation(
             projection,
             limit(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
@@ -512,8 +516,8 @@ public record FindCollectionOperation(
                             ? documentColumns
                             : documentKeyColumns)
                     .from(
-                        commandContext.schemaObject().name().keyspace(),
-                        commandContext.schemaObject().name().table())
+                        commandContext.schemaObject().identifier().keyspace(),
+                        commandContext.schemaObject().identifier().table())
                     .where(expression)
                     .limit(limit);
             var bm25Expr = bm25SearchExpression();
@@ -546,8 +550,8 @@ public record FindCollectionOperation(
               DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME,
               commandContext().schemaObject().similarityFunction())
           .from(
-              commandContext.schemaObject().name().keyspace(),
-              commandContext.schemaObject().name().table())
+              commandContext.schemaObject().identifier().keyspace(),
+              commandContext.schemaObject().identifier().table())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -557,8 +561,8 @@ public record FindCollectionOperation(
           .select()
           .column(CollectionReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
           .from(
-              commandContext.schemaObject().name().keyspace(),
-              commandContext.schemaObject().name().table())
+              commandContext.schemaObject().identifier().keyspace(),
+              commandContext.schemaObject().identifier().table())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -595,8 +599,8 @@ public record FindCollectionOperation(
                   .select()
                   .column(columnsToAdd)
                   .from(
-                      commandContext.schemaObject().name().keyspace(),
-                      commandContext.schemaObject().name().table())
+                      commandContext.schemaObject().identifier().keyspace(),
+                      commandContext.schemaObject().identifier().table())
                   .where(expression)
                   .limit(maxSortReadLimit())
                   .build();
@@ -617,9 +621,7 @@ public record FindCollectionOperation(
      * @return index column name with field name as entry key like query_text_values['username']
      */
     public List<String> getOrderingColumns() {
-      return sortIndexColumns.stream()
-          .map(col -> col.formatted(column()))
-          .collect(Collectors.toList());
+      return sortIndexColumns.stream().map(col -> col.formatted(column())).toList();
     }
   }
 }

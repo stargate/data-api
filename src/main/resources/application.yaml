@@ -181,6 +181,14 @@ quarkus:
         }
       }
 
+  # MCP (Model Context Protocol) server configuration
+  mcp:
+    server:
+      http:
+        root-path: /v1/mcp
+      traffic-logging:
+        enabled: true
+        text-limit: 1000
 
 "%dev":
    quarkus:

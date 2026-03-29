@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
@@ -70,6 +71,7 @@ public class DocumentShredder {
         doc,
         txId,
         ctx.schemaObject().indexingProjector(),
+        ctx.requestContext().tenant(),
         ctx.commandName(),
         ctx.schemaObject(),
         null);
@@ -95,6 +97,7 @@ public class DocumentShredder {
         doc,
         txId,
         ctx.schemaObject().indexingProjector(),
+        ctx.requestContext().tenant(),
         ctx.commandName(),
         ctx.schemaObject(),
         docIdToReturn);
@@ -104,6 +107,7 @@ public class DocumentShredder {
       JsonNode doc,
       UUID txId,
       IndexingProjector indexProjector,
+      Tenant tenant,
       String commandName,
       CollectionSchemaObject collectionSettings,
       AtomicReference<DocumentId> docIdToReturn) {
@@ -142,15 +146,16 @@ public class DocumentShredder {
 
     // Create json bytes written metrics
     if (jsonProcessingMetricsReporter != null) {
-      jsonProcessingMetricsReporter.reportJsonWriteBytesMetrics(commandName, docJson.length());
+      jsonProcessingMetricsReporter.reportJsonWriteBytesMetrics(
+          tenant, commandName, docJson.length());
     }
 
     final WritableShreddedDocument.Builder b =
         WritableShreddedDocument.builder(docId, txId, docJson, docWithId);
 
-    // Before value validation, indexing, may need to drop "non-indexed" properties. But if so,
-    // need to ensure we do not modify original document, so let's create a copy (may need
-    // to be returned as "after" Document)
+    // Before value validation, indexing, may need to drop "non-indexed" properties. But if so, need
+    // to ensure we do not modify original document, so let's create a copy (may need to be returned
+    // as "after" Document)
     ObjectNode indexableDocument;
 
     if (indexProjector != null) {

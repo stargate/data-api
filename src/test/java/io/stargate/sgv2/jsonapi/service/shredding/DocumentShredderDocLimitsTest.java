@@ -42,7 +42,7 @@ public class DocumentShredderDocLimitsTest {
 
   @InjectMock protected RequestContext dataApiRequestInfo;
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // Tests for Document size/depth violations
   @Nested
@@ -142,7 +142,13 @@ public class DocumentShredderDocLimitsTest {
           IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
       assertThat(
               documentShredder.shred(
-                  doc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null))
+                  doc,
+                  null,
+                  indexProjector,
+                  null,
+                  "testCommand",
+                  TEST_CONSTANTS.MISSING_COLLECTION,
+                  null))
           .isNotNull();
     }
 
@@ -223,7 +229,13 @@ public class DocumentShredderDocLimitsTest {
           IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
       assertThat(
               documentShredder.shred(
-                  doc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null))
+                  doc,
+                  null,
+                  indexProjector,
+                  null,
+                  "testCommand",
+                  TEST_CONSTANTS.MISSING_COLLECTION,
+                  null))
           .isNotNull();
     }
 
@@ -491,6 +503,6 @@ public class DocumentShredderDocLimitsTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
-    return testConstants.collectionContext();
+    return TEST_CONSTANTS.collectionContext();
   }
 }

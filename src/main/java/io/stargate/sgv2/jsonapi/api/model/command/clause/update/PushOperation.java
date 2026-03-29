@@ -172,8 +172,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
   // Just needed for tests
   @Override
   public boolean equals(Object o) {
-    return (o instanceof PushOperation)
-        && Objects.equals(this.actions, ((PushOperation) o).actions);
+    return (o instanceof PushOperation p) && Objects.equals(this.actions, p.actions);
   }
 
   /** Value class for per-field update operations. */

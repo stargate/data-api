@@ -161,7 +161,9 @@ public record DeleteCollectionOperation(
               commandContext
                   .jsonProcessingMetricsReporter()
                   .reportJsonReadDocsMetrics(
-                      commandContext().commandName(), deletedInformation.size());
+                      commandContext().requestContext().tenant(),
+                      commandContext().commandName(),
+                      deletedInformation.size());
               return new DeleteOperationPage(
                   deletedInformation, moreData.get(), returnDocumentInResponse, deleteLimit == 1);
             });
@@ -184,8 +186,8 @@ public record DeleteCollectionOperation(
     String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
     return String.format(
         delete,
-        commandContext.schemaObject().name().keyspace(),
-        commandContext.schemaObject().name().table());
+        commandContext.schemaObject().identifier().keyspace(),
+        commandContext.schemaObject().identifier().table());
   }
 
   /**

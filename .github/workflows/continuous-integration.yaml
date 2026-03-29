@@ -99,7 +99,7 @@ jobs:
       # Publish baseline coverage for main branch (for future PR comparisons)
       - name: Publish baseline coverage
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: baseline-coverage
           path: target/site/jacoco/jacoco.xml
@@ -288,7 +288,7 @@ jobs:
           EOF
 
       - name: Upload JaCoCo coverage report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
           path: target/site/jacoco/
@@ -387,7 +387,7 @@ jobs:
       # Publish baseline IT coverage for main branch (for future PR comparisons)
       - name: Publish baseline IT coverage
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: baseline-it-coverage-${{ matrix.type }}
           path: target/site/jacoco-it/jacoco.xml
@@ -568,7 +568,7 @@ jobs:
           echo "The complete JaCoCo HTML report is available as an artifact named \`jacoco-it-report-${{ matrix.type }}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload JaCoCo integration test code coverage report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-it-report-${{ matrix.type }}
           path: target/site/jacoco-it/

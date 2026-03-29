@@ -6,17 +6,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Base for classes that resolve a {@link UpdateOperator} for a table.
@@ -119,6 +118,6 @@ public abstract class TableUpdateOperatorResolver {
         new CqlNamedValueContainerFactory(tableSchemaObject, codecRegistry, errorStrategy)
             .create(jsonNamedValues);
 
-    return allColumns.values().stream().map(assignmentSupplier).collect(Collectors.toList());
+    return allColumns.values().stream().map(assignmentSupplier).toList();
   }
 }

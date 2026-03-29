@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
@@ -8,6 +7,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTextIndex;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.Objects;
 
 /** Builder for a {@link CreateIndexDBTask}. */

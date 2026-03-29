@@ -57,23 +57,17 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
   # creates a new release if it's not existing
-  # outputs the upload URL in the release-upload-url output var
   create-release:
     name: Create release
     needs: resolve-tag
     runs-on: ubuntu-latest
-    outputs:
-      release-upload-url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Create release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: ${{needs.resolve-tag.outputs.release-tag}}
-          release_name: Release ${{needs.resolve-tag.outputs.release-tag}}
-          draft: false
-          prerelease: false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.resolve-tag.outputs.release-tag }}"
+          gh release create "$TAG" --repo "${{ github.repository }}" --title "Release $TAG" --notes "" --verify-tag
 
   # builds and publishes the jar
   publish-jar:
@@ -163,7 +157,7 @@ jobs:
           cache: maven
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # only set version here
       - name: Install
@@ -172,7 +166,7 @@ jobs:
 
       # build and push OSS image to Docker hub
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
@@ -207,7 +201,7 @@ jobs:
           cache: maven
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # only set version here
       - name: Install

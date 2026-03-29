@@ -4,7 +4,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,7 +29,7 @@ public class AlterTableExceptionHandler extends TableDriverExceptionHandler {
    * </ul>
    */
   @Override
-  public Throwable handle(InvalidQueryException exception) {
+  public RuntimeException handle(InvalidQueryException exception) {
     if (exception.getMessage().contains("Unknown type")) {
       return SchemaException.Code.UNKNOWN_USER_DEFINED_TYPE.get(
           Map.of("driverMessage", exception.getMessage()));

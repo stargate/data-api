@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.unchecked.LWTFailureException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
@@ -80,13 +79,11 @@ public record ReadAndUpdateCollectionOperation(
               if (upsert() && docs.isEmpty() && matchedCount.get() == 0) {
                 // TODO: creating the new document here, with the defaults from the filter, makes it
                 // harder because the new document created here may nto have an _id if there was
-                // none
-                // in the filter. A better approach may be to have the documentUpdater create
+                // none in the filter. A better approach may be to have the documentUpdater create
                 // the upsert document totally in once place.
                 // Currently creating to upsert document is in multiple places. To do this we would
-                // create
-                // UpdateOperations from the filter and give them to the document updated when it is
-                // created.
+                // create UpdateOperations from the filter and give them to the document updated
+                // when it is created.
                 return Multi.createFrom().item(findCollectionOperation().getNewDocument());
               } else {
                 matchedCount.addAndGet(docs.size());
@@ -146,11 +143,16 @@ public record ReadAndUpdateCollectionOperation(
               // create json doc read/write metrics
               commandContext
                   .jsonProcessingMetricsReporter()
-                  .reportJsonReadDocsMetrics(commandContext().commandName(), matchedCount.get());
+                  .reportJsonReadDocsMetrics(
+                      commandContext().requestContext().tenant(),
+                      commandContext().commandName(),
+                      matchedCount.get());
               commandContext
                   .jsonProcessingMetricsReporter()
                   .reportJsonWrittenDocsMetrics(
-                      commandContext().commandName(), modifiedCount.get());
+                      commandContext().requestContext().tenant(),
+                      commandContext().commandName(),
+                      modifiedCount.get());
               return new UpdateCollectionOperationPage(
                   matchedCount.get(),
                   modifiedCount.get(),
@@ -282,8 +284,12 @@ public record ReadAndUpdateCollectionOperation(
   }
 
   private String buildUpdateQuery(boolean vectorEnabled, boolean lexicalEnabled) {
-    final SchemaObjectName tableName = commandContext.schemaObject().name();
-    return buildUpdateQuery(tableName.keyspace(), tableName.table(), vectorEnabled, lexicalEnabled);
+    var identifier = commandContext.schemaObject().identifier();
+    return buildUpdateQuery(
+        identifier.keyspace().asInternal(),
+        identifier.table().asInternal(),
+        vectorEnabled,
+        lexicalEnabled);
   }
 
   // NOTE: This method is used in the test code (to avoid having to copy query Strings verbatim),
@@ -299,16 +305,16 @@ public record ReadAndUpdateCollectionOperation(
         .append("\" SET ")
         .append(
             """
-tx_id = now(),
-exist_keys = ?,
-array_size = ?,
-array_contains = ?,
-query_bool_values = ?,
-query_dbl_values = ?,
-query_text_values = ?,
-query_null_values = ?,
-query_timestamp_values = ?,
-""");
+                tx_id = now(),
+                exist_keys = ?,
+                array_size = ?,
+                array_contains = ?,
+                query_bool_values = ?,
+                query_dbl_values = ?,
+                query_text_values = ?,
+                query_null_values = ?,
+                query_timestamp_values = ?,
+                """);
     if (vectorEnabled) {
       updateQuery.append("\nquery_vector_value = ?,");
     }
@@ -317,10 +323,10 @@ query_timestamp_values = ?,
     }
     updateQuery.append(
         """
-doc_json  = ?
-WHERE key = ?
-IF tx_id = ?
-""");
+            doc_json  = ?
+            WHERE key = ?
+            IF tx_id = ?
+            """);
 
     return updateQuery.toString();
   }

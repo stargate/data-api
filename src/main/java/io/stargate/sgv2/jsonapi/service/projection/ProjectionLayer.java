@@ -341,8 +341,7 @@ class ProjectionLayer {
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
-    if (!(o instanceof ProjectionLayer)) return false;
-    ProjectionLayer other = (ProjectionLayer) o;
+    if (!(o instanceof ProjectionLayer other)) return false;
     return (this.isTerminal == other.isTerminal)
         && Objects.equals(this.fullPath, other.fullPath)
         && Objects.equals(this.nextLayers, other.nextLayers);

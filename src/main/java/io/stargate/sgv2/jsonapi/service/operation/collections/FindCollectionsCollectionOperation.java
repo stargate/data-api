@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
@@ -14,9 +13,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.util.List;
@@ -61,10 +60,7 @@ public record FindCollectionsCollectionOperation(
     return queryExecutor
         .getDriverMetadata(requestContext)
         .map(Metadata::getKeyspaces)
-        .map(
-            keyspaces ->
-                keyspaces.get(
-                    CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace())))
+        .map(keyspaces -> keyspaces.get(commandContext.schemaObject().identifier().keyspace()))
         .map(
             keyspaceMetadata -> {
               if (keyspaceMetadata == null) {
@@ -76,7 +72,8 @@ public record FindCollectionsCollectionOperation(
                       .filter(tableMatcher)
                       .map(
                           table ->
-                              CollectionSchemaObject.getCollectionSettings(table, objectMapper))
+                              CollectionSchemaObject.getCollectionSettings(
+                                  requestContext.tenant(), table, objectMapper))
                       .toList();
               return new Result(explain, collections);
             });
@@ -98,7 +95,9 @@ public record FindCollectionsCollectionOperation(
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
       } else {
         List<String> tables =
-            collections.stream().map(schemaObject -> schemaObject.name().table()).toList();
+            collections.stream()
+                .map(schemaObject -> (schemaObject.identifier().table().asInternal()))
+                .toList();
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, tables);
       }
       return builder.build();

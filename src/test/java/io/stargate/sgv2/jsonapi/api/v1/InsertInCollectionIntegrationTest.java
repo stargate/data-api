@@ -354,7 +354,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", jsonEquals("[]"))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
           .body(
               "errors[0].message",
               startsWith(
@@ -649,6 +649,27 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body(
               "errors[0].message",
               containsString("Bad type for '_id' field: unrecognized JSON extension type"));
+    }
+
+    // [#2366] Sending _id as a plain (non-EJSON) Object should give a clear error, not
+    //   SERVER_UNHANDLED_ERROR
+    @Test
+    @Order(9)
+    public void failInsertDocWithPlainObjectAsDocId() {
+      String doc =
+          """
+              {
+                "_id": { "buffer": { "0": 105, "1": 120 } },
+                "value": 42
+              }
+          """;
+      givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .body("$", responseIsWritePartialSuccess())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
+          .body(
+              "errors[0].message",
+              containsString("Document Id must be a JSON String, Number, Boolean"));
     }
   }
 
@@ -1161,7 +1182,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].errorCode", is(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name()))
           .body(
               "errors[0].message",
               startsWith(
@@ -1303,7 +1324,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body(
               "errors[0].message",
               startsWith("Document size limitation violated: Number value length"))
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"));
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()));
     }
 
     @Test
@@ -1562,6 +1583,41 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       verifyDocCount(2);
     }
 
+    // [#2366] Sending _id as a plain (non-EJSON) Object in insertMany should give a clear
+    //   error, not SERVER_UNHANDLED_ERROR
+    @Test
+    public void failInsertManyWithPlainObjectAsDocId() {
+      givenHeadersPostJsonThenOk(
+              """
+              {
+                "insertMany": {
+                  "documents": [
+                    {
+                      "text": "Some text content",
+                      "_id": {
+                        "buffer": {
+                          "0": 105, "1": 120, "2": 241, "3": 2
+                        }
+                      }
+                    }
+                  ],
+                  "options": {
+                    "returnDocumentResponses": true,
+                    "ordered": false
+                  }
+                }
+              }
+              """)
+          .body("$", responseIsWritePartialSuccess())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_DOCID_TYPE.name()))
+          .body(
+              "errors[0].message",
+              containsString("Document Id must be a JSON String, Number, Boolean"));
+
+      verifyDocCount(0);
+    }
+
     @Test
     public void orderedFailBadKeyspace() {
       String json =
@@ -1621,7 +1677,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   .formatted(docs.toString()))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_VALUE_INVALID"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
               containsString(

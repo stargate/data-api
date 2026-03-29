@@ -12,7 +12,7 @@ public class EmbeddingProviderExceptionHandler extends DefaultProviderExceptionH
   }
 
   @Override
-  public Throwable handle(TimeoutException exception) {
+  public RuntimeException handle(TimeoutException exception) {
 
     return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
         Map.of(
@@ -26,7 +26,7 @@ public class EmbeddingProviderExceptionHandler extends DefaultProviderExceptionH
    * gracefully (bad host name in templatized URL)
    */
   @Override
-  public Throwable handle(UnknownHostException exception) {
+  public RuntimeException handle(UnknownHostException exception) {
 
     return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_BAD_HOST_NAME.get(
         Map.of(

@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -148,11 +149,11 @@ public class UDTCodecs {
 
       Object cqlFieldValue = fieldCodec.toCQL(userInputRawFieldValue);
       if (cqlFieldValue != null) {
-        // if user-input field value is null, we skip it, since driver udtValue set() method needs
-        // the targetClass.
-        newUdtValue =
-            newUdtValue.set(
-                fieldIdentifier, cqlFieldValue, (Class<Object>) cqlFieldValue.getClass());
+        // Use codecFor(DataType) to look up the codec by CQL type, not by Java class.
+        // This avoids mismatches when the Java value is a subclass of the expected type
+        // (e.g., Inet4Address vs InetAddress for INET columns).
+        TypeCodec<Object> driverCodec = newUdtValue.codecRegistry().codecFor(expectedFieldType);
+        newUdtValue = newUdtValue.set(fieldIdentifier, cqlFieldValue, driverCodec);
       } else {
         // if the value is null, we set it to null in the UdtValue
         newUdtValue = newUdtValue.setToNull(fieldIdentifier);

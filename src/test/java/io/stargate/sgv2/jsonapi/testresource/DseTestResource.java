@@ -44,7 +44,7 @@ public class DseTestResource extends StargateTestResource {
     // 21-Apr-2025, tatu: formerly referenced hard-coded images; left here for reference:
     //   to be removed in near future
     // "stargateio/dse-next:4.0.11-591d171ac9c9"
-    // "datastax/dse-server:6.9.18"
+    // "datastax/dse-server:6.9.20"
     // "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd:1.2.3";
 
     // 21-Apr-2025, tatu: [data-api#1952] Load definition from "./docker-compose/.env"
@@ -113,6 +113,11 @@ public class DseTestResource extends StargateTestResource {
     return "true";
   }
 
+  // By default, we enable the feature flag for MCP
+  public String getFeatureFlagMcp() {
+    return "true";
+  }
+
   @Override
   public Map<String, String> start() {
     Map<String, String> env = super.start();
@@ -138,6 +143,12 @@ public class DseTestResource extends StargateTestResource {
     String featureFlagReranking = getFeatureFlagReranking();
     if (featureFlagReranking != null) {
       propsBuilder.put("stargate.feature.flags.reranking", featureFlagReranking);
+    }
+
+    // MCP feature flag:
+    String featureFlagMcp = getFeatureFlagMcp();
+    if (featureFlagMcp != null) {
+      propsBuilder.put("stargate.feature.flags.mcp", featureFlagMcp);
     }
 
     propsBuilder.put(

@@ -13,10 +13,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.*;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProviderWrapper;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -29,7 +30,7 @@ import java.util.*;
  * documents, sort clause and update clause.
  */
 public class DataVectorizer {
-  private final EmbeddingProvider embeddingProvider;
+  private final MeteredEmbeddingProviderWrapper embeddingProviderWrapper;
   private final JsonNodeFactory nodeFactory;
   private final EmbeddingCredentials embeddingCredentials;
   private final SchemaObject schemaObject;
@@ -44,11 +45,12 @@ public class DataVectorizer {
    * @param schemaObject - The collection setting for vectorize call
    */
   public DataVectorizer(
-      EmbeddingProvider embeddingProvider,
+      MeteredEmbeddingProviderWrapper embeddingProvider,
       JsonNodeFactory nodeFactory,
       EmbeddingCredentials embeddingCredentials,
       SchemaObject schemaObject) {
-    this.embeddingProvider = embeddingProvider;
+    // 16-Feb-2026, tatu: This can be null, apparently
+    this.embeddingProviderWrapper = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials =
         Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
@@ -89,7 +91,7 @@ public class DataVectorizer {
 
           String vectorizeData = jsonNode.asText();
           if (vectorizeData.isBlank()) {
-            ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, (String) null);
+            ((ObjectNode) document).putNull(VECTOR_EMBEDDING_FIELD);
             continue;
           }
 
@@ -100,14 +102,13 @@ public class DataVectorizer {
       }
 
       if (!vectorizeTexts.isEmpty()) {
-        if (embeddingProvider == null) {
+        if (embeddingProviderWrapper == null) {
           throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-              Map.of("table", schemaObject.name().table()));
+              Map.of("table", schemaObject.identifier().table().toString()));
         }
         Uni<List<float[]>> vectors =
-            embeddingProvider
+            embeddingProviderWrapper
                 .vectorize(
-                    1,
                     vectorizeTexts,
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -177,14 +178,13 @@ public class DataVectorizer {
    * @return Uni<float[]> - result vector float array
    */
   public Uni<float[]> vectorize(String vectorizeContent) {
-    if (embeddingProvider == null) {
+    if (embeddingProviderWrapper == null) {
       throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-          Map.of("table", schemaObject.name().table()));
+          Map.of("table", schemaObject.identifier().table().toString()));
     }
     Uni<List<float[]>> vectors =
-        embeddingProvider
+        embeddingProviderWrapper
             .vectorize(
-                1,
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -224,17 +224,16 @@ public class DataVectorizer {
       if (sortClause == null || sortClause.sortExpressions().isEmpty())
         return Uni.createFrom().item(true);
       if (sortClause.hasVectorizeSearchClause()) {
-        if (embeddingProvider == null) {
+        if (embeddingProviderWrapper == null) {
           throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-              Map.of("table", schemaObject.name().table()));
+              Map.of("table", schemaObject.identifier().table().toString()));
         }
         final List<SortExpression> sortExpressions = sortClause.sortExpressions();
         SortExpression expression = sortExpressions.getFirst();
         String text = expression.getVectorize();
         Uni<List<float[]>> vectors =
-            embeddingProvider
+            embeddingProviderWrapper
                 .vectorize(
-                    1,
                     List.of(text),
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
@@ -316,13 +315,13 @@ public class DataVectorizer {
       EmbeddingProvider.EmbeddingRequestType requestType) {
 
     // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
-    if (embeddingProvider == null) {
+    if (embeddingProviderWrapper == null) {
       throw SchemaException.Code.EMBEDDING_SERVICE_NOT_CONFIGURED.get(
-          Map.of("table", schemaObject.name().table()));
+          Map.of("table", schemaObject.identifier().table().toString()));
     }
 
-    return embeddingProvider
-        .vectorize(1, textsToVectorize, embeddingCredentials, requestType)
+    return embeddingProviderWrapper
+        .vectorize(textsToVectorize, embeddingCredentials, requestType)
         .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings)
         .onItem()
         .transform(
