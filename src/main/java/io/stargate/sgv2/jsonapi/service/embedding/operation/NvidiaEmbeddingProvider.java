@@ -88,7 +88,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
     // fall back to whatever they provided as the auth token for the API
     var accessToken =
         HttpConstants.BEARER_PREFIX_FOR_API_KEY
-            + embeddingCredentials.apiKey().orElseGet(embeddingCredentials.authToken()::get);
+            + embeddingCredentials.apiKey().or(embeddingCredentials::authToken).orElse(null);
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(
