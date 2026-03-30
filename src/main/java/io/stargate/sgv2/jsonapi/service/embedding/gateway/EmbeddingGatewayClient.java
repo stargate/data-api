@@ -149,6 +149,9 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     embeddingCredentials
         .secretId()
         .ifPresent(v -> contextBuilder.putAuthTokens(EMBEDDING_SECRET_ID, v));
+    embeddingCredentials
+        .authToken()
+        .ifPresent(v -> contextBuilder.putAuthTokens(DATA_API_TOKEN, v));
 
     // Add the `authentication` (sync service key) in the createCollection command
     if (authentication != null) {
