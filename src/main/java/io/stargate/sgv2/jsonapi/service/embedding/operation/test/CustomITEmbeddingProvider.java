@@ -137,7 +137,7 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
     if (texts.isEmpty()) {
       var modelUsage =
           createModelUsage(
-              requestContext.getEmbeddingCredentials().tenant(),
+              requestContext.tenant(),
               ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
               0,
               0,
@@ -170,7 +170,7 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
 
     var modelUsage =
         createModelUsage(
-            requestContext.getEmbeddingCredentials().tenant(),
+            requestContext.tenant(),
             ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
             0,
             0,

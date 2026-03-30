@@ -52,8 +52,7 @@ public class DataVectorizer {
     // 16-Feb-2026, tatu: This can be null, apparently
     this.embeddingProviderWrapper = embeddingProvider;
     this.nodeFactory = nodeFactory;
-    this.requestContext =
-        Objects.requireNonNull(requestContext, "embeddingCredentials must not be null");
+    this.requestContext = Objects.requireNonNull(requestContext, "requestContext must not be null");
     this.schemaObject = schemaObject;
   }
 
