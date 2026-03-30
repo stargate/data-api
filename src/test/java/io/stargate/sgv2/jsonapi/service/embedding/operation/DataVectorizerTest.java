@@ -34,7 +34,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,14 +50,6 @@ public class DataVectorizerTest {
 
   // We need actual working MeterRegistry (or sophisticated mock :) ):
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-
-  private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(
-          testConstants.TENANT,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty());
 
   private CommandContext<CollectionSchemaObject> commandContext;
   private CollectionSchemaObject collectionSettings = null;
@@ -95,7 +86,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
@@ -125,7 +116,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
@@ -158,7 +149,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
       try {
         Throwable failure =
@@ -190,7 +181,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
@@ -216,7 +207,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
       try {
         Throwable failure =
@@ -280,7 +271,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(brokenProvider),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
       Throwable failure =
           dataVectorizer
@@ -322,7 +313,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
 
       Throwable failure =
@@ -352,7 +343,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
       try {
         dataVectorizer.vectorize(sortClause).subscribe().asCompletionStage().get();
@@ -378,7 +369,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               meteredEmbeddingProvider(),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
       try {
         final float[] testData =
