@@ -67,7 +67,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ needs.resolve-tag.outputs.release-tag }}"
-          gh release create "$TAG" --title "Release $TAG" --notes "" --verify-tag
+          gh release create "$TAG" --repo "${{ github.repository }}" --title "Release $TAG" --notes "" --verify-tag
 
   # builds and publishes the jar
   publish-jar:
