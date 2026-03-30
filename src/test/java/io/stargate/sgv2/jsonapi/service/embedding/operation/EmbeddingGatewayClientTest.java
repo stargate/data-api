@@ -40,7 +40,11 @@ public class EmbeddingGatewayClientTest {
 
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(
-          testConstants.TENANT, Optional.empty(), Optional.empty(), Optional.empty());
+          testConstants.TENANT,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty());
 
   private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(

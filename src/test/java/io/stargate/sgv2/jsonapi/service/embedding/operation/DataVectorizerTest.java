@@ -54,7 +54,11 @@ public class DataVectorizerTest {
 
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(
-          testConstants.TENANT, Optional.empty(), Optional.empty(), Optional.empty());
+          testConstants.TENANT,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty());
 
   private CommandContext<CollectionSchemaObject> commandContext;
   private CollectionSchemaObject collectionSettings = null;

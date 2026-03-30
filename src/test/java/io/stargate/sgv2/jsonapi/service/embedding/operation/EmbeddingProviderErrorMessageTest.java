@@ -40,7 +40,11 @@ public class EmbeddingProviderErrorMessageTest {
 
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(
-          testConstants.TENANT, Optional.of("test"), Optional.empty(), Optional.empty());
+          testConstants.TENANT,
+          Optional.of("test"),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty());
 
   private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
