@@ -1152,6 +1152,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
 
     @Test
+    @Disabled("Requires SyncService (localhost:8084) which is not available in IT environment")
     public void happyProviderKeyFormat() {
       givenHeadersPostJsonThenOk(
               """
