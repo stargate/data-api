@@ -12,4 +12,8 @@ import java.util.Optional;
  * @param secretId - Secret Id used for AWS Bedrock embedding service
  */
 public record EmbeddingCredentials(
-    Tenant tenant, Optional<String> apiKey, Optional<String> accessId, Optional<String> secretId) {}
+    Tenant tenant,
+    Optional<String> apiKey,
+    Optional<String> accessId,
+    Optional<String> secretId,
+    Optional<String> authToken) {}
