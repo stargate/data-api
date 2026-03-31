@@ -12,7 +12,6 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.TestConstants;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -37,10 +36,6 @@ public class EmbeddingGatewayClientTest {
   public static final String TESTING_COMMAND_NAME = "test_command";
 
   private static final TestConstants testConstants = new TestConstants();
-
-  private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(
-          testConstants.TENANT, Optional.empty(), Optional.empty(), Optional.empty());
 
   private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
@@ -161,7 +156,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                embeddingCredentials,
+                testConstants.EMBEDDING_CREDENTIALS,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
@@ -228,7 +223,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                embeddingCredentials,
+                testConstants.EMBEDDING_CREDENTIALS,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())

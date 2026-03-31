@@ -149,7 +149,11 @@ public class TestConstants {
 
     EMBEDDING_CREDENTIALS =
         new EmbeddingCredentials(
-            TENANT, Optional.of("test-api-key"), Optional.empty(), Optional.empty());
+            TENANT,
+            Optional.of("test-api-key"),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
 
     // ============================================================
     // Schema Objects
