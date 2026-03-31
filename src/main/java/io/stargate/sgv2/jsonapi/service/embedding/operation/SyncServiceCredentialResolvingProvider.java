@@ -157,6 +157,6 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
             resolvedByAcceptedName.containsKey(SECRET_KEY)
                 ? resolvedByAcceptedName.get(SECRET_KEY)
                 : resolvedByAcceptedName.get(SECRET_ID));
-    return new EmbeddingCredentials(tenant, apiKey, accessId, secretId);
+    return new EmbeddingCredentials(tenant, apiKey, accessId, secretId, Optional.of(authToken));
   }
 }
