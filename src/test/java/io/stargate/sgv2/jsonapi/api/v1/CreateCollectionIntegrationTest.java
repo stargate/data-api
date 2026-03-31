@@ -1151,61 +1151,10 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
       deleteCollection("collection_with_vector_service");
     }
 
-    @Test
-    @Disabled("Requires SyncService (localhost:8084) which is not available in IT environment")
-    public void happyProviderKeyFormat() {
-      givenHeadersPostJsonThenOk(
-              """
-                        {
-                            "createCollection": {
-                                "name": "collection_with_vector_service",
-                                "options": {
-                                    "vector": {
-                                        "metric": "cosine",
-                                        "dimension": 1536,
-                                        "service": {
-                                            "provider": "openai",
-                                            "modelName": "text-embedding-ada-002",
-                                            "authentication": {
-                                                "providerKey" : "shared_creds"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        """)
-          .body("$", responseIsDDLSuccess())
-          .body("status.ok", is(1));
-
-      deleteCollection("collection_with_vector_service");
-
-      givenHeadersPostJsonThenOk(
-              """
-                                {
-                                    "createCollection": {
-                                        "name": "collection_with_vector_service",
-                                        "options": {
-                                            "vector": {
-                                                "metric": "cosine",
-                                                "dimension": 1536,
-                                                "service": {
-                                                    "provider": "openai",
-                                                    "modelName": "text-embedding-ada-002",
-                                                    "authentication": {
-                                                        "providerKey" : "shared_creds.providerKey"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                """)
-          .body("$", responseIsDDLSuccess())
-          .body("status.ok", is(1));
-
-      deleteCollection("collection_with_vector_service");
-    }
+    // happyProviderKeyFormat test removed: it uses SHARED_SECRET authentication
+    // ("providerKey") which requires SyncService for credential validation. That service
+    // is not available in the IT environment. The providerKey format handling is covered
+    // by unit tests (SyncServiceCredentialResolvingProviderTest).
   }
 
   @Nested
