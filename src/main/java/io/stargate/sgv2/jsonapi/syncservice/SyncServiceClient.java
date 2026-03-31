@@ -67,7 +67,9 @@ public class SyncServiceClient {
               if (res.errors() != null && !res.errors().isEmpty()) {
                 var firstError = res.errors().getFirst();
                 throw SchemaException.Code.VECTORIZE_CREDENTIAL_INVALID.get(
-                    Map.of("errorMessage", "(%s): %s".formatted(firstError.errorId(), firstError.message())));
+                    Map.of(
+                        "errorMessage",
+                        "(%s): %s".formatted(firstError.errorId(), firstError.message())));
               }
               boolean validity = true;
               if (res.credentials() == null || res.credentials().isEmpty()) {
