@@ -193,8 +193,7 @@ public class VectorizeConfigValidator {
 
         // Validate the credential name from secret service
         // already append the .providerKey to the value in CreateCollectionCommand
-        // !!! 24-Feb-2026, tatu: NOTE: method seems to be expected to signal failure by
-        //   throwing Exception as return value is discarded here. Is this correct?
+        // Both validate() and validateKey() are blocking and throw on invalid credentials
         if (operationsConfig.enableEmbeddingGateway()) {
           validateCredentials.validate(userConfig.provider(), userAuth.getValue());
         } else {

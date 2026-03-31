@@ -35,12 +35,19 @@ public class SyncServiceClient {
 
   @RestClient SyncService syncService;
 
-  public Uni<Boolean> validateKey(String provider, String key) {
-    return validateKey(
-        dataApiRequestInfo.authToken(), dataApiRequestInfo.tenant().toString(), provider, key);
+  /**
+   * Validates the credential key by calling SyncService. Blocks until the result is available.
+   * Throws on invalid or unresolvable credentials, matching the contract of {@link
+   * io.stargate.sgv2.jsonapi.service.resolver.ValidateCredentials#validate}.
+   */
+  public void validateKey(String provider, String key) {
+    validateKeyAsync(
+            dataApiRequestInfo.authToken(), dataApiRequestInfo.tenant().toString(), provider, key)
+        .await()
+        .atMost(Duration.ofSeconds(10));
   }
 
-  private Uni<Boolean> validateKey(String token, String tenant, String provider, String key) {
+  private Uni<Void> validateKeyAsync(String token, String tenant, String provider, String key) {
     return syncService
         .valid("Bearer " + token, UUID.randomUUID().toString(), tenant, provider, key)
         .onFailure(
@@ -60,7 +67,7 @@ public class SyncServiceClient {
               if (res.errors() != null && !res.errors().isEmpty()) {
                 var firstError = res.errors().getFirst();
                 throw SchemaException.Code.VECTORIZE_CREDENTIAL_INVALID.get(
-                    Map.of("errorMessage", "(%s): %s", firstError.errorId(), firstError.message()));
+                    Map.of("errorMessage", "(%s): %s".formatted(firstError.errorId(), firstError.message())));
               }
               boolean validity = true;
               if (res.credentials() == null || res.credentials().isEmpty()) {
@@ -70,7 +77,14 @@ public class SyncServiceClient {
                   validity &= entry.getValue();
                 }
               }
-              return validity;
+              if (!validity) {
+                throw SchemaException.Code.VECTORIZE_CREDENTIAL_INVALID.get(
+                    Map.of(
+                        "errorMessage",
+                        "Credential validation failed for provider '%s', key '%s'"
+                            .formatted(provider, key)));
+              }
+              return null;
             });
   }
 
