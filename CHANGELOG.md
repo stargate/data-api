@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.0.44](https://github.com/stargate/data-api/tree/v1.0.44) (2026-04-01)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.43...v1.0.44)
+
+**Merged pull requests:**
+
+- Bumping version for next data-api release [\#2444](https://github.com/stargate/data-api/pull/2444) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Add SyncService client from EGW for embedded calling from Data API [\#2405](https://github.com/stargate/data-api/pull/2405) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.43](https://github.com/stargate/data-api/tree/v1.0.43) (2026-03-31)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.42...v1.0.43)
