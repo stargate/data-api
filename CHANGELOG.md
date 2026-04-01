@@ -6,7 +6,6 @@
 
 **Merged pull requests:**
 
-- Bumping version for next data-api release [\#2444](https://github.com/stargate/data-api/pull/2444) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Add SyncService client from EGW for embedded calling from Data API [\#2405](https://github.com/stargate/data-api/pull/2405) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.43](https://github.com/stargate/data-api/tree/v1.0.43) (2026-03-31)
@@ -14,8 +13,6 @@
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.42...v1.0.43)
 
 **Merged pull requests:**
-
-- Bumping version for next data-api release [\#2443](https://github.com/stargate/data-api/pull/2443) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.42](https://github.com/stargate/data-api/tree/v1.0.42) (2026-03-31)
 
@@ -46,7 +43,6 @@
 - Add integration tests for MCP feature [\#2421](https://github.com/stargate/data-api/pull/2421) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Add some tests for MCP implementation and tools [\#2420](https://github.com/stargate/data-api/pull/2420) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - More commands support for MCP [\#2419](https://github.com/stargate/data-api/pull/2419) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
-- Bumping version for next data-api release [\#2418](https://github.com/stargate/data-api/pull/2418) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix \#2275: improve bad `\_id` handling for Tables wrt error [\#2416](https://github.com/stargate/data-api/pull/2416) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - SchemaObjectCache refactor [\#2307](https://github.com/stargate/data-api/pull/2307) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
