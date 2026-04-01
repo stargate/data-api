@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.0.43](https://github.com/stargate/data-api/tree/v1.0.43) (2026-03-31)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.42...v1.0.43)
+
+**Merged pull requests:**
+
+- Bumping version for next data-api release [\#2443](https://github.com/stargate/data-api/pull/2443) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.42](https://github.com/stargate/data-api/tree/v1.0.42) (2026-03-31)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.41...v1.0.42)
