@@ -1152,6 +1152,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
 
     @Test
+    @Disabled("Requires SyncService (localhost:8084) for SHARED_SECRET credential validation")
     public void happyProviderKeyFormat() {
       givenHeadersPostJsonThenOk(
               """
