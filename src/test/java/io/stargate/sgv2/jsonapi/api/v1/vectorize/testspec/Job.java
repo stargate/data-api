@@ -58,11 +58,7 @@ public record Job(
     var fromEnv = new TestRunEnv();
 
     for (Map.Entry<String, String> entry : fromEnvironment.entrySet()) {
-      var value = System.getenv(entry.getValue());
-      if (value== null) {
-        throw new RuntimeException("Environment variable " + entry.getValue() + " is undefined");
-      }
-      fromEnv.put(entry.getKey(), value);
+      fromEnv.put(entry.getKey(), TestEnvAccess.getEnvVar(entry.getKey()));
     }
 
     var fromVariables = new TestRunEnv(variables);
@@ -74,11 +70,7 @@ public record Job(
     var fromEnv = new TestRunEnv();
 
     for (Map.Entry<String, String> entry : fromEnvironment.entrySet()) {
-      var value = System.getenv(entry.getValue());
-      if (value== null) {
-        throw new RuntimeException("Environment variable " + entry.getValue() + " is undefined");
-      }
-      fromEnv.put(entry.getKey(), value);
+      fromEnv.put(entry.getKey(), TestEnvAccess.getEnvVar(entry.getKey()));
     }
 
     var fromVariables = new TestRunEnv(variables);

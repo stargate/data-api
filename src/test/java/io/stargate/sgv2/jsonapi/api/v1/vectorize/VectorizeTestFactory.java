@@ -12,12 +12,15 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class VectorizeTestFactory {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(VectorizeTestFactory.class);
+
   @TestFactory
   Stream<DynamicContainer> jobs() {
 
-    var testPlan = TestPlan.create("local", List.of("all-vectorize-workflow"));
+//    var testPlan = TestPlan.create("local", List.of("all-vectorize-workflow"));
+    var testContext = TestPlan.fromFile("/Users/aaron.morton/code/stargate/jsonapi/.env/test-plans/dev.yaml");
 
-    return testPlan.testNode();
+    return testContext.testPlan().testNode();
   }
 }

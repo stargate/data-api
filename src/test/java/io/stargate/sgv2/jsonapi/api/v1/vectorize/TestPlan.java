@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.targets.Target;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.Job;
@@ -8,7 +10,10 @@ import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.*;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -18,17 +23,36 @@ import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 
 public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled){
 
+  private static final ObjectMapper MAPPER = new ObjectMapper()
+      .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
+
+  public static TestPlanContext fromFile(String path) {
+
+    TestPlanFile planFile;
+    try {
+      planFile =  MAPPER.readValue(Path.of(path).toFile(), TestPlanFile.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    var testPlan = create(planFile.target(), planFile.workflows(), planFile.ignoreDisabled());
+    return new TestPlanContext(testPlan, planFile);
+  }
   public static TestPlan  create(String targetName, List<String> workflows){
     return create(targetName, workflows, true);
   }
 
-  public static TestPlan  create(String targetName, List<String> workflows, boolean ignoreDisabled){
+  public static TestPlan  create(String targetName, List<String> workflows, Boolean ignoreDisabled){
     var targetConfigs = TargetsSpec.loadAll("integration-tests/targets/targets.json");
     var target = new Target(targetConfigs.configuration(targetName));
 
     var specFiles = SpecFiles.loadAll(List.of("integration-tests/vectorize", "integration-tests/assertions/assertion-templates.json"));
 
-    return new  TestPlan(target, specFiles, Set.copyOf(workflows), ignoreDisabled);
+    return new  TestPlan(
+        target,
+        specFiles,
+        workflows == null ? Set.of() :  Set.copyOf(workflows),
+        ignoreDisabled == null || ignoreDisabled);
   }
 
   public Stream<WorkflowSpec> selectedWorkflows(){
@@ -115,5 +139,27 @@ public record TestPlan(Target target, SpecFiles specFiles, Set<String> workflows
         Stream.concat(dynamicNodes,
             lifecycleNodes( afterUriBuilder, "After TestSuite", testSuite.meta(), () -> target.afterTestSuite(this, afterUriBuilder,testSuite, environment)))
     );
+  }
+
+  public record TestPlanFile(
+      String target,
+      List<String> workflows,
+      Boolean ignoreDisabled,
+      Map<String, String> envVars
+  ) { }
+
+  public record TestPlanContext(
+      TestPlan testPlan,
+      TestPlanFile testPlanFile
+  ) implements AutoCloseable {
+
+    public TestPlanContext{
+      testPlanFile.envVars.forEach(System::setProperty);
+    }
+
+    @Override
+    public void close() {
+      testPlanFile.envVars.keySet().forEach(System::clearProperty);
+    }
   }
 }
