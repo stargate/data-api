@@ -54,7 +54,11 @@
     <!-- Testing -->
     <skipTests>false</skipTests>
     <skipUnitTests>${skipTests}</skipUnitTests>
-    <surefire-plugin.version>3.5.4</surefire-plugin.version>
+    <!-- 09-Apr-2026, tatu: Wrt [data-api#2447] need to use not-latest
+        (specifically, 3.5.3; latest being 3.5.5)
+        See: https://github.com/fabriciorby/maven-surefire-junit5-tree-reporter?tab=readme-ov-file#important
+      -->
+    <surefire-plugin.version>3.5.3</surefire-plugin.version>
     <skipITs>false</skipITs>
   </properties>
   <dependencyManagement>
