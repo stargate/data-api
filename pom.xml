@@ -356,6 +356,13 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>me.fabriciorby</groupId>
+            <artifactId>maven-surefire-junit5-tree-reporter</artifactId>
+            <version>1.5.1</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <!-- 17-Oct-2025, tatu: agent settings needed to get rid of "inline mock" warning by Mockito;
               leading to duplication of "mockito.version".
@@ -363,6 +370,12 @@
             -->
           <!-- 02-Dec-2025, tatu: [data-api#2270] Use @{argLine} to preserve JaCoCo agent config -->
           <argLine>@{argLine} -Xmx4g -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+          <!-- 09-Apr-2026, tatu: Try to prettify output -->
+          <reportFormat>plain</reportFormat>
+          <consoleOutputReporter>
+            <disable>true</disable>
+          </consoleOutputReporter>
+          <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter"/>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <maven.home>${maven.home}</maven.home>
