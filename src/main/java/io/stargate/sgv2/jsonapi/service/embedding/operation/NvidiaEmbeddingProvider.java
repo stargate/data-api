@@ -84,8 +84,11 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
         new NvidiaEmbeddingRequest(
             texts.toArray(new String[texts.size()]), modelName(), input_type);
 
-    // TODO: XXX No token to pass with the nvidia request for now. This will change on main merge
-    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY;
+    // user specified the embedding key in the request header, use that.
+    // fall back to whatever they provided as the auth token for the API
+    var accessToken =
+        HttpConstants.BEARER_PREFIX_FOR_API_KEY
+            + embeddingCredentials.apiKey().or(embeddingCredentials::authToken).orElse(null);
 
     long callStartNano = System.nanoTime();
     return retryHTTPCall(

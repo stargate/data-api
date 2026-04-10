@@ -25,10 +25,13 @@ public class HeaderBasedEmbeddingCredentialsResolver implements EmbeddingCredent
         request.getHeader(HttpConstants.EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME);
     String secretId =
         request.getHeader(HttpConstants.EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME);
+    String authToken = request.getHeader(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
+
     return new EmbeddingCredentials(
         tenant,
         Optional.ofNullable(headerValue),
         Optional.ofNullable(accessId),
-        Optional.ofNullable(secretId));
+        Optional.ofNullable(secretId),
+        Optional.ofNullable(authToken));
   }
 }

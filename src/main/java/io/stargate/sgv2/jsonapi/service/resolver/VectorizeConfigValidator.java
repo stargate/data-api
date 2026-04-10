@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.syncservice.SyncServiceClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -26,15 +27,18 @@ public class VectorizeConfigValidator {
   private final OperationsConfig operationsConfig;
   private final EmbeddingProvidersConfig embeddingProvidersConfig;
   private final ValidateCredentials validateCredentials;
+  private final SyncServiceClient syncServiceClient;
 
   @Inject
   public VectorizeConfigValidator(
       OperationsConfig operationsConfig,
       EmbeddingProvidersConfig embeddingProvidersConfig,
-      ValidateCredentials validateCredentials) {
+      ValidateCredentials validateCredentials,
+      SyncServiceClient syncServiceClient) {
     this.operationsConfig = operationsConfig;
     this.embeddingProvidersConfig = embeddingProvidersConfig;
     this.validateCredentials = validateCredentials;
+    this.syncServiceClient = syncServiceClient;
   }
 
   /**
@@ -189,8 +193,11 @@ public class VectorizeConfigValidator {
 
         // Validate the credential name from secret service
         // already append the .providerKey to the value in CreateCollectionCommand
+        // Both validate() and validateKey() are blocking and throw on invalid credentials
         if (operationsConfig.enableEmbeddingGateway()) {
           validateCredentials.validate(userConfig.provider(), userAuth.getValue());
+        } else {
+          syncServiceClient.validateKey(userConfig.provider(), userAuth.getValue());
         }
       }
     }

@@ -1,5 +1,51 @@
 # Changelog
 
+## [v1.0.44](https://github.com/stargate/data-api/tree/v1.0.44) (2026-04-01)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.43...v1.0.44)
+
+**Merged pull requests:**
+
+- Add SyncService client from EGW for embedded calling from Data API [\#2405](https://github.com/stargate/data-api/pull/2405) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
+## [v1.0.43](https://github.com/stargate/data-api/tree/v1.0.43) (2026-03-31)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.42...v1.0.43)
+
+**Merged pull requests:**
+
+## [v1.0.42](https://github.com/stargate/data-api/tree/v1.0.42) (2026-03-31)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.41...v1.0.42)
+
+**Merged pull requests:**
+
+- Pass Astra token to Nvidia service [\#2441](https://github.com/stargate/data-api/pull/2441) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add ITs for MCP table related tools [\#2439](https://github.com/stargate/data-api/pull/2439) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Quick fix for \#2437: IllegalArgumentException from estimatedDocumentCount [\#2438](https://github.com/stargate/data-api/pull/2438) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix a bug in \#2427; need to have repo to create release in/for [\#2436](https://github.com/stargate/data-api/pull/2436) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add ITs for MCP collection related tools [\#2435](https://github.com/stargate/data-api/pull/2435) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+
+## [v1.0.41](https://github.com/stargate/data-api/tree/v1.0.41) (2026-03-20)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.40...v1.0.41)
+
+**Merged pull requests:**
+
+- Fix: MCP tool schemas missing descriptions for nested record fields [\#2434](https://github.com/stargate/data-api/pull/2434) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Convert all `CollectionCommand` to MCP tools [\#2432](https://github.com/stargate/data-api/pull/2432) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update from DSE 6.9.18 to 6.9.20 [\#2430](https://github.com/stargate/data-api/pull/2430) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- \[MCP\] Resolve PR \#2425 review comments [\#2429](https://github.com/stargate/data-api/pull/2429) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix GH workflow deprecation [\#2427](https://github.com/stargate/data-api/pull/2427) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- \[MCP\] Add a factory for CommandResult to ToolResponse transformation [\#2426](https://github.com/stargate/data-api/pull/2426) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- \[MCP\] Add integration tests for KeyspaceCommandTools [\#2425](https://github.com/stargate/data-api/pull/2425) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Bump the github-actions group with 2 updates [\#2422](https://github.com/stargate/data-api/pull/2422) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Add integration tests for MCP feature [\#2421](https://github.com/stargate/data-api/pull/2421) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add some tests for MCP implementation and tools [\#2420](https://github.com/stargate/data-api/pull/2420) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- More commands support for MCP [\#2419](https://github.com/stargate/data-api/pull/2419) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix \#2275: improve bad `\_id` handling for Tables wrt error [\#2416](https://github.com/stargate/data-api/pull/2416) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- SchemaObjectCache refactor [\#2307](https://github.com/stargate/data-api/pull/2307) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
 ## [v1.0.40](https://github.com/stargate/data-api/tree/v1.0.40) (2026-03-03)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.39...v1.0.40)

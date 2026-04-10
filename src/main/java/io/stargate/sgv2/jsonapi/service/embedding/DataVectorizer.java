@@ -38,19 +38,19 @@ public class DataVectorizer {
   /**
    * Constructor
    *
-   * @param embeddingProvider - Service client based on embedding service configuration set for the
-   *     table
+   * @param embeddingProviderWrapper - Service client based on embedding service configuration set
+   *     for the table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
    * @param embeddingCredentials - Credentials for the embedding service
    * @param schemaObject - The collection setting for vectorize call
    */
   public DataVectorizer(
-      MeteredEmbeddingProviderWrapper embeddingProvider,
+      MeteredEmbeddingProviderWrapper embeddingProviderWrapper,
       JsonNodeFactory nodeFactory,
       EmbeddingCredentials embeddingCredentials,
       SchemaObject schemaObject) {
     // 16-Feb-2026, tatu: This can be null, apparently
-    this.embeddingProviderWrapper = embeddingProvider;
+    this.embeddingProviderWrapper = embeddingProviderWrapper;
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials =
         Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");

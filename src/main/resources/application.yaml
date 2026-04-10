@@ -62,6 +62,13 @@ quarkus:
   banner:
     path: banner/banner.txt
 
+  # cache settings for "credentials" (sync-service)
+  cache:
+    caffeine:
+      "credentials":
+        maximum-size: 1000
+        expire-after-access: 5m
+
   # properties for the gRPC clients
   grpc:
     # all the clients' setup, only embedding gateway
@@ -149,6 +156,13 @@ quarkus:
     # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
     # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
     additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
+
+  # Sync-service configuration
+  rest-client:
+    credentials:
+      url: http://localhost:8084/v1
+      connect-timeout: 2000
+      read-timeout: 5000
 
   # adapt path of the open api definitions
   smallrye-openapi:
