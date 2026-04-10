@@ -70,7 +70,7 @@ public record Job(
     var fromEnv = new TestRunEnv();
 
     for (Map.Entry<String, String> entry : fromEnvironment.entrySet()) {
-      fromEnv.put(entry.getKey(), TestEnvAccess.getEnvVar(entry.getKey()));
+      fromEnv.put(entry.getKey(), TestEnvAccess.getEnvVar(entry.getValue()));
     }
 
     var fromVariables = new TestRunEnv(variables);

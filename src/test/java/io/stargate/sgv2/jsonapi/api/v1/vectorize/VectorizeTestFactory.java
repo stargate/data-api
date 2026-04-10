@@ -19,7 +19,7 @@ public class VectorizeTestFactory {
   Stream<DynamicContainer> jobs() {
 
 //    var testPlan = TestPlan.create("local", List.of("all-vectorize-workflow"));
-    var testContext = TestPlan.fromFile("/Users/aaron.morton/code/stargate/jsonapi/.env/test-plans/dev.yaml");
+    var testContext = TestPlan.fromFile("/Users/amorton/code/stargate/jsonapi/.env/test-plans/test-plan-dev-smoketest-aws-us-east-1.yaml");
 
     return testContext.testPlan().testNode();
   }

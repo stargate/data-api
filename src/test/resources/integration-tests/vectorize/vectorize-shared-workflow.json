@@ -1,21 +1,22 @@
 {
   "meta": {
-    "name": "all-vectorize-workflow",
+    "name": "vectorize-shared-workflow",
     "kind": "workflow"
   },
   "jobs": [
     {
       "meta": {
         "name": "open-ai-vectorize",
-        "tags": ["disabled"]
+        "tags": []
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "x_embedding_api_key",
+        "x-embedding-api-key": "openAi_KEY",
         "Token": "Token"
       },
       "variables": {
         "PROVIDER": "openai",
-        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
+        "CREDENTIAL" : "kent-open-ai-key"
       },
       "matrix": {
         "MODEL": [
@@ -25,13 +26,13 @@
         ]
       },
       "tests": [
-        "vectorize-header-auth"
+        "vectorize-shared-auth"
       ]
     },
     {
       "meta": {
         "name": "voyageAI-vectorize",
-        "tags": [
+        "tags": ["disabled"
         ]
       },
       "fromEnvironment": {
@@ -58,7 +59,7 @@
     {
       "meta": {
         "name": "jinaAI-vectorize",
-        "tags": [
+        "tags": ["disabled"
         ]
       },
       "fromEnvironment": {
@@ -163,7 +164,7 @@
       "meta": {
         "name": "nvidia-vectorize",
         "tags": [
-          "disabled"
+            "disabled"
         ]
       },
       "fromEnvironment": {

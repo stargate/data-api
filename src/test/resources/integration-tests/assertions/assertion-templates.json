@@ -37,6 +37,10 @@
         "http.success": null,
         "response.isWriteSuccess": null
       },
+      "findEmbeddingProviders": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
       "findOneAndDelete": {
         "http.success": null,
         "response.isFindAndSuccess": null
