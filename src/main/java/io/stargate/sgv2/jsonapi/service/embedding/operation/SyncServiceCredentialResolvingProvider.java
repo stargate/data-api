@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
  * entry in the authentication map, then passing the resolved credentials to the delegate provider.
  */
 public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
-
   private static final Logger LOGGER =
       LoggerFactory.getLogger(SyncServiceCredentialResolvingProvider.class);
 
@@ -58,6 +57,11 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
   protected String errorMessageJsonPtr() {
     // Not used directly — this wrapper never makes HTTP calls itself
     return "";
+  }
+
+  @Override
+  public String nameForMetrics() {
+    return delegate.nameForMetrics();
   }
 
   @Override

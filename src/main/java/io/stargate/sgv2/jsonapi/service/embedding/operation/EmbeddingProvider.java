@@ -68,6 +68,10 @@ public abstract class EmbeddingProvider extends ProviderBase {
     return modelConfig.apiModelSupport();
   }
 
+  public String nameForMetrics() {
+    return serviceConfig.modelProvider().apiName();
+  }
+
   public EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig() {
     return providerConfig;
   }
