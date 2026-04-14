@@ -289,7 +289,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               lines -> {
                 lines.forEach(
                     line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
+                      assertThat(line).contains("embedding_provider=\"custom\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                       assertThat(line).contains("tenant=\"SINGLE-TENANT\"");
 
@@ -318,7 +318,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                 // percentiles and is very very fragle to include in a test
                 lines.forEach(
                     line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
+                      assertThat(line).contains("embedding_provider=\"custom\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                       assertThat(line).contains("tenant=\"SINGLE-TENANT\"");
 
@@ -1200,7 +1200,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     return findCountFromMetrics(
         metrics,
         Arrays.asList(
-            "embedding_provider=\"CustomITEmbeddingProvider\"",
+            "embedding_provider=\"custom\"",
             "module=\"sgv2-jsonapi\"",
             "tenant=\"SINGLE-TENANT\""));
   }
@@ -1223,7 +1223,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     return findSumFromMetrics(
         metrics,
         Arrays.asList(
-            "embedding_provider=\"CustomITEmbeddingProvider\"",
+            "embedding_provider=\"custom\"",
             "module=\"sgv2-jsonapi\"",
             "tenant=\"SINGLE-TENANT\""));
   }
