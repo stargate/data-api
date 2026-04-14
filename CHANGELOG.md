@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.0.45](https://github.com/stargate/data-api/tree/v1.0.45) (2026-04-14)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.44...v1.0.45)
+
+**Merged pull requests:**
+
+- Fix \#2449: use "API name" for embedding provider metric tags [\#2450](https://github.com/stargate/data-api/pull/2450) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2447: add Maven plug-in for tree-based console output [\#2448](https://github.com/stargate/data-api/pull/2448) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2445](https://github.com/stargate/data-api/pull/2445) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.44](https://github.com/stargate/data-api/tree/v1.0.44) (2026-04-01)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.43...v1.0.44)
