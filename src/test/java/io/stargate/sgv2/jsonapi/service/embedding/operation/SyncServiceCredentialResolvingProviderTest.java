@@ -292,4 +292,16 @@ class SyncServiceCredentialResolvingProviderTest {
       assertThat(provider.maxBatchSize()).isEqualTo(delegate.maxBatchSize());
     }
   }
+
+  @Nested
+  class NameForMetrics {
+
+    @Test
+    void shouldDelegateNameForMetrics() {
+      var provider = createProvider(Map.of("providerKey", "cred"));
+      // delegate is a TestEmbeddingProvider using ModelProvider.CUSTOM → apiName "custom"
+      assertThat(provider.nameForMetrics()).isEqualTo("custom");
+      assertThat(provider.nameForMetrics()).isEqualTo(delegate.nameForMetrics());
+    }
+  }
 }
