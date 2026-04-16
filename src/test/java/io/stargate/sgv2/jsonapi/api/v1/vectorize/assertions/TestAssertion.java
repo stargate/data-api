@@ -1,18 +1,17 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCase;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunResponse;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.AssertionTemplateSpec;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
-import org.junit.jupiter.api.DynamicNode;
-
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.AssertionTemplateSpec;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCase;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicNode;
 
 public interface TestAssertion {
 
@@ -24,36 +23,33 @@ public interface TestAssertion {
 
   DynamicNode testNodes(TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse);
 
-
   static List<TestAssertion> forSuccess(TestPlan testPlan, TestCommand testCommand) {
 
-    var builder = Stream.<AssertionDefinition>builder()
-        .add(new AssertionDefinition("Templated.isSuccess", null));
+    var builder =
+        Stream.<AssertionDefinition>builder()
+            .add(new AssertionDefinition("Templated.isSuccess", null));
 
     return buildAssertions(testPlan, testCommand, builder.build());
   }
 
   static List<TestAssertion> buildAssertions(TestPlan testPlan, TestCase testCase) {
 
-    var defs = testCase.asserts().properties().stream()
-        .map(AssertionDefinition::create);
+    var defs = testCase.asserts().properties().stream().map(AssertionDefinition::create);
     return buildAssertions(testPlan, testCase.command(), defs);
   }
 
-  static List<TestAssertion> buildAssertions(TestPlan testPlan, TestCommand testCommand, Stream<AssertionDefinition> defs) {
+  static List<TestAssertion> buildAssertions(
+      TestPlan testPlan, TestCommand testCommand, Stream<AssertionDefinition> defs) {
 
-    return defs.map(
-        def -> buildAssertion(testPlan, testCommand, def)
-    ).toList();
+    return defs.map(def -> buildAssertion(testPlan, testCommand, def)).toList();
   }
 
-  static TestAssertion buildAssertion(TestPlan testPlan, TestCommand testCommand, AssertionDefinition def) {
+  static TestAssertion buildAssertion(
+      TestPlan testPlan, TestCommand testCommand, AssertionDefinition def) {
     return def.addFactory(AssertionFactory.REGISTRY).build(testPlan, testCommand);
   }
 
-  /**
-   * <p> </p>
-   */
+  /** */
   record AssertionDefinition(String name, JsonNode args) {
 
     static AssertionDefinition create(Map.Entry<String, JsonNode> def) {
@@ -64,34 +60,39 @@ public interface TestAssertion {
 
       var factory = registry.getWrapped(name());
       if (factory == null) {
-        throw new  IllegalStateException("Unknown Assertion Factory name=" + name());
+        throw new IllegalStateException("Unknown Assertion Factory name=" + name());
       }
       return new AssertionDefWithFactory(factory, args);
     }
   }
 
-  /**
-   * <p> </p>
-   */
-  record AssertionDefWithFactory(AssertionFactory.WrappedMethod method, JsonNode args){
+  /** */
+  record AssertionDefWithFactory(AssertionFactory.WrappedMethod method, JsonNode args) {
 
     TestAssertion build(TestPlan testPlan, TestCommand testCommand) {
 
       return switch (method) {
         case AssertionFactory.WrappedAssertionMatcherFactory factory ->
-            new SingleTestAssertion(method.properName(), args(), factory.create(testCommand, args()));
+            new SingleTestAssertion(
+                method.properName(), args(), factory.create(testCommand, args()));
 
-        case AssertionFactory.TemplatedAssertionFactory factory ->{
+        case AssertionFactory.TemplatedAssertionFactory factory -> {
+          var template =
+              testPlan
+                  .specFiles()
+                  .byType(AssertionTemplateSpec.class)
+                  .flatMap(
+                      assertTemplate -> assertTemplate.templateFor(method.properName()).stream())
+                  .findFirst()
+                  .orElseThrow(
+                      () ->
+                          new IllegalStateException(
+                              "Unknown Assertion Template name=" + method.properName()));
 
-            var template = testPlan.specFiles().byType(AssertionTemplateSpec.class)
-                .flatMap(assertTemplate -> assertTemplate.templateFor(method.properName()).stream())
-                .findFirst()
-                .orElseThrow(() -> new  IllegalStateException("Unknown Assertion Template name=" + method.properName()));
-
-            yield new TestAssertionContainer(method.properName(), args(), factory.create(testPlan, template, testCommand, args()));
+          yield new TestAssertionContainer(
+              method.properName(), args(), factory.create(testPlan, template, testCommand, args()));
         }
       };
     }
-
   }
 }

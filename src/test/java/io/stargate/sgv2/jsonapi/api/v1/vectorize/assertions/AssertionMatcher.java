@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.messaging.APIResponse;
 
-/**
- * Contract for running an assertion on the response from the API.
- */
+/** Contract for running an assertion on the response from the API. */
 @FunctionalInterface
 public interface AssertionMatcher {
 
@@ -15,5 +13,4 @@ public interface AssertionMatcher {
    * @throws AssertionError if the match fails
    */
   void match(APIResponse apiResponse);
-
 }

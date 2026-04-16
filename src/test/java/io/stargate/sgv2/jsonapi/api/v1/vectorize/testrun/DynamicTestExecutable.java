@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
 
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
-
-public class  DynamicTestExecutable implements Executable {
+public class DynamicTestExecutable implements Executable {
 
   private final String description;
   private final TestUri testUri;
@@ -14,30 +14,30 @@ public class  DynamicTestExecutable implements Executable {
   private final String trimmedDisplayName;
   private final boolean isTrimmed;
 
-  public  DynamicTestExecutable(String description, TestUri.Builder testUri, Executable executable) {
+  public DynamicTestExecutable(String description, TestUri.Builder testUri, Executable executable) {
     this(description, testUri.build(), executable);
   }
 
   @SuppressWarnings("StringEquality")
-  public  DynamicTestExecutable(String description, TestUri testUri, Executable executable) {
+  public DynamicTestExecutable(String description, TestUri testUri, Executable executable) {
     this.description = description;
     this.testUri = testUri;
     this.executable = executable;
 
-    var truncated =  ( description != null && description.length() > 60) ?
-        description.substring(0, 57) + "..."
-        :
-        description;
+    var truncated =
+        (description != null && description.length() > 60)
+            ? description.substring(0, 57) + "..."
+            : description;
 
     this.trimmedDisplayName = truncated;
     this.isTrimmed = truncated != description;
   }
 
-  public String trimmedDisplayName(){
-    return  trimmedDisplayName;
+  public String trimmedDisplayName() {
+    return trimmedDisplayName;
   }
 
-  public DynamicTest testNode(){
+  public DynamicTest testNode() {
     return dynamicTest(trimmedDisplayName, testUri.uri(), this);
   }
 
@@ -48,13 +48,13 @@ public class  DynamicTestExecutable implements Executable {
     afterExecute();
   }
 
-  private void beforeExecute(){
+  private void beforeExecute() {
     if (isTrimmed) {
       System.out.printf(description + "\n");
     }
   }
 
-  private void afterExecute(){
-    System.out.printf("Executed - " + testUri.uri().toString() + "\n");
+  private void afterExecute() {
+    //    System.out.printf("Executed - " + testUri.uri().toString() + "\n");
   }
 }

@@ -5,12 +5,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AssertionFactoryRegistry {
 
-  private final Map<AssertionName, AssertionFactory.WrappedMethod> factoryMethods = new ConcurrentHashMap<>();
-
+  private final Map<AssertionName, AssertionFactory.WrappedMethod> factoryMethods =
+      new ConcurrentHashMap<>();
 
   public void register(Class<?> cls) {
     for (var method : cls.getMethods()) {
-      if ( AssertionFactory.isValidFactoryMethod(method)) {
+      if (AssertionFactory.isValidFactoryMethod(method)) {
         var wrapped = AssertionFactory.WrappedMethod.of(cls, method);
         factoryMethods.put(wrapped.assertionName(), wrapped);
       }
@@ -27,7 +27,9 @@ public class AssertionFactoryRegistry {
 
     factoryMethod = factoryMethods.get(normalisedName);
     if (factoryMethod == null) {
-      throw new IllegalArgumentException("Unknown assertion factory. (normalised)name: %s known=%s".formatted(normalisedName, factoryMethods.keySet()));
+      throw new IllegalArgumentException(
+          "Unknown assertion factory. (normalised)name: %s known=%s"
+              .formatted(normalisedName, factoryMethods.keySet()));
     }
     return factoryMethod;
   }
@@ -38,8 +40,10 @@ public class AssertionFactoryRegistry {
       Class.forName(normalisedName.properClassName());
       // class static initializer should call register()
     } catch (ClassNotFoundException e) {
-      throw  new IllegalArgumentException("Unknown assertion factory. normalisedName=%s, properClassName()=%s".formatted(normalisedName, normalisedName.properClassName()), e);
+      throw new IllegalArgumentException(
+          "Unknown assertion factory. normalisedName=%s, properClassName()=%s"
+              .formatted(normalisedName, normalisedName.properClassName()),
+          e);
     }
   }
-
 }

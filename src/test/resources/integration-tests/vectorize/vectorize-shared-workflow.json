@@ -159,30 +159,6 @@
       "tests": [
         "vectorize-header-auth"
       ]
-    },
-    {
-      "meta": {
-        "name": "nvidia-vectorize",
-        "tags": [
-            "disabled"
-        ]
-      },
-      "fromEnvironment": {
-        "x-embedding-api-key": "Token",
-        "Token": "Token"
-      },
-      "variables": {
-        "PROVIDER": "nvidia",
-        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
-      },
-      "matrix": {
-        "MODEL": [
-          "NV-Embed-QA"
-        ]
-      },
-      "tests": [
-        "vectorize-header-auth"
-      ]
     }
   ]
 }

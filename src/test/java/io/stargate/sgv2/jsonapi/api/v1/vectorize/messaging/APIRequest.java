@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.messaging;
 
+import static io.restassured.RestAssured.given;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -8,41 +10,36 @@ import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.targets.Connection;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-
 import java.util.Map;
-
-import static io.restassured.RestAssured.given;
-
 
 public class APIRequest {
 
   public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private static String COLLECTION_PATH  = "/{keyspace}/{collection}";
-  private static String KEYSPACE_PATH  = "/{keyspace}";
-  private static String DB_PATH  = "/";
+  private static String COLLECTION_PATH = "/{keyspace}/{collection}";
+  private static String KEYSPACE_PATH = "/{keyspace}";
+  private static String DB_PATH = "/";
 
   private final Connection connection;
   private final TestRunEnv integrationEnv;
   private final ObjectNode request;
 
-  public APIRequest(Connection connection, TestRunEnv integrationEnv, ObjectNode request ) {
+  public APIRequest(Connection connection, TestRunEnv integrationEnv, ObjectNode request) {
 
     this.connection = connection;
     this.integrationEnv = integrationEnv;
     this.request = request;
   }
 
-  public APIResponse execute(){
+  public APIResponse execute() {
 
     var requestSpec = requestSpec();
     return new APIResponse(this, executeRequest(requestSpec));
   }
-
 
   private RequestSpecification requestSpec() {
 
@@ -53,30 +50,29 @@ public class APIRequest {
       throw new RuntimeException(e);
     }
 
-    return jsonRequest()
-        .body(requestString).when();
+    return jsonRequest().body(requestString).when();
   }
 
   private ValidatableResponse executeRequest(RequestSpecification requestSpec) {
 
     var commandName = TestCommand.commandName(request);
     Response response;
-    if (commandName.getTargets().contains(CommandTarget.COLLECTION) || commandName.getTargets().contains(CommandTarget.TABLE)){
-      response = requestSpec
-          .post(COLLECTION_PATH, integrationEnv.requiredValue("KEYSPACE_NAME"), integrationEnv.requiredValue("COLLECTION_NAME"));
-    }
-    else if (commandName.getTargets().contains(CommandTarget.KEYSPACE) ){
-      response =  requestSpec.post(KEYSPACE_PATH, integrationEnv.requiredValue("KEYSPACE_NAME"));
-    }
-    else if(commandName.getTargets().contains(CommandTarget.DATABASE)){
-      response =  requestSpec.post(DB_PATH);
-    }
-    else {
+    if (commandName.getTargets().contains(CommandTarget.COLLECTION)
+        || commandName.getTargets().contains(CommandTarget.TABLE)) {
+      response =
+          requestSpec.post(
+              COLLECTION_PATH,
+              integrationEnv.requiredValue("KEYSPACE_NAME"),
+              integrationEnv.requiredValue("COLLECTION_NAME"));
+    } else if (commandName.getTargets().contains(CommandTarget.KEYSPACE)) {
+      response = requestSpec.post(KEYSPACE_PATH, integrationEnv.requiredValue("KEYSPACE_NAME"));
+    } else if (commandName.getTargets().contains(CommandTarget.DATABASE)) {
+      response = requestSpec.post(DB_PATH);
+    } else {
       throw new IllegalArgumentException("Do not know how to execute command: " + commandName);
     }
 
-    return response
-        .then().log().all();
+    return response.then().log().all();
   }
 
   protected Map<String, String> getHeaders() {
@@ -88,16 +84,17 @@ public class APIRequest {
         integrationEnv.requiredValue("x-embedding-api-key"));
   }
 
-  public RequestSpecification jsonRequest(){
+  public RequestSpecification jsonRequest() {
 
+    //    .log().uri()
+    //            .log().body()
     return given()
-        .log().all()
+        .log()
+        .all()
         .baseUri(connection.domain())
         .port(connection.port())
         .basePath(connection.basePath())
         .headers(getHeaders())
         .contentType(ContentType.JSON);
-
   }
-
 }

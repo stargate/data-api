@@ -1,0 +1,99 @@
+name: API Test Bench Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: true
+        type: environment
+  pull_request:
+
+# needed when a workflow wants to use OIDC (OpenID Connect) to authenticate to cloud
+permissions:
+  id-token: write
+  contents: write
+  packages: write
+  pull-requests: write
+
+# global env vars, available in all jobs and steps
+env:
+  MAVEN_OPTS: '-Xmx4g'
+  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
+  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.TEST_TARGETS }}
+    steps:
+      - id: set-matrix
+        run: echo "TEST_TARGETS=${{ secrets.TEST_TARGETS }}" >> $GITHUB_OUTPUT
+
+  # runs unit tests
+  build:
+    name: Unit tests
+    runs-on: ubuntu-latest
+
+    # max run time 12 minutes
+    timeout-minutes: 12
+
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.setup.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: maven
+
+      - name: Setup Maven
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>stargate-central</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>stargate-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+              <server>
+                <id>artifactory</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-releases</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+           </servers>
+          </settings>
+          EOF
+      - name: Build & Test
+        env:
+          TEST_PLAN_FILE: classpath:integration-tests/test-plans/vectorize-astra-test-plan.yaml
+          Token: ${{ matrix.token }}
+          TARGET_NAME: ${{ matrix.name }}
+          ENDPOINT: ${{ matrix.endpoint }}
+          openAi_KEY: ${{ secrets.OPEN_AI_KEY }}
+
+        run: |
+          ./mvnw -B -ntp verify -Dfmt.skip -DskipUnitTests -Dit.test=TestBenchTests

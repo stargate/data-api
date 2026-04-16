@@ -1,18 +1,14 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
-
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-/**
-
- */
-
+/** */
 public sealed interface AssertionFactory {
 
   public static final AssertionFactoryRegistry REGISTRY = new AssertionFactoryRegistry();
@@ -24,7 +20,8 @@ public sealed interface AssertionFactory {
 
   @FunctionalInterface
   non-sealed interface TemplatedAssertionFactory extends AssertionFactory {
-    List<TestAssertion> create(TestPlan testPlan, JsonNode template, TestCommand testCommand, JsonNode args);
+    List<TestAssertion> create(
+        TestPlan testPlan, JsonNode template, TestCommand testCommand, JsonNode args);
   }
 
   static boolean isValidFactoryMethod(Method method) {
@@ -45,9 +42,7 @@ public sealed interface AssertionFactory {
 
     if (method.getReturnType() == AssertionMatcher.class) {
       var p = method.getParameterTypes();
-      return p.length == 2
-          && p[0] == TestCommand.class
-          && p[1] == JsonNode.class;
+      return p.length == 2 && p[0] == TestCommand.class && p[1] == JsonNode.class;
     }
     return false;
   }
@@ -66,10 +61,9 @@ public sealed interface AssertionFactory {
     }
 
     static WrappedMethod of(Class<?> clazz, Method method) {
-      return  (method.getReturnType() == AssertionMatcher.class) ?
-          new WrappedAssertionMatcherFactory(clazz, method)
-          :
-          new WrappedTemplatedAssertionFactory(clazz, method);
+      return (method.getReturnType() == AssertionMatcher.class)
+          ? new WrappedAssertionMatcherFactory(clazz, method)
+          : new WrappedTemplatedAssertionFactory(clazz, method);
     }
 
     public Class<?> clazz() {
@@ -119,7 +113,8 @@ public sealed interface AssertionFactory {
     }
 
     @Override
-    public List<TestAssertion> create(TestPlan testPlan, JsonNode template, TestCommand testCommand, JsonNode args) {
+    public List<TestAssertion> create(
+        TestPlan testPlan, JsonNode template, TestCommand testCommand, JsonNode args) {
       return invoke(testPlan, template, testCommand, args);
     }
   }

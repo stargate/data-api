@@ -7,11 +7,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
-
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import org.apache.commons.text.StringSubstitutor;
 
-public class TestCommand  {
+public class TestCommand {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -23,28 +22,29 @@ public class TestCommand  {
   public TestCommand(ObjectNode request) {
 
     // if non null, that this is a point to find commands in the named test.
-    var includeField =request.get("$include");
+    var includeField = request.get("$include");
     this.includeFrom = includeField == null ? null : includeField.asText();
 
     if (includeField != null) {
       this.request = null;
       this.commandName = null;
-    }
-    else {
+    } else {
       this.request = request;
       this.commandName = commandName(request);
     }
   }
 
-  private void checkIsInclude(){
+  private void checkIsInclude() {
     if (includeFrom != null) {
       throw new IllegalStateException("TestCommand is defined to $include from: " + includeFrom);
     }
   }
+
   public ObjectNode request() {
     checkIsInclude();
     return request;
   }
+
   public CommandName commandName() {
     checkIsInclude();
     return commandName;
@@ -57,7 +57,7 @@ public class TestCommand  {
   public static TestCommand fromJson(String json) {
 
     try {
-      return  new TestCommand((ObjectNode) OBJECT_MAPPER.readTree(json));
+      return new TestCommand((ObjectNode) OBJECT_MAPPER.readTree(json));
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
@@ -90,7 +90,6 @@ public class TestCommand  {
     walk(updated, env.substitutor());
     return updated;
   }
-
 
   private static void walk(ObjectNode obj, StringSubstitutor subs) {
     obj.properties()

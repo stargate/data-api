@@ -7,17 +7,14 @@ import org.hamcrest.StringDescription;
 /**
  * Assertions that check the body of the response using a {@link Matcher} form hamcrest.
  *
- * <p>
- * Example:
+ * <p>Example:
+ *
  * <pre>
  *   return new BodyAssertion("data.documents", hasSize(expectedCount));
  * </pre>
- * </p>
  */
-public record BodyAssertion(
-    String bodyPath,
-    Matcher<?> matcher
-) implements Describable, AssertionMatcher {
+public record BodyAssertion(String bodyPath, Matcher<?> matcher)
+    implements Describable, AssertionMatcher {
 
   @Override
   public void match(APIResponse apiResponse) {

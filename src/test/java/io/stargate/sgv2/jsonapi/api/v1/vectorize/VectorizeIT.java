@@ -4,12 +4,10 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.AbstractCollectionIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.DynamicContainer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
-
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.TestFactory;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)

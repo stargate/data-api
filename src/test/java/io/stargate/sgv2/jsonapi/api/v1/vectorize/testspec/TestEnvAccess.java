@@ -9,12 +9,13 @@ public abstract class TestEnvAccess {
   public static String getEnvVar(String varName) {
 
     var value = System.getProperty(varName);
-    if (value != null){
+    if (value != null) {
       return value;
     }
     value = System.getenv(varName);
-    if (value== null) {
-      throw new RuntimeException("Environment variable not found in System Properties or Environment. varName=" + varName);
+    if (value == null) {
+      throw new RuntimeException(
+          "Environment variable not found in System Properties or Environment. varName=" + varName);
     }
     return value;
   }

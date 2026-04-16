@@ -1,14 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.io.File;
 import org.jspecify.annotations.NonNull;
 
-import java.io.File;
-
-public record SpecFile(
-    File file,
-    TestSpec spec,
-    JsonNode root) {
+public record SpecFile(File file, TestSpec spec, JsonNode root) {
 
   @Override
   public @NonNull String toString() {

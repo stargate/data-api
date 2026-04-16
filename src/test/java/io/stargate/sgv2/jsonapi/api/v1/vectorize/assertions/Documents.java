@@ -1,17 +1,15 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
-
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.hasSize;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
+
 /**
- * Assertions that check the `document` or `documents` in the `data` field
- * of the API result.
- * <p>
- * See {@link TestAssertion}
- * </p>
+ * Assertions that check the `document` or `documents` in the `data` field of the API result.
+ *
+ * <p>See {@link TestAssertion}
  */
 public class Documents {
 

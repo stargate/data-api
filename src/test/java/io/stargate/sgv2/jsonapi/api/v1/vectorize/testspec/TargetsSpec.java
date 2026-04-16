@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -12,27 +11,27 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public record TargetsSpec(
-    TestSpecMeta meta,
-    List<TargetConfiguration> targets)
+public record TargetsSpec(TestSpecMeta meta, List<TargetConfiguration> targets)
     implements TestSpec {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper()
-      .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
-
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
   public TargetsSpec {
     Set<String> seen = new HashSet<String>();
-    for  (TargetConfiguration target : targets) {
+    for (TargetConfiguration target : targets) {
       if (seen.contains(target.name())) {
-        throw new IllegalArgumentException("target name already exists: " + target.name() );
+        throw new IllegalArgumentException("target name already exists: " + target.name());
       }
       seen.add(target.name());
     }
   }
 
   public TargetConfiguration configuration(String name) {
-    return targets.stream().filter(target -> target.name().equals(name)).findFirst().orElseThrow(() -> new IllegalArgumentException("target name not found: " + name));
+    return targets.stream()
+        .filter(target -> target.name().equals(name))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("target name not found: " + name));
   }
 
   public static TargetsSpec loadAll(String path) {
@@ -45,7 +44,7 @@ public record TargetsSpec(
     }
   }
 
-  private static Path resourceDir(String path) {
+  public static Path resourceDir(String path) {
     String normalized = path.startsWith("/") ? path.substring(1) : path;
 
     ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -62,5 +61,4 @@ public record TargetsSpec(
       throw new IllegalArgumentException("Bad resource URI for: " + path + " -> " + url, e);
     }
   }
-
 }

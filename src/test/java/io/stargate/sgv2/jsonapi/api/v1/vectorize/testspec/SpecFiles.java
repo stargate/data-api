@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
@@ -13,13 +12,11 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/**
- * Collection of all the test spec files read for this execution.
- */
+/** Collection of all the test spec files read for this execution. */
 public class SpecFiles {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper()
-      .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
   private final List<SpecFile> specFiles;
 
@@ -27,28 +24,24 @@ public class SpecFiles {
     this.specFiles = specFiles;
 
     for (SpecFile file : specFiles) {
-     if (file.spec() instanceof TestSuiteSpec it){
-       it.expand(this);
-     }
+      if (file.spec() instanceof TestSuiteSpec it) {
+        it.expand(this);
+      }
     }
   }
 
   public static SpecFiles loadAll(List<String> paths) {
 
-    var specFiles = resourceDirs(paths)
-        .flatMap(SpecFiles::loadAll)
-        .toList();
+    var specFiles = resourceDirs(paths).flatMap(SpecFiles::loadAll).toList();
     return new SpecFiles(specFiles);
   }
 
   public Stream<SpecFile> byKind(TestSpecKind kind) {
-    return specFiles.stream()
-        .filter(itFile -> itFile.spec().meta().kind() == kind);
+    return specFiles.stream().filter(itFile -> itFile.spec().meta().kind() == kind);
   }
 
   public <T extends TestSpec> Stream<T> byType(Class<T> clazz) {
-    return byKind(TestSpecKind.fromType(clazz))
-        .map(specFile -> specFile.spec().asSpecType(clazz));
+    return byKind(TestSpecKind.fromType(clazz)).map(specFile -> specFile.spec().asSpecType(clazz));
   }
 
   public Stream<SpecFile> byName(TestSpecKind kind, String name) {
@@ -60,22 +53,21 @@ public class SpecFiles {
         .map(specFile -> specFile.spec().asSpecType(clazz));
   }
 
-
   private Stream<SpecFile> match(TestSpecKind kind, Predicate<TestSpec> predicate) {
-    return byKind(kind)
-        .filter(specFile -> predicate.test(specFile.spec()));
+    return byKind(kind).filter(specFile -> predicate.test(specFile.spec()));
   }
 
   private static Stream<SpecFile> loadAll(Path path) {
 
     try (Stream<Path> pathStream = Files.walk(path)) {
-      return pathStream.filter(Files::isRegularFile)
-              .filter(SpecFiles::isJsonFile)
-              .map(SpecFiles::loadOne)
-              .toList() // force so the files are read before closing
-              .stream();
+      return pathStream
+          .filter(Files::isRegularFile)
+          .filter(SpecFiles::isJsonFile)
+          .map(SpecFiles::loadOne)
+          .toList() // force so the files are read before closing
+          .stream();
     } catch (IOException e) {
-      throw new UncheckedIOException("Failed reading test resources under: " + path , e);
+      throw new UncheckedIOException("Failed reading test resources under: " + path, e);
     }
   }
 
@@ -92,10 +84,9 @@ public class SpecFiles {
       var element =
           switch (TestSpecKind.valueOf(kindNode.asText().toUpperCase())) {
             case ASSERTION_TEMPLATE -> MAPPER.treeToValue(root, AssertionTemplateSpec.class);
-            case TARGETS ->  MAPPER.treeToValue(root, TargetsSpec.class);
+            case TARGETS -> MAPPER.treeToValue(root, TargetsSpec.class);
             case TEST_SUITE -> MAPPER.treeToValue(root, TestSuiteSpec.class);
             case WORKFLOW -> MAPPER.treeToValue(root, WorkflowSpec.class);
-
           };
       return new SpecFile(file, element, root);
     } catch (IOException e) {
@@ -111,23 +102,25 @@ public class SpecFiles {
 
     var cl = Thread.currentThread().getContextClassLoader();
 
-    return paths.stream().map(
-        path  -> {
-          String normalized = path.startsWith("/") ? path.substring(1) : path;
+    return paths.stream()
+        .map(
+            path -> {
+              String normalized = path.startsWith("/") ? path.substring(1) : path;
 
-          var url = cl.getResource(normalized);
-          if (url == null) {
-            throw new IllegalArgumentException("Test resource folder not found: " + path);
-          }
+              var url = cl.getResource(normalized);
+              if (url == null) {
+                throw new IllegalArgumentException("Test resource folder not found: " + path);
+              }
 
-          try {
-            // Works for file: URLs; if you run tests from a jar, switch to getResourceAsStream-based
-            // walking.
-            return Paths.get(url.toURI());
-          } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Bad resource URI for: " + path + " -> " + url, e);
-          }
-        }
-    );
+              try {
+                // Works for file: URLs; if you run tests from a jar, switch to
+                // getResourceAsStream-based
+                // walking.
+                return Paths.get(url.toURI());
+              } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(
+                    "Bad resource URI for: " + path + " -> " + url, e);
+              }
+            });
   }
 }

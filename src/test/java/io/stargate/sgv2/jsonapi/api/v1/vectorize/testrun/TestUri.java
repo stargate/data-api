@@ -1,47 +1,52 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
+import static java.util.stream.Collectors.joining;
+
 import java.net.URI;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toMap;
+public record TestUri(Scheme scheme, List<SegmentValue> segments) {
 
-public record TestUri(
-    Scheme scheme,
-    List<SegmentValue> segments) {
-
-  public static TestUri.Builder builder(Scheme scheme){
-    return new  TestUri.Builder(scheme);
+  public static TestUri.Builder builder(Scheme scheme) {
+    return new TestUri.Builder(scheme);
   }
 
-  public Segment leafType(){
+  public Segment leafType() {
     return segments.getLast().segment;
   }
 
   public URI uri() {
-    var path = segments.stream()
-        .map(SegmentValue::toString)
-        .collect(joining("/"));
-    return URI.create(scheme.name() + "://" + path);
+    var path = segments.stream().map(SegmentValue::toString).collect(joining("/"));
+
+    return URI.create(scheme.name() + "://" + AUTHORITY + "/" + path);
   }
 
-  public static TestUri parse(URI uri) {
+  public static Optional<TestUri> parse(URI uri) {
 
-    var builder = builder(Scheme.valueOf(uri.getScheme().toLowerCase()));
-    SegmentValue.parse(uri)
-        .forEach(builder::addSegment);
-    return builder.build();
+    Scheme scheme;
+    try {
+      scheme = Scheme.valueOf(uri.getScheme().toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
+    }
+
+    var builder = builder(scheme);
+    SegmentValue.parse(uri).forEach(builder::addSegment);
+    return Optional.of(builder.build());
   }
 
   public enum Scheme {
-    TESTRUN;
+    DATAAPI;
 
     public String pathName() {
       return name().toLowerCase();
     }
   }
+
+  // aka the domain
+  public static final String AUTHORITY = "TESTRUN";
 
   public enum Segment {
     TARGET(null),
@@ -69,7 +74,7 @@ public record TestUri(
     public boolean isParentValid(Segment segment) {
       // XXX TODO: needs work
       return true;
-      //return (parent == null) || (parent == segment) || (segment == LIFECYCLE) ;
+      // return (parent == null) || (parent == segment) || (segment == LIFECYCLE) ;
     }
 
     public String pathName() {
@@ -81,20 +86,22 @@ public record TestUri(
 
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9\\-_.~]");
 
-    public SegmentValue{
+    public SegmentValue {
       Objects.requireNonNull(segment, "segment must not be null");
       Objects.requireNonNull(value, "value must not be null");
     }
 
     public static Stream<SegmentValue> parse(URI uri) {
-      return Arrays.stream(uri.getPath().split("/"))
-          .map(SegmentValue::parse);
+      var path = uri.getPath().startsWith("/") ? uri.getPath().substring(1) : uri.getPath();
+
+      return Arrays.stream(path.split("/")).map(SegmentValue::parse);
     }
 
     public static SegmentValue parse(String segmentKeyValue) {
       var parts = segmentKeyValue.split("=", 2);
       if (parts.length != 2) {
-        throw new IllegalArgumentException("Invalid segment, expected key=value format: " + segmentKeyValue);
+        throw new IllegalArgumentException(
+            "Invalid segment, expected key=value format: " + segmentKeyValue);
       }
       try {
         return new SegmentValue(Segment.valueOf(parts[0].toUpperCase()), parts[1]);
@@ -108,7 +115,6 @@ public record TestUri(
       return segment.name() + "=" + INVALID_CHARS.matcher(value).replaceAll("_");
     }
   }
-
 
   public static class Builder {
 
@@ -134,7 +140,7 @@ public record TestUri(
       return this;
     }
 
-    public Builder clone(){
+    public Builder clone() {
       return new Builder(scheme, new ArrayList<>(segmentValues));
     }
 
@@ -146,11 +152,9 @@ public record TestUri(
           throw new IllegalArgumentException(
               "Invalid segment order. segment=%s expected parent=%s but previous=%s"
                   .formatted(current.segment(), current.segment().parent(), previous));
-
         }
       }
       return new TestUri(scheme, List.copyOf(segmentValues));
     }
   }
-
 }

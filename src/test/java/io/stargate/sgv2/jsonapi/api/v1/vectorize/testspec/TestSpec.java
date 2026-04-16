@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
-public sealed interface TestSpec permits AssertionTemplateSpec, TargetsSpec, TestSuiteSpec, WorkflowSpec {
+public sealed interface TestSpec
+    permits AssertionTemplateSpec, TargetsSpec, TestSuiteSpec, WorkflowSpec {
 
   TestSpecMeta meta();
 
