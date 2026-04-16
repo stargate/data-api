@@ -43,6 +43,7 @@ jobs:
   # runs unit tests
   build:
     name: Unit tests
+    needs: setup
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'DEV' }}
 
