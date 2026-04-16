@@ -25,6 +25,8 @@ env:
 jobs:
   setup:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'DEV' }}
+
     outputs:
       matrix: ${{ steps.set-matrix.outputs.TEST_TARGETS }}
     steps:
@@ -42,8 +44,6 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJson(needs.setup.outputs.matrix) }}
-
-    environment: ${{ github.event.inputs.environment || 'DEV' }}
 
     steps:
       - uses: actions/checkout@v6
