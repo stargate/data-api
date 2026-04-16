@@ -7,6 +7,7 @@ on:
         description: 'Environment to test against'
         required: true
         type: environment
+  pull_request:
 
 # needed when a workflow wants to use OIDC (OpenID Connect) to authenticate to cloud
 permissions:
