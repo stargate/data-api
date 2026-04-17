@@ -42,7 +42,7 @@ jobs:
 
   # runs unit tests
   build:
-    name: Unit tests (${{ matrix.name }})
+    name: Test Bench- ${{ matrix.name }}
     needs: setup
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'DEV' }}
@@ -101,7 +101,7 @@ jobs:
       - name: Build & Test
         env:
           TEST_PLAN_FILE: classpath:integration-tests/test-plans/vectorize-astra-test-plan.yaml
-          Token: ${{ secrets[matrix.token_secret] }}
+          Token: ${{ secrets.API_TOKEN }}
           TARGET_NAME: ${{ matrix.name }}
           ENDPOINT: ${{ matrix.endpoint }}
           openAi_KEY: ${{ secrets.OPEN_AI_KEY }}
