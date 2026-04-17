@@ -1,0 +1,164 @@
+{
+  "meta": {
+    "name": "vectorize-shared-workflow",
+    "kind": "workflow"
+  },
+  "jobs": [
+    {
+      "meta": {
+        "name": "open-ai-vectorize",
+        "tags": []
+      },
+      "fromEnvironment": {
+        "x-embedding-api-key": "openAi_KEY",
+        "Token": "Token"
+      },
+      "variables": {
+        "PROVIDER": "openai",
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
+        "CREDENTIAL" : "kent-open-ai-key"
+      },
+      "matrix": {
+        "MODEL": [
+          "text-embedding-3-small",
+          "text-embedding-3-large",
+          "text-embedding-ada-002"
+        ]
+      },
+      "tests": [
+        "vectorize-shared-auth"
+      ]
+    },
+    {
+      "meta": {
+        "name": "voyageAI-vectorize",
+        "tags": ["disabled"
+        ]
+      },
+      "fromEnvironment": {
+        "x-embedding-api-key": "voyageAI_KEY",
+        "Token": "Token"
+      },
+      "variables": {
+        "PROVIDER": "voyageAI",
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+      },
+      "matrix": {
+        "MODEL": [
+          "voyage-large-2-instruct",
+          "voyage-law-2",
+          "voyage-code-2",
+          "voyage-large-2",
+          "voyage-2"
+        ]
+      },
+      "tests": [
+        "vectorize-header-auth"
+      ]
+    },
+    {
+      "meta": {
+        "name": "jinaAI-vectorize",
+        "tags": ["disabled"
+        ]
+      },
+      "fromEnvironment": {
+        "x-embedding-api-key": "jinaAI_KEY",
+        "Token": "Token"
+      },
+      "variables": {
+        "PROVIDER": "jinaAI",
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+      },
+      "matrix": {
+        "MODEL": [
+          "jina-embeddings-v2-base-en",
+          "jina-embeddings-v2-base-de",
+          "jina-embeddings-v2-base-es",
+          "jina-embeddings-v2-base-code",
+          "jina-embeddings-v2-base-zh"
+        ]
+      },
+      "tests": [
+        "vectorize-header-auth"
+      ]
+    },
+    {
+      "meta": {
+        "name": "huggingface-non-dedicated-vectorize",
+        "tags": [
+          "disabled"
+        ]
+      },
+      "fromEnvironment": {
+        "x-embedding-api-key": "huggingface_KEY",
+        "Token": "Token"
+      },
+      "variables": {
+        "PROVIDER": "huggingface",
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+      },
+      "matrix": {
+        "MODEL": [
+          "sentence-transformers/all-MiniLM-L6-v2",
+          "intfloat/multilingual-e5-large",
+          "intfloat/multilingual-e5-large-instruct",
+          "BAAI/bge-small-en-v1.5",
+          "BAAI/bge-base-en-v1.5",
+          "BAAI/bge-large-en-v1.5"
+        ]
+      },
+      "tests": [
+        "vectorize-header-auth"
+      ]
+    },
+    {
+      "meta": {
+        "name": "mistral-vectorize",
+        "tags": [
+          "disabled"
+        ]
+      },
+      "fromEnvironment": {
+        "x-embedding-api-key": "mistral_KEY",
+        "Token": "Token"
+      },
+      "variables": {
+        "PROVIDER": "mistral",
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+      },
+      "matrix": {
+        "MODEL": [
+          "mistral-embed"
+        ]
+      },
+      "tests": [
+        "vectorize-header-auth"
+      ]
+    },
+    {
+      "meta": {
+        "name": "upstageAI-vectorize",
+        "tags": [
+          "disabled"
+        ]
+      },
+      "fromEnvironment": {
+        "x-embedding-api-key": "upstageAI_KEY",
+        "Token": "Token"
+      },
+      "variables": {
+        "PROVIDER": "upstageAI",
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+      },
+      "matrix": {
+        "MODEL": [
+          "solar-embedding-1-large"
+        ]
+      },
+      "tests": [
+        "vectorize-header-auth"
+      ]
+    }
+  ]
+}

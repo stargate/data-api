@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "name": "vectorize-header-auth",
+    "kind": "test_suite"
+  },
+  "setup": [
+    {
+      "createCollection": {
+        "name": "${COLLECTION_NAME}",
+        "options": {
+          "vector": {
+            "metric": "cosine",
+            "service": {
+              "provider": "${PROVIDER}",
+              "modelName": "${MODEL}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "$include": "vectorize-base"
+    }
+  ],
+  "tests": [
+    {
+      "$include": "vectorize-base"
+    }
+  ],
+  "cleanup": [
+    {
+      "deleteCollection": {
+        "name": "${COLLECTION_NAME}"
+      }
+    }
+  ]
+}
