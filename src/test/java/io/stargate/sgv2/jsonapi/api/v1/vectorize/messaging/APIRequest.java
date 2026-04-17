@@ -86,11 +86,9 @@ public class APIRequest {
 
   public RequestSpecification jsonRequest() {
 
-    //    .log().uri()
-    //            .log().body()
     return given()
-        .log()
-        .all()
+        .log().uri()
+        .log().body()
         .baseUri(connection.domain())
         .port(connection.port())
         .basePath(connection.basePath())
