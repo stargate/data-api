@@ -49,7 +49,7 @@ jobs:
     name: Test Bench- ${{ matrix.environment }} - ${{ matrix.name }}
     needs: setup
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'DEV' }}
+    environment: ${{ matrix.environment }}
 
     # max run time 12 minutes
     timeout-minutes: 12
