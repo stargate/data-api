@@ -28,7 +28,7 @@ jobs:
 
     strategy:
       matrix:
-        environment: [ DEV, TEST ]
+        environment: [ DEV ]
     environment: ${{ matrix.environment }}
 
     outputs:
