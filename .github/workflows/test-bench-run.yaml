@@ -33,7 +33,12 @@ jobs:
       - id: set-matrix
         env:
           TEST_TARGETS: ${{ vars.TEST_TARGETS }}
-        run: echo "$TEST_TARGETS" >> "$GITHUB_OUTPUT"
+        run: |
+          {
+            echo "TEST_TARGETS<<EOF"
+            echo "$TEST_TARGETS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
   # runs unit tests
   build:
@@ -96,7 +101,7 @@ jobs:
       - name: Build & Test
         env:
           TEST_PLAN_FILE: classpath:integration-tests/test-plans/vectorize-astra-test-plan.yaml
-          Token: ${{ secrets.API_TOKEN }}
+          Token: ${{ secrets[matrix.token_secret] }}
           TARGET_NAME: ${{ matrix.name }}
           ENDPOINT: ${{ matrix.endpoint }}
           openAi_KEY: ${{ secrets.OPEN_AI_KEY }}
