@@ -25,7 +25,11 @@ env:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'DEV' }}
+
+    strategy:
+      matrix:
+        environment: [ DEV, TEST ]
+    environment: ${{ matrix.environment }}
 
     outputs:
       matrix: ${{ steps.set-matrix.outputs.TEST_TARGETS }}
@@ -42,7 +46,7 @@ jobs:
 
   # runs unit tests
   build:
-    name: Test Bench> ${{ matrix.name }}
+    name: Test Bench- ${{ matrix.environment }} - ${{ matrix.name }}
     needs: setup
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'DEV' }}
