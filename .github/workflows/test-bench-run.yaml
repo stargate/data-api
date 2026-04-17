@@ -34,7 +34,7 @@ jobs:
         env:
           TEST_TARGETS: ${{ secrets.TEST_TARGETS_SECRET }}
         run: |
-          echo "$TEST_TARGETS" >> "$GITHUB_OUTPUT"
+          echo "TEST_TARGETS=$TEST_TARGETS" >> "$GITHUB_OUTPUT"
 
   # runs unit tests
   build:
