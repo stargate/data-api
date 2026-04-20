@@ -676,6 +676,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(4)
   class CreateRegularIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void invalidCreateIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                  {
+                    "name": "empty_def_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     @Test
     public void createIndexWithEmptyName() {
 
@@ -951,23 +968,6 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS,
               SchemaException.class,
               "Index function `entries` can not apply to map column when analyze options are specified.");
-    }
-
-    // Reproduction for https://github.com/stargate/data-api/issues/2442
-    @Test
-    public void invalidCreateIndexWithEmptyDefinition() {
-      assertTableCommand(keyspaceName, testTableName)
-          .postCreateIndex(
-              """
-                  {
-                    "name": "empty_def_idx",
-                    "definition": {}
-                  }
-                  """)
-          .hasSingleApiError(
-              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
-              RequestException.class,
-              "must not be null");
     }
 
     @Test
