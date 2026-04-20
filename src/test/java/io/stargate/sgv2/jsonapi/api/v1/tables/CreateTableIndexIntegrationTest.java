@@ -953,6 +953,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               "Index function `entries` can not apply to map column when analyze options are specified.");
     }
 
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void createIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                  {
+                    "name": "empty_def_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     @Test
     public void emptyOptionsForEntriesIndexOnMap() {
       // Test for issue #1911: empty options object should be treated same as omitting options
@@ -980,6 +997,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(5)
   class CreateVectorIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void createVectorIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                  {
+                    "name": "empty_def_vector_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     @Test
     public void createIndexWithEmptyName() {
       assertTableCommand(keyspaceName, vectorTableName)
@@ -1146,6 +1180,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(6)
   class CreateTextIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void createTextIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+                  {
+                    "name": "empty_def_text_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     // Definition of the text index must be JSON String or Object; fail if not
     @Test
     public void failForDefNotStringOrObject() {
