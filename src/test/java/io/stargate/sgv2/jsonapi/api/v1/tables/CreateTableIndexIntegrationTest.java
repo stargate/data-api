@@ -955,7 +955,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     // Reproduction for https://github.com/stargate/data-api/issues/2442
     @Test
-    public void createIndexWithEmptyDefinition() {
+    public void invalidCreateIndexWithEmptyDefinition() {
       assertTableCommand(keyspaceName, testTableName)
           .postCreateIndex(
               """
@@ -999,7 +999,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateVectorIndexFailure {
     // Reproduction for https://github.com/stargate/data-api/issues/2442
     @Test
-    public void createVectorIndexWithEmptyDefinition() {
+    public void invalidCreateVectorIndexWithEmptyDefinition() {
       assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
@@ -1182,7 +1182,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateTextIndexFailure {
     // Reproduction for https://github.com/stargate/data-api/issues/2442
     @Test
-    public void createTextIndexWithEmptyDefinition() {
+    public void invalidCreateTextIndexWithEmptyDefinition() {
       assertTableCommand(keyspaceName, lexicalTableName)
           .postCreateTextIndex(
               """

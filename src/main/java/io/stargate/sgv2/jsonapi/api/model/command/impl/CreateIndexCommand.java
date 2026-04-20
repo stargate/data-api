@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -30,6 +31,7 @@ public record CreateIndexCommand(
         String name,
     //
     @NotNull
+        @Valid
         @Schema(description = "Definition of the index to create.", type = SchemaType.OBJECT)
         @JsonProperty(TableDescConstants.IndexDesc.DEFINITION)
         RegularIndexDefinitionDesc definition,
