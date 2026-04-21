@@ -146,8 +146,7 @@ public class MeteredEmbeddingProviderWrapper {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     Tag tenantTag = Tag.of(TENANT_TAG, requestContext.tenant().toString());
     Tag embeddingProviderTag =
-        Tag.of(
-            jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.getClass().getSimpleName());
+        Tag.of(jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.nameForMetrics());
     return Tags.of(commandTag, tenantTag, embeddingProviderTag);
   }
 }

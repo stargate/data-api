@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.45-SNAPSHOT</version>
+  <version>1.0.46-SNAPSHOT</version>
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -54,10 +54,6 @@
     <!-- Testing -->
     <skipTests>false</skipTests>
     <skipUnitTests>${skipTests}</skipUnitTests>
-    <!-- 09-Apr-2026, tatu: Wrt [data-api#2447] need to use not-latest
-        (specifically, 3.5.3; latest being 3.5.5)
-        See: https://github.com/fabriciorby/maven-surefire-junit5-tree-reporter?tab=readme-ov-file#important
-      -->
     <surefire-plugin.version>3.5.5</surefire-plugin.version>
     <skipITs>false</skipITs>
   </properties>
