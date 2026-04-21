@@ -25,8 +25,8 @@ public class DynamicTestExecutable implements Executable {
     this.executable = executable;
 
     var truncated =
-        (description != null && description.length() > 80)
-            ? description.substring(0, 77) + "..."
+        (description != null && description.length() > 120)
+            ? description.substring(0, 117) + "..."
             : description;
 
     this.trimmedDisplayName = truncated;

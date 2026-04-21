@@ -58,7 +58,7 @@
         (specifically, 3.5.3; latest being 3.5.5)
         See: https://github.com/fabriciorby/maven-surefire-junit5-tree-reporter?tab=readme-ov-file#important
       -->
-    <surefire-plugin.version>3.5.3</surefire-plugin.version>
+    <surefire-plugin.version>3.5.5</surefire-plugin.version>
     <skipITs>false</skipITs>
   </properties>
   <dependencyManagement>
