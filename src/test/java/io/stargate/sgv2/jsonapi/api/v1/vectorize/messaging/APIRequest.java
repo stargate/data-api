@@ -81,11 +81,11 @@ public class APIRequest {
   protected Map<String, String> getHeaders() {
 
     var headers = new HashMap<String, String>();
-    headers.put(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, integrationEnv.requiredValue("Token"));
+    headers.put(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, integrationEnv.requiredValue(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME));
 
-    var embeddingApiKey = integrationEnv.get("embeddingApiKey");
+    var embeddingApiKey = integrationEnv.get(HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME);
     if (!Strings.isNullOrEmpty(embeddingApiKey)){
-      headers.put(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, embeddingApiKey);
+      headers.put(HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, embeddingApiKey);
     }
     return headers;
   }
