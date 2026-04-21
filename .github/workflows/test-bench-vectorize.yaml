@@ -1,4 +1,4 @@
-name: API Test Bench Run
+name: Test Bench - Vectorize Run
 
 on:
   workflow_dispatch:
@@ -102,11 +102,17 @@ jobs:
           EOF
       - name: Build & Test
         env:
-          TEST_PLAN_FILE: classpath:integration-tests/test-plans/vectorize-astra-test-plan.yaml
-          Token: ${{ secrets.API_TOKEN }}
+          TEST_PLAN_FILE: classpath:integration-tests/test-plans/test-bench-vectorize.yaml
+          Token: ${{ secrets.DATA_API_TOKEN }}
           TARGET_NAME: ${{ matrix.name }}
           ENDPOINT: ${{ matrix.endpoint }}
-          openAi_KEY: ${{ secrets.OPEN_AI_KEY }}
+          HUGGINGFACE_KEY: ${{ secrets.HUGGINGFACE_KEY }}
+          JINA_AI_KEY: ${{ secrets.JINA_AI_KEY }}
+          MISTRAL_KEY: ${{ secrets.MISTRAL_KEY }}
+          OPEN_AI_KEY: ${{ secrets.OPEN_AI_KEY }}
+          UPSTAGE_AI_KEY: ${{ secrets.UPSTAGE_AI_KEY }}
+          VOYAGE_AI_KEY: ${{ secrets.VOYAGE_AI_KEY }}
+
 
         run: |
           ./mvnw -B -ntp verify -Dfmt.skip -DskipUnitTests -Dit.test=TestBenchTests

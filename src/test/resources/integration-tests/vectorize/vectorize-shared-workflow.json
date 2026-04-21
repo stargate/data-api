@@ -59,7 +59,7 @@
     {
       "meta": {
         "name": "jinaAI-vectorize",
-        "tags": ["disabled"
+        "tags": [
         ]
       },
       "fromEnvironment": {
@@ -87,7 +87,7 @@
       "meta": {
         "name": "huggingface-non-dedicated-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {
@@ -116,7 +116,7 @@
       "meta": {
         "name": "mistral-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {
@@ -140,7 +140,7 @@
       "meta": {
         "name": "upstageAI-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {

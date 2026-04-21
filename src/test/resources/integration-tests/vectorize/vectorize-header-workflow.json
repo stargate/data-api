@@ -8,12 +8,12 @@
       "meta": {
         "name": "open-ai-vectorize",
         "tags": [
-            "disabled"
+
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "openAi_KEY",
-        "Token": "Token"
+        "x-embedding-api-key": "OPEN_AI_KEY",
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "openai",
@@ -33,12 +33,12 @@
     {
       "meta": {
         "name": "voyageAI-vectorize",
-        "tags": ["disabled"
+        "tags": [
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "voyageAI_KEY",
-        "Token": "Token"
+        "x-embedding-api-key": "VOYAGE_AI_KEY",
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "voyageAI",
@@ -60,12 +60,12 @@
     {
       "meta": {
         "name": "jinaAI-vectorize",
-        "tags": ["disabled"
+        "tags": [
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "jinaAI_KEY",
-        "Token": "Token"
+        "x-embedding-api-key": "JINA_AI_KEY",
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "jinaAI",
@@ -88,12 +88,12 @@
       "meta": {
         "name": "huggingface-non-dedicated-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "huggingface_KEY",
-        "Token": "Token"
+        "x-embedding-api-key": "HUGGINGFACE_KEY",
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "huggingface",
@@ -117,12 +117,12 @@
       "meta": {
         "name": "mistral-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "mistral_KEY",
-        "Token": "Token"
+        "x-embedding-api-key": "MISTRAL_KEY",
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "mistral",
@@ -141,12 +141,12 @@
       "meta": {
         "name": "upstageAI-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "upstageAI_KEY",
-        "Token": "Token"
+        "x-embedding-api-key": "UPSTAGE_AI_KEY",
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "upstageAI",
@@ -168,8 +168,8 @@
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "Token",
-        "Token": "Token"
+        "x-embedding-api-key": "DATA_API_TOKEN",
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "nvidia",
@@ -178,7 +178,7 @@
       "matrix": {
         "MODEL": [
           "NV-Embed-QA",
-          "nvidia/nv-embedqa-e5-v5-xxx"
+          "nvidia/nv-embedqa-e5-v5"
         ]
       },
       "tests": [

@@ -1,4 +1,4 @@
-name: Astra ENV
+name: Test Plan - Astra - Vectorize Workflows
 customTarget:
   name: ${TARGET_NAME}
   backend: astra
