@@ -152,7 +152,7 @@ public class MeteredEmbeddingProviderWrapper {
         jsonApiMetricsConfig.embeddingModelTagEnabled()
             ? embeddingProvider.modelName()
             : MetricsConstants.UNKNOWN_VALUE;
-    tags = tags.and(jsonApiMetricsConfig.embeddingModel(), modelValue);
+    tags = tags.and(jsonApiMetricsConfig.embeddingModelTag(), modelValue);
     return tags;
   }
 }

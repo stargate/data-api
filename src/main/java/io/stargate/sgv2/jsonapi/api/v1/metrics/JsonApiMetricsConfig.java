@@ -73,7 +73,7 @@ public interface JsonApiMetricsConfig {
 
   @NotBlank
   @WithDefault("embedding.model")
-  String embeddingModel();
+  String embeddingModelTag();
 
   /** Whether to include the embedding model name as a metric tag. Defaults to true. */
   @WithDefault("true")

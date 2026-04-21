@@ -31,7 +31,7 @@ class MeteredEmbeddingProviderWrapperTest {
     metricsConfig = mock(JsonApiMetricsConfig.class);
     when(metricsConfig.command()).thenReturn("command");
     when(metricsConfig.embeddingProvider()).thenReturn("embedding.provider");
-    when(metricsConfig.embeddingModel()).thenReturn("embedding.model");
+    when(metricsConfig.embeddingModelTag()).thenReturn("embedding.model");
     when(metricsConfig.embeddingModelTagEnabled()).thenReturn(true);
     when(metricsConfig.vectorizeInputBytesMetrics()).thenReturn("vectorize.input.bytes");
 
