@@ -62,8 +62,57 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
         .wasSuccessful();
   }
 
-  // By default, collection creation should fail
+  // [data-api#2423]: explicit "enabled: false" should succeed even when feature is disabled
   @Order(3)
+  @Test
+  public void okCreateWithRerankExplicitlyDisabled() {
+    final String collName = "coll_rerank_explicit_off";
+    assertNamespaceCommand(keyspaceName)
+        .postCreateCollection(
+                """
+                    {
+                      "name": "%s",
+                      "options": {
+                        "rerank": {
+                          "enabled": false
+                        }
+                      }
+                    }
+                    """
+                .formatted(collName))
+        .wasSuccessful();
+  }
+
+  // [data-api#2423]: both lexical and rerank explicitly disabled (original reporter scenario)
+  @Order(4)
+  @Test
+  public void okCreateWithLexicalAndRerankExplicitlyDisabled() {
+    final String collName = "coll_lex_rerank_off";
+    assertNamespaceCommand(keyspaceName)
+        .postCreateCollection(
+                """
+                    {
+                      "name": "%s",
+                      "options": {
+                        "vector": {
+                          "dimension": 14,
+                          "metric": "cosine"
+                        },
+                        "lexical": {
+                          "enabled": false
+                        },
+                        "rerank": {
+                          "enabled": false
+                        }
+                      }
+                    }
+                    """
+                .formatted(collName))
+        .wasSuccessful();
+  }
+
+  // By default, collection creation with rerank enabled should fail
+  @Order(5)
   @Test
   public void failCreateWithoutFeatureEnabled() {
 
@@ -74,7 +123,7 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
   }
 
   // But with header override, should succeed
-  @Order(4)
+  @Order(6)
   @Test
   public void okCreateWithFeatureEnabledViaHeader() {
     assertNamespaceCommand(keyspaceName)
@@ -84,7 +133,7 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
   }
 
   // But even with collection, findAndRerank() should fail without Feature enabled
-  @Order(5)
+  @Order(7)
   @Test
   public void failFindWithoutFeature() {
     // Temporarily create the command string, refactor when we have templates for FindAndRerank
