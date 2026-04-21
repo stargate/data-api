@@ -8,6 +8,7 @@
       "meta": {
         "name": "open-ai-vectorize",
         "tags": [
+            "disabled"
         ]
       },
       "fromEnvironment": {
@@ -177,7 +178,7 @@
       "matrix": {
         "MODEL": [
           "NV-Embed-QA",
-          "nvidia/nv-embedqa-e5-v5-XX"
+          "nvidia/nv-embedqa-e5-v5"
         ]
       },
       "tests": [

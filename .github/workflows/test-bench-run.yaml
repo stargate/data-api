@@ -42,7 +42,7 @@ jobs:
 
   # runs unit tests
   build:
-    name: Test Bench - ${{ matrix.name }}
+    name: Test Bench- ENV-${{ github.event.inputs.environment || 'DEV' }} Target- ${{ matrix.name }}
     needs: setup
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'DEV' }}

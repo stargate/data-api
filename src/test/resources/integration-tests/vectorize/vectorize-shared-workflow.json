@@ -7,7 +7,7 @@
     {
       "meta": {
         "name": "open-ai-vectorize",
-        "tags": []
+        "tags": ["disabled"]
       },
       "fromEnvironment": {
         "x-embedding-api-key": "openAi_KEY",

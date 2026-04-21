@@ -15,10 +15,10 @@ public record SingleTestAssertion(String name, JsonNode args, AssertionMatcher m
     try {
       matcher.match(testResponse.apiResponse());
     } catch (AssertionError e) {
-      System.out.printf("Failed Assertion: name=%s, args=%s", name, args);
+//      System.out.printf("Failed Assertion: name=%s, args=%s", name, args);
       throw e;
     } catch (Exception e) {
-      System.out.printf("Error In Assertion: name=%s, args=%s", name, args);
+//      System.out.printf("Error In Assertion: name=%s, args=%s", name, args);
       throw e;
     }
   }

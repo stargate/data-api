@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1.vectorize;
+package io.stargate.sgv2.jsonapi.api.v1.vectorize.reporting;
 
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import java.util.*;
@@ -13,12 +13,14 @@ import org.junit.platform.launcher.TestPlan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+
 public class DynamicTreeListener implements TestExecutionListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTreeListener.class);
 
-  private TestTracker rootTracker;
-  private final Map<UniqueId, TestTracker> testTrackers = new ConcurrentHashMap<>();
+  private TestReportingTracker rootTracker;
+  private final Map<UniqueId, TestReportingTracker> testTrackers = new ConcurrentHashMap<>();
 
   private final Map<String, Long> startTimes = new ConcurrentHashMap<>();
   private final Map<String, TestSetStats> containerStats = new ConcurrentHashMap<>();
@@ -30,7 +32,7 @@ public class DynamicTreeListener implements TestExecutionListener {
 
   @Override
   public void testPlanExecutionFinished(TestPlan testPlan) {
-    writer.printTestPlanCompleted(rootTracker);
+    writer.allTestsFinished(rootTracker);
   }
 
   @Override
@@ -41,14 +43,11 @@ public class DynamicTreeListener implements TestExecutionListener {
     if (!isTestBenchNode(id)) {
       return;
     }
-    //        System.out.println("XXX " + id.getDisplayName());
     var tracker = getCreateTestTracker(id);
     if (tracker == null) {
       return;
     }
-    //        System.out.println("YYY " + tracker.runUri);
-    //        System.out.println("ZZZ " + tracker.runUri.leafType());
-    writer.printTestStarted(tracker);
+    writer.testStarted(tracker);
   }
 
   @Override
@@ -139,7 +138,7 @@ public class DynamicTreeListener implements TestExecutionListener {
   //        return Optional.empty();
   //    }
 
-  private TestTracker getCreateTestTracker(TestIdentifier testIdentifier) {
+  private TestReportingTracker getCreateTestTracker(TestIdentifier testIdentifier) {
 
     var existingTracker = testTrackers.get(testIdentifier.getUniqueIdObject());
     if (existingTracker != null) {
@@ -169,7 +168,7 @@ public class DynamicTreeListener implements TestExecutionListener {
                 "parentID not found for testIdentifier: " + testIdentifier.toString())
             : null;
 
-    var tracker = new TestTracker(testIdentifier, testUri.get(), parentTracker);
+    var tracker = new TestReportingTracker(testIdentifier, testUri.get(), parentTracker);
 
     if (rootTracker == null) {
       rootTracker = tracker;
@@ -179,19 +178,21 @@ public class DynamicTreeListener implements TestExecutionListener {
   }
 
   /** */
-  public class TestTracker {
+  public class TestReportingTracker {
 
     private final TestIdentifier identifier;
     private final TestUri runUri;
-    private final TestTracker parent;
+    private final TestReportingTracker parent;
     private final int depth;
 
-    private final List<TestTracker> children = new ArrayList<>();
+    private final List<TestReportingTracker> children = new ArrayList<>();
 
+    private Optional<Throwable> throwable = Optional.empty();
     private TestExecutionResult.Status junitStatus;
     private final TestContainerStats stats;
 
-    public TestTracker(TestIdentifier identifier, TestUri runUri, TestTracker parent) {
+    public TestReportingTracker(
+        TestIdentifier identifier, TestUri runUri, TestReportingTracker parent) {
       this.identifier = identifier;
       this.runUri = runUri;
       this.parent = parent;
@@ -203,6 +204,14 @@ public class DynamicTreeListener implements TestExecutionListener {
       }
     }
 
+    public Optional<Throwable> throwable() {
+      return throwable;
+    }
+
+    @Nullable
+    public TestExecutionResult.Status junitStatus(){
+      return junitStatus;
+    }
     public TestIdentifier identifier() {
       return identifier;
     }
@@ -211,11 +220,11 @@ public class DynamicTreeListener implements TestExecutionListener {
       return runUri;
     }
 
-    public TestTracker parent() {
+    public TestReportingTracker parent() {
       return parent;
     }
 
-    public List<TestTracker> children() {
+    public List<TestReportingTracker> children() {
       return children;
     }
 
@@ -229,6 +238,7 @@ public class DynamicTreeListener implements TestExecutionListener {
 
     public void executionFinished(TestExecutionResult result) {
       junitStatus = result.getStatus();
+      throwable = result.getThrowable();
       if (stats != null) {
         stats.testCompleted(result);
       }
