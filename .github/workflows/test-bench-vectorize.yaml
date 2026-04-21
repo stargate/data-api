@@ -102,7 +102,7 @@ jobs:
           EOF
       - name: Build & Test
         env:
-          TEST_PLAN_FILE: classpath:integration-tests/test-plans/test-bench-vectorize.yaml
+          TEST_PLAN_FILE: classpath:integration-tests/test-plans/test-plan-astra-vectorize.yaml
           Token: ${{ secrets.DATA_API_TOKEN }}
           TARGET_NAME: ${{ matrix.name }}
           ENDPOINT: ${{ matrix.endpoint }}
