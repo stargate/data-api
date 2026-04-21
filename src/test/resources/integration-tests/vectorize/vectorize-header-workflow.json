@@ -178,7 +178,7 @@
       "matrix": {
         "MODEL": [
           "NV-Embed-QA",
-          "nvidia/nv-embedqa-e5-v5"
+          "nvidia/nv-embedqa-e5-v5-xxx"
         ]
       },
       "tests": [
