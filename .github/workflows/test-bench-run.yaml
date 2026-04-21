@@ -51,6 +51,8 @@ jobs:
     timeout-minutes: 12
 
     strategy:
+      # do not fail fast, we want to run on all the different target dbs
+      fail-fast: false
       matrix:
         include: ${{ fromJson(needs.setup.outputs.matrix) }}
 
