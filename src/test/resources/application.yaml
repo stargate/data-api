@@ -26,7 +26,7 @@ quarkus:
       # Fine for JVM mode; if building native images, use index-dependency instead
       'io.quarkus.deployment.steps.ReflectiveHierarchyStep':
         level: ERROR
-      'io.stargate.sgv2.jsonapi.api.v1.vectorize.TestBenchConsoleWriter':
+      'io.stargate.sgv2.jsonapi.api.v1.vectorize.reporting.TestBenchConsoleWriter':
         level: INFO
         handlers:
           - PLAIN_CONSOLE
