@@ -283,10 +283,10 @@ public class CollectionRerankDef {
       CreateCollectionCommand.Options.RerankDesc rerankingDesc,
       RerankingProvidersConfig providerConfigs) {
 
-    // If reranking is not enabled for the API, error out if user provides desc or return disabled
-    // configuration.
+    // If reranking is not enabled for the API, allow explicit "enabled: false" but error out
+    // if user tries to enable it (fix for #2423).
     if (!isRerankingEnabledForAPI) {
-      if (rerankingDesc != null) {
+      if (rerankingDesc != null && !Boolean.FALSE.equals(rerankingDesc.enabled())) {
         throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
       }
       return DISABLED;
