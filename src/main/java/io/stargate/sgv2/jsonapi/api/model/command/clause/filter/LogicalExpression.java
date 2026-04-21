@@ -58,6 +58,10 @@ public class LogicalExpression {
     this.comparisonExpressions = comparisonExpression;
   }
 
+  public static LogicalExpression empty() {
+    return and();
+  }
+
   public static LogicalExpression and() {
     return new LogicalExpression(LogicalOperator.AND, 0, new ArrayList<>(), new ArrayList<>());
   }
@@ -121,7 +125,7 @@ public class LogicalExpression {
     return logicalRelation;
   }
 
-  protected void setLogicalRelation(LogicalOperator logicalRelation) {
+  public void setLogicalRelation(LogicalOperator logicalRelation) {
     this.logicalRelation = logicalRelation;
   }
 

@@ -1,20 +1,23 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -27,112 +30,135 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * of chosen Nvidia model.
  */
 public class NvidiaEmbeddingProvider extends EmbeddingProvider {
-  private static final String providerId = ProviderConstants.NVIDIA;
-  private final NvidiaEmbeddingProviderClient nvidiaEmbeddingProviderClient;
+
+  private final NvidiaEmbeddingProviderClient nvidiaClient;
 
   public NvidiaEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
-      String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+    super(
+        ModelProvider.NVIDIA,
+        providerConfig,
+        modelConfig,
+        serviceConfig,
+        dimension,
+        vectorizeServiceParameters);
 
-    nvidiaEmbeddingProviderClient =
+    nvidiaClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .baseUri(URI.create(serviceConfig.getBaseUrl(modelName())))
+            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(NvidiaEmbeddingProviderClient.class);
   }
 
-  @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface NvidiaEmbeddingProviderClient {
-    @POST
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
-        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
-
-    @ClientExceptionMapper
-    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
-    }
-
-    /**
-     * Extract the error message from the response body. The example response body is:
-     *
-     * <pre>
-     * {
-     *   "object": "error",
-     *   "message": "Input length exceeds the maximum token length of the model",
-     *   "detail": {},
-     *   "type": "invalid_request_error"
-     * }
-     * </pre>
-     *
-     * @param response The response body as a String.
-     * @return The error message extracted from the response body.
-     */
-    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      // Get the whole response body
-      JsonNode rootNode = response.readEntity(JsonNode.class);
-      // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
-      JsonNode messageNode = rootNode.path("message");
-      // Return the text of the "message" node, or the whole response body if it is missing
-      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
-    }
+  /**
+   * The example response body is:
+   *
+   * <pre>
+   * {
+   *   "object": "error",
+   *   "message": "Input length exceeds the maximum token length of the model",
+   *   "detail": {},
+   *   "type": "invalid_request_error"
+   * }
+   * </pre>
+   */
+  @Override
+  protected String errorMessageJsonPtr() {
+    return "/message";
   }
-
-  private record EmbeddingRequest(String[] input, String model, String input_type) {}
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private record EmbeddingResponse(Data[] data, String model, Usage usage) {
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record Data(int index, float[] embedding) {}
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record Usage(int prompt_tokens, int total_tokens) {}
-  }
-
-  private static final String PASSAGE = "passage";
-  private static final String QUERY = "query";
 
   @Override
-  public Uni<Response> vectorize(
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
-    String[] textArray = new String[texts.size()];
-    String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
+    checkEOLModelUsage();
+    var input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? "passage" : "query";
+    var nvidiaRequest =
+        new NvidiaEmbeddingRequest(
+            texts.toArray(new String[texts.size()]), modelName(), input_type);
 
-    EmbeddingRequest request =
-        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
+    // user specified the embedding key in the request header, use that.
+    // fall back to whatever they provided as the auth token for the API
+    var accessToken =
+        HttpConstants.BEARER_PREFIX_FOR_API_KEY
+            + embeddingCredentials.apiKey().or(embeddingCredentials::authToken).orElse(null);
 
-    Uni<EmbeddingResponse> response =
-        applyRetry(nvidiaEmbeddingProviderClient.embed("Bearer ", request));
-
-    return response
+    long callStartNano = System.nanoTime();
+    return retryHTTPCall(
+            nvidiaClient.embed(
+                accessToken, embeddingCredentials.tenant().toString(), nvidiaRequest))
         .onItem()
         .transform(
-            resp -> {
-              if (resp.data() == null) {
-                return Response.of(batchId, Collections.emptyList());
+            jakartaResponse -> {
+              var nvidiaResponse = decodeResponse(jakartaResponse, NvidiaEmbeddingResponse.class);
+              long callDurationNano = System.nanoTime() - callStartNano;
+
+              // aaron - 10 June 2025 - previous code would silently swallow no data returned
+              // and return an empty result. If we made a request we should get a response.
+              if (nvidiaResponse.data() == null) {
+                throwEmptyData(jakartaResponse);
               }
-              Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
+
+              Arrays.sort(nvidiaResponse.data(), (a, b) -> a.index() - b.index());
               List<float[]> vectors =
-                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
-              return Response.of(batchId, vectors);
+                  Arrays.stream(nvidiaResponse.data())
+                      .map(NvidiaEmbeddingResponse.Data::embedding)
+                      .toList();
+
+              var modelUsage =
+                  createModelUsage(
+                      embeddingCredentials.tenant(),
+                      ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+                      nvidiaResponse.usage().prompt_tokens(),
+                      nvidiaResponse.usage().total_tokens(),
+                      jakartaResponse,
+                      callDurationNano);
+              return new BatchedEmbeddingResponse(batchId, vectors, modelUsage);
             });
   }
 
-  @Override
-  public int maxBatchSize() {
-    return requestProperties.maxBatchSize();
+  /**
+   * REST client interface for the NVidia Embedding Service.
+   *
+   * <p>..
+   */
+  @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(ProviderHttpInterceptor.class)
+  public interface NvidiaEmbeddingProviderClient {
+    @POST
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
+    Uni<Response> embed(
+        @HeaderParam("Authorization") String accessToken,
+        @HeaderParam("tenant-id") String tenantId,
+        NvidiaEmbeddingRequest request);
+  }
+
+  /**
+   * Request structure of the Nidia REST service.
+   *
+   * <p>..
+   */
+  public record NvidiaEmbeddingRequest(String[] input, String model, String input_type) {}
+
+  /**
+   * Response structure of the Nvidia REST service.
+   *
+   * <p>..
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
+  private record NvidiaEmbeddingResponse(Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Data(int index, float[] embedding) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Usage(int prompt_tokens, int total_tokens) {}
   }
 }

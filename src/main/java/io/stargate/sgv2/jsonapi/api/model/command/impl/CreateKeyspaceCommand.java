@@ -8,19 +8,15 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates a keyspace.")
 @JsonTypeName(CommandName.Names.CREATE_KEYSPACE)
 public record CreateKeyspaceCommand(
-    @NotNull
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Size(min = 1, max = 48)
-        @Schema(description = "Name of the keyspace")
-        String name,
+    @Schema(description = "Required name of the new Keyspace") String name,
     @Nullable @Valid CreateKeyspaceCommand.Options options)
     implements GeneralCommand {
 
@@ -32,31 +28,32 @@ public record CreateKeyspaceCommand(
    *
    * @param strategy Cassandra keyspace strategy class name to use (SimpleStrategy or
    *     NetworkTopologyStrategy).
-   * @param strategyOptions Options for each strategy. For <code>SimpleStrategy</code>,
-   *     `replication_factor` is optional. For the <code>NetworkTopologyStrategy</code> each data
-   *     center with replication.
+   * @param strategyOptions Additional strategy options as a flat map. For {@code SimpleStrategy},
+   *     use {@code replication_factor} (integer). For {@code NetworkTopologyStrategy}, use
+   *     datacenter names as keys with replication factor as values (e.g. {@code "dc1": 3}).
    */
-  @Schema(description = "Cassandra based replication settings.")
-  // no record due to the @JsonAnySetter, see
-  // https://github.com/FasterXML/jackson-databind/issues/562
-  public static class Replication {
-    @NotNull()
-    @Pattern(regexp = "SimpleStrategy|NetworkTopologyStrategy")
-    @JsonProperty("class")
-    private String strategy;
-
-    @JsonAnySetter
-    @Schema(hidden = true)
-    private Map<String, Integer> strategyOptions;
-
-    public String strategy() {
-      return strategy;
-    }
-
-    public Map<String, Integer> strategyOptions() {
-      return strategyOptions;
-    }
-  }
+  @Schema(
+      description =
+          "Cassandra based replication settings. "
+              + "For SimpleStrategy, use {\"class\": \"SimpleStrategy\", \"replication_factor\": N}. "
+              + "For NetworkTopologyStrategy, use {\"class\": \"NetworkTopologyStrategy\", \"datacenter_name\": N, ...}.")
+  public record Replication(
+      @NotNull
+          @Pattern(regexp = "SimpleStrategy|NetworkTopologyStrategy")
+          @JsonProperty("class")
+          @Schema(
+              description =
+                  "Cassandra replication strategy class. Must be either 'SimpleStrategy' or 'NetworkTopologyStrategy'.")
+          String strategy,
+      @JsonAnySetter
+          @Schema(
+              description =
+                  "Additional strategy options as a flat map. "
+                      + "For SimpleStrategy, use 'replication_factor' (integer). "
+                      + "For NetworkTopologyStrategy, use datacenter names as keys with replication factor as values "
+                      + "(e.g. 'dc1': 3, 'dc2': 2).",
+              type = SchemaType.OBJECT)
+          Map<String, Integer> strategyOptions) {}
 
   /** {@inheritDoc} */
   @Override

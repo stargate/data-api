@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import java.util.Map;
+
 /**
  * List of value operator that can be used in Filter clause Have commented the unsupported
  * operators, will add it as we support them
@@ -12,7 +15,8 @@ public enum ValueComparisonOperator implements FilterOperator {
   GT("$gt"),
   GTE("$gte"),
   LT("$lt"),
-  LTE("$lte");
+  LTE("$lte"),
+  MATCH("$match");
 
   private String operator;
 
@@ -27,24 +31,19 @@ public enum ValueComparisonOperator implements FilterOperator {
 
   @Override
   public FilterOperator invert() {
-    switch (this) {
-      case EQ:
-        return NE;
-      case NE:
-        return EQ;
-      case IN:
-        return NIN;
-      case NIN:
-        return IN;
-      case GT:
-        return LTE;
-      case GTE:
-        return LT;
-      case LT:
-        return GTE;
-      case LTE:
-        return GT;
-    }
-    return this;
+    return switch (this) {
+      case EQ -> NE;
+      case NE -> EQ;
+      case IN -> NIN;
+      case NIN -> IN;
+      case GT -> LTE;
+      case GTE -> LT;
+      case LT -> GTE;
+      case LTE -> GT;
+        // No way to do "not matches" (not supported by database)
+      case MATCH ->
+          throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+              Map.of("message", "cannot use '$not' to invert '$match' operator"));
+    };
   }
 }

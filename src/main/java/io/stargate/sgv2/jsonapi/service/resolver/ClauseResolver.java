@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 
 /**
  * Base for a class that can resolve a clause in a command for use by an Operation.
@@ -38,5 +38,14 @@ public abstract class ClauseResolver<CmdT extends Command, SchemaT extends Schem
     this.operationsConfig = operationsConfig;
   }
 
+  /**
+   * Resolves the supplied command into a cause for the task to use, such as resolving the filter in
+   * a filterable command.
+   *
+   * @param commandContext The context the command will be executed in.
+   * @param command The command to resolve.
+   * @return The clause, wrapped in a {@link WithWarnings} object for any warnings that may have
+   *     been generated.
+   */
   public abstract WithWarnings<R> resolve(CommandContext<SchemaT> commandContext, CmdT command);
 }

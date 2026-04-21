@@ -1,0 +1,39 @@
+package io.stargate.sgv2.jsonapi.service.resolver;
+
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRerankingProvidersCommand;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FindRerankingProvidersOperation;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+/** Command resolver for {@link FindRerankingProvidersCommand}. */
+@ApplicationScoped
+public class FindRerankingProvidersCommandResolver
+    implements CommandResolver<FindRerankingProvidersCommand> {
+
+  @Inject RerankingProvidersConfig rerankingProvidersConfig;
+
+  public FindRerankingProvidersCommandResolver() {}
+
+  @Override
+  public Class<FindRerankingProvidersCommand> getCommandClass() {
+    return FindRerankingProvidersCommand.class;
+  }
+
+  @Override
+  public Operation<DatabaseSchemaObject> resolveDatabaseCommand(
+      CommandContext<DatabaseSchemaObject> ctx, FindRerankingProvidersCommand command) {
+
+    boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
+    if (!isRerankingEnabledForAPI) {
+      throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
+    }
+
+    return new FindRerankingProvidersOperation(command, rerankingProvidersConfig);
+  }
+}

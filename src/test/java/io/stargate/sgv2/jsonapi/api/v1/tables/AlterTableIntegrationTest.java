@@ -24,7 +24,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "alter_table_test";
@@ -84,10 +84,20 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0].definition.columns.vehicle_id_4.type", equalTo("text"))
           .body("status.tables[0].definition.columns.physicalAddress.type", equalTo("text"))
           .body("status.tables[0].definition.columns.list_type.type", equalTo("list"))
+          // July 16th, 2025. To not break client, value/key types of map/list/set
+          // are still return with short-form
+          //          .body("status.tables[0].definition.columns.list_type.valueType.type",
+          // equalTo("text"))
           .body("status.tables[0].definition.columns.list_type.valueType", equalTo("text"))
           .body("status.tables[0].definition.columns.set_type.type", equalTo("set"))
+          //          .body("status.tables[0].definition.columns.set_type.valueType.type",
+          // equalTo("text"))
           .body("status.tables[0].definition.columns.set_type.valueType", equalTo("text"))
           .body("status.tables[0].definition.columns.map_type.type", equalTo("map"))
+          //          .body("status.tables[0].definition.columns.map_type.keyType.type",
+          // equalTo("text"))
+          //          .body("status.tables[0].definition.columns.map_type.valueType.type",
+          // equalTo("text"))
           .body("status.tables[0].definition.columns.map_type.keyType", equalTo("text"))
           .body("status.tables[0].definition.columns.map_type.valueType", equalTo("text"))
           .body("status.tables[0].definition.columns.vector_type_1.type", equalTo("vector"))
@@ -116,6 +126,52 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               SchemaException.Code.CANNOT_ADD_EXISTING_COLUMNS,
               SchemaException.class,
               "The request included the following duplicate columns: age(int).");
+    }
+
+    @Test
+    public void addColumnUnsupportedDataTypes() {
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("add", Map.ofEntries(Map.entry("timeuuidColumn", Map.of("type", "timeuuid"))))
+          .hasSingleApiError(
+              SchemaException.Code.CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS,
+              SchemaException.class,
+              "The command attempted to add columns with unsupported data types: timeuuid");
+    }
+
+    @Test
+    public void addColumnUnsupportedCollectionTypes() {
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "add",
+              Map.ofEntries(
+                  Map.entry("listColumn", Map.of("type", "list", "valueType", "counter"))))
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_LIST_DEFINITION,
+              SchemaException.class,
+              "The command used the value type: counter.");
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "add",
+              Map.ofEntries(Map.entry("setColumn", Map.of("type", "set", "valueType", "timeuuid"))))
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SET_DEFINITION,
+              SchemaException.class,
+              "The command used the value type: timeuuid.");
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "add",
+              Map.ofEntries(
+                  Map.entry(
+                      "mapColumn",
+                      Map.of("type", "map", "keyType", "counter", "valueType", "text"))))
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
+              SchemaException.class,
+              "The command used the key type: counter.");
     }
   }
 
@@ -223,7 +279,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasSingleApiError(
               SchemaException.Code.CANNOT_VECTORIZE_UNKNOWN_COLUMNS,
               SchemaException.class,
-              "The command attempted to drop the unknown columns: invalid_column.");
+              "The command attempted to vectorize the unknown columns: invalid_column.");
     }
 
     @Test
@@ -239,6 +295,33 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               SchemaException.class,
               "The command attempted to vectorize the non-vector columns: age.");
     }
+
+    private static Stream<Arguments> deprecatedEmbeddingModelSource() {
+      return Stream.of(
+          Arguments.of(
+              "DEPRECATED",
+              "a-deprecated-nvidia-embedding-model",
+              SchemaException.Code.DEPRECATED_AI_MODEL),
+          Arguments.of(
+              "END_OF_LIFE",
+              "a-EOL-nvidia-embedding-model",
+              SchemaException.Code.END_OF_LIFE_AI_MODEL));
+    }
+
+    @ParameterizedTest
+    @MethodSource("deprecatedEmbeddingModelSource")
+    public void deprecatedEmbeddingModel(
+        String status, String modelName, SchemaException.Code errorCode) {
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "addVectorize",
+              Map.of("vector_type_1", Map.of("provider", "nvidia", "modelName", modelName)))
+          .hasSingleApiError(
+              errorCode,
+              SchemaException.class,
+              "The model is: %s. It is at %s status".formatted(modelName, status));
+    }
   }
 
   @Nested
@@ -246,6 +329,15 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableDropVectorizeSuccess {
     @Test
     public void shouldDropVectorizeForColumns() {
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(true)
+          .wasSuccessful()
+          .body(
+              "status.tables[0].definition.columns.vector_type_2.service.provider",
+              equalTo("mistral"));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("dropVectorize", List.of("vector_type_1"))

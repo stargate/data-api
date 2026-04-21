@@ -1,8 +1,10 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import static io.stargate.sgv2.jsonapi.exception.ExceptionFlags.UNRELIABLE_DB_SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import java.util.EnumSet;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +51,33 @@ public class ErrorCodeTest extends ConfiguredErrorTest {
     assertThat(errorFromParamArgs.errorId)
         .describedAs("errorId is different between from param args and map")
         .isNotEqualTo(errorFromMap.errorId);
+  }
+
+  @Test
+  public void getWithExceptionFlags() {
+    var errorCode = TestScopeException.Code.SCOPED_REQUEST_ERROR;
+    var flags = EnumSet.of(UNRELIABLE_DB_SESSION);
+
+    var errorFromParamArgs =
+        assertDoesNotThrow(
+            () -> errorCode.get(flags, "name", TEST_DATA.VAR_NAME, "value", TEST_DATA.VAR_VALUE));
+
+    var errorFromMap =
+        assertDoesNotThrow(
+            () ->
+                errorCode.get(
+                    flags,
+                    Map.of(
+                        "name", TEST_DATA.VAR_NAME,
+                        "value", TEST_DATA.VAR_VALUE)),
+            String.format("Creating exception with template %s", errorCode.template()));
+
+    assertThat(errorFromParamArgs.exceptionFlags)
+        .as("Exception created with param args carries the given flags")
+        .isEqualTo(flags);
+    assertThat(errorFromMap.exceptionFlags)
+        .as("Exception created with map carries the given flags")
+        .isEqualTo(flags);
   }
 
   @Test

@@ -1,9 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -19,8 +20,8 @@ import java.util.Objects;
  * @param <ValueT> The type of the value stored in the {@link NamedValue}
  * @param <NvT> The type of the {@link NamedValue} stored in the map
  */
-public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<NameT, ValueT>>
-    extends LinkedHashMap<NameT, NvT> implements PrettyPrintable {
+public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<NameT, ValueT, ?>>
+    extends LinkedHashMap<NameT, NvT> implements Recordable {
 
   public NamedValueContainer() {
     super();
@@ -46,7 +47,7 @@ public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<
    * @return The previous value associated with the name, or null if there was no mapping for the
    *     name
    */
-  public NamedValue<NameT, ValueT> put(NvT namedValue) {
+  public NamedValue<NameT, ValueT, ?> put(NvT namedValue) {
     return put(namedValue.name(), namedValue);
   }
 
@@ -55,28 +56,32 @@ public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<
     namedValues.forEach(this::put);
   }
 
+  public NvT getNamedValue(NvT namedValue) {
+    return get(namedValue.name());
+  }
+
+  public boolean containsNamedValue(NvT namedValue) {
+    return containsKey(namedValue.name());
+  }
+
   /** Helper that returns an immutable list of the {@link NamedValue#value()}s in the container. */
   public Collection<ValueT> valuesValue() {
     return values().stream().map(NamedValue::value).toList();
   }
 
-  @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  public String toString(boolean pretty) {
-    return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
+  public List<NvT> deferredValues() {
+    // TODO: cache or better calculate this
+    return values().stream()
+        .filter(namedValue -> namedValue.state().equals(NamedValue.NamedValueState.DEFERRED))
+        .toList();
   }
 
   @Override
-  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
-    return toString(sb).endSubBuilder();
-  }
-
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    forEach((key, value) -> prettyToStringBuilder.append(key.toString(), value));
-    return prettyToStringBuilder;
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    DataRecorder recorder = dataRecorder;
+    for (NvT namedValue : values()) {
+      recorder = namedValue.recordTo(recorder);
+    }
+    return recorder;
   }
 }

@@ -3,15 +3,16 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public record UpdateCollectionOperationPage(
     int matchedCount,
@@ -21,8 +22,6 @@ public record UpdateCollectionOperationPage(
     String pagingState)
     implements Supplier<CommandResult> {
 
-  private static final String ERROR = "Failed to update documents with _id %s: %s";
-
   @Override
   public CommandResult get() {
     final DocumentId[] upsertedId = new DocumentId[1];
@@ -30,8 +29,8 @@ public record UpdateCollectionOperationPage(
 
     var builder =
         returnDocs
-            ? CommandResult.singleDocumentBuilder(false, false)
-            : CommandResult.statusOnlyBuilder(false, false);
+            ? CommandResult.singleDocumentBuilder(RequestTracing.NO_OP)
+            : CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
 
     // aggregate the errors by error code or error class
     Multimap<String, ReadAndUpdateCollectionOperation.UpdatedDocument> groupedErrorUpdates =
@@ -44,14 +43,13 @@ public record UpdateCollectionOperationPage(
           if (returnDocs) {
             updatedDocs.add(update.document());
           }
-          //
           if (update.error() != null) {
-            String key = ExceptionUtil.getThrowableGroupingKey(update.error());
-            groupedErrorUpdates.put(key, update);
+            groupedErrorUpdates.put(update.error().code, update);
           }
         });
     // Create error by error code or error class
-    List<CommandResult.Error> errors = new ArrayList<>(groupedErrorUpdates.size());
+    List<CommandError> errors = new ArrayList<>(groupedErrorUpdates.size());
+
     groupedErrorUpdates
         .keySet()
         .forEach(
@@ -59,10 +57,10 @@ public record UpdateCollectionOperationPage(
               final Collection<ReadAndUpdateCollectionOperation.UpdatedDocument> updatedDocuments =
                   groupedErrorUpdates.get(key);
               final List<DocumentId> documentIds =
-                  updatedDocuments.stream().map(update -> update.id()).collect(Collectors.toList());
+                  updatedDocuments.stream().map(update -> update.id()).toList();
               errors.add(
-                  ExceptionUtil.getError(
-                      ERROR, documentIds, updatedDocuments.stream().findFirst().get().error()));
+                  CommandErrorFactory.create(
+                      updatedDocuments.stream().findFirst().get().error(), documentIds));
             });
 
     if (upsertedId[0] != null) {
@@ -86,7 +84,7 @@ public record UpdateCollectionOperationPage(
     if (returnDocs && !updatedDocs.isEmpty()) {
       builder.addDocument(updatedDocs.getFirst());
     }
-    builder.addCommandResultError(errors);
+    builder.addCommandError(errors);
     return builder.build();
   }
 }

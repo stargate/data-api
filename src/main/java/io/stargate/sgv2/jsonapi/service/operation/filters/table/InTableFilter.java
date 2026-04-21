@@ -4,8 +4,8 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
-import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
@@ -14,17 +14,17 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.ArrayList;
 import java.util.List;
 
 /** API filter $in and $nin against table column. */
 public class InTableFilter extends TableFilter {
 
-  // TODO: this is prob subvlass NativeTypeTableFilter because it is not against a collection
+  // TODO: this is prob sub-class NativeTypeTableFilter because it is not against a collection
   private final List<Object> arrayValue;
 
   public final Operator operator;
@@ -51,10 +51,7 @@ public class InTableFilter extends TableFilter {
   }
 
   @Override
-  public <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
-      TableSchemaObject tableSchemaObject,
-      StmtT ongoingWhereClause,
-      List<Object> positionalValues) {
+  public Relation apply(TableSchemaObject tableSchemaObject, List<Object> positionalValues) {
 
     List<Term> bindMarkers = new ArrayList<>();
 
@@ -101,13 +98,17 @@ public class InTableFilter extends TableFilter {
                   map.put("invalidColumn", path);
                   map.put(
                       "columnType",
-                      tableSchemaObject.tableMetadata().getColumn(path).get().getType().toString());
+                      tableSchemaObject
+                          .tableMetadata()
+                          .getColumn(CqlIdentifier.fromInternal(path))
+                          .get()
+                          .getType()
+                          .toString());
                 }));
       }
     }
 
-    return ongoingWhereClause.where(
-        applyInOperator(Relation.column(getPathAsCqlIdentifier()), bindMarkers));
+    return applyInOperator(Relation.column(getPathAsCqlIdentifier()), bindMarkers);
   }
 
   /**

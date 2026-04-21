@@ -10,19 +10,18 @@ import com.fasterxml.uuid.impl.UUIDUtil;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.*;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +40,9 @@ public class DocumentShredderWithExtendedTypesTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject DocumentShredder documentShredder;
-  @InjectMock protected DataApiRequestInfo bogusRequestInfo;
+  @InjectMock protected RequestContext bogusRequestInfo;
+
+  private final TestConstants testConstants = new TestConstants();
 
   @Nested
   class OkCasesExplicitId {
@@ -51,14 +52,14 @@ public class DocumentShredderWithExtendedTypesTest {
       final String valueUUID = defaultTestUUID2().toString();
       final String inputJson =
               """
-                      { "_id" : {"$uuid": "%s"},
-                        "name" : "Bob",
-                        "extraId" : {"$uuid": "%s"}
-                      }
-                      """
+          { "_id" : {"$uuid": "%s"},
+            "name" : "Bob",
+            "extraId" : {"$uuid": "%s"}
+          }
+          """
               .formatted(idUUID, valueUUID);
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
+      WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
 
       assertThat(doc.id())
           .isEqualTo(
@@ -103,14 +104,14 @@ public class DocumentShredderWithExtendedTypesTest {
       final String valueObjectId = defaultTestObjectId2().toString();
       final String inputJson =
               """
-                          { "_id" : {"$objectId": "%s"},
-                            "name" : "Bob",
-                            "objectId2" : {"$objectId": "%s"}
-                          }
-                          """
+          { "_id" : {"$objectId": "%s"},
+            "name" : "Bob",
+            "objectId2" : {"$objectId": "%s"}
+          }
+          """
               .formatted(idObjectId, valueObjectId);
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
+      WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
 
       assertThat(doc.id())
           .isEqualTo(
@@ -153,13 +154,13 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleWithoutId() throws Exception {
       final String inputJson =
           """
-                      {
-                        "age" : 39,
-                        "name" : "Chuck"
-                      }
-                      """;
+          {
+            "age" : 39,
+            "name" : "Chuck"
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
+      WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
 
       assertThat(doc.id()).isInstanceOf(DocumentId.StringId.class);
       // should be auto-generated UUID:
@@ -197,15 +198,23 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleWithoutIdGenLegacyUUID() throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      var collectionSchemaObject =
+          new CollectionSchemaObject(
+              testConstants.COLLECTION_IDENTIFIER,
+              new IdConfig(CollectionIdType.UNDEFINED),
+              VectorConfig.NOT_ENABLED_CONFIG,
+              null,
+              CollectionLexicalConfig.configForDisabled(),
+              CollectionRerankDef.configForDisabled());
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
+              null,
               "test",
-              CollectionSchemaObject.MISSING.withIdType(CollectionIdType.UNDEFINED),
+              collectionSchemaObject,
               null);
-
       DocumentId docId = doc.id();
       // Legacy UUID generated as "plain" String id
       assertThat(docId).isInstanceOf(DocumentId.StringId.class);
@@ -237,13 +246,22 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleWithoutIdGenObjectId() throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      var collectionSchemaObject =
+          new CollectionSchemaObject(
+              testConstants.COLLECTION_IDENTIFIER,
+              new IdConfig(CollectionIdType.OBJECT_ID),
+              VectorConfig.NOT_ENABLED_CONFIG,
+              null,
+              CollectionLexicalConfig.configForDisabled(),
+              CollectionRerankDef.configForDisabled());
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
+              null,
               "test",
-              CollectionSchemaObject.MISSING.withIdType(CollectionIdType.OBJECT_ID),
+              collectionSchemaObject,
               null);
 
       DocumentId docId = doc.id();
@@ -293,13 +311,23 @@ public class DocumentShredderWithExtendedTypesTest {
         throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
+
+      var collectionSchemaObject =
+          new CollectionSchemaObject(
+              testConstants.COLLECTION_IDENTIFIER,
+              new IdConfig(idType),
+              VectorConfig.NOT_ENABLED_CONFIG,
+              null,
+              CollectionLexicalConfig.configForDisabled(),
+              CollectionRerankDef.configForDisabled());
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
+              null,
               "test",
-              CollectionSchemaObject.MISSING.withIdType(idType),
+              collectionSchemaObject,
               null);
 
       DocumentId docId = doc.id();
@@ -338,13 +366,13 @@ public class DocumentShredderWithExtendedTypesTest {
     public void shredSimpleBinaryVector() throws Exception {
       final String inputJson =
           """
-                  {
-                    "age" : 39,
-                    "$vector": {"$binary": "PoAAAD6AAAA+gAAAPoAAAD6AAAA="}
-                  }
-                  """;
+          {
+            "age" : 39,
+            "$vector": {"$binary": "PoAAAD6AAAA+gAAAPoAAAD6AAAA="}
+          }
+          """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
+      WritableShreddedDocument doc = documentShredder.shred(commandContext(), inputDoc, null);
 
       List<JsonPath> expPaths =
           Arrays.asList(JsonPath.from("_id"), JsonPath.from("age"), JsonPath.from("$vector"));
@@ -363,15 +391,19 @@ public class DocumentShredderWithExtendedTypesTest {
     public void docInvalidObjectAsDocId() {
       final String inputJson =
           """
-                              { "_id" : {"$objectId": "not-an-oid"},
-                                "name" : "Bob"
-                              }
-                              """;
-      Throwable t = catchThrowable(() -> documentShredder.shred(objectMapper.readTree(inputJson)));
+          { "_id" : {"$objectId": "not-an-oid"},
+            "name" : "Bob"
+          }
+          """;
+      Throwable t =
+          catchThrowable(
+              () ->
+                  documentShredder.shred(commandContext(), objectMapper.readTree(inputJson), null));
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-an-oid\")");
     }
@@ -381,15 +413,19 @@ public class DocumentShredderWithExtendedTypesTest {
       // First, invalid String
       final String inputJson =
           """
-                          { "_id" : {"$uuid": "not-a-uuid"},
-                            "name" : "Bob"
-                          }
-                          """;
-      Throwable t = catchThrowable(() -> documentShredder.shred(objectMapper.readTree(inputJson)));
+          { "_id" : {"$uuid": "not-a-uuid"},
+            "name" : "Bob"
+          }
+          """;
+      Throwable t =
+          catchThrowable(
+              () ->
+                  documentShredder.shred(commandContext(), objectMapper.readTree(inputJson), null));
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got (\"not-a-uuid\")");
 
@@ -397,11 +433,15 @@ public class DocumentShredderWithExtendedTypesTest {
       t =
           catchThrowable(
               () ->
-                  documentShredder.shred(objectMapper.readTree("{ \"_id\" : {\"$uuid\": { } } }")));
+                  documentShredder.shred(
+                      commandContext(),
+                      objectMapper.readTree("{ \"_id\" : {\"$uuid\": { } } }"),
+                      null));
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got ({})");
     }
@@ -410,16 +450,18 @@ public class DocumentShredderWithExtendedTypesTest {
     public void docUnknownEJSonAsId() {
       final String inputJson =
           """
-                                  { "_id" : {"$unknown": "value"} }
-                                  """;
-      Throwable t = catchThrowable(() -> documentShredder.shred(objectMapper.readTree(inputJson)));
+          { "_id" : {"$unknown": "value"} }
+          """;
+      Throwable t =
+          catchThrowable(
+              () ->
+                  documentShredder.shred(commandContext(), objectMapper.readTree(inputJson), null));
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
-          .hasMessage(
-              ErrorCodeV1.SHRED_BAD_DOCID_TYPE.getMessage()
-                  + ": unrecognized JSON extension type '$unknown'");
+          .isInstanceOf(DocumentException.class)
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_DOCID_TYPE.name())
+          .hasMessageContaining(": unrecognized JSON extension type '$unknown'");
     }
   }
 
@@ -431,14 +473,15 @@ public class DocumentShredderWithExtendedTypesTest {
           catchThrowable(
               () ->
                   documentShredder.shred(
-                      objectMapper.readTree("{ \"value\": { \"$objectId\": \"abc\" } }")));
+                      commandContext(),
+                      objectMapper.readTree("{ \"value\": { \"$objectId\": \"abc\" } }"),
+                      null));
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
-          .hasMessageStartingWith(
-              ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value (\"abc\") for extended JSON type '$objectId' (path 'value')");
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasMessageContaining(
+              "Bad JSON Extension value to shred: invalid value (\"abc\") for extended JSON type '$objectId' (path 'value')");
     }
 
     @Test
@@ -447,14 +490,15 @@ public class DocumentShredderWithExtendedTypesTest {
           catchThrowable(
               () ->
                   documentShredder.shred(
-                      objectMapper.readTree("{ \"value\": { \"$uuid\": \"foobar\" } }")));
+                      commandContext(),
+                      objectMapper.readTree("{ \"value\": { \"$uuid\": \"foobar\" } }"),
+                      null));
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
-          .hasMessageStartingWith(
-              ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value (\"foobar\") for extended JSON type '$uuid' (path 'value')");
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_EJSON_VALUE.name())
+          .hasMessageContaining(
+              "Bad JSON Extension value to shred: invalid value (\"foobar\") for extended JSON type '$uuid' (path 'value')");
     }
 
     @Test
@@ -463,26 +507,16 @@ public class DocumentShredderWithExtendedTypesTest {
           catchThrowable(
               () ->
                   documentShredder.shred(
-                      objectMapper.readTree("{ \"value\": { \"$unknownType\": 123 } }")));
+                      commandContext(),
+                      objectMapper.readTree("{ \"value\": { \"$unknownType\": 123 } }"),
+                      null));
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage());
+          .hasFieldOrPropertyWithValue("code", DocumentException.Code.SHRED_BAD_FIELD_NAME.name())
+          .hasMessageStartingWith(
+              "Document field name not valid: field name '$unknownType' starts with '$'");
     }
-  }
-
-  protected JsonNode fromJson(String json) {
-    try {
-      return objectMapper.readTree(json);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  protected Date defaultTestDate() {
-    OffsetDateTime dt = OffsetDateTime.parse("2023-01-01T00:00:00Z");
-    return new Date(dt.toInstant().toEpochMilli());
   }
 
   protected UUID defaultTestUUID() {
@@ -499,5 +533,9 @@ public class DocumentShredderWithExtendedTypesTest {
 
   protected ObjectId defaultTestObjectId2() {
     return new ObjectId("1234567890abcdef87654321");
+  }
+
+  private CommandContext<CollectionSchemaObject> commandContext() {
+    return testConstants.collectionContext();
   }
 }

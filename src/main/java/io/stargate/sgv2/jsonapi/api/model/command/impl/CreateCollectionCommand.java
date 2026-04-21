@@ -1,13 +1,14 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.*;
@@ -18,11 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates a collection.")
 @JsonTypeName(CommandName.Names.CREATE_COLLECTION)
 public record CreateCollectionCommand(
-    @NotNull
-        @Size(min = 1, max = 48)
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Schema(description = "Name of the collection")
-        String name,
+    @Schema(description = "Required name of the new Collection") String name,
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
@@ -58,7 +55,25 @@ public record CreateCollectionCommand(
                   "Optional indexing configuration to provide allow/deny list of fields for indexing",
               type = SchemaType.OBJECT,
               implementation = IndexingConfig.class)
-          IndexingConfig indexing) {
+          IndexingConfig indexing,
+      @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(
+              description =
+                  "Optional configuration defining if and how to support use of '$lexical' field",
+              type = SchemaType.OBJECT,
+              implementation = LexicalConfigDefinition.class)
+          LexicalConfigDefinition lexical,
+      @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(
+              description =
+                  "Optional configuration defining if and how to support use of 'rerank' field",
+              type = SchemaType.OBJECT,
+              implementation = RerankDesc.class)
+          RerankDesc rerank) {
 
     public record IdConfig(
         @Nullable
@@ -147,39 +162,31 @@ public record CreateCollectionCommand(
 
       public void validate() {
         if (allow() != null && deny() != null) {
-          throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-              "`allow` and `deny` cannot be used together");
+          throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+              Map.of("errorMessage", "'allow' and 'deny' cannot be used together"));
         }
 
         if (allow() == null && deny() == null) {
-          throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-              "`allow` or `deny` should be provided");
+          throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+              Map.of("errorMessage", "'allow' or 'deny' should be provided"));
         }
 
         if (allow() != null) {
           Set<String> dedupe = new HashSet<>(allow());
           if (dedupe.size() != allow().size()) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`allow` cannot contain duplicates");
+            throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                Map.of("errorMessage", "'allow' cannot contain duplicates"));
           }
-          String invalid = findInvalidPath(allow());
-          if (invalid != null) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`allow` contains invalid path: '%s'", invalid);
-          }
+          validateIndexingPath(allow());
         }
 
         if (deny() != null) {
           Set<String> dedupe = new HashSet<>(deny());
           if (dedupe.size() != deny().size()) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`deny` cannot contain duplicates");
+            throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                Map.of("errorMessage", "'deny' cannot contain duplicates"));
           }
-          String invalid = findInvalidPath(deny());
-          if (invalid != null) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`deny` contains invalid path: '%s'", invalid);
-          }
+          validateIndexingPath(deny());
         }
       }
 
@@ -192,28 +199,118 @@ public record CreateCollectionCommand(
         return deny() != null && deny().contains("*");
       }
 
-      public String findInvalidPath(List<String> paths) {
+      /**
+       * Validates the given paths name. A path name must not be empty and must not start with a $
+       * except for $vector.
+       *
+       * @param paths the paths to validate
+       */
+      public void validateIndexingPath(List<String> paths) {
         // Special case: single "*" is accepted
         if (paths.size() == 1 && "*".equals(paths.get(0))) {
-          return null;
+          return;
         }
         for (String path : paths) {
-          if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
-            // One exception: $vector is allowed
-            if (!DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
-              return path;
+          if (!NamingRules.FIELD.apply(path)) {
+            if (path.isEmpty()) {
+              throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                  Map.of("errorMessage", "path must be represented as a non-empty string"));
+            }
+            if (path.startsWith("$")) {
+              // $vector is allowed, otherwise throw error
+              if (!DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+                throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                    Map.of("errorMessage", "path ('%s') must not start with '$'".formatted(path)));
+              }
             }
           }
+
+          try {
+            DocumentPath.verifyEncodedPath(path);
+          } catch (IllegalArgumentException e) {
+            throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                Map.of(
+                    "errorMessage",
+                    "indexing path ('%s') is not a valid path: %s"
+                        .formatted(path, e.getMessage())));
+          }
         }
-        return null;
       }
     }
 
-    public Options(IdConfig idConfig, VectorSearchConfig vector, IndexingConfig indexing) {
-      // idConfig could be null, will resolve idType to empty string in table comment
-      this.idConfig = idConfig;
-      this.vector = vector;
-      this.indexing = indexing;
+    public record LexicalConfigDefinition(
+        @Schema(
+                description = "Whether to enable the use of '$lexical' field (default: 'true')",
+                defaultValue = "true",
+                type = SchemaType.BOOLEAN,
+                implementation = Boolean.class,
+                required = true)
+            Boolean enabled,
+        @Schema(
+                description =
+                    "Analyzer to use for '$lexical' field: either String (name of a pre-defined analyzer), or JSON Object to specify custom one. Default: 'standard')",
+                defaultValue = "standard",
+                oneOf = {String.class, Map.class})
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @JsonProperty("analyzer")
+            JsonNode analyzerDef) {}
+
+    public record RerankDesc(
+        @Schema(
+                description = "Whether to enable the use of reranking model (default: 'true')",
+                defaultValue = "true",
+                type = SchemaType.BOOLEAN,
+                implementation = Boolean.class,
+                required = true)
+            Boolean enabled,
+        @Schema(
+                description =
+                    "Reranking model configuration. Default is llama-3.2-nv-rerankqa-1b-v2 model from Nvidia.",
+                defaultValue =
+                    "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}",
+                implementation = RerankServiceDesc.class)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @JsonProperty("service")
+            RerankServiceDesc rerankServiceDesc) {}
+
+    public record RerankServiceDesc(
+        @NotNull
+            @Schema(
+                description = "Registered reranking service provider",
+                type = SchemaType.STRING,
+                implementation = String.class)
+            @JsonProperty(ServiceDescConstants.PROVIDER)
+            String provider,
+        @Schema(
+                description = "Registered reranking service model",
+                type = SchemaType.STRING,
+                implementation = String.class)
+            @JsonProperty(ServiceDescConstants.MODEL_NAME)
+            String modelName,
+        @Valid
+            @Nullable
+            @Schema(
+                description = "Authentication config for chosen reranking service",
+                type = SchemaType.OBJECT)
+            @JsonProperty(ServiceDescConstants.AUTHENTICATION)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            Map<String, String> authentication,
+        @Nullable
+            @Schema(
+                description =
+                    "Optional parameters that match the messageTemplate provided for the reranking provider",
+                type = SchemaType.OBJECT)
+            @JsonProperty(ServiceDescConstants.PARAMETERS)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            Map<String, Object> parameters) {
+
+      @JsonIgnore
+      public boolean isEmpty() {
+        return (provider == null)
+            && (modelName == null)
+            && (authentication == null)
+            && (parameters == null);
+      }
     }
   }
 

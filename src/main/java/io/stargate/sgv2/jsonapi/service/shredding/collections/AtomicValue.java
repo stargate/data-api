@@ -17,7 +17,7 @@ public record AtomicValue(DocValueType type, String typedFullValue, DocValueHash
   static final AtomicValue TRUE = create(DocValueType.BOOLEAN, "1");
 
   public static AtomicValue forString(String str) {
-    // For Strings no changes needed, use default prefix+full-value
+    // For Constants no changes needed, use default prefix+full-value
     return create(DocValueType.STRING, str);
   }
 

@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -43,6 +43,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
+  // For $match on $lexical
+  private static final Object MATCH_GROUP = new Object();
 
   public CollectionFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -156,7 +158,11 @@ public class CollectionFilterResolver<T extends Command & Filterable>
         .compareValues(
             "*",
             EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
-            JsonType.SUB_DOC);
+            JsonType.SUB_DOC)
+        .capture(MATCH_GROUP)
+        .compareValues(
+            // Should be "$lexical" but validated elsewhere
+            "*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING);
 
     return matchRules;
   }
@@ -230,8 +236,9 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                       IDCollectionFilter.Operator.NE, expression.value()));
                               break;
                             default:
-                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                                  "%s", expression.operator());
+                              throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+                                  Map.of(
+                                      "message", "operator '%s'".formatted(expression.operator())));
                           }
                         });
                   });
@@ -258,8 +265,9 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                       (List<Object>) expression.value()));
                               break;
                             default:
-                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                                  "%s", expression.operator());
+                              throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+                                  Map.of(
+                                      "message", "operator '%s'".formatted(expression.operator())));
                           }
                         });
                   });
@@ -272,6 +280,23 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     idRangeGroup.consumeAllCaptures(
                         expression -> {
                           final DocumentId value = (DocumentId) expression.value();
+                          // E.G. {"_id":{"$gt":true}}
+                          if (value.value() instanceof Boolean) {
+                            dbLogicalExpression.addFilter(
+                                new BoolCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    (Boolean) value.value()));
+                          }
+                          // E.G. {"_id":{"$gt":"apple"}}
+                          if (value.value() instanceof String) {
+                            dbLogicalExpression.addFilter(
+                                new TextCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    (String) value.value()));
+                          }
+                          // E.G. {"_id":{"$gt":123}}
                           if (value.value() instanceof BigDecimal bdv) {
                             dbLogicalExpression.addFilter(
                                 new NumberCollectionFilter(
@@ -279,6 +304,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                     getMapFilterBaseOperator(expression.operator()),
                                     bdv));
                           }
+                          // E.G. {"_id":{"$gt":{"$date":1672531200000}}}
                           if (value.value() instanceof Map) {
                             dbLogicalExpression.addFilter(
                                 new DateCollectionFilter(
@@ -481,6 +507,19 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                       : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
                         });
                   });
+
+          captureGroups
+              .getGroupIfPresent(MATCH_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> matchGroup = (CaptureGroup<Object>) captureGroup;
+                    matchGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new MatchCollectionFilter(
+                                  expression.path(), (String) expression.value()));
+                        });
+                  });
         };
 
     currentCaptureGroups.consumeAll(currentDbLogicalExpression, consumer);
@@ -504,8 +543,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case LTE:
         return MapCollectionFilter.Operator.LTE;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-            "%s", filterOperator.getOperator());
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "operator '%s'".formatted(filterOperator.getOperator())));
     }
   }
 
@@ -517,8 +556,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NIN:
         return InCollectionFilter.Operator.NIN;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-            "%s", filterOperator.getOperator());
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "operator '%s'".formatted(filterOperator.getOperator())));
     }
   }
 
@@ -530,8 +569,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NE:
         return SetCollectionFilter.Operator.NOT_CONTAINS;
       default:
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-            "%s", filterOperator.getOperator());
+        throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+            Map.of("message", "operator '%s'".formatted(filterOperator.getOperator())));
     }
   }
 }

@@ -1,12 +1,16 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTextIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
@@ -21,32 +25,31 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
+import io.stargate.sgv2.jsonapi.service.schema.UnscopedSchemaObjectIdentifier;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.function.Supplier;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
@@ -59,6 +62,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path(CollectionResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
@@ -66,24 +71,43 @@ import org.jboss.resteasy.reactive.RestResponse;
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
 @Tag(ref = "Documents")
 public class CollectionResource {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionResource.class);
 
-  public static final String BASE_PATH = "/v1/{keyspace}/{collection}";
+  public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}/{collection}";
 
+  // need to keep for a little because we have to check the schema type before making the command
+  // context
+  // TODO remove apiFeatureConfig as a property after cleanup for how we get schema from cache
+  @Inject private FeaturesConfig apiFeatureConfig;
+  @Inject private RequestContext requestContext;
+
+  private final SchemaObjectCacheSupplier schemaObjectCacheSupplier;
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
+  private final EmbeddingProviderFactory embeddingProviderFactory;
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  @Inject private SchemaCache schemaCache;
-
-  @Inject private EmbeddingProviderFactory embeddingProviderFactory;
-
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
-
-  @Inject FeaturesConfig apiFeatureConfig;
-
-  @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
-
   @Inject
-  public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public CollectionResource(
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier,
+      MeteredCommandProcessor meteredCommandProcessor,
+      MeterRegistry meterRegistry,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CqlSessionCacheSupplier sessionCacheSupplier,
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory) {
+
+    this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
+    this.embeddingProviderFactory = embeddingProviderFactory;
     this.meteredCommandProcessor = meteredCommandProcessor;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
+            .withCqlSessionCache(sessionCacheSupplier.get())
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+            .withEmbeddingProviderFactory(embeddingProviderFactory)
+            .withRerankingProviderFactory(rerankingProviderFactory)
+            .withMeterRegistry(meterRegistry);
   }
 
   @Operation(
@@ -117,6 +141,7 @@ public class CollectionResource {
                         // Table Only commands
                         AlterTableCommand.class,
                         CreateIndexCommand.class,
+                        CreateTextIndexCommand.class,
                         CreateVectorIndexCommand.class,
                         ListIndexesCommand.class
                       }),
@@ -141,6 +166,7 @@ public class CollectionResource {
                 @ExampleObject(ref = "alterTableAddVectorize"),
                 @ExampleObject(ref = "alterTableDropVectorize"),
                 @ExampleObject(ref = "createIndex"),
+                @ExampleObject(ref = "createTextIndex"),
                 @ExampleObject(ref = "createVectorIndex"),
                 @ExampleObject(ref = "listIndexes"),
                 @ExampleObject(ref = "insertOneTables"),
@@ -178,93 +204,118 @@ public class CollectionResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("keyspace")
-          @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
-          String keyspace,
-      @PathParam("collection")
-          @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
-          String collection) {
-    return schemaCache
-        .getSchemaObject(
-            dataApiRequestInfo,
-            dataApiRequestInfo.getTenantId(),
-            keyspace,
-            collection,
-            CommandType.DDL.equals(command.commandName().getCommandType()))
+      @PathParam("keyspace") @NotEmpty String keyspace,
+      @PathParam("collection") @NotEmpty String collection) {
+
+    var unscopedSchemaIdentifier =
+        new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
+            cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
+
+    return schemaObjectCacheSupplier
+        .get()
+        .getTableBased(
+            requestContext,
+            unscopedSchemaIdentifier,
+            requestContext.userAgent(),
+            command.isForceSchemaRefresh())
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {
               if (throwable != null) {
-
-                // We failed to get the schema object, or failed to build it.
-                Throwable error = throwable;
-                if (throwable instanceof RuntimeException && throwable.getCause() != null) {
-                  error = throwable.getCause();
-                } else if (error instanceof JsonApiException jsonApiException) {
-                  return Uni.createFrom().failure(jsonApiException);
-                }
-                // otherwise use generic for now
-                return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
-
+                return Uni.createFrom()
+                    .item(
+                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                            .addThrowable(throwable)
+                            .build());
               } else {
-
-                // TODO No need for the else clause here, simplify
-                var apiFeatures =
-                    ApiFeatures.fromConfigAndRequest(
-                        apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
-                if ((schemaObject.type() == SchemaObject.SchemaObjectType.TABLE)
-                    && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
-                  return Uni.createFrom()
-                      .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
-                }
-
-                // TODO: This needs to change, currenty it is only checking if there is vecotrize
-                // for
-                // the $vector column in a collection
+                // TODO: This needs to change, currently it is only checking if there is vectorize
+                // for the $vector column in a collection
 
                 VectorColumnDefinition vectorColDef = null;
-                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                if (schemaObject.type() == SchemaObjectType.COLLECTION) {
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
                           .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
                           .orElse(null);
-                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                } else if (schemaObject.type() == SchemaObjectType.TABLE) {
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
                           .getFirstVectorColumnWithVectorizeDefinition()
                           .orElse(null);
                 }
-                EmbeddingProvider embeddingProvider =
-                    (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
-                        ? null
-                        : embeddingProviderFactory.getConfiguration(
-                            dataApiRequestInfo.getTenantId(),
-                            dataApiRequestInfo.getCassandraToken(),
-                            vectorColDef.vectorizeDefinition().provider(),
-                            vectorColDef.vectorizeDefinition().modelName(),
-                            vectorColDef.vectorSize(),
-                            vectorColDef.vectorizeDefinition().parameters(),
-                            vectorColDef.vectorizeDefinition().authentication(),
-                            command.getClass().getSimpleName());
+
+                EmbeddingProvider embeddingProvider = null;
+
+                if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
+                  embeddingProvider =
+                      embeddingProviderFactory.create(
+                          requestContext.tenant(),
+                          requestContext.authToken(),
+                          vectorColDef.vectorizeDefinition().provider(),
+                          vectorColDef.vectorizeDefinition().modelName(),
+                          vectorColDef.vectorSize(),
+                          vectorColDef.vectorizeDefinition().parameters(),
+                          vectorColDef.vectorizeDefinition().authentication(),
+                          command.getClass().getSimpleName());
+                }
 
                 var commandContext =
-                    CommandContext.forSchemaObject(
-                        schemaObject,
-                        embeddingProvider,
-                        command.getClass().getSimpleName(),
-                        jsonProcessingMetricsReporter,
-                        apiFeatures);
+                    contextBuilderSupplier
+                        .getBuilder(schemaObject)
+                        .withEmbeddingProvider(embeddingProvider)
+                        .withCommandName(command.getClass().getSimpleName())
+                        .withRequestContext(requestContext)
+                        .build();
 
-                return meteredCommandProcessor.processCommand(
-                    dataApiRequestInfo, commandContext, command);
+                return meteredCommandProcessor
+                    .processCommand(commandContext, command)
+                    .onTermination()
+                    .invoke(
+                        () -> {
+                          try {
+                            commandContext.close();
+                          } catch (Exception e) {
+                            LOGGER.error(
+                                "Error closing the command context for requestContext={}",
+                                requestContext,
+                                e);
+                          }
+                        });
               }
             })
-        .map(commandResult -> commandResult.toRestResponse());
+        .onItemOrFailure()
+        .transformToUni(
+            (commandResult, throwable) -> {
+              // regardless of success or failure, we refresh schema cache if command says to do so
+              // we have our SchemaObjectCache, but the driver also has a metadata cache so the only
+              // way
+              // to refresh from the DB is to pull schema again, so it tells the driver to refresh
+              // async
+              // cannot tell the driver to invalidate cache of a specific part of the schema
+              Throwable finalThrowable = throwable;
+              CommandResult finalCommandResult = commandResult;
+
+              Supplier<Uni<CommandResult>> commandResultUni =
+                  () ->
+                      finalThrowable == null
+                          ? Uni.createFrom().item(finalCommandResult)
+                          : Uni.createFrom().failure(finalThrowable);
+              if (command.isForceSchemaRefresh()) {
+                return schemaObjectCacheSupplier
+                    .get()
+                    .getTableBased(
+                        requestContext,
+                        unscopedSchemaIdentifier,
+                        requestContext.userAgent(),
+                        command.isForceSchemaRefresh())
+                    .onItem()
+                    // TODO XXXX - IGNORE FAILURE
+                    .transformToUni(so -> commandResultUni.get());
+              }
+              return commandResultUni.get();
+            })
+        .map(CommandResult::toRestResponse);
   }
 }

@@ -2,18 +2,26 @@ package io.stargate.sgv2.jsonapi.service.cql.builder;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.CqlVector;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class QueryBuilder {
+  public static final int DEFAULT_BM25_LIMIT = 100;
+  public static final int MAX_BM25_LIMIT = 1000;
+
+  private static final String COUNT_FUNCTION_NAME = "COUNT";
+
   private String keyspaceName;
   private String tableName;
   private boolean isInsert;
@@ -22,6 +30,7 @@ public class QueryBuilder {
   private boolean isSelect;
   private Integer limitInt;
   private String orderByAnn;
+  private BM25Clause bm25Clause;
   private final List<QueryBuilder.FunctionCall> functionCalls = new ArrayList<>();
 
   /** The vectorValue used to compute similarityScore or process an ANN search */
@@ -32,8 +41,6 @@ public class QueryBuilder {
 
   /** The where expression which contains conditions and logic operation for a SELECT or UPDATE. */
   private Expression<BuiltCondition> whereExpression = null;
-
-  private static final String COUNT_FUNCTION_NAME = "COUNT";
 
   public void keyspace(String keyspace) {
     this.keyspaceName = keyspace;
@@ -47,6 +54,10 @@ public class QueryBuilder {
     this.keyspaceName = keyspace;
     table(table);
     return this;
+  }
+
+  public QueryBuilder from(CqlIdentifier keyspace, CqlIdentifier table) {
+    return from(keyspace.toString(), table.toString());
   }
 
   public QueryBuilder select() {
@@ -80,7 +91,7 @@ public class QueryBuilder {
 
   public QueryBuilder as(String alias) {
     if (functionCalls.isEmpty()) {
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+      throw ServerException.internalServerError(
           "as() method cannot be called without a preceding function call");
     }
     // the alias is set for the last function call
@@ -114,7 +125,7 @@ public class QueryBuilder {
     if (isSelect) {
       return selectQuery();
     }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+    throw ServerException.internalServerError(
         "Unsupported cql query type in QueryBuilder (isSelect=false)");
   }
 
@@ -138,13 +149,31 @@ public class QueryBuilder {
 
     if (orderByAnn != null) {
       if (vectorValue == null) {
-        throw ErrorCodeV1.MISSING_VECTOR_VALUE.toApiException();
+        throw ServerException.internalServerError("Missing the vector value when building cql");
       }
       builder.append(" ORDER BY ").append(orderByAnn).append(" ANN OF ?");
       values.add(vectorValue);
     }
 
-    if (limitInt != null) {
+    if (bm25Clause != null) {
+      // LIMIT gets tricky with BM25: should use explicit one, if one given, but
+      // it looks like it's sometimes passed as `Integer.MAX_VALUE` to mean "no limit"
+
+      final int bm25Limit;
+      if (limitInt == null || limitInt < 1 || (limitInt == Integer.MAX_VALUE)) {
+        bm25Limit = DEFAULT_BM25_LIMIT;
+      } else {
+        bm25Limit = Math.min(limitInt, MAX_BM25_LIMIT);
+      }
+
+      builder
+          .append(" ORDER BY ")
+          .append(bm25Clause.column())
+          .append(" BM25 OF ? LIMIT ")
+          .append(bm25Limit);
+
+      values.add(bm25Clause.query());
+    } else if (limitInt != null) {
       builder.append(" LIMIT ").append(limitInt == -1 ? "?" : limitInt);
     }
 
@@ -211,11 +240,11 @@ public class QueryBuilder {
         BuiltCondition condition = variable.getValue();
         condition.lhs.appendToBuilder(sb);
         condition.rhsTerm.appendPositionalValue(values);
-        sb.append(" ").append(condition.predicate.toString()).append(" ?");
+        sb.append(condition.predicate.getCql()).append("?");
       }
       default ->
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Unsupported expression type %s", outerExpression.getExprType());
+          throw ServerException.internalServerError(
+              "Unsupported expression type " + outerExpression.getExprType());
     }
   }
 
@@ -249,7 +278,7 @@ public class QueryBuilder {
           .append(cqlName(functionCall.getColumnName()));
       if (functionCall.isSimilarityFunction) {
         if (vectorValue == null) {
-          throw ErrorCodeV1.MISSING_VECTOR_VALUE.toApiException();
+          throw ServerException.internalServerError("Missing the vector value when building cql");
         }
         builder.append(", ").append('?');
         values.add(vectorValue);
@@ -273,10 +302,16 @@ public class QueryBuilder {
       case DOT_PRODUCT ->
           functionCalls.add(
               FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_DOT_PRODUCT"));
+        // can this ever occur?
       default ->
-          throw ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
-              "%s", similarityFunction);
+          throw SchemaException.Code.VECTOR_SEARCH_UNKNOWN_FUNCTION_NAME.get(
+              Map.of("function", similarityFunction.name()));
     }
+    return this;
+  }
+
+  public QueryBuilder bm25Sort(String column, String text) {
+    bm25Clause = new BM25Clause(column, text);
     return this;
   }
 
@@ -285,6 +320,8 @@ public class QueryBuilder {
     this.vectorValue = CQLBindValues.getVectorValue(vectorValue);
     return this;
   }
+
+  private record BM25Clause(String column, String query) {}
 
   public static class FunctionCall {
     final String columnName;

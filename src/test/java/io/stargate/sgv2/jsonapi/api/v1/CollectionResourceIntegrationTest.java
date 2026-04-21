@@ -7,21 +7,23 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   @Nested
   class ClientErrors {
-    String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
+    String collectionName = "col" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
     @Test
     public void tokenMissing() {
-      given()
+      given() // NOTE: not passing headers, on purpose
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
@@ -30,17 +32,13 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(401)
           .body("$", responseIsError())
           .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing token, expecting one in the Token header."));
+              "errors[0].errorCode",
+              is(APISecurityException.Code.MISSING_AUTHENTICATION_TOKEN.name()));
     }
 
     @Test
     public void malformedBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("wrong")
+      givenHeadersAndJson("wrong")
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -50,146 +48,76 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
+          .body("errors[0].errorCode", is(RequestException.Code.REQUEST_NOT_JSON.name()))
           .body(
               "errors[0].message",
-              startsWith("Request invalid, cannot parse as JSON: underlying problem:"))
-          .body("errors[0].message", containsString("Unrecognized token 'wrong'"));
+              startsWith(
+                  "Request not valid JSON, problem: Unrecognized token 'wrong': was expecting (JSON String, Number, Array, Object"));
     }
 
     @Test
     public void unknownCommand() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "unknownCommand": {
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_UNKNOWN.name()))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are ["));
+                  "Command 'unknownCommand' is not a Collection Command recognized by Data API."))
+          .body(
+              "errors[0].message",
+              containsString("Data API supports following Collection Commands: [alterTable,"));
     }
 
     @Test
     public void unknownCommandField() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
               {
                 "findOne": {
                     "unknown": "value"
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+              """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
-          .body("errors[0].message", startsWith("Request invalid, unrecognized JSON field"))
-          .body("errors[0].message", containsString("\"unknown\" not one of known fields"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_UNKNOWN.name()))
+          .body("errors[0].message", startsWith("Command field 'unknown' not recognized"))
           .body(
               "errors[0].message",
-              containsString("(\"filter\", \"options\", \"projection\", \"sort\")"));
-    }
-
-    @Test
-    public void invalidKeyspaceName() {
-      String json =
-          """
-          {
-            "insertOne": {
-                "document": {}
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'keyspace' value \"7_no_leading_number\" not valid. Problem: must match "));
-    }
-
-    @Test
-    public void invalidCollectionName() {
-      String json =
-          """
-          {
-            "insertOne": {
-                "document": {}
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, "7_no_leading_number")
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'collection' value \"7_no_leading_number\" not valid. Problem: must match "));
+              containsString(
+                  "not one of known fields ('filter', 'options', 'projection', 'sort')"));
     }
 
     @Test
     public void emptyBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
+      // Note: no body specified
+      givenHeaders()
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
-              startsWith("Request invalid: field 'command' value `null` not valid"));
+              startsWith("Command field 'command' value `null` not valid: must not be null."));
     }
   }
 }

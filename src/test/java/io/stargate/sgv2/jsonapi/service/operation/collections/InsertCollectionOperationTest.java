@@ -17,18 +17,21 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -37,7 +40,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDo
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -47,14 +49,17 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertCollectionOperationTest extends OperationTestBase {
-  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
 
+  private final TestConstants testConstants = new TestConstants();
+
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_VECTOR;
 
   private final ColumnDefinitions COLUMNS_APPLIED =
@@ -75,31 +80,38 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       CommandContext<CollectionSchemaObject> context, List<JsonNode> documents) {
     var builder =
         new CollectionInsertAttemptBuilder(
-            context.schemaObject(), documentShredder, context.commandName());
+            context.schemaObject(),
+            documentShredder,
+            context.requestContext().tenant(),
+            context.commandName());
     return documents.stream().map(builder::build).toList();
   }
 
   static final String INSERT_CQL =
       "INSERT INTO \"%s\".\"%s\""
-          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+          + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values)"
           + " VALUES"
-          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
   static final String INSERT_VECTOR_CQL =
       "INSERT INTO \"%s\".\"%s\""
-          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+          + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
           + " VALUES"
-          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
-  @PostConstruct
-  public void init() {
+  @BeforeEach
+  public void beforeEach() {
+    super.beforeEach();
+
     COMMAND_CONTEXT_NON_VECTOR = createCommandContextWithCommandName("testCommand");
 
     COMMAND_CONTEXT_VECTOR =
-        new CommandContext<>(
+        testConstants.collectionContext(
+            "testCommand",
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME,
-                null,
+                COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -109,11 +121,11 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                             SimilarityFunction.COSINE,
                             EmbeddingSourceModel.OTHER,
                             null))),
-                null),
-            null,
-            "testCommand",
+                null,
+                CollectionLexicalConfig.configForDisabled(),
+                CollectionRerankDef.configForPreRerankingCollection()),
             jsonProcessingMetricsReporter,
-            DEFAULT_API_FEATURES_FOR_TESTS);
+            null);
   }
 
   @Nested
@@ -122,17 +134,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOne() throws Exception {
       String document =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"},
-                            "date_val" : {"$date": 1672531200000 }
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 }
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
@@ -143,7 +155,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -152,7 +164,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertCollectionOperation(COMMAND_CONTEXT_NON_VECTOR, List.of(insertAttempt))
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -173,16 +185,16 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertDuplicate() throws Exception {
       String doc1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
 
       final JsonNode jsonNode = objectMapper.readTree(doc1);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
@@ -195,7 +207,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -204,7 +216,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertCollectionOperation(COMMAND_CONTEXT_NON_VECTOR, List.of(insertAttempt))
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -220,10 +232,11 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message()).isEqualTo("Document already exists with the given _id");
-                assertThat(error.fields())
-                    .containsEntry("exceptionClass", "JsonApiException")
-                    .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
+                assertThat(error.errorCode())
+                    .isEqualTo(DocumentException.Code.DOCUMENT_ALREADY_EXISTS.name());
+                assertThat(error.message())
+                    .startsWith(
+                        "Cannot insert the document: a document already exists with given '_id' ('doc1')");
               });
     }
 
@@ -231,28 +244,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertManyOrdered() throws Exception {
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       CommandContext commandContext =
           createCommandContextWithCommandName("jsonDocsWrittenInsertManyCommand");
@@ -272,13 +285,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final List<Integer> calls = new ArrayList<>();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 calls.add(1);
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
                 calls.add(2);
@@ -288,7 +301,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       Supplier<CommandResult> execute =
           new InsertCollectionOperation(
                   commandContext, List.of(insertAttempt1, insertAttempt2), true, false, false)
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -327,7 +340,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"jsonDocsWrittenInsertManyCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(commandContext.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
@@ -372,17 +387,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOneRetryLWTCheck() throws Exception {
       String document =
           """
-                                  {
-                                    "_id": "doc1",
-                                    "text": "user1",
-                                    "number" : 10,
-                                    "boolean": true,
-                                    "nullval" : null,
-                                    "array" : ["a", "b"],
-                                    "sub_doc" : {"col": "val"},
-                                    "date_val" : {"$date": 1672531200000 }
-                                  }
-                                  """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 }
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
@@ -396,7 +411,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -405,7 +420,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertCollectionOperation(COMMAND_CONTEXT_NON_VECTOR, List.of(insertAttempt))
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -426,28 +441,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertManyUnordered() throws Exception {
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -464,13 +479,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
@@ -484,7 +499,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                   false,
                   false,
                   false)
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -510,28 +525,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       // ordered first insert fails
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -545,13 +560,19 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
+      // when this error comes out of the query executor, it will have been translated using
+      // CollectionDriverExceptionMapper
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Test break #1"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Test break #1"));
               });
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
@@ -565,7 +586,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                   true,
                   false,
                   false)
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -582,12 +603,11 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.message()).contains("Test break #1");
+                assertThat(error.documentIds())
+                    .containsExactlyElementsOf(List.of(DocumentId.fromString("doc1")));
+                assertThat(error.errorCode())
+                    .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
               });
     }
 
@@ -596,28 +616,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       // ordered first insert OK, second fail
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -634,17 +654,23 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
                 return Uni.createFrom().item(resultOk);
               });
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
+      // when this error comes out of the query executor, it will have been translated using
+      // CollectionDriverExceptionMapper
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Test break #2"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Test break #2"));
               });
 
       Supplier<CommandResult> execute =
@@ -654,7 +680,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                   true,
                   false,
                   false)
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -672,12 +698,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Test break #2");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.message()).contains("Error Message: Test break #2");
+                assertThat(error.errorCode())
+                    .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
               });
     }
 
@@ -686,28 +709,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       // unordered one query fail
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -725,13 +748,19 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
+      // when this error comes out of the query executor, it will have been translated using
+      // CollectionDriverExceptionMapper
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount1.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Test break #1"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Test break #1"));
               });
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount2.addAndGet(1);
@@ -745,7 +774,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                   false,
                   false,
                   false)
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -764,12 +793,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
-                assertThat(error.fields())
-                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
-                    .containsEntry("exceptionClass", "JsonApiException");
+                assertThat(error.message()).contains("Error Message: Test break #1");
+                assertThat(error.errorCode())
+                    .isEqualTo(ServerException.Code.INTERNAL_SERVER_ERROR.name());
               });
     }
 
@@ -778,28 +804,28 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       // unordered both queries fail
       String document1 =
           """
-                          {
-                            "_id": "doc1",
-                            "text": "user1",
-                            "number" : 10,
-                            "boolean": true,
-                            "nullval" : null,
-                            "array" : ["a", "b"],
-                            "sub_doc" : {"col": "val"}
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
       String document2 =
           """
-                          {
-                            "_id": "doc2",
-                            "text": "user2",
-                            "number" : 11,
-                            "boolean": false,
-                            "nullval" : null,
-                            "array" : ["c", "d"],
-                            "sub_doc" : {"col": "lav"}
-                          }
-                          """;
+          {
+            "_id": "doc2",
+            "text": "user2",
+            "number" : 11,
+            "boolean": false,
+            "nullval" : null,
+            "array" : ["c", "d"],
+            "sub_doc" : {"col": "lav"}
+          }
+          """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
       var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
@@ -817,17 +843,26 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
+      // when this error comes out of the query executor, it will have been translated using
+      // CollectionDriverExceptionMapper
+      // they tend to pull a lof of info from the cause exception, so we simulate that here
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount1.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Insert 1 failed"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Insert 1 failed"));
               });
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount2.addAndGet(1);
-                return Uni.createFrom().failure(new RuntimeException("Insert 2 failed"));
+                return Uni.createFrom()
+                    .failure(
+                        ServerException.Code.INTERNAL_SERVER_ERROR.get(
+                            "errorMessage", "Insert 2 failed"));
               });
 
       Supplier<CommandResult> execute =
@@ -837,7 +872,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                   false,
                   false,
                   false)
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -852,10 +887,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status()).hasSize(1).containsEntry(CommandStatus.INSERTED_IDS, List.of());
       assertThat(result.errors())
           .hasSize(2)
-          .extracting(CommandResult.Error::message)
-          .containsExactlyInAnyOrder(
-              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Insert 1 failed",
-              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Insert 2 failed");
+          .extracting(CommandError::message)
+          .anySatisfy(msg -> assertThat(msg).contains("Insert 1 failed"))
+          .anySatisfy(msg -> assertThat(msg).contains("Insert 2 failed"));
     }
   }
 
@@ -865,18 +899,18 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOneVectorSearch() throws Exception {
       String document =
           """
-        {
-          "_id": "doc1",
-          "text": "user1",
-          "number" : 10,
-          "boolean": true,
-          "nullval" : null,
-          "array" : ["a", "b"],
-          "sub_doc" : {"col": "val"},
-          "date_val" : {"$date": 1672531200000 },
-          "$vector" : [0.11,0.22,0.33,0.44]
-        }
-        """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 },
+            "$vector" : [0.11,0.22,0.33,0.44]
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_VECTOR, jsonNode);
@@ -887,7 +921,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -896,7 +930,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertCollectionOperation(COMMAND_CONTEXT_VECTOR, List.of(insertAttempt))
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -917,17 +951,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOneVectorEnabledNoVectorData() throws Exception {
       String document =
           """
-        {
-          "_id": "doc1",
-          "text": "user1",
-          "number" : 10,
-          "boolean": true,
-          "nullval" : null,
-          "array" : ["a", "b"],
-          "sub_doc" : {"col": "val"},
-          "date_val" : {"$date": 1672531200000 }
-        }
-        """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 }
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_VECTOR, jsonNode);
@@ -938,7 +972,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -947,7 +981,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertCollectionOperation(COMMAND_CONTEXT_VECTOR, List.of(insertAttempt))
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -968,18 +1002,18 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     public void insertOneVectorDisabledWithVectorData() throws Exception {
       String document =
           """
-        {
-          "_id": "doc1",
-          "text": "user1",
-          "number" : 10,
-          "boolean": true,
-          "nullval" : null,
-          "array" : ["a", "b"],
-          "sub_doc" : {"col": "val"},
-          "date_val" : {"$date": 1672531200000 },
-          "$vector" : [0.11,0.22,0.33,0.44]
-        }
-        """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"},
+            "date_val" : {"$date": 1672531200000 },
+            "$vector" : [0.11,0.22,0.33,0.44]
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
@@ -987,11 +1021,10 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           new InsertCollectionOperation(COMMAND_CONTEXT_NON_VECTOR, List.of(insertAttempt));
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      Throwable failure =
-          catchThrowable(() -> operation.execute(dataApiRequestInfo, queryExecutor));
+      Throwable failure = catchThrowable(() -> operation.execute(requestContext, queryExecutor));
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED);
+          .hasFieldOrPropertyWithValue(
+              "code", SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.name());
     }
   }
 

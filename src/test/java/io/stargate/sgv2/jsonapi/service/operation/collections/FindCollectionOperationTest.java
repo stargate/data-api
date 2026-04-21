@@ -22,11 +22,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -36,6 +38,8 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
@@ -43,9 +47,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Response;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -55,6 +57,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -65,6 +68,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
   private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
+  private final TestConstants testConstants = new TestConstants();
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -72,17 +76,18 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
   @Inject ObjectMapper objectMapper;
 
-  @PostConstruct
-  public void init() {
+  @BeforeEach
+  public void beforeEach() {
+    super.beforeEach();
     // TODO: a lot of these test create the same command context, these should be in the base class
     // leaving as new objects for now, they can prob be reused
 
     COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
     VECTOR_COMMAND_CONTEXT =
-        new CommandContext<>(
+        testConstants.collectionContext(
+            "testCommand",
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME,
-                null,
+                COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -92,11 +97,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
                             SimilarityFunction.COSINE,
                             EmbeddingSourceModel.OTHER,
                             null))),
-                null),
-            null,
-            "testCommand",
+                null,
+                CollectionLexicalConfig.configForDisabled(),
+                CollectionRerankDef.configForPreRerankingCollection()),
             jsonProcessingMetricsReporter,
-            DEFAULT_API_FEATURES_FOR_TESTS);
+            null);
   }
 
   @Nested
@@ -122,7 +127,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
                     "username": "user2"
                   }
                   """;
-      CommandContext commandContext = createCommandContextWithCommandName("jsonBytesReadCommand");
+      var commandContext = createCommandContextWithCommandName("jsonBytesReadCommand");
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       List<Row> rows =
           Arrays.asList(
@@ -131,7 +136,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -154,7 +159,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -192,7 +197,9 @@ public class FindCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"jsonBytesReadCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, should be one
@@ -255,22 +262,22 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
-      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows1 = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       SimpleStatement stmt2 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc2"));
-      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      List<Row> rows2 = List.of(resultRow(0, "doc2", UUID.randomUUID(), doc2));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
       final AtomicInteger callCount1 = new AtomicInteger();
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -298,7 +305,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -315,7 +322,6 @@ public class FindCollectionOperationTest extends OperationTestBase {
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.errors()).isNullOrEmpty();
       assertThat(result.status()).isEmpty();
-      ;
     }
 
     @Test
@@ -340,22 +346,22 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
-      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows1 = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       SimpleStatement stmt2 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc2"));
-      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      List<Row> rows2 = List.of(resultRow(0, "doc2", UUID.randomUUID(), doc2));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
       final AtomicInteger callCount1 = new AtomicInteger();
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -383,7 +389,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -426,7 +432,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -463,23 +469,23 @@ public class FindCollectionOperationTest extends OperationTestBase {
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(
               collectionReadCql, boundKeyForStatement("doc1"), textFilterValue);
-      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows1 = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       SimpleStatement stmt2 =
           SimpleStatement.newInstance(
               collectionReadCql, boundKeyForStatement("doc2"), textFilterValue);
-      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      List<Row> rows2 = List.of(resultRow(0, "doc2", UUID.randomUUID(), doc2));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
       final AtomicInteger callCount1 = new AtomicInteger();
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -509,7 +515,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -548,22 +554,22 @@ public class FindCollectionOperationTest extends OperationTestBase {
                   """;
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
-      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows1 = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       SimpleStatement stmt2 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc2"));
-      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      List<Row> rows2 = List.of(resultRow(0, "doc2", UUID.randomUUID(), doc2));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
       final AtomicInteger callCount1 = new AtomicInteger();
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt2), any(), anyInt()))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -591,7 +597,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -624,11 +630,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -651,7 +657,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -677,10 +683,10 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
-      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, Arrays.asList(), null);
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, List.of(), null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -706,7 +712,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -738,11 +744,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       final String textFilterValue = "username " + new DocValueHasher().getHash("user1").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, textFilterValue);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -765,7 +771,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -800,11 +806,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(collectionReadCql, "amount", new BigDecimal(100));
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -828,7 +834,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -863,11 +869,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(collectionReadCql, "amount", new BigDecimal(200));
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -891,7 +897,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -927,11 +933,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       SimpleStatement stmt =
           SimpleStatement.newInstance(
               collectionReadCql, "dob", Instant.ofEpochMilli(1672531200000L));
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -955,7 +961,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -991,11 +997,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       SimpleStatement stmt =
           SimpleStatement.newInstance(
               collectionReadCql, "dob", Instant.ofEpochMilli(1672531200000L));
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1019,7 +1025,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1054,11 +1060,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       final String booleanFilterValue =
           "registration_active " + new DocValueHasher().getHash(true).hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, booleanFilterValue);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1081,7 +1087,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1117,11 +1123,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       final String dateFilterValue =
           "date_field " + new DocValueHasher().getHash(Instant.ofEpochMilli(1672531200000L)).hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, dateFilterValue);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1145,7 +1151,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1179,11 +1185,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
                   """;
 
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "registration_active");
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1205,7 +1211,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1241,11 +1247,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(collectionReadCql, "tags Stag1", "tags Stag2");
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1267,7 +1273,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1304,11 +1310,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       SimpleStatement stmt =
           SimpleStatement.newInstance(
               collectionReadCql, "username Suser1", "tags Stag1", "tags Stag2");
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1322,7 +1328,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       explicitOr.addFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
       explicitOr.addFilter(new AllCollectionFilter("tags", List.of("tag1", "tag2"), false));
-      implicitAnd.addSubExpression(explicitOr);
+      implicitAnd.addSubExpressionReturnCurrent(explicitOr);
 
       FindCollectionOperation operation =
           FindCollectionOperation.unsortedSingle(
@@ -1335,7 +1341,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1372,11 +1378,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       SimpleStatement stmt =
           SimpleStatement.newInstance(
               collectionReadCql, "username Suser1", "tags Stag1", "tags Stag2");
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1390,7 +1396,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       explicitOr.addFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
       explicitOr.addFilter(new AllCollectionFilter("tags", List.of("tag1", "tag2"), true));
-      implicitAnd.addSubExpression(explicitOr);
+      implicitAnd.addSubExpressionReturnCurrent(explicitOr);
 
       FindCollectionOperation operation =
           FindCollectionOperation.unsortedSingle(
@@ -1403,7 +1409,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1438,11 +1444,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
                   """;
 
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags", 2);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1468,7 +1474,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1505,11 +1511,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       final String tagsHash = new DocValueHasher().getHash(List.of("tag1", "tag2")).hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags", tagsHash);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1536,7 +1542,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1572,11 +1578,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       final String tagsHash = new DocValueHasher().getHash(List.of("tag1", "tag3")).hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "tags", tagsHash);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1603,7 +1609,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1638,11 +1644,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
                   """;
       final String hash = new DocValueHasher().getHash(Map.of("col", "val")).hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "sub_doc", hash);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1669,7 +1675,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1704,11 +1710,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
                       """;
       final String hash = new DocValueHasher().getHash(Map.of("col", "val")).hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, "sub_doc", hash);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1735,7 +1741,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1768,7 +1774,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1791,7 +1797,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Throwable failure =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -1865,7 +1871,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
               TestColumn.ofVarchar("query_null_values['username']"),
               TestColumn.ofDate("query_timestamp_values['username']"));
       List<Row> rows =
-          Arrays.asList(
+          List.of(
               resultRow(
                   columnDefs,
                   0,
@@ -1936,7 +1942,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1962,7 +1968,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2066,7 +2072,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
               TestColumn.ofVarchar("query_null_values['sort_date']"),
               TestColumn.ofDate("query_timestamp_values['sort_date']"));
       List<Row> rows =
-          Arrays.asList(
+          List.of(
               resultRow(
                   columnDefs,
                   0,
@@ -2137,7 +2143,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2163,7 +2169,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2248,7 +2254,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
               TestColumn.ofVarchar("query_null_values['username']"),
               TestColumn.ofDate("query_timestamp_values['username']"));
       List<Row> rows =
-          Arrays.asList(
+          List.of(
               resultRow(
                   columnDefs,
                   0,
@@ -2319,7 +2325,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2345,7 +2351,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2424,7 +2430,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
               TestColumn.ofVarchar("query_null_values['username']"),
               TestColumn.ofDate("query_timestamp_values['username']"));
       List<Row> rows =
-          Arrays.asList(
+          List.of(
               resultRow(
                   columnDefs,
                   0,
@@ -2495,7 +2501,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2521,7 +2527,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2588,7 +2594,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
             TestColumn.ofVarchar("query_null_values['uuidv6']"),
             TestColumn.ofDate("query_timestamp_values['uuidv6']"));
     List<Row> rows =
-        Arrays.asList(
+        List.of(
             resultRow(
                 columnDefs,
                 1,
@@ -2626,7 +2632,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
     final AtomicInteger callCount = new AtomicInteger();
     QueryExecutor queryExecutor = mock(QueryExecutor.class);
-    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
         .then(
             invocation -> {
               callCount.incrementAndGet();
@@ -2652,7 +2658,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
     Supplier<CommandResult> execute =
         operation
-            .execute(dataApiRequestInfo, queryExecutor)
+            .execute(requestContext, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -2701,13 +2707,13 @@ public class FindCollectionOperationTest extends OperationTestBase {
       CqlVector<Float> vectorValue = vectorForStatement(0.25f, 0.25f, 0.25f, 0.25f);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, vectorValue);
       List<Row> rows =
-          Arrays.asList(
+          List.of(
               resultRow(0, "doc1", UUID.randomUUID(), doc1),
               resultRow(1, "doc2", UUID.randomUUID(), doc2));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2732,7 +2738,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2776,13 +2782,13 @@ public class FindCollectionOperationTest extends OperationTestBase {
       CqlVector<Float> vectorValue = vectorForStatement(0.25f, 0.25f, 0.25f, 0.25f);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, vectorValue);
       List<Row> rows =
-          Arrays.asList(
+          List.of(
               resultRow(0, "doc1", UUID.randomUUID(), doc1),
               resultRow(1, "doc2", UUID.randomUUID(), doc2));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2806,7 +2812,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2843,11 +2849,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       CqlVector<Float> vectorValue = vectorForStatement(0.25f, 0.25f, 0.25f, 0.25f);
       SimpleStatement stmt =
           SimpleStatement.newInstance(collectionReadCql, textFilterValue, vectorValue);
-      List<Row> rows = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2871,7 +2877,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2937,25 +2943,23 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void readFailureException() throws UnknownHostException {
 
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      Node coordinator = mock(Node.class);
-      ConsistencyLevel consistencyLevel = ConsistencyLevel.ONE;
-      int received = 1;
-      int blockFor = 0;
-      int numFailures = 1;
-      boolean dataPresent = false;
+
       Map<InetAddress, Integer> reasonMap = new HashMap<>();
       reasonMap.put(InetAddress.getByName("127.0.0.1"), 0x0000);
-      Mockito.when(
-              queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), any(), any(), anyInt()))
-          .thenThrow(
-              new ReadFailureException(
-                  coordinator,
-                  consistencyLevel,
-                  received,
-                  blockFor,
-                  numFailures,
-                  dataPresent,
-                  reasonMap));
+
+      // to properly mock how the QueryExecutor works, we need to push this driver exception
+      // through the error mapper used by the QueryExecutor so we can get the same mapping to an API
+      // error.
+
+      var driverException =
+          new ReadFailureException(
+              mock(Node.class), ConsistencyLevel.ONE, 1, 0, 1, false, reasonMap);
+      var handledException =
+          new CollectionDriverExceptionHandler(VECTOR_COMMAND_CONTEXT.schemaObject(), null)
+              .handle(driverException);
+
+      Mockito.when(queryExecutor.executeVectorSearch(eq(requestContext), any(), any(), anyInt()))
+          .thenThrow(handledException);
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
@@ -2975,22 +2979,18 @@ public class FindCollectionOperationTest extends OperationTestBase {
       // Throwable
       Throwable failure =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      CommandResult.Error error =
-          ThrowableToErrorMapper.getMapperWithMessageFunction()
-              .apply(failure, failure.getMessage());
-      assertThat(error).isNotNull();
-      assertThat(error.fields().get("errorCode")).isEqualTo("SERVER_READ_FAILED");
-      assertThat(error.fields().get("exceptionClass")).isEqualTo("JsonApiException");
-      assertThat(error.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
-      assertThat(error.message())
-          .startsWith("Database read failed")
-          .endsWith(
-              "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");
+
+      var commandError = CommandErrorFactory.create(failure);
+
+      assertThat(commandError).isNotNull();
+      assertThat(commandError.errorCode())
+          .isEqualTo(DatabaseException.Code.FAILED_READ_REQUEST.name());
+      assertThat(commandError.message()).contains("The number of nodes blocked for was: 0.");
     }
   }
 
@@ -2998,7 +2998,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     return new MockRow(
         KEY_TXID_JSON_COLUMNS,
         index,
-        Arrays.asList(byteBufferForKey(key), byteBufferFrom(txId), byteBufferFrom(doc)));
+        List.of(byteBufferForKey(key), byteBufferFrom(txId), byteBufferFrom(doc)));
   }
 
   MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {

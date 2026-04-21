@@ -11,7 +11,6 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -30,32 +29,29 @@ class InsertManyCommandTest {
 
   @Inject Validator validator;
 
-  @Nested
-  class Validation {
-
-    @Test
-    public void noDocuments() throws Exception {
-      String json =
-          """
+  @Test
+  public void noDocuments() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
             }
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("must not be null");
+  }
 
-    @Test
-    public void documentsArrayEmpty() throws Exception {
-      String json =
-          """
+  @Test
+  public void documentsArrayEmpty() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
               "documents": []
@@ -63,19 +59,19 @@ class InsertManyCommandTest {
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be empty");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("must not be empty");
+  }
 
-    @Test
-    public void tooManyDocuments() throws Exception {
-      String json =
-          """
+  @Test
+  public void tooManyDocuments() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
               "documents": [
@@ -87,19 +83,19 @@ class InsertManyCommandTest {
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("amount of documents to insert is over the max limit (3 vs 2)");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("amount of documents to insert is over the max limit (3 vs 2)");
+  }
 
-    @Test
-    public void acceptableDocuments() throws Exception {
-      String json =
-          """
+  @Test
+  public void acceptableDocuments() throws Exception {
+    String json =
+        """
           {
             "insertMany": {
               "documents": [
@@ -110,10 +106,9 @@ class InsertManyCommandTest {
           }
           """;
 
-      InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
-      Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
+    InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+    Set<ConstraintViolation<InsertManyCommand>> result = validator.validate(command);
 
-      assertThat(result).isEmpty();
-    }
+    assertThat(result).isEmpty();
   }
 }

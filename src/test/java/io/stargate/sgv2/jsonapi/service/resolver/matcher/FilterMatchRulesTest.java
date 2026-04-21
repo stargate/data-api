@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.EnumSet;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -21,12 +20,12 @@ import org.junit.jupiter.api.Test;
 public class FilterMatchRulesTest {
   @Inject ObjectMapper objectMapper;
 
-  @Nested
-  class FilterMatchRulesApply {
-    @Test
-    public void apply() throws Exception {
-      String json =
-          """
+  private TestConstants testConstants = new TestConstants();
+
+  @Test
+  public void apply() throws Exception {
+    String json =
+        """
                         {
                           "findOne": {
                             "sort" : {"user.name" : 1, "user.age" : -1},
@@ -35,25 +34,25 @@ public class FilterMatchRulesTest {
                         }
                         """;
 
-      FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      FilterMatchRules<FindOneCommand> filterMatchRules = new FilterMatchRules<FindOneCommand>();
+    FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
+    FilterMatchRules<FindOneCommand> filterMatchRules = new FilterMatchRules<FindOneCommand>();
 
-      filterMatchRules
-          .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.EMPTY)
-          .matcher()
-          .capture("EMPTY");
-      filterMatchRules
-          .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
-          .matcher()
-          .capture("TEST1")
-          .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
+    filterMatchRules
+        .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.EMPTY)
+        .matcher()
+        .capture("EMPTY");
+    filterMatchRules
+        .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
+        .matcher()
+        .capture("TEST1")
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      DBLogicalExpression response =
-          filterMatchRules.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
-      assertThat(response).isNotNull();
+    DBLogicalExpression response =
+        filterMatchRules.apply(testConstants.collectionContext(), findOneCommand);
+    assertThat(response).isNotNull();
 
-      json =
-          """
+    json =
+        """
           {
             "findOne": {
               "sort" : {"user.name" : 1, "user.age" : -1}
@@ -61,15 +60,15 @@ public class FilterMatchRulesTest {
           }
           """;
 
-      findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      response = filterMatchRules.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
-      assertThat(response).isNotNull();
-    }
+    findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
+    response = filterMatchRules.apply(testConstants.collectionContext(), findOneCommand);
+    assertThat(response).isNotNull();
+  }
 
-    @Test
-    public void addMatchRule() throws Exception {
-      String json =
-          """
+  @Test
+  public void addMatchRule() throws Exception {
+    String json =
+        """
               {
                 "findOne": {
                   "sort" : {"user.name" : 1, "user.age" : -1},
@@ -78,20 +77,19 @@ public class FilterMatchRulesTest {
               }
               """;
 
-      FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      FilterMatchRules<FindOneCommand> filterMatchRules = new FilterMatchRules<>();
+    FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
+    FilterMatchRules<FindOneCommand> filterMatchRules = new FilterMatchRules<>();
 
-      filterMatchRules
-          .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.EMPTY)
-          .matcher()
-          .capture("EMPTY");
-      filterMatchRules
-          .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
-          .matcher()
-          .capture("TEST1")
-          .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
+    filterMatchRules
+        .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.EMPTY)
+        .matcher()
+        .capture("EMPTY");
+    filterMatchRules
+        .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
+        .matcher()
+        .capture("TEST1")
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      assertThat(filterMatchRules.size()).isEqualTo(2);
-    }
+    assertThat(filterMatchRules.size()).isEqualTo(2);
   }
 }

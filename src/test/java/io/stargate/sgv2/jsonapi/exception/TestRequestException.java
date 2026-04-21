@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import java.util.EnumSet;
+import java.util.Optional;
+
 /**
  * Base for any errors that are from the {@link ErrorFamily#REQUEST} family, these are errors
  * related to the structure of the request.
@@ -19,8 +22,14 @@ public class TestRequestException extends APIException {
   }
 
   public TestRequestException(
-      ErrorFamily family, ErrorScope scope, String code, String title, String message) {
-    super(family, scope, code, title, message);
+      ErrorFamily family,
+      ErrorScope scope,
+      String code,
+      String title,
+      String message,
+      Optional<Integer> httpStatusOverride,
+      EnumSet<ExceptionFlags> exceptionFlags) {
+    super(family, scope, code, title, message, httpStatusOverride, exceptionFlags);
   }
 
   public enum Scope implements ErrorScope {

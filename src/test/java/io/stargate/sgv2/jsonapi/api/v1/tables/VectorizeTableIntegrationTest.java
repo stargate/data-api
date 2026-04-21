@@ -24,7 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
@@ -140,7 +140,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     }
   }
 
-  private static Stream<Arguments> INVALID_VECTORIZE_SORT() {
+  private static Stream<Arguments> invalidVectorizeSortTests() {
     return Stream.of(
         Arguments.of(
             ImmutableMap.of(
@@ -156,12 +156,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT),
-            SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORIZE),
-        Arguments.of(
-            ImmutableMap.of(
-                VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),
-                SAMPLE_VECTORIZE_CONTENT),
-            SortException.Code.CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN),
+            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS),
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
@@ -169,14 +164,14 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 SAMPLE_VECTORIZE_CONTENT,
                 VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),
                 1),
-            SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS),
+            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS),
         Arguments.of(
             ImmutableMap.of("no_column_exist", SAMPLE_VECTORIZE_CONTENT),
             SortException.Code.CANNOT_SORT_UNKNOWN_COLUMNS));
   }
 
   @ParameterizedTest
-  @MethodSource("INVALID_VECTORIZE_SORT")
+  @MethodSource("invalidVectorizeSortTests")
   public void invalidVectorizeSort(
       ImmutableMap<String, Object> sort, SortException.Code sortExceptionCode) {
 

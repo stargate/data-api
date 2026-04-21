@@ -1,35 +1,52 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
-import com.datastax.oss.driver.internal.core.type.PrimitiveType;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
+import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.*;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ApiMapType extends CollectionApiDataType {
+public class ApiMapType extends CollectionApiDataType<MapType> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiMapType.class);
 
   public static final TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
+
   public static final TypeFactoryFromCql<ApiMapType, MapType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
-  // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
-  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
-
   private final PrimitiveApiDataTypeDef keyType;
+
+  /** NO VALIDATION - Testing Only */
+  @VisibleForTesting
+  ApiMapType(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
+    this(
+        (PrimitiveApiDataTypeDef) keyType,
+        valueType,
+        defaultCollectionApiSupport(isFrozen),
+        isFrozen);
+  }
 
   private ApiMapType(
       PrimitiveApiDataTypeDef keyType,
-      PrimitiveApiDataTypeDef valueType,
+      ApiDataType valueType,
       ApiSupportDef apiSupport,
       boolean isFrozen) {
     super(
@@ -39,128 +56,188 @@ public class ApiMapType extends CollectionApiDataType {
         apiSupport);
 
     this.keyType = keyType;
-    // sanity checking
-    if (!isKeyTypeSupported(keyType)) {
-      throw new IllegalArgumentException("keyType is not supported");
-    }
-    if (!isValueTypeSupported(valueType)) {
-      throw new IllegalArgumentException("valueType is not supported");
-    }
   }
 
   @Override
-  public ColumnDesc columnDesc() {
+  public boolean isFrozen() {
+    return cqlType.isFrozen();
+  }
+
+  @Override
+  public ColumnDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
+    // no different representation of the map itself, but pass through the binding point
+    // because the key or value type may be different, e.g. UDT is the value type
     return new MapColumnDesc(
-        keyType.columnDesc(), valueType.columnDesc(), ApiSupportDesc.from(this));
-  }
-
-  public static ApiMapType from(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
-    Objects.requireNonNull(keyType, "keyType must not be null");
-    Objects.requireNonNull(valueType, "valueType must not be null");
-
-    if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
-      return new ApiMapType(
-          (PrimitiveApiDataTypeDef) keyType,
-          (PrimitiveApiDataTypeDef) valueType,
-          defaultApiSupport(isFrozen),
-          isFrozen);
-    }
-    throw new IllegalArgumentException(
-        "keyType and valueType must be primitive types, keyType: %s valueType: %s"
-            .formatted(keyType, valueType));
-  }
-
-  public static boolean isKeyTypeSupported(ApiDataType keyType) {
-    Objects.requireNonNull(keyType, "keyType must not be null");
-
-    // keys must be text or ascii, because keys in JSON are string
-    return keyType == ApiDataTypeDefs.ASCII || keyType == ApiDataTypeDefs.TEXT;
-  }
-
-  public static boolean isValueTypeSupported(ApiDataType valueType) {
-    Objects.requireNonNull(valueType, "valueType must not be null");
-
-    return valueType.isPrimitive();
+        schemaDescSource,
+        keyType.getSchemaDescription(schemaDescSource),
+        valueType.getSchemaDescription(schemaDescSource),
+        ApiSupportDesc.from(this));
   }
 
   public PrimitiveApiDataTypeDef getKeyType() {
     return keyType;
   }
 
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder).append("keyType", keyType);
+  }
+
+  /** Factory to create {@link ApiMapType} from user provided {@link MapColumnDesc}. */
   private static class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc> {
 
+    ColumnDescFactory() {
+      super(ApiTypeName.MAP, MapColumnDesc.class);
+    }
+
     @Override
-    public ApiMapType create(MapColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiMapType create(
+        TypeBindingPoint bindingPoint,
+        MapColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      ApiDataType keyType;
-      ApiDataType valueType;
+      // can we use a map of any type in this binding point?
+      if (!isTypeBindable(bindingPoint, columnDesc, validateVectorize)) {
+        throw new UnsupportedUserType(
+            bindingPoint,
+            columnDesc,
+            SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.get(
+                Map.of(
+                    "supportedKeyTypes",
+                        errFmtApiTypeName(
+                            DefaultTypeFactoryFromColumnDesc.INSTANCE.allBindableTypes(
+                                TypeBindingPoint.MAP_KEY)),
+                    "supportedValueTypes",
+                        errFmtApiTypeName(
+                            DefaultTypeFactoryFromColumnDesc.INSTANCE.allBindableTypes(
+                                TypeBindingPoint.COLLECTION_VALUE)),
+                    "unsupportedKeyType", errFmtOrMissing(columnDesc.keyType()),
+                    "unsupportedValueType", errFmtOrMissing(columnDesc.valueType()))));
+      }
+
       try {
-        keyType = TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.keyType(), validateVectorize);
-        valueType =
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize);
+        var valueType =
+            DefaultTypeFactoryFromColumnDesc.INSTANCE.create(
+                TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize);
+        var keyType =
+            DefaultTypeFactoryFromColumnDesc.INSTANCE.create(
+                TypeBindingPoint.MAP_KEY, columnDesc.keyType(), validateVectorize);
+
+        // can never be frozen when created from ColumnDesc / API
+        return new ApiMapType(keyType, valueType, false);
+
       } catch (UnsupportedUserType e) {
-        throw new UnsupportedUserType(columnDesc, e);
+        // make sure we have the list type, not just the key or value type
+        throw new UnsupportedUserType(bindingPoint, columnDesc, e);
       }
-      // does not call isSupported to avoid two conversions for the key and value types
-      if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
-        // never frozen from the API
-        return ApiMapType.from(keyType, valueType, false);
-      }
-      throw new UnsupportedUserType(columnDesc);
     }
 
     @Override
-    public boolean isSupported(
-        MapColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
-      Objects.requireNonNull(columnDesc, "columnDesc must not be null");
+    public boolean isTypeBindable(
+        TypeBindingPoint bindingPoint,
+        MapColumnDesc columnDesc,
+        VectorizeConfigValidator validateVectorize) {
 
-      try {
-        return isKeyTypeSupported(
-                TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.keyType(), validateVectorize))
-            && isValueTypeSupported(
-                TypeFactoryFromColumnDesc.DEFAULT.create(
-                    columnDesc.valueType(), validateVectorize));
-      } catch (UnsupportedUserType e) {
+      //  we accept frozen, but change the support.
+
+      // can we use a map of any type in this binding point?
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser()) {
         return false;
       }
+
+      // can the value and key types be used with a map?
+      // also, we have to have a key and a value type
+      if (columnDesc.valueType() == null
+          || !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
+              TypeBindingPoint.COLLECTION_VALUE, columnDesc.valueType(), validateVectorize)) {
+        return false;
+      }
+      if (columnDesc.keyType() == null
+          || !DefaultTypeFactoryFromColumnDesc.INSTANCE.isTypeBindableUntyped(
+              TypeBindingPoint.MAP_KEY, columnDesc.keyType(), validateVectorize)) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint) {
+      return SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromUser();
     }
   }
 
+  /** Factory to create {@link ApiMapType} from CQL {@link MapType}. */
   private static class CqlTypeFactory extends TypeFactoryFromCql<ApiMapType, MapType> {
 
+    CqlTypeFactory() {
+      super(ProtocolConstants.DataType.MAP, MapType.class);
+    }
+
     @Override
-    public ApiMapType create(MapType cqlType, VectorizeDefinition vectorizeDefn)
+    public ApiMapType create(
+        TypeBindingPoint bindingPoint, MapType cqlType, VectorizeDefinition vectorizeDefn)
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      if (!isSupported(cqlType)) {
-        throw new UnsupportedCqlType(cqlType);
+      if (!isTypeBindable(bindingPoint, cqlType)) {
+        throw new UnsupportedCqlType(bindingPoint, cqlType);
       }
 
       try {
-        return ApiMapType.from(
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getKeyType(), vectorizeDefn),
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getValueType(), vectorizeDefn),
-            cqlType.isFrozen());
+        var keyType =
+            DefaultTypeFactoryFromCql.INSTANCE.create(
+                TypeBindingPoint.MAP_KEY, cqlType.getKeyType(), vectorizeDefn);
+        var valueType =
+            DefaultTypeFactoryFromCql.INSTANCE.create(
+                TypeBindingPoint.COLLECTION_VALUE, cqlType.getValueType(), vectorizeDefn);
+        return new ApiMapType(keyType, valueType, cqlType.isFrozen());
+
       } catch (UnsupportedCqlType e) {
         // make sure we have the map type, not just the key or value type
-        throw new UnsupportedCqlType(cqlType, e);
+        throw new UnsupportedCqlType(bindingPoint, cqlType, e);
       }
     }
 
     @Override
-    public boolean isSupported(MapType cqlType) {
+    public boolean isTypeBindable(TypeBindingPoint bindingPoint, MapType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
+
       // we accept frozen and then change the support
-      // keys must be text or ascii, because keys in JSON are string
-      if (!(cqlType.getKeyType() == DataTypes.TEXT || cqlType.getKeyType() == DataTypes.ASCII)) {
+
+      // can we use a map of any type in this binding point?
+      if (!SUPPORT_BINDING_RULES.rule(bindingPoint).bindableFromDb()) {
         return false;
       }
-      // must be a primitive type value
-      return cqlType.getValueType() instanceof PrimitiveType;
+      // now check if the key and value types are supported for binding into a map
+      if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
+          TypeBindingPoint.MAP_KEY, cqlType.getKeyType())) {
+        return false;
+      }
+      if (!DefaultTypeFactoryFromCql.INSTANCE.isTypeBindableUntyped(
+          TypeBindingPoint.COLLECTION_VALUE, cqlType.getValueType())) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public Optional<CqlTypeKey> maybeCreateCacheKey(
+        TypeBindingPoint bindingPoint, MapType cqlType) {
+
+      // we can cache the map type if the value type is not a UDT, because the UDT types are tenant
+      // specific.
+      // we dont support udt's as keys, but checking that anyway so avoid any cross tenant issues
+      if (cqlType.getKeyType() instanceof UserDefinedType
+          || cqlType.getValueType() instanceof UserDefinedType) {
+        return Optional.empty();
+      }
+      return Optional.of(
+          CqlTypeKey.create(
+              cqlType, cqlType.getValueType(), cqlType.getKeyType(), cqlType.isFrozen()));
     }
   }
 }

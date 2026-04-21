@@ -5,11 +5,12 @@ import io.grpc.ManagedChannelBuilder;
 import io.quarkus.runtime.ShutdownEvent;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingServiceGrpc;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import java.util.Map;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
@@ -20,9 +21,9 @@ public class ValidateCredentials {
   @ConfigProperty(name = "quarkus.grpc.clients.\"embedding\".port")
   private int port;
 
-  private ManagedChannel channel = null;
+  private ManagedChannel channel;
 
-  @Inject DataApiRequestInfo dataApiRequestInfo;
+  @Inject RequestContext dataApiRequestInfo;
 
   public boolean validate(String provider, String value) {
     if (channel == null) {
@@ -31,16 +32,16 @@ public class ValidateCredentials {
     EmbeddingGateway.ValidateCredentialRequest.Builder validateCredentialRequest =
         EmbeddingGateway.ValidateCredentialRequest.newBuilder();
     validateCredentialRequest.setCredential(value);
-    validateCredentialRequest.setTenantId(dataApiRequestInfo.getTenantId().orElse("default"));
+    validateCredentialRequest.setTenantId(dataApiRequestInfo.tenant().toString());
     validateCredentialRequest.setProviderName(provider);
-    validateCredentialRequest.setToken(dataApiRequestInfo.getCassandraToken().orElse(""));
+    validateCredentialRequest.setToken(dataApiRequestInfo.authToken());
     EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingService =
         EmbeddingServiceGrpc.newBlockingStub(channel);
     final EmbeddingGateway.ValidateCredentialResponse validateCredentialResponse =
         embeddingService.validateCredential(validateCredentialRequest.build());
     if (validateCredentialResponse.hasError()) {
-      throw ErrorCodeV1.VECTORIZE_CREDENTIAL_INVALID.toApiException(
-          " with error: %s", validateCredentialResponse.getError().getErrorMessage());
+      throw SchemaException.Code.VECTORIZE_CREDENTIAL_INVALID.get(
+          Map.of("errorMessage", validateCredentialResponse.getError().getErrorBody()));
     }
     return validateCredentialResponse.getValidity();
   }

@@ -11,29 +11,21 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * ReadOperation interface which all find command operations will use. It also provides the
@@ -74,10 +66,9 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
    * @param jsonProcessingMetricsReporter - reporter to use for reporting JSON read/write metrics
-   * @return
    */
   default Uni<FindResponse> findDocument(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       List<SimpleStatement> queries,
       String pageState,
@@ -87,9 +78,9 @@ public interface CollectionReadOperation extends CollectionOperation {
       DocumentProjector projection,
       int limit,
       boolean vectorSearch,
+      Tenant tenant,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
-
     return Multi.createFrom()
         .items(queries.stream())
         .onItem()
@@ -111,7 +102,7 @@ public interface CollectionReadOperation extends CollectionOperation {
               Iterator<Row> rowIterator = rSet.currentPage().iterator();
               while (--remaining >= 0 && rowIterator.hasNext()) {
                 Row row = rowIterator.next();
-                ReadDocument document = null;
+                ReadDocument document;
                 try {
                   // TODO: Use the field name, not the ordinal for the field this is too brittle
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
@@ -119,7 +110,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                     // create metrics
                     // TODO Use the column names!
                     jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                        commandName, row.getString(2).length());
+                        tenant, commandName, row.getString(2).length());
 
                     if (projection.doIncludeSimilarityScore()) {
                       float score = row.getFloat(3); // similarity_score
@@ -143,37 +134,48 @@ public interface CollectionReadOperation extends CollectionOperation {
         .collect()
         .asList()
         .onItem()
-        .transform(
-            list -> {
-              // Merge all find responses
-              List<ReadDocument> documents = new ArrayList<>();
-              String tempPageState = null;
-              if (limit == 1) {
-                // In case of findOne limit will be 1 return one document. Need to do it to support
-                // `in` operator
-                for (FindResponse response : list) {
-                  if (!response.docs().isEmpty()) {
-                    documents.add(response.docs().get(0));
-                    break;
-                  }
-                }
-              } else {
-                // pagination is handled only when single query is run(non `in` filter), so here
-                // page state of the last query is returned
-                for (FindResponse response : list) {
-                  documents.addAll(response.docs());
-                  // picking the last page state
-                  tempPageState = response.pageState();
-                }
-              }
-              return new FindResponse(documents, tempPageState);
-            });
+        .transform(list -> applyLimitToFindResponses(list, limit));
+  }
+
+  /**
+   * A single findCommand may result as multiple cql queries in case of `$in` filter on `_id` field.
+   *
+   * <p>E.G. <code>{"find": {"filter": {"_id": {"$in": ["1", "2", "3"]}}}</code> will result as 3
+   * cql queries,
+   *
+   * <ul>
+   *   <li>SELECT key, tx_id, doc_json FROM xxx WHERE key = '1' LIMIT 2147483647
+   *   <li>SELECT key, tx_id, doc_json FROM xxx WHERE key = '2' LIMIT 2147483647
+   *   <li>SELECT key, tx_id, doc_json FROM xxx WHERE key = '3' LIMIT 2147483647
+   * </ul>
+   *
+   * and then 3 findResponse. For this case, we need to merge all the responses and then apply
+   * limit, since limit is applied to the command, so we need to do necessary trimming.
+   *
+   * <p>In terms of pageState, for above case tempPageState will be just as null, since "_id"
+   * partition key select won't have pageState.
+   *
+   * <p>For other filter conditions, there will be just one single cql query, the pageState will be
+   * set as the corresponding one. And limit has been applied to the single cql query, so the
+   * trimming here won't affect anything.
+   */
+  private FindResponse applyLimitToFindResponses(List<FindResponse> responses, int limit) {
+    List<ReadDocument> documents = new ArrayList<>();
+    String tempPageState = null;
+    for (FindResponse response : responses) {
+      documents.addAll(response.docs());
+      tempPageState = response.pageState();
+    }
+    if (documents.size() > limit) {
+      documents = documents.subList(0, limit);
+    }
+    return new FindResponse(documents, tempPageState);
   }
 
   byte true_byte = (byte) 1;
 
   /**
-   * This method reads upto system fixed limit
+   * This method reads up to system fixed limit
    *
    * @param queryExecutor
    * @param queries Multiple queries only in case of `in` condition on `_id` field
@@ -189,10 +191,9 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
    * @param jsonProcessingMetricsReporter - reporter to use for reporting JSON read/write metrics
-   * @return
    */
   default Uni<FindResponse> findOrderDocument(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       List<SimpleStatement> queries,
       int pageSize,
@@ -204,6 +205,7 @@ public interface CollectionReadOperation extends CollectionOperation {
       int errorLimit,
       DocumentProjector projection,
       boolean vectorSearch,
+      Tenant tenant,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
@@ -247,13 +249,13 @@ public interface CollectionReadOperation extends CollectionOperation {
               Iterator<Row> rowIterator = resultSet.currentPage().iterator();
               int remaining = resultSet.remaining();
               int count = documentCounter.addAndGet(remaining);
-              if (count == errorLimit) {
-                throw ErrorCodeV1.DATASET_TOO_BIG.toApiException(
-                    "maximum sortable count = %d", errorLimit);
+              if (count >= errorLimit) {
+                throw SortException.Code.OVERLOADED_SORT_ROW_LIMIT.get(
+                    Map.of("maxLimit", String.valueOf(errorLimit), "unit", "document"));
               }
               List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {
-                ReadDocument document = null;
+                ReadDocument document;
                 Row row = rowIterator.next();
                 List<JsonNode> sortValues = new ArrayList<>(numberOfOrderByColumn);
                 for (int sortColumnCount = 0;
@@ -279,8 +281,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                   columnCounter++;
                   ByteBuffer boolValue = row.getBytesUnsafe(columnCounter);
                   if (boolValue != null) {
-                    sortValues.add(
-                        nodeFactory.booleanNode(Byte.compare(true_byte, boolValue.get(0)) == 0));
+                    sortValues.add(nodeFactory.booleanNode(true_byte == boolValue.get(0)));
                     continue;
                   }
                   // null value
@@ -311,7 +312,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                         sortValues);
                 documents.add(document);
                 jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                    commandName, row.getString(2).length());
+                    tenant, commandName, row.getString(2).length());
               }
               return Uni.createFrom().item(documents);
             })
@@ -327,8 +328,10 @@ public interface CollectionReadOperation extends CollectionOperation {
               // begin value to read from the sorted list
               int begin = skip;
 
-              // If the begin index is >= sorted list size, return empty response
-              if (begin >= sortedData.size()) return new FindResponse(List.of(), null);
+              // If the beginning index is >= sorted list size, return empty response
+              if (begin >= sortedData.size()) {
+                return new FindResponse(List.of(), null);
+              }
               // Last index to which we need to read
               int end = Math.min(skip + limit, sortedData.size());
               // Create a sublist of the required rage
@@ -358,7 +361,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                             return ReadDocument.from(
                                 readDoc.id().orElse(null), readDoc.txnId().orElse(null), data);
                           })
-                      .collect(Collectors.toList());
+                      .toList();
               return new FindResponse(responseDocuments, null);
             });
   }
@@ -379,99 +382,83 @@ public interface CollectionReadOperation extends CollectionOperation {
   /**
    * Default implementation to run count query and parse the result set, this approach counts by key
    * field
-   *
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
    */
   default Uni<CountResponse> countDocumentsByKey(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    AtomicLong counter = new AtomicLong();
-    final CompletionStage<AsyncResultSet> async =
-        queryExecutor
-            .executeCount(dataApiRequestInfo, simpleStatement)
-            .whenComplete(
-                (rs, error) -> {
-                  getCount(rs, error, counter);
-                });
 
-    return Uni.createFrom()
-        .completionStage(async)
-        .onItem()
-        .transform(
-            rs -> {
-              return new CountResponse(counter.get());
+    AtomicLong counter = new AtomicLong();
+
+    return queryExecutor
+        .executeCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
+        .transformToUni(
+            (rs, failure) -> {
+              if (failure != null) {
+                return Uni.createFrom()
+                    .failure(
+                        DatabaseException.Code.COUNT_READ_FAILED.get(
+                            Map.of("errorMessage", failure.toString())));
+              }
+              getCount(rs, null, counter);
+              return Uni.createFrom().item(new CountResponse(counter.get()));
             });
   }
 
-  /**
-   * Default implementation to run count query and parse the result set
-   *
-   * @param dataApiRequestInfo
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
-   */
+  /** Default implementation to run count query and parse the result set */
   default Uni<CountResponse> countDocuments(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    return Uni.createFrom()
-        .completionStage(queryExecutor.executeCount(dataApiRequestInfo, simpleStatement))
-        .onItem()
-        .transform(
-            rSet -> {
+
+    return queryExecutor
+        .executeCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
+        .transformToUni(
+            (rSet, failure) -> {
+              if (failure != null) {
+                return Uni.createFrom()
+                    .failure(
+                        DatabaseException.Code.COUNT_READ_FAILED.get(
+                            Map.of("errorMessage", failure.toString())));
+              }
               Row row = rSet.one(); // For count there will be only one row
               long count = row.getLong(0); // Count value will be the first column value
-              return new CountResponse(count);
+              return Uni.createFrom().item(new CountResponse(count));
             });
   }
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
-    if (error != null) {
-      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException();
-    } else {
-      counter.addAndGet(rs.remaining());
-      if (rs.hasMorePages()) {
-        rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
-      }
+    // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to complete before
+    // returning, and it cannot handle a failure on fetchNextPage - will fix after this PR
+    counter.addAndGet(rs.remaining());
+    if (rs.hasMorePages()) {
+      rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
     }
   }
 
-  /**
-   * Run estimated count query and parse the result set
-   *
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
-   */
+  /** Run estimated count query and parse the result set */
   default Uni<CountResponse> estimateDocumentCount(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    AtomicLong counter = new AtomicLong();
-    final CompletionStage<AsyncResultSet> async =
-        queryExecutor
-            .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
-            .whenComplete(
-                (rs, error) -> {
-                  getEstimatedCount(rs, error, counter);
-                });
 
-    return Uni.createFrom()
-        .completionStage(async)
-        .onItem()
+    AtomicLong counter = new AtomicLong();
+
+    return queryExecutor
+        .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
         .transform(
-            rs -> {
+            (rs, failure) -> {
+              getEstimatedCount(rs, failure, counter);
               return new CountResponse(counter.get());
             });
   }
 
   private void getEstimatedCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
     if (error != null) {
-      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException("root cause: %s", error.getMessage());
+      throw DatabaseException.Code.COUNT_READ_FAILED.get(Map.of("errorMessage", error.toString()));
     } else {
 
       // calculate the total range size and total partitions count for each range
@@ -491,7 +478,7 @@ public interface CollectionReadOperation extends CollectionOperation {
 
       // estimate the total row count by dividing the total partition count by the ratio
       // of the sum of all token ranges to the entire token range, avoiding division by zero
-      // relies on the assumption that the supershredding schema uses one row per partition
+      // relies on the assumption that the super-shredding schema uses one row per partition
       if (totalRangeSize > 0) {
         counter.addAndGet((long) (totalPartitionsCount / (totalRangeSize / TOTAL_TOKEN_RANGE)));
       }
@@ -517,7 +504,8 @@ public interface CollectionReadOperation extends CollectionOperation {
   /**
    * Helper method to handle details of exactly how much information to include in error message.
    */
-  static JsonApiException parsingExceptionToApiException(JacksonException e) {
-    return ErrorCodeV1.DOCUMENT_UNPARSEABLE.toApiException("%s", e.getOriginalMessage());
+  static APIException parsingExceptionToApiException(JacksonException e) {
+    return DatabaseException.Code.DOCUMENT_FROM_DB_UNPARSEABLE.get(
+        Map.of("errorMessage", e.getOriginalMessage()));
   }
 }

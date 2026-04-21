@@ -1,15 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
-import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An attempt to insert into a table, runs the query, does not hold the result set (e.g. for applied
- * LWT) that is for later.
+ * IMPORTANT: THIS IS ALSO USED BY THE COLLECTIONS (JUST FOR INSERT) SO IT NEEDS TO STAY UNTIL
+ * COLLECTIONS CODE IS UPDATED (INSERTS STARTED THE "ATTEMPT" PATTERN)
  */
 public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     extends OperationAttempt<InsertAttempt<SchemaT>, SchemaT> {
@@ -39,12 +37,12 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildInsertStatement();
 
     logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeWrite(statement);
+    return new StatementContext(statement, () -> queryExecutor.executeWrite(statement));
   }
 
   protected SimpleStatement buildInsertStatement() {

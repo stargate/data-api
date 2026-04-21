@@ -4,7 +4,7 @@ import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
@@ -32,6 +32,7 @@ public record WritableShreddedDocument(
     Map<JsonPath, String> queryTextValues,
     Map<JsonPath, Date> queryTimestampValues,
     Set<JsonPath> queryNullValues,
+    String queryLexicalValue,
     float[] queryVectorValues,
     UUID nextTxID) {
 
@@ -53,6 +54,7 @@ public record WritableShreddedDocument(
         && Objects.equals(queryTextValues, that.queryTextValues)
         && Objects.equals(queryTimestampValues, that.queryTimestampValues)
         && Objects.equals(queryNullValues, that.queryNullValues)
+        && Objects.equals(queryLexicalValue, that.queryLexicalValue)
         && Arrays.equals(queryVectorValues, that.queryVectorValues);
   }
 
@@ -71,7 +73,8 @@ public record WritableShreddedDocument(
             queryNumberValues,
             queryTextValues,
             queryTimestampValues,
-            queryNullValues);
+            queryNullValues,
+            queryLexicalValue);
     result = 31 * result + Arrays.hashCode(queryVectorValues);
     return result;
   }
@@ -107,6 +110,7 @@ public record WritableShreddedDocument(
     private Map<JsonPath, String> queryTextValues;
     private Map<JsonPath, Date> queryTimestampValues;
     private Set<JsonPath> queryNullValues;
+    private String queryLexicalValue;
 
     private float[] queryVectorValues;
 
@@ -138,6 +142,7 @@ public record WritableShreddedDocument(
           _nonNull(queryTextValues),
           _nonNull(queryTimestampValues),
           _nonNull(queryNullValues),
+          queryLexicalValue,
           queryVectorValues,
           Uuids.timeBased());
     }
@@ -178,13 +183,18 @@ public record WritableShreddedDocument(
               }
               break;
           }
-          throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-              "invalid value (%s) for extended JSON type '%s' (path '%s')",
-              obj.iterator().next(), obj.fieldNames().next(), path);
+          throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "invalid value (%s) for extended JSON type '%s' (path '%s')"
+                      .formatted(obj.iterator().next(), obj.fieldNames().next(), path)));
         }
         // Otherwise it's either unsupported of malformed EJSON-encoded value; fail
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "unrecognized extended JSON type '%s' (path '%s')", obj.fieldNames().next(), path);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "unrecognized extended JSON type '%s' (path '%s')"
+                    .formatted(obj.fieldNames().next(), path)));
       }
 
       addKey(path);
@@ -282,6 +292,12 @@ public record WritableShreddedDocument(
     }
 
     @Override
+    public void shredLexical(JsonPath path, String content) {
+      addKey(path);
+      queryLexicalValue = content;
+    }
+
+    @Override
     public void shredVector(JsonPath path, ArrayNode vector) {
       // vector data is added only to queryVectorValues and exists keys index
       addKey(path);
@@ -289,7 +305,10 @@ public record WritableShreddedDocument(
       for (int i = 0; i < vector.size(); i++) {
         JsonNode element = vector.get(i);
         if (!element.isNumber()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+          throw DocumentException.Code.SHRED_BAD_VECTOR_VALUE.get(
+              Map.of(
+                  "nodeType", JsonUtil.nodeTypeAsString(element),
+                  "nodeValue", element.toString()));
         }
         arrayVals[i] = element.floatValue();
       }
@@ -304,7 +323,8 @@ public record WritableShreddedDocument(
       try {
         queryVectorValues = CqlVectorUtil.bytesToFloats(binaryVector);
       } catch (IllegalArgumentException e) {
-        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(e.getMessage());
+        throw DocumentException.Code.SHRED_BAD_BINARY_VECTOR_VALUE.get(
+            Map.of("errorMessage", e.getMessage()));
       }
     }
 

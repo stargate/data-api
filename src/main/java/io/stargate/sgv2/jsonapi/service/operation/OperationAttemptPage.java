@@ -3,15 +3,17 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * base for a page of {@link OperationAttempt}s that have been run, subclasses are used to configure
- * the {@link CommandResult} as needed for each command type.
+ * TODO: aaron 19 march 2025 - remove OperationAttempt and related code once Tasks are solid
+ *
+ * <p>base for a page of {@link OperationAttempt}s that have been run, subclasses are used to
+ * configure the {@link CommandResult} as needed for each command type.
  *
  * <p>Implements the {@link Supplier} interface to provide a {@link CommandResult}, which is what is
  * returned by an {@link Operation}. Subclasses should normally override the {@link
@@ -65,7 +67,7 @@ abstract class OperationAttemptPage<
 
   protected void addAttemptWarningsToResult() {
     attempts.stream()
-        .flatMap(attempt -> attempt.warningsExcludingSupresed().stream())
+        .flatMap(attempt -> attempt.warningsExcludingSuppressed().stream())
         .forEach(resultBuilder::addWarning);
   }
 

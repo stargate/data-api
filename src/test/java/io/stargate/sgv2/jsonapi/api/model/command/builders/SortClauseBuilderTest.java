@@ -1,0 +1,443 @@
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import jakarta.inject.Inject;
+import java.io.IOException;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+@QuarkusTest
+@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
+class SortClauseBuilderTest {
+  // Needed to create the collection context to pass to the builder
+  private final TestConstants testConstants = new TestConstants();
+
+  @Inject ObjectMapper objectMapper;
+
+  @Nested
+  class Deserialize {
+
+    @Test
+    public void happyPath() throws Exception {
+      String json =
+          """
+          {
+           "some.path" : 1,
+           "another.path" : -1
+          }
+          """;
+
+      SortClause sortClause = deserializeSortClause(json);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions())
+          .hasSize(2)
+          .contains(
+              SortExpression.sort("some.path", true), SortExpression.sort("another.path", false));
+    }
+
+    @Test
+    public void happyPathWithUnusualChars() throws Exception {
+      String json =
+          """
+              {
+               "app.kubernetes.io/name" : 1,
+               "another.odd$path" : -1
+              }
+              """;
+
+      SortClause sortClause = deserializeSortClause(json);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions())
+          .hasSize(2)
+          .contains(
+              SortExpression.sort("app.kubernetes.io/name", true),
+              SortExpression.sort("another.odd$path", false));
+    }
+
+    @Test
+    public void happyPathWithEscapedChars() throws Exception {
+      // should have the escape character in the expression
+      String json =
+          """
+              {
+               "app&.kubernetes&.io/name" : 1,
+               "another&.odd&&path" : -1
+              }
+              """;
+
+      SortClause sortClause = deserializeSortClause(json);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions())
+          .hasSize(2)
+          .containsExactlyInAnyOrder(
+              SortExpression.sort("app&.kubernetes&.io/name", true),
+              SortExpression.sort("another&.odd&&path", false))
+          .doesNotContainSequence(
+              SortExpression.sort("app.kubernetes.io/name", true),
+              SortExpression.sort("another.odd&path", false));
+    }
+
+    @Test
+    public void happyPathVectorSearch() throws Exception {
+      String json =
+          """
+        {
+         "$vector" : [0.11, 0.22, 0.33]
+        }
+        """;
+
+      SortClause sortClause = deserializeSortClause(json);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).getVector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void vectorSearchBinaryObject() throws Exception {
+      String vectorString =
+          Base64Util.encodeAsMimeBase64(
+              CqlVectorUtil.floatsToBytes(new float[] {0.11f, 0.22f, 0.33f}));
+      String json =
+              """
+            {
+             "$vector" : { "$binary" : "%s"}
+            }
+            """
+              .formatted(vectorString);
+
+      SortClause sortClause = deserializeSortClause(json);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().getFirst().getPath()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().getFirst().getVector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void binaryVectorSearchTableColumn() throws Exception {
+      String vectorString =
+          Base64Util.encodeAsMimeBase64(
+              CqlVectorUtil.floatsToBytes(new float[] {0.11f, 0.22f, 0.33f}));
+      String json =
+              """
+            {
+             "$vector" : { "$binary" : "%s"}
+            }
+            """
+              .formatted(vectorString);
+
+      SortClause sortClause = deserializeSortClause(json);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).getVector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void vectorSearchEmpty() {
+      String json =
+          """
+        {
+         "$vector" : []
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(DocumentException.class);
+      assertThat(throwable.getMessage()).contains("Bad $vector value: cannot be empty Array");
+    }
+
+    @Test
+    public void vectorSearchNonArray() {
+      String json =
+          """
+        {
+         "$vector" : 0.55
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Value used for sort expression on path '$vector' not valid: vector sort expression needs to be Array value, not Number");
+    }
+
+    @Test
+    public void vectorSearchNonArrayObject() {
+      String json =
+          """
+        {
+         "$vector" : {}
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Value used for sort expression on path '$vector' not valid: only binary vector object values are supported for sorting, not value: {}");
+    }
+
+    @Test
+    public void vectorSearchInvalidData() {
+      String json =
+          """
+        {
+         "$vector" : [0.11, "abc", true]
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(DocumentException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Bad $vector value: needs to be an array containing only Numbers but has a String value (\"abc\")");
+    }
+
+    @Test
+    public void vectorSearchInvalidSortClause() {
+      String json =
+          """
+        {
+         "$vector" : [0.11, 0.22, 0.33],
+         "some.path" : 1
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains("vector search cannot be used with other sort expressions");
+    }
+
+    @Test
+    public void happyPathVectorizeSearch() throws Exception {
+      String json =
+          """
+        {
+         "$vectorize" : "test data"
+        }
+        """;
+
+      SortClause sortClause = deserializeSortClause(json);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vectorize");
+      assertThat(sortClause.sortExpressions().get(0).getVectorize()).isEqualTo("test data");
+    }
+
+    @Test
+    public void vectorizeSearchNonText() {
+      String json =
+          """
+        {
+         "$vectorize" : 0.55
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value, not Number");
+    }
+
+    @Test
+    public void vectorizeSearchObject() {
+      String json =
+          """
+        {
+         "$vectorize" : {}
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value, not Object");
+    }
+
+    @Test
+    public void vectorizeSearchBlank() {
+      String json =
+          """
+            {
+             "$vectorize" : " "
+            }
+            """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String value");
+    }
+
+    @Test
+    public void vectorizeSearchWithOtherSort() {
+      String json =
+          """
+        {
+         "$vectorize" : "test data",
+         "some.path" : 1
+        }
+        """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable.getMessage())
+          .contains(
+              "Sort clause used by command not valid.\n"
+                  + "Problem: vectorize sort (path '$vectorize') cannot be used with other sort expressions");
+    }
+
+    @Test
+    public void mustHandleNull() throws Exception {
+      String json = "null";
+
+      SortClause sortClause = deserializeSortClause(json);
+
+      // Note: we will always create non-null sort clause
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.isEmpty()).isTrue();
+    }
+
+    @Test
+    public void mustBeObject() {
+      String json =
+          """
+                    ["primitive"]
+                    """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+    }
+
+    @Test
+    public void mustHandleBlankNotEmptyString() throws Exception {
+      String json = "{\"   \": 1}";
+      SortClause sortClause = deserializeSortClause(json);
+      assertThat(sortClause.sortExpressions())
+          .hasSize(1)
+          .contains(SortExpression.sort("   ", true));
+    }
+
+    @Test
+    public void mustNotContainEmptyString() {
+      String json =
+          """
+              {"": 1}
+          """;
+
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+    }
+
+    @Test
+    public void invalidPathNameOperator() {
+      String json =
+          """
+              {"$gt": 1}
+          """;
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable)
+          .hasMessageContaining(
+              "Path '$gt' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields");
+    }
+
+    // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
+    @Test
+    public void invalidPathNameHybridWithNumber() {
+      // First test with regular 1/-1 value
+      Throwable t =
+          catchThrowable(
+              () ->
+                  deserializeSortClause(
+                      """
+                          {"$hybrid": 1}
+                      """));
+
+      assertThat(t).isInstanceOf(SortException.class);
+      assertThat(t)
+          .hasMessageContaining(
+              "Path '$hybrid' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')");
+    }
+
+    // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
+    @Test
+    public void invalidPathNameHybridWithString() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  deserializeSortClause(
+                      """
+                  {"$hybrid": "tokens are tasty"}
+              """));
+
+      assertThat(t).isInstanceOf(SortException.class);
+      assertThat(t)
+          .hasMessageContaining(
+              "Path '$hybrid' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields ");
+    }
+
+    @Test
+    public void invalidEscapeUsage() {
+      String json =
+          """
+          {"a&b": 1}
+          """;
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
+
+      assertThat(throwable).isInstanceOf(SortException.class);
+      assertThat(throwable)
+          .hasMessageContaining(
+              "Path 'a&b' used in sort clause not valid: The ampersand character '&' at position 1 must be followed by either '&' or '.' to form a valid escape sequence");
+    }
+  }
+
+  private SortClause deserializeSortClause(String json) throws IOException {
+    final JsonNode node = objectMapper.readTree(json);
+    CollectionSchemaObject schema = testConstants.collectionContext().schemaObject();
+    return SortClauseBuilder.builderFor(schema).build(node);
+  }
+}

@@ -6,11 +6,10 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.VectorSortable;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.function.Function;
 
@@ -24,14 +23,14 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
   String SIMILARITY_SCORE_ALIAS = "similarityScore" + System.currentTimeMillis();
 
   static <CmdT extends Projectable> TableSimilarityFunction from(
-      CmdT command, TableSchemaObject table) {
-
+      CommandContext<TableSchemaObject> ctx, CmdT command) {
+    final TableSchemaObject table = ctx.schemaObject();
     if (!(command instanceof VectorSortable)) {
       return NO_OP;
     }
     var vectorSortable = (VectorSortable) command;
 
-    var sortExpressionOptional = vectorSortable.vectorSortExpression();
+    var sortExpressionOptional = vectorSortable.vectorSortExpression(ctx);
     if (sortExpressionOptional.isEmpty()) {
       // nothing to sort on, so nothing to return even if they asked for the similarity score
       return NO_OP;
@@ -45,17 +44,11 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
     }
 
     var requestedVectorColumnPath = sortExpression.pathAsCqlIdentifier();
-    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
-    // Currently, this matcher is just for match vector columns, and then to avoid hit the
-    // typeName() placeholder exception in UnsupportedApiDataType
-    var matcher =
-        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
     var apiColumnDef =
         table
             .apiTableDef()
             .allColumns()
-            .filterBySupport(matcher)
-            .filterByApiTypeName(ApiTypeName.VECTOR)
+            .filterVectorColumnsToContainer()
             .get(requestedVectorColumnPath);
     if (apiColumnDef == null) {
       // column does not exist or is not a vector, ignore because sort will fail
@@ -74,7 +67,7 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
 
     return new TableSimilarityFunctionImpl(
         requestedVectorColumnPath,
-        CqlVectorUtil.floatsToCqlVector(sortExpression.vector()),
+        CqlVectorUtil.floatsToCqlVector(sortExpression.getVector()),
         similarityFunction);
   }
 

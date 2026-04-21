@@ -11,11 +11,17 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ModelType;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.List;
@@ -29,12 +35,55 @@ public class EmbeddingGatewayClientTest {
 
   public static final String TESTING_COMMAND_NAME = "test_command";
 
-  private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty());
+  private static final TestConstants testConstants = new TestConstants();
+
+  private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+          "testModel",
+          new ApiModelSupport.ApiModelSupportImpl(
+              ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+          Optional.empty(),
+          List.of(),
+          Map.of(),
+          Optional.empty());
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl
+          .RequestPropertiesImpl
+      REQUEST_PROPERTIES =
+          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+              3, 10, 100, 100, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+          ModelProvider.CUSTOM.apiName(),
+          true,
+          Optional.of("http://testing.com"),
+          false,
+          Map.of(),
+          List.of(),
+          REQUEST_PROPERTIES,
+          List.of());
+
+  private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
+      new ServiceConfigStore.ServiceConfig(
+          ModelProvider.CUSTOM,
+          "http://testing.com",
+          Optional.empty(),
+          new ServiceConfigStore.ServiceRequestProperties(
+              REQUEST_PROPERTIES.atMostRetries(),
+              REQUEST_PROPERTIES.initialBackOffMillis(),
+              REQUEST_PROPERTIES.readTimeoutMillis(),
+              REQUEST_PROPERTIES.maxBackOffMillis(),
+              REQUEST_PROPERTIES.jitter(),
+              REQUEST_PROPERTIES.taskTypeRead(),
+              REQUEST_PROPERTIES.taskTypeStore(),
+              REQUEST_PROPERTIES.maxBatchSize()),
+          null); // aaron -passing null here to bypass url overrides
 
   // for [data-api#1088] (NPE for VoyageAI provider)
   @Test
   void verifyDirectConstructionWithNullServiceParameters() {
+
     List<EmbeddingProviderFactory.ProviderConstructor> providerCtors =
         Arrays.asList(
             AzureOpenAIEmbeddingProvider::new,
@@ -47,53 +96,67 @@ public class EmbeddingGatewayClientTest {
             UpstageAIEmbeddingProvider::new,
             VertexAIEmbeddingProvider::new,
             VoyageAIEmbeddingProvider::new);
+
     for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
-      EmbeddingProviderConfigStore.RequestProperties requestProperties =
-          EmbeddingProviderConfigStore.RequestProperties.of(
-              3, 5, 5000, 5, 0.5, Optional.empty(), Optional.empty(), 2048);
-      assertThat(ctor.create(requestProperties, "baseUrl", "modelName", 5, null)).isNotNull();
+
+      assertThat(ctor.create(PROVIDER_CONFIG, MODEL_CONFIG, SERVICE_CONFIG, 5, null)).isNotNull();
     }
   }
 
   @Test
   void handleValidResponse() {
-    EmbeddingService embeddingService = mock(EmbeddingService.class);
-    final EmbeddingGateway.EmbeddingResponse.Builder builder =
-        EmbeddingGateway.EmbeddingResponse.newBuilder();
-    EmbeddingGateway.EmbeddingResponse.FloatEmbedding.Builder floatEmbeddingBuilder =
-        EmbeddingGateway.EmbeddingResponse.FloatEmbedding.newBuilder();
-    floatEmbeddingBuilder
-        .addEmbedding(0.5f)
-        .addEmbedding(0.5f)
-        .addEmbedding(0.5f)
-        .addEmbedding(0.5f)
-        .addEmbedding(0.5f);
-    builder
-        .addEmbeddings(floatEmbeddingBuilder.build())
-        .addEmbeddings(floatEmbeddingBuilder.build());
 
-    when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
+    var floatEmbeddingBuilder =
+        EmbeddingGateway.EmbeddingResponse.FloatEmbedding.newBuilder()
+            .addEmbedding(0.5f)
+            .addEmbedding(0.5f)
+            .addEmbedding(0.5f)
+            .addEmbedding(0.5f)
+            .addEmbedding(0.5f);
+
+    var modelUsageBuilder =
+        EmbeddingGateway.ModelUsage.newBuilder()
+            .setModelProvider(ModelProvider.OPENAI.apiName())
+            .setModelType(EmbeddingGateway.ModelUsage.ModelType.EMBEDDING)
+            .setModelName("test-model")
+            .setTenantId(testConstants.TENANT.toString())
+            .setInputType(EmbeddingGateway.ModelUsage.InputType.INDEX)
+            .setPromptTokens(5)
+            .setTotalTokens(5)
+            .setRequestBytes(100)
+            .setResponseBytes(100)
+            .setCallDurationNanos(20000);
+
+    var embeddingResonseBuilder =
+        EmbeddingGateway.EmbeddingResponse.newBuilder()
+            .addEmbeddings(floatEmbeddingBuilder.build())
+            .addEmbeddings(floatEmbeddingBuilder.build())
+            .setModelUsage(modelUsageBuilder.build());
+
+    EmbeddingService embeddingService = mock(EmbeddingService.class);
+    when(embeddingService.embed(any()))
+        .thenReturn(Uni.createFrom().item(embeddingResonseBuilder.build()));
+
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
-            EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
-            "openai",
+            ModelProvider.OPENAI,
+            PROVIDER_CONFIG,
+            MODEL_CONFIG,
+            SERVICE_CONFIG,
             1536,
-            Optional.of("default"),
-            Optional.of("default"),
-            "https://api.openai.com/v1/",
-            "text-embedding-3-small",
-            embeddingService,
             Map.of(),
+            testConstants.TENANT,
+            "default",
+            embeddingService,
             Map.of(),
             TESTING_COMMAND_NAME);
 
-    final EmbeddingProvider.Response response =
+    final EmbeddingProvider.BatchedEmbeddingResponse response =
         embeddingGatewayClient
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                embeddingCredentials,
+                testConstants.EMBEDDING_CREDENTIALS,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
@@ -106,35 +169,52 @@ public class EmbeddingGatewayClientTest {
     assertThat(response.embeddings().size()).isEqualTo(2);
     assertThat(response.embeddings().get(0).length).isEqualTo(5);
     assertThat(response.embeddings().get(1).length).isEqualTo(5);
+
+    assertThat(response.modelUsage()).isNotNull();
+    assertThat(response.modelUsage().modelProvider()).isEqualTo(ModelProvider.OPENAI);
+    assertThat(response.modelUsage().modelType()).isEqualTo(ModelType.EMBEDDING);
+    assertThat(response.modelUsage().modelName()).isEqualTo("test-model");
+    assertThat(response.modelUsage().tenant()).isEqualTo(testConstants.TENANT);
+    assertThat(response.modelUsage().inputType()).isEqualTo(ModelInputType.INDEX);
+
+    assertThat(response.modelUsage().promptTokens()).isEqualTo(5);
+    assertThat(response.modelUsage().totalTokens()).isEqualTo(5);
+    assertThat(response.modelUsage().requestBytes()).isEqualTo(100);
+    assertThat(response.modelUsage().responseBytes()).isEqualTo(100);
+    assertThat(response.modelUsage().durationNanos()).isEqualTo(20000);
+    assertThat(response.modelUsage().batchCount()).isEqualTo(1);
   }
 
   @Test
   void handleError() {
     EmbeddingService embeddingService = mock(EmbeddingService.class);
-    final EmbeddingGateway.EmbeddingResponse.Builder builder =
+    EmbeddingGateway.EmbeddingResponse.Builder builder =
         EmbeddingGateway.EmbeddingResponse.newBuilder();
     EmbeddingGateway.EmbeddingResponse.ErrorResponse.Builder errorResponseBuilder =
         EmbeddingGateway.EmbeddingResponse.ErrorResponse.newBuilder();
-    final JsonApiException apiException =
-        ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-            "Error Code : %s response description : %s", 429, "Too Many Requests");
+    APIException apiException =
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED.get(
+            Map.of(
+                "provider", "TEST-MODEL", "httpStatus", "429", "errorMessage", "Slow Down Dude!"));
+
     errorResponseBuilder
-        .setErrorCode(apiException.getErrorCode().name())
-        .setErrorMessage(apiException.getMessage());
+        .setErrorCode(apiException.code)
+        .setErrorTitle(apiException.title)
+        .setErrorBody(apiException.body);
     builder.setError(errorResponseBuilder.build());
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
+
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
-            EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
-            "openai",
+            ModelProvider.OPENAI,
+            PROVIDER_CONFIG,
+            MODEL_CONFIG,
+            SERVICE_CONFIG,
             1536,
-            Optional.of("default"),
-            Optional.of("default"),
-            "https://api.openai.com/v1/",
-            "text-embedding-3-small",
-            embeddingService,
             Map.of(),
+            testConstants.TENANT,
+            "default",
+            embeddingService,
             Map.of(),
             TESTING_COMMAND_NAME);
 
@@ -143,7 +223,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                embeddingCredentials,
+                testConstants.EMBEDDING_CREDENTIALS,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
@@ -151,12 +231,12 @@ public class EmbeddingGatewayClientTest {
             .getFailure();
 
     assertThat(result)
-        .isInstanceOf(JsonApiException.class)
+        .isInstanceOf(APIException.class)
         .satisfies(
             e -> {
-              JsonApiException exception = (JsonApiException) e;
+              APIException exception = (APIException) e;
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
-              assertThat(exception.getErrorCode()).isEqualTo(apiException.getErrorCode());
+              assertThat(exception.code).isEqualTo(apiException.code);
             });
   }
 }

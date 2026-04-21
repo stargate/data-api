@@ -17,7 +17,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "findOneSingleStringKeyTable";
@@ -261,8 +261,63 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .hasJSONField("data.document", removeNullValues(DOC_B_JSON));
     }
 
+    // for [data-api#1532]
     @Test
     @Order(4)
+    void documentIdWith$in() {
+      final String TABLE_NAME = "findOneIdAndDollarInTable";
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              TABLE_NAME,
+              Map.of(
+                  "_id", "text",
+                  "value", "int"),
+              "_id")
+          .wasSuccessful();
+
+      // First, insert 2 documents:
+      String DOC_A_JSON = "{ \"_id\": \"a\", \"value\": 12 }";
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .insertOne(DOC_A_JSON)
+          .wasSuccessful();
+
+      String DOC_B_JSON = "{ \"_id\": \"b\", \"value\": 23 }";
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .insertOne(DOC_B_JSON)
+          .wasSuccessful();
+
+      // First find one of documents by column other than _id
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .postFindOne(
+              """
+                                      {
+                                            "filter": {
+                                                "value": { "$in": [12] }
+                                            }
+                                      }
+                                      """)
+          .wasSuccessful()
+          .hasJSONField("data.document", DOC_A_JSON);
+
+      // Then try to find one of documents by _id
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .postFindOne(
+              """
+                              {
+                                    "filter": {
+                                        "_id": { "$in": ["b", "c"] }
+                                    }
+                              }
+                              """)
+          .wasSuccessful()
+          .hasJSONField("data.document", DOC_B_JSON);
+    }
+
+    @Test
+    @Order(5)
     public final void sparseDataForCollectionDataType() {
       String tableName = "mapListSet";
       String tableJson =
@@ -328,6 +383,33 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
               FilterException.Code.UNKNOWN_TABLE_COLUMNS,
               FilterException.class,
               "Only columns defined in the table schema can be filtered");
+    }
+
+    /**
+     * Test for <a href="https://github.com/stargate/data-api/issues/2275">#2275</a>: filtering a
+     * primitive text column with an object value should produce a clear FilterException, not a
+     * misleading "Server internal error: Filter type not supported".
+     */
+    @Test
+    @Order(2)
+    public void failOnObjectValueForPrimitiveColumn() {
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .postFindOne(
+              """
+                          {
+                              "filter": {
+                                "_id": {
+                                  "buffer": {
+                                    "0": 105,
+                                    "1": 49,
+                                    "2": 174
+                                  }
+                                }
+                              }
+                          }
+                      """)
+          .hasSingleApiError(
+              FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE, FilterException.class);
     }
   }
 }

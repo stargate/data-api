@@ -6,9 +6,17 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.internal.core.type.DefaultListType;
+import com.datastax.oss.driver.internal.core.type.DefaultMapType;
+import com.datastax.oss.driver.internal.core.type.DefaultSetType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
@@ -16,8 +24,12 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LogicalExpressionTestData extends TestDataSuplier {
+
+  private static final Logger log = LoggerFactory.getLogger(LogicalExpressionTestData.class);
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -25,44 +37,57 @@ public class LogicalExpressionTestData extends TestDataSuplier {
     super(testData);
   }
 
-  public DBLogicalExpression andExpression(TableMetadata tableMetadata) {
+  public DBLogicalExpression implicitAndExpression(TableMetadata tableMetadata) {
     return new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
   }
 
   public static class ExpressionBuilder<FixtureT> {
-    public final DBLogicalExpression expression;
+    public DBLogicalExpression rootImplicitAnd;
     private final TableMetadata tableMetadata;
     private final FixtureT fixture;
 
     public ExpressionBuilder(
-        FixtureT fixture, DBLogicalExpression expression, TableMetadata tableMetadata) {
+        FixtureT fixture, DBLogicalExpression rootImplicitAnd, TableMetadata tableMetadata) {
       this.fixture = fixture;
-      this.expression = expression;
+      this.rootImplicitAnd = rootImplicitAnd;
       this.tableMetadata = tableMetadata;
     }
 
+    public FixtureT replaceRootDBLogicalExpression(DBLogicalExpression dbLogicalExpression) {
+      this.rootImplicitAnd = dbLogicalExpression;
+      return fixture;
+    }
+
     public FixtureT eqOn(CqlIdentifier column) {
-      expression.addFilter(eq(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(eq(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
     public FixtureT notEqOn(CqlIdentifier column) {
-      expression.addFilter(notEq(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(notEq(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
     public FixtureT gtOn(CqlIdentifier column) {
-      expression.addFilter(gt(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(gt(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
     public FixtureT inOn(CqlIdentifier column) {
-      expression.addFilter(in(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(in(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
     public FixtureT notInOn(CqlIdentifier column) {
-      expression.addFilter(nin(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(nin(tableMetadata.getColumn(column).orElseThrow()));
+      return fixture;
+    }
+
+    public FixtureT mapListSetTableFilter(
+        CqlIdentifier column,
+        MapSetListTableFilter.Operator operator,
+        MapSetListFilterComponent component) {
+      rootImplicitAnd.addFilter(filterOnMapSetList(column, operator, component));
       return fixture;
     }
 
@@ -71,23 +96,12 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       return eqAllClusteringKeys();
     }
 
-    public FixtureT inOnOnePartitionKey(
-        InTableFilter.Operator inFilterOperator, ColumnMetadata firstPartitionKey) {
-      if (inFilterOperator == InTableFilter.Operator.IN) {
-        expression.addFilter(in(firstPartitionKey));
-      }
-      if (inFilterOperator == InTableFilter.Operator.NIN) {
-        expression.addFilter(nin(firstPartitionKey));
-      }
-      return fixture;
-    }
-
     public FixtureT eqAllPartitionKeys() {
       tableMetadata
           .getPartitionKey()
           .forEach(
               columnMetadata -> {
-                expression.addFilter(eq(columnMetadata));
+                rootImplicitAnd.addFilter(eq(columnMetadata));
               });
       return fixture;
     }
@@ -103,7 +117,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         if (index == skipIndex) {
           continue;
         }
-        expression.addFilter(eq(columnMetadata));
+        rootImplicitAnd.addFilter(eq(columnMetadata));
       }
       return fixture;
     }
@@ -114,8 +128,19 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           .keySet()
           .forEach(
               columnMetadata -> {
-                expression.addFilter(eq(columnMetadata));
+                rootImplicitAnd.addFilter(eq(columnMetadata));
               });
+      return fixture;
+    }
+
+    public FixtureT inOnOnePartitionKey(
+        InTableFilter.Operator inFilterOperator, ColumnMetadata firstPartitionKey) {
+      if (inFilterOperator == InTableFilter.Operator.IN) {
+        rootImplicitAnd.addFilter(in(firstPartitionKey));
+      }
+      if (inFilterOperator == InTableFilter.Operator.NIN) {
+        rootImplicitAnd.addFilter(nin(firstPartitionKey));
+      }
       return fixture;
     }
 
@@ -131,7 +156,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         if (index == skipIndex) {
           continue;
         }
-        expression.addFilter(eq(columnMetadata));
+        rootImplicitAnd.addFilter(eq(columnMetadata));
       }
       return fixture;
     }
@@ -140,7 +165,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
 
       ColumnMetadata columnMetadata =
           tableMetadata.getClusteringColumns().keySet().stream().toList().get(index);
-      expression.addFilter(eq(columnMetadata));
+      rootImplicitAnd.addFilter(eq(columnMetadata));
       return fixture;
     }
 
@@ -157,7 +182,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           .filter(columnMetadata -> !allIndexTargets.contains(columnMetadata.getName()))
           .findFirst()
           .ifPresentOrElse(
-              columnMetadata -> expression.addFilter(eq(columnMetadata)),
+              columnMetadata -> rootImplicitAnd.addFilter(eq(columnMetadata)),
               () -> {
                 throw new IllegalArgumentException(
                     "Table don't have a column that is NOT on the SAI table to generate test data");
@@ -171,6 +196,10 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           columnMetadata.getType(),
           NativeTypeTableFilter.Operator.EQ,
           value(columnMetadata.getType()));
+    }
+
+    public TableFilter eq(CqlIdentifier columnCqlIdentifier) {
+      return eq(tableMetadata.getColumn(columnCqlIdentifier).orElseThrow());
     }
 
     public static TableFilter notEq(ColumnMetadata columnMetadata) {
@@ -201,6 +230,67 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           InTableFilter.Operator.NIN,
           columnMetadata.getName().asInternal(),
           List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
+    }
+
+    /**
+     * Creates the table filter for map/set/list column. Caller should specify the operator and the
+     * MapSetListComponent. Method will create the filter based on the column type and the
+     * component, and also populate the positionalValues.
+     */
+    public TableFilter filterOnMapSetList(
+        CqlIdentifier columnCqlIdentifier,
+        MapSetListTableFilter.Operator operator,
+        MapSetListFilterComponent mapSetListComponent) {
+      var columnMetadata = tableMetadata.getColumn(columnCqlIdentifier).get();
+      return switch (mapSetListComponent) {
+        case LIST_VALUE:
+          {
+            DefaultListType listType = (DefaultListType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(value(listType.getElementType()), value(listType.getElementType())),
+                MapSetListFilterComponent.LIST_VALUE);
+          }
+        case SET_VALUE:
+          {
+            DefaultSetType setType = (DefaultSetType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(value(setType.getElementType()), value(setType.getElementType())),
+                MapSetListFilterComponent.SET_VALUE);
+          }
+        case MAP_KEY:
+          {
+            DefaultMapType mapType = (DefaultMapType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(value(mapType.getKeyType()), value(mapType.getKeyType())),
+                MapSetListFilterComponent.MAP_KEY);
+          }
+        case MAP_VALUE:
+          {
+            DefaultMapType mapType = (DefaultMapType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(value(mapType.getValueType()), value(mapType.getValueType())),
+                MapSetListFilterComponent.MAP_VALUE);
+          }
+        case MAP_ENTRY:
+          {
+            DefaultMapType mapType = (DefaultMapType) columnMetadata.getType();
+            yield new MapSetListTableFilter(
+                operator,
+                columnMetadata.getName().asInternal(),
+                List.of(
+                    List.of(value(mapType.getKeyType()), value(mapType.getValueType())),
+                    List.of(value(mapType.getKeyType()), value(mapType.getValueType()))),
+                MapSetListFilterComponent.MAP_ENTRY);
+          }
+      };
     }
 
     public static TableFilter filter(
@@ -295,7 +385,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return "P1H30M"; // Handle duration as a string
       }
       if (type.equals(DataTypes.INT)) {
-        return 25;
+        return 25L;
       }
       if (type.equals(DataTypes.BIGINT)) {
         return 1000000L;
@@ -407,6 +497,27 @@ public class LogicalExpressionTestData extends TestDataSuplier {
 
       throw new IllegalArgumentException(
           "Did not understand type %s to convert into JsonNode".formatted(dataType));
+    }
+
+    // Get CqlValue of type that Driver expects
+    public Object CqlValue(CqlIdentifier column) {
+      var cqlDataType = tableMetadata.getColumn(column).orElseThrow().getType();
+      var javaValue = value(cqlDataType);
+      JSONCodec codec = null;
+      try {
+        codec =
+            JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
+                tableMetadata,
+                column,
+                ExpressionBuilder.value(tableMetadata.getColumn(column).orElseThrow().getType()));
+      } catch (UnknownColumnException | ToCQLCodecException | MissingJSONCodecException e) {
+        throw new IllegalArgumentException(e);
+      }
+      try {
+        return codec.toCQL(javaValue);
+      } catch (ToCQLCodecException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 }

@@ -39,33 +39,6 @@ public class CollectionInsertAttempt extends InsertAttempt<CollectionSchemaObjec
     setStatus(OperationStatus.READY);
   }
 
-  //  public CollectionInsertAttempt(int position, DocumentId documentId, Throwable failure) {
-  //    this.position = position;
-  //    // TODO confirm why the document is allowed to be null
-  //    this.document = null;
-  //    this.documentId = documentId;
-  //    this.failure = failure;
-  //  }
-  //
-  //  private CollectionInsertAttempt(int position, WritableShreddedDocument document) {
-  //    this.position = position;
-  //    this.document = document;
-  //    this.documentId = document.id();
-  //  }
-
-  //  public static CollectionInsertAttempt from(int position, WritableShreddedDocument document) {
-  //    return new CollectionInsertAttempt(position, document);
-  //  }
-  //
-  //  public static List<CollectionInsertAttempt> from(List<WritableShreddedDocument> documents) {
-  //    final int count = documents.size();
-  //    List<CollectionInsertAttempt> result = new ArrayList<>(count);
-  //    for (int i = 0; i < count; ++i) {
-  //      result.add(from(i, documents.get(i)));
-  //    }
-  //    return result;
-  //  }
-
   @Override
   protected RegularInsert applyInsertValues(
       OngoingValues ongoingValues, List<Object> positionalValues) {

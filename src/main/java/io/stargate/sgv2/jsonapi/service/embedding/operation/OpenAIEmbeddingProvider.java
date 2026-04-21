@@ -1,21 +1,25 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -24,128 +28,142 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class OpenAIEmbeddingProvider extends EmbeddingProvider {
-  private static final String providerId = ProviderConstants.OPENAI;
-  private final OpenAIEmbeddingProviderClient openAIEmbeddingProviderClient;
+
+  private final OpenAIEmbeddingProviderClient openAIClient;
 
   public OpenAIEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
-      String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
     super(
-        requestProperties,
-        baseUrl,
-        modelName,
-        acceptsOpenAIDimensions(modelName) ? dimension : 0,
+        ModelProvider.OPENAI,
+        providerConfig,
+        modelConfig,
+        serviceConfig,
+        acceptsOpenAIDimensions(modelConfig.name()) ? dimension : 0,
         vectorizeServiceParameters);
 
-    openAIEmbeddingProviderClient =
+    openAIClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .baseUri(URI.create(serviceConfig.getBaseUrl(modelName())))
+            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(OpenAIEmbeddingProviderClient.class);
   }
 
-  @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface OpenAIEmbeddingProviderClient {
-    @POST
-    @Path("/embeddings")
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
-        @HeaderParam("Authorization") String accessToken,
-        @HeaderParam("OpenAI-Organization") String organizationId,
-        @HeaderParam("OpenAI-Project") String projectId,
-        EmbeddingRequest request);
-
-    @ClientExceptionMapper
-    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
-    }
-
-    /**
-     * Extract the error message from the response body. The example response body is:
-     *
-     * <pre>
-     * {
-     *   "error": {
-     *     "message": "You exceeded your current quota, please check your plan and billing details. For
-     *                 more information on this error, read the docs:
-     *                 https://platform.openai.com/docs/guides/error-codes/api-errors.",
-     *     "type": "insufficient_quota",
-     *     "param": null,
-     *     "code": "insufficient_quota"
-     *   }
-     * }
-     * </pre>
-     *
-     * @param response The response body as a String.
-     * @return The error message extracted from the response body.
-     */
-    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      // Get the whole response body
-      JsonNode rootNode = response.readEntity(JsonNode.class);
-      // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
-      // Extract the "message" node from the "error" node
-      JsonNode messageNode = rootNode.at("/error/message");
-      // Return the text of the "message" node, or the whole response body if it is missing
-      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.asText();
-    }
-  }
-
-  private record EmbeddingRequest(
-      String[] input,
-      String model,
-      @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
-
-  private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
-    private record Data(String object, int index, float[] embedding) {}
-
-    private record Usage(int prompt_tokens, int total_tokens) {}
+  /**
+   * The example response body is:
+   *
+   * <pre>
+   * {
+   *   "error": {
+   *     "message": "You exceeded your current quota, please check your plan and billing details. For
+   *                 more information on this error, read the docs:
+   *                 https://platform.openai.com/docs/guides/error-codes/api-errors.",
+   *     "type": "insufficient_quota",
+   *     "param": null,
+   *     "code": "insufficient_quota"
+   *   }
+   * }
+   * </pre>
+   */
+  @Override
+  protected String errorMessageJsonPtr() {
+    return "/error/message";
   }
 
   @Override
-  public Uni<Response> vectorize(
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
-    String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
-    String organizationId = (String) vectorizeServiceParameters.get("organizationId");
-    String projectId = (String) vectorizeServiceParameters.get("projectId");
 
-    Uni<EmbeddingResponse> response =
-        applyRetry(
-            openAIEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(),
-                organizationId,
-                projectId,
-                request));
+    checkEOLModelUsage();
+    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
-    return response
+    var openAiRequest =
+        new OpenAiEmbeddingRequest(texts.toArray(new String[texts.size()]), modelName(), dimension);
+    var organizationId = (String) vectorizeServiceParameters.get("organizationId");
+    var projectId = (String) vectorizeServiceParameters.get("projectId");
+
+    // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
+    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
+
+    final long callStartNano = System.nanoTime();
+    return retryHTTPCall(openAIClient.embed(accessToken, organizationId, projectId, openAiRequest))
         .onItem()
         .transform(
-            resp -> {
-              if (resp.data() == null) {
-                return Response.of(batchId, Collections.emptyList());
+            jakartaResponse -> {
+              var openAiResponse = decodeResponse(jakartaResponse, OpenAiEmbeddingResponse.class);
+              long callDurationNano = System.nanoTime() - callStartNano;
+
+              // aaron - 10 June 2025 - previous code would silently swallow no data returned
+              // and return an empty result. If we made a request we should get a response.
+              if (openAiResponse.data() == null) {
+                throwEmptyData(jakartaResponse);
               }
-              Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
+              Arrays.sort(openAiResponse.data(), (a, b) -> a.index() - b.index());
               List<float[]> vectors =
-                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
-              return Response.of(batchId, vectors);
+                  Arrays.stream(openAiResponse.data())
+                      .map(OpenAiEmbeddingResponse.Data::embedding)
+                      .toList();
+
+              var modelUsage =
+                  createModelUsage(
+                      embeddingCredentials.tenant(),
+                      ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+                      openAiResponse.usage().prompt_tokens(),
+                      openAiResponse.usage().total_tokens(),
+                      jakartaResponse,
+                      callDurationNano);
+
+              return new BatchedEmbeddingResponse(batchId, vectors, modelUsage);
             });
   }
 
-  @Override
-  public int maxBatchSize() {
-    return requestProperties.maxBatchSize();
+  /**
+   * REST client interface for the OpenAI Embedding Service.
+   *
+   * <p>..
+   */
+  @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(ProviderHttpInterceptor.class)
+  public interface OpenAIEmbeddingProviderClient {
+    @POST
+    @Path("/embeddings")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
+    Uni<Response> embed(
+        @HeaderParam("Authorization") String accessToken,
+        @HeaderParam("OpenAI-Organization") String organizationId,
+        @HeaderParam("OpenAI-Project") String projectId,
+        OpenAiEmbeddingRequest request);
+  }
+
+  /**
+   * Request structure of the OpenAI REST service.
+   *
+   * <p>..
+   */
+  public record OpenAiEmbeddingRequest(
+      String[] input,
+      String model,
+      @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
+
+  /**
+   * Response structure of the OpenAI REST service.
+   *
+   * <p>..
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private record OpenAiEmbeddingResponse(String object, Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Data(String object, int index, float[] embedding) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Usage(int prompt_tokens, int total_tokens) {}
   }
 }

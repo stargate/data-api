@@ -11,14 +11,16 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +39,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -47,7 +49,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -57,7 +59,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -67,11 +69,11 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
-  public static class WhereAnalyzerFixture implements PrettyPrintable {
+  public static class WhereAnalyzerFixture implements Recordable {
 
     private final String message;
     private final TableMetadata tableMetadata;
@@ -90,10 +92,13 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
       this.message = message;
       this.tableMetadata = tableMetadata;
+      var TEST_CONSTANT = new TestConstants();
       this.analyzer =
           new WhereCQLClauseAnalyzer(
-              TableSchemaObject.from(tableMetadata, new ObjectMapper()), statementType);
-      this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+              TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper()),
+              statementType);
+      this.tableSchemaObject =
+          TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper());
       this.expression =
           new LogicalExpressionTestData.ExpressionBuilder<>(this, expression, tableMetadata);
     }
@@ -118,7 +123,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
               this::callAnalyze,
               "Expected exception %s when: %s".formatted(exceptionClass, message));
 
-      LOGGER.warn("Analysis Error: {}\n {}", message, this.exception.toString());
+      LOGGER.debug("Analysis Error: {}\n {}", message, this.exception.toString());
       return this;
     }
 
@@ -132,11 +137,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public void callAnalyze() {
-      LOGGER.warn("Analyzing: {}\n {}", message, toString(true));
+      LOGGER.debug("Analyzing: {}\n {}", message, PrettyPrintable.pprint(this));
       // store the result in this fixture for later
       analysisResult =
-          analyzer.analyse(TableWhereCQLClause.forSelect(tableSchemaObject, expression.expression));
-      LOGGER.warn("Analysis result: {}", analysisResult);
+          analyzer.analyse(
+              TableWhereCQLClause.forSelect(
+                      tableSchemaObject, WithWarnings.of(expression.rootImplicitAnd))
+                  .target());
+      LOGGER.debug("Analysis result: {}", analysisResult);
     }
 
     public WhereAnalyzerFixture assertFilterExceptionCode(FilterException.Code code) {
@@ -306,25 +314,10 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     @Override
-    public String toString() {
-      return toString(false);
-    }
-
-    public String toString(boolean pretty) {
-      return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
-    }
-
-    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-      prettyToStringBuilder
-          .append("expression", expression.expression)
+    public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+      return dataRecorder
+          .append("expression", expression.rootImplicitAnd)
           .append("table", tableMetadata.describe(true));
-      return prettyToStringBuilder;
-    }
-
-    @Override
-    public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-      var sb = prettyToStringBuilder.beginSubBuilder(getClass());
-      return toString(sb).endSubBuilder();
     }
   }
 }

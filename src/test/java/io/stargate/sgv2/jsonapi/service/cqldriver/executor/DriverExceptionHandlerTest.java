@@ -4,27 +4,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.InvalidKeyspaceException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link DriverExceptionHandler} interface only */
 public class DriverExceptionHandlerTest {
 
   @Test
-  public void callWithNonDriverReturnsSame() {
+  public void callWithNonDriverReturnsUnexpectedError() {
 
-    var originalEx = new RuntimeException("original");
+    var originalEx = new RuntimeException("original 123");
 
     // Not using mocks because want all the defaults in the interface to kick in
-    var handler = new DriverExceptionHandler<TableSchemaObject>() {};
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var handler = new DriverExceptionHandler() {};
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
         .as("When not a DriverException, should return the same exception")
-        .isSameAs(originalEx);
+        .hasMessageContaining("RuntimeException")
+        .hasMessageContaining("original 123")
+        .asInstanceOf(InstanceOfAssertFactories.type(ServerException.class))
+        .satisfies(
+            se -> {
+              assertThat(se.code).isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+            });
   }
 
   @Test
@@ -37,15 +45,14 @@ public class DriverExceptionHandlerTest {
     // Not using mocks because want all the defaults in the interface to kick in
     final Object[] calledWith = new Object[1];
     var handler =
-        new DriverExceptionHandler<TableSchemaObject>() {
-          public RuntimeException handle(
-              TableSchemaObject schemaObject, WriteTimeoutException exception) {
+        new DriverExceptionHandler() {
+          public RuntimeException handle(WriteTimeoutException exception) {
             calledWith[0] = exception;
             return expectedEx;
           }
         };
 
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
         .as("When a WriteFailureException, should return the exception from the handler")
@@ -59,21 +66,22 @@ public class DriverExceptionHandlerTest {
   @Test
   public void defaultDriverErrorHandled() {
 
-    var originalEx =
-        new WriteTimeoutException(null, ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE);
+    var originalEx = new InvalidKeyspaceException("unknown keyspace");
 
     // Not using mocks because want all the defaults in the interface to kick in
-    var handler = new DriverExceptionHandler<TableSchemaObject>() {};
+    var handler = new DriverExceptionHandler() {};
 
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
+    // This is a server error because the interface does not have the schema object as state
+    // so it cannot give a driver error that has table name etc.
     assertThat(actualEx)
         .as(
             "When a DriverException and no handler should return ServerException code=%s",
             ServerException.Code.UNEXPECTED_SERVER_ERROR.name())
         .isNotNull()
         .isInstanceOf(ServerException.class)
-        .hasMessageContaining(WriteTimeoutException.class.getSimpleName())
+        .hasMessageContaining(InvalidKeyspaceException.class.getSimpleName())
         .hasMessageContaining(originalEx.getMessage())
         .satisfies(
             e -> {

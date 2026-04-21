@@ -27,7 +27,7 @@ stargate:
 
   feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig
     flags:  # Ok to leave out features that have no default value (enabled or disabled)
-      tables:
+      lexical:
 
   # custom grpc settings
   grpc:
@@ -61,6 +61,13 @@ quarkus:
   # banner for the startup
   banner:
     path: banner/banner.txt
+
+  # cache settings for "credentials" (sync-service)
+  cache:
+    caffeine:
+      "credentials":
+        maximum-size: 1000
+        expire-after-access: 5m
 
   # properties for the gRPC clients
   grpc:
@@ -120,6 +127,9 @@ quarkus:
         level: INFO
       'io.stargate':
         level: DEBUG
+      # noisy for ITs (which run with prod, not test, settings)
+      'io.stargate.sgv2.jsonapi.service.operation':
+        level: INFO
 
     min-level: trace
 
@@ -146,6 +156,13 @@ quarkus:
     # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
     # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
     additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
+
+  # Sync-service configuration
+  rest-client:
+    credentials:
+      url: http://localhost:8084/v1
+      connect-timeout: 2000
+      read-timeout: 5000
 
   # adapt path of the open api definitions
   smallrye-openapi:
@@ -178,6 +195,14 @@ quarkus:
         }
       }
 
+  # MCP (Model Context Protocol) server configuration
+  mcp:
+    server:
+      http:
+        root-path: /v1/mcp
+      traffic-logging:
+        enabled: true
+        text-limit: 1000
 
 "%dev":
    quarkus:

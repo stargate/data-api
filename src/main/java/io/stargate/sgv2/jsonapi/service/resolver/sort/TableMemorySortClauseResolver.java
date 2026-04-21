@@ -10,11 +10,11 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InMemorySortComparator;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowSorter;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -60,14 +60,14 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
     if (orderByCqlClause.fullyCoversCommand()) {
       // Cql Order by is enough to handle the sort clause, no need for a row sorter
       // this will also cover where there is no sorting.
-      LOGGER.debug("No in memory sort needed, using CQL order by");
+      LOGGER.debug("No in-memory sort needed, using CQL order by");
       return WithWarnings.of(RowSorter.NO_OP);
     }
 
     // Just a sanity check,
-    var sortClause = command.sortClause();
+    var sortClause = command.sortClause(commandContext);
     if (sortClause == null || sortClause.isEmpty()) {
-      LOGGER.debug("No in memory sort needed, sort clause was null or empty");
+      LOGGER.debug("No in-memory sort needed, sort clause was null or empty");
       return WithWarnings.of(RowSorter.NO_OP);
     }
 
@@ -100,12 +100,6 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
   /** Resolves the sort for sorting table rows in memory */
   private WithWarnings<RowSorter> resolveToTableInMemorySort(
       List<SortExpression> sortExpressions, TableSchemaObject tableSchemaObject) {
-
-    // check all the columns are know
-    checkUnknownSortColumns(
-        tableSchemaObject,
-        sortExpressions.stream().map(SortExpression::pathAsCqlIdentifier).toList());
-
     var apiTableDef = tableSchemaObject.apiTableDef();
     List<InMemorySortComparator.SortByTerm> sortByList = new ArrayList<>(sortExpressions.size());
 
@@ -119,7 +113,7 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
                     + sortExpression.pathAsCqlIdentifier());
           }
           sortByList.add(
-              new InMemorySortComparator.SortByTerm(apiColumnDef, sortExpression.ascending()));
+              new InMemorySortComparator.SortByTerm(apiColumnDef, sortExpression.isAscending()));
         });
 
     var sorter =

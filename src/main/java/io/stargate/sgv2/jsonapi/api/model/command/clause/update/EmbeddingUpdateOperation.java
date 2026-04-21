@@ -19,7 +19,6 @@ public record EmbeddingUpdateOperation(String vectorizeContent) {
    * update the document with corresponding vector
    *
    * @param doc Document to update
-   * @param dataVectorizer dataVectorizer
    * @return Uni<Boolean> modified
    */
   public void updateDocument(JsonNode doc, float[] vector) {
@@ -30,6 +29,6 @@ public record EmbeddingUpdateOperation(String vectorizeContent) {
     for (float listValue : vector) {
       arrayNode.add(nodeFactory.numberNode(listValue));
     }
-    ((ObjectNode) doc).put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
+    ((ObjectNode) doc).set(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
   }
 }

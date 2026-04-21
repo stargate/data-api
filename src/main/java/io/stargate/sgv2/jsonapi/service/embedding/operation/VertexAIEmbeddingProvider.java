@@ -1,186 +1,174 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.rest.client.reactive.ClientExceptionMapper;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class VertexAIEmbeddingProvider extends EmbeddingProvider {
-  private static final String providerId = ProviderConstants.VERTEXAI;
-  private final VertexAIEmbeddingProviderClient vertexAIEmbeddingProviderClient;
+
+  private final VertexAIEmbeddingProviderClient vertexClient;
 
   public VertexAIEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
-      String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
-      Map<String, Object> serviceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
+      Map<String, Object> vectorizeServiceParameters) {
+    super(
+        ModelProvider.VERTEXAI,
+        providerConfig,
+        modelConfig,
+        serviceConfig,
+        dimension,
+        vectorizeServiceParameters);
 
-    String actualUrl = replaceParameters(baseUrl, serviceParameters);
-    vertexAIEmbeddingProviderClient =
+    String actualUrl =
+        replaceParameters(serviceConfig.getBaseUrl(modelName()), vectorizeServiceParameters);
+    vertexClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(actualUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(VertexAIEmbeddingProviderClient.class);
   }
 
-  @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface VertexAIEmbeddingProviderClient {
-    @POST
-    @Path("/{modelId}:predict")
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
-        @HeaderParam("Authorization") String accessToken,
-        @PathParam("modelId") String modelId,
-        EmbeddingRequest request);
-
-    @ClientExceptionMapper
-    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
-    }
-
-    /**
-     * TODO: Add customized error message extraction logic here. <br>
-     * Extract the error message from the response body. The example response body is:
-     *
-     * <pre>
-     *
-     * </pre>
-     *
-     * @param response The response body as a String.
-     * @return The error message extracted from the response body.
-     */
-    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      // Get the whole response body
-      JsonNode rootNode = response.readEntity(JsonNode.class);
-      // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
-      return rootNode.toString();
-    }
-  }
-
-  private record EmbeddingRequest(List<Content> instances) {
-    public record Content(String content) {}
-  }
-
-  private static class EmbeddingResponse {
-    public EmbeddingResponse() {}
-
-    private List<Prediction> predictions;
-
-    @JsonIgnore private Object metadata;
-
-    public List<Prediction> getPredictions() {
-      return predictions;
-    }
-
-    public void setPredictions(List<Prediction> predictions) {
-      this.predictions = predictions;
-    }
-
-    public Object getMetadata() {
-      return metadata;
-    }
-
-    public void setMetadata(Object metadata) {
-      this.metadata = metadata;
-    }
-
-    protected static class Prediction {
-      public Prediction() {}
-
-      private Embeddings embeddings;
-
-      public Embeddings getEmbeddings() {
-        return embeddings;
-      }
-
-      public void setEmbeddings(Embeddings embeddings) {
-        this.embeddings = embeddings;
-      }
-
-      protected static class Embeddings {
-        public Embeddings() {}
-
-        private float[] values;
-
-        @JsonIgnore private Object statistics;
-
-        public float[] getValues() {
-          return values;
-        }
-
-        public void setValues(float[] values) {
-          this.values = values;
-        }
-
-        public Object getStatistics() {
-          return statistics;
-        }
-
-        public void setStatistics(Object statistics) {
-          this.statistics = statistics;
-        }
-      }
-    }
+  @Override
+  protected String errorMessageJsonPtr() {
+    // overriding the call that needs this (but still return safe value)
+    return "";
   }
 
   @Override
-  public Uni<Response> vectorize(
+  protected String responseErrorMessage(Response jakartaResponse) {
+    return jakartaResponse.readEntity(String.class);
+  }
+
+  @Override
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
-    EmbeddingRequest request =
-        new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
 
-    Uni<EmbeddingResponse> serviceResponse =
-        applyRetry(
-            vertexAIEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(), modelName, request));
+    checkEOLModelUsage();
+    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
-    return serviceResponse
+    var vertexRequest =
+        new VertexEmbeddingRequest(
+            texts.stream().map(VertexEmbeddingRequest.Content::new).toList());
+
+    // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
+    var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
+
+    long callStartNano = System.nanoTime();
+    return retryHTTPCall(vertexClient.embed(accessToken, modelName(), vertexRequest))
         .onItem()
         .transform(
-            response -> {
-              if (response.getPredictions() == null) {
-                return Response.of(batchId, Collections.emptyList());
+            jakartaResponse -> {
+              var vertexResponse = decodeResponse(jakartaResponse, VertexEmbeddingResponse.class);
+              long callDurationNano = System.nanoTime() - callStartNano;
+
+              // aaron - 10 June 2025 - previous code would silently swallow no data returned
+              // and return an empty result. If we made a request we should get a response.
+              if (vertexResponse.predictions() == null) {
+                throwEmptyData(jakartaResponse);
               }
-              List<float[]> vectors =
-                  response.getPredictions().stream()
-                      .map(prediction -> prediction.getEmbeddings().getValues())
-                      .collect(Collectors.toList());
-              return Response.of(batchId, vectors);
+
+              // token usage is for each of the embeddings , need to sum it up
+              int total_tokens = 0;
+              List<float[]> vectors = new ArrayList<>(vertexResponse.predictions().size());
+              for (var prediction : vertexResponse.predictions()) {
+                vectors.add(prediction.embeddings().values);
+                total_tokens += prediction.embeddings().statistics().token_count;
+              }
+
+              // Docs say the token_count in the response is the "Number of tokens of the input
+              // text."
+              // so seems safe ot use this as the prompt_tokens and total_tokens
+              // https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#response_body
+              var modelUsage =
+                  createModelUsage(
+                      embeddingCredentials.tenant(),
+                      ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+                      total_tokens,
+                      total_tokens,
+                      jakartaResponse,
+                      callDurationNano);
+              return new BatchedEmbeddingResponse(batchId, vectors, modelUsage);
             });
   }
 
-  @Override
-  public int maxBatchSize() {
-    return requestProperties.maxBatchSize();
+  /**
+   * REST client interface for the Vertex Embedding Service.
+   *
+   * <p>..
+   */
+  @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(ProviderHttpInterceptor.class)
+  public interface VertexAIEmbeddingProviderClient {
+
+    @POST
+    @Path("/{modelId}:predict")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
+    Uni<Response> embed(
+        @HeaderParam("Authorization") String accessToken,
+        @PathParam("modelId") String modelId,
+        VertexEmbeddingRequest request);
+  }
+
+  /**
+   * Request structure of the Vertex REST service.
+   *
+   * <p>..
+   */
+  private record VertexEmbeddingRequest(List<Content> instances) {
+    public record Content(String content) {}
+  }
+
+  /**
+   * Response structure of the Vertex REST service.
+   *
+   * <p>.. aaron - 10 June 2025 - this used to be a class, moved to be a record for consistency
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record VertexEmbeddingResponse(
+      List<Prediction> predictions,
+      // aaron 10 june 2025, could not see metadata in API docs, but it was in the old code.
+      // https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#response_body
+      @JsonIgnore Object metadata) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Prediction(Embeddings embeddings) {
+
+      @JsonIgnoreProperties(ignoreUnknown = true)
+      public record Embeddings(float[] values, Statistics statistics) {
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record Statistics(boolean truncated, int token_count) {}
+      }
+    }
   }
 }

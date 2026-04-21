@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,19 +77,20 @@ public class DocumentProjector {
   public static DocumentProjector createFromDefinition(
       JsonNode projectionDefinition, boolean includeSimilarity) {
     // First special case: "simple" default projection
-    if (projectionDefinition == null || projectionDefinition.isEmpty()) {
+    if (projectionDefinition == null
+        || (projectionDefinition.isObject() && projectionDefinition.isEmpty())) {
       if (includeSimilarity) {
         return defaultProjectorWithSimilarity();
       }
       return defaultProjector();
     }
     if (!projectionDefinition.isObject()) {
-      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-          "definition must be OBJECT, was %s", projectionDefinition.getNodeType());
+      throw ProjectionException.Code.UNSUPPORTED_PROJECTION_DEFINITION.get(
+          Map.of("projectionValueType", JsonUtil.nodeTypeAsString(projectionDefinition)));
     }
     // Special cases: "star-include/exclude"
     if (projectionDefinition.size() == 1) {
-      Map.Entry<String, JsonNode> entry = projectionDefinition.fields().next();
+      Map.Entry<String, JsonNode> entry = projectionDefinition.properties().iterator().next();
       if ("*".equals(entry.getKey())) {
         boolean includeAll = extractIncludeOrExclude(entry.getKey(), entry.getValue());
         if (includeAll) {
@@ -109,8 +111,11 @@ public class DocumentProjector {
       return value.booleanValue();
     }
     // Unknown JSON node type; error
-    throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-        "path ('%s') value must be NUMBER or BOOLEAN, was %s", path, value.getNodeType());
+    throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+        Map.of(
+            "errorMessage",
+            "path ('%s') value must be Number or Boolean, was %s"
+                .formatted(path, JsonUtil.nodeTypeAsString(value))));
   }
 
   public boolean isInclusion() {
@@ -153,8 +158,7 @@ public class DocumentProjector {
   // Mostly for deserialization tests
   @Override
   public boolean equals(Object o) {
-    if (o instanceof DocumentProjector) {
-      DocumentProjector other = (DocumentProjector) o;
+    if (o instanceof DocumentProjector other) {
       return (this.inclusion == other.inclusion)
           && (this.includeSimilarityScore == other.includeSimilarityScore)
           && Objects.equals(this.rootLayer, other.rootLayer);
@@ -213,6 +217,8 @@ public class DocumentProjector {
 
     private Boolean $vectorizeInclusion;
 
+    private Boolean $lexicalInclusion;
+
     /** Whether similarity score is needed. */
     private final boolean includeSimilarityScore;
 
@@ -236,7 +242,9 @@ public class DocumentProjector {
                 // $vector only included if explicitly included
                 Boolean.TRUE.equals($vectorInclusion),
                 // $vectorize only included if explicitly included
-                Boolean.TRUE.equals($vectorizeInclusion)),
+                Boolean.TRUE.equals($vectorizeInclusion),
+                // $lexical only included if explicitly included
+                Boolean.TRUE.equals($lexicalInclusion)),
             true,
             includeSimilarityScore);
       } else { // exclusion-based
@@ -249,36 +257,42 @@ public class DocumentProjector {
                 // $vector excluded unless explicitly included
                 !Boolean.TRUE.equals($vectorInclusion),
                 // $vectorize excluded unless explicitly included
-                !Boolean.TRUE.equals($vectorizeInclusion)),
+                !Boolean.TRUE.equals($vectorizeInclusion),
+                // $lexical excluded unless explicitly included
+                !Boolean.TRUE.equals($lexicalInclusion)),
             false,
             includeSimilarityScore);
       }
     }
 
     PathCollector collectFromObject(JsonNode ob, String parentPath) {
-      var it = ob.fields();
-      while (it.hasNext()) {
-        var entry = it.next();
+      for (var entry : ob.properties()) {
         String path = entry.getKey();
 
         if (path.isEmpty()) {
-          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-              "empty paths (and path segments) not allowed");
+          throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+              Map.of("errorMessage", "empty paths (and path segments) not allowed"));
         }
         if (path.charAt(0) == '$'
             && !(path.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-                || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
+                || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
+                || DocumentConstants.Fields.LEXICAL_CONTENT_FIELD.equals(path))) {
           // First: no operators allowed at root level
           if (parentPath == null) {
-            throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-                "'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+            throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+                Map.of(
+                    "errorMessage",
+                    "'$lexical'/'$vector'/'$vectorize' are only allowed paths that can start with '$' (path: '%s')"
+                        .formatted(path)));
           }
 
           // Second: we only support one operator for now
           if (!"$slice".equals(path)) {
-            throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-                "unrecognized/unsupported projection operator '%s' (only '$slice' supported)",
-                path);
+            throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+                Map.of(
+                    "errorMessage",
+                    "unsupported projection operator '%s' (only '$slice' supported)"
+                        .formatted(path)));
           }
 
           addSlice(parentPath, entry.getValue());
@@ -287,8 +301,8 @@ public class DocumentProjector {
 
         // Special rule for "*": only allowed as single root-level entry;
         if ("*".equals(path)) {
-          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-              "wildcard ('*') only allowed as the only root-level path");
+          throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+              Map.of("errorMessage", "wildcard ('*') only allowed as the only root-level path"));
         }
         if (parentPath != null) {
           path = parentPath + "." + path;
@@ -312,9 +326,11 @@ public class DocumentProjector {
           collectFromObject(value, path);
         } else {
           // Unknown JSON node type; error
-          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-              "path ('%s') value must be NUMBER, BOOLEAN or OBJECT, was %s",
-              path, value.getNodeType());
+          throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+              Map.of(
+                  "errorMessage",
+                  "path ('%s') value must be Number, Boolean or Object, was %s"
+                      .formatted(path, JsonUtil.nodeTypeAsString(value))));
         }
       }
       return this;
@@ -328,9 +344,11 @@ public class DocumentProjector {
           int skip = sliceDef.get(0).intValue();
           int count = sliceDef.get(1).intValue();
           if (count < 0) { // negative values not allowed
-            throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-                "path ('%s') has unsupported parameter for '$slice' (%s): second NUMBER (entries to return) MUST be positive",
-                path, sliceDef.getNodeType());
+            throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+                Map.of(
+                    "errorMessage",
+                    "path ('%s') has unsupported parameter for '$slice' (%s): second Number (entries to return) MUST be positive"
+                        .formatted(path, JsonUtil.nodeTypeAsString(sliceDef))));
           }
           slices.add(
               new ProjectionLayer.SliceDef(path, ProjectionLayer.constructSlicer(skip, count)));
@@ -341,9 +359,11 @@ public class DocumentProjector {
         slices.add(new ProjectionLayer.SliceDef(path, ProjectionLayer.constructSlicer(count)));
         return;
       }
-      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-          "path ('%s') has unsupported parameter for '$slice' (%s): only NUMBER or ARRAY with 2 NUMBERs accepted",
-          path, sliceDef.getNodeType());
+      throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+          Map.of(
+              "errorMessage",
+              "path ('%s') has unsupported parameter for '$slice' (%s): only Number or Array with 2 Numbers accepted"
+                  .formatted(path, JsonUtil.nodeTypeAsString(sliceDef))));
     }
 
     private void addExclusion(String path) {
@@ -353,11 +373,14 @@ public class DocumentProjector {
         $vectorInclusion = false;
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
         $vectorizeInclusion = false;
+      } else if (DocumentConstants.Fields.LEXICAL_CONTENT_FIELD.equals(path)) {
+        $lexicalInclusion = false;
       } else {
         // Must not mix exclusions and inclusions
         if (inclusions > 0) {
-          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-              "cannot exclude '%s' on inclusion projection", path);
+          throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+              Map.of(
+                  "errorMessage", "cannot exclude '%s' on inclusion projection".formatted(path)));
         }
         ++exclusions;
         paths.add(path);
@@ -371,11 +394,14 @@ public class DocumentProjector {
         $vectorInclusion = true;
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
         $vectorizeInclusion = true;
+      } else if (DocumentConstants.Fields.LEXICAL_CONTENT_FIELD.equals(path)) {
+        $lexicalInclusion = true;
       } else {
         // Must not mix exclusions and inclusions
         if (exclusions > 0) {
-          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-              "cannot include '%s' on exclusion projection", path);
+          throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.get(
+              Map.of(
+                  "errorMessage", "cannot include '%s' on exclusion projection".formatted(path)));
         }
         ++inclusions;
         paths.add(path);

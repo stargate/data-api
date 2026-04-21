@@ -8,12 +8,12 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionsCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -22,16 +22,19 @@ public class FindCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject FindCollectionsCommandResolver resolver;
+  private final TestConstants testConstants = new TestConstants();
 
-  @Nested
-  class FindCollectionCommandResolveCommand {
+  CommandContext<KeyspaceSchemaObject> commandContext;
 
-    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.KEYSPACE_CONTEXT;
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.keyspaceContext();
+  }
 
-    @Test
-    public void findCollection() throws Exception {
-      String json =
-          """
+  @Test
+  public void findCollection() throws Exception {
+    String json =
+        """
           {
             "findCollections": {
 
@@ -39,24 +42,23 @@ public class FindCollectionCommandResolverTest {
           }
           """;
 
-      FindCollectionsCommand findCommand =
-          objectMapper.readValue(json, FindCollectionsCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+    FindCollectionsCommand findCommand = objectMapper.readValue(json, FindCollectionsCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, findCommand);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionsCollectionOperation.class,
-              findCollection -> {
-                assertThat(findCollection.objectMapper()).isEqualTo(objectMapper);
-                assertThat(findCollection.commandContext()).isEqualTo(commandContext);
-                assertThat(findCollection.explain()).isEqualTo(false);
-              });
-    }
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionsCollectionOperation.class,
+            findCollection -> {
+              assertThat(findCollection.objectMapper()).isEqualTo(objectMapper);
+              assertThat(findCollection.commandContext()).isEqualTo(commandContext);
+              assertThat(findCollection.explain()).isEqualTo(false);
+            });
+  }
 
-    @Test
-    public void findCollectionWithExplain() throws Exception {
-      String json =
-          """
+  @Test
+  public void findCollectionWithExplain() throws Exception {
+    String json =
+        """
                   {
                     "findCollections": {
                       "options" : {
@@ -66,18 +68,16 @@ public class FindCollectionCommandResolverTest {
                   }
                   """;
 
-      FindCollectionsCommand findCommand =
-          objectMapper.readValue(json, FindCollectionsCommand.class);
-      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+    FindCollectionsCommand findCommand = objectMapper.readValue(json, FindCollectionsCommand.class);
+    Operation operation = resolver.resolveCommand(commandContext, findCommand);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindCollectionsCollectionOperation.class,
-              findCollection -> {
-                assertThat(findCollection.objectMapper()).isEqualTo(objectMapper);
-                assertThat(findCollection.commandContext()).isEqualTo(commandContext);
-                assertThat(findCollection.explain()).isEqualTo(true);
-              });
-    }
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionsCollectionOperation.class,
+            findCollection -> {
+              assertThat(findCollection.objectMapper()).isEqualTo(objectMapper);
+              assertThat(findCollection.commandContext()).isEqualTo(commandContext);
+              assertThat(findCollection.explain()).isEqualTo(true);
+            });
   }
 }

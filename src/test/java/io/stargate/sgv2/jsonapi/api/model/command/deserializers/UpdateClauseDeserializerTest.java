@@ -10,7 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -160,8 +160,9 @@ public class UpdateClauseDeserializerTest {
 
       Exception e = catchException(() -> objectMapper.readValue(json, UpdateClause.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasMessageContaining("$vectorize` and `$vector` can't be used together");
+          .isInstanceOf(SchemaException.class)
+          .hasMessageContaining(
+              "$vector' and '$vectorize' cannot be used together in same document");
     }
 
     @Test
@@ -173,8 +174,9 @@ public class UpdateClauseDeserializerTest {
 
       Exception e = catchException(() -> objectMapper.readValue(json, UpdateClause.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasMessageContaining("$vectorize` and `$vector` can't be used together");
+          .isInstanceOf(SchemaException.class)
+          .hasMessageContaining(
+              "$vector' and '$vectorize' cannot be used together in same document");
     }
   }
 }

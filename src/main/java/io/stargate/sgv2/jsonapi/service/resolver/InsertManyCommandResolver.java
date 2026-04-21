@@ -2,19 +2,18 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttemptBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
+import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -23,12 +22,10 @@ import jakarta.inject.Inject;
 public class InsertManyCommandResolver implements CommandResolver<InsertManyCommand> {
 
   private final DocumentShredder documentShredder;
-  private final RowShredder rowShredder;
 
   @Inject
-  public InsertManyCommandResolver(DocumentShredder documentShredder, RowShredder rowShredder) {
+  public InsertManyCommandResolver(DocumentShredder documentShredder) {
     this.documentShredder = documentShredder;
-    this.rowShredder = rowShredder;
   }
 
   @Override
@@ -37,7 +34,7 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, InsertManyCommand command) {
 
     final InsertManyCommand.Options options = command.options();
@@ -45,35 +42,32 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     final boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
 
     var builder =
-        new CollectionInsertAttemptBuilder(ctx.schemaObject(), documentShredder, ctx.commandName());
+        new CollectionInsertAttemptBuilder(
+            ctx.schemaObject(), documentShredder, ctx.requestContext().tenant(), ctx.commandName());
     var attempts = command.documents().stream().map(builder::build).toList();
 
     return new InsertCollectionOperation(ctx, attempts, ordered, false, returnDocumentResponses);
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, InsertManyCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, InsertManyCommand command) {
 
-    final InsertManyCommand.Options options = command.options();
-    final boolean ordered = (null != options) && options.ordered();
-    final boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
+    // TODO: move the default for ordered to a constant and use in the API
+    var tasksAndDeferrables =
+        TableInsertDBTask.builder(commandContext)
+            .withOrdered(
+                ApiOptionUtils.getOrDefault(
+                    command.options(), InsertManyCommand.Options::ordered, false))
+            .withReturnDocumentResponses(
+                ApiOptionUtils.getOrDefault(
+                    command.options(), InsertManyCommand.Options::returnDocumentResponses, false))
+            .withJsonNamedValueFactory(
+                new JsonNamedValueContainerFactory(
+                    commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+            .build(command.documents());
 
-    var builder =
-        new TableInsertAttemptBuilder(
-            rowShredder,
-            new WriteableTableRowBuilder(ctx.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY));
-
-    OperationAttemptContainer<TableSchemaObject, InsertAttempt<TableSchemaObject>> attempts =
-        new OperationAttemptContainer<>(ordered);
-    attempts.addAll(command.documents().stream().map(builder::build).toList());
-
-    var pageBuilder =
-        InsertAttemptPage.<TableSchemaObject>builder()
-            .returnDocumentResponses(returnDocumentResponses)
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return EmbeddingOperationFactory.createOperation(commandContext, tasksAndDeferrables);
   }
 }

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import java.util.Optional;
 
@@ -15,16 +16,17 @@ public interface VectorSortable extends Sortable {
   }
 
   /**
-   * Returns the first SortExpression that has {@link SortExpression#vector()} not null, if there is
-   * more than one raises {@link IllegalStateException}.
+   * Returns the first SortExpression that returns true for {@link SortExpression#hasVector()}, if
+   * there is more than one raises {@link IllegalStateException}.
    *
    * @return the vector sort expression if it exists.
    */
-  default Optional<SortExpression> vectorSortExpression() {
-    if (sortClause() != null && sortClause().sortExpressions() != null) {
+  default Optional<SortExpression> vectorSortExpression(CommandContext<?> ctx) {
+    SortClause sortClause = sortClause(ctx);
+    if (sortClause.sortExpressions() != null) {
       var vectorSorts =
-          sortClause().sortExpressions().stream()
-              .filter(expression -> expression.vector() != null)
+          sortClause.sortExpressions().stream()
+              .filter(expression -> expression.hasVector())
               .toList();
       if (vectorSorts.size() > 1) {
         throw new IllegalStateException("Only one vector sort expression is allowed");

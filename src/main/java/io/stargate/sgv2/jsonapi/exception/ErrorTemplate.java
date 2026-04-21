@@ -2,15 +2,12 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import org.apache.commons.text.StringSubstitutor;
 
 /**
  * A template for creating an {@link APIException}, that is associated with an Error Code enum so
- * the {@link ErrorCodeV1} interface can easily create the exception.
+ * the {@link ErrorCode} interface can easily create the exception.
  *
  * <p>Instances are normally created by reading a config file, see {@link #load(Class, ErrorFamily,
  * ErrorScope, String)}
@@ -58,9 +55,47 @@ public record ErrorTemplate<T extends APIException>(
     String messageTemplate,
     Optional<Integer> httpStatusOverride) {
 
-  public T toException(Map<String, String> values) {
-    var errorInstance = toInstance(values);
+  public static final String NULL_REPLACEMENT = "(null)";
 
+  /**
+   * The Apache text substitution will throw an error if the substitution value is null, call this
+   * method to ensure the text value is not a null.
+   *
+   * @param value String value that may be a null.
+   * @return The value or {@link #NULL_REPLACEMENT} if the value is null.
+   */
+  public static String replaceIfNull(String value) {
+    return value == null ? NULL_REPLACEMENT : value;
+  }
+
+  public T toException(EnumSet<ExceptionFlags> exceptionFlags, Map<String, String> values) {
+    var errorInstance = toInstance(values, exceptionFlags);
+
+    try {
+      return constructor().newInstance(errorInstance);
+    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException(
+          "Failed to create a new instance of " + constructor().getDeclaringClass().getSimpleName(),
+          e);
+    }
+  }
+
+  /**
+   * By-pass factory method needed when translating from gRPC into proper exception instance:
+   * message is pre-formatted and needs to by-pass templating.
+   */
+  public T withPreformattedMessage(
+      EnumSet<ExceptionFlags> exceptionFlags, String formattedMessage) {
+    var errorInstance =
+        new ErrorInstance(
+            UUID.randomUUID(),
+            family,
+            scope,
+            code,
+            title,
+            formattedMessage,
+            httpStatusOverride,
+            exceptionFlags);
     try {
       return constructor().newInstance(errorInstance);
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
@@ -80,19 +115,30 @@ public record ErrorTemplate<T extends APIException>(
    * <p>
    *
    * @param values The values to use in the template for the error body.
+   * @param exceptionFlags The set of exception actions to apply to this error instance.
    * @return {@link ErrorInstance} created from the template.
    * @throws UnresolvedErrorTemplateVariable if the template string for the body of the exception
    *     has variables e.g <code>${my_var}</code> that are not in the <code>values</code> passed in
    *     or not in the {@link ErrorConfig#getSnippetVars()} from the error config.
    */
-  private ErrorInstance toInstance(Map<String, String> values) {
+  private ErrorInstance toInstance(
+      Map<String, String> values, EnumSet<ExceptionFlags> exceptionFlags) {
 
     // use the apache string substitution to replace the variables in the messageTemplate
     Map<String, String> allValues = new HashMap<>(values);
     allValues.putAll(ErrorConfig.getInstance().getSnippetVars());
 
+    // the substitution will throw an exception if a variable is null
+    // easy way to handle this is to pre-process the map rather than custom substituter
+    allValues.replaceAll((k, v) -> replaceIfNull(v));
+
     // set so IllegalArgumentException thrown if template var missing a value
-    var subs = new StringSubstitutor(allValues).setEnableUndefinedVariableException(true);
+    // Disable substitution in values so user-provided strings containing "${...}" are not
+    // interpreted as template variables (see data-api#2401)
+    var subs =
+        new StringSubstitutor(allValues)
+            .setEnableUndefinedVariableException(true)
+            .setDisableSubstitutionInValues(true);
 
     String msg;
     try {
@@ -102,7 +148,7 @@ public record ErrorTemplate<T extends APIException>(
     }
 
     return new ErrorInstance(
-        UUID.randomUUID(), family, scope, code, title, msg, httpStatusOverride);
+        UUID.randomUUID(), family, scope, code, title, msg, httpStatusOverride, exceptionFlags);
   }
 
   /**
@@ -118,7 +164,7 @@ public record ErrorTemplate<T extends APIException>(
    * @param family The {@link ErrorFamily} the error belongs to.
    * @param scope The {@link ErrorScope} the error belongs to.
    * @param code The SNAKE_CASE error code for the error.
-   * @return {@link ErrorTemplate} that the Error Code num can provide to the {@link ErrorCodeV1}
+   * @return {@link ErrorTemplate} that the Error Code num can provide to the {@link ErrorCode}
    *     interface.
    * @param <T> Type of the {@link APIException} the error code creates.
    * @throws IllegalArgumentException if the <code>exceptionClass</code> does not have the

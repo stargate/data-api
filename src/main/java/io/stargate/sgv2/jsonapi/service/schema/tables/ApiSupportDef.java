@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -45,11 +47,15 @@ public interface ApiSupportDef {
    */
   boolean filter();
 
+  /** The type can be used with update operators */
+  Update update();
+
   default boolean isUnsupportedAny() {
     return isUnsupportedDDL() || isUnsupportedDML();
   }
 
   default boolean isUnsupportedDDL() {
+    // TODO, should we call collectionSupport as part of DDL
     return !createTable();
   }
 
@@ -58,14 +64,41 @@ public interface ApiSupportDef {
   }
 
   /**
+   * Record to represent if a dataType is supported for update operations.
+   *
+   * @param set If the type can be used in a $set operation.
+   * @param unset If the type can be used in a $unset operation.
+   * @param push If the type can be used in a $push operation.
+   * @param pullAll If the type can be used in a $pullAll operation.
+   */
+  record Update(boolean set, boolean unset, boolean push, boolean pullAll) {
+    public static final Update PRIMITIVE = new Update(true, true, false, false);
+    public static final Update FULL = new Update(true, true, true, true);
+    public static final Update NONE = new Update(false, false, false, false);
+
+    // TODO UDT_TODO, we don't have the finegrained control for partial/full update on an UDT
+    // column.
+    public static final Update UDT = new Update(true, true, false, false);
+
+    public boolean supports(UpdateOperator updateOperator) {
+      return switch (updateOperator) {
+        case SET -> set;
+        case UNSET -> unset;
+        case PUSH -> push;
+        case PULL_ALL -> pullAll;
+        default -> false;
+      };
+    }
+  }
+
+  /**
    * Helper record to be used when the support can be determined at compile time, or easily cached.
    */
-  record Support(boolean createTable, boolean insert, boolean read, boolean filter)
+  record Support(boolean createTable, boolean insert, boolean read, boolean filter, Update update)
       implements ApiSupportDef {
 
-    public static final Support FULL = new Support(true, true, true, true);
-
-    public static final Support NONE = new Support(false, false, false, false);
+    public static final Support FULL = new Support(true, true, true, true, Update.PRIMITIVE);
+    public static final Support NONE = new Support(false, false, false, false, Update.NONE);
   }
 
   /** Predicate to match for full support. */
@@ -86,17 +119,22 @@ public interface ApiSupportDef {
    * @param read If non-null, will match objects where the read value is the same.
    * @param filter If non-null, will match objects where the filter value is the same.
    */
-  record Matcher(Boolean createTable, Boolean insert, Boolean read, Boolean filter)
+  record Matcher(
+      Boolean createTable,
+      Collection collectionSupport,
+      Boolean insert,
+      Boolean read,
+      Boolean filter)
       implements Predicate<ApiSupportDef> {
 
-    public static final Matcher NO_MATCHES = new Matcher(null, null, null, null);
+    public static final Matcher NO_MATCHES = new Matcher(null, null, null, null, null);
 
     /**
      * Returns a new matcher with the same values as this object, and the createTable value set to
      * the given value.
      */
     public Matcher withCreateTable(boolean createTable) {
-      return new Matcher(createTable, insert, read, filter);
+      return new Matcher(createTable, collectionSupport, insert, read, filter);
     }
 
     /**
@@ -104,7 +142,7 @@ public interface ApiSupportDef {
      * given value.
      */
     public Matcher withInsert(boolean insert) {
-      return new Matcher(createTable, insert, read, filter);
+      return new Matcher(createTable, collectionSupport, insert, read, filter);
     }
 
     /**
@@ -112,15 +150,7 @@ public interface ApiSupportDef {
      * given value.
      */
     public Matcher withRead(boolean read) {
-      return new Matcher(createTable, insert, read, filter);
-    }
-
-    /**
-     * Returns a new matcher with the same values as this object, and the filter value set to the
-     * given value.
-     */
-    public Matcher withFilter(boolean filter) {
-      return new Matcher(createTable, insert, read, filter);
+      return new Matcher(createTable, collectionSupport, insert, read, filter);
     }
 
     @Override

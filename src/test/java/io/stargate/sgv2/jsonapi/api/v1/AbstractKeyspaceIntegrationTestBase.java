@@ -6,17 +6,18 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilder;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -43,9 +44,17 @@ import org.junit.jupiter.api.TestInstance;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
+  // Property to disable lexical search tests when lexical/BM25 functionality not available
+  public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
   // keyspace automatically created in this test
-  protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
+  protected static final String keyspaceName =
+      "ks" + RandomStringUtils.insecure().nextAlphanumeric(16);
+
+  /**
+   * Access is protected via {@link #createDriverSession()} method and closed in {@link #cleanUp()}.
+   */
+  private CqlSession cqlSession;
 
   @BeforeAll
   public static void enableLog() {
@@ -54,7 +63,36 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   @BeforeAll
   public void createKeyspace() {
+    waitForRestEndpoint(GeneralResource.BASE_PATH, 60); // Wait max 60 seconds
     createKeyspace(keyspaceName);
+  }
+
+  @AfterAll
+  public void cleanUp() {
+    if (cqlSession != null) {
+      cqlSession.close();
+    }
+  }
+
+  /** Tentative to let the system start before creating the keyspace. */
+  private void waitForRestEndpoint(String baseUrl, int timeoutSeconds) {
+    long startTime = System.currentTimeMillis();
+    while ((System.currentTimeMillis() - startTime) < timeoutSeconds * 1000) {
+      try {
+        int statusCode =
+            RestAssured.given().port(getTestPort()).when().get(baseUrl).getStatusCode();
+        if (statusCode >= 200 && statusCode < 500) {
+          return; // ready
+        }
+      } catch (Exception e) {
+        // Ignore and retry
+      }
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException ignored) {
+      }
+    }
+    throw new RuntimeException("REST endpoint not available at " + baseUrl + " after timeout");
   }
 
   protected void createKeyspace(String nsToCreate) {
@@ -122,10 +160,31 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                   """
                 .formatted(collectionToCreate))
         .when()
-        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .post(KeyspaceResource.BASE_PATH, keyspace)
         .then()
         .statusCode(200)
         .body("$", responseIsDDLSuccess());
+  }
+
+  protected void deleteCollection(String collectionName) {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(
+                """
+                    {
+                      "deleteCollection": {
+                        "name": "%s"
+                      }
+                    }
+                    """
+                .formatted(collectionName))
+        .when()
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .then()
+        .statusCode(200)
+        .body("$", responseIsDDLSuccess())
+        .body("status.ok", is(1));
   }
 
   protected int getTestPort() {
@@ -137,49 +196,30 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   protected Map<String, ?> getHeaders() {
-    if (useCoordinator()) {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          getAuthToken(),
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      String credential =
-          "Cassandra:"
-              + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
-              + ":"
-              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          credential,
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    }
+    String credential =
+        "Cassandra:"
+            + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
+            + ":"
+            + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
+    return Map.of(
+        HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+        credential,
+        HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+        CustomITEmbeddingProvider.TEST_API_KEY);
   }
 
   protected Map<String, ?> getInvalidHeaders() {
-    if (useCoordinator()) {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          "invalid",
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      String credential =
-          "Cassandra:"
-              + Base64.getEncoder().encodeToString("invalid".getBytes())
-              + ":"
-              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          credential,
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    }
-  }
 
-  protected boolean useCoordinator() {
-    return Boolean.getBoolean("testing.containers.use-coordinator");
+    String credential =
+        "Cassandra:"
+            + Base64.getEncoder().encodeToString("invalid".getBytes())
+            + ":"
+            + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
+    return Map.of(
+        HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+        credential,
+        HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+        CustomITEmbeddingProvider.TEST_API_KEY);
   }
 
   public static void checkMetrics(String commandName) {
@@ -212,15 +252,26 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   public static void checkDriverMetricsTenantId() {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    // Example line
+    // session_cql_requests_seconds{module="sgv2-jsonapi",session="default_tenant",quantile="0.5",}
+    // 0.238944256
+
     Optional<String> sessionLevelDriverMetricTenantId =
         metrics
             .lines()
             .filter(
                 line ->
-                    line.startsWith("session_cql_requests_seconds_bucket")
-                        && line.contains("tenant"))
+                    line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-    assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
+    if (!sessionLevelDriverMetricTenantId.isPresent()) {
+      List<String> lines = metrics.lines().toList();
+      long buckets =
+          lines.stream().filter(line -> line.startsWith("session_cql_requests_seconds")).count();
+      fail(
+          String.format(
+              "No tenant id found in any of 'session_cql_requests_seconds' entries (%d buckets; %d log lines)",
+              buckets, lines.size()));
+    }
   }
 
   public static void checkVectorMetrics(String commandName, String sortType) {
@@ -258,11 +309,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     assertThat(countMetrics.size()).isGreaterThan(0);
   }
 
-  /** Utility method for reducing boilerplate code for sending JSON commands */
-  protected RequestSpecification givenHeadersAndJson(String json) {
-    return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
-  }
-
   protected String generateBase64EncodedBinaryVector(float[] vector) {
     {
       final byte[] byteArray = CqlVectorUtil.floatsToBytes(vector);
@@ -282,33 +328,82 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     }
   }
 
+  protected boolean executeCqlStatement(String... statements) {
+    var cqlStatements = new SimpleStatement[statements.length];
+    for (int i = 0; i < statements.length; i++) {
+      cqlStatements[i] = SimpleStatement.newInstance(statements[i]);
+    }
+    return executeCqlStatement(cqlStatements);
+  }
+
   protected boolean executeCqlStatement(SimpleStatement... statements) {
     var cqlSession = createDriverSession();
     for (SimpleStatement statement : statements) {
       if (!cqlSession.execute(statement).wasApplied()) {
-        cqlSession.close();
         return false;
       }
     }
-    cqlSession.close();
     return true;
   }
 
-  private CqlSession createDriverSession() {
-    int port =
-        useCoordinator()
-            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
-            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-    String dc = null;
-    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
-      dc = "dc1";
-    } else {
-      dc = "datacenter1";
+  /**
+   * Synchronized to avoid creating multiple sessions, performance is not a concern. Session is
+   * closed in {@link #cleanUp()} method.
+   */
+  private synchronized CqlSession createDriverSession() {
+    if (cqlSession == null) {
+      int port = getCassandraCqlPort();
+      String dc;
+      if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
+        dc = "dc1";
+      } else {
+        dc = "datacenter1";
+      }
+      var builder =
+          new CqlSessionBuilder()
+              .withLocalDatacenter(dc)
+              .addContactPoint(new InetSocketAddress("localhost", port))
+              .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
+      cqlSession = builder.build();
     }
-    var builder = new TenantAwareCqlSessionBuilder("IntegrationTest").withLocalDatacenter(dc);
-    builder
-        .addContactPoint(new InetSocketAddress("localhost", port))
-        .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
-    return builder.build();
+    return cqlSession;
+  }
+
+  /**
+   * Gets the Cassandra CQL port. Subclasses can override this if their tests need isolated
+   * container and port.
+   */
+  protected int getCassandraCqlPort() {
+    return Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+  }
+
+  /** Helper method for determining if lexical search is available for the database backend */
+  protected boolean isLexicalAvailableForDB() {
+    return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeaders() {
+    return given().headers(getHeaders()).contentType(ContentType.JSON);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeadersAndJson(String json) {
+    return givenHeaders().body(json);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThen(String json) {
+    return givenHeadersAndJson(json).when().post(KeyspaceResource.BASE_PATH, keyspaceName).then();
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThenOk(String json) {
+    return givenHeadersPostJsonThen(json).statusCode(200);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(String json) {
+    return givenHeadersPostJsonThenOk(json).body("errors", is(nullValue()));
   }
 }

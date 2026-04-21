@@ -10,82 +10,96 @@ import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
-import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Refactored as seperate class that represent a collection property.*
+ * Refactored as separate class that represent a collection property.
  *
  * <p>TODO: there are a LOT of different ways this is constructed, need to refactor
  */
 public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
-  public static final SchemaObjectType TYPE = SchemaObjectType.COLLECTION;
-
-  public static final CollectionSchemaObject MISSING =
-      new CollectionSchemaObject(
-          SchemaObjectName.MISSING,
-          null,
-          IdConfig.defaultIdConfig(),
-          VectorConfig.NOT_ENABLED_CONFIG,
-          null);
-
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
+  private final CollectionLexicalConfig lexicalConfig;
+  private final CollectionRerankDef rerankDef;
 
-  /**
-   * @param vectorConfig
-   * @param indexingConfig
-   */
   public CollectionSchemaObject(
-      String keypaceName,
-      String name,
+      Tenant tenant,
       TableMetadata tableMetadata,
       IdConfig idConfig,
       VectorConfig vectorConfig,
-      CollectionIndexingConfig indexingConfig) {
-    this(
-        new SchemaObjectName(keypaceName, name),
-        tableMetadata,
-        idConfig,
-        vectorConfig,
-        indexingConfig);
-  }
+      CollectionIndexingConfig indexingConfig,
+      CollectionLexicalConfig lexicalConfig,
+      CollectionRerankDef rerankDef) {
 
-  public CollectionSchemaObject(
-      SchemaObjectName name,
-      TableMetadata tableMetadata,
-      IdConfig idConfig,
-      VectorConfig vectorConfig,
-      CollectionIndexingConfig indexingConfig) {
-    super(TYPE, name, tableMetadata);
+    super(SchemaObjectType.COLLECTION, tenant, tableMetadata);
 
     this.idConfig = idConfig;
     this.vectorConfig = vectorConfig;
     this.indexingConfig = indexingConfig;
     this.tableMetadata = tableMetadata;
+    this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
+    this.rerankDef = Objects.requireNonNull(rerankDef);
   }
 
-  // TODO: remove this, it is just here for testing and can be handled by creating test data
-  // effectively
-  public CollectionSchemaObject withIdType(CollectionIdType idType) {
+  /**
+   * we have a lot of old tests that created a collection without having table metadata. Use the
+   * ctor with TableMetadata in prod code
+   */
+  @VisibleForTesting
+  public CollectionSchemaObject(
+      SchemaObjectIdentifier identifier,
+      IdConfig idConfig,
+      VectorConfig vectorConfig,
+      CollectionIndexingConfig indexingConfig,
+      CollectionLexicalConfig lexicalConfig,
+      CollectionRerankDef rerankDef) {
+
+    super(SchemaObjectType.COLLECTION, identifier);
+
+    this.idConfig = idConfig;
+    this.vectorConfig = vectorConfig;
+    this.indexingConfig = indexingConfig;
+    this.tableMetadata = null;
+    this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
+    this.rerankDef = Objects.requireNonNull(rerankDef);
+  }
+
+  /**
+   * Method for constructing a new CollectionSchemaObject with overrides for Lexical and Rerank
+   * settings.
+   */
+  public CollectionSchemaObject withLexicalAndRerankOverrides(
+      CollectionLexicalConfig lexicalOverride, CollectionRerankDef rerankOverride) {
     return new CollectionSchemaObject(
-        name(), tableMetadata, new IdConfig(idType), vectorConfig, indexingConfig);
+        identifier().tenant(),
+        tableMetadata,
+        idConfig,
+        vectorConfig,
+        indexingConfig,
+        lexicalOverride,
+        rerankOverride);
   }
 
   @Override
@@ -96,6 +110,16 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   @Override
   public IndexUsage newIndexUsage() {
     return newCollectionIndexUsage();
+  }
+
+  @Override
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder)
+        .append("idConfig", idConfig)
+        .append("vectorConfig", vectorConfig)
+        .append("indexingConfig", indexingConfig)
+        .append("lexicalConfig", lexicalConfig)
+        .append("rerankDef", rerankDef);
   }
 
   /**
@@ -119,35 +143,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return indexingConfig.indexingProjector();
   }
 
-  // TODO: AARON COMMENTED OUT TO SEE IF IT IS USED
-  //  public enum AuthenticationType {
-  //    NONE,
-  //    HEADER,
-  //    SHARED_SECRET,
-  //    UNDEFINED;
-  //
-  //    public static AuthenticationType fromString(String authenticationType) {
-  //      if (authenticationType == null) return UNDEFINED;
-  //      return switch (authenticationType.toLowerCase()) {
-  //        case "none" -> NONE;
-  //        case "header" -> HEADER;
-  //        case "shared_secret" -> SHARED_SECRET;
-  //        default ->
-  //            throw ErrorCodeV1.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
-  //                "'%s'", authenticationType);
-  //      };
-  //    }
-  //  }
-
   public static CollectionSchemaObject getCollectionSettings(
-      TableMetadata table, ObjectMapper objectMapper) {
-    // [jsonapi#639]: get internal name to avoid quoting of case-sensitive names
-    String keyspaceName = table.getKeyspace().asInternal();
-    String collectionName = table.getName().asInternal();
+      Tenant tenant, TableMetadata table, ObjectMapper objectMapper) {
+
     // get vector column
     final Optional<ColumnMetadata> vectorColumn =
-        table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
+        table.getColumn(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME);
     boolean vectorEnabled = vectorColumn.isPresent();
+    final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
 
     // if vector column exists
     if (vectorEnabled) {
@@ -156,7 +159,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       IndexMetadata vectorIndex = null;
       Map<CqlIdentifier, IndexMetadata> indexMap = table.getIndexes();
       for (CqlIdentifier key : indexMap.keySet()) {
-        if (key.asInternal().endsWith(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)) {
+        if (key.asInternal().endsWith(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME)) {
           vectorIndex = indexMap.get(key);
           break;
         }
@@ -181,23 +184,12 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                       () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelName));
         }
       }
-      final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
+
       return createCollectionSettings(
-          keyspaceName,
-          collectionName,
-          table,
-          true,
-          vectorSize,
-          function,
-          sourceModel,
-          comment,
-          objectMapper);
+          tenant, table, true, vectorSize, function, sourceModel, comment, objectMapper);
     } else { // if not vector collection
-      // handling comment so get the indexing config from comment
-      final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
-          keyspaceName,
-          collectionName,
+          tenant,
           table,
           false,
           0,
@@ -208,31 +200,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     }
   }
 
-  public static CollectionSchemaObject getCollectionSettings(
-      String keyspaceName,
-      String collectionName,
-      TableMetadata tableMetadata,
-      boolean vectorEnabled,
-      int vectorSize,
-      SimilarityFunction similarityFunction,
-      EmbeddingSourceModel sourceModel,
-      String comment,
-      ObjectMapper objectMapper) {
-    return createCollectionSettings(
-        keyspaceName,
-        collectionName,
-        tableMetadata,
-        vectorEnabled,
-        vectorSize,
-        similarityFunction,
-        sourceModel,
-        comment,
-        objectMapper);
-  }
-
-  private static CollectionSchemaObject createCollectionSettings(
-      String keyspaceName,
-      String collectionName,
+  public static CollectionSchemaObject createCollectionSettings(
+      Tenant tenant,
       TableMetadata tableMetadata,
       boolean vectorEnabled,
       int vectorSize,
@@ -242,10 +211,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       ObjectMapper objectMapper) {
 
     if (comment == null || comment.isBlank()) {
+      // If no "comment", must assume Legacy (no Lexical) config
+      CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForPreLexical();
+      // If no "comment", must assume Legacy (no Reranking) config
+      CollectionRerankDef rerankingConfig = CollectionRerankDef.configForPreRerankingCollection();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
-            keyspaceName,
-            collectionName,
+            tenant,
             tableMetadata,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
@@ -256,15 +228,18 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                         function,
                         sourceModel,
                         null))),
-            null);
+            null,
+            lexicalConfig,
+            rerankingConfig);
       } else {
         return new CollectionSchemaObject(
-            keyspaceName,
-            collectionName,
+            tenant,
             tableMetadata,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
-            null);
+            null,
+            lexicalConfig,
+            rerankingConfig);
       }
     } else {
       JsonNode commentConfigNode;
@@ -272,8 +247,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         commentConfigNode = objectMapper.readTree(comment);
       } catch (JacksonException e) {
         // This should never happen, already check if vectorize is a valid JSON
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            e, "Invalid JSON in Table comment for Collection, problem: %s", e.getMessage());
+        throw ServerException.internalServerError(
+            "Invalid JSON in Table comment for Collection, problem: " + e.getMessage());
       }
       // new table comment design from schema_version v1, with collection as top-level key
       JsonNode collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);
@@ -281,24 +256,33 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         final JsonNode schemaVersionNode =
             collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY);
         if (schemaVersionNode == null) {
-          throw ErrorCodeV1.INVALID_SCHEMA_VERSION.toApiException();
+          throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
+              Map.of(
+                  "collectionName",
+                  tableMetadata.getName().asInternal(),
+                  "schemaVersion",
+                  "<null>"));
         }
-        switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
+        int schemaVersion = collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt();
+        switch (schemaVersion) {
           case 1:
             return new CollectionSettingsV1Reader()
-                .readCollectionSettings(
-                    collectionNode, keyspaceName, collectionName, tableMetadata, objectMapper);
+                .readCollectionSettings(tenant, collectionNode, tableMetadata, objectMapper);
           default:
-            throw ErrorCodeV1.INVALID_SCHEMA_VERSION.toApiException();
+            throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
+                Map.of(
+                    "collectionName",
+                    tableMetadata.getName().asInternal(),
+                    "schemaVersion",
+                    String.valueOf(schemaVersion)));
         }
       } else {
         // backward compatibility for old indexing table comment
         // sample comment : {"indexing":{"deny":["address"]}}}
         return new CollectionSettingsV0Reader()
             .readCollectionSettings(
+                tenant,
                 commentConfigNode,
-                keyspaceName,
-                collectionName,
                 tableMetadata,
                 vectorEnabled,
                 vectorSize,
@@ -312,7 +296,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionSchemaObject collectionSetting) {
 
     // TODO: move the vector and vectorize parts to be methods on those schema objects
-    CreateCollectionCommand.Options options = null;
+    CreateCollectionCommand.Options options;
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
 
@@ -361,11 +345,24 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             ? null
             : new CreateCollectionCommand.Options.IdConfig(idType.toString());
 
-    options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
+    // construct the CreateCollectionCommand.options.lexicalConfig
+    CollectionLexicalConfig lexicalConfig = collectionSetting.lexicalConfig;
+    var lexicalDef =
+        new CreateCollectionCommand.Options.LexicalConfigDefinition(
+            lexicalConfig.enabled(), lexicalConfig.analyzerDefinition());
+
+    // construct the CreateCollectionCommand.options.rerankDef
+    CollectionRerankDef rerankDef = collectionSetting.rerankDef;
+    CreateCollectionCommand.Options.RerankDesc rerankDesc = rerankDef.toRerankDesc();
+
+    options =
+        new CreateCollectionCommand.Options(
+            idConfig, vectorSearchConfig, indexingConfig, lexicalDef, rerankDesc);
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
-    return new CreateCollectionCommand(collectionSetting.name.table(), options);
+    return new CreateCollectionCommand(
+        collectionSetting.identifier().table().asInternal(), options);
   }
 
   public IdConfig idConfig() {
@@ -374,6 +371,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   public CollectionIndexingConfig indexingConfig() {
     return indexingConfig;
+  }
+
+  public CollectionLexicalConfig lexicalConfig() {
+    return lexicalConfig;
+  }
+
+  public CollectionRerankDef rerankingConfig() {
+    return rerankDef;
   }
 
   // TODO: these helper functions break encapsulation for very little benefit
@@ -392,22 +397,24 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     if (obj == this) return true;
     if (obj == null || obj.getClass() != this.getClass()) return false;
     var that = (CollectionSchemaObject) obj;
-    return Objects.equals(this.name, that.name)
+    return Objects.equals(this.identifier(), that.identifier())
         && Objects.equals(this.idConfig, that.idConfig)
         && Objects.equals(this.vectorConfig, that.vectorConfig)
-        && Objects.equals(this.indexingConfig, that.indexingConfig);
+        && Objects.equals(this.indexingConfig, that.indexingConfig)
+        && Objects.equals(this.lexicalConfig, that.lexicalConfig)
+        && Objects.equals(this.rerankDef, that.rerankDef);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, idConfig, vectorConfig, indexingConfig);
+    return Objects.hash(identifier(), idConfig, vectorConfig, indexingConfig);
   }
 
   @Override
   public String toString() {
-    return "CollectionSettings["
-        + "name="
-        + name
+    return "CollectionSchemaObject["
+        + "identifier="
+        + identifier()
         + ", "
         + "idConfig="
         + idConfig
@@ -417,6 +424,12 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         + ", "
         + "indexingConfig="
         + indexingConfig
+        + ", "
+        + "lexicalConfig="
+        + lexicalConfig
+        + ", "
+        + "rerankDef="
+        + rerankDef
         + ']';
   }
 }

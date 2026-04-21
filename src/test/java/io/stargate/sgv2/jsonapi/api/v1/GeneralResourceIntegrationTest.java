@@ -8,13 +8,15 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @BeforeAll
@@ -27,7 +29,8 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
 
     @Test
     public void tokenMissing() {
-      given()
+
+      given() // No headers added on purpose
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
@@ -36,68 +39,61 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .statusCode(401)
           .body("$", responseIsError())
           .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing token, expecting one in the Token header."));
+              "errors[0].errorCode",
+              is(APISecurityException.Code.MISSING_AUTHENTICATION_TOKEN.name()));
     }
 
     @Test
     public void malformedBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{wrong}")
+      givenHeadersAndJson("{wrong}")
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].errorCode", is(RequestException.Code.REQUEST_NOT_JSON.name()))
+          .body(
+              "errors[0].message",
+              containsString("Request not valid JSON, problem: Unexpected character"));
     }
 
     @Test
     public void unknownCommand() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "unknownCommand": {
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_UNKNOWN.name()))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"GeneralCommand\"s: known commands are [createKeyspace,"));
+                  "Command 'unknownCommand' is not a General Command recognized by Data API."))
+          .body(
+              "errors[0].message",
+              containsString("Data API supports following General Commands: [createKeyspace,"));
     }
 
     @Test
     public void emptyBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
+      givenHeaders()
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'command' value `null` not valid. Problem: must not be null"));
+              startsWith("Command field 'command' value `null` not valid: must not be null"));
     }
   }
 }

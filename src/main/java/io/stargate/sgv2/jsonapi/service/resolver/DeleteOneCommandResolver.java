@@ -6,24 +6,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -40,7 +40,6 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   private final ObjectMapper objectMapper;
 
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<DeleteOneCommand, CollectionSchemaObject> collectionFilterResolver;
@@ -51,13 +50,11 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
       OperationsConfig operationsConfig,
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
 
     this.operationsConfig = operationsConfig;
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -65,34 +62,32 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, DeleteOneCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, DeleteOneCommand command) {
 
     // Sort clause is not supported for table deleteOne command.
-    if (command.sortClause() != null && !command.sortClause().isEmpty()) {
+    if (!command.sortClause(commandContext).isEmpty()) {
       throw SortException.Code.UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND.get(
-          errVars(ctx.schemaObject(), map -> {}));
+          errVars(commandContext.schemaObject(), map -> {}));
     }
 
-    var builder = new DeleteAttemptBuilder<>(ctx.schemaObject(), true);
+    TableDeleteDBTaskBuilder taskBuilder =
+        new TableDeleteDBTaskBuilder(commandContext.schemaObject())
+            .withDeleteOne(true)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
 
-    var attempts = new OperationAttemptContainer<>(builder.build(where));
-
-    var pageBuilder =
-        DeleteAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    var tasks = new TaskGroup<>(taskBuilder.build(where));
+    return new TaskOperation<>(tasks, DeleteDBTaskPage.accumulator(commandContext));
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, DeleteOneCommand command) {
 
     FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
@@ -110,8 +105,10 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
 
     var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
-    final SortClause sortClause = command.sortClause();
-    SchemaValidatable.maybeValidate(commandContext, sortClause);
+    final SortClause sortClause = command.sortClause(commandContext);
+    if (sortClause != null) {
+      sortClause.validate(commandContext.schemaObject());
+    }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
     var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
@@ -119,7 +116,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
 
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         dbLogicalExpression,
@@ -133,6 +130,18 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
           objectMapper,
           vector,
           false);
+    }
+
+    // BM25 search / sort?
+    SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
+    if (bm25Expr != null) {
+      return FindCollectionOperation.bm25Single(
+          commandContext,
+          dbLogicalExpression,
+          DocumentProjector.includeAllProjector(),
+          CollectionReadType.KEY,
+          objectMapper,
+          bm25Expr);
     }
 
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
@@ -152,14 +161,14 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
           // documentConfig.defaultPageSize() as limit
           operationsConfig.maxDocumentSortCount(),
           false);
-    } else {
-      return FindCollectionOperation.unsortedSingle(
-          commandContext,
-          dbLogicalExpression,
-          DocumentProjector.includeAllProjector(),
-          CollectionReadType.KEY,
-          objectMapper,
-          false);
     }
+    // Otherwise non-sorted
+    return FindCollectionOperation.unsortedSingle(
+        commandContext,
+        dbLogicalExpression,
+        DocumentProjector.includeAllProjector(),
+        CollectionReadType.KEY,
+        objectMapper,
+        false);
   }
 }

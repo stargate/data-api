@@ -9,8 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.IncOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -208,11 +207,9 @@ public class IncOperationTest extends UpdateOperationTestBase {
                                   """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $inc requires numeric parameter, got: STRING");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.name())
+          .hasMessageContaining("$inc requires numeric parameter, got: String");
     }
 
     // Not legal to try to modify doc id (immutable):
@@ -224,10 +221,11 @@ public class IncOperationTest extends UpdateOperationTestBase {
                 UpdateOperator.INC.resolveOperation(objectFromJson("{\"_id\": 1}"));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $inc");
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID.name())
+          .hasFieldOrPropertyWithValue("title", "Update operators cannot be used on _id field")
+          .hasMessageContaining("The command used the update operator: $inc");
     }
 
     @Test
@@ -249,11 +247,10 @@ public class IncOperationTest extends UpdateOperationTestBase {
                 oper.updateDocument(doc);
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $inc requires target to be Number; value at 'prop' of type STRING");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.name())
+          .hasMessageContaining(
+              "$inc requires target to be Number; value at 'prop' of type String");
     }
 
     @Test
@@ -275,11 +272,10 @@ public class IncOperationTest extends UpdateOperationTestBase {
                 oper.updateDocument(doc);
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $inc requires target to be Number; value at 'subdoc.array.1' of type STRING");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.name())
+          .hasMessageContaining(
+              "$inc requires target to be Number; value at 'subdoc.array.1' of type String");
     }
 
     // One odd case: explicit "null" is invalid target
@@ -305,11 +301,10 @@ public class IncOperationTest extends UpdateOperationTestBase {
                 oper.updateDocument(doc);
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
-          .hasMessageStartingWith(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                  + ": $inc requires target to be Number; value at 'subdoc.prop' of type NULL");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_TARGET.name())
+          .hasMessageContaining(
+              "$inc requires target to be Number; value at 'subdoc.prop' of type Null");
     }
 
     // Test to make sure we know to look for "$"-modifier to help with user errors
@@ -325,12 +320,9 @@ public class IncOperationTest extends UpdateOperationTestBase {
                         """));
               });
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-                  + ": $inc does not support modifiers");
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.name())
+          .hasMessageContaining("$inc does not support modifiers");
     }
   }
 }

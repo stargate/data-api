@@ -1,25 +1,30 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import static org.hamcrest.Matchers.hasSize;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.v1.AbstractKeyspaceIntegrationTestBase;
+import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.api.v1.util.DataApiResponseValidator;
+import java.io.IOException;
 
-/** Abstract class for all table int tests that needs a collection to execute tests in. */
+/** Abstract class for all table int tests that needs a table to execute tests in. */
 public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegrationTestBase {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   String removeNullValues(String doc) {
     ObjectNode newNode = MAPPER.createObjectNode();
-    JsonNode oldNode = null;
+    JsonNode oldNode;
     try {
       oldNode = MAPPER.readTree(doc);
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       throw new IllegalArgumentException("Failed to parse JSON: " + doc, e);
     }
     oldNode
-        .fields()
+        .properties()
+        .iterator()
         .forEachRemaining(
             entry -> {
               JsonNode value = entry.getValue();
@@ -74,12 +79,18 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
   //        .body("status.ok", is(1));
   //  }
 
-  //  protected DataApiResponseValidator insertOneInTable(String tableName, String documentJSON) {
-  //    return DataApiCommandSenders.assertTableCommand(keyspaceName, tableName)
-  //        .postInsertOne(documentJSON)
-  //        .hasNoErrors()
-  //        .body("status.insertedIds", hasSize(1));
-  //  }
+  protected DataApiResponseValidator insertOneInTable(String tableName, Object docValue) {
+    return insertOneInTable(keyspaceName, tableName, docValue);
+  }
+
+  protected DataApiResponseValidator insertOneInTable(
+      String keyspaceName, String tableName, Object docValue) {
+    final String documentJSON = docValue instanceof String str ? str : asJson(docValue);
+    return DataApiCommandSenders.assertTableCommand(keyspaceName, tableName)
+        .postInsertOne("{\"document\": %s}".formatted(documentJSON))
+        .hasNoErrors()
+        .body("status.insertedIds", hasSize(1));
+  }
 
   //  protected DataApiResponseValidator createIndex(
   //      String tableName, String columnName, String indexName) {
@@ -127,4 +138,11 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
   //    }
   //  }
 
+  protected String asJson(Object value) {
+    try {
+      return MAPPER.writeValueAsString(value);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Failed to convert value to JSON: " + value, e);
+    }
+  }
 }

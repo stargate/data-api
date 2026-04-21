@@ -4,7 +4,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -24,11 +24,13 @@ public record TruncateCollectionOperation(CommandContext<CollectionSchemaObject>
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    logger.info("Executing TruncateCollectionOperation for {}", context.schemaObject().name());
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+    logger.info(
+        "Executing TruncateCollectionOperation for {}", context.schemaObject().identifier());
     String cql =
         TRUNCATE_TABLE_CQL.formatted(
-            context.schemaObject().name().keyspace(), context.schemaObject().name().table());
+            context.schemaObject().identifier().keyspace().asInternal(),
+            context.schemaObject().identifier().table().asInternal());
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
     return queryExecutor

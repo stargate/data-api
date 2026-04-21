@@ -17,8 +17,6 @@
 
 package io.stargate.sgv2.jsonapi.config;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.CASSANDRA;
-
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
@@ -41,7 +39,7 @@ public interface OperationsConfig {
    * Defines the default maximum documents to insert setting for {@code InsertMany} command;
    * defaults to 100
    */
-  public static final int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
+  int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
 
   /**
    * @return Defines the default document page size, defaults to <code>20</code>.
@@ -65,12 +63,6 @@ public interface OperationsConfig {
    */
   @WithDefault("false")
   boolean enableEmbeddingGateway();
-
-  /**
-   * @return Flag to extend error response with additional information.
-   */
-  @WithDefault("true")
-  boolean extendError();
 
   /**
    * @return Defines the maximum limit of document read to perform in memory sorting <code>10000
@@ -146,6 +138,15 @@ public interface OperationsConfig {
   boolean tooManyIndexesRollbackEnabled();
 
   /**
+   * Optional string that is the case-insensitive user agent string that will be used to identify if
+   * a request is from an SLA checker. Requests from SLA checkers may be treated differently for
+   * features such as caching sessions.(Empty string is treated as unset / null)
+   */
+  @WithDefault("")
+  @Nullable
+  Optional<String> slaUserAgent();
+
+  /**
    * @return Defines the default page size for count operation, having separate from
    *     `defaultPageSize` config because count will read more keys per page, defaults to <code>100
    *     </code>.
@@ -178,30 +179,41 @@ public interface OperationsConfig {
 
   interface DatabaseConfig {
 
-    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
-    @WithDefault(CASSANDRA)
-    String type();
+    /**
+     * The type of backend DB to connect to, this drives decisions like using the cassandraEndPoints
+     */
+    @WithDefault(DatabaseType.Constants.CASSANDRA)
+    @WithConverter(DatabaseType.DatabaseTypeConverter.class)
+    DatabaseType type();
 
-    /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
+    /**
+     * Username when connecting to cassandra database (when type is {@link DatabaseType#CASSANDRA})
+     * and fixedToken is used
+     */
     @Nullable
     @WithDefault("cassandra")
     String userName();
 
-    /** Password when connecting to cassandra database (when type is <code>cassandra</code>) */
+    /**
+     * Password when connecting to cassandra database (when type is {@link DatabaseType#CASSANDRA})
+     * and fixedToken is used
+     */
     @Nullable
     @WithDefault("cassandra")
     String password();
 
-    /** Fixed Token used for Integration Test authentication */
+    /**
+     * Fixed Token used for Integration Test authentication. When set, all tokens must match this
+     * value and the userName and password from this config are always used for the db credentials
+     */
     Optional<String> fixedToken();
 
-    /** Cassandra contact points (when type is <code>cassandra</code>) */
+    /** Cassandra contact points (when type is {@link DatabaseType#CASSANDRA}) */
     @Nullable
     @WithDefault("127.0.0.1")
     List<String> cassandraEndPoints();
 
-    /** Cassandra contact points (when type is <code>cassandra</code>) */
-    @Nullable
+    /** Cassandra port (when type is {@link DatabaseType#CASSANDRA}) */
     @WithDefault("9042")
     int cassandraPort();
 
@@ -210,15 +222,22 @@ public interface OperationsConfig {
     @WithDefault("datacenter1")
     String localDatacenter();
 
-    /** Time to live for CQLSession in cache in seconds. */
+    /** Time to live for CQLSession in cache in seconds, that are not from the slaUserAgent. */
     @WithDefault("300")
     long sessionCacheTtlSeconds();
+
+    /**
+     * Time to live for CQLSession created because of a request from with the SLA user-agent in
+     * cache in seconds.
+     */
+    @WithDefault("10")
+    long slaSessionCacheTtlSeconds();
 
     /** Maximum number of CQLSessions in cache. */
     @WithDefault("50")
     int sessionCacheMaxSize();
 
-    /** DDL query retry wait in illis. */
+    /** DDL query retry wait in millis. */
     @WithDefault("1000")
     int ddlRetryDelayMillis();
 
@@ -251,9 +270,6 @@ public interface OperationsConfig {
     @WithConverter(ConsistencyLevelConverter.class)
     ConsistencyLevel serialConsistency();
 
-    /**
-     * @return Settings for the consistency level.
-     */
     interface ConsistencyConfig {
 
       /**
@@ -303,8 +319,17 @@ public interface OperationsConfig {
 
   interface OfflineModeConfig {
 
-    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
     @WithDefault("1000")
     int maxDocumentInsertCount();
   }
+
+  @NotNull
+  @WithDefault("0,50,100")
+  @WithConverter(IntConfigWithBoundsConverter.class)
+  IntConfigWithBounds hybridSearchVectorLimit();
+
+  @NotNull
+  @WithDefault("0,50,100")
+  @WithConverter(IntConfigWithBoundsConverter.class)
+  IntConfigWithBounds hybridSearchLexicalLimit();
 }

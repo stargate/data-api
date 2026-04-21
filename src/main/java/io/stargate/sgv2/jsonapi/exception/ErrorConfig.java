@@ -81,6 +81,9 @@ public class ErrorConfig {
    * <p>Does not have {@link ErrorFamily} because we have that as the only hierarchy in the config
    * file, it is two different lists in the parent class.
    *
+   * <p>NOTE: Jackson is configured to use KEBAB-CASE so the YAML file uses that format for the
+   * fields
+   *
    * @param scope
    * @param code
    * @param title

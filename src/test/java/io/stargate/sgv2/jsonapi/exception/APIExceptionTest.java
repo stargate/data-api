@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -70,5 +71,33 @@ public class APIExceptionTest extends ConfiguredErrorTest {
         .contains(exception.code)
         .contains(exception.title)
         .contains(exception.body);
+  }
+
+  @Test
+  public void defaultExceptionFlagsFieldEmpty() {
+    var exception =
+        TestScopeException.Code.SCOPED_REQUEST_ERROR.get(
+            "name", TEST_DATA.VAR_NAME,
+            "value", TEST_DATA.VAR_VALUE);
+
+    assertThat(exception.exceptionFlags)
+        .as("exceptionFlags field should not be null and should be empty EnumSet")
+        .isNotNull()
+        .isEmpty();
+  }
+
+  @Test
+  public void exceptionFlagsSetViaConstructor() {
+    var exception =
+        TestScopeException.Code.SCOPED_REQUEST_ERROR.get(
+            EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION),
+            "name",
+            TEST_DATA.VAR_NAME,
+            "value",
+            TEST_DATA.VAR_VALUE);
+
+    assertThat(exception.exceptionFlags)
+        .as("exceptionFlags should contain UNRELIABLE_DB_SESSION")
+        .contains(ExceptionFlags.UNRELIABLE_DB_SESSION);
   }
 }

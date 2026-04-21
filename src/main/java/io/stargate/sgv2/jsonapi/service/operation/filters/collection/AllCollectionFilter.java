@@ -1,10 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
@@ -58,7 +57,7 @@ public class AllCollectionFilter extends CollectionFilter {
       this.collectionIndexUsage.arrayContainsTag = true;
       result.add(
           BuiltCondition.of(
-              ConditionLHS.column(DATA_CONTAINS),
+              ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
               negation ? BuiltConditionPredicate.NOT_CONTAINS : BuiltConditionPredicate.CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
     }
@@ -67,7 +66,6 @@ public class AllCollectionFilter extends CollectionFilter {
 
   @Override
   public BuiltCondition get() {
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "For $all filter we always use getAll() method");
+    throw ServerException.internalServerError("For $all filter we always use getAll() method");
   }
 }

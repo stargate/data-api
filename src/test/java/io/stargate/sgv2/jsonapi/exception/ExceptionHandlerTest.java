@@ -7,8 +7,8 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.nio.channels.WritePendingException;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -22,37 +22,43 @@ public class ExceptionHandlerTest {
   public void handleNull() {
 
     var handler =
-        new ExceptionHandler<TableSchemaObject, UnsupportedOperationException>() {
+        new ExceptionHandler<UnsupportedOperationException>() {
           @Override
           public Class<UnsupportedOperationException> getExceptionClass() {
             return UnsupportedOperationException.class;
           }
         };
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, null));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null));
 
     assertThat(actualEx).as("When handling null, returns null").isNull();
   }
 
   @Test
-  public void handleNoneBaseTypeReturnsSame() {
+  public void handleNoneBaseTypeReturnsUnexpectedError() {
 
-    var originalEx = new IllegalStateException("original");
+    var originalEx = new IllegalStateException("original exception 123");
 
     // UnsupportedOperationException and IllegalStateException are both direct subclasses of
     // RuntimeException
     // a handler for one should not be called for the other
     var handler =
-        new ExceptionHandler<TableSchemaObject, UnsupportedOperationException>() {
+        new ExceptionHandler<UnsupportedOperationException>() {
           @Override
           public Class<UnsupportedOperationException> getExceptionClass() {
             return UnsupportedOperationException.class;
           }
         };
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
-        .as("When handling non BaseT exception, returns the exception object passed")
-        .isSameAs(originalEx);
+        .as("When handling non BaseT exception, returns Server UNEXPECTED_SERVER_ERROR")
+        .hasMessageContaining("IllegalStateException")
+        .hasMessageContaining("original exception 123")
+        .asInstanceOf(InstanceOfAssertFactories.type(ServerException.class))
+        .satisfies(
+            se -> {
+              assertThat(se.code).isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+            });
   }
 
   /**
@@ -70,31 +76,29 @@ public class ExceptionHandlerTest {
 
     final Object[] calledWith = new Object[2];
     var handler =
-        new ExceptionHandler<TableSchemaObject, IllegalStateException>() {
+        new ExceptionHandler<IllegalStateException>() {
           @Override
           public Class<IllegalStateException> getExceptionClass() {
             return IllegalStateException.class;
           }
 
           @Override
-          public RuntimeException handle(
-              TableSchemaObject schemaObject, IllegalStateException exception) {
+          public RuntimeException handle(IllegalStateException exception) {
             if (exception instanceof WritePendingException writePendingException) {
-              return handle(schemaObject, writePendingException);
+              return handle(writePendingException);
             }
             calledWith[0] = exception;
             return expectedParentEx;
           }
 
-          public RuntimeException handle(
-              TableSchemaObject schemaObject, WritePendingException exception) {
+          public RuntimeException handle(WritePendingException exception) {
             calledWith[1] = exception;
             return expectedChildEx;
           }
         };
 
     // First test, with the parent exception
-    var actualParentTest = assertDoesNotThrow(() -> handler.maybeHandle(null, originalParentEx));
+    var actualParentTest = assertDoesNotThrow(() -> handler.maybeHandle(originalParentEx));
 
     assertThat(actualParentTest)
         .as(
@@ -115,8 +119,8 @@ public class ExceptionHandlerTest {
     calledWith[0] = null;
     calledWith[1] = null;
 
-    // Second test, with the parent exception
-    var actualChildTest = assertDoesNotThrow(() -> handler.maybeHandle(null, originalChildEx));
+    // Second test, with the child exception
+    var actualChildTest = assertDoesNotThrow(() -> handler.maybeHandle(originalChildEx));
 
     assertThat(actualChildTest)
         .as(
@@ -146,14 +150,14 @@ public class ExceptionHandlerTest {
 
     // Not using mocks because want all the defaults in the interface to kick in
     var handler =
-        new ExceptionHandler<TableSchemaObject, DriverException>() {
+        new ExceptionHandler<DriverException>() {
           @Override
           public Class<DriverException> getExceptionClass() {
             return DriverException.class;
           }
         };
 
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
         .as(
@@ -168,6 +172,67 @@ public class ExceptionHandlerTest {
               var apiError = (APIException) e;
               assertThat(apiError.code)
                   .isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+              assertThat(apiError.exceptionFlags)
+                  .as("Default error should have empty exception flags")
+                  .isEmpty();
             });
+  }
+
+  /**
+   * If called with an {@link APIException}, it should return the same instance if it is not handled
+   * by the implementation.
+   */
+  @Test
+  public void handleAPIExceptionReturnsSameInstance() {
+
+    var originalEx = ServerException.Code.INTERNAL_SERVER_ERROR.get("errorMessage", "testing");
+
+    // No handler for any subclasses, but this handler can handle RuntimeException, which
+    // APIException is
+    var handler =
+        new ExceptionHandler<RuntimeException>() {
+          @Override
+          public Class<RuntimeException> getExceptionClass() {
+            return RuntimeException.class;
+          }
+        };
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
+
+    assertThat(actualEx)
+        .as(
+            "When handling non BaseT exception, of APIException returns the exception object passed")
+        .isSameAs(originalEx);
+  }
+
+  /**
+   * If called with an {@link APIException}, and the {@link
+   * ExceptionHandler#ignoreUnhandledApiException()} == false then we should wrap with a new
+   * instance
+   */
+  @Test
+  public void handleAPIExceptionReturnsDiffInstance() {
+
+    var originalEx = ServerException.Code.INTERNAL_SERVER_ERROR.get("errorMessage", "testing");
+
+    // No handler for any subclasses, but this handler can handle RuntimeException, which
+    // APIException is
+    var handler =
+        new ExceptionHandler<RuntimeException>() {
+          @Override
+          public Class<RuntimeException> getExceptionClass() {
+            return RuntimeException.class;
+          }
+
+          @Override
+          public boolean ignoreUnhandledApiException() {
+            return false;
+          }
+        };
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
+
+    assertThat(actualEx)
+        .as(
+            "When handling non BaseT exception, of APIException wraps when ignoreUnhandledApiException==false")
+        .isNotSameAs(originalEx);
   }
 }

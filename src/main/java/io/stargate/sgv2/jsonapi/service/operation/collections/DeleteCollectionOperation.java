@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -7,9 +9,9 @@ import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.exception.unchecked.LWTFailureException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
@@ -59,11 +61,11 @@ public record DeleteCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext requestContext, QueryExecutor queryExecutor) {
     final AtomicBoolean moreData = new AtomicBoolean(false);
     final String delete = buildDeleteQuery();
     AtomicInteger totalCount = new AtomicInteger(0);
-    final int retryAttempt = retryLimit - 2;
+
     // Read the required records to be deleted
     return Multi.createBy()
         .repeating()
@@ -72,7 +74,7 @@ public record DeleteCollectionOperation(
             stateRef -> {
               Uni<CollectionReadOperation.FindResponse> docsToDelete =
                   findCollectionOperation()
-                      .getDocuments(dataApiRequestInfo, queryExecutor, stateRef.get(), null);
+                      .getDocuments(requestContext, queryExecutor, stateRef.get(), null);
               return docsToDelete
                   .onItem()
                   .invoke(findResponse -> stateRef.set(findResponse.pageState()));
@@ -104,39 +106,46 @@ public record DeleteCollectionOperation(
         .onItem()
         .transformToUniAndMerge(
             document -> {
-              return deleteDocument(dataApiRequestInfo, queryExecutor, delete, document)
+              return deleteDocument(requestContext, queryExecutor, delete, document)
                   // Retry `retryLimit` times in case of LWT failure
-                  .onFailure(LWTException.class)
+                  .onFailure(LWTFailureException.class)
                   .recoverWithUni(
                       () -> {
                         return Uni.createFrom()
                             .item(document)
                             .flatMap(
                                 prevDoc -> {
-                                  return readDocumentAgain(
-                                          dataApiRequestInfo, queryExecutor, prevDoc)
+                                  return readDocumentAgain(requestContext, queryExecutor, prevDoc)
                                       .onItem()
                                       // Try deleting the document
                                       .transformToUni(
                                           reReadDocument ->
                                               deleteDocument(
-                                                  dataApiRequestInfo,
+                                                  requestContext,
                                                   queryExecutor,
                                                   delete,
                                                   reReadDocument));
                                 })
-                            .onFailure(LWTException.class)
+                            .onFailure(LWTFailureException.class)
                             .retry()
                             // because it's already run twice before this
                             // check.
-                            .atMost(retryLimit - 1);
+                            .atMost(retryLimit - 1)
+                            // AJM - GH #2309 - this means we failed all retries to get the LWT to
+                            // apply we now need to create the error to return to the user
+                            .onFailure(LWTFailureException.class)
+                            .transform(
+                                error -> {
+                                  throw DatabaseException.Code.FAILED_CONCURRENT_OPERATIONS.get(
+                                      errVars(commandContext().schemaObject()));
+                                });
                       })
                   .onItemOrFailure()
                   .transform(
                       (deleted, error) ->
                           Tuple3.of(
                               deleted != null ? deleted.getItem1() : false,
-                              error,
+                              maybeWrapThrowable(error),
                               error == null
                                       && deleted != null
                                       && deleted.getItem2() != null
@@ -152,10 +161,20 @@ public record DeleteCollectionOperation(
               commandContext
                   .jsonProcessingMetricsReporter()
                   .reportJsonReadDocsMetrics(
-                      commandContext().commandName(), deletedInformation.size());
+                      commandContext().requestContext().tenant(),
+                      commandContext().commandName(),
+                      deletedInformation.size());
               return new DeleteOperationPage(
                   deletedInformation, moreData.get(), returnDocumentInResponse, deleteLimit == 1);
             });
+  }
+
+  private static APIException maybeWrapThrowable(Throwable throwable) {
+    return switch (throwable) {
+      case null -> null;
+      case APIException apiException -> apiException;
+      default -> ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(throwable));
+    };
   }
 
   private ReadDocument applyProjection(ReadDocument document) {
@@ -167,8 +186,8 @@ public record DeleteCollectionOperation(
     String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
     return String.format(
         delete,
-        commandContext.schemaObject().name().keyspace(),
-        commandContext.schemaObject().name().table());
+        commandContext.schemaObject().identifier().keyspace(),
+        commandContext.schemaObject().identifier().table());
   }
 
   /**
@@ -185,19 +204,15 @@ public record DeleteCollectionOperation(
    *
    * <p>[applied] ----------- True
    *
-   * @param queryExecutor
-   * @param query
-   * @param doc
    * @return Uni<Tuple2<Boolean, ReadDocument>> where boolean `true` if deleted successfully, else
-   *     `false` if data changed and no longer match the conditions and throws JsonApiException if
-   *     LWT failure. ReadDocument is the document that was deleted.
+   *     `false` if data changed and no longer match the conditions and throws APIException if LWT
+   *     failure. ReadDocument is the document that was deleted.
    */
   private Uni<Tuple2<Boolean, ReadDocument>> deleteDocument(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
-      ReadDocument doc)
-      throws JsonApiException {
+      ReadDocument doc) {
     return Uni.createFrom()
         .item(doc)
         // Read again if retryAttempt >`0`
@@ -205,7 +220,7 @@ public record DeleteCollectionOperation(
         .transformToUni(
             document -> {
               if (document == null) {
-                return Uni.createFrom().item(Tuple2.of(false, document));
+                return Uni.createFrom().item(Tuple2.of(false, null));
               } else {
                 SimpleStatement deleteStatement = bindDeleteQuery(query, document);
                 return queryExecutor
@@ -217,20 +232,16 @@ public record DeleteCollectionOperation(
                           if (result.wasApplied()) {
                             // In case of successful document delete
                             return Tuple2.of(true, document);
-                          } else {
-                            // In case of successful document delete
-
-                            throw new LWTException(ErrorCodeV1.CONCURRENCY_FAILURE);
                           }
+                          // In case of failed document delete
+                          throw new LWTFailureException(deleteStatement);
                         });
               }
             });
   }
 
   private Uni<ReadDocument> readDocumentAgain(
-      DataApiRequestInfo dataApiRequestInfo,
-      QueryExecutor queryExecutor,
-      ReadDocument prevReadDoc) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
     // Read again if retry flag is `true`
     return findCollectionOperation()
         .getDocuments(
@@ -242,20 +253,15 @@ public record DeleteCollectionOperation(
         .transform(
             response -> {
               if (!response.docs().isEmpty()) {
-                return response.docs().get(0);
-              } else {
-                // If data changed and doesn't satisfy filter conditions
-                return null;
+                return response.docs().getFirst();
               }
+              // If data changed and doesn't satisfy filter conditions
+              return null;
             });
   }
 
   private static SimpleStatement bindDeleteQuery(String query, ReadDocument doc) {
-    SimpleStatement deleteStatement =
-        SimpleStatement.newInstance(
-            query,
-            CQLBindValues.getDocumentIdValue(doc.id().orElseThrow()),
-            doc.txnId().orElse(null));
-    return deleteStatement;
+    return SimpleStatement.newInstance(
+        query, CQLBindValues.getDocumentIdValue(doc.id().orElseThrow()), doc.txnId().orElse(null));
   }
 }

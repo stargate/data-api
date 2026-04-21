@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.*;
 
 /**
- * Ordered container of {@link OperationAttempt} objects that are part of the same {@link
+ * TODO: aaron 19 march 2025 - remove OperationAttempt and related code once Tasks are solid
+ *
+ * <p>Ordered container of {@link OperationAttempt} objects that are part of the same {@link
  * io.stargate.sgv2.jsonapi.api.model.command.Command}.
  *
  * <p>The container can be configured to process the attempts sequentially or in parallel (default),

@@ -8,12 +8,12 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropNamespaceCommand;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.DropKeyspaceOperation;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -23,15 +23,18 @@ class DropKeyspaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DropNamespaceCommandResolver resolver;
 
-  CommandContext<DatabaseSchemaObject> commandContext = TestConstants.DATABASE_CONTEXT;
+  private final TestConstants testConstants = new TestConstants();
+  CommandContext<DatabaseSchemaObject> commandContext;
 
-  @Nested
-  class ResolveCommand {
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.databaseContext();
+  }
 
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPath() throws Exception {
+    String json =
+        """
           {
             "dropNamespace": {
               "name" : "red_star_belgrade"
@@ -39,13 +42,12 @@ class DropKeyspaceCommandResolverTest {
           }
           """;
 
-      DropNamespaceCommand command = objectMapper.readValue(json, DropNamespaceCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    DropNamespaceCommand command = objectMapper.readValue(json, DropNamespaceCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              DropKeyspaceOperation.class,
-              op -> assertThat(op.name()).isEqualTo("red_star_belgrade"));
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            DropKeyspaceOperation.class,
+            op -> assertThat(op.name()).isEqualTo("red_star_belgrade"));
   }
 }

@@ -18,6 +18,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -36,6 +37,8 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
@@ -47,7 +50,6 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -56,6 +58,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -69,56 +72,22 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   @Inject DocumentShredder documentShredder;
   @Inject ObjectMapper objectMapper;
   @Inject DataVectorizerService dataVectorizerService;
-
-  private static String UPDATE =
-      "UPDATE \"%s\".\"%s\" "
-          + "        SET"
-          + "            tx_id = now(),"
-          + "            exist_keys = ?,"
-          + "            array_size = ?,"
-          + "            array_contains = ?,"
-          + "            query_bool_values = ?,"
-          + "            query_dbl_values = ?,"
-          + "            query_text_values = ?,"
-          + "            query_null_values = ?,"
-          + "            query_timestamp_values = ?,"
-          + "            doc_json  = ?"
-          + "        WHERE "
-          + "            key = ?"
-          + "        IF "
-          + "            tx_id = ?";
-
-  private static String UPDATE_VECTOR =
-      "UPDATE \"%s\".\"%s\" "
-          + "        SET"
-          + "            tx_id = now(),"
-          + "            exist_keys = ?,"
-          + "            array_size = ?,"
-          + "            array_contains = ?,"
-          + "            query_bool_values = ?,"
-          + "            query_dbl_values = ?,"
-          + "            query_text_values = ?,"
-          + "            query_null_values = ?,"
-          + "            query_timestamp_values = ?,"
-          + "            query_vector_value = ?,"
-          + "            doc_json  = ?"
-          + "        WHERE "
-          + "            key = ?"
-          + "        IF "
-          + "            tx_id = ?";
+  private final TestConstants testConstants = new TestConstants();
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
           TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
 
-  @PostConstruct
-  public void init() {
+  @BeforeEach
+  public void beforeEach() {
+    super.beforeEach();
+
     COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
     COMMAND_VECTOR_CONTEXT =
-        new CommandContext<>(
+        testConstants.collectionContext(
+            "testCommand",
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME,
-                null,
+                COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -128,11 +97,11 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             SimilarityFunction.COSINE,
                             EmbeddingSourceModel.OTHER,
                             null))),
-                null),
-            null,
-            "testCommand",
+                null,
+                CollectionLexicalConfig.configForDisabled(),
+                CollectionRerankDef.configForPreRerankingCollection()),
             jsonProcessingMetricsReporter,
-            DEFAULT_API_FEATURES_FOR_TESTS);
+            null);
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
@@ -150,41 +119,19 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));
 
-  private SimpleStatement nonVectorUpdateStatement(
-      WritableShreddedDocument shredDocument, UUID tx_id) {
-    String updateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-    return SimpleStatement.newInstance(
-        updateCql,
-        CQLBindValues.getSetValue(shredDocument.existKeys()),
-        CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-        CQLBindValues.getStringSetValue(shredDocument.arrayContains()),
-        CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
-        CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
-        CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
-        CQLBindValues.getSetValue(shredDocument.queryNullValues()),
-        CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
-        shredDocument.docJson(),
-        CQLBindValues.getDocumentIdValue(shredDocument.id()),
-        tx_id);
+  private SimpleStatement nonVectorUpdateStatement(WritableShreddedDocument shredDocument) {
+    String updateCql =
+        ReadAndUpdateCollectionOperation.buildUpdateQuery(
+            KEYSPACE_NAME, COLLECTION_NAME, false, false);
+    return ReadAndUpdateCollectionOperation.bindUpdateValues(
+        updateCql, shredDocument, false, false);
   }
 
-  private SimpleStatement vectorUpdateStatement(
-      WritableShreddedDocument shredDocument, UUID tx_id) {
-    String updateCql = UPDATE_VECTOR.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-    return SimpleStatement.newInstance(
-        updateCql,
-        CQLBindValues.getSetValue(shredDocument.existKeys()),
-        CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-        CQLBindValues.getStringSetValue(shredDocument.arrayContains()),
-        CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
-        CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
-        CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
-        CQLBindValues.getSetValue(shredDocument.queryNullValues()),
-        CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
-        CQLBindValues.getVectorValue(shredDocument.queryVectorValues()),
-        shredDocument.docJson(),
-        CQLBindValues.getDocumentIdValue(shredDocument.id()),
-        tx_id);
+  private SimpleStatement vectorUpdateStatement(WritableShreddedDocument shredDocument) {
+    String updateCql =
+        ReadAndUpdateCollectionOperation.buildUpdateQuery(
+            KEYSPACE_NAME, COLLECTION_NAME, true, false);
+    return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, true, false);
   }
 
   @Nested
@@ -210,7 +157,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -242,12 +189,13 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
             """;
 
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = vectorUpdateStatement(shredDocument, tx_id);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_VECTOR_CONTEXT, jsonNode, tx_id);
+      SimpleStatement stmt2 = vectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -276,7 +224,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -316,7 +264,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -362,7 +310,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -415,7 +363,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadNoWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
@@ -475,7 +425,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadNoWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
@@ -587,7 +539,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -605,13 +557,14 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               }
               """;
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id1);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id1);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
 
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -660,7 +613,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -700,7 +653,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadAndWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, the value should be one
@@ -759,7 +714,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                     line -> {
                       assertThat(line).contains("command=\"ReadAndWriteCommand\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line)
+                          .contains(
+                              "tenant=\"%s\"".formatted(COMMAND_CONTEXT.requestContext().tenant()));
                     });
               });
       // verify count metric -- command called once, should be one
@@ -821,7 +778,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", tx_id, doc1));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -851,13 +808,14 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 }
                 """;
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id);
 
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -888,7 +846,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -928,7 +886,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -951,12 +909,13 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       // update
       JsonNode jsonNode = objectMapper.readTree(doc1_select_update);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, null);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, null);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -987,7 +946,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1078,7 +1037,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1097,13 +1056,14 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               """;
 
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id1);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id1);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
 
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1154,7 +1114,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1245,7 +1205,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                       null)));
       AsyncResultSet results1 = new MockAsyncResultSet(SELECT_SORT_RESULT_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1263,13 +1223,14 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 }
                 """;
       JsonNode jsonNode = objectMapper.readTree(doc2Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id2);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id2);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
 
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1315,7 +1276,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1348,7 +1309,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1379,12 +1340,13 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 """;
 
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, null);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, null);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1411,7 +1373,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1444,7 +1406,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1486,7 +1448,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1564,7 +1526,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           Arrays.asList(resultRow(0, "doc1", tx_id1, doc1), resultRow(0, "doc2", tx_id2, doc2));
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1573,12 +1535,13 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       // update
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id1);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id1);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1586,12 +1549,12 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               });
 
       jsonNode = objectMapper.readTree(doc2Updated);
-      shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id2);
+      shredDocument = documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id2);
+      SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
       final AtomicInteger callCount3 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt3)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt3)))
           .then(
               invocation -> {
                 callCount3.incrementAndGet();
@@ -1635,7 +1598,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1668,7 +1631,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1684,12 +1647,13 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                   }
                   """;
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, null);
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, null);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt2)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt2)))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -1732,7 +1696,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1766,7 +1730,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       List<Row> rows1 = Arrays.asList();
       AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
       final AtomicInteger callCount1 = new AtomicInteger();
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
@@ -1809,7 +1773,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
@@ -20,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
@@ -30,20 +28,15 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
     @Test
     public final void happyPath() {
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "dropKeyspace": {
               "name": "%s"
             }
           }
           """
-              .formatted(keyspaceName);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(keyspaceName))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -52,18 +45,13 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .body("status.ok", is(1));
 
       // ensure it's dropped
-      json =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "findKeyspaces": {
                     }
                   }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -74,42 +62,35 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
     @Test
     public final void withExistingCollection() {
-      String keyspace = "k%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
-      String collection = "c%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
+      String keyspace =
+          "k%s".formatted(RandomStringUtils.insecure().nextAlphanumeric(8)).toLowerCase();
+      String collection =
+          "c%s".formatted(RandomStringUtils.insecure().nextAlphanumeric(8)).toLowerCase();
 
-      String createKeyspace =
-              """
+      givenHeadersAndJson(
+                  """
               {
                 "createKeyspace": {
                   "name": "%s"
                 }
               }
               """
-              .formatted(keyspace);
-      String createCollection =
-              """
-              {
-                "createCollection": {
-                  "name": "%s"
-                }
-              }
-              """
-              .formatted(collection);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createKeyspace)
+                  .formatted(keyspace))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollection)
+      givenHeadersAndJson(
+                  """
+              {
+                "createCollection": {
+                  "name": "%s"
+                }
+              }
+              """
+                  .formatted(collection))
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
@@ -117,20 +98,15 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
 
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "dropKeyspace": {
               "name": "%s"
             }
           }
           """
-              .formatted(keyspace);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(keyspace))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -139,18 +115,13 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .body("status.ok", is(1));
 
       // ensure it's dropped
-      json =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "findKeyspaces": {
                     }
                   }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -161,19 +132,14 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
     @Test
     public final void notExisting() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
               {
                 "dropKeyspace": {
                   "name": "whatever_not_there"
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+              """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -189,20 +155,15 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
     @Test
     public final void happyPath() {
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "dropNamespace": {
               "name": "%s"
             }
           }
           """
-              .formatted(keyspaceName);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(keyspaceName))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -212,20 +173,16 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .body("status.warnings", hasSize(1))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: dropNamespace."))
@@ -234,18 +191,13 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
               containsString("The new command to use is: dropKeyspace."));
 
       // ensure it's dropped
-      json =
-          """
+      givenHeadersAndJson(
+              """
               {
                 "findKeyspaces": {
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+              """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -256,42 +208,35 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
     @Test
     public final void withExistingCollection() {
-      String keyspace = "k%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
-      String collection = "c%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
+      String keyspace =
+          "k%s".formatted(RandomStringUtils.insecure().nextAlphanumeric(8)).toLowerCase();
+      String collection =
+          "c%s".formatted(RandomStringUtils.insecure().nextAlphanumeric(8)).toLowerCase();
 
-      String createKeyspace =
-              """
+      givenHeadersAndJson(
+                  """
               {
                 "createKeyspace": {
                   "name": "%s"
                 }
               }
               """
-              .formatted(keyspace);
-      String createCollection =
-              """
-              {
-                "createCollection": {
-                  "name": "%s"
-                }
-              }
-              """
-              .formatted(collection);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createKeyspace)
+                  .formatted(keyspace))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollection)
+      givenHeadersAndJson(
+                  """
+              {
+                "createCollection": {
+                  "name": "%s"
+                }
+              }
+              """
+                  .formatted(collection))
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
@@ -299,20 +244,15 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
 
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "dropNamespace": {
               "name": "%s"
             }
           }
           """
-              .formatted(keyspace);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(keyspace))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -322,15 +262,13 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .body("status.warnings", hasSize(1))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: dropNamespace."))
@@ -339,18 +277,13 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
               containsString("The new command to use is: dropKeyspace."));
       ;
       // ensure it's dropped
-      json =
-          """
+      givenHeadersAndJson(
+              """
               {
                 "findKeyspaces": {
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+              """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -361,19 +294,14 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
     @Test
     public final void notExisting() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "dropNamespace": {
               "name": "whatever_not_there"
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -383,15 +311,13 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .body("status.warnings", hasSize(1))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: dropNamespace."))

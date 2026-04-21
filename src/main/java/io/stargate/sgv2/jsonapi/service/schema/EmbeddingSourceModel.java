@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -14,14 +14,43 @@ import java.util.stream.Collectors;
  * enabled.
  */
 public enum EmbeddingSourceModel {
-  ADA002("ada002", "ADA002", SimilarityFunction.DOT_PRODUCT),
-  BERT("bert", "BERT", SimilarityFunction.DOT_PRODUCT),
-  COHERE_V3("cohere-v3", "COHERE_V3", SimilarityFunction.DOT_PRODUCT),
-  GECKO("gecko", "GECKO", SimilarityFunction.DOT_PRODUCT),
-  NV_QA_4("nv-qa-4", "NV_QA_4", SimilarityFunction.DOT_PRODUCT),
-  OPENAI_V3_LARGE("openai-v3-large", "OPENAI_V3_LARGE", SimilarityFunction.DOT_PRODUCT),
-  OPENAI_V3_SMALL("openai-v3-small", "OPENAI_V3_SMALL", SimilarityFunction.DOT_PRODUCT),
-  OTHER("other", "OTHER", SimilarityFunction.COSINE);
+  ADA002(ApiConstants.ADA002, "ADA002", SimilarityFunction.DOT_PRODUCT),
+  BERT(ApiConstants.BERT, "BERT", SimilarityFunction.DOT_PRODUCT),
+  COHERE_V3(ApiConstants.COHERE_V3, "COHERE_V3", SimilarityFunction.DOT_PRODUCT),
+  GECKO(ApiConstants.GECKO, "GECKO", SimilarityFunction.DOT_PRODUCT),
+  NV_QA_4(ApiConstants.NV_QA_4, "NV_QA_4", SimilarityFunction.DOT_PRODUCT),
+  OPENAI_V3_LARGE(ApiConstants.OPENAI_V3_LARGE, "OPENAI_V3_LARGE", SimilarityFunction.DOT_PRODUCT),
+  OPENAI_V3_SMALL(ApiConstants.OPENAI_V3_SMALL, "OPENAI_V3_SMALL", SimilarityFunction.DOT_PRODUCT),
+  OTHER(ApiConstants.OTHER, "OTHER", SimilarityFunction.COSINE);
+
+  /** For use with API swagger docs */
+  public interface ApiConstants {
+    String ADA002 = "ada002";
+    String BERT = "bert";
+    String COHERE_V3 = "cohere-v3";
+    String GECKO = "gecko";
+    String NV_QA_4 = "nv-qa-4";
+    String OPENAI_V3_LARGE = "openai-v3-large";
+    String OPENAI_V3_SMALL = "openai-v3-small";
+    String OTHER = "other";
+
+    String ALL =
+        ADA002
+            + ", "
+            + BERT
+            + ", "
+            + COHERE_V3
+            + ", "
+            + GECKO
+            + ", "
+            + NV_QA_4
+            + ", "
+            + OPENAI_V3_LARGE
+            + ", "
+            + OPENAI_V3_SMALL
+            + ", "
+            + OTHER;
+  }
 
   // TODO: Add a comment why this is the default
   public static final EmbeddingSourceModel DEFAULT = OTHER;
@@ -163,8 +192,10 @@ public enum EmbeddingSourceModel {
    * the caller should decide when to throw. Moved to be a public method here so it can be used by
    * the caller.
    */
-  public static JsonApiException getUnknownSourceModelException(String apiName) {
-    return ErrorCodeV1.VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME.toApiException(
-        "Received: '%s'; Accepted: %s", apiName, String.join(", ", allApiNames()));
+  public static APIException getUnknownSourceModelException(String apiName) {
+    return SchemaException.Code.VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME.get(
+        Map.of(
+            "errorMessage",
+            "Received: '%s'; Accepted: %s".formatted(apiName, String.join(", ", allApiNames()))));
   }
 }

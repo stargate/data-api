@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.fixtures.data;
 
 import com.datastax.oss.driver.api.core.type.DataType;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
@@ -31,19 +31,19 @@ public interface FixtureData {
   /** Data for types that are not supported by the API. */
   List<FixtureData> UNSUPPORTED_TYPES = List.of(new UnsupportedTypesData());
 
-  default JsonLiteral<?> fromJSON(ApiColumnDef columnDef) {
+  default JsonNode fromJSON(ApiColumnDef columnDef) {
     return fromJSON(columnDef.type());
   }
 
-  default JsonLiteral<?> fromJSON(ApiDataType apiDataType) {
+  default JsonNode fromJSON(ApiDataType apiDataType) {
     return fromJSON(apiDataType.cqlType());
   }
 
   /**
-   * Returns a Java value that we want we would have read from Jackson.
+   * Returns a JSON node we would have gotten from the document, just the value not the name
    *
    * @param type {@link DataType} to generate data for.
-   * @return A Java value that we would have read from Jackson
+   * @return A JSON node, just the value not the name
    */
-  JsonLiteral<?> fromJSON(DataType type);
+  JsonNode fromJSON(DataType type);
 }

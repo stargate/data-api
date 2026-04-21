@@ -1,19 +1,21 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.util.List;
@@ -53,39 +55,27 @@ public record FindCollectionsCollectionOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    KeyspaceMetadata keyspaceMetadata =
-        cqlSessionCache
-            .getSession(dataApiRequestInfo)
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
-    if (keyspaceMetadata == null) {
-      return Uni.createFrom()
-          .failure(
-              ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
-                  "Unknown keyspace '%s', you must create it first",
-                  commandContext.schemaObject().name().keyspace()));
-    }
-    return Uni.createFrom()
-        .item(
-            () -> {
-              List<CollectionSchemaObject> properties =
-                  keyspaceMetadata
-                      // get all tables
-                      .getTables()
-                      .values()
-                      .stream()
-                      // filter for valid collections
+      RequestContext requestContext, QueryExecutor queryExecutor) {
+
+    return queryExecutor
+        .getDriverMetadata(requestContext)
+        .map(Metadata::getKeyspaces)
+        .map(keyspaces -> keyspaces.get(commandContext.schemaObject().identifier().keyspace()))
+        .map(
+            keyspaceMetadata -> {
+              if (keyspaceMetadata == null) {
+                throw SchemaException.Code.UNKNOWN_KEYSPACE.get(
+                    errVars(commandContext.schemaObject()));
+              }
+              var collections =
+                  keyspaceMetadata.getTables().values().stream()
                       .filter(tableMatcher)
-                      // map to name
                       .map(
                           table ->
-                              CollectionSchemaObject.getCollectionSettings(table, objectMapper))
-                      // get as list
+                              CollectionSchemaObject.getCollectionSettings(
+                                  requestContext.tenant(), table, objectMapper))
                       .toList();
-              // Wrap the properties list into a command result
-              return new Result(explain, properties);
+              return new Result(explain, collections);
             });
   }
 
@@ -96,7 +86,7 @@ public record FindCollectionsCollectionOperation(
     @Override
     public CommandResult get() {
 
-      var builder = CommandResult.statusOnlyBuilder(false, false);
+      var builder = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
       if (explain) {
         final List<CreateCollectionCommand> createCollectionCommands =
             collections.stream()
@@ -105,7 +95,9 @@ public record FindCollectionsCollectionOperation(
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
       } else {
         List<String> tables =
-            collections.stream().map(schemaObject -> schemaObject.name().table()).toList();
+            collections.stream()
+                .map(schemaObject -> (schemaObject.identifier().table().asInternal()))
+                .toList();
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, tables);
       }
       return builder.build();

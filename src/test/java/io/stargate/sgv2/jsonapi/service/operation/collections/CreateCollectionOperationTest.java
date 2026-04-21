@@ -8,7 +8,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -28,12 +27,11 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -42,371 +40,282 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CreateCollectionOperationTest extends OperationTestBase {
-
-  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT =
-      new CommandContext<>(
-          COLLECTION_SCHEMA_OBJECT,
-          null,
-          "CreateCollectionCommand",
-          null,
-          DEFAULT_API_FEATURES_FOR_TESTS);
-
   @Inject DatabaseLimitsConfig databaseLimitsConfig;
 
   @Inject ObjectMapper objectMapper;
 
-  @Nested
-  class Execute {
+  private final ColumnDefinitions RESULT_COLUMNS =
+      buildColumnDefs(OperationTestBase.TestColumn.ofBoolean("[applied]"));
 
-    private final ColumnDefinitions RESULT_COLUMNS =
-        buildColumnDefs(OperationTestBase.TestColumn.ofBoolean("[applied]"));
+  private AsyncResultSet mockSuccessSchemaResultset() {
+    List<Row> resultRows =
+        Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
 
-    @Test
-    public void createCollectionNoVector() {
-      List<Row> resultRows =
-          Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+    return new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
+  }
 
-      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
-      final AtomicInteger schemaCounter = new AtomicInteger();
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(eq(dataApiRequestInfo), any()))
-          .then(
-              invocation -> {
-                schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(results);
-              });
+  private AtomicInteger addSchemaChangeCounter(QueryExecutor queryExecutor) {
+    var counter = new AtomicInteger();
 
-      CQLSessionCache sessionCache = mock(CQLSessionCache.class);
-      CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
-      Metadata metadata = mock(Metadata.class);
-      when(session.getMetadata()).thenReturn(metadata);
-      Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
-      DefaultKeyspaceMetadata keyspaceMetadata =
-          new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
-              false,
-              false,
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
-      when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
+    when(queryExecutor.executeCreateSchemaChange(eq(requestContext), any()))
+        .then(
+            invocation -> {
+              counter.incrementAndGet();
+              return Uni.createFrom().item(mockSuccessSchemaResultset());
+            });
+    return counter;
+  }
 
-      CreateCollectionOperation operation =
-          CreateCollectionOperation.withoutVectorSearch(
-              KEYSPACE_CONTEXT,
-              databaseLimitsConfig,
-              objectMapper,
-              sessionCache,
-              COLLECTION_NAME,
-              "",
-              10,
-              false,
-              false);
+  private void addKeyspaceSchema(QueryExecutor queryExecutor) {
 
-      Supplier<CommandResult> execute =
-          operation
-              .execute(dataApiRequestInfo, queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-      // 1 create Table + 8 super shredder indexes
-      assertThat(schemaCounter.get()).isEqualTo(9);
-    }
+    var driverMetadata = mock(Metadata.class);
+    when(queryExecutor.getDriverMetadata(any())).thenReturn(Uni.createFrom().item(driverMetadata));
 
-    @Test
-    public void createCollectionVector() {
-      List<Row> resultRows =
-          Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+    var allKeyspaces = new HashMap<CqlIdentifier, KeyspaceMetadata>();
+    var keyspaceMetadata =
+        new DefaultKeyspaceMetadata(
+            CqlIdentifier.fromInternal(KEYSPACE_NAME),
+            false,
+            false,
+            new HashMap<>(),
+            new HashMap<>(),
+            new HashMap<>(),
+            new HashMap<>(),
+            new HashMap<>(),
+            new HashMap<>());
+    allKeyspaces.put(keyspaceMetadata.getName(), keyspaceMetadata);
+    when(driverMetadata.getKeyspaces()).thenReturn(allKeyspaces);
+  }
 
-      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
-      final AtomicInteger schemaCounter = new AtomicInteger();
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(eq(dataApiRequestInfo), any()))
-          .then(
-              invocation -> {
-                schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(results);
-              });
+  private final CollectionLexicalConfig LEXICAL_CONFIG = CollectionLexicalConfig.configForDefault();
 
-      CQLSessionCache sessionCache = mock(CQLSessionCache.class);
-      CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
-      Metadata metadata = mock(Metadata.class);
-      when(session.getMetadata()).thenReturn(metadata);
-      Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
-      DefaultKeyspaceMetadata keyspaceMetadata =
-          new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
-              false,
-              false,
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
-      when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
+  private final CollectionRerankDef RERANKING_DEF = CollectionRerankDef.configForDefault();
 
-      CreateCollectionOperation operation =
-          CreateCollectionOperation.withVectorSearch(
-              KEYSPACE_CONTEXT,
-              databaseLimitsConfig,
-              objectMapper,
-              sessionCache,
-              COLLECTION_NAME,
-              5,
-              "cosine",
-              "",
-              "",
-              10,
-              false,
-              false);
+  @BeforeEach
+  public void init() {}
 
-      Supplier<CommandResult> execute =
-          operation
-              .execute(dataApiRequestInfo, queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-      // 1 create Table + 8 super shredder indexes + 1 vector index
-      assertThat(schemaCounter.get()).isEqualTo(10);
-    }
+  @Test
+  public void createCollectionNoVector() {
+    var queryExecutor = mock(QueryExecutor.class);
+    var schemaChangeCounter = addSchemaChangeCounter(queryExecutor);
+    addKeyspaceSchema(queryExecutor);
 
-    @Test
-    public void denyAllCollectionNoVector() {
-      List<Row> resultRows =
-          Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+    // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
+    // :(
+    var operation =
+        CreateCollectionOperation.withoutVectorSearch(
+            KEYSPACE_CONTEXT,
+            databaseLimitsConfig,
+            objectMapper,
+            mock(CQLSessionCache.class),
+            COLLECTION_NAME,
+            "",
+            10,
+            false,
+            false,
+            LEXICAL_CONFIG,
+            RERANKING_DEF);
 
-      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
-      final AtomicInteger schemaCounter = new AtomicInteger();
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(eq(dataApiRequestInfo), any()))
-          .then(
-              invocation -> {
-                schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(results);
-              });
+    operation
+        .execute(requestContext, queryExecutor)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem();
 
-      CQLSessionCache sessionCache = mock(CQLSessionCache.class);
-      CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
-      Metadata metadata = mock(Metadata.class);
-      when(session.getMetadata()).thenReturn(metadata);
-      Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
-      DefaultKeyspaceMetadata keyspaceMetadata =
-          new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
-              false,
-              false,
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
-      when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
+    // 1 create Table + 8 super shredder indexes + lexical index
+    assertThat(schemaChangeCounter.get()).isEqualTo(10);
+  }
 
-      CreateCollectionOperation operation =
-          CreateCollectionOperation.withoutVectorSearch(
-              KEYSPACE_CONTEXT,
-              databaseLimitsConfig,
-              objectMapper,
-              sessionCache,
-              COLLECTION_NAME,
-              "",
-              10,
-              false,
-              true);
+  @Test
+  public void createCollectionVector() {
+    var queryExecutor = mock(QueryExecutor.class);
+    var schemaChangeCounter = addSchemaChangeCounter(queryExecutor);
+    addKeyspaceSchema(queryExecutor);
 
-      Supplier<CommandResult> execute =
-          operation
-              .execute(dataApiRequestInfo, queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-      // 1 create Table
-      assertThat(schemaCounter.get()).isEqualTo(1);
-    }
+    // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
+    // :(
+    var operation =
+        CreateCollectionOperation.withVectorSearch(
+            KEYSPACE_CONTEXT,
+            databaseLimitsConfig,
+            objectMapper,
+            mock(CQLSessionCache.class),
+            COLLECTION_NAME,
+            5,
+            "cosine",
+            "",
+            "",
+            10,
+            false,
+            false,
+            LEXICAL_CONFIG,
+            RERANKING_DEF);
 
-    @Test
-    public void denyAllCollectionVector() {
-      List<Row> resultRows =
-          Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+    operation
+        .execute(requestContext, queryExecutor)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem();
 
-      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
-      final AtomicInteger schemaCounter = new AtomicInteger();
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(eq(dataApiRequestInfo), any()))
-          .then(
-              invocation -> {
-                schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(results);
-              });
+    // 1 create Table + 8 super shredder indexes + 1 vector index + 1 lexical
+    assertThat(schemaChangeCounter.get()).isEqualTo(11);
+  }
 
-      CQLSessionCache sessionCache = mock(CQLSessionCache.class);
-      CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
-      Metadata metadata = mock(Metadata.class);
-      when(session.getMetadata()).thenReturn(metadata);
-      Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
-      DefaultKeyspaceMetadata keyspaceMetadata =
-          new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
-              false,
-              false,
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
-      when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
+  @Test
+  public void denyAllCollectionNoVector() {
+    var queryExecutor = mock(QueryExecutor.class);
+    var schemaChangeCounter = addSchemaChangeCounter(queryExecutor);
+    addKeyspaceSchema(queryExecutor);
 
-      CreateCollectionOperation operation =
-          CreateCollectionOperation.withVectorSearch(
-              KEYSPACE_CONTEXT,
-              databaseLimitsConfig,
-              objectMapper,
-              sessionCache,
-              COLLECTION_NAME,
-              5,
-              "cosine",
-              "",
-              "",
-              10,
-              false,
-              true);
+    // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
+    // :(
+    var operation =
+        CreateCollectionOperation.withoutVectorSearch(
+            KEYSPACE_CONTEXT,
+            databaseLimitsConfig,
+            objectMapper,
+            mock(CQLSessionCache.class),
+            COLLECTION_NAME,
+            "",
+            10,
+            false,
+            true,
+            LEXICAL_CONFIG,
+            RERANKING_DEF);
 
-      Supplier<CommandResult> execute =
-          operation
-              .execute(dataApiRequestInfo, queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-      // 1 create Table + 1 vector index
-      assertThat(schemaCounter.get()).isEqualTo(2);
-    }
+    operation
+        .execute(requestContext, queryExecutor)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem();
 
-    @Test
-    public void indexAlreadyDropTable() {
-      List<Row> resultRows =
-          Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+    // 1 create Table + 1 lexical index
+    assertThat(schemaChangeCounter.get()).isEqualTo(2);
+  }
 
-      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
-      final AtomicInteger schemaCounter = new AtomicInteger();
-      final AtomicInteger dropCounter = new AtomicInteger();
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(
-              eq(dataApiRequestInfo),
-              argThat(
-                  simpleStatement ->
-                      simpleStatement.getQuery().startsWith("CREATE TABLE IF NOT EXISTS"))))
-          .then(
-              invocation -> {
-                schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(results);
-              });
+  @Test
+  public void denyAllCollectionVector() {
 
-      when(queryExecutor.executeCreateSchemaChange(
-              eq(dataApiRequestInfo),
-              argThat(
-                  simpleStatement -> simpleStatement.getQuery().startsWith("CREATE CUSTOM INDEX"))))
-          .then(
-              invocation -> {
-                schemaCounter.incrementAndGet();
-                throw new InvalidQueryException(mock(Node.class), "Index xxxxx already exists");
-              });
+    var queryExecutor = mock(QueryExecutor.class);
+    var schemaChangeCounter = addSchemaChangeCounter(queryExecutor);
+    addKeyspaceSchema(queryExecutor);
 
-      when(queryExecutor.executeDropSchemaChange(
-              eq(dataApiRequestInfo),
-              argThat(
-                  simpleStatement ->
-                      simpleStatement.getQuery().startsWith("DROP TABLE IF EXISTS"))))
-          .then(
-              invocation -> {
-                dropCounter.incrementAndGet();
-                return Uni.createFrom().item(results);
-              });
-      CQLSessionCache sessionCache = mock(CQLSessionCache.class);
-      CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
-      Metadata metadata = mock(Metadata.class);
-      when(session.getMetadata()).thenReturn(metadata);
-      Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
-      DefaultKeyspaceMetadata keyspaceMetadata =
-          new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
-              false,
-              false,
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>(),
-              new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
-      when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
+    // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
+    // :(
+    var operation =
+        CreateCollectionOperation.withVectorSearch(
+            KEYSPACE_CONTEXT,
+            databaseLimitsConfig,
+            objectMapper,
+            mock(CQLSessionCache.class),
+            COLLECTION_NAME,
+            5,
+            "cosine",
+            "",
+            "",
+            10,
+            false,
+            true,
+            LEXICAL_CONFIG,
+            RERANKING_DEF);
 
-      CreateCollectionOperation operation =
-          CreateCollectionOperation.withoutVectorSearch(
-              KEYSPACE_CONTEXT,
-              databaseLimitsConfig,
-              objectMapper,
-              sessionCache,
-              COLLECTION_NAME,
-              "",
-              10,
-              true,
-              false);
+    operation
+        .execute(requestContext, queryExecutor)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem();
 
-      Supplier<CommandResult> execute =
-          operation
-              .execute(dataApiRequestInfo, queryExecutor)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-      // 1 create Table + 1 index failure
-      assertThat(schemaCounter.get()).isEqualTo(2);
-      // 1 drop table
-      assertThat(dropCounter.get()).isEqualTo(1);
-    }
+    // 1 create Table + 1 vector index + 1 lexical
+    assertThat(schemaChangeCounter.get()).isEqualTo(3);
+  }
 
-    private List<ColumnMetadata> createCorrectPartitionColumn() {
-      List<DataType> tuple =
-          Arrays.asList(
-              new PrimitiveType(ProtocolConstants.DataType.TINYINT),
-              new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
-      List<ColumnMetadata> partitionKey = new ArrayList<>();
-      partitionKey.add(
-          new DefaultColumnMetadata(
-              CqlIdentifier.fromInternal("keyspace"),
-              CqlIdentifier.fromInternal("collection"),
-              CqlIdentifier.fromInternal("key"),
-              new DefaultTupleType(tuple),
-              false));
-      return partitionKey;
-    }
+  @Test
+  public void indexAlreadyDropTable() {
+    var queryExecutor = mock(QueryExecutor.class);
+    var successResultSet = mockSuccessSchemaResultset();
+    addKeyspaceSchema(queryExecutor);
+
+    final AtomicInteger schemaChangeCounter = new AtomicInteger();
+    final AtomicInteger schemaDropCounter = new AtomicInteger();
+
+    when(queryExecutor.executeCreateSchemaChange(
+            eq(requestContext),
+            argThat(
+                simpleStatement ->
+                    simpleStatement.getQuery().startsWith("CREATE TABLE IF NOT EXISTS"))))
+        .then(
+            invocation -> {
+              schemaChangeCounter.incrementAndGet();
+              return Uni.createFrom().item(successResultSet);
+            });
+
+    when(queryExecutor.executeCreateSchemaChange(
+            eq(requestContext),
+            argThat(
+                simpleStatement -> simpleStatement.getQuery().startsWith("CREATE CUSTOM INDEX"))))
+        .then(
+            invocation -> {
+              schemaChangeCounter.incrementAndGet();
+              throw new InvalidQueryException(mock(Node.class), "Index xxxxx already exists");
+            });
+
+    when(queryExecutor.executeDropSchemaChange(
+            eq(requestContext),
+            argThat(
+                simpleStatement -> simpleStatement.getQuery().startsWith("DROP TABLE IF EXISTS"))))
+        .then(
+            invocation -> {
+              schemaDropCounter.incrementAndGet();
+              return Uni.createFrom().item(successResultSet);
+            });
+
+    // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
+    // :(
+    var operation =
+        CreateCollectionOperation.withoutVectorSearch(
+            KEYSPACE_CONTEXT,
+            databaseLimitsConfig,
+            objectMapper,
+            mock(CQLSessionCache.class),
+            COLLECTION_NAME,
+            "",
+            10,
+            true,
+            false,
+            LEXICAL_CONFIG,
+            RERANKING_DEF);
+
+    operation
+        .execute(requestContext, queryExecutor)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem();
+    // 1 create Table + 1 index failure
+    assertThat(schemaChangeCounter.get()).isEqualTo(2);
+    // 1 drop table
+    assertThat(schemaDropCounter.get()).isEqualTo(1);
+  }
+
+  private List<ColumnMetadata> createCorrectPartitionColumn() {
+    List<DataType> tuple =
+        Arrays.asList(
+            new PrimitiveType(ProtocolConstants.DataType.TINYINT),
+            new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
+    List<ColumnMetadata> partitionKey = new ArrayList<>();
+    partitionKey.add(
+        new DefaultColumnMetadata(
+            CqlIdentifier.fromInternal("keyspace"),
+            CqlIdentifier.fromInternal("collection"),
+            CqlIdentifier.fromInternal("key"),
+            new DefaultTupleType(tuple),
+            false));
+    return partitionKey;
   }
 }

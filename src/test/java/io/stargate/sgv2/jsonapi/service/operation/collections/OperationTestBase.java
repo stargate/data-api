@@ -15,72 +15,87 @@ import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
 import io.quarkus.test.InjectMock;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.BeforeEach;
 
 public class OperationTestBase {
 
+  // aaron feb 11 2025 - not sure how this is working, not sure how @Inject works when then
+  // super class is not under quarkus control. But if I remove it tests break
   @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
-  protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  protected final SchemaObjectName SCHEMA_OBJECT_NAME =
-      new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
-  protected final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
-  protected final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT =
-      new CollectionSchemaObject(
-          SCHEMA_OBJECT_NAME,
-          null,
-          IdConfig.defaultIdConfig(),
-          VectorConfig.NOT_ENABLED_CONFIG,
-          null);
-  protected final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
-      KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
+  // this will work even though the base class is not managed by Quarkus
+  @InjectMock protected RequestContext requestContext;
 
-  protected final String COMMAND_NAME = "testCommand";
+  private final TestConstants testConstants = new TestConstants();
 
-  protected final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
-      new CommandContext<>(
-          COLLECTION_SCHEMA_OBJECT,
-          null,
-          COMMAND_NAME,
-          jsonProcessingMetricsReporter,
-          DEFAULT_API_FEATURES_FOR_TESTS);
-  protected final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      new CommandContext<>(
-          KEYSPACE_SCHEMA_OBJECT,
-          null,
-          COMMAND_NAME,
-          jsonProcessingMetricsReporter,
-          DEFAULT_API_FEATURES_FOR_TESTS);
+  protected final String KEYSPACE_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
+  protected final String COLLECTION_NAME = RandomStringUtils.insecure().nextAlphanumeric(16);
+  protected final SchemaObjectIdentifier KEYSPACE_IDENTIFIER =
+      SchemaObjectIdentifier.forKeyspace(
+          testConstants.TENANT, CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME));
+  protected final SchemaObjectIdentifier COLLECTION_IDENTIFIER =
+      SchemaObjectIdentifier.forCollection(
+          testConstants.TENANT,
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME),
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(COLLECTION_NAME));
 
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
+  protected CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
+  protected KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
+
+  protected CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT;
+  protected CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT;
 
   protected static final TupleType DOC_KEY_TYPE =
       DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
 
+  @BeforeEach
+  public void beforeEach() {
+    // must do this here to avoid touching quarkus config before it is initialized
+    COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
+            null,
+            CollectionLexicalConfig.configForDisabled(),
+            CollectionRerankDef.configForPreRerankingCollection());
+
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
+
+    COLLECTION_CONTEXT =
+        testConstants.collectionContext(
+            testConstants.COMMAND_NAME,
+            COLLECTION_SCHEMA_OBJECT,
+            jsonProcessingMetricsReporter,
+            null);
+    KEYSPACE_CONTEXT =
+        testConstants.keyspaceContext(
+            testConstants.COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+  }
+
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(
       String commandName) {
-    return new CommandContext<>(
-        COLLECTION_SCHEMA_OBJECT,
-        null,
-        commandName,
-        jsonProcessingMetricsReporter,
-        DEFAULT_API_FEATURES_FOR_TESTS);
+    return testConstants.collectionContext(
+        commandName, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter, null);
   }
 
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {

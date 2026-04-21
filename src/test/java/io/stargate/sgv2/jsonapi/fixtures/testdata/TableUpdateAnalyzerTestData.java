@@ -6,12 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateAnalyzer;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,11 +28,11 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
     return new TableUpdateAnalyzerFixture(message, tableMetaData);
   }
 
-  public static class TableUpdateAnalyzerFixture implements PrettyPrintable {
+  public static class TableUpdateAnalyzerFixture implements Recordable {
 
-    private final String message;
+    public final String message;
     private final TableMetadata tableMetadata;
-    private final TableSchemaObject tableSchemaObject;
+    public final TableSchemaObject tableSchemaObject;
     private final TableUpdateAnalyzer analyzer;
     private final UpdateClauseTestData.ColumnAssignmentsBuilder<TableUpdateAnalyzerFixture>
         columnAssignments;
@@ -40,9 +41,12 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
     public TableUpdateAnalyzerFixture(String message, TableMetadata tableMetadata) {
       this.message = message;
       this.tableMetadata = tableMetadata;
+      var TEST_CONSTANT = new TestConstants();
       this.analyzer =
-          new TableUpdateAnalyzer(TableSchemaObject.from(tableMetadata, new ObjectMapper()));
-      this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+          new TableUpdateAnalyzer(
+              TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper()));
+      this.tableSchemaObject =
+          TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper());
       this.columnAssignments =
           new UpdateClauseTestData.ColumnAssignmentsBuilder<>(this, tableMetadata);
     }
@@ -80,7 +84,7 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
     }
 
     public void callAnalyze() {
-      LOGGER.warn("Analyzing update clause: {}\n {}", message, toString(true));
+      LOGGER.warn("Analyzing update clause: {}\n {}", message, PrettyPrintable.pprint(this));
       analyzer.analyze(columnAssignments.columnAssignments);
     }
 
@@ -102,25 +106,10 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
     }
 
     @Override
-    public String toString() {
-      return toString(false);
-    }
-
-    public String toString(boolean pretty) {
-      return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
-    }
-
-    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-      prettyToStringBuilder
+    public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+      return dataRecorder
           .append("columnAssignments", columnAssignments.columnAssignments)
           .append("table", tableMetadata.describe(true));
-      return prettyToStringBuilder;
-    }
-
-    @Override
-    public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-      var sb = prettyToStringBuilder.beginSubBuilder(getClass());
-      return toString(sb).endSubBuilder();
     }
   }
 }

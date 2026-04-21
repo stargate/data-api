@@ -2,25 +2,32 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtCqlIdentifier;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.TypeFactory;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The APi model for a table in the database.
  *
  * <p>Created by the factories {@link #FROM_TABLE_DESC_FACTORY} and {@link #FROM_CQL_FACTORY}.
  */
-public class ApiTableDef {
+public class ApiTableDef implements SchemaDescribable<TableDesc>, Recordable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiTableDef.class);
 
   public static final FromTableDescFactory FROM_TABLE_DESC_FACTORY = new FromTableDescFactory();
   public static final FromCqlFactory FROM_CQL_FACTORY = new FromCqlFactory();
@@ -78,8 +85,17 @@ public class ApiTableDef {
    *
    * @return the {@link TableDesc} for the table.
    */
-  public TableDesc toTableDesc() {
+  @Override
+  public TableDesc getSchemaDescription(SchemaDescSource schemaDescSource) {
 
+    // only describe for a DDL command, for the DML commands it only considers the columns that
+    // were read, handled in the {@link TableProjection}
+    if (schemaDescSource != SchemaDescSource.DDL_SCHEMA_OBJECT) {
+      throw schemaDescSource.unsupportedException("ApiTableDef.getSchemaDescription()");
+    }
+
+    // primary key parts are only names, not the full column definition, so no need to
+    // cascade the command type to them.
     var partitionKeys = partitionkeys.values().stream().map(ApiColumnDef::name).toList();
     var orderingKeys =
         clusteringDefs.stream()
@@ -90,13 +106,11 @@ public class ApiTableDef {
             .toList();
     var primaryKey = PrimaryKeyDesc.from(partitionKeys, orderingKeys);
 
-    var columnsDesc = new ColumnsDescContainer();
-    allColumns
-        .values()
-        .forEach(columnDef -> columnsDesc.put(columnDef.name(), columnDef.columnDesc()));
-
-    return io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc.from(
-        name, new TableDefinitionDesc(columnsDesc, primaryKey));
+    return new TableDesc(
+        schemaDescSource,
+        cqlIdentifierToJsonKey(name),
+        new TableDefinitionDesc(
+            allColumns.getSchemaDescription(SchemaDescSource.DDL_USAGE), primaryKey));
   }
 
   /** Get the name for this table. */
@@ -161,13 +175,23 @@ public class ApiTableDef {
     return indexesIncludingUnsupported;
   }
 
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("name", name)
+        .append("partitionKeys", partitionkeys)
+        .append("clusteringDefs", clusteringDefs)
+        .append("nonPKColumns", nonPKColumns)
+        .append("supportedIndexes", supportedIndexes);
+  }
+
   /**
    * Factory for creating a {@link ApiTableDef} from a users decription sent in a command {@link
    * TableDefinitionDesc}.
    *
    * <p>Use the singleton {@link #FROM_TABLE_DESC_FACTORY} to create an instance.
    */
-  public static final class FromTableDescFactory extends FactoryFromDesc {
+  public static final class FromTableDescFactory extends TypeFactory {
 
     FromTableDescFactory() {}
 
@@ -181,7 +205,7 @@ public class ApiTableDef {
 
       var allColumnDefs =
           ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
-              tableDesc.columns(), validateVectorize);
+              TypeBindingPoint.TABLE_COLUMN, tableDesc.columns(), validateVectorize);
       var partitionIdentifiers =
           Arrays.stream(tableDesc.primaryKey().keys())
               .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
@@ -287,7 +311,7 @@ public class ApiTableDef {
 
       var allColumns =
           ApiColumnDefContainer.FROM_CQL_FACTORY.create(
-              tableMetadata.getColumns().values(), vectorConfig);
+              TypeBindingPoint.TABLE_COLUMN, tableMetadata.getColumns().values(), vectorConfig);
 
       // TODO: add validation that the columns are found in all columns
       var primaryKeys = new ApiColumnDefContainer(tableMetadata.getPrimaryKey().size());

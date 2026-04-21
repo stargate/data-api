@@ -4,13 +4,12 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromCql;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 
 /** Container for */
-public class ApiIndexDefContainer implements Iterable<ApiIndexDef>, PrettyPrintable {
+public class ApiIndexDefContainer implements Iterable<ApiIndexDef>, Recordable {
 
   public static final CqlColumnFactory FROM_CQL_FACTORY = new CqlColumnFactory();
 
@@ -100,13 +99,8 @@ public class ApiIndexDefContainer implements Iterable<ApiIndexDef>, PrettyPrinta
   }
 
   @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    return prettyToStringBuilder.append("indexes", byName.values());
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder.append("indexes", byName.values());
   }
 
   public static class CqlColumnFactory {
@@ -125,11 +119,7 @@ public class ApiIndexDefContainer implements Iterable<ApiIndexDef>, PrettyPrinta
 
       var container = new ApiIndexDefContainer(indexes.size());
       for (var indexMetadata : indexes) {
-        try {
-          container.put(IndexFactoryFromCql.DEFAULT.create(allColumns, indexMetadata));
-        } catch (UnsupportedCqlIndexException e) {
-          container.put(IndexFactoryFromCql.DEFAULT.createUnsupported(indexMetadata));
-        }
+        container.put(IndexFactoryFromCql.create(allColumns, indexMetadata));
       }
       return container.toUnmodifiable();
     }

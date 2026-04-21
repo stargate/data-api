@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.Date;
@@ -29,11 +29,11 @@ import java.util.Map;
  * (NOTE: these are types we have -- MongoDB has more native types so this is a subset of BSON
  * sorting definitions).
  *
- * <p>Within each type sorting is as usual for most types (Numbers, Strings, Booleans). Arrays use
- * straight-forward element-by-element sorting (similar to Strings). The only more esoteric case are
- * Objects, where sorting is by ordered fields, first comparing field name (String sort), if same,
- * then recursively by value; and if first N fields the same, Object with more properties is sorted
- * last.
+ * <p>Within each type sorting is as usual for most types (Numbers, Constants, Booleans). Arrays use
+ * straight-forward element-by-element sorting (similar to Constants). The only more esoteric case
+ * are Objects, where sorting is by ordered fields, first comparing field name (String sort), if
+ * same, then recursively by value; and if first N fields the same, Object with more properties is
+ * sorted last.
  */
 public class JsonNodeComparator implements Comparator<JsonNode> {
   private static final Comparator<JsonNode> ASC = new JsonNodeComparator();
@@ -76,8 +76,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
         return compareBooleans(o1.booleanValue(), o2.booleanValue());
       default:
         // Should never happen:
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            "Unsupported JsonNodeType for comparison: %s", type1);
+        throw ServerException.internalServerError(
+            "Unsupported JsonNodeType for comparison: " + type1);
     }
   }
 
@@ -88,8 +88,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
       return ((Date) pojo1).compareTo((Date) pojo2);
     }
     // should never happen.
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unsupported POJO type for comparison: %s", pojo1.getClass().getName());
+    throw ServerException.internalServerError(
+        "Unsupported POJO type for comparison: " + pojo1.getClass().getName());
   }
 
   private int compareBooleans(boolean b1, boolean b2) {
@@ -126,8 +126,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
   private int compareObjects(ObjectNode n1, ObjectNode n2) {
     // Object comparison is interesting: compares entries in order,
     // first by property name, then by value. If all else equal, "longer one wins"
-    Iterator<Map.Entry<String, JsonNode>> it1 = n1.fields();
-    Iterator<Map.Entry<String, JsonNode>> it2 = n2.fields();
+    Iterator<Map.Entry<String, JsonNode>> it1 = n1.properties().iterator();
+    Iterator<Map.Entry<String, JsonNode>> it2 = n2.properties().iterator();
 
     while (it1.hasNext() && it2.hasNext()) {
       Map.Entry<String, JsonNode> entry1 = it1.next();
@@ -150,27 +150,16 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
   }
 
   private int typePriority(JsonNodeType type, JsonNode node) {
-    switch (type) {
-      case MISSING:
-        return 0;
-      case NULL:
-        return 1;
-      case NUMBER:
-        return 2;
-      case STRING:
-        return 3;
-      case OBJECT:
-        return 4;
-      case ARRAY:
-        return 5;
-      case BOOLEAN:
-        return 6;
-      case POJO:
-        if (((POJONode) node).getPojo() instanceof Date) {
-          return 7;
-        }
-      default:
-        return 8;
-    }
+    return switch (type) {
+      case MISSING -> 0;
+      case NULL -> 1;
+      case NUMBER -> 2;
+      case STRING -> 3;
+      case OBJECT -> 4;
+      case ARRAY -> 5;
+      case BOOLEAN -> 6;
+      case POJO -> (node instanceof POJONode pojo && pojo.getPojo() instanceof Date) ? 7 : 8;
+      default -> 8;
+    };
   }
 }

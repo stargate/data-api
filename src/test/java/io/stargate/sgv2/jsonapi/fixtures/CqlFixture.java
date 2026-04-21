@@ -2,12 +2,13 @@ package io.stargate.sgv2.jsonapi.fixtures;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.fixtures.data.FixtureData;
 import io.stargate.sgv2.jsonapi.fixtures.identifiers.BaseFixtureIdentifiers;
 import io.stargate.sgv2.jsonapi.fixtures.identifiers.FixtureIdentifiers;
 import io.stargate.sgv2.jsonapi.fixtures.tables.TableFixture;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +64,9 @@ public class CqlFixture {
     this.cqlData = cqlData;
     this.tableFixture = tableFixture;
     this.tableMetadata = tableFixture.tableMetadata(identifiers);
-    this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+    var TEST_CONSTANT = new TestConstants();
+    this.tableSchemaObject =
+        TableSchemaObject.from(TEST_CONSTANT.TENANT, tableMetadata, new ObjectMapper());
   }
 
   public FixtureIdentifiers identifiers() {

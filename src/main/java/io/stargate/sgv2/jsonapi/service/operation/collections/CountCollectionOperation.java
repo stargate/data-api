@@ -5,7 +5,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -24,9 +24,9 @@ public record CountCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     SimpleStatement simpleStatement = buildSelectQuery();
-    Uni<CountResponse> countResponse = null;
+    Uni<CountResponse> countResponse;
     if (limit == -1)
       countResponse = countDocuments(dataApiRequestInfo, queryExecutor, simpleStatement);
     else countResponse = countDocumentsByKey(dataApiRequestInfo, queryExecutor, simpleStatement);
@@ -48,7 +48,7 @@ public record CountCollectionOperation(
   private SimpleStatement buildSelectQuery() {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(dbLogicalExpression, null);
-    Query query = null;
+    Query query;
     if (limit == -1) {
       query =
           new QueryBuilder()
@@ -56,9 +56,9 @@ public record CountCollectionOperation(
               .count()
               .as("count")
               .from(
-                  commandContext.schemaObject().name().keyspace(),
-                  commandContext.schemaObject().name().table())
-              .where(expressions.get(0))
+                  commandContext.schemaObject().identifier().keyspace(),
+                  commandContext.schemaObject().identifier().table())
+              .where(expressions.getFirst())
               .build();
     } else {
       query =
@@ -66,9 +66,9 @@ public record CountCollectionOperation(
               .select()
               .column("key")
               .from(
-                  commandContext.schemaObject().name().keyspace(),
-                  commandContext.schemaObject().name().table())
-              .where(expressions.get(0))
+                  commandContext.schemaObject().identifier().keyspace(),
+                  commandContext.schemaObject().identifier().table())
+              .where(expressions.getFirst())
               .limit(limit + 1)
               .build();
     }

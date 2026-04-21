@@ -1,19 +1,22 @@
 package io.stargate.sgv2.jsonapi.service.updater;
 
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.*;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Updates the document read from the database with the updates came as part of the request. */
 public record DocumentUpdater(
@@ -93,13 +96,28 @@ public record DocumentUpdater(
   private DocumentUpdaterResponse replace(ObjectNode docToUpdate, boolean docInserted) {
     // Do deep clone so we can remove _id field and check
     ObjectNode compareDoc = docToUpdate.deepCopy();
+
+    // amorton: GH #2378 - we need to compare using the DocumentId because this has the correct type
+    // comparison logic for an _id in a doc. BUT we also need to directly MOVE the JsonNode object
+    // from the replacement document to use later, future work needed to so we can
+    // reliably go back and forth between JsonNode and DocumentId without losing the benefits of
+    // both.
     JsonNode idNode = compareDoc.remove(DocumentConstants.Fields.DOC_ID);
+
     // The replace document cannot specify an _id value that differs from the replaced document.
     if (replaceDocumentId != null && idNode != null) {
-      if (!JsonUtil.equalsOrdered(replaceDocumentId, idNode)) {
+      var replaceDocId = DocumentId.fromJson(replaceDocumentId);
+      var compareDocId = DocumentId.fromJson(idNode);
+
+      if (!replaceDocId.equals(compareDocId)) {
         // throw error id cannot be different
-        throw ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID.toApiException(
-            "'%s' vs '%s'", idNode, replaceDocumentId);
+        // DocumentId implementations only have the value in toString
+        throw DocumentException.Code.DOCUMENT_REPLACE_DIFFERENT_DOCID.get(
+            Map.of(
+                "replaceId",
+                    "%s(%s)".formatted(classSimpleName(replaceDocId), replaceDocId.toString()),
+                "matchedId",
+                    "%s(%s)".formatted(classSimpleName(compareDocId), compareDocId.toString())));
       }
     }
 
@@ -115,7 +133,10 @@ public record DocumentUpdater(
         replaceDocument.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else if (!vectorizeNode.isTextual()) {
         // if $vectorize is not textual value
-        throw ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE.toApiException();
+        throw DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.get(
+            Map.of(
+                "errorMessage",
+                "needs to be String, not %s".formatted(JsonUtil.nodeTypeAsString(vectorizeNode))));
       } else if (vectorizeNode.asText().isBlank()) {
         // $vectorize is blank text value, set $vector as null value, no need to vectorize
         replaceDocument.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
@@ -167,8 +188,7 @@ public record DocumentUpdater(
     public Uni<DocumentUpdaterResponse> updateEmbeddingVector(
         DocumentUpdaterResponse responseBeforeVectorize,
         DataVectorizerService dataVectorizerService,
-        DataApiRequestInfo dataApiRequestInfo,
-        CommandContext commandContext) {
+        CommandContext<?> commandContext) {
 
       List<EmbeddingUpdateOperation> embeddingUpdateOperations =
           responseBeforeVectorize.embeddingUpdateOperations();
@@ -177,7 +197,7 @@ public record DocumentUpdater(
       }
       // lazy construct the dataVectorizer, only when embeddingUpdateOperation is not null
       final DataVectorizer dataVectorizer =
-          dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
+          dataVectorizerService.constructDataVectorizer(commandContext);
       // currently, there is only one $vectorize for document
       return Multi.createFrom()
           .iterable(embeddingUpdateOperations)

@@ -154,9 +154,6 @@ public class TestDataNames {
   public final CqlIdentifier CQL_VECTOR_COLUMN =
       CqlIdentifier.fromInternal("vector_column_" + System.currentTimeMillis());
 
-  public final List<CqlIdentifier> ALL_COLLECTION_DATATYPE_COLUMNS =
-      List.of(CQL_MAP_COLUMN, CQL_LIST_COLUMN, CQL_SET_COLUMN, CQL_VECTOR_COLUMN);
-
   public final CqlIdentifier CQL_MAP_COLUMN_INDEX =
       CqlIdentifier.fromInternal("map_column_index_" + System.currentTimeMillis());
   public final CqlIdentifier CQL_LIST_COLUMN_INDEX =

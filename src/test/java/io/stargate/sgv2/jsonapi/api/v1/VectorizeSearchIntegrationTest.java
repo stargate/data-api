@@ -5,10 +5,14 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -19,7 +23,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
@@ -32,8 +36,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
   class CreateCollection {
     @Test
     public void happyPathVectorSearch() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                 {
                     "createCollection": {
                         "name": "my_collection_vectorize",
@@ -55,20 +59,12 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                         }
                     }
                 }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                """)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
-      json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                     {
                         "createCollection": {
                             "name": "my_collection_vectorize_deny",
@@ -93,15 +89,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                             }
                         }
                     }
-                    """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                    """)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
@@ -126,10 +114,22 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
             }
             """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+      // verify starting metrics (we cannot assume clean slate)
+      final double initialCallCount, initialInputByteSum;
+      {
+        final String allMetrics = getAllMetrics();
+        List<String> vectorizeCallMetrics =
+            getVectorizeCallDurationMetrics("InsertOneCommand", allMetrics, -1);
+        // Usually get 0.0 if no earlier calls, but maybe something else
+        initialCallCount = findEmbeddingCountFromMetrics(vectorizeCallMetrics);
+
+        List<String> vectorizeInputBytesMetrics =
+            allMetrics.lines().filter(line -> line.startsWith("vectorize_input_bytes")).toList();
+        // same here, may get 0.0 if no earlier calls
+        initialInputByteSum = findEmbeddingSumFromMetrics(vectorizeInputBytesMetrics);
+      }
+
+      givenHeadersAndJson(json)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -138,72 +138,26 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.insertedIds[0]", is("1"));
 
       // verify the metrics
-      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> vectorizeCallDurationMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("vectorize_call_duration_seconds")
-                          && !line.startsWith("vectorize_call_duration_seconds_bucket")
-                          && !line.contains("quantile")
-                          && line.contains("command=\"InsertOneCommand\""))
-              .toList();
-
-      assertThat(vectorizeCallDurationMetrics)
-          .satisfies(
-              lines -> {
-                assertThat(lines.size()).isEqualTo(3);
-                lines.forEach(
-                    line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
-                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
-
-                      if (line.contains("_count")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(1.0);
-                      }
-                    });
-              });
+      final String allMetrics = getAllMetrics();
+      List<String> vectorizeCallMetrics =
+          getVectorizeCallDurationMetrics("InsertOneCommand", allMetrics, 3);
+      double afterCallCount = findEmbeddingCountFromMetrics(vectorizeCallMetrics);
+      assertThat(Math.round(afterCallCount - initialCallCount))
+          .withFailMessage(
+              "Expected after (%s) call count to be 1.0 higher than before (%s)",
+              afterCallCount, initialCallCount)
+          .isEqualTo(1L);
 
       List<String> vectorizeInputBytesMetrics =
-          metrics.lines().filter(line -> line.startsWith("vectorize_input_bytes")).toList();
-      assertThat(vectorizeInputBytesMetrics)
-          .satisfies(
-              lines -> {
-                assertThat(lines.size()).isEqualTo(3);
-                lines.forEach(
-                    line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
-                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+          allMetrics.lines().filter(line -> line.startsWith("vectorize_input_bytes")).toList();
+      double afterCallInputByteSum = findEmbeddingSumFromMetrics(vectorizeInputBytesMetrics);
+      assertThat(Math.round(afterCallInputByteSum - initialInputByteSum))
+          .withFailMessage(
+              "Expected after (%s) input bytes to be 44.0 higher than before (%s)",
+              afterCallInputByteSum, initialInputByteSum)
+          .isEqualTo(44L);
 
-                      if (line.contains("_count")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(1.0);
-                      }
-
-                      if (line.contains("_sum")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(44.0);
-                      }
-                    });
-              });
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+      givenHeadersAndJson(json)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionNameDenyAll)
           .then()
@@ -211,20 +165,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("1"));
 
-      json =
-          """
+      givenHeadersAndJson(
+              """
             {
               "find": {
                 "filter" : {"_id" : "1"},
                 "projection": { "$vector": 1 }
               }
             }
-            """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+            """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -237,8 +186,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
 
     @Test
     public void insertVectorArrayData() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
              "insertOne": {
                 "document": {
@@ -249,30 +198,25 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                 }
              }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].errorCode", is(DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name()))
           .body(
               "errors[0].message",
-              startsWith(
-                  "$vectorize value needs to be text value: issue in document at position 1"));
+              containsString(
+                  "Invalid $vectorize value: needs to be String, not Array (issue in document at position 1)"));
     }
 
     @Test
     public void insertInvalidVectorizeData() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
              "insertOne": {
                 "document": {
@@ -283,21 +227,18 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                 }
              }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vectorize value needs to be text value"))
-          .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body(
+              "errors[0].errorCode", is(DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name()))
+          .body(
+              "errors[0].message",
+              containsString("Invalid $vectorize value: needs to be String, not Number"));
     }
   }
 
@@ -306,8 +247,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
   class InsertManyCollection {
     @Test
     public void insertVectorSearch() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
            "insertMany": {
               "documents": [
@@ -329,12 +270,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               }
            }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -344,26 +280,18 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.insertedIds[1]", is("3"));
 
       // verify the metrics
-      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      final String allMetrics = getAllMetrics();
       List<String> vectorizeCallDurationMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("vectorize_call_duration_seconds")
-                          && !line.startsWith("vectorize_call_duration_seconds_bucket")
-                          && !line.contains("quantile")
-                          && line.contains("command=\"InsertManyCommand\""))
-              .toList();
+          getVectorizeCallDurationMetrics("InsertManyCommand", allMetrics, 3);
 
       assertThat(vectorizeCallDurationMetrics)
           .satisfies(
               lines -> {
                 lines.forEach(
                     line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
+                      assertThat(line).contains("embedding_provider=\"custom\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line).contains("tenant=\"SINGLE-TENANT\"");
 
                       if (line.contains("_count")) {
                         String[] parts = line.split(" ");
@@ -376,7 +304,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               });
 
       List<String> vectorizeInputBytesMetrics =
-          metrics
+          allMetrics
               .lines()
               .filter(
                   line ->
@@ -386,12 +314,13 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
       assertThat(vectorizeInputBytesMetrics)
           .satisfies(
               lines -> {
-                assertThat(lines.size()).isEqualTo(3);
+                // aaron, this used to check the number of lines, that is linked to the number of
+                // percentiles and is very very fragle to include in a test
                 lines.forEach(
                     line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
+                      assertThat(line).contains("embedding_provider=\"custom\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
+                      assertThat(line).contains("tenant=\"SINGLE-TENANT\"");
 
                       if (line.contains("_count")) {
                         String[] parts = line.split(" ");
@@ -411,20 +340,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                     });
               });
 
-      json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "find": {
             "filter" : {"_id" : "2"},
             "projection": { "$vector": 1 }
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -436,18 +360,13 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
   }
 
   public void insertVectorDocuments() {
-    String json =
-        """
+    givenHeadersAndJson(
+            """
       {
         "deleteMany": {
         }
       }
-      """;
-
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(json)
+      """)
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
@@ -456,8 +375,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
         .extract()
         .path("status.moreData");
 
-    json =
-        """
+    givenHeadersAndJson(
+            """
             {
                "insertMany": {
                   "documents": [
@@ -482,11 +401,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                   ]
                }
             }
-            """;
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(json)
+            """)
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
@@ -510,8 +425,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(2)
     public void happyPath() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "find": {
               "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"},
@@ -521,12 +436,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -549,8 +459,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(3)
     public void happyPathWithFilter() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "find": {
             "filter" : {"_id" : "1"},
@@ -561,12 +471,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
             }
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -579,8 +484,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(5)
     public void happyPathWithInvalidData() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "find": {
             "filter" : {"_id" : "1"},
@@ -590,42 +495,32 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
             }
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
-              startsWith("$vectorize search clause needs to be non-blank text value"));
+              startsWith(
+                  "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String"));
     }
 
     @Test
     @Order(6)
     public void vectorizeSortDenyAll() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
             {
               "find": {
                 "projection": { "$vector": 1, "$vectorize" : 1 },
                 "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
               }
             }
-            """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+            """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionNameDenyAll)
           .then()
@@ -652,20 +547,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(2)
     public void happyPath() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "findOne": {
             "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"},
             "options" : { "includeSortVector" : true }
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -678,20 +568,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(3)
     public void happyPathWithIdFilter() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "findOne": {
             "filter" : {"_id" : "1"},
             "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -703,30 +588,26 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(4)
     public void failWithEmptyVector() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "findOne": {
             "filter" : {"_id" : "1"},
             "sort" : {"$vectorize" : []}
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_VALUE_INVALID.name()))
           .body(
-              "errors[0].message", is("$vectorize search clause needs to be non-blank text value"));
+              "errors[0].message",
+              startsWith(
+                  "Value used for sort expression on path '$vectorize' not valid: vectorize sort expression needs to be non-blank String"));
     }
   }
 
@@ -743,8 +624,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(2)
     public void setOperation() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "findOneAndUpdate": {
             "filter" : {"_id": "2"},
@@ -753,12 +634,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
             "options" : {"returnDocument" : "after"}
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -774,8 +650,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(3)
     public void unsetOperation() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
             {
               "findOneAndUpdate": {
                 "filter" : {"name": "Coded Cleats"},
@@ -783,12 +659,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                 "options" : {"returnDocument" : "after"}
               }
             }
-            """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+            """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -803,8 +674,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(4)
     public void setOnInsertOperation() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "findOneAndUpdate": {
               "filter" : {"_id": "11"},
@@ -813,12 +684,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               "options" : {"returnDocument" : "after", "upsert": true}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -840,8 +706,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Order(1)
     public void findOneAndUpdate_sortClause() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "findOneAndUpdate": {
               "sort" : {"$vectorize" : "A deep learning display that controls your mood"},
@@ -849,12 +715,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               "options" : {"returnDocument" : "after"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -870,8 +731,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Order(2)
     public void findOneAndUpdate_updateClause() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "findOneAndUpdate": {
                       "sort" : {"$vectorize" : "A deep learning display that controls your mood"},
@@ -879,12 +740,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                       "options" : {"returnDocument" : "after"}
                     }
                   }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -895,8 +751,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
-      json =
-          """
+      givenHeadersAndJson(
+              """
                         {
                           "findOne": {
                             "filter" : {"_id" : "3"},
@@ -905,11 +761,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                             }
                           }
                         }
-                        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -925,19 +777,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Order(3)
     public void updateOne_sortClause() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "updateOne": {
             "update" : {"$set" : {"new_col": "new_val"}},
             "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
           }
         }
-        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -946,18 +794,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("status.moreData", is(nullValue()));
-      json =
-          """
+
+      givenHeadersAndJson(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "1"}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -971,19 +816,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Order(4)
     public void updateOne_updateClause() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                 {
                   "updateOne": {
                     "update" : {"$set" : {"new_col": "new_val", "$vectorize":"ChatGPT upgraded"}},
                     "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
                   }
                 }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -992,8 +833,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("status.moreData", is(nullValue()));
-      json =
-          """
+      givenHeadersAndJson(
+              """
                         {
                           "findOne": {
                             "filter" : {"_id" : "1"},
@@ -1002,11 +843,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                             }
                           }
                         }
-                        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1022,8 +859,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Order(5)
     public void findOneAndReplace() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "findOneAndReplace": {
               "projection": { "$vector": 1 },
@@ -1032,12 +869,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               "options" : {"returnDocument" : "after"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1055,8 +887,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Order(6)
     public void findOneAndReplaceWithoutVector() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "findOneAndReplace": {
             "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"},
@@ -1064,12 +896,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
             "options" : {"returnDocument" : "after"}
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1086,20 +913,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Order(7)
     public void findOneAndDelete() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                 {
                   "findOneAndDelete": {
                     "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"},
                     "projection": { "*": 1 }
                   }
                 }
-                """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1115,20 +937,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Order(8)
     public void deleteOne() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "deleteOne": {
             "filter" : {"$vector" : {"$exists" : true}},
             "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1137,19 +954,14 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.deletedCount", is(1));
 
       // ensure find does not find the document
-      json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "findOne": {
             "filter" : {"_id" : "1"}
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1161,8 +973,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(9)
     public void createDropDifferentVectorDimension() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                   {
                       "createCollection": {
                           "name": "cacheTestTable",
@@ -1184,11 +996,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                           }
                       }
                   }
-                  """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  """)
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
@@ -1197,8 +1005,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.ok", is(1));
 
       // insertOne to trigger the schema cache
-      json =
-          """
+      givenHeadersAndJson(
+              """
                     {
                        "insertOne": {
                           "document": {
@@ -1209,12 +1017,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                           }
                        }
                     }
-                    """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                    """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, "cacheTestTable")
           .then()
@@ -1223,10 +1026,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.insertedIds[0]", is("1"));
 
       // DeleteCollection, should evict the corresponding schema cache
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
                   """
                           {
                             "deleteCollection": {
@@ -1243,8 +1043,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.ok", is(1));
 
       // Create a new collection with same name, but dimension as 6
-      json =
-          """
+      givenHeadersAndJson(
+              """
                   {
                       "createCollection": {
                           "name": "cacheTestTable",
@@ -1266,11 +1066,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                           }
                       }
                   }
-                  """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  """)
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
@@ -1279,8 +1075,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.ok", is(1));
 
       // insertOne, should use the new collectionSetting, since the outdated one has been evicted
-      json =
-          """
+      givenHeadersAndJson(
+              """
                 {
                    "insertOne": {
                       "document": {
@@ -1291,12 +1087,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                       }
                    }
                 }
-                """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, "cacheTestTable")
           .then()
@@ -1305,20 +1096,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.insertedIds[0]", is("1"));
 
       // find, verify the dimension
-      json =
-          """
+      givenHeadersAndJson(
+              """
                     {
                       "find": {
                         "projection": { "$vector": 1, "$vectorize" : 1 },
                         "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
                       }
                     }
-                    """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                    """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, "cacheTestTable")
           .then()
@@ -1330,5 +1116,129 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f, 0.05f))
           .body("data.documents[0].$vectorize", is(notNullValue()));
     }
+  }
+
+  @Nested
+  @Order(8)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class UnknownExistingModel {
+
+    // As best practice, when we deprecate or EOL a model,
+    // we should mark them in the configuration,
+    // instead of removing the whole entry as bad practice!
+    // The bad practice should only happen in dev before, add this validation to capture, and
+    // confirm it does at least not return 500.
+    @Test
+    @Order(1)
+    public void findOneAndUpdate_sortClause() {
+      var collection = "collectionWithBadModel";
+      var tableWithBadModel =
+          """
+                CREATE TABLE "%s"."%s" (
+                    key frozen<tuple<tinyint, text>> PRIMARY KEY,
+                    array_contains set<text>,
+                    array_size map<text, int>,
+                    doc_json text,
+                    exist_keys set<text>,
+                    query_bool_values map<text, tinyint>,
+                    query_dbl_values map<text, decimal>,
+                    query_null_values set<text>,
+                    query_text_values map<text, text>,
+                    query_timestamp_values map<text, timestamp>,
+                    query_vector_value vector<float, 123>,
+                    tx_id timeuuid
+                ) WITH additional_write_policy = '99p'
+                  AND comment = '{"collection":{"name":"%s","schema_version":1,"options":{"vector":{"dimension":123,"metric":"cosine","service":{"provider":"nvidia","modelName":"random"}},"defaultId":{"type":""}}}}';
+                """;
+      executeCqlStatement(
+          SimpleStatement.newInstance(
+              tableWithBadModel.formatted(keyspaceName, collection, collection)));
+      givenHeadersAndJson("{ \"findOne\": {} } ")
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collection)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body(
+              "errors[0].errorCode",
+              is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNAVAILABLE.name()))
+          .body(
+              "errors[0].message",
+              containsString("The model 'random' for service provider 'nvidia' is not supported"));
+    }
+  }
+
+  private String getAllMetrics() {
+    return given().when().get("/metrics").then().statusCode(200).extract().asString();
+  }
+
+  private List<String> getVectorizeCallDurationMetrics(
+      String commandName, String metrics, int expectedLines) {
+    List<String> matches =
+        metrics
+            .lines()
+            .filter(
+                line ->
+                    line.startsWith("vectorize_call_duration_seconds")
+                        && !line.startsWith("vectorize_call_duration_seconds_bucket")
+                        && !line.contains("quantile")
+                        && line.contains("command=\"" + commandName + "\""))
+            .toList();
+    // Allow -1 to be passed for "ok to not find any lines" which is acceptable starting state
+    if (expectedLines >= 0) {
+      assertThat(matches)
+          .withFailMessage(
+              "Expected to find %d vectorize_call_duration_seconds metrics for command '%s', but found %s.",
+              expectedLines, commandName, matches.size())
+          .hasSize(expectedLines);
+    }
+    return matches;
+  }
+
+  private static double findEmbeddingCountFromMetrics(List<String> metrics) {
+    return findCountFromMetrics(
+        metrics,
+        Arrays.asList(
+            "embedding_provider=\"custom\"",
+            "module=\"sgv2-jsonapi\"",
+            "tenant=\"SINGLE-TENANT\""));
+  }
+
+  private static double findCountFromMetrics(List<String> metrics, List<String> matches) {
+    String countLine =
+        metrics.stream()
+            .filter(str -> matches.stream().allMatch(str::contains) && str.contains("_count"))
+            .findFirst()
+            .orElse(null);
+    if (countLine == null) {
+      return 0;
+    }
+    String[] parts = countLine.split(" ");
+    String numericPart = parts[parts.length - 1]; // Get the last part which should be the number
+    return Double.parseDouble(numericPart);
+  }
+
+  private static double findEmbeddingSumFromMetrics(List<String> metrics) {
+    return findSumFromMetrics(
+        metrics,
+        Arrays.asList(
+            "embedding_provider=\"custom\"",
+            "module=\"sgv2-jsonapi\"",
+            "tenant=\"SINGLE-TENANT\""));
+  }
+
+  private static double findSumFromMetrics(List<String> metrics, List<String> matches) {
+    String countLine =
+        metrics.stream()
+            .filter(str -> matches.stream().allMatch(str::contains) && str.contains("_sum"))
+            .findFirst()
+            .orElse(null);
+    if (countLine == null) {
+      return 0;
+    }
+    String[] parts = countLine.split(" ");
+    String numericPart = parts[parts.length - 1]; // Get the last part which should be the number
+    return Double.parseDouble(numericPart);
   }
 }

@@ -5,37 +5,107 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ApplicationScoped
+/**
+ * This is legacy class from the first versions of the API, this class is now created in {@link
+ * io.stargate.sgv2.jsonapi.service.operation.Operation#execute(RequestContext, QueryExecutor)} for
+ * backwards compatibility. From there is passed to the operation and used to execute.
+ *
+ * <p>It is no longer a bean and should not be injected.
+ *
+ * <p>See {@link CommandQueryExecutor} for the new approach
+ */
 public class QueryExecutor {
   private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
-  private final OperationsConfig operationsConfig;
 
-  /** CQLSession cache. */
   private final CQLSessionCache cqlSessionCache;
+  private final OperationsConfig operationsConfig;
+  // nullable, see executeAsync
+  private final Function<SimpleStatement, DriverExceptionHandler> exceptionHandlerFactory;
+  private final RequestTracing requestTracing;
 
-  @Inject
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
-    this.cqlSessionCache = cqlSessionCache;
-    this.operationsConfig = operationsConfig;
+    this(cqlSessionCache, operationsConfig, null, RequestTracing.NO_OP);
+  }
+
+  public QueryExecutor(
+      CQLSessionCache cqlSessionCache,
+      OperationsConfig operationsConfig,
+      Function<SimpleStatement, DriverExceptionHandler> exceptionHandlerFactory,
+      RequestTracing requestTracing) {
+
+    this.cqlSessionCache =
+        Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
+    this.operationsConfig =
+        Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
+    // null checked in executeAsync
+    this.exceptionHandlerFactory = exceptionHandlerFactory;
+    this.requestTracing = Objects.requireNonNull(requestTracing, "requestTracing must not be null");
+  }
+
+  private Uni<AsyncResultSet> executeAsync(
+      RequestContext requestContext, SimpleStatement statement) {
+
+    // we only check exceptionHandlerFactory here, because it may be null if no special this object
+    // was
+    // created for the legacy SchemaCache classes which only use the driver metadata and will be
+    // removed soon.
+    Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory must not be null");
+
+    var stmtWithTracing =
+        requestTracing.enabled() != statement.isTracing()
+            ? statement.setTracing(requestTracing.enabled())
+            : statement;
+
+    DBTraceMessages.executingStatement(
+        requestTracing, stmtWithTracing, "Executing statement for non task based operation");
+
+    return cqlSessionCache
+        .getSession(requestContext)
+        .flatMap(
+            session ->
+                Uni.createFrom().completionStage(() -> session.executeAsync(stmtWithTracing)))
+        .onItemOrFailure()
+        .transformToUni(
+            (asyncResultSet, error) ->
+                switch (error) {
+                  case RuntimeException rte -> {
+                    var handler =
+                        Objects.requireNonNull(
+                            exceptionHandlerFactory.apply(statement),
+                            "QueryExecutor.executeAsync() - exceptionHandlerFactory returned null");
+
+                    yield Uni.createFrom().failure(handler.maybeHandle(rte));
+                  }
+                  case Throwable throwable -> Uni.createFrom().failure(throwable);
+                  case null -> {
+                    DBTraceMessages.maybeCqlTrace(
+                        requestTracing,
+                        asyncResultSet,
+                        "Statement trace for non task based operation");
+                    yield Uni.createFrom().item(asyncResultSet);
+                  }
+                });
   }
 
   /**
@@ -49,7 +119,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeRead(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext requestContext,
       SimpleStatement simpleStatement,
       Optional<String> pagingState,
       int pageSize) {
@@ -61,9 +131,7 @@ public class QueryExecutor {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement));
+    return executeAsync(requestContext, simpleStatement);
   }
 
   /**
@@ -73,13 +141,13 @@ public class QueryExecutor {
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public CompletionStage<AsyncResultSet> executeCount(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement simpleStatement) {
+  public Uni<AsyncResultSet> executeCount(
+      RequestContext requestContext, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement
             .setExecutionProfileName("count")
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
-    return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
+    return executeAsync(requestContext, simpleStatement);
   }
 
   /**
@@ -89,12 +157,12 @@ public class QueryExecutor {
    *     query must have keyspace prefixed.
    * @return AsyncResultSet
    */
-  public CompletionStage<AsyncResultSet> executeEstimatedCount(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement simpleStatement) {
+  public Uni<AsyncResultSet> executeEstimatedCount(
+      RequestContext requestContext, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement.setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
 
-    return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
+    return executeAsync(requestContext, simpleStatement);
   }
 
   /**
@@ -108,7 +176,7 @@ public class QueryExecutor {
    * @return
    */
   public Uni<AsyncResultSet> executeVectorSearch(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext requestContext,
       SimpleStatement simpleStatement,
       Optional<String> pagingState,
       int pageSize) {
@@ -120,9 +188,8 @@ public class QueryExecutor {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement));
+
+    return executeAsync(requestContext, simpleStatement);
   }
 
   /**
@@ -133,18 +200,15 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeWrite(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement statement) {
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache
-                .getSession(dataApiRequestInfo)
-                .executeAsync(
-                    statement
-                        .setIdempotent(true)
-                        .setConsistencyLevel(
-                            operationsConfig.queriesConfig().consistency().writes())
-                        .setSerialConsistencyLevel(
-                            operationsConfig.queriesConfig().serialConsistency())));
+      RequestContext requestContext, SimpleStatement statement) {
+
+    var stmtToExec =
+        statement
+            .setIdempotent(true)
+            .setConsistencyLevel(operationsConfig.queriesConfig().consistency().writes())
+            .setSerialConsistencyLevel(operationsConfig.queriesConfig().serialConsistency());
+
+    return executeAsync(requestContext, stmtToExec);
   }
 
   /**
@@ -155,8 +219,9 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeCreateSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "create");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+
+    return executeSchemaChange(requestContext, boundStatement, "create");
   }
 
   /**
@@ -167,8 +232,9 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeDropSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "drop");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+
+    return executeSchemaChange(requestContext, boundStatement, "drop");
   }
 
   /**
@@ -179,22 +245,22 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeTruncateSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "truncate");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+
+    return executeSchemaChange(requestContext, boundStatement, "truncate");
   }
 
   private Uni<AsyncResultSet> executeSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement, String profile) {
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache
-                .getSession(dataApiRequestInfo)
-                .executeAsync(
-                    boundStatement
-                        .setExecutionProfileName(profile)
-                        .setIdempotent(true)
-                        .setSerialConsistencyLevel(
-                            operationsConfig.queriesConfig().consistency().schemaChanges())))
+      RequestContext requestContext, SimpleStatement boundStatement, String profile) {
+
+    var stmtToExec =
+        boundStatement
+            .setExecutionProfileName(profile)
+            .setIdempotent(true)
+            .setSerialConsistencyLevel(
+                operationsConfig.queriesConfig().consistency().schemaChanges());
+
+    return executeAsync(requestContext, stmtToExec)
         .onFailure(
             error ->
                 error instanceof DriverTimeoutException
@@ -206,28 +272,20 @@ public class QueryExecutor {
               logger.error(
                   "Timeout/Invalid query executing schema change query : {}",
                   boundStatement.getQuery());
-              SimpleStatement duplicate = SimpleStatement.newInstance(boundStatement.getQuery());
+              SimpleStatement duplicate =
+                  SimpleStatement.newInstance(boundStatement.getQuery())
+                      .setExecutionProfileName(profile)
+                      .setIdempotent(true)
+                      .setSerialConsistencyLevel(
+                          operationsConfig.queriesConfig().consistency().schemaChanges());
+
               return Uni.createFrom()
                   .item(throwable)
                   .onItem()
                   .delayIt()
                   .by(Duration.ofMillis(operationsConfig.databaseConfig().ddlRetryDelayMillis()))
                   .onItem()
-                  .transformToUni(
-                      v ->
-                          Uni.createFrom()
-                              .completionStage(
-                                  cqlSessionCache
-                                      .getSession(dataApiRequestInfo)
-                                      .executeAsync(
-                                          duplicate
-                                              .setExecutionProfileName(profile)
-                                              .setIdempotent(true)
-                                              .setSerialConsistencyLevel(
-                                                  operationsConfig
-                                                      .queriesConfig()
-                                                      .consistency()
-                                                      .schemaChanges()))));
+                  .transformToUni(v -> executeAsync(requestContext, duplicate));
             })
         .onFailure(
             error ->
@@ -239,6 +297,28 @@ public class QueryExecutor {
         .atMost(2);
   }
 
+  public Uni<Metadata> getDriverMetadata(RequestContext requestContext) {
+
+    return cqlSessionCache
+        .getSession(requestContext)
+        .flatMap(session -> Uni.createFrom().completionStage(session::refreshSchemaAsync))
+        .onItemOrFailure()
+        .transformToUni(
+            (metadata, error) ->
+                switch (error) {
+                  case RuntimeException rte -> {
+                    var handler =
+                        Objects.requireNonNull(
+                            exceptionHandlerFactory.apply(null),
+                            "QueryExecutor.executeAsync() - exceptionHandlerFactory returned null");
+
+                    yield Uni.createFrom().failure(handler.maybeHandle(rte));
+                  }
+                  case Throwable throwable -> Uni.createFrom().failure(throwable);
+                  case null -> Uni.createFrom().item(metadata);
+                });
+  }
+
   /**
    * Gets the schema for the provided namespace and collection name
    *
@@ -246,49 +326,22 @@ public class QueryExecutor {
    * @param collectionName
    * @return
    */
-  protected Uni<Optional<TableMetadata>> getSchema(
-      DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
-    try {
-      var session = cqlSessionCache.getSession(dataApiRequestInfo);
-      return Uni.createFrom()
-          .completionStage(session.refreshSchemaAsync())
-          .onItem()
-          .transformToUni(
-              v -> {
-                KeyspaceMetadata keyspaceMetadata =
-                    session.getMetadata().getKeyspaces().get(cqlIdentifierFromUserInput(namespace));
-                if (keyspaceMetadata == null) {
-                  return Uni.createFrom()
-                      .failure(ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
-                }
-                return Uni.createFrom()
-                    .item(keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName)));
-              });
-    } catch (Exception e) {
-      // TODO: this ^^ is a very wide error catch, confirm what it should actually be catching
-      return Uni.createFrom().failure(e);
-    }
-  }
+  public Uni<Optional<TableMetadata>> getTableMetadata(
+      RequestContext requestContext, String namespace, String collectionName) {
 
-  /**
-   * Gets the schema for the provided namespace and collection name
-   *
-   * @param namespace - namespace
-   * @param collectionName - collection name
-   * @return TableMetadata
-   */
-  protected Uni<TableMetadata> getCollectionSchema(
-      DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
-    Optional<KeyspaceMetadata> keyspaceMetadata;
-    if ((keyspaceMetadata =
-            cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspace(namespace))
-        .isPresent()) {
-      Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(collectionName);
-      if (tableMetadata.isPresent()) {
-        return Uni.createFrom().item(tableMetadata.get());
-      }
-    }
-    return Uni.createFrom().nullItem();
+    return getDriverMetadata(requestContext)
+        .map(
+            metadata -> {
+              var keyspaceMetadata =
+                  metadata.getKeyspaces().get(cqlIdentifierFromUserInput(namespace));
+
+              if (keyspaceMetadata == null) {
+                throw SchemaException.Code.UNKNOWN_KEYSPACE.get(
+                    ErrorConstants.TemplateVars.KEYSPACE, namespace);
+              }
+
+              return keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName));
+            });
   }
 
   private static byte[] decodeBase64(String base64encoded) {

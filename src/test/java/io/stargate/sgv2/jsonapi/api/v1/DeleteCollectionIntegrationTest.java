@@ -2,10 +2,11 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
@@ -15,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
@@ -25,7 +26,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyPath() {
-      String collection = RandomStringUtils.randomAlphabetic(16);
+      String collection = RandomStringUtils.insecure().nextAlphabetic(16);
 
       // first create
       givenHeadersAndJson(
@@ -64,7 +65,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void notExisting() {
-      String collection = RandomStringUtils.randomAlphabetic(16);
+      String collection = RandomStringUtils.insecure().nextAlphabetic(16);
 
       // delete not existing
       givenHeadersAndJson(
@@ -98,12 +99,11 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
           .body(
               "errors[0].message",
-              is(
-                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be null."));
+              startsWith(
+                  "Command field 'command.name' value `null` not valid: must not be empty."));
     }
   }
 

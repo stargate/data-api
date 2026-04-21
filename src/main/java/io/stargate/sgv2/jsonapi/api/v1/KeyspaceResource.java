@@ -1,31 +1,27 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -44,6 +40,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path(KeyspaceResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
@@ -51,17 +49,38 @@ import org.jboss.resteasy.reactive.RestResponse;
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
 @Tag(ref = "Keyspaces")
 public class KeyspaceResource {
+  private static final Logger LOGGER = LoggerFactory.getLogger(KeyspaceResource.class);
 
-  public static final String BASE_PATH = "/v1/{keyspace}";
+  public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}";
+
+  @Inject private RequestContext requestContext;
+
+  private final SchemaObjectCacheSupplier schemaObjectCacheSupplier;
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
-
-  @Inject FeaturesConfig apiFeatureConfig;
-
   @Inject
-  public KeyspaceResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public KeyspaceResource(
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier,
+      MeteredCommandProcessor meteredCommandProcessor,
+      MeterRegistry meterRegistry,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CqlSessionCacheSupplier sessionCacheSupplier,
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory) {
+
+    this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
     this.meteredCommandProcessor = meteredCommandProcessor;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            // old code did not pass a jsonProcessingMetricsReporter not sure why - Aaron Feb 10
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
+            .withCqlSessionCache(sessionCacheSupplier.get())
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+            .withEmbeddingProviderFactory(embeddingProviderFactory)
+            .withRerankingProviderFactory(rerankingProviderFactory)
+            .withMeterRegistry(meterRegistry);
   }
 
   @Operation(
@@ -82,10 +101,16 @@ public class KeyspaceResource {
                         CreateTableCommand.class,
                         DropIndexCommand.class,
                         DropTableCommand.class,
-                        ListTablesCommand.class
+                        ListTablesCommand.class,
+                        ListTypesCommand.class,
+                        CreateTypeCommand.class,
+                        AlterTypeCommand.class,
+                        DropTypeCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "createCollection"),
+                @ExampleObject(ref = "createCollectionLexical"),
+                @ExampleObject(ref = "createCollectionReranking"),
                 @ExampleObject(ref = "createCollectionVectorSearch"),
                 @ExampleObject(ref = "findCollections"),
                 @ExampleObject(ref = "deleteCollection"),
@@ -93,7 +118,11 @@ public class KeyspaceResource {
                 @ExampleObject(ref = "createTableWithMultipleKeys"),
                 @ExampleObject(ref = "dropTable"),
                 @ExampleObject(ref = "dropIndex"),
-                @ExampleObject(ref = "listTables")
+                @ExampleObject(ref = "listTables"),
+                @ExampleObject(ref = "listTypes"),
+                @ExampleObject(ref = "createType"),
+                @ExampleObject(ref = "alterType"),
+                @ExampleObject(ref = "dropType")
               }))
   @APIResponses(
       @APIResponse(
@@ -113,41 +142,47 @@ public class KeyspaceResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid KeyspaceCommand command,
-      @PathParam("keyspace")
-          @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
-          String keyspace) {
-
-    final ApiFeatures apiFeatures =
-        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
+      @NotNull @Valid KeyspaceCommand command, @PathParam("keyspace") @NotEmpty String keyspace) {
 
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
     //    CommandContext commandContext = new CommandContext(keyspace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
-    CommandContext<KeyspaceSchemaObject> commandContext =
-        new CommandContext<>(
-            new KeyspaceSchemaObject(keyspace),
-            null,
-            command.getClass().getSimpleName(),
-            null,
-            apiFeatures);
 
-    // Need context first to check if feature is enabled
-    if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
-      return Uni.createFrom()
-          .item(
-              new ThrowableCommandResultSupplier(
-                  ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
-          .map(commandResult -> commandResult.toRestResponse());
-    }
+    var keyspaceIdentifier =
+        SchemaObjectIdentifier.forKeyspace(
+            requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
 
-    // call processor
-    return meteredCommandProcessor
-        .processCommand(dataApiRequestInfo, commandContext, command)
-        // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.toRestResponse());
+    // Force refresh on all keyspace commands because they are all DDL commands
+    return schemaObjectCacheSupplier
+        .get()
+        .getKeyspace(requestContext, keyspaceIdentifier, requestContext.userAgent(), true)
+        .flatMap(
+            keyspaceSchemaObject -> {
+              var commandContext =
+                  contextBuilderSupplier
+                      .getBuilder(keyspaceSchemaObject)
+                      .withCommandName(command.getClass().getSimpleName())
+                      .withRequestContext(requestContext)
+                      .build();
+
+              // call processor
+              return meteredCommandProcessor
+                  .processCommand(commandContext, command)
+                  // map to 2xx unless overridden by error
+                  .map(commandResult -> commandResult.toRestResponse())
+                  .onTermination()
+                  .invoke(
+                      () -> {
+                        try {
+                          commandContext.close();
+                        } catch (Exception e) {
+                          LOGGER.error(
+                              "Error closing the command context for requestContext={}",
+                              requestContext,
+                              e);
+                        }
+                      });
+            });
   }
 }

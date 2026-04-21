@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.bpodgursky.jbool_expressions.Expression;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,10 +9,10 @@ import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -25,9 +27,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindCollectionOperation(
@@ -49,13 +48,11 @@ public record FindCollectionOperation(
     int maxSortReadLimit,
     boolean singleResponse,
     float[] vector,
+    SortExpression bm25SearchExpression,
 
     /** Whether to include the sort vector in the response. This is used for vector search. */
     boolean includeSortVector)
     implements CollectionReadOperation {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(FindCollectionOperation.class);
-
   /**
    * Constructs find operation for unsorted single document find.
    *
@@ -88,6 +85,7 @@ public record FindCollectionOperation(
         0,
         0,
         true,
+        null,
         null,
         includeSortVector);
   }
@@ -130,7 +128,63 @@ public record FindCollectionOperation(
         0,
         false,
         null,
+        null,
         includeSortVector);
+  }
+
+  /** Constructs find operation for BM25-sorted single-document find. */
+  public static FindCollectionOperation bm25Single(
+      CommandContext<CollectionSchemaObject> commandContext,
+      DBLogicalExpression dbLogicalExpression,
+      DocumentProjector projection,
+      CollectionReadType readType,
+      ObjectMapper objectMapper,
+      SortExpression bm25Expr) {
+    return new FindCollectionOperation(
+        commandContext,
+        dbLogicalExpression,
+        projection,
+        null,
+        1,
+        1,
+        readType,
+        objectMapper,
+        null,
+        0,
+        0,
+        true,
+        null,
+        bm25Expr,
+        false);
+  }
+
+  /** Constructs find operation for BM25-sorted multi-document find. */
+  public static FindCollectionOperation bm25Multi(
+      CommandContext<CollectionSchemaObject> commandContext,
+      DBLogicalExpression dbLogicalExpression,
+      DocumentProjector projection,
+      String pageState,
+      int limit,
+      int pageSize,
+      CollectionReadType readType,
+      ObjectMapper objectMapper,
+      SortExpression bm25Expr) {
+    return new FindCollectionOperation(
+        commandContext,
+        dbLogicalExpression,
+        projection,
+        pageState,
+        limit,
+        pageSize,
+        readType,
+        objectMapper,
+        null,
+        0,
+        0,
+        false,
+        null,
+        bm25Expr,
+        false);
   }
 
   /**
@@ -167,6 +221,7 @@ public record FindCollectionOperation(
         0,
         true,
         vector,
+        null,
         includeSortVector);
   }
 
@@ -180,7 +235,8 @@ public record FindCollectionOperation(
    * @param limit limit of rows to fetch
    * @param pageSize page size
    * @param readType type of the read
-   * @param objectMapper object mapper to use * @param vector vector to search * @param
+   * @param objectMapper object mapper to use
+   * @param vector vector to search
    * @param includeSortVector include sort vector in the response
    * @return FindCollectionOperation for a multi document unsorted find
    */
@@ -209,6 +265,7 @@ public record FindCollectionOperation(
         0,
         false,
         vector,
+        null,
         includeSortVector);
   }
 
@@ -251,6 +308,7 @@ public record FindCollectionOperation(
         skip,
         maxSortReadLimit,
         true,
+        null,
         null,
         includeSortVector);
   }
@@ -299,47 +357,50 @@ public record FindCollectionOperation(
         maxSortReadLimit,
         false,
         null,
+        null,
         includeSortVector);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
           .failure(
-              ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-                  "%s", commandContext().schemaObject().name().table()));
+              SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.get(
+                  errVars(commandContext().schemaObject())));
     }
+
     // get FindResponse
     return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
-
         // map the response to result
         .map(
             docs -> {
-              // TODO: why is this here and not higher up where it can happen for any command result
-              // ?
+              // TODO: why is this here and not higher up where it can happen for any command
+              // result?
               commandContext
                   .jsonProcessingMetricsReporter()
-                  .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
+                  .reportJsonReadDocsMetrics(
+                      commandContext.requestContext().tenant(),
+                      commandContext().commandName(),
+                      docs.docs().size());
               return new ReadOperationPage(
                   docs.docs(), singleResponse, docs.pageState(), includeSortVector(), vector());
             });
   }
 
   /**
-   * A operation method which can return FindResponse instead of CommandResult. This method will be
+   * An operation method which can return FindResponse instead of CommandResult. This method will be
    * used by other commands which needs a document to be read.
    *
    * @param queryExecutor
    * @param pageState
-   * @param additionalIdFilter Used if a additional id filter need to be added to already available
+   * @param additionalIdFilter Used if an additional id filter need to be added to already available
    *     filters
-   * @return
    */
   public Uni<FindResponse> getDocuments(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String pageState,
       IDCollectionFilter additionalIdFilter) {
@@ -362,6 +423,7 @@ public record FindCollectionOperation(
             maxSortReadLimit(),
             projection(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
@@ -378,23 +440,22 @@ public record FindCollectionOperation(
             projection,
             limit(),
             vector() != null,
+            commandContext.requestContext().tenant(),
             commandContext.commandName(),
             commandContext.jsonProcessingMetricsReporter());
       }
       default -> {
-        JsonApiException failure =
-            ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-                "Unsupported find operation read type `%s`", readType);
-        return Uni.createFrom().failure(failure);
+        return Uni.createFrom()
+            .failure(
+                new IllegalArgumentException(
+                    "Unsupported find operation read type `%s`".formatted(readType)));
       }
     }
   }
 
   /**
-   * A operation method which can return ReadDocument with an empty document, if the filter
-   * condition has _id filter it will return document with this field added
-   *
-   * @return
+   * An operation method which can return ReadDocument with an empty document, if the filter
+   * condition has _id filter it will return document with this field added.
    */
   public ReadDocument getNewDocument() {
 
@@ -407,22 +468,21 @@ public record FindCollectionOperation(
       var currentDbLogicalExpression = stack.pop();
 
       for (DBFilterBase filter : dbLogicalExpression.filters()) {
-        // every filter must be a collection filter, because we are making a new document and we
-        // only do this for docs
-        if (filter instanceof IDCollectionFilter) {
-          IDCollectionFilter idFilter = (IDCollectionFilter) filter;
+        // every filter must be a collection filter, because we are making a new document,
+        // and we only do this for docs
+        if (filter instanceof IDCollectionFilter idFilter) {
           documentId = idFilter.getSingularDocumentId();
           idFilter
               .updateForNewDocument(objectMapper().getNodeFactory())
               .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-        } else if (filter instanceof CollectionFilter) {
-          CollectionFilter collectionFilter = (CollectionFilter) filter;
+        } else if (filter instanceof CollectionFilter collectionFilter) {
           collectionFilter
               .updateForNewDocument(objectMapper().getNodeFactory())
               .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
         } else {
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Unsupported filter type in getNewDocument: %s", filter.getClass().getName());
+          throw new IllegalArgumentException(
+              "Unsupported filter type in getNewDocument: %s"
+                  .formatted(filter.getClass().getName()));
         }
       }
 
@@ -434,7 +494,6 @@ public record FindCollectionOperation(
   /**
    * Builds select query based on filters and additionalIdFilter overrides.
    *
-   * @param additionalIdFilter
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
@@ -449,7 +508,7 @@ public record FindCollectionOperation(
         expression -> {
           final Query query;
           if (vector() == null) {
-            query =
+            QueryBuilder qb =
                 new QueryBuilder()
                     .select()
                     .column(
@@ -457,11 +516,18 @@ public record FindCollectionOperation(
                             ? documentColumns
                             : documentKeyColumns)
                     .from(
-                        commandContext.schemaObject().name().keyspace(),
-                        commandContext.schemaObject().name().table())
+                        commandContext.schemaObject().identifier().keyspace(),
+                        commandContext.schemaObject().identifier().table())
                     .where(expression)
-                    .limit(limit)
-                    .build();
+                    .limit(limit);
+            var bm25Expr = bm25SearchExpression();
+            if (bm25Expr != null) {
+              qb =
+                  qb.bm25Sort(
+                      DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME,
+                      bm25Expr.getLexicalQuery());
+            }
+            query = qb.build();
           } else {
             query = getVectorSearchQueryByExpression(expression);
           }
@@ -473,7 +539,7 @@ public record FindCollectionOperation(
 
   /**
    * A separate method to build vector search query by using expression, expression can contain
-   * logic operations like 'or','and'..
+   * logic operations like 'or' and 'and'.
    */
   private Query getVectorSearchQueryByExpression(Expression<BuiltCondition> expression) {
     if (projection().doIncludeSimilarityScore()) {
@@ -481,25 +547,25 @@ public record FindCollectionOperation(
           .select()
           .column(CollectionReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
           .similarityFunction(
-              DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+              DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME,
               commandContext().schemaObject().similarityFunction())
           .from(
-              commandContext.schemaObject().name().keyspace(),
-              commandContext.schemaObject().name().table())
+              commandContext.schemaObject().identifier().keyspace(),
+              commandContext.schemaObject().identifier().table())
           .where(expression)
           .limit(limit)
-          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
+          .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
           .build();
     } else {
       return new QueryBuilder()
           .select()
           .column(CollectionReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
           .from(
-              commandContext.schemaObject().name().keyspace(),
-              commandContext.schemaObject().name().table())
+              commandContext.schemaObject().identifier().keyspace(),
+              commandContext.schemaObject().identifier().table())
           .where(expression)
           .limit(limit)
-          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
+          .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
           .build();
     }
   }
@@ -533,8 +599,8 @@ public record FindCollectionOperation(
                   .select()
                   .column(columnsToAdd)
                   .from(
-                      commandContext.schemaObject().name().keyspace(),
-                      commandContext.schemaObject().name().table())
+                      commandContext.schemaObject().identifier().keyspace(),
+                      commandContext.schemaObject().identifier().table())
                   .where(expression)
                   .limit(maxSortReadLimit())
                   .build();
@@ -552,14 +618,10 @@ public record FindCollectionOperation(
    */
   public record OrderBy(String column, boolean ascending) {
     /**
-     * Returns index column name with field name as entry key like query_text_values['username']
-     *
-     * @return
+     * @return index column name with field name as entry key like query_text_values['username']
      */
     public List<String> getOrderingColumns() {
-      return sortIndexColumns.stream()
-          .map(col -> col.formatted(column()))
-          .collect(Collectors.toList());
+      return sortIndexColumns.stream().map(col -> col.formatted(column())).toList();
     }
   }
 }

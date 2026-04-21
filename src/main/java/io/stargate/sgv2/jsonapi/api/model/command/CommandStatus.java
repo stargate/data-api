@@ -21,14 +21,20 @@ public enum CommandStatus {
   @JsonProperty(Names.EXISTING_KEYSPACES)
   EXISTING_KEYSPACES(Names.EXISTING_KEYSPACES),
   /** Status for reporting existing embedding services. */
-  @JsonProperty(Names.EXISTING_VECTOR_PROVIDERS)
-  EXISTING_VECTOR_PROVIDERS(Names.EXISTING_VECTOR_PROVIDERS),
+  @JsonProperty(Names.EXISTING_EMBEDDING_PROVIDERS)
+  EXISTING_EMBEDDING_PROVIDERS(Names.EXISTING_EMBEDDING_PROVIDERS),
+  /** Status for reporting existing reranking services. */
+  @JsonProperty(Names.EXISTING_RERANKING_PROVIDERS)
+  EXISTING_RERANKING_PROVIDERS(Names.EXISTING_RERANKING_PROVIDERS),
   /** Status for reporting existing collections. */
   @JsonProperty(Names.EXISTING_COLLECTIONS)
   EXISTING_COLLECTIONS(Names.EXISTING_COLLECTIONS),
-  /** Status for reporting existing collections. */
+  /** Status for reporting existing tables. */
   @JsonProperty(Names.EXISTING_TABLES)
   EXISTING_TABLES(Names.EXISTING_TABLES),
+  /** Status for reporting existing types. */
+  @JsonProperty(Names.EXISTING_TYPES)
+  EXISTING_TYPES(Names.EXISTING_TYPES),
   /** Status for reporting existing indexes. */
   @JsonProperty(Names.EXISTING_INDEXES)
   EXISTING_INDEXES(Names.EXISTING_INDEXES),
@@ -130,6 +136,10 @@ public enum CommandStatus {
    */
   @JsonProperty(Names.SORTED_ROW_COUNT)
   SORTED_ROW_COUNT(Names.SORTED_ROW_COUNT),
+
+  /** The internal tracing for processing the request. */
+  @JsonProperty(Names.TRACE)
+  TRACE(Names.TRACE),
   ;
 
   private final String apiName;
@@ -152,9 +162,11 @@ public enum CommandStatus {
     String DELETED_COUNT = "deletedCount";
     String EXISTING_NAMESPACES = "namespaces";
     String EXISTING_KEYSPACES = "keyspaces";
-    String EXISTING_VECTOR_PROVIDERS = "embeddingProviders";
+    String EXISTING_EMBEDDING_PROVIDERS = "embeddingProviders";
+    String EXISTING_RERANKING_PROVIDERS = "rerankingProviders";
     String EXISTING_COLLECTIONS = "collections";
     String EXISTING_TABLES = "tables";
+    String EXISTING_TYPES = "types";
     String EXISTING_INDEXES = "indexes";
     String DOCUMENT_RESPONSES = "documentResponses";
     String INSERTED_IDS = "insertedIds";
@@ -171,5 +183,6 @@ public enum CommandStatus {
     String PRIMARY_KEY_SCHEMA = "primaryKeySchema";
     String PROJECTION_SCHEMA = "projectionSchema";
     String SORTED_ROW_COUNT = "sortedRowCount";
+    String TRACE = "trace";
   }
 }

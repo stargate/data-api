@@ -3,16 +3,19 @@ package io.stargate.sgv2.jsonapi.api.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.fasterxml.jackson.databind.*;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
@@ -33,10 +36,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -54,8 +57,10 @@ class ObjectMapperConfigurationTest {
 
   @Inject DocumentLimitsConfig documentLimitsConfig;
 
+  private final TestConstants testConstants = new TestConstants();
+
   @Nested
-  class unmatchedOperationCommandHandlerTest {
+  class UnmatchedOperationCommandHandler {
     @Test
     public void notExistedCommandMatchKeyspaceCommand() throws Exception {
       String json =
@@ -67,9 +72,9 @@ class ObjectMapperConfigurationTest {
                     """;
       Exception e = catchException(() -> objectMapper.readValue(json, KeyspaceCommand.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"notExistedCommand\" not one of \"KeyspaceCommand\"s");
+              "Command 'notExistedCommand' is not a Keyspace Command recognized by Data API.");
     }
 
     @Test
@@ -83,9 +88,9 @@ class ObjectMapperConfigurationTest {
                             """;
       Exception e = catchException(() -> objectMapper.readValue(json, KeyspaceCommand.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"find\" not one of \"KeyspaceCommand\"s");
+              "Command 'find' is not a Keyspace Command recognized by Data API.");
     }
 
     @Test
@@ -99,9 +104,9 @@ class ObjectMapperConfigurationTest {
                             """;
       Exception e = catchException(() -> objectMapper.readValue(json, GeneralCommand.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"insertOne\" not one of \"GeneralCommand\"s");
+              "Command 'insertOne' is not a General Command recognized by Data API.");
     }
 
     @Test
@@ -115,9 +120,9 @@ class ObjectMapperConfigurationTest {
                                   """;
       Exception e = catchException(() -> objectMapper.readValue(json, CollectionCommand.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"createKeyspace\" not one of \"CollectionCommand\"s");
+              "Command 'createKeyspace' is not a Collection Command recognized by Data API.");
 
       String deprecatedCommandJson =
           """
@@ -130,15 +135,25 @@ class ObjectMapperConfigurationTest {
           catchException(
               () -> objectMapper.readValue(deprecatedCommandJson, CollectionCommand.class));
       assertThat(e1)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"createNamespace\" not one of \"CollectionCommand\"s");
+              "Command 'createNamespace' is not a Collection Command recognized by Data API");
+    }
+  }
+
+  // Tests for CQL value serialization handling
+  @Nested
+  class ValueHandlingCqlSerialization {
+    // [data-api#1698] Default CqlVector serialization not what we need for InsertedIds
+    @Test
+    public void okCqlVectorSerialization() throws Exception {
+      CqlVector<Float> input = CqlVector.newInstance(1.0f, 0.5f, -0.25f, 0.0f);
+      assertThat(objectMapper.writeValueAsString(input)).isEqualTo("[1.0,0.5,-0.25,0.0]");
     }
   }
 
   @Nested
   class FindOne {
-
     @Test
     public void happyPath() throws Exception {
       String json =
@@ -160,14 +175,15 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneCommand.class,
               findOne -> {
-                SortClause sortClause = findOne.sortClause();
+                SortClause sortClause = findOne.sortClause(testConstants.collectionContext());
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause.sortExpressions())
                     .contains(
                         SortExpression.sort("user.name", true),
                         SortExpression.sort("user.age", false));
 
-                FilterClause filterClause = findOne.filterClause();
+                FilterClause filterClause =
+                    filterClause(testConstants.collectionContext(), findOne);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -175,10 +191,8 @@ class ObjectMapperConfigurationTest {
                     .singleElement()
                     .satisfies(
                         expression -> {
-                          ValueComparisonOperation<String> op =
-                              new ValueComparisonOperation<>(
-                                  ValueComparisonOperator.EQ,
-                                  new JsonLiteral<>("aaron", JsonType.STRING));
+                          ValueComparisonOperation<?> op =
+                              ValueComparisonOperation.build(ValueComparisonOperator.EQ, "aaron");
 
                           assertThat(expression.getPath()).isEqualTo("username");
                           assertThat(expression.getFilterOperations())
@@ -203,7 +217,11 @@ class ObjectMapperConfigurationTest {
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class,
-              findOne -> Assertions.assertThat(findOne.sortClause()).isNull());
+              findOne -> {
+                SortClause sc = findOne.sortClause(testConstants.collectionContext());
+                Assertions.assertThat(sc).isNotNull();
+                Assertions.assertThat(sc.isEmpty()).isTrue();
+              });
     }
 
     @Test
@@ -221,7 +239,7 @@ class ObjectMapperConfigurationTest {
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class,
-              findOne -> Assertions.assertThat(findOne.filterClause()).isNull());
+              findOne -> Assertions.assertThat(findOne.filterDefinition()).isNull());
     }
 
     // Only "empty" Options allowed, nothing else
@@ -301,8 +319,7 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
-          .hasMessageStartingWith(
-              ErrorCodeV1.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `InsertOneCommand`");
+          .hasMessageStartingWith("Command 'insertOne' does not accept options");
     }
 
     @Test
@@ -353,16 +370,15 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               DeleteOneCommand.class,
               cmd -> {
-                FilterClause filterClause = cmd.filterClause();
+                FilterClause filterClause = filterClause(testConstants.collectionContext(), cmd);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
 
                 assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
                     .isEqualTo("username");
-                ValueComparisonOperation<String> op =
-                    new ValueComparisonOperation<>(
-                        ValueComparisonOperator.EQ, new JsonLiteral<>("Aaron", JsonType.STRING));
+                ValueComparisonOperation<?> op =
+                    ValueComparisonOperation.build(ValueComparisonOperator.EQ, "Aaron");
                 assertThat(
                         filterClause
                             .logicalExpression()
@@ -390,8 +406,7 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
-          .hasMessageStartingWith(
-              ErrorCodeV1.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `DeleteOneCommand`");
+          .hasMessageStartingWith("Command 'deleteOne' does not accept options");
     }
   }
 
@@ -917,8 +932,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterClause filterClause = findOneAndUpdateCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterDefinition filterSpec = findOneAndUpdateCommand.filterDefinition();
+                assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
@@ -946,8 +961,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterClause filterClause = findOneAndUpdateCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterDefinition filterSpec = findOneAndUpdateCommand.filterDefinition();
+                assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
@@ -1021,8 +1036,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               CountDocumentsCommand.class,
               countCommand -> {
-                FilterClause filterClause = countCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterDefinition filterSpec = countCommand.filterDefinition();
+                assertThat(filterSpec).isNotNull();
               });
     }
   }
@@ -1085,17 +1100,21 @@ class ObjectMapperConfigurationTest {
                               .containsEntry(
                                   "new_col_2",
                                   new MapColumnDesc(
-                                      PrimitiveColumnDesc.TEXT, PrimitiveColumnDesc.TEXT));
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
+                                      PrimitiveColumnDesc.TEXT,
+                                      PrimitiveColumnDesc.TEXT));
                           assertThat(columns)
                               .containsEntry(
                                   "content",
                                   new VectorColumnDesc(
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
                                       1024,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                           assertThat(columns)
                               .containsEntry(
                                   "vector_1",
                                   new VectorColumnDesc(
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
                                       null,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });
@@ -1219,5 +1238,10 @@ class ObjectMapperConfigurationTest {
                         });
               });
     }
+  }
+
+  private <CMD extends Command & Filterable> FilterClause filterClause(
+      CommandContext<?> ctx, CMD cmd) {
+    return cmd.filterClause(ctx);
   }
 }

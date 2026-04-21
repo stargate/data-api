@@ -5,9 +5,9 @@ import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.internal.core.cql.EmptyColumnDefinitions;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.concurrent.CompletionStage;
+import org.jspecify.annotations.NonNull;
 
 public class ResultSetTestData extends TestDataSuplier {
 

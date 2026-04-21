@@ -20,20 +20,31 @@ import org.junit.jupiter.api.BeforeAll;
  */
 public abstract class AbstractCollectionIntegrationTestBase
     extends AbstractKeyspaceIntegrationTestBase {
+  // Base collection name automatically created in this test
+  protected final String collectionName;
 
-  // collection name automatically created in this test
-  protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
+  protected AbstractCollectionIntegrationTestBase() {
+    this("col");
+  }
+
+  protected AbstractCollectionIntegrationTestBase(String collectionNamePrefix) {
+    collectionName = collectionNamePrefix + RandomStringUtils.insecure().nextAlphanumeric(16);
+  }
 
   @BeforeAll
-  public final void createSimpleCollection() {
+  public void createDefaultCollection() {
+    createSimpleCollection();
+  }
+
+  protected final void createSimpleCollection() {
     createSimpleCollection(this.collectionName);
   }
 
-  protected void createSimpleCollection(String collectionToCreate) {
+  protected final void createSimpleCollection(String collectionToCreate) {
     createCollection(this.keyspaceName, collectionToCreate);
   }
 
-  protected void createComplexCollection(String collectionSetting) {
+  protected final void createComplexCollection(String collectionSetting) {
     given()
         .port(getTestPort())
         .headers(getHeaders())
@@ -54,6 +65,11 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility to delete all documents from the test collection. */
   protected void deleteAllDocuments() {
+    deleteAllDocuments(keyspaceName, collectionName);
+  }
+
+  /** Utility to delete all documents from the specified collection. */
+  protected void deleteAllDocuments(String ks, String collection) {
     String json =
         """
         {
@@ -69,7 +85,7 @@ public abstract class AbstractCollectionIntegrationTestBase
               .contentType(ContentType.JSON)
               .body(json)
               .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+              .post(CollectionResource.BASE_PATH, ks, collection)
               .then()
               .statusCode(200)
               .body("$", responseIsWriteSuccess())
@@ -111,45 +127,37 @@ public abstract class AbstractCollectionIntegrationTestBase
         .statusCode(200);
   }
 
-  /** Utility to insert many docs to the test collection. */
-  protected void insertManyDocs(String docsJson, int docsAmount) {
-    String doc =
-            """
-                {
-                  "insertMany": {
-                    "documents": %s
-                  }
-                }
-                """
-            .formatted(docsJson);
-
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(doc)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-        .then()
-        .body("$", responseIsWriteSuccess())
-        .body("status.insertedIds", hasSize(docsAmount))
-        .statusCode(200);
-  }
-
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThen(String json) {
+    return givenHeadersPostJsonThen(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThen(
+      String keyspace, String collectionName, String json) {
     return givenHeadersAndJson(json)
         .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+        .post(CollectionResource.BASE_PATH, keyspace, collectionName)
         .then();
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThenOk(String json) {
-    return givenHeadersPostJsonThen(json).statusCode(200);
+    return givenHeadersPostJsonThenOk(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThenOk(
+      String keyspace, String collectionName, String json) {
+    return givenHeadersPostJsonThen(keyspace, collectionName, json).statusCode(200);
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(String json) {
-    return givenHeadersPostJsonThenOk(json).body("errors", is(nullValue()));
+    return givenHeadersPostJsonThenOkNoErrors(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(
+      String keyspace, String collectionName, String json) {
+    return givenHeadersPostJsonThenOk(keyspace, collectionName, json)
+        .body("errors", is(nullValue()));
   }
 }

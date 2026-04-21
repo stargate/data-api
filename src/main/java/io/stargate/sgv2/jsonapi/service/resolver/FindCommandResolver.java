@@ -4,26 +4,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.*;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Map;
 
 /** Resolves the {@link FindOneCommand } */
 @ApplicationScoped
@@ -32,25 +31,20 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final ReadCommandResolver<FindCommand> readCommandResolver;
 
   @Inject
   public FindCommandResolver(
       OperationsConfig operationsConfig,
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
 
-    this.readCommandResolver = new ReadCommandResolver<>(objectMapper, operationsConfig);
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -62,96 +56,25 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   }
 
   @Override
-  public Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, FindCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, FindCommand command) {
 
-    // TODO: if we are doing in memory sorting how do we get a paging state working ?
-    // The in memory sorting will blank out the paging state so we need to handle this
-    var cqlPageState =
-        command.options() == null
-            ? CqlPagingState.EMPTY
-            : CqlPagingState.from(command.options().pageState());
-
-    var pageBuilder =
-        ReadAttemptPage.<TableSchemaObject>builder().singleResponse(false).mayReturnVector(command);
-
-    return readCommandResolver.buildReadOperation(ctx, command, cqlPageState, pageBuilder);
-
-    // TODO: AARON MAHESH this is what was here before, leaving until we confirm all good
-
-    //    var rowSorterWithWarnings = tableRowSorterClauseResolver.resolve(ctx, command);
-    //
-    //    boolean inMemorySort = rowSorterWithWarnings != null;
-    //    var operationConfig = ctx.getConfig(OperationsConfig.class);
-    //    int limit =
-    //        Optional.ofNullable(command.options())
-    //            .map(FindCommand.Options::limit)
-    //            .orElse(inMemorySort ? operationsConfig.defaultPageSize() : Integer.MAX_VALUE);
-    //
-    //    var selectLimit = inMemorySort ? operationConfig.maxDocumentSortCount() + 1 : limit;
-    //
-    //    var cqlPageState =
-    //        inMemorySort
-    //            ? CqlPagingState.EMPTY
-    //            : Optional.ofNullable(command.options())
-    //                .map(options -> CqlPagingState.from(options.pageState()))
-    //                .orElse(CqlPagingState.EMPTY);
-    //
-    //    int pageSize =
-    //        inMemorySort ? operationsConfig.defaultSortPageSize() :
-    // operationsConfig.defaultPageSize();
-    //
-    //    var orderBy = tableSortOrderByCqlClauseResolver.resolve(ctx, command);
-    //
-    //    int skip =
-    // Optional.ofNullable(command.options()).map(FindCommand.Options::skip).orElse(0);
-    //
-    //    SortedRowAccumulator.RowSortSettings rowSortSettings =
-    //        inMemorySort ? SortedRowAccumulator.RowSortSettings.from(limit, skip, selectLimit) :
-    // null;
-    //
-    //    var projection =
-    //        TableProjection.fromDefinition(
-    //            objectMapper,
-    //            command.tableProjectionDefinition(),
-    //            ctx.schemaObject(),
-    //            inMemorySort
-    //                ?
-    // rowSorterWithWarnings.getOrderingColumns().stream().map(ApiColumnDef::name).toList()
-    //                : null);
-    //
-    //    var builder =
-    //        new TableReadAttemptBuilder(
-    //                ctx.schemaObject(),
-    //                projection,
-    //                projection,
-    //                orderBy,
-    //                rowSorterWithWarnings,
-    //            rowSortSettings)
-    //            .addBuilderOption(CQLOption.ForSelect.limit(selectLimit))
-    //            .addStatementOption(CQLOption.ForStatement.pageSize(pageSize))
-    //            .addPagingState(cqlPageState);
-    //
-    //    var where =
-    //        TableWhereCQLClause.forSelect(
-    //            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
-    //    var attempts = new OperationAttemptContainer<>(builder.build(where));
-    //
-    //    var pageBuilder =
-    //        ReadAttemptPage.<TableSchemaObject>builder()
-    //            .singleResponse(false)
-    //            .includeSortVector(command.options() != null &&
-    // command.options().includeSortVector())
-    //            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-    //            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-    //
-    //    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return new TableReadDBOperationBuilder<>(commandContext)
+        .withCommand(command)
+        .withPagingState(
+            command.options() == null
+                ? CqlPagingState.EMPTY
+                : CqlPagingState.from(command.options().pageState()))
+        .withSingleResponse(false)
+        .build();
   }
 
   @Override
-  public Operation resolveCollectionCommand(
-      CommandContext<CollectionSchemaObject> ctx, FindCommand command) {
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
 
-    var resolvedDbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
+    var resolvedDbLogicalExpression =
+        collectionFilterResolver.resolve(commandContext, command).target();
     // limit and page state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;
@@ -173,27 +96,28 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
       includeSortVector = options.includeSortVector();
     }
 
-    SortClause sortClause = command.sortClause();
+    final SortClause sortClause = command.sortClause(commandContext);
 
     // collection always uses in memory sorting, so we don't support page state with sort clause
     // empty sort clause and empty page state are treated as no sort clause and no page state
     // any non-zero length string is considered page state - the same standard is used in
     // Tables(CqlPagingState)
-    if (sortClause != null && !sortClause.isEmpty() && pageState != null && !pageState.isEmpty()) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-          "pageState is not supported with non-empty sort clause");
+    if (sortClause != null) {
+      if (!sortClause.isEmpty() && pageState != null && !pageState.isEmpty()) {
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of("problem", "'pageState' is not supported with non-empty sort clause"));
+      }
+      sortClause.validate(commandContext.schemaObject());
     }
 
-    SchemaValidatable.maybeValidate(ctx, sortClause);
-
     // if vector search
-    float[] vector = SortClauseUtil.resolveVsearch(sortClause);
-    var indexUsage = ctx.schemaObject().newCollectionIndexUsage();
+    final float[] vector = SortClauseUtil.resolveVsearch(sortClause);
+    var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
     indexUsage.vectorIndexTag = vector != null;
 
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         resolvedDbLogicalExpression,
@@ -203,31 +127,59 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
       limit =
           Math.min(
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
+
+      // Hack: See https://github.com/stargate/data-api/issues/1961
+      int pageSize =
+          commandContext.getHybridLimits() == null
+              ? operationsConfig.defaultPageSize()
+              : commandContext.getHybridLimits().vectorLimit();
       return FindCollectionOperation.vsearch(
-          ctx,
+          commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(includeSimilarity),
           pageState,
           limit,
-          operationsConfig.defaultPageSize(),
+          pageSize,
           CollectionReadType.DOCUMENT,
           objectMapper,
           vector,
           includeSortVector);
     }
 
-    List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
-    // if orderBy present
-    if (orderBy != null) {
-      return FindCollectionOperation.sorted(
-          ctx,
+    // BM25 search / sort?
+    SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
+    if (bm25Expr != null) {
+      // Hack: See https://github.com/stargate/data-api/issues/1961
+      int pageSize =
+          commandContext.getHybridLimits() == null
+              ? operationsConfig.defaultPageSize()
+              : commandContext.getHybridLimits().lexicalLimit();
+      return FindCollectionOperation.bm25Multi(
+          commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
-          // For in memory sorting if no limit provided in the request will use
+          limit,
+          pageSize,
+          CollectionReadType.DOCUMENT,
+          objectMapper,
+          bm25Expr);
+    }
+
+    List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
+    // if orderBy present
+    if (orderBy != null) {
+      // Hack: See https://github.com/stargate/data-api/issues/1961
+      // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
+      return FindCollectionOperation.sorted(
+          commandContext,
+          resolvedDbLogicalExpression,
+          command.buildProjector(),
+          pageState,
+          // For in-memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
           Math.min(limit, operationsConfig.defaultPageSize()),
-          // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
+          // For in-memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           CollectionReadType.SORTED_DOCUMENT,
           objectMapper,
@@ -235,17 +187,18 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           skip,
           operationsConfig.maxDocumentSortCount(),
           includeSortVector);
-    } else {
-      return FindCollectionOperation.unsorted(
-          ctx,
-          resolvedDbLogicalExpression,
-          command.buildProjector(),
-          pageState,
-          limit,
-          operationsConfig.defaultPageSize(),
-          CollectionReadType.DOCUMENT,
-          objectMapper,
-          includeSortVector);
     }
+    // Hack: See https://github.com/stargate/data-api/issues/1961
+    // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
+    return FindCollectionOperation.unsorted(
+        commandContext,
+        resolvedDbLogicalExpression,
+        command.buildProjector(),
+        pageState,
+        limit,
+        operationsConfig.defaultPageSize(),
+        CollectionReadType.DOCUMENT,
+        objectMapper,
+        includeSortVector);
   }
 }

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.*;
 import java.util.*;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,16 @@ public abstract class ApiDataTypeDefs {
 
   public static final PrimitiveApiDataTypeDef DURATION =
       new PrimitiveApiDataTypeDef(
-          ApiTypeName.DURATION, DataTypes.DURATION, ApiSupportDef.Support.FULL);
+          ApiTypeName.DURATION,
+          DataTypes.DURATION,
+          new ApiSupportDef.Support(true, true, true, true, ApiSupportDef.Update.PRIMITIVE),
+          // we do not let the user bind a duration as a map key, but if the DB says it is ok.
+          // otherwise supported
+          new DefaultTypeBindingRules(
+              DefaultTypeBindingRules.createAll(TypeBindingPoint.COLLECTION_VALUE),
+              DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              DefaultTypeBindingRules.createAll(TypeBindingPoint.TABLE_COLUMN),
+              DefaultTypeBindingRules.createAll(TypeBindingPoint.UDT_FIELD)));
 
   public static final PrimitiveApiDataTypeDef TIME =
       new PrimitiveApiDataTypeDef(ApiTypeName.TIME, DataTypes.TIME, ApiSupportDef.Support.FULL);
@@ -64,7 +74,14 @@ public abstract class ApiDataTypeDefs {
       new PrimitiveApiDataTypeDef(
           ApiTypeName.COUNTER,
           DataTypes.COUNTER,
-          new ApiSupportDef.Support(false, false, true, true));
+          new ApiSupportDef.Support(false, false, true, true, ApiSupportDef.Update.NONE),
+          // we do not support the user creating anything with a counter type, but we accept if the
+          // DB says
+          new DefaultTypeBindingRules(
+              DefaultTypeBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.UDT_FIELD, true, false)));
 
   public static final PrimitiveApiDataTypeDef INET =
       new PrimitiveApiDataTypeDef(ApiTypeName.INET, DataTypes.INET, ApiSupportDef.Support.FULL);
@@ -73,15 +90,33 @@ public abstract class ApiDataTypeDefs {
       new PrimitiveApiDataTypeDef(
           ApiTypeName.TIMEUUID,
           DataTypes.TIMEUUID,
-          new ApiSupportDef.Support(false, true, true, true));
+          // Does not support counter as primitive column, list/set value or map key/value.
+          new ApiSupportDef.Support(false, true, true, true, ApiSupportDef.Update.PRIMITIVE),
+          // we do not support the user creating anything with a timeuuid type, but we accept if the
+          // DB says
+          new DefaultTypeBindingRules(
+              DefaultTypeBindingRules.create(TypeBindingPoint.COLLECTION_VALUE, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.MAP_KEY, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.TABLE_COLUMN, true, false),
+              DefaultTypeBindingRules.create(TypeBindingPoint.UDT_FIELD, true, false)));
 
   public static final PrimitiveApiDataTypeDef UUID =
       new PrimitiveApiDataTypeDef(ApiTypeName.UUID, DataTypes.UUID, ApiSupportDef.Support.FULL);
 
-  // Collections use to help lookups, all external access should be through the from() functions
+  // Collections use to help lookups, all external access should be through the
+  // filterBySupportToList() functions
   // below.
-  static final List<PrimitiveApiDataTypeDef> PRIMITIVE_TYPES =
+  public static final List<PrimitiveApiDataTypeDef> PRIMITIVE_TYPES =
       List.of(
           ASCII, BIGINT, BOOLEAN, BINARY, COUNTER, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT,
           SMALLINT, TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
+
+  /**
+   * This static method is to filter out all the {@link PrimitiveApiDataTypeDef} that check the
+   * given ApiSupport matcher.
+   */
+  public static List<PrimitiveApiDataTypeDef> filterBySupportToList(
+      Predicate<ApiSupportDef> matcher) {
+    return PRIMITIVE_TYPES.stream().filter(type -> matcher.test(type.apiSupport())).toList();
+  }
 }

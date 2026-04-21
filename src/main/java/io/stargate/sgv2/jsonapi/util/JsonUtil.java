@@ -1,24 +1,45 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Utf8;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
+import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
+import org.apache.commons.text.WordUtils;
 import org.bson.types.ObjectId;
 
 public class JsonUtil {
-  @Deprecated // use JsonExtensionType.EJSON_DATE.encodedName() instead
-  public static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
+  /**
+   * Helper method for producing "pretty" type description for given {@link JsonNode} value.
+   *
+   * @param node JSON value to describe
+   * @return Capitalized type name like "Object", "Array", "String", "Number" etc.
+   */
+  public static String nodeTypeAsString(JsonNode node) {
+    if (node == null) {
+      return "<null>";
+    }
+    return nodeTypeAsString(node.getNodeType());
+  }
+
+  public static String nodeTypeAsString(JsonNodeType nodeType) {
+    if (nodeType == null) {
+      return "<null>";
+    }
+    return WordUtils.capitalizeFully(nodeType.toString());
+  }
 
   /**
    * Method that compares to JSON values for equality using Mongo semantics which are otherwise same
@@ -52,8 +73,8 @@ public class JsonUtil {
         }
         ObjectNode ob1 = (ObjectNode) node1;
         ObjectNode ob2 = (ObjectNode) node2;
-        Iterator<Map.Entry<String, JsonNode>> it1 = ob1.fields();
-        Iterator<Map.Entry<String, JsonNode>> it2 = ob2.fields();
+        Iterator<Map.Entry<String, JsonNode>> it1 = ob1.properties().iterator();
+        Iterator<Map.Entry<String, JsonNode>> it2 = ob2.properties().iterator();
 
         while (it1.hasNext()) {
           Map.Entry<String, JsonNode> entry1 = it1.next();
@@ -92,21 +113,26 @@ public class JsonUtil {
    *
    * @param json JSON value to check
    * @return Date extracted, if given valid EJSON-encoded Date value; or {@code null} if not
-   *     EJSON-like; or {@link JsonApiException} for malformed EJSON value
-   * @throws JsonApiException If value indicates it would be EJSON-encoded date (by key) but has
-   *     invalid value part (not number)
+   *     EJSON-like
+   * @throws APIException If value indicates it would be EJSON-encoded date (by key) but has invalid
+   *     value part (not number)
    */
   public static Date extractEJsonDate(JsonNode json, Object path) {
     if (json.isObject() && json.size() == 1) {
-      JsonNode value = json.get(EJSON_VALUE_KEY_DATE);
+      JsonNode value = json.get(JsonExtensionType.EJSON_DATE.encodedName());
       if (value != null) {
         if (value.isIntegralNumber() && value.canConvertToLong()) {
           return new Date(value.longValue());
         }
         // Otherwise we have an error case
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "Date (%s) needs to have NUMBER value, has %s (path '%s')",
-            EJSON_VALUE_KEY_DATE, value.getNodeType(), path);
+        throw DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+            Map.of(
+                "errorMessage",
+                "Date (%s) needs to have Number value, had %s (path '%s')"
+                    .formatted(
+                        JsonExtensionType.EJSON_DATE.encodedName(),
+                        JsonUtil.nodeTypeAsString(value),
+                        path)));
       }
     }
     return null;
@@ -118,7 +144,7 @@ public class JsonUtil {
    */
   public static Date tryExtractEJsonDate(JsonNode json) {
     if (json.isObject() && json.size() == 1) {
-      JsonNode value = json.get(EJSON_VALUE_KEY_DATE);
+      JsonNode value = json.get(JsonExtensionType.EJSON_DATE.encodedName());
       if (value != null) {
         if (value.isIntegralNumber() && value.canConvertToLong()) {
           return new Date(value.longValue());
@@ -134,12 +160,12 @@ public class JsonUtil {
 
   public static ObjectNode createEJSonDate(JsonNodeCreator f, long timestamp) {
     ObjectNode json = f.objectNode();
-    json.put(EJSON_VALUE_KEY_DATE, timestamp);
+    json.put(JsonExtensionType.EJSON_DATE.encodedName(), timestamp);
     return json;
   }
 
   public static Map<String, Object> createEJSonDateAsMap(long timestamp) {
-    return Map.of(EJSON_VALUE_KEY_DATE, timestamp);
+    return Map.of(JsonExtensionType.EJSON_DATE.encodedName(), timestamp);
   }
 
   public static ObjectNode createJsonExtensionValue(
@@ -153,7 +179,8 @@ public class JsonUtil {
   }
 
   public static Date createDateFromDocumentId(DocumentId documentId) {
-    return new Date((Long) ((Map) documentId.value()).get(EJSON_VALUE_KEY_DATE));
+    return new Date(
+        (Long) ((Map) documentId.value()).get(JsonExtensionType.EJSON_DATE.encodedName()));
   }
 
   public static JsonExtensionType findJsonExtensionType(JsonNode jsonValue) {
@@ -208,46 +235,64 @@ public class JsonUtil {
   }
 
   private static Object tryExtractExtendedFromUnwrapped(JsonExtensionType etype, JsonNode value) {
-    switch (etype) {
-      case EJSON_DATE:
-        if (value.isIntegralNumber() && value.canConvertToLong()) {
-          return new Date(value.longValue());
-        }
-        break;
-      case OBJECT_ID:
+    return switch (etype) {
+      case EJSON_DATE ->
+          (value.isIntegralNumber() && value.canConvertToLong())
+              ? new Date(value.longValue())
+              : null;
+      case OBJECT_ID -> {
         try {
-          return new ObjectId(value.asText());
+          yield new ObjectId(value.asText());
         } catch (IllegalArgumentException e) {
+          yield null;
         }
-        break;
-      case UUID:
+      }
+      case UUID -> {
         try {
-          return java.util.UUID.fromString(value.asText());
+          yield java.util.UUID.fromString(value.asText());
         } catch (IllegalArgumentException e) {
+          yield null;
         }
-        break;
-    }
-    return null;
+      }
+      case BINARY -> {
+        // For some formats we may get actual Binary; for JSON it's Text (JSON String):
+        if (value.isBinary() || value.isTextual()) {
+          try {
+            yield value.binaryValue();
+          } catch (IOException e) {
+            yield null;
+          }
+        } else {
+          yield null;
+        }
+      }
+    };
   }
 
   private static void failOnInvalidExtendedValue(JsonExtensionType etype, JsonNode value) {
-    switch (etype) {
-      case EJSON_DATE:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be an epoch timestamp, instead got (%s)",
-            etype.encodedName(), value);
-      case OBJECT_ID:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
-            etype.encodedName(), value);
-      case UUID:
-        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
-            "'%s' value has to be 36-character UUID String, instead got (%s)",
-            etype.encodedName(), value);
-    }
-    // should never happen
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unrecognized JsonExtensionType: %s", etype);
+    throw switch (etype) {
+      case EJSON_DATE ->
+          DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "'%s' value has to be an epoch timestamp, instead got (%s)"
+                      .formatted(etype.encodedName(), value)));
+      case OBJECT_ID ->
+          DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)"
+                      .formatted(etype.encodedName(), value)));
+      case UUID ->
+          DocumentException.Code.SHRED_BAD_EJSON_VALUE.get(
+              Map.of(
+                  "errorMessage",
+                  "'%s' value has to be 36-character UUID String, instead got (%s)"
+                      .formatted(etype.encodedName(), value)));
+      case BINARY ->
+          // should never happen
+          ServerException.internalServerError("Unrecognized JsonExtensionType: " + etype);
+    };
   }
 
   /**
@@ -255,8 +300,8 @@ public class JsonUtil {
    * length, and if so, return actual length (in bytes); otherwise return {@code
    * OptionalInt.empty()}. This is faster than encoding String as byte[] and checking length as it
    * not only avoids unnecessary allocation of potentially long String, but also avoids exact
-   * calculation for shorter Strings where we can determine that size cannot exceed the limit (since
-   * we know that UTF-8 encoded length is at most 3x of char length).
+   * calculation for shorter Constants where we can determine that size cannot exceed the limit
+   * (since we know that UTF-8 encoded length is at most 3x of char length).
    *
    * @param value String to check
    * @param maxLengthInBytes Maximum length in bytes allowed (inclusive)
@@ -275,5 +320,25 @@ public class JsonUtil {
       }
     }
     return OptionalInt.empty();
+  }
+
+  public static float[] arrayNodeToVector(ArrayNode arrayNode) {
+
+    float[] arrayVals = new float[arrayNode.size()];
+    if (arrayNode.isEmpty()) {
+      throw DocumentException.Code.SHRED_BAD_VECTOR_SIZE.get();
+    }
+
+    for (int i = 0; i < arrayNode.size(); i++) {
+      JsonNode element = arrayNode.get(i);
+      if (!element.isNumber()) {
+        throw DocumentException.Code.SHRED_BAD_VECTOR_VALUE.get(
+            Map.of(
+                "nodeType", nodeTypeAsString(element),
+                "nodeValue", element.toString()));
+      }
+      arrayVals[i] = element.floatValue();
+    }
+    return arrayVals;
   }
 }

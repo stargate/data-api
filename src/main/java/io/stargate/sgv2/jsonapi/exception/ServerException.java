@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
+import java.util.Map;
+
 /**
  * Base for any errors that are from the {@link ErrorFamily#SERVER} family, these are server side
  * errors not related to the structure of the request itself.
@@ -20,7 +23,9 @@ public class ServerException extends APIException {
     /** See {@link DatabaseException} */
     DATABASE,
     /** See {@link EmbeddingProviderException} */
-    EMBEDDING_PROVIDER;
+    EMBEDDING_PROVIDER,
+    /** See {@link RerankingProviderException} */
+    RERANKING_PROVIDER;
 
     @Override
     public String scope() {
@@ -29,7 +34,9 @@ public class ServerException extends APIException {
   }
 
   public enum Code implements ErrorCode<ServerException> {
-    // Error code for any unknown / unexpected server error
+    // Error code for "should never happen" style server errors
+    INTERNAL_SERVER_ERROR,
+    // Error code for any other unknown / unexpected server error
     UNEXPECTED_SERVER_ERROR;
 
     private final ErrorTemplate<ServerException> template;
@@ -42,5 +49,10 @@ public class ServerException extends APIException {
     public ErrorTemplate<ServerException> template() {
       return template;
     }
+  }
+
+  public static ServerException internalServerError(String message) {
+    return Code.INTERNAL_SERVER_ERROR.get(
+        Map.of(ErrorConstants.TemplateVars.ERROR_MESSAGE, message));
   }
 }

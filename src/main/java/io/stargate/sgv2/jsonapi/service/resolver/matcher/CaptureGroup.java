@@ -4,6 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,10 +38,9 @@ public class CaptureGroup<DataType> {
   public CaptureGroup() {}
 
   /**
-   * Consumer all the captures for this captureGroup it takes the consumer object which defines how
-   * to construct corresponding dbFilter{@link CollectionFilterResolver} {@link TableFilterResolver}
-   *
-   * @param consumer
+   * This method is to consume all the captures for current captureGroup. It takes the consumer
+   * object which will construct corresponding dbFilter. See {@link CollectionFilterResolver} or
+   * {@link TableFilterResolver} for usage.
    */
   void consumeAllCaptures(Consumer<CaptureExpression<DataType>> consumer) {
     captures.forEach(
@@ -49,7 +49,10 @@ public class CaptureGroup<DataType> {
               operation ->
                   consumer.accept(
                       new CaptureExpression<>(
-                          key, operation.operator(), operation.operand().value())));
+                          key,
+                          operation.operator(),
+                          operation.operand().value(),
+                          operation.mapSetListComponent())));
         });
   }
 
@@ -71,6 +74,9 @@ public class CaptureGroup<DataType> {
    *
    * <p>May also need to expand this to include the operation.
    */
-  public static record CaptureExpression<DataType>(
-      String path, FilterOperator operator, DataType value) {}
+  public record CaptureExpression<DataType>(
+      String path,
+      FilterOperator operator,
+      DataType value,
+      MapSetListFilterComponent filterComponent) {}
 }

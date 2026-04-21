@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.Objects;
 
 /**
@@ -10,7 +10,7 @@ import java.util.Objects;
  * Documents * 26 sept 2024 - aaron - this will be removed when we migrate the delete and update
  * table ops to use OperationAttempt
  */
-abstract class TableOperation implements Operation {
+abstract class TableOperation implements Operation<TableSchemaObject> {
 
   protected final CommandContext<TableSchemaObject> commandContext;
 

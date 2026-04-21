@@ -45,8 +45,7 @@ public abstract class ConditionLHS {
       if (other == this) {
         return true;
       }
-      if (other instanceof ColumnName) {
-        ColumnName that = (ColumnName) other;
+      if (other instanceof ColumnName that) {
         return Objects.equals(this.columnName, that.columnName);
       }
       return false;
@@ -77,8 +76,7 @@ public abstract class ConditionLHS {
     public boolean equals(Object other) {
       if (other == this) {
         return true;
-      } else if (other instanceof MapElement) {
-        MapElement that = (MapElement) other;
+      } else if (other instanceof MapElement that) {
         return Objects.equals(this.columnName, that.columnName)
             && Objects.equals(this.key, that.key);
       } else {

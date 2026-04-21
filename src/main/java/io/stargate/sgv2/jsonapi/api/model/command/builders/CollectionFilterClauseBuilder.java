@@ -1,0 +1,204 @@
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
+
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
+import java.util.List;
+import java.util.Map;
+
+public class CollectionFilterClauseBuilder extends FilterClauseBuilder<CollectionSchemaObject> {
+  public CollectionFilterClauseBuilder(CollectionSchemaObject schema) {
+    super(schema);
+  }
+
+  /**
+   * Create the list of ComparisonExpression from a single path entry. A single path entry has key
+   * as the path String, and the value as a JsonNode. E.G.
+   *
+   * <ul>
+   *   <li><code>{"name" : {"$eq" : "value"}}</code>
+   *   <li><code>{"name" : {"$gt" : 10, "$lt" : 50}}</code>
+   * </ul>
+   */
+  @Override
+  protected List<ComparisonExpression> buildFromPathEntry(Map.Entry<String, JsonNode> entry) {
+    // the shared logic for both Collection and Table.
+    return buildFromPathEntryCommon(entry);
+  }
+
+  // Collections have fixed "_id" as THE document id
+  @Override
+  protected boolean isDocId(String path) {
+    return DocumentConstants.Fields.DOC_ID.equals(path);
+  }
+
+  @Override
+  protected FilterClause validateAndBuild(LogicalExpression rootExpr) {
+    return new FilterClause(validateWithSchema(rootExpr));
+  }
+
+  @Override
+  protected String validateFilterClausePath(String path, FilterOperator operator) {
+    if (!NamingRules.FIELD.apply(path)) {
+      if (path.isEmpty()) {
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of("message", "filter expression path cannot be empty String"));
+      }
+      // 3 special fields with $ prefix, skip here
+      switch (path) {
+        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD -> {
+          return path;
+        }
+        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD -> {
+          if (!schema.lexicalConfig().enabled()) {
+            throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
+          }
+          // Only $match valid on $lexical field
+          if (operator != ValueComparisonOperator.MATCH) {
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of(
+                    "message",
+                    "cannot filter on '%s' field using operator '%s': only '$match' is supported"
+                        .formatted(path, operator.getOperator())));
+          }
+          return path;
+        }
+      }
+      throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+          Map.of("message", "filter expression path ('%s') cannot start with '$'".formatted(path)));
+    } else {
+      // and one special-case operator
+      // $match only valid on $lexical field (ok case handled above)
+      if (operator == ValueComparisonOperator.MATCH) {
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of(
+                "message",
+                "'%s' operator can only be used with the '%s' field, not '%s'"
+                    .formatted(
+                        operator.getOperator(),
+                        DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+                        path)));
+      }
+    }
+
+    try {
+      path = DocumentPath.verifyEncodedPath(path);
+    } catch (IllegalArgumentException e) {
+      throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+          Map.of(
+              "message",
+              "filter expression path ('%s') is not valid: %s".formatted(path, e.getMessage())));
+    }
+
+    return path;
+  }
+
+  private LogicalExpression validateWithSchema(LogicalExpression rootExpr) {
+    IndexingProjector indexingProjector = schema.indexingProjector();
+
+    // If nothing specified, everything indexed
+    if (!indexingProjector.isIdentityProjection()) {
+      validateCollectionLogicalExpression(rootExpr, indexingProjector);
+    }
+    return rootExpr;
+  }
+
+  private void validateCollectionLogicalExpression(
+      LogicalExpression logicalExpression, IndexingProjector indexingProjector) {
+    for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
+      validateCollectionLogicalExpression(subLogicalExpression, indexingProjector);
+    }
+    for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
+      validateCollectionComparisonExpression(subComparisonExpression, indexingProjector);
+    }
+  }
+
+  private void validateCollectionComparisonExpression(
+      ComparisonExpression comparisonExpression, IndexingProjector indexingProjector) {
+    String path = comparisonExpression.getPath();
+    boolean isPathIndexed =
+        !indexingProjector.isIndexingDenyAll() && indexingProjector.isPathIncluded(path);
+
+    // special case path may be set to indexed for `$vector` and `$vectorize` fields even in case of
+    // deny all
+
+    if (!isPathIndexed) {
+      // If path is "_id" and it's denied, the operator can only be $eq or $in
+      if (path.equals(DocumentConstants.Fields.DOC_ID)) {
+        FilterOperator filterOperator =
+            comparisonExpression.getFilterOperations().get(0).operator();
+        // if operator is $eq or $in, _id can be used, return
+        if (filterOperator == ValueComparisonOperator.EQ
+            || filterOperator == ValueComparisonOperator.IN) {
+          return;
+        }
+        // otherwise throw _id - specific exception
+        throw FilterException.Code.FILTER_ID_NOT_INDEXED.get(
+            Map.of("operator", filterOperator.getOperator()));
+      }
+      // For any other not-indexed path throw generic exception
+      throw FilterException.Code.FILTER_PATH_UNINDEXED.get(
+          Map.of("path", comparisonExpression.getPath()));
+    }
+
+    JsonLiteral<?> operand = comparisonExpression.getFilterOperations().get(0).operand();
+    // If path is an object (like address), validate the incremental path (like address.city)
+    if (operand.type() == JsonType.ARRAY || operand.type() == JsonType.SUB_DOC) {
+      if (operand.value() instanceof Map<?, ?> map) {
+        validateCollectionMap(indexingProjector, map, path);
+      }
+      if (operand.value() instanceof List<?> list) {
+        validateCollectionList(indexingProjector, list, path);
+      }
+    }
+  }
+
+  private void validateCollectionMap(
+      IndexingProjector indexingProjector, Map<?, ?> map, String currentPath) {
+    for (Map.Entry<?, ?> entry : map.entrySet()) {
+      String incrementalPath = currentPath + "." + entry.getKey();
+      if (!indexingProjector.isPathIncluded(incrementalPath)) {
+        throw FilterException.Code.FILTER_PATH_UNINDEXED.get(Map.of("path", incrementalPath));
+      }
+      // continue build the incremental path if the value is a map
+      if (entry.getValue() instanceof Map<?, ?> valueMap) {
+        validateCollectionMap(indexingProjector, valueMap, incrementalPath);
+      }
+      // continue build the incremental path if the value is a list
+      if (entry.getValue() instanceof List<?> list) {
+        validateCollectionList(indexingProjector, list, incrementalPath);
+      }
+    }
+  }
+
+  private void validateCollectionList(
+      IndexingProjector indexingProjector, List<?> list, String currentPath) {
+    for (Object element : list) {
+      if (element instanceof Map<?, ?> map) {
+        validateCollectionMap(indexingProjector, map, currentPath);
+      } else if (element instanceof List<?> sublList) {
+        validateCollectionList(indexingProjector, sublList, currentPath);
+      } else if (element instanceof String) {
+        // no need to build incremental path, validate current path
+        if (!indexingProjector.isPathIncluded(currentPath)) {
+          throw FilterException.Code.FILTER_PATH_UNINDEXED.get(Map.of("path", currentPath));
+        }
+      }
+    }
+  }
+}

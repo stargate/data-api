@@ -4,37 +4,61 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMes
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Map;
 
 /**
- * The API definition of an Index, is an interface so the unsupported indexs can be represented as
- * well.
+ * The internal API definition of an Index.
+ *
+ * <p>Is an interface so the unsupported indexes can be represented as easily.
  */
-public interface ApiIndexDef extends PrettyPrintable {
+public interface ApiIndexDef extends SchemaDescribable<IndexDesc<?>>, Recordable {
 
+  /** The name of the index in the database. */
   CqlIdentifier indexName();
 
+  /**
+   * The target column the index is on.
+   *
+   * <p>Code should not assume a column can only have one index.
+   */
   CqlIdentifier targetColumn();
 
+  /** The type of index from the API perspective. */
   ApiIndexType indexType();
 
-  IndexDesc<?> indexDesc();
+  /**
+   * The index function from the API perspective.
+   *
+   * <p>This is nullable for indexes on primitive and vector types.
+   */
+  ApiIndexFunction indexFunction();
 
+  /**
+   * Raw CQL indexing options from {@link
+   * com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata#getOptions()}.
+   */
   Map<String, String> indexOptions();
 
+  /**
+   * If the index is unsupported by the API, unsupported indexes need to be listed from <code>
+   * listIndexes</code> but cannot be created.
+   *
+   * @return
+   */
   default boolean isUnsupported() {
     return false;
   }
 
   @Override
-  default PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+  default Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
     // Does not include the indexDesc because it is built on demand
-    return prettyToStringBuilder
+    return dataRecorder
         .append("indexName", cqlIdentifierToMessageString(indexName()))
         .append("targetColumn", cqlIdentifierToMessageString(targetColumn()))
         .append("indexType", indexType())
+        .append("indexFunction", indexFunction())
         .append("indexOptions", indexOptions())
         .append("isUnsupported", isUnsupported());
   }

@@ -7,19 +7,17 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
@@ -444,5 +442,345 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     var expectedUpdatedRowWithNull = DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(null, null);
     checkUpdatedData(
         FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRowWithNull));
+  }
+
+  /**
+   * Test for <a href="https://github.com/stargate/data-api/issues/2275">#2275</a>: filtering a
+   * primitive text column (part of primary key) with an object value should produce a clear
+   * FilterException about the value type mismatch, not a misleading "Server internal error: Filter
+   * type not supported, unable to resolve to a filtering strategy".
+   */
+  @Test
+  public void filterPrimitiveColumnWithObjectValue() {
+    // Filter uses an object value for a text primary key column -- simulates the
+    // incorrect serialization described in the issue
+    var filterJSON =
+        """
+                    {
+                      "partition-key-1": {
+                        "buffer": {
+                          "0": 105,
+                          "1": 49,
+                          "2": 174
+                        }
+                      },
+                      "partition-key-2": "partition-key-2-value-default",
+                      "clustering-key-1": "clustering-key-1-value-default",
+                      "clustering-key-2": "clustering-key-2-value-default",
+                      "clustering-key-3": "clustering-key-3-value-default"
+                    }
+                """;
+    var updateClauseJSON = SET_UPDATE_CLAUSE_TEMPLATE.formatted("updated_value", "updated_value");
+
+    // Should produce a FilterException (not ServerException.INTERNAL_SERVER_ERROR)
+    // with a message indicating that the object value is not valid for the text column
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(filterJSON, updateClauseJSON)
+        .hasSingleApiError(FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE, FilterException.class)
+        .hasNoWarnings();
+  }
+
+  // ==================================================================================================================
+  // UpdateMany not (yet?) supported
+  // ==================================================================================================================
+
+  @Test
+  public void updateManyNotSupported() {
+    String updateClauseJSON = "{ \"$set\": { \"not_indexed_column\": \"def\"}}";
+
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateMany(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(
+            RequestException.Code.UNSUPPORTED_TABLE_COMMAND,
+            RequestException.class,
+            "The command is not supported by tables in the API",
+            "While many commands operate on both tables and collections",
+            "The commands supported by tables are: ")
+        .hasNoWarnings();
+  }
+
+  @Nested
+  class MapSetListUpdate {
+
+    static final String MAP_SET_LIST_TABLE_NAME = "table_collection_" + System.currentTimeMillis();
+
+    static final String MAP_SET_LIST_TABLE_DEFINITION =
+        """
+                    {
+                        "name": "%s",
+                        "definition": {
+                          "columns": {
+                            "id": "text",
+                            "name": "text",
+                            "mapTextToText": {
+                                    "type": "map",
+                                    "keyType": "text",
+                                    "valueType": "text"
+                            },
+                            "mapIntToInt": {
+                                    "type": "map",
+                                    "keyType": "int",
+                                    "valueType": "int"
+                            },
+                            "setText": {
+                                    "type": "set",
+                                    "valueType": "text"
+                            },
+                            "listText": {
+                                    "type": "list",
+                                    "valueType": "text"
+                            }
+                          },
+                          "primaryKey": {
+                            "partitionBy": [
+                              "id"
+                            ]
+                          }
+                        }
+                      }
+                    """;
+
+    static final String DEFAULT_ROW =
+        """
+                    {
+                        "id": "default-row"
+                    }
+                    """;
+
+    static final String DEFAULT_ROW_JSON =
+        """
+                        {
+                            "id": "default-row",
+                            "name": "default-row"
+                        }
+                        """;
+
+    static final String EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON =
+        """
+                    {
+                        "id": "default-row",
+                        "name": "default-row",
+                        "mapTextToText": {"key1": "value1"},
+                        "mapIntToInt": [[1, 1]],
+                        "setText": ["value1"],
+                        "listText": ["value1"]
+                    }
+                    """;
+
+    @BeforeAll
+    public static void createTable() {
+      assertNamespaceCommand(keyspaceName)
+          .postCreateTable(MAP_SET_LIST_TABLE_DEFINITION.formatted(MAP_SET_LIST_TABLE_NAME))
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .insertOne(DEFAULT_ROW_JSON)
+          .wasSuccessful();
+    }
+
+    @Test
+    @Order(1)
+    public void setAndUnset() {
+      var setJSON =
+          """
+                          {
+                            "$set": {
+                                "mapTextToText": {"key1": "value1"},
+                                "mapIntToInt": [[1, 1]],
+                                "setText": ["value1"],
+                                "listText": ["value1"]
+                            }
+                          }
+                      """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, setJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON);
+      // then unset.
+      unsetAllMapSetList();
+    }
+
+    @Test
+    @Order(2)
+    public void pushSingle() {
+      var pushJSON =
+          """
+                          {
+                            "$push": {
+                                "mapTextToText": {"key1": "value1"},
+                                "mapIntToInt": [1, 1],
+                                "setText": "value1",
+                                "listText": "value1"
+                            }
+                          }
+                      """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, pushJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON);
+      // then unset.
+      unsetAllMapSetList();
+    }
+
+    @Test
+    @Order(3)
+    public void pushMultiple() {
+      var pushJSON =
+          """
+                          {
+                            "$push": {
+                                "mapTextToText": {"$each": [{"key1": "value1"}]},
+                                "mapIntToInt": {"$each": [[1, 1]]},
+                                "setText": {"$each": ["value1"]},
+                                "listText": {"$each": ["value1"]}
+                            }
+                          }
+                      """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, pushJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON);
+
+      // then unset.
+      unsetAllMapSetList();
+    }
+
+    @Test
+    @Order(4)
+    public void pullAll() {
+      // make sure we have the data to pullAll
+      var setJSON =
+          """
+                          {
+                            "$set": {
+                                "mapTextToText": {"key1": "value1"},
+                                "mapIntToInt": [[1, 1]],
+                                "setText": ["value1"],
+                                "listText": ["value1"]
+                            }
+                          }
+                          """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, setJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON);
+      // then pullAll
+      var pushJSON =
+          """
+                              {
+                                "$pullAll": {
+                                    "mapTextToText": ["key1"],
+                                    "mapIntToInt": [1],
+                                    "setText": ["value1"],
+                                    "listText": ["value1"]
+                                }
+                              }
+                          """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, pushJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, DEFAULT_ROW_JSON);
+
+      // then unset.
+      unsetAllMapSetList();
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePushPullAllOperations")
+    public void pushOrPullAllOnPrimitive(String operator) {
+      var updateJSON =
+              """
+              {
+                "%s": {
+                  "name": "newValue"
+                }
+              }
+              """
+              .formatted(operator);
+
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, updateJSON)
+          .hasSingleApiError(
+              UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR, UpdateException.class)
+          .hasNoWarnings();
+    }
+
+    private static Stream<Arguments> providePushPullAllOperations() {
+      return Stream.of(Arguments.of("$push"), Arguments.of("$pullAll"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideUpdateMapSetListWithNull")
+    public void collectionUpdateOperations(String updateClauseJSON) {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, updateClauseJSON)
+          .hasSingleApiError(
+              UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES,
+              UpdateException.class,
+              "The update included invalid values for the columns: ")
+          .hasNoWarnings();
+    }
+
+    private static Stream<Arguments> provideUpdateMapSetListWithNull() {
+      return Stream.of(
+          Arguments.of("{\"$set\": {\"mapTextToText\": [[null,\"abc\"]]}}"),
+          Arguments.of("{\"$set\": {\"mapIntToInt\": [[123,null]]}}"),
+          Arguments.of("{\"$set\": {\"mapTextToText\": {\"123\":null}}}"),
+          Arguments.of("{\"$set\": {\"setText\": [null]}}"),
+          Arguments.of("{\"$set\": {\"listText\": [null]}}"),
+          Arguments.of("{\"$push\": {\"mapTextToText\": [null,\"abc\"]}}"),
+          Arguments.of("{\"$push\": {\"mapIntToInt\": [123, null]}}"),
+          Arguments.of("{\"$push\": {\"setText\": null}}"),
+          Arguments.of("{\"$push\": {\"listText\": null}}"),
+          Arguments.of("{\"$pullAll\": {\"mapTextToText\": [null]}}"),
+          Arguments.of("{\"$pullAll\": {\"setText\": [null]}}"),
+          Arguments.of("{\"$pullAll\": {\"listText\": [null]}}"));
+    }
+
+    private void unsetAllMapSetList() {
+      var unsetJSON =
+          """
+                          {
+                            "$unset": {
+                                  "mapTextToText": {"123": "455"},
+                                  "mapIntToInt": [],
+                                  "setText": ["random"],
+                                  "listText": "abc"
+                                }
+                          }
+                      """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, unsetJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+
+      checkUpdatedData(DEFAULT_ROW, DEFAULT_ROW_JSON);
+    }
+
+    private void checkUpdatedData(String filter, String expectedUpdatedRow) {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .find(filter)
+          .wasSuccessful()
+          .hasNoWarnings()
+          .hasDocuments(1)
+          .hasDocumentInPosition(0, expectedUpdatedRow);
+    }
   }
 }

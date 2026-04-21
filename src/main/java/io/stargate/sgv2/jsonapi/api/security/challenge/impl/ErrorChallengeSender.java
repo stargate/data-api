@@ -5,14 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import java.util.Collections;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,15 +37,14 @@ public class ErrorChallengeSender
 
   @Inject
   public ErrorChallengeSender(ObjectMapper objectMapper) {
+
     this.objectMapper = objectMapper;
-    String message =
-        "Role unauthorized for operation: Missing token, expecting one in the %s header."
-            .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
-    CommandResult.Error error =
-        new CommandResult.Error(
-            message, Collections.emptyMap(), Collections.emptyMap(), Response.Status.UNAUTHORIZED);
     commandResult =
-        CommandResult.statusOnlyBuilder(false, false).addCommandResultError(error).build();
+        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+            .addThrowable(
+                APISecurityException.Code.MISSING_AUTHENTICATION_TOKEN.get(
+                    "authHeader", HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME))
+            .build();
   }
 
   /** {@inheritDoc} */

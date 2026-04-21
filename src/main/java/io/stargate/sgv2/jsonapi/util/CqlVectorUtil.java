@@ -16,22 +16,11 @@ import java.util.*;
  *       bytes (Big-Endian), as encoded by {@link Float#floatToIntBits(float)}. This means that a
  *       vector of {@code 8} {@code Float} values will be represented as a {@code byte[32]} (for
  *       example). This is used as an intermediate representation.
- *   <li>As Base64-encoded Strings, when embedded in JSON payloads: this is Base64 encoding of the
+ *   <li>As Base64-encoded Constants, when embedded in JSON payloads: this is Base64 encoding of the
  *       binary-packed byte arrays.
  * </ul>
  */
 public interface CqlVectorUtil {
-  /**
-   * Method for converting binary-packed representation of a CQL {@code float} vector into a {@link
-   * CqlVector} instance.
-   *
-   * @param packedBytes binary-packed representation of the vector
-   * @return {@link CqlVector} instance representing the vector
-   */
-  static CqlVector<Float> bytesToCqlVector(byte[] packedBytes) {
-    return floatsToCqlVector(bytesToFloats(packedBytes));
-  }
-
   /**
    * Method for converting binary-packed representation of a CQL {@code float} vector into a raw
    * {@code float[]} array.

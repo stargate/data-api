@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.fixtures.testdata;
 
 public abstract class TestDataSuplier {
 
-  protected final TestDataNames names;
+  public final TestDataNames names;
   protected final TestData testData;
 
   protected TestDataSuplier(TestData testData) {

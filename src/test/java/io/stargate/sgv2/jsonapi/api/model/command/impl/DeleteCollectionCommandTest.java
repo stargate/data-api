@@ -10,8 +10,6 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -22,32 +20,29 @@ class DeleteCollectionCommandTest {
 
   @Inject Validator validator;
 
-  @Nested
-  class Validation {
-
-    @Test
-    public void noName() throws Exception {
-      String json =
-          """
+  @Test
+  public void noName() throws Exception {
+    String json =
+        """
           {
             "deleteCollection": {
             }
           }
           """;
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
+    DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
+    Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("must not be empty");
+  }
 
-    @Test
-    public void nameBlank() throws Exception {
-      String json =
-          """
+  @Test
+  public void nameBlank() throws Exception {
+    String json =
+        """
           {
             "deleteCollection": {
               "name": ""
@@ -55,62 +50,19 @@ class DeleteCollectionCommandTest {
           }
           """;
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
+    DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
+    Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
 
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("size must be between 1 and 48");
-    }
+    assertThat(result)
+        .isNotEmpty()
+        .extracting(ConstraintViolation::getMessage)
+        .contains("must not be empty");
+  }
 
-    @Test
-    public void nameTooLong() throws Exception {
-      String name = RandomStringUtils.randomAlphabetic(49);
-      String json =
-              """
-          {
-            "deleteCollection": {
-              "name": "%s"
-            }
-          }
-          """
-              .formatted(name);
-
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("size must be between 1 and 48");
-    }
-
-    @Test
-    public void nameWrongPattern() throws Exception {
-      String json =
-          """
-          {
-            "deleteCollection": {
-              "name": "_not_possible"
-            }
-          }
-          """;
-
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .hasSize(1)
-          .contains("must match \"[a-zA-Z][a-zA-Z0-9_]*\"");
-    }
-
-    @Test
-    public void nameCorrectPattern() throws Exception {
-      String json =
-          """
+  @Test
+  public void nameCorrectPattern() throws Exception {
+    String json =
+        """
           {
             "deleteCollection": {
               "name": "is_possible_10"
@@ -118,10 +70,9 @@ class DeleteCollectionCommandTest {
           }
           """;
 
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
+    DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
+    Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
 
-      assertThat(result).isEmpty();
-    }
+    assertThat(result).isEmpty();
   }
 }

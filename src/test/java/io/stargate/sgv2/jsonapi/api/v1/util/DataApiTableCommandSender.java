@@ -6,10 +6,11 @@ import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 
 public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiTableCommandSender> {
   private final String tableName;
+  private final String keyspace;
   private TableTemplates templated;
 
   protected DataApiTableCommandSender(String keyspace, String tableName) {
-    super(keyspace);
+    this.keyspace = keyspace;
     this.tableName = tableName;
     this.templated = new TableTemplates(this);
   }
@@ -25,6 +26,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
 
   public DataApiResponseValidator postUpdateOne(String jsonClause) {
     return postCommand(CommandName.UPDATE_ONE, jsonClause);
+  }
+
+  public DataApiResponseValidator postUpdateMany(String jsonClause) {
+    return postCommand(CommandName.UPDATE_MANY, jsonClause);
   }
 
   public DataApiResponseValidator postDeleteMany(String jsonClause) {
@@ -51,6 +56,11 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(CommandName.FIND, jsonClause);
   }
 
+  public DataApiResponseValidator postFindWithFilter(String filter) {
+    var jsonClause = "{ \"filter\": " + filter + " } ";
+    return postCommand(CommandName.FIND, jsonClause);
+  }
+
   public DataApiResponseValidator postInsertOne(String jsonClause) {
     return postCommand(CommandName.INSERT_ONE, jsonClause);
   }
@@ -65,6 +75,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
 
   public DataApiResponseValidator postListIndexes(String jsonClause) {
     return postCommand(CommandName.LIST_INDEXES, jsonClause);
+  }
+
+  public DataApiResponseValidator postCreateTextIndex(String jsonClause) {
+    return postCommand(CommandName.CREATE_TEXT_INDEX, jsonClause);
   }
 
   public DataApiResponseValidator postCreateVectorIndex(String jsonClause) {

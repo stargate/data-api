@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
-import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
@@ -11,14 +10,13 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.FilterBehaviour;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 
 /**
@@ -26,7 +24,8 @@ import java.util.List;
  * defined in the CQL specification.
  *
  * <pre>
- *   <native-type> ::= ascii
+ *   native-types:
+ *                 | ascii
  *                 | bigint
  *                 | blob
  *                 | boolean
@@ -51,14 +50,14 @@ import java.util.List;
  *
  * @param <CqlT> The JSON Type , BigDecimal, String etc
  */
-public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements PrettyPrintable {
+public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements Recordable {
 
   /**
    * The operations that can be performed to filter a column TIDY: we have operations defined in
    * multiple places, once we have refactored the collection operations we should centralize these
    * operator definitions
    *
-   * <p>TODO, other operators that apply to scaler / native tyes
+   * <p>TODO, other operators that apply to scalar / native types
    */
   public enum Operator {
     EQ(BuiltConditionPredicate.EQ, new FilterBehaviour.Behaviour(true, false)),
@@ -66,7 +65,9 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
     LT(BuiltConditionPredicate.LT, new FilterBehaviour.Behaviour(false, true)),
     GT(BuiltConditionPredicate.GT, new FilterBehaviour.Behaviour(false, true)),
     LTE(BuiltConditionPredicate.LTE, new FilterBehaviour.Behaviour(false, true)),
-    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true));
+    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true)),
+    // ":" operator (text search)
+    TEXT_SEARCH(BuiltConditionPredicate.TEXT_SEARCH, new FilterBehaviour.Behaviour(false, false));
 
     public final BuiltConditionPredicate predicate;
     public final FilterBehaviour filterBehaviour;
@@ -84,6 +85,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
         case GTE -> GTE;
         case LT -> LT;
         case LTE -> LTE;
+        case MATCH -> TEXT_SEARCH;
         default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
       };
     }
@@ -105,10 +107,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
   }
 
   @Override
-  public <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
-      TableSchemaObject tableSchemaObject,
-      StmtT ongoingWhereClause,
-      List<Object> positionalValues) {
+  public Relation apply(TableSchemaObject tableSchemaObject, List<Object> positionalValues) {
 
     try {
       var codec =
@@ -150,30 +149,14 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
               }));
     }
 
-    return ongoingWhereClause.where(
-        Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()));
+    return Relation.column(getPathAsCqlIdentifier())
+        .build(operator.predicate.getCql(), bindMarker());
   }
 
-  @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  public String toString(boolean pretty) {
-    return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
-  }
-
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    prettyToStringBuilder
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
         .append("path", path)
         .append("operator", operator)
         .append("columnValue", columnValue);
-    return prettyToStringBuilder;
-  }
-
-  @Override
-  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
-    return toString(sb).endSubBuilder();
   }
 }

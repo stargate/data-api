@@ -15,17 +15,15 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.*;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProviderWrapper;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.*;
@@ -51,24 +49,18 @@ public class DataVectorizerService {
   /**
    * This will vectorize the sort clause, update clause and the document with `$vectorize` field
    *
-   * @param dataApiRequestInfo
    * @param commandContext
    * @param command
    * @return
    */
   public <T extends SchemaObject> Uni<Command> vectorize(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext, Command command) {
+      CommandContext<T> commandContext, Command command) {
 
-    final DataVectorizer dataVectorizer =
-        constructDataVectorizer(dataApiRequestInfo, commandContext);
+    final DataVectorizer dataVectorizer = constructDataVectorizer(commandContext);
 
-    // TODO, This is the hack to make table vectorize failure goes into command process flow
-    try {
-      if (commandContext.schemaObject() instanceof TableSchemaObject) {
-        return vectorizeTableCommand(dataVectorizer, commandContext.asTableContext(), command);
-      }
-    } catch (Exception e) {
-      return Uni.createFrom().failure(e);
+    if (commandContext.schemaObject() instanceof TableSchemaObject) {
+      // For Tables, this is now handled by the EmbeddingTask and composite tasks
+      return Uni.createFrom().item(command);
     }
 
     return vectorizeSortClause(dataVectorizer, commandContext, command)
@@ -79,22 +71,23 @@ public class DataVectorizerService {
   }
 
   public <T extends SchemaObject> DataVectorizer constructDataVectorizer(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext) {
-    EmbeddingProvider embeddingProvider =
+      CommandContext<T> commandContext) {
+
+    MeteredEmbeddingProviderWrapper embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(
                 provider ->
-                    new MeteredEmbeddingProvider(
+                    new MeteredEmbeddingProviderWrapper(
                         meterRegistry,
                         jsonApiMetricsConfig,
-                        dataApiRequestInfo,
+                        commandContext.requestContext(),
                         provider,
                         commandContext.commandName()))
             .orElse(null);
     return new DataVectorizer(
         embeddingProvider,
         objectMapper.getNodeFactory(),
-        dataApiRequestInfo.getEmbeddingCredentials(),
+        commandContext.requestContext().getEmbeddingCredentials(),
         commandContext.schemaObject());
   }
 
@@ -102,7 +95,7 @@ public class DataVectorizerService {
       DataVectorizer dataVectorizer, CommandContext<T> commandContext, Command command) {
 
     if (command instanceof Sortable sortable) {
-      return dataVectorizer.vectorize(sortable.sortClause());
+      return dataVectorizer.vectorize(sortable.sortClause(commandContext));
     }
     return Uni.createFrom().item(true);
   }
@@ -180,16 +173,7 @@ public class DataVectorizerService {
           T tableSchemaObject, List<JsonNode> documents, ErrorCode<E> noVectorizeDefinitionCode) {
 
     var apiTableDef = tableSchemaObject.apiTableDef();
-    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
-    // Currently, this matcher is just for match vector columns, and then to avoid hit the
-    // typeName() placeholder exception in UnsupportedApiDataType
-    var matcher =
-        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
-    var vectorColumnDefs =
-        apiTableDef
-            .allColumns()
-            .filterBySupport(matcher)
-            .filterByApiTypeNameToList(ApiTypeName.VECTOR);
+    var vectorColumnDefs = apiTableDef.allColumns().filterVectorColumnsToList();
 
     if (vectorColumnDefs.isEmpty()) {
       return List.of();
@@ -263,13 +247,13 @@ public class DataVectorizerService {
   private List<DataVectorizer.VectorizeTask> tasksForSort(
       Sortable command, CommandContext<TableSchemaObject> commandContext) {
 
-    var sortClause = command.sortClause();
+    var sortClause = command.sortClause(commandContext);
     // because this is coming off the command may be null or empty
     if (sortClause == null || sortClause.isEmpty()) {
       return List.of();
     }
 
-    var vectorizeSorts = command.sortClause().tableVectorizeSorts();
+    var vectorizeSorts = sortClause.tableVectorizeSorts();
     if (vectorizeSorts.isEmpty()) {
       return List.of();
     }
@@ -291,7 +275,7 @@ public class DataVectorizerService {
               map -> {
                 map.put(
                     "sortVectorizeColumns",
-                    errFmtJoin(vectorizeSorts.stream().map(SortExpression::path).toList()));
+                    errFmtJoin(vectorizeSorts.stream().map(SortExpression::getPath).toList()));
               }));
     }
 

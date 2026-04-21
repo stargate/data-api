@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.exception.checked;
 
-import java.util.Optional;
-
 /**
  * Base for checked exceptions we have in the code.
  *
@@ -45,7 +43,11 @@ public class CheckedApiException extends Exception {
   }
 
   protected static String className(Object value) {
-    return Optional.of(value).map(Object::getClass).map(Class::getName).orElse("null");
+    if (value == null) {
+      return "null";
+    } else {
+      return value.getClass().getName();
+    }
   }
 
   private static String maybeTruncate(String value) {

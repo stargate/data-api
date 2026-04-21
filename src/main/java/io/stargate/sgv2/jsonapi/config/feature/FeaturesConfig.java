@@ -14,5 +14,7 @@ import java.util.Map;
  */
 @ConfigMapping(prefix = "stargate.feature")
 public interface FeaturesConfig {
-  Map<ApiFeature, Boolean> flags();
+  // Quarkus/SmallRye Config won't accept use of `null` values, so we must bind
+  // as Strings and only convert to Boolean when needed.
+  Map<ApiFeature, String> flags();
 }

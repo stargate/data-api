@@ -3,8 +3,10 @@ package io.stargate.sgv2.jsonapi.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -23,15 +25,13 @@ import java.util.regex.Pattern;
  * operations' locator paths do not overlap in ancestors/descendants dimensions.
  */
 public class PathMatchLocator implements Comparable<PathMatchLocator> {
-  private static final Pattern DOT = Pattern.compile(Pattern.quote("."));
-
   private static final Pattern INDEX_SEGMENT = Pattern.compile("0|[1-9][0-9]*");
 
   private final String dotPath;
 
-  private final String[] segments;
+  private final DocumentPath segments;
 
-  private PathMatchLocator(String dotPath, String[] segments) {
+  private PathMatchLocator(String dotPath, DocumentPath segments) {
     this.dotPath = dotPath;
     this.segments = segments;
   }
@@ -67,9 +67,9 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
    *
    * @param dotPath Path that uses dot-notation
    * @return Locator instance
-   * @throws JsonApiException if dotPath invalid (empty path segment(s))
+   * @throws APIException if dotPath invalid (empty path segment(s))
    */
-  public static PathMatchLocator forPath(String dotPath) throws JsonApiException {
+  public static PathMatchLocator forPath(String dotPath) {
     return new PathMatchLocator(dotPath, splitAndVerify(dotPath));
   }
 
@@ -86,11 +86,11 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
    */
   public PathMatch findIfExists(JsonNode document) {
     JsonNode context = document;
-    final int lastSegmentIndex = segments.length - 1;
+    final int lastSegmentIndex = segments.getSegmentsSize() - 1;
 
     // First traverse all but the last segment
     for (int i = 0; i < lastSegmentIndex; ++i) {
-      final String segment = segments[i];
+      final String segment = segments.getSegment(i);
       // Simple logic: Object nodes traversed via property; Arrays index; others can't
       if (context.isObject()) {
         context = context.get(segment);
@@ -109,7 +109,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
 
     // But the last segment is special since we now may get Value node but also need
     // to denote how context refers to it (Object property vs Array index)
-    final String segment = segments[lastSegmentIndex];
+    final String segment = segments.getSegment(lastSegmentIndex);
     if (context.isObject()) {
       return PathMatch.pathViaObject(dotPath, context, context.get(segment), segment);
     } else if (context.isArray()) {
@@ -133,13 +133,13 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
    * @param document Document that is to contain target path
    */
   public PathMatch findOrCreate(JsonNode document) {
-    String[] segments = splitAndVerify(dotPath);
+    DocumentPath segments = splitAndVerify(dotPath);
     JsonNode context = document;
-    final int lastSegmentIndex = segments.length - 1;
+    final int lastSegmentIndex = segments.getSegmentsSize() - 1;
 
     // First traverse all but the last segment
     for (int i = 0; i < lastSegmentIndex; ++i) {
-      final String segment = segments[i];
+      final String segment = segments.getSegment(i);
       JsonNode nextContext;
 
       // Simple logic: Object nodes traversed via property; Arrays index; others can't
@@ -175,7 +175,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
 
     // But the last segment is special since we now may get Value node but also need
     // to denote how context refers to it (Object property vs Array index)
-    final String segment = segments[lastSegmentIndex];
+    final String segment = segments.getSegment(lastSegmentIndex);
     if (context.isObject()) {
       return PathMatch.pathViaObject(dotPath, context, context.get(segment), segment);
     }
@@ -205,9 +205,9 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
 
     // Unlike with other methods, we do not need to use special handling for
     // last segment:
-    final int end = segments.length;
+    final int end = segments.getSegmentsSize();
     for (int i = 0; i < end; ++i) {
-      final String segment = segments[i];
+      final String segment = segments.getSegment(i);
       int index;
       if (context.isArray() && (index = findIndexFromSegment(segment)) >= 0) {
         context = context.path(index);
@@ -222,15 +222,17 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     return context;
   }
 
-  private static String[] splitAndVerify(String dotPath) throws JsonApiException {
-    String[] result = DOT.split(dotPath);
-    for (String segment : result) {
-      if (segment.isEmpty()) {
-        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
-            "empty segment ('') in path '%s'", dotPath);
-      }
+  private static DocumentPath splitAndVerify(String dotPath) {
+    DocumentPath path;
+    try {
+      path = DocumentPath.from(dotPath);
+    } catch (IllegalArgumentException e) {
+      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.get(
+          Map.of(
+              "errorMessage",
+              "update path ('%s') is not valid: %s".formatted(dotPath, e.getMessage())));
     }
-    return result;
+    return path;
   }
 
   private int findIndexFromSegment(String segment) {
@@ -240,18 +242,20 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     return -1;
   }
 
-  private JsonApiException cantCreatePropertyPath(String fullPath, String prop, JsonNode context) {
-    return ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
-        "cannot create field ('%s') in path '%s'; only OBJECT nodes have properties (got %s)",
-        prop, fullPath, context.getNodeType());
+  private APIException cantCreatePropertyPath(String fullPath, String prop, JsonNode context) {
+    throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.get(
+        Map.of(
+            "errorMessage",
+            "cannot create field ('%s') in path '%s'; only Object nodes have properties (got %s)"
+                .formatted(prop, fullPath, JsonUtil.nodeTypeAsString(context))));
   }
 
   // Needed because Command Resolver unit tests rely on equality checks for Command equality
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
-    if (!(o instanceof PathMatchLocator)) return false;
-    return dotPath.equals(((PathMatchLocator) o).dotPath);
+    if (!(o instanceof PathMatchLocator pml)) return false;
+    return dotPath.equals(pml.dotPath);
   }
 
   @Override
@@ -266,18 +270,6 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
 
   @Override
   public int compareTo(PathMatchLocator other) {
-    // Instead of simple alphabetic sorting of dotPath, do segment-aware to
-    // ensure parent/children are sorted next to each other
-    final String[] s1 = this.segments;
-    final String[] s2 = other.segments;
-
-    for (int i = 0, end = Math.min(s1.length, s2.length); i < end; ++i) {
-      int diff = s1[i].compareTo(s2[i]);
-      if (diff != 0) {
-        return diff;
-      }
-    }
-    // If same prefix sort longer one after shorter one
-    return s1.length - s2.length;
+    return segments.compareTo(other.segments);
   }
 }

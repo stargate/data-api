@@ -12,6 +12,7 @@ services:
       - CLUSTER_NAME=hcd-${HCDTAG}-cluster
       - DS_LICENSE=accept
       - HCD_AUTO_CONF_OFF=cassandra.yaml
+      - JVM_EXTRA_OPTS=-Dcassandra.sai.latest.version=ec
     volumes:
       - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
     ports:
@@ -37,6 +38,7 @@ services:
       - SEEDS=hcd-1
       - DS_LICENSE=accept
       - HCD_AUTO_CONF_OFF=cassandra.yaml
+      - JVM_EXTRA_OPTS=-Dcassandra.sai.latest.version=ec
     volumes:
       - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
     healthcheck:
@@ -60,6 +62,7 @@ services:
       - SEEDS=hcd-1
       - DS_LICENSE=accept
       - HCD_AUTO_CONF_OFF=cassandra.yaml
+      - JVM_EXTRA_OPTS=-Dcassandra.sai.latest.version=ec
     volumes:
       - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
     healthcheck:

@@ -2,14 +2,12 @@ package io.stargate.sgv2.jsonapi.api.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIndexingConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.*;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -18,21 +16,26 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CollectionSchemaObjectTest {
-  final ObjectMapper objectMapper = new ObjectMapper();
+
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   @Test
   public void ensureSingleProjectorCreation() {
+
     CollectionIndexingConfig indexingConfig =
-        new CollectionIndexingConfig(new HashSet<String>(Arrays.asList("abc")), null);
+        new CollectionIndexingConfig(new HashSet<>(Arrays.asList("abc")), null);
+
     CollectionSchemaObject settings =
         new CollectionSchemaObject(
-            "namespace",
-            "collectionName",
-            null,
+            TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT.identifier(),
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
-            indexingConfig);
+            indexingConfig,
+            CollectionLexicalConfig.configForDisabled(),
+            CollectionRerankDef.configForPreRerankingCollection());
+
     IndexingProjector indexingProj = settings.indexingProjector();
+
     assertThat(indexingProj)
         .isNotNull()
         // Should get the same instance second time due to memoization

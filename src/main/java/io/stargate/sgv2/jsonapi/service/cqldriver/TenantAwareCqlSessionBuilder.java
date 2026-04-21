@@ -6,13 +6,17 @@ import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.session.ProgrammaticArguments;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import com.datastax.oss.protocol.internal.util.collection.NullAllowingImmutableMap;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * This is an extension of the {@link CqlSessionBuilder} that allows to pass a tenant ID to the
  * CQLSession via TenantAwareDriverContext which is an extension of the {@link DefaultDriverContext}
- * that adds the tenant ID to the startup options.
+ * that adds the tenant ID to the startup options. The tenant ID is critical for the cql session and
+ * it has to be passed and cannot be removed.
+ *
+ * <p>It's linked to issue <a href="https://github.com/stargate/data-api/issues/2119">#2119</a>
  */
 public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
   /**
@@ -21,19 +25,12 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
    */
   public static final String TENANT_ID_PROPERTY_KEY = "TENANT_ID";
 
-  /** Tenant ID that will be passed to the CQLSession via TenantAwareDriverContext */
-  private final String tenantId;
+  /** Tenant that will be passed to the CQLSession via TenantAwareDriverContext */
+  private Tenant tenant;
 
-  /**
-   * Constructor that takes the tenant ID as a parameter
-   *
-   * @param tenantId tenant id or database id
-   */
-  public TenantAwareCqlSessionBuilder(String tenantId) {
-    if (tenantId == null || tenantId.isEmpty()) {
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Tenant ID cannot be null or empty");
-    }
-    this.tenantId = tenantId;
+  public TenantAwareCqlSessionBuilder withTenant(Tenant tenant) {
+    this.tenant = Objects.requireNonNull(tenant, "tenant must not be null");
+    return this;
   }
 
   /**
@@ -46,7 +43,7 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
   @Override
   protected DriverContext buildContext(
       DriverConfigLoader configLoader, ProgrammaticArguments programmaticArguments) {
-    return new TenantAwareDriverContext(tenantId, configLoader, programmaticArguments);
+    return new TenantAwareDriverContext(tenant.toString(), configLoader, programmaticArguments);
   }
 
   /**
