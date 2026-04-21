@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.given;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Strings;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
@@ -14,6 +15,8 @@ import io.stargate.sgv2.jsonapi.api.v1.vectorize.targets.Connection;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+
+import java.util.HashMap;
 import java.util.Map;
 
 public class APIRequest {
@@ -77,11 +80,14 @@ public class APIRequest {
 
   protected Map<String, String> getHeaders() {
 
-    return Map.of(
-        HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-        integrationEnv.requiredValue("Token"),
-        HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-        integrationEnv.requiredValue("x-embedding-api-key"));
+    var headers = new HashMap<String, String>();
+    headers.put(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, integrationEnv.requiredValue("Token"));
+
+    var embeddingApiKey = integrationEnv.get("embeddingApiKey");
+    if (!Strings.isNullOrEmpty(embeddingApiKey)){
+      headers.put(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, embeddingApiKey);
+    }
+    return headers;
   }
 
   public RequestSpecification jsonRequest() {

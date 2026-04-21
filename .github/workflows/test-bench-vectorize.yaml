@@ -103,7 +103,7 @@ jobs:
       - name: Build & Test
         env:
           TEST_PLAN_FILE: classpath:integration-tests/test-plans/test-plan-astra-vectorize.yaml
-          Token: ${{ secrets.DATA_API_TOKEN }}
+          DATA_API_TOKEN: ${{ secrets.DATA_API_TOKEN }}
           TARGET_NAME: ${{ matrix.name }}
           ENDPOINT: ${{ matrix.endpoint }}
           HUGGINGFACE_KEY: ${{ secrets.HUGGINGFACE_KEY }}

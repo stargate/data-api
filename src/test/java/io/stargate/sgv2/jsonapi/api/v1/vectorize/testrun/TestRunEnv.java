@@ -95,7 +95,7 @@ public class TestRunEnv {
         .setEnableUndefinedVariableException(true);
   }
 
-  private String get(String name) {
+  public String get(String name) {
 
     var value = vars.get(name);
     if (value == null) {

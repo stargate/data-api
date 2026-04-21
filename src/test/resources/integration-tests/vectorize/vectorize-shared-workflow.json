@@ -7,11 +7,12 @@
     {
       "meta": {
         "name": "open-ai-vectorize",
-        "tags": ["disabled"]
+        "tags": [
+
+        ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "openAi_KEY",
-        "Token": "Token"
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "openai",
@@ -32,28 +33,31 @@
     {
       "meta": {
         "name": "voyageAI-vectorize",
-        "tags": ["disabled"
+        "tags": [
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "voyageAI_KEY",
-        "Token": "Token"
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "voyageAI",
-        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
+        "CREDENTIAL" : "kent-voyageai-key"
+
       },
       "matrix": {
         "MODEL": [
           "voyage-large-2-instruct",
           "voyage-law-2",
-          "voyage-code-2",
           "voyage-large-2",
-          "voyage-2"
+          "voyage-2",
+          "voyage-code-2",
+          "voyage-finance-2",
+          "voyage-multilingual-2"
         ]
       },
       "tests": [
-        "vectorize-header-auth"
+        "vectorize-shared-auth"
       ]
     },
     {
@@ -63,12 +67,12 @@
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "jinaAI_KEY",
-        "Token": "Token"
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "jinaAI",
-        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
+        "CREDENTIAL" : "kent-jinaaiai-key"
       },
       "matrix": {
         "MODEL": [
@@ -76,27 +80,27 @@
           "jina-embeddings-v2-base-de",
           "jina-embeddings-v2-base-es",
           "jina-embeddings-v2-base-code",
-          "jina-embeddings-v2-base-zh"
+          "jina-embeddings-v2-base-zh",
+          "jina-embeddings-v3"
         ]
       },
       "tests": [
-        "vectorize-header-auth"
+        "vectorize-shared-auth"
       ]
     },
     {
       "meta": {
         "name": "huggingface-non-dedicated-vectorize",
         "tags": [
-
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "huggingface_KEY",
-        "Token": "Token"
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "huggingface",
-        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
+        "CREDENTIAL" : "yuqi-huggingface-serverless-key"
       },
       "matrix": {
         "MODEL": [
@@ -109,23 +113,22 @@
         ]
       },
       "tests": [
-        "vectorize-header-auth"
+        "vectorize-shared-auth"
       ]
     },
     {
       "meta": {
         "name": "mistral-vectorize",
         "tags": [
-
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "mistral_KEY",
-        "Token": "Token"
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "mistral",
-        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
+        "CREDENTIAL" : "kent-mistralai-key"
       },
       "matrix": {
         "MODEL": [
@@ -133,23 +136,22 @@
         ]
       },
       "tests": [
-        "vectorize-header-auth"
+        "vectorize-shared-auth"
       ]
     },
     {
       "meta": {
         "name": "upstageAI-vectorize",
         "tags": [
-
         ]
       },
       "fromEnvironment": {
-        "x-embedding-api-key": "upstageAI_KEY",
-        "Token": "Token"
+        "Token": "DATA_API_TOKEN"
       },
       "variables": {
         "PROVIDER": "upstageAI",
-        "COLLECTION_NAME": "${PROVIDER}-${MODEL}"
+        "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
+        "CREDENTIAL" : "kent-upstage-key"
       },
       "matrix": {
         "MODEL": [
@@ -157,7 +159,7 @@
         ]
       },
       "tests": [
-        "vectorize-header-auth"
+        "vectorize-shared-auth"
       ]
     }
   ]
