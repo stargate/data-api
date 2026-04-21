@@ -150,7 +150,7 @@ public class TestBenchConsoleWriter {
 
 
     // The name of the container or test
-    buffer.strong(tracker.identifier().getDisplayName()).a(timingInfo).newline();
+    buffer.strong(tracker.identifier().getDisplayName()).a(timingInfo);
 
     // if we have stats write a stats line, these are aggregate for all things below.
     // alternative is to only print them for Test Environment these are lines like
@@ -158,8 +158,10 @@ public class TestBenchConsoleWriter {
     // to do that do this test: (tracker.runUri().leafType() == TestUri.Segment.ENV)
 
     if (tracker.stats() != null) {
+      buffer.a(theme.blank());
       writeStatsLine(buffer, tracker);
     }
+    buffer.newline();
 
     // we do not want to descent below the Test Envirinment unless there is a failure, otherwise there is too
     // much output. Tend ENV line looks like
@@ -176,12 +178,9 @@ public class TestBenchConsoleWriter {
 
   private void writeStatsLine(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
     buffer
-            .a(theme.blank().repeat(tracker.depth()))
-            .a(theme.entry())
             .a("Successful: ").a( tracker.stats().successful()).a(", ")
             .a("Failures: ").a( tracker.stats().failures()).a(", ")
             .a("Aborted: ").a( tracker.stats().aborted()).a(", ")
-            .a("Skipped: ").a( tracker.stats().skipped())
-            .newline();
+            .a("Skipped: ").a( tracker.stats().skipped());
   }
 }

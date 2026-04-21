@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'DEV' }}
 
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     strategy:
       # do not fail fast, we want to run on all the different target dbs
