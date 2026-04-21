@@ -11,6 +11,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,8 @@ class MeteredEmbeddingProviderWrapperTest {
     metricsConfig = mock(JsonApiMetricsConfig.class);
     when(metricsConfig.command()).thenReturn("command");
     when(metricsConfig.embeddingProvider()).thenReturn("embedding.provider");
+    when(metricsConfig.embeddingModel()).thenReturn("embedding.model");
+    when(metricsConfig.embeddingModelTagEnabled()).thenReturn(true);
     when(metricsConfig.vectorizeInputBytesMetrics()).thenReturn("vectorize.input.bytes");
 
     requestContext = TEST_CONSTANTS.requestContext();
@@ -66,5 +69,44 @@ class MeteredEmbeddingProviderWrapperTest {
 
     // Should be the API name "custom", NOT the class name "TestEmbeddingProvider"
     assertThat(providerTagValues).containsExactly("custom");
+
+    // Verify embedding.model tag is present with the model name
+    var modelTagValues =
+        meters.stream()
+            .flatMap(m -> m.getId().getTags().stream())
+            .filter(tag -> "embedding.model".equals(tag.getKey()))
+            .map(Tag::getValue)
+            .distinct()
+            .toList();
+    assertThat(modelTagValues).containsExactly("testModel");
+  }
+
+  @Test
+  void shouldUseUnknownModelTagWhenDisabled() {
+    when(metricsConfig.embeddingModelTagEnabled()).thenReturn(false);
+
+    var provider = new TestEmbeddingProvider();
+    var wrapper =
+        new MeteredEmbeddingProviderWrapper(
+            meterRegistry, metricsConfig, requestContext, provider, "testCommand");
+
+    wrapper
+        .vectorize(
+            List.of("hello world"),
+            TEST_CONSTANTS.EMBEDDING_CREDENTIALS,
+            EmbeddingProvider.EmbeddingRequestType.INDEX)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem();
+
+    List<Meter> meters = meterRegistry.getMeters();
+    var modelTagValues =
+        meters.stream()
+            .flatMap(m -> m.getId().getTags().stream())
+            .filter(tag -> "embedding.model".equals(tag.getKey()))
+            .map(Tag::getValue)
+            .distinct()
+            .toList();
+    assertThat(modelTagValues).containsExactly(MetricsConstants.UNKNOWN_VALUE);
   }
 }

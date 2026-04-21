@@ -72,6 +72,14 @@ public interface JsonApiMetricsConfig {
   String embeddingProvider();
 
   @NotBlank
+  @WithDefault("embedding.model")
+  String embeddingModel();
+
+  /** Whether to include the embedding model name as a metric tag. Defaults to true. */
+  @WithDefault("true")
+  boolean embeddingModelTagEnabled();
+
+  @NotBlank
   @WithDefault("index.usage.count")
   String indexUsageCounterMetrics();
 
