@@ -59,7 +59,6 @@ class CollectionRerankDefTest {
 
       // This should NOT throw — the user is saying "I don't want reranking"
       // which matches the server state (reranking not available).
-      // BUG: currently throws SchemaException RERANKING_FEATURE_NOT_ENABLED
       CollectionRerankDef result =
           CollectionRerankDef.fromApiDesc(
               false, // reranking NOT enabled
