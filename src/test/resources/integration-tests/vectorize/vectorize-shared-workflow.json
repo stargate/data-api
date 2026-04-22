@@ -72,7 +72,7 @@
       "variables": {
         "PROVIDER": "jinaAI",
         "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
-        "CREDENTIAL" : "kent-jinaaiai-key"
+        "CREDENTIAL" : "kent-jinaai-key"
       },
       "matrix": {
         "MODEL": [
