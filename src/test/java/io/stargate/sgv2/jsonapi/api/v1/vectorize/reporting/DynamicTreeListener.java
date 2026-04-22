@@ -19,6 +19,8 @@ public class DynamicTreeListener implements TestExecutionListener {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTreeListener.class);
 
+  private Integer totalTestCount = null;
+  private int startedTestCount = 0;
   private TestReportingTracker rootTracker;
   private final Map<UniqueId, TestReportingTracker> testTrackers = new ConcurrentHashMap<>();
 
@@ -28,7 +30,8 @@ public class DynamicTreeListener implements TestExecutionListener {
   private final TestBenchConsoleWriter writer = new TestBenchConsoleWriter();
 
   @Override
-  public void testPlanExecutionStarted(TestPlan testPlan) {}
+  public void testPlanExecutionStarted(TestPlan testPlan) {
+  }
 
   @Override
   public void testPlanExecutionFinished(TestPlan testPlan) {
@@ -36,7 +39,8 @@ public class DynamicTreeListener implements TestExecutionListener {
   }
 
   @Override
-  public void dynamicTestRegistered(TestIdentifier testIdentifier) {}
+  public void dynamicTestRegistered(TestIdentifier id) {
+  }
 
   @Override
   public void executionStarted(TestIdentifier id) {
@@ -47,7 +51,15 @@ public class DynamicTreeListener implements TestExecutionListener {
     if (tracker == null) {
       return;
     }
-    writer.testStarted(tracker);
+
+    // we will not see the test count until we see the first dymamic test node we create, e.g.
+    //TestPlan: smoketest-aws-us-east-1 on astra workflows vectorize-header-workflow
+    // if we have a tracker, its one of our tests.
+    if (totalTestCount == null) {
+      totalTestCount = Integer.parseInt(System.getProperty("testbench.test.count", "0"));
+    }
+
+    writer.testStarted(totalTestCount,++startedTestCount,  tracker);
   }
 
   @Override

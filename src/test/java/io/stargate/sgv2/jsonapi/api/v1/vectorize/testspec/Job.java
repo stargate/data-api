@@ -1,8 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
-import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+
 
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import java.util.ArrayList;
@@ -22,22 +23,22 @@ public record Job(
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Job.class);
 
-  public DynamicContainer testNode(TestPlan testPlan, TestUri.Builder uriBuilder) {
+  public DynamicContainer testNode(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder) {
 
     uriBuilder.addSegment(TestUri.Segment.JOB, meta.name());
 
     var desc = "Job: %s ".formatted(meta.name());
 
-    testPlan.updateJobForTarget(this);
-    var allEnvs = allEnvironments(testPlan);
-    var testSuiteNodes =
-        testSuites(testPlan)
-            .map(testSuite -> testSuite.testNode(testPlan, uriBuilder.clone(), allEnvs));
+    testNodeFactory.testPlan().updateJobForTarget(this);
+    var allEnvs = allEnvironments(testNodeFactory.testPlan());
+    var testSuiteNodes = testSuites(testNodeFactory.testPlan())
+            .map(testSuite -> testSuite.testNode(testNodeFactory, uriBuilder.clone(), allEnvs))
+            .toList();
 
-    return dynamicContainer(
+    return testNodeFactory.testPlanContainer(
         desc,
         uriBuilder.build().uri(),
-        testPlan.addLifecycle(uriBuilder.clone(), this, testSuiteNodes));
+        testNodeFactory.addLifecycle(uriBuilder.clone(), this, testSuiteNodes));
   }
 
   public Stream<TestSuiteSpec> testSuites(TestPlan testPlan) {

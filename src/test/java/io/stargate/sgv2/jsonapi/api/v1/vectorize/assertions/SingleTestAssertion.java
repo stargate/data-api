@@ -1,10 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.DynamicTestExecutable;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestExecutionCondition;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunResponse;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.*;
+
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DynamicNode;
 
@@ -26,7 +24,7 @@ public record SingleTestAssertion(String name, JsonNode args, AssertionMatcher m
 
   @Override
   public DynamicNode testNodes(
-      TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition) {
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition) {
 
     var matcherDesc = (matcher instanceof Describable d) ? d.describe() : "";
 
@@ -43,6 +41,6 @@ public record SingleTestAssertion(String name, JsonNode args, AssertionMatcher m
               run(resp);
             });
 
-    return executable.testNode();
+    return executable.testNode(testNodeFactory);
   }
 }

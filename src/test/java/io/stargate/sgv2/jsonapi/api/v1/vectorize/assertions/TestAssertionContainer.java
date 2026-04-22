@@ -1,9 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 
-import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestExecutionCondition;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunResponse;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import java.util.List;
@@ -34,14 +35,14 @@ public record TestAssertionContainer(String name, JsonNode args, List<TestAssert
 
   @Override
   public DynamicNode testNodes(
-      TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition) {
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition) {
 
     uriBuilder.addSegment(TestUri.Segment.ASSERTION, name());
     var childs =
         assertions.stream()
-            .map(assertion -> assertion.testNodes(uriBuilder.clone(), testResponse, testExecutionCondition))
-            .toList();
+            .map(assertion -> assertion.testNodes(testNodeFactory, uriBuilder.clone(), testResponse, testExecutionCondition))
+                .toList();
 
-    return dynamicContainer(name, childs);
+    return testNodeFactory.testPlanContainer(name, uriBuilder.build().uri(), childs);
   }
 }

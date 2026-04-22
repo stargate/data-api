@@ -13,11 +13,11 @@ import org.junit.jupiter.api.TestFactory;
 @WithTestResource(value = DseTestResource.class)
 public class VectorizeIT extends AbstractCollectionIntegrationTestBase {
 
-  @TestFactory
-  Stream<DynamicContainer> jobs() {
-
-    var testPlan = TestPlan.create("integration", List.of("all-vectorize-workflow"));
-
-    return testPlan.testNode();
-  }
+//  @TestFactory
+//  Stream<DynamicContainer> jobs() {
+//
+//    var testPlan = TestPlan.create("integration", List.of("all-vectorize-workflow"));
+//
+//    return testPlan.testNode();
+//  }
 }

@@ -112,6 +112,6 @@ jobs:
           UPSTAGE_AI_KEY: ${{ secrets.UPSTAGE_AI_KEY }}
           VOYAGE_AI_KEY: ${{ secrets.VOYAGE_AI_KEY }}
 
-
+        # reducing extra output with the -Dfailsafe.printSummary=false -Dfailsafe.trimStackTrace=true
         run: |
-          ./mvnw -B -ntp verify -Dfmt.skip -DskipUnitTests -Dfailsafe.redirectTestOutputToFile=true -Dit.test=TestBenchTests
+          ./mvnw -B -ntp verify -Dfmt.skip -DskipUnitTests -Dfailsafe.printSummary=false -Dfailsafe.trimStackTrace=true -Dit.test=TestBenchTests

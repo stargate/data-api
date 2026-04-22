@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize;
 
-import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.StreamReadFeature;
@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.targets.Target;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.*;
@@ -41,7 +42,7 @@ public record TestPlan(
               YAMLFactory.builder().enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION).build())
           .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
-  public static TestPlanContext fromFile(Path path) {
+  public static TestPlan fromFile(Path path) {
 
     LOGGER.info("fromFile() - Loading test plan file, path={}", path);
     TestPlanFile planFile;
@@ -63,7 +64,7 @@ public record TestPlan(
             ? create(planFile.customTarget(), planFile.workflows, planFile.ignoreDisabled)
             : create(planFile.targetName(), planFile.workflows(), planFile.ignoreDisabled());
 
-    return new TestPlanContext(testPlan, planFile);
+    return testPlan;
   }
 
   public static TestPlan create(String targetName, List<String> workflows) {
@@ -101,7 +102,7 @@ public record TestPlan(
         .map(testSpec -> (WorkflowSpec) testSpec.spec());
   }
 
-  public Stream<DynamicContainer> testNode() {
+  public TestPlanNodeTree testNode() {
 
     var desc =
         "TestPlan: %s on %s workflows %s"
@@ -114,112 +115,19 @@ public record TestPlan(
         TestUri.builder(TestUri.Scheme.DATAAPI)
             .addSegment(TestUri.Segment.TARGET, target.configuration().name());
 
-    return Stream.of(
-        dynamicContainer(
+    var testNodeFactory = new TestNodeFactory(this);
+
+    var root = testNodeFactory.testPlanContainer(
             desc,
             uriBuilder.build().uri(),
             selectedWorkflows()
-                .map(workflow -> workflow.testNode(this, uriBuilder.clone(), ignoreDisabled))));
+                .map(workflow -> workflow.testNode(testNodeFactory, uriBuilder.clone(), ignoreDisabled))
+                    .toList());
+    return new TestPlanNodeTree(root, testNodeFactory.testNodeCount());
   }
 
   public void updateJobForTarget(Job job) {
     target.updateJobForTarget(job);
-  }
-
-  private static Optional<DynamicContainer> containerIfPresent(
-      TestUri.Builder uriBuilder,
-      String namePrefix,
-      TestSpecMeta meta,
-      Optional<DynamicNode> dynamicNode) {
-    return dynamicNode.map(
-        node ->
-            dynamicContainer(
-                namePrefix + ": " + meta.name(), uriBuilder.build().uri(), Stream.of(node)));
-  }
-
-  private static Stream<DynamicNode> streamIfPresent(Optional<DynamicContainer> container) {
-    return container.stream().flatMap(Stream::of);
-  }
-
-  private static Stream<DynamicNode> lifecycleNodes(
-      TestUri.Builder uriBuilder,
-      String namePrefix,
-      TestSpecMeta meta,
-      Supplier<Optional<DynamicNode>> nodeSupplier) {
-    var targetDynamicNode = nodeSupplier.get();
-    return streamIfPresent(containerIfPresent(uriBuilder, namePrefix, meta, targetDynamicNode));
-  }
-
-  public Stream<? extends DynamicNode> addLifecycle(
-      TestUri.Builder uriBuilder,
-      WorkflowSpec workflow,
-      Stream<? extends DynamicNode> dynamicNodes) {
-
-    var beforeUriBuilder =
-        uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "before-workflow");
-    var afterUriBuilder =
-        uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "after-workflow");
-
-    return Stream.concat(
-        lifecycleNodes(
-            beforeUriBuilder,
-            "Before Workflow",
-            workflow.meta(),
-            () -> target.beforeWorkflow(this, beforeUriBuilder, workflow)),
-        Stream.concat(
-            dynamicNodes,
-            lifecycleNodes(
-                afterUriBuilder,
-                "After Workflow",
-                workflow.meta(),
-                () -> target.afterWorkflow(this, afterUriBuilder, workflow))));
-  }
-
-  public Stream<? extends DynamicNode> addLifecycle(
-      TestUri.Builder uriBuilder, Job job, Stream<? extends DynamicNode> dynamicNodes) {
-
-    var beforeUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "before-job");
-    var afterUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "after-job");
-
-    return Stream.concat(
-        lifecycleNodes(
-            beforeUriBuilder,
-            "Before Job",
-            job.meta(),
-            () -> target.beforeJob(this, beforeUriBuilder, job)),
-        Stream.concat(
-            dynamicNodes,
-            lifecycleNodes(
-                afterUriBuilder,
-                "After Job",
-                job.meta(),
-                () -> target.afterJob(this, afterUriBuilder, job))));
-  }
-
-  public Stream<? extends DynamicNode> addLifecycle(
-      TestUri.Builder uriBuilder,
-      TestSuiteSpec testSuite,
-      TestRunEnv environment,
-      Stream<? extends DynamicNode> dynamicNodes) {
-
-    var beforeUriBuilder =
-        uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "before-test-suite");
-    var afterUriBuilder =
-        uriBuilder.clone().addSegment(TestUri.Segment.LIFECYCLE, "after-test-suite");
-
-    return Stream.concat(
-        lifecycleNodes(
-            beforeUriBuilder,
-            "Before TestSuite",
-            testSuite.meta(),
-            () -> target.beforeTestSuite(this, beforeUriBuilder, testSuite, environment)),
-        Stream.concat(
-            dynamicNodes,
-            lifecycleNodes(
-                afterUriBuilder,
-                "After TestSuite",
-                testSuite.meta(),
-                () -> target.afterTestSuite(this, afterUriBuilder, testSuite, environment))));
   }
 
   public record TestPlanFile(
@@ -230,18 +138,6 @@ public record TestPlan(
       Boolean ignoreDisabled,
       Map<String, String> envVars) {}
 
-  public record TestPlanContext(TestPlan testPlan, TestPlanFile testPlanFile)
-      implements AutoCloseable {
-
-    public TestPlanContext {
-      if (testPlanFile.envVars != null) {
-        testPlanFile.envVars.forEach(System::setProperty);
-      }
-    }
-
-    @Override
-    public void close() {
-      testPlanFile.envVars.keySet().forEach(System::clearProperty);
-    }
-  }
+  public record TestPlanNodeTree(DynamicNode root,
+                                 int totalNodeCount){}
 }

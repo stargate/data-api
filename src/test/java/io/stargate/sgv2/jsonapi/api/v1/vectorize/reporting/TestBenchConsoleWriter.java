@@ -47,7 +47,7 @@ public class TestBenchConsoleWriter {
    *
    * @param tracker Tracker for the test that is running.
    */
-  public void testStarted(DynamicTreeListener.TestReportingTracker tracker) {
+  public void testStarted(int totalTestCount, int startedTestCount, DynamicTreeListener.TestReportingTracker tracker) {
 
     var buffer = buffer();
     if (firstLine) {
@@ -65,13 +65,16 @@ public class TestBenchConsoleWriter {
     // if there is no parent, this is the first test that is running.
     // display name is the name the TestBench put on the container
     if (tracker.parent() == null) {
-      buffer.a(theme.down()).strong(tracker.identifier().getDisplayName());
+      buffer.a(theme.down());
     } else {
       buffer
           .a(theme.blank().repeat(tracker.depth() - 1))
-          .a(theme.entry())
-          .strong(tracker.identifier().getDisplayName());
+          .a(theme.entry());
     }
+
+    buffer.a(startedTestCount).a(" of ").a(totalTestCount).a(": ");
+    buffer.strong(tracker.identifier().getDisplayName());
+
     LOGGER.info(buffer.toString());
   }
 
@@ -93,7 +96,7 @@ public class TestBenchConsoleWriter {
         .a(theme.dash().repeat(20))
         .newline();
 
-    writeCompletedSummary(buffer, rootTracker, true);
+    writeCompletedSummary(buffer, rootTracker, true, false);
     LOGGER.info(buffer.toString());
   }
 
@@ -110,7 +113,8 @@ public class TestBenchConsoleWriter {
   private void writeCompletedSummary(
       MessageBuilder buffer,
       DynamicTreeListener.TestReportingTracker tracker,
-      boolean isRoot) {
+      boolean isRoot,
+      boolean parentFailures) {
 
     // the tree part of the line
     if (isRoot) {
@@ -140,14 +144,6 @@ public class TestBenchConsoleWriter {
       }
     }
 
-//    if (tracker.stats() == null) {
-//      buffer.a(theme.blank());
-//    } else if (tracker.stats().noErrors()) {
-//      buffer.a(theme.successful());
-//    } else {
-//      buffer.a(theme.failed());
-//    }
-
 
     // The name of the container or test
     buffer.strong(tracker.identifier().getDisplayName()).a(timingInfo);
@@ -173,9 +169,11 @@ public class TestBenchConsoleWriter {
     // descend until we get one
     // OF if there are FAILURES then we descend, these are tests that ran but assertion failed.
     // we do not descend for aborted, these are tests that did not run because of previous failure.
-    var hasFailures = tracker.stats() != null && tracker.stats().failures() > 0;
-    if (!tracker.runUri().leafType().descendantOf(TestUri.Segment.ENV) || hasFailures) {
-      tracker.children().forEach(child -> writeCompletedSummary(buffer, child, false));
+    for (var child : tracker.children()){
+      var hasFailures = child.stats() != null && child.stats().failures() > 0;
+      if (!child.runUri().leafType().descendantOf(TestUri.Segment.ENV) || hasFailures || parentFailures) {
+        writeCompletedSummary(buffer, child, false, hasFailures);
+      }
     }
   }
 
@@ -183,7 +181,6 @@ public class TestBenchConsoleWriter {
     buffer
             .a("Successful: ").a( tracker.stats().successful()).a(", ")
             .a("Failures: ").a( tracker.stats().failures()).a(", ")
-            .a("Aborted: ").a( tracker.stats().aborted()).a(", ")
-            .a("Skipped: ").a( tracker.stats().skipped());
+            .a("Aborted: ").a( tracker.stats().aborted()).a(", ");
   }
 }

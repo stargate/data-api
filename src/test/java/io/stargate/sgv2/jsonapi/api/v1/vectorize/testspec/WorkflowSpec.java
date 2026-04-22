@@ -1,20 +1,17 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
-import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
+
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import java.util.List;
-import org.junit.jupiter.api.DynamicContainer;
+
+import org.junit.jupiter.api.DynamicNode;
 
 public record WorkflowSpec(TestSpecMeta meta, List<Job> jobs) implements TestSpec {
 
-  public DynamicContainer testNode(TestPlan testPlan, TestUri.Builder uriBuilder) {
-    return testNode(testPlan, uriBuilder, true);
-  }
-
-  public DynamicContainer testNode(
-      TestPlan testPlan, TestUri.Builder uriBuilder, boolean ignoreDisabled) {
+  public DynamicNode testNode(
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, boolean ignoreDisabled) {
 
     uriBuilder.addSegment(TestUri.Segment.WORKFLOW, meta().name());
     var desc = "Workflow: %s ".formatted(meta.name());
@@ -23,9 +20,11 @@ public record WorkflowSpec(TestSpecMeta meta, List<Job> jobs) implements TestSpe
         ignoreDisabled
             ? jobs().stream().filter(job -> !job.meta().tags().contains("disabled"))
             : jobs().stream();
-    var jobNodes = testNodeJobs.map(job -> job.testNode(testPlan, uriBuilder.clone()));
+    var jobNodes = testNodeJobs
+            .map(job -> job.testNode(testNodeFactory, uriBuilder.clone()))
+            .toList();
 
-    return dynamicContainer(
-        desc, uriBuilder.build().uri(), testPlan.addLifecycle(uriBuilder.clone(), this, jobNodes));
+    return testNodeFactory.testPlanContainer(
+        desc, uriBuilder.build().uri(), testNodeFactory.addLifecycle(uriBuilder.clone(), this, jobNodes));
   }
 }

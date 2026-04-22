@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.targets;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.*;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.lifecycle.TestPlanLifecycle;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.messaging.APIRequest;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.Job;
@@ -52,35 +52,35 @@ public class Target implements TestPlanLifecycle {
 
   @Override
   public Optional<DynamicNode> beforeWorkflow(
-      TestPlan testPlan, TestUri.Builder uriBuilder, WorkflowSpec workflow) {
-    return backend.beforeWorkflow(testPlan, uriBuilder, workflow);
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, WorkflowSpec workflow) {
+    return backend.beforeWorkflow(testNodeFactory, uriBuilder, workflow);
   }
 
   @Override
   public Optional<DynamicNode> afterWorkflow(
-      TestPlan testPlan, TestUri.Builder uriBuilder, WorkflowSpec workflow) {
-    return backend.afterWorkflow(testPlan, uriBuilder, workflow);
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, WorkflowSpec workflow) {
+    return backend.afterWorkflow(testNodeFactory, uriBuilder, workflow);
   }
 
   @Override
-  public Optional<DynamicNode> beforeJob(TestPlan testPlan, TestUri.Builder uriBuilder, Job job) {
-    return backend.beforeJob(testPlan, uriBuilder, job);
+  public Optional<DynamicNode> beforeJob(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
+    return backend.beforeJob(testNodeFactory, uriBuilder, job);
   }
 
   @Override
-  public Optional<DynamicNode> afterJob(TestPlan testPlan, TestUri.Builder uriBuilder, Job job) {
-    return backend.afterJob(testPlan, uriBuilder, job);
+  public Optional<DynamicNode> afterJob(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
+    return backend.afterJob(testNodeFactory, uriBuilder, job);
   }
 
   @Override
   public Optional<DynamicNode> beforeTestSuite(
-      TestPlan testPlan, TestUri.Builder uriBuilder, TestSuiteSpec test, TestRunEnv env) {
-    return backend.beforeTestSuite(testPlan, uriBuilder, test, env);
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestSuiteSpec test, TestRunEnv env) {
+    return backend.beforeTestSuite(testNodeFactory, uriBuilder, test, env);
   }
 
   @Override
   public Optional<DynamicNode> afterTestSuite(
-      TestPlan testPlan, TestUri.Builder uriBuilder, TestSuiteSpec test, TestRunEnv env) {
-    return backend.afterTestSuite(testPlan, uriBuilder, test, env);
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestSuiteSpec test, TestRunEnv env) {
+    return backend.afterTestSuite(testNodeFactory, uriBuilder, test, env);
   }
 }

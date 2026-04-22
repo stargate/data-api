@@ -1,13 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec;
 
-import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.*;
+
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestExecutionCondition;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunRequest;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.*;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -19,21 +16,25 @@ public record TestSuiteSpec(
     implements TestSpec {
 
   public DynamicContainer testNode(
-      TestPlan testPlan, TestUri.Builder uriBuilder, List<TestRunEnv> allEnvs) {
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, List<TestRunEnv> allEnvs) {
 
     uriBuilder.addSegment(TestUri.Segment.SUITE, meta().name());
 
     var desc = "TestSuite: %s ".formatted(meta.name());
-
-    return dynamicContainer(
+    var childs = allEnvs.stream()
+            .map(testEnv -> testEnv.testNode(testNodeFactory, uriBuilder.clone(), this))
+            .toList();
+    return testNodeFactory.testPlanContainer(
         desc,
         uriBuilder.build().uri(),
-        allEnvs.stream().map(testEnv -> testEnv.testNode(testPlan, uriBuilder.clone(), this)));
+            childs);
   }
 
-  public Collection<? extends DynamicNode> testNodesForEnvironment(
-      TestPlan testPlan, TestUri.Builder uriBuilder, TestRunEnv testEnvironment, TestExecutionCondition testExecutionCondition) {
+  public List<? extends DynamicNode> testNodesForEnvironment(
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestRunEnv testEnvironment, TestExecutionCondition testExecutionCondition) {
 
+    // not increasing the count of test nodes here, because this code is not actually making any
+    // test nodes, it is all in things we call, they do the increasing
     List<DynamicNode> nodes = new ArrayList<>();
 
     int i = 1;
@@ -44,18 +45,18 @@ public record TestSuiteSpec(
           new TestRunRequest(
               "SetupRequest[%s]: %s".formatted(i++, setupCommand.commandName()),
               setupCommand,
-              testPlan.target(),
+                  testNodeFactory.testPlan().target(),
               testEnvironment,
-              TestAssertion.forSuccess(testPlan, setupCommand),
+              TestAssertion.forSuccess(testNodeFactory.testPlan(), setupCommand),
               testExecutionCondition);
 
-      nodes.add(setupRequest.testNodes(setupUriBuilder.clone()));
+      nodes.add(setupRequest.testNodes(testNodeFactory, setupUriBuilder.clone()));
     }
 
     var testUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.STAGE, "test");
     for (var testCase : tests()) {
       nodes.add(
-          testCase.testNodesForEnvironment(testPlan, testUriBuilder.clone(), testEnvironment, testExecutionCondition));
+          testCase.testNodesForEnvironment(testNodeFactory, testUriBuilder.clone(), testEnvironment, testExecutionCondition));
     }
 
     // NOTE: For Cleanup we use a condition that is always TRUE because we always want to try to run a cleanup task.
@@ -66,11 +67,12 @@ public record TestSuiteSpec(
           new TestRunRequest(
               "CleanupRequest[%s]: %s".formatted(i++, cleanupCommand.commandName()),
               cleanupCommand,
-              testPlan.target(),
+                  testNodeFactory.testPlan().target(),
               testEnvironment,
-              TestAssertion.forSuccess(testPlan, cleanupCommand),
+              TestAssertion.forSuccess(testNodeFactory.testPlan(), cleanupCommand),
               alwaysTrueCondition);
-      nodes.add(cleanupRequest.testNodes(cleanupUriBuilder.clone()));
+
+      nodes.add(cleanupRequest.testNodes(testNodeFactory, cleanupUriBuilder.clone()));
     }
 
     return nodes;

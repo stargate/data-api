@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
-
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
@@ -41,8 +39,8 @@ public class DynamicTestExecutable implements Executable {
     return trimmedDisplayName;
   }
 
-  public DynamicTest testNode() {
-    return dynamicTest(trimmedDisplayName, testUri.uri(), this);
+  public DynamicTest testNode(TestNodeFactory testNodeFactory) {
+    return testNodeFactory.testPlanTest(trimmedDisplayName, testUri.uri(), this);
   }
 
   @Override

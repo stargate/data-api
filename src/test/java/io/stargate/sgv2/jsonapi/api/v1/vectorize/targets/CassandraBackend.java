@@ -3,9 +3,9 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.targets;
 import static io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv.toSafeSchemaIdentifier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestExecutionCondition;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunRequest;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.Job;
@@ -32,7 +32,7 @@ public class CassandraBackend extends Backend {
   }
 
   @Override
-  public Optional<DynamicNode> beforeJob(TestPlan testPlan, TestUri.Builder uriBuilder, Job job) {
+  public Optional<DynamicNode> beforeJob(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
 
     var command =
         TestCommand.fromJson(
@@ -44,21 +44,21 @@ public class CassandraBackend extends Backend {
             }
             """);
 
-    var env = job.withoutMatrix(testPlan);
+    var env = job.withoutMatrix(testNodeFactory.testPlan());
     var setupRequest =
         new TestRunRequest(
             env.substitutor().replace("createKeyspace: ${KEYSPACE_NAME}"),
             command,
-            testPlan.target(),
+            testNodeFactory.testPlan().target(),
             env,
-            TestAssertion.forSuccess(testPlan, command),
+            TestAssertion.forSuccess(testNodeFactory.testPlan(), command),
             new TestExecutionCondition.AlwaysTrue("CassandraBackend.beforeJob()"));
 
-    return Optional.of(setupRequest.testNodes(uriBuilder));
+    return Optional.of(setupRequest.testNodes(testNodeFactory, uriBuilder));
   }
 
   @Override
-  public Optional<DynamicNode> afterJob(TestPlan testPlan, TestUri.Builder uriBuilder, Job job) {
+  public Optional<DynamicNode> afterJob(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
     var command =
         TestCommand.fromJson(
             """
@@ -69,16 +69,16 @@ public class CassandraBackend extends Backend {
             }
             """);
 
-    var env = job.withoutMatrix(testPlan);
+    var env = job.withoutMatrix(testNodeFactory.testPlan());
     var setupRequest =
         new TestRunRequest(
             env.substitutor().replace("dropKeyspace: ${KEYSPACE_NAME}"),
             command,
-            testPlan.target(),
-            job.withoutMatrix(testPlan),
-            TestAssertion.forSuccess(testPlan, command),
+                testNodeFactory.testPlan().target(),
+            job.withoutMatrix(testNodeFactory.testPlan()),
+            TestAssertion.forSuccess(testNodeFactory.testPlan(), command),
             new TestExecutionCondition.AlwaysTrue("CassandraBackend.afterJob()"));
 
-    return Optional.of(setupRequest.testNodes(uriBuilder));
+    return Optional.of(setupRequest.testNodes(testNodeFactory, uriBuilder));
   }
 }

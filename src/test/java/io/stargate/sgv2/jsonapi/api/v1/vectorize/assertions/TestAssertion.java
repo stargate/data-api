@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestExecutionCondition;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunResponse;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.AssertionTemplateSpec;
@@ -22,7 +23,7 @@ public interface TestAssertion {
 
   void run(TestRunResponse testResponse);
 
-  DynamicNode testNodes(TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition);
+  DynamicNode testNodes(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition);
 
   static List<TestAssertion> forSuccess(TestPlan testPlan, TestCommand testCommand) {
 

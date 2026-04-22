@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
-import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+
 
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.targets.Target;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -25,12 +27,11 @@ public record TestRunRequest(
     return new TestRunResponse(this, apiRequest, apiRequest.execute());
   }
 
-  public DynamicContainer testNodes(TestUri.Builder uriBuilder) {
+  public DynamicContainer testNodes(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder) {
 
     uriBuilder.addSegment(TestUri.Segment.REQUEST, name());
 
-    Stream.Builder<DynamicNode> nodesBuilder = Stream.builder();
-    ;
+    var nodes = new ArrayList<DynamicNode>();
 
     AtomicReference<TestRunResponse> atomicResponse = new AtomicReference<>();
 
@@ -43,7 +44,8 @@ public record TestRunRequest(
                 .addSegment(TestUri.Segment.COMMAND, testCommand.commandName().getApiName()),
             testExecutionCondition,
             () -> atomicResponse.set(execute()));
-    nodesBuilder.add(commandExecutable.testNode());
+
+    nodes.add(commandExecutable.testNode(testNodeFactory));
 
     // tests for each assertion
     var assertionsUriBuilder =
@@ -52,16 +54,16 @@ public record TestRunRequest(
         testAssertions().stream()
             .map(
                 testAssertion ->
-                    testAssertion.testNodes(assertionsUriBuilder.clone(), atomicResponse, testExecutionCondition))
+                    testAssertion.testNodes(testNodeFactory, assertionsUriBuilder.clone(), atomicResponse, testExecutionCondition))
             .toList();
 
     // if we have assertion tests, put them in a container
     if (!assertionTests.isEmpty()) {
-      nodesBuilder.add(
-          dynamicContainer(
-              "Assertions", assertionsUriBuilder.build().uri(), assertionTests.stream()));
+      nodes.add(
+              testNodeFactory.testPlanContainer(
+              "Assertions", assertionsUriBuilder.build().uri(), assertionTests));
     }
 
-    return dynamicContainer("Request: " + name, uriBuilder.build().uri(), nodesBuilder.build());
+    return testNodeFactory.testPlanContainer("Request: " + name, uriBuilder.build().uri(), nodes);
   }
 }

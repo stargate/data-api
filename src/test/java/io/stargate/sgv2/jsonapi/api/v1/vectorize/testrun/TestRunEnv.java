@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
-import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestSuiteSpec;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,19 +29,19 @@ public class TestRunEnv {
   }
 
   public DynamicContainer testNode(
-      TestPlan testPlan, TestUri.Builder uriBuilder, TestSuiteSpec testSuite) {
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestSuiteSpec testSuite) {
 
     var d = description();
     uriBuilder.addSegment(TestUri.Segment.ENV, d);
     var desc = "TestEnv: %s ".formatted(d);
 
     var testExecutionCondition = new TestExecutionCondition.Default(desc);
-    var envNodes = testSuite.testNodesForEnvironment(testPlan, uriBuilder.clone(), this, testExecutionCondition).stream();
+    var envNodes = testSuite.testNodesForEnvironment(testNodeFactory, uriBuilder.clone(), this, testExecutionCondition);
 
-    return DynamicContainer.dynamicContainer(
+    return testNodeFactory.testPlanContainer(
         desc,
         uriBuilder.build().uri(),
-        testPlan.addLifecycle(uriBuilder.clone(), testSuite, this, envNodes));
+            testNodeFactory.addLifecycle(uriBuilder.clone(), testSuite, this, envNodes));
   }
 
   private String description() {
