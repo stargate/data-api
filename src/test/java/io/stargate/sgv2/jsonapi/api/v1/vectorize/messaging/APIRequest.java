@@ -75,7 +75,7 @@ public class APIRequest {
       throw new IllegalArgumentException("Do not know how to execute command: " + commandName);
     }
 
-    return response.then().log().all();
+    return response.then().log().status().and().log().body();
   }
 
   protected Map<String, String> getHeaders() {
