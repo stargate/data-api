@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun;
 
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
 
@@ -13,15 +14,17 @@ public class DynamicTestExecutable implements Executable {
 
   private final String trimmedDisplayName;
   private final boolean isTrimmed;
+  private final TestExecutionCondition testExecutionCondition;
 
-  public DynamicTestExecutable(String description, TestUri.Builder testUri, Executable executable) {
-    this(description, testUri.build(), executable);
+  public DynamicTestExecutable(String description, TestUri.Builder testUri, TestExecutionCondition testExecutionCondition, Executable executable) {
+    this(description, testUri.build(), testExecutionCondition, executable);
   }
 
   @SuppressWarnings("StringEquality")
-  public DynamicTestExecutable(String description, TestUri testUri, Executable executable) {
+  public DynamicTestExecutable(String description, TestUri testUri, TestExecutionCondition testExecutionCondition, Executable executable) {
     this.description = description;
     this.testUri = testUri;
+    this.testExecutionCondition = testExecutionCondition;
     this.executable = executable;
 
     var truncated =
@@ -30,6 +33,7 @@ public class DynamicTestExecutable implements Executable {
             : description;
 
     this.trimmedDisplayName = truncated;
+    // using reference quality to see it is a diff object.
     this.isTrimmed = truncated != description;
   }
 
@@ -43,8 +47,15 @@ public class DynamicTestExecutable implements Executable {
 
   @Override
   public void execute() throws Throwable {
+    Assumptions.assumeTrue(testExecutionCondition,  testExecutionCondition.message());
     beforeExecute();
-    executable.execute();
+    try {
+      executable.execute();
+    }
+    catch (Throwable e) {
+      testExecutionCondition.abortFutureTests("Failed Upstream: " + trimmedDisplayName);
+      throw e;
+    }
     afterExecute();
   }
 

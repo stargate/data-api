@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.*;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestExecutionCondition;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunRequest;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
@@ -31,7 +32,7 @@ public record TestSuiteSpec(
   }
 
   public Collection<? extends DynamicNode> testNodesForEnvironment(
-      TestPlan testPlan, TestUri.Builder uriBuilder, TestRunEnv testEnvironment) {
+      TestPlan testPlan, TestUri.Builder uriBuilder, TestRunEnv testEnvironment, TestExecutionCondition testExecutionCondition) {
 
     List<DynamicNode> nodes = new ArrayList<>();
 
@@ -45,7 +46,8 @@ public record TestSuiteSpec(
               setupCommand,
               testPlan.target(),
               testEnvironment,
-              TestAssertion.forSuccess(testPlan, setupCommand));
+              TestAssertion.forSuccess(testPlan, setupCommand),
+              testExecutionCondition);
 
       nodes.add(setupRequest.testNodes(setupUriBuilder.clone()));
     }
@@ -53,9 +55,11 @@ public record TestSuiteSpec(
     var testUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.STAGE, "test");
     for (var testCase : tests()) {
       nodes.add(
-          testCase.testNodesForEnvironment(testPlan, testUriBuilder.clone(), testEnvironment));
+          testCase.testNodesForEnvironment(testPlan, testUriBuilder.clone(), testEnvironment, testExecutionCondition));
     }
 
+    // NOTE: For Cleanup we use a condition that is always TRUE because we always want to try to run a cleanup task.
+    var alwaysTrueCondition = new TestExecutionCondition.AlwaysTrue("Cleanup Commands for parent URL: " + uriBuilder.build().uri().toString());
     var cleanupUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.STAGE, "cleanup");
     for (TestCommand cleanupCommand : cleanup()) {
       var cleanupRequest =
@@ -64,7 +68,8 @@ public record TestSuiteSpec(
               cleanupCommand,
               testPlan.target(),
               testEnvironment,
-              TestAssertion.forSuccess(testPlan, cleanupCommand));
+              TestAssertion.forSuccess(testPlan, cleanupCommand),
+              alwaysTrueCondition);
       nodes.add(cleanupRequest.testNodes(cleanupUriBuilder.clone()));
     }
 

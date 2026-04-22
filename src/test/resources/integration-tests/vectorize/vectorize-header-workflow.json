@@ -8,7 +8,6 @@
       "meta": {
         "name": "open-ai-vectorize",
         "tags": [
-
         ]
       },
       "fromEnvironment": {
@@ -34,6 +33,7 @@
       "meta": {
         "name": "voyageAI-vectorize",
         "tags": [
+
         ]
       },
       "fromEnvironment": {
@@ -61,6 +61,7 @@
       "meta": {
         "name": "jinaAI-vectorize",
         "tags": [
+
         ]
       },
       "fromEnvironment": {
@@ -177,7 +178,7 @@
       },
       "matrix": {
         "MODEL": [
-          "NV-Embed-QA",
+          "NV-Embed-QA-XX",
           "nvidia/nv-embedqa-e5-v5"
         ]
       },

@@ -133,7 +133,7 @@ public class TestBenchConsoleWriter {
         case null -> {}
       }
     } else {
-      if (tracker.stats().noErrors()) {
+      if (tracker.stats().failures() ==0 && tracker.stats().aborted() == 0) {
         buffer.a(theme.successful());
       } else {
         buffer.a(theme.failed());
@@ -167,11 +167,14 @@ public class TestBenchConsoleWriter {
     // much output. Tend ENV line looks like
     // TestEnv: [MODEL=text-embedding-3-small, PROVIDER=openai]  - 26 s
 
-    var noErrors = tracker.stats() != null && tracker.stats().noErrors();
+
 
     // If we have a TestEnv then we want to write out the summary of results for it, otherwise
     // descend until we get one
-    if (!noErrors ||  tracker.runUri().leafType() != TestUri.Segment.ENV) {
+    // OF if there are FAILURES then we descend, these are tests that ran but assertion failed.
+    // we do not descend for aborted, these are tests that did not run because of previous failure.
+    var hasFailures = tracker.stats() != null && tracker.stats().failures() > 0;
+    if (!tracker.runUri().leafType().descendantOf(TestUri.Segment.ENV) || hasFailures) {
       tracker.children().forEach(child -> writeCompletedSummary(buffer, child, false));
     }
   }

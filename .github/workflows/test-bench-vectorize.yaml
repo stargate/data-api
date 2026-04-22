@@ -114,4 +114,4 @@ jobs:
 
 
         run: |
-          ./mvnw -B -ntp verify -Dfmt.skip -DskipUnitTests -Dit.test=TestBenchTests
+          ./mvnw -B -ntp verify -Dfmt.skip -DskipUnitTests -Dfailsafe.redirectTestOutputToFile=true -Dit.test=TestBenchTests

@@ -239,14 +239,23 @@ public class DynamicTreeListener implements TestExecutionListener {
     public void executionFinished(TestExecutionResult result) {
       junitStatus = result.getStatus();
       throwable = result.getThrowable();
+
       if (stats != null) {
-        stats.testCompleted(result);
+        stats.testCompleted(this, result);
       }
       if (parent != null) {
-        parent.executionFinished(result);
+        parent.descendantExecutionFinished(this, result);
       }
     }
 
+    private void descendantExecutionFinished(TestReportingTracker originalTracker,  TestExecutionResult result) {
+      if (stats != null) {
+        stats.testCompleted(originalTracker, result);
+      }
+      if (parent != null) {
+        parent.descendantExecutionFinished(originalTracker, result);
+      }
+    }
     public void executionSkipped() {
       if (stats != null) {
         stats.testSkipped();
@@ -299,17 +308,20 @@ public class DynamicTreeListener implements TestExecutionListener {
       return skipped;
     }
 
-    public boolean noErrors() {
-      return aborted == 0 && failures == 0;
-    }
+//    public boolean noErrors() {
+//      return aborted == 0 && failures == 0;
+//    }
 
-    public void testCompleted(TestExecutionResult result) {
+    public void testCompleted(TestReportingTracker tracker,  TestExecutionResult result) {
       lastFinishedAtMillis = System.currentTimeMillis();
 
-      switch (result.getStatus()) {
-        case FAILED -> failures++;
-        case ABORTED -> aborted++;
-        case SUCCESSFUL -> successful++;
+      // we only update the stats IF the test we are tracking is a TEST, we do not update for containers.
+      if (tracker.identifier().isTest()) {
+        switch (result.getStatus()) {
+          case FAILED -> failures++;
+          case ABORTED -> aborted++;
+          case SUCCESSFUL -> successful++;
+        }
       }
     }
 

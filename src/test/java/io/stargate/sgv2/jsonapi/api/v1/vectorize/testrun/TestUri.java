@@ -80,6 +80,16 @@ public record TestUri(Scheme scheme, List<SegmentValue> segments) {
     public String pathName() {
       return name().toLowerCase();
     }
+
+    public boolean descendantOf(Segment segment) {
+      if (parent == null){
+        return false;
+      }
+      if (this.parent == segment) {
+        return true;
+      }
+      return this.parent.descendantOf(segment);
+    }
   }
 
   public record SegmentValue(Segment segment, String value) {

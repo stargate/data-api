@@ -16,7 +16,8 @@ public record TestRunRequest(
     TestCommand testCommand,
     Target target,
     TestRunEnv testEnvironment,
-    List<TestAssertion> testAssertions) {
+    List<TestAssertion> testAssertions,
+    TestExecutionCondition testExecutionCondition) {
 
   public TestRunResponse execute() {
 
@@ -40,6 +41,7 @@ public record TestRunRequest(
             uriBuilder
                 .clone()
                 .addSegment(TestUri.Segment.COMMAND, testCommand.commandName().getApiName()),
+            testExecutionCondition,
             () -> atomicResponse.set(execute()));
     nodesBuilder.add(commandExecutable.testNode());
 
@@ -50,7 +52,7 @@ public record TestRunRequest(
         testAssertions().stream()
             .map(
                 testAssertion ->
-                    testAssertion.testNodes(assertionsUriBuilder.clone(), atomicResponse))
+                    testAssertion.testNodes(assertionsUriBuilder.clone(), atomicResponse, testExecutionCondition))
             .toList();
 
     // if we have assertion tests, put them in a container

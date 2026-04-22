@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv.toSaf
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestExecutionCondition;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunRequest;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.Job;
@@ -50,7 +51,8 @@ public class CassandraBackend extends Backend {
             command,
             testPlan.target(),
             env,
-            TestAssertion.forSuccess(testPlan, command));
+            TestAssertion.forSuccess(testPlan, command),
+            new TestExecutionCondition.AlwaysTrue("CassandraBackend.beforeJob()"));
 
     return Optional.of(setupRequest.testNodes(uriBuilder));
   }
@@ -74,7 +76,8 @@ public class CassandraBackend extends Backend {
             command,
             testPlan.target(),
             job.withoutMatrix(testPlan),
-            TestAssertion.forSuccess(testPlan, command));
+            TestAssertion.forSuccess(testPlan, command),
+            new TestExecutionCondition.AlwaysTrue("CassandraBackend.afterJob()"));
 
     return Optional.of(setupRequest.testNodes(uriBuilder));
   }

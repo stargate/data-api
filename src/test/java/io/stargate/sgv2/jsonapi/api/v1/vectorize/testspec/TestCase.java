@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.TestPlan;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.assertions.TestAssertion;
+import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestExecutionCondition;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunRequest;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
@@ -16,7 +17,7 @@ public record TestCase(
     @JsonProperty("$include") String include) {
 
   public DynamicContainer testNodesForEnvironment(
-      TestPlan testPlan, TestUri.Builder uriBuilder, TestRunEnv testEnvironment) {
+      TestPlan testPlan, TestUri.Builder uriBuilder, TestRunEnv testEnvironment, TestExecutionCondition testExecutionCondition) {
 
     var testRequest =
         new TestRunRequest(
@@ -24,7 +25,8 @@ public record TestCase(
             command(),
             testPlan.target(),
             testEnvironment,
-            TestAssertion.buildAssertions(testPlan, this));
+            TestAssertion.buildAssertions(testPlan, this),
+            testExecutionCondition);
 
     return testRequest.testNodes(uriBuilder);
   }

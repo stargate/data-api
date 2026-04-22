@@ -36,7 +36,8 @@ public class TestRunEnv {
     uriBuilder.addSegment(TestUri.Segment.ENV, d);
     var desc = "TestEnv: %s ".formatted(d);
 
-    var envNodes = testSuite.testNodesForEnvironment(testPlan, uriBuilder.clone(), this).stream();
+    var testExecutionCondition = new TestExecutionCondition.Default(desc);
+    var envNodes = testSuite.testNodesForEnvironment(testPlan, uriBuilder.clone(), this, testExecutionCondition).stream();
 
     return DynamicContainer.dynamicContainer(
         desc,
