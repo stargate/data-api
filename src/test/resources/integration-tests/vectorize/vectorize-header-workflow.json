@@ -7,7 +7,7 @@
     {
       "meta": {
         "name": "open-ai-vectorize",
-        "tags": ["disabled"
+        "tags": [
         ]
       },
       "fromEnvironment": {
@@ -32,7 +32,7 @@
     {
       "meta": {
         "name": "voyageAI-vectorize",
-        "tags": ["disabled"
+        "tags": [
         ]
       },
       "fromEnvironment": {
@@ -59,7 +59,7 @@
     {
       "meta": {
         "name": "jinaAI-vectorize",
-        "tags": ["disabled"
+        "tags": [
         ]
       },
       "fromEnvironment": {
@@ -86,7 +86,7 @@
     {
       "meta": {
         "name": "huggingface-non-dedicated-vectorize",
-        "tags": ["disabled"
+        "tags": [
 
         ]
       },
@@ -116,7 +116,7 @@
       "meta": {
         "name": "mistral-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {
@@ -140,7 +140,7 @@
       "meta": {
         "name": "upstageAI-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {
@@ -177,7 +177,7 @@
       "matrix": {
         "MODEL": [
           "NV-Embed-QA",
-          "nvidia/nv-embedqa-e5-v5-XXX"
+          "nvidia/nv-embedqa-e5-v5"
         ]
       },
       "tests": [
