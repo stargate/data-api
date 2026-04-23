@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.maven.plugin.surefire.report.Theme;
 import org.apache.maven.surefire.shared.utils.logging.MessageBuilder;
+import org.junit.platform.engine.TestExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,7 +204,8 @@ public class TestBenchConsoleWriter {
   private void writeFailureMessages(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
 
     // if we have a throwable, write out the tree node test and the error it generated.
-    if (tracker.throwable().isPresent()){
+    // ignoring the ABORTED
+    if (tracker.throwable().isPresent() && (tracker.junitStatus() == TestExecutionResult.Status.FAILED )) {
       writeTestDesc(buffer, tracker);
       buffer.newline();
       buffer.newline();
