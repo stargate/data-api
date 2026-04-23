@@ -116,6 +116,15 @@ public class TestBenchConsoleWriter {
       writeTestDesc(testPlanNodeDesc, rootTracker);
       testPlanNodeDesc.newline();
 
+      String failureReport;
+      if (rootTracker.stats().failures() == 0){
+        failureReport = "No failures";
+      } else {
+        var failureReportBuffer = buffer();
+        writeFailureMessages(failureReportBuffer, rootTracker);
+        failureReport = failureReportBuffer.toString();
+      }
+
       // report is a markdown
       // GitHub collapsable sections
       // https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-collapsed-sections
@@ -132,8 +141,18 @@ public class TestBenchConsoleWriter {
               %s
               ```
               
+              </details>
+              
               <details>
-              """.formatted(rootTracker.identifier().getDisplayName(), testPlanNodeDesc.toString(), testReport);
+              
+              <summary>Test Bench Failures</summary>
+              
+              ```
+              %s
+              ```
+              
+              </details>
+              """.formatted(rootTracker.identifier().getDisplayName(), testPlanNodeDesc.toString(), testReport, failureReport);
 
         try {
             Files.writeString(Path.of(reportFilePath), markdownReport);
@@ -181,6 +200,19 @@ public class TestBenchConsoleWriter {
     }
   }
 
+  private void writeFailureMessages(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
+
+    // if we have a throwable, write out the tree node test and the error it generated.
+    if (tracker.throwable().isPresent()){
+      writeTestDesc(buffer, tracker);
+      buffer.newline();
+      buffer.newline();
+      buffer.a("```").newline();
+      buffer.a(tracker.throwable().get().getMessage()).newline();
+      buffer.a("```").newline().newline();
+    }
+    tracker.children().forEach(child -> writeFailureMessages(buffer, child));
+  }
   private void writeTestDesc(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
 
     // Icon for success for failure,
