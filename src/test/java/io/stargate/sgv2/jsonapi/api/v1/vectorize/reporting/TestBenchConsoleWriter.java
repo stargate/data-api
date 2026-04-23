@@ -111,11 +111,19 @@ public class TestBenchConsoleWriter {
     if (reportFilePath != null) {
       LOGGER.info("Writing report file to: {}", reportFilePath);
 
+      // this is the info for the top node, so peeps know if they want to go down into the report.
+      var testPlanNodeDesc = buffer();
+      writeTestDesc(testPlanNodeDesc, rootTracker);
+      testPlanNodeDesc.newline();
+
       // report is a markdown
       // GitHub collapsable sections
       // https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-collapsed-sections
       var markdownReport = """
               ## %s
+              
+              %s
+              
               <details>
               
               <summary>Test Bench Summary</summary>
@@ -125,7 +133,7 @@ public class TestBenchConsoleWriter {
               ```
               
               <details>
-              """.formatted(rootTracker.identifier().getDisplayName(), testReport);
+              """.formatted(rootTracker.identifier().getDisplayName(), testPlanNodeDesc.toString(), testReport);
 
         try {
             Files.writeString(Path.of(reportFilePath), markdownReport);
@@ -158,13 +166,25 @@ public class TestBenchConsoleWriter {
       buffer.a(theme.blank().repeat(tracker.depth() - 1)).a(theme.entry());
     }
 
-    var timingInfo = tracker.stats() == null ?
-            ""
-            :
-            " - %s s".formatted(tracker.stats().elapsedMillis() / 1000);
+    writeTestDesc(buffer, tracker);
+    buffer.newline();
+
+    // If we have a TestEnv then we want to write out the summary of results for it, otherwise
+    // descend until we get one
+    // OF if there are FAILURES then we descend, these are tests that ran but assertion failed.
+    // we do not descend for aborted, these are tests that did not run because of previous failure.
+    for (var child : tracker.children()){
+      var hasFailures = child.stats() != null && child.stats().failures() > 0;
+      if (!child.runUri().leafType().descendantOf(TestUri.Segment.ENV) || hasFailures || parentFailures) {
+        writeCompletedSummary(buffer, child, false, hasFailures);
+      }
+    }
+  }
+
+  private void writeTestDesc(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
 
     // Icon for success for failure,
-    // if we have stats then this is a container we we use that status, otherwise we use the JUNIT execution status
+    // if we have stats then this is a container we use that status, otherwise we use the JUNIT execution status
     if (tracker.stats() == null){
       switch (tracker.junitStatus()) {
         case SUCCESSFUL -> buffer.a(theme.successful());
@@ -179,9 +199,13 @@ public class TestBenchConsoleWriter {
       }
     }
 
-
     // The name of the container or test
-    buffer.strong(tracker.identifier().getDisplayName()).a(timingInfo);
+    buffer.strong(tracker.identifier().getDisplayName());
+
+    // timing info if available
+    if (tracker.stats() != null){
+      buffer.a(" - %s s".formatted(tracker.stats().elapsedMillis() / 1000);
+    }
 
     // if we have stats write a stats line, these are aggregate for all things below.
     // alternative is to only print them for Test Environment these are lines like
@@ -190,29 +214,13 @@ public class TestBenchConsoleWriter {
 
     if (tracker.stats() != null) {
       buffer.a(theme.blank());
-      writeStatsLine(buffer, tracker);
+      writeTestStats(buffer, tracker);
     }
-    buffer.newline();
 
-    // we do not want to descent below the Test Envirinment unless there is a failure, otherwise there is too
-    // much output. Tend ENV line looks like
-    // TestEnv: [MODEL=text-embedding-3-small, PROVIDER=openai]  - 26 s
-
-
-
-    // If we have a TestEnv then we want to write out the summary of results for it, otherwise
-    // descend until we get one
-    // OF if there are FAILURES then we descend, these are tests that ran but assertion failed.
-    // we do not descend for aborted, these are tests that did not run because of previous failure.
-    for (var child : tracker.children()){
-      var hasFailures = child.stats() != null && child.stats().failures() > 0;
-      if (!child.runUri().leafType().descendantOf(TestUri.Segment.ENV) || hasFailures || parentFailures) {
-        writeCompletedSummary(buffer, child, false, hasFailures);
-      }
-    }
+    // NOTE: does not add new line, caller should
   }
 
-  private void writeStatsLine(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
+  private void writeTestStats(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
     buffer
             .a("Successful: ").a( tracker.stats().successful()).a(", ")
             .a("Failures: ").a( tracker.stats().failures()).a(", ")

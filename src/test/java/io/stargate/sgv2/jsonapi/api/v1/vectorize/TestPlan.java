@@ -105,11 +105,10 @@ public record TestPlan(
   public TestPlanNodeTree testNode() {
 
     var desc =
-        "TestPlan: %s on %s workflows %s"
+        "TestPlan: %s on %s"
             .formatted(
                 target.configuration().name(),
-                target.configuration().backend(),
-                workflows.isEmpty() ? "<all>" : String.join(", ", workflows));
+                target.configuration().backend());
 
     var uriBuilder =
         TestUri.builder(TestUri.Scheme.DATAAPI)
