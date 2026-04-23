@@ -69,6 +69,9 @@ jobs:
 
     timeout-minutes: 120
 
+    env:
+      TEST_BENCH_REPORT: test-bench-report-${{ matrix.name }}.md
+
     strategy:
       # do not fail fast, we want to run on all the different target dbs
       fail-fast: false
@@ -140,4 +143,9 @@ jobs:
             -Dfailsafe.printSummary=false \
             -Dfailsafe.trimStackTrace=true \
             -Dit.test=TestBenchTests \
-            -Dtest-bench-report-path=test-bench-report-${{ matrix.name }}.md
+            -Dtest-bench-report-path=$TEST_BENCH_REPORT
+
+      - name: Write summary
+        if: always()
+        run: |
+          cat "$TEST_BENCH_REPORT" >> $GITHUB_STEP_SUMMARY
