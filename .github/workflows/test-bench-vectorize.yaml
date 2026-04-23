@@ -25,7 +25,7 @@ env:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'DEV' }}
+    environment: ${{ github.event.inputs.environment || 'PROD' }}
 
     outputs:
       matrix: ${{ steps.set-matrix.outputs.TEST_TARGETS }}
@@ -50,7 +50,7 @@ jobs:
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           ## Test Run Setup
           
-          **Environment:** ${{ github.event.inputs.environment || 'DEV' }}
+          **Environment:** ${{ github.event.inputs.environment || 'PROD' }}
           **Triggered by:** ${{ github.actor }}
           
           ### Test Targets
@@ -62,10 +62,10 @@ jobs:
 
   # runs unit tests
   build:
-    name: Test Bench- ENV-${{ github.event.inputs.environment || 'DEV' }} Target- ${{ matrix.name }}
+    name: Test Bench- ENV-${{ github.event.inputs.environment || 'PROD' }} Target- ${{ matrix.name }}
     needs: setup
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'DEV' }}
+    environment: ${{ github.event.inputs.environment || 'PROD' }}
 
     timeout-minutes: 120
 
