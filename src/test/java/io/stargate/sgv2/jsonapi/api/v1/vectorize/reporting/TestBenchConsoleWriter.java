@@ -112,12 +112,16 @@ public class TestBenchConsoleWriter {
       LOGGER.info("Writing report file to: {}", reportFilePath);
 
       // report is a markdown
+      // GitHub collapsable sections
+      // https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-collapsed-sections
       var markdownReport = """
               ## %s
-              
+              <details>
+              <summary>Test Bench Summary</summary>
               ```
               %s
               ```
+              <details>
               """.formatted(rootTracker.identifier().getDisplayName(), testReport);
 
         try {
@@ -209,6 +213,6 @@ public class TestBenchConsoleWriter {
     buffer
             .a("Successful: ").a( tracker.stats().successful()).a(", ")
             .a("Failures: ").a( tracker.stats().failures()).a(", ")
-            .a("Aborted: ").a( tracker.stats().aborted()).a(", ");
+            .a("Aborted: ").a( tracker.stats().aborted());
   }
 }
