@@ -137,7 +137,7 @@ jobs:
           VOYAGE_AI_KEY: ${{ secrets.VOYAGE_AI_KEY }}
 
         # reducing extra output with the -Dfailsafe.printSummary=false -Dfailsafe.trimStackTrace=true
-        # -Dorg.fusesource.jansi.Ansi.disable=true - disable ansi because GH action summary does not handle 
+        # -Dorg.fusesource.jansi.Ansi.disable=true - disable ansi because GH action summary does not handle
         run: |
           ./mvnw -B -ntp verify \
             -Dfmt.skip \
