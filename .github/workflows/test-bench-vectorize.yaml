@@ -69,10 +69,6 @@ jobs:
 
     timeout-minutes: 120
 
-    env:
-      # Path to where the summary report will be written so we can include in the GH summary
-      TEST_BENCH_REPORT: test-bench-report-${{ matrix.name }}.md
-
     strategy:
       # do not fail fast, we want to run on all the different target dbs
       fail-fast: false
@@ -123,6 +119,14 @@ jobs:
            </servers>
           </settings>
           EOF
+
+      - name: Set env
+        # Sanitize the name of the target, it could be things like "smoketest-prod-gcp-us-east4 (astra-serverless-prod-49)"
+        # TEST_BENCH_REPORT path to where the summary report will be written so we can include in the GH summary
+        run: |
+          SAFE_NAME=$(echo "${{ matrix.name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
+          echo "TEST_BENCH_REPORT=test-bench-report-${SAFE_NAME}.md" >> $GITHUB_ENV
+
       - name: Build & Test
         env:
           TEST_PLAN_FILE: classpath:integration-tests/test-plans/test-plan-astra-vectorize.yaml
