@@ -3,6 +3,10 @@ package io.stargate.sgv2.jsonapi.api.v1.vectorize.reporting;
 import static org.apache.maven.surefire.shared.utils.logging.MessageUtils.buffer;
 
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestUri;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.maven.plugin.surefire.report.Theme;
 import org.apache.maven.surefire.shared.utils.logging.MessageBuilder;
@@ -85,19 +89,43 @@ public class TestBenchConsoleWriter {
    */
   public void allTestsFinished(DynamicTreeListener.TestReportingTracker rootTracker) {
 
-    var buffer = buffer();
+    var reportBuffer = buffer();
+    writeCompletedSummary(reportBuffer, rootTracker, true, false);
+    var testReport = reportBuffer.toString();
 
-    buffer
-        .newline()
-        .a(theme.dash().repeat(20))
-        .newline()
-        .a("Test Bench Results")
-        .newline()
-        .a(theme.dash().repeat(20))
-        .newline();
+    if (LOGGER.isInfoEnabled()){
+      var logLineBuffer = buffer();
+      logLineBuffer
+              .newline()
+              .a(theme.dash().repeat(20))
+              .newline()
+              .a("Test Bench Results")
+              .newline()
+              .a(theme.dash().repeat(20))
+              .newline();
+      logLineBuffer.a(testReport);
+      LOGGER.info(logLineBuffer.toString());
+    }
 
-    writeCompletedSummary(buffer, rootTracker, true, false);
-    LOGGER.info(buffer.toString());
+    var reportFilePath = System.getProperty("test-bench-report-path");
+    if (reportFilePath != null) {
+      LOGGER.info("Writing report file to: {}", reportFilePath);
+
+      // report is a markdown
+      var markdownReport = """
+              ## %s
+              
+              ```
+              %s
+              ```
+              """.formatted(rootTracker.identifier().getDisplayName(), testReport);
+
+        try {
+            Files.writeString(Path.of(reportFilePath), markdownReport);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
   }
 
   /**

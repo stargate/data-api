@@ -134,4 +134,10 @@ jobs:
 
         # reducing extra output with the -Dfailsafe.printSummary=false -Dfailsafe.trimStackTrace=true
         run: |
-          ./mvnw -B -ntp verify -Dfmt.skip -DskipUnitTests -Dfailsafe.printSummary=false -Dfailsafe.trimStackTrace=true -Dit.test=TestBenchTests
+          ./mvnw -B -ntp verify \
+            -Dfmt.skip \
+            -DskipUnitTests \
+            -Dfailsafe.printSummary=false \
+            -Dfailsafe.trimStackTrace=true \
+            -Dit.test=TestBenchTests \
+            -Dtest-bench-report-path=test-bench-report-${{ matrix.name }}.md
