@@ -70,7 +70,10 @@ jobs:
     timeout-minutes: 120
 
     env:
+      # Path to where the summary report will be written so we can include in the GH summary
       TEST_BENCH_REPORT: test-bench-report-${{ matrix.name }}.md
+      # Disable JANSI in the logging and report writing, GH summary does render them properly.
+      TERM: dumb
 
     strategy:
       # do not fail fast, we want to run on all the different target dbs
