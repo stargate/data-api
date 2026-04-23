@@ -117,10 +117,13 @@ public class TestBenchConsoleWriter {
       var markdownReport = """
               ## %s
               <details>
+              
               <summary>Test Bench Summary</summary>
+              
               ```
               %s
               ```
+              
               <details>
               """.formatted(rootTracker.identifier().getDisplayName(), testReport);
 

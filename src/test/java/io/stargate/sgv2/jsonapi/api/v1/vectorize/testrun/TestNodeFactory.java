@@ -167,4 +167,24 @@ public class TestNodeFactory {
                 namePrefix + ": " + meta.name(), uriBuilder.build().uri(), List.of(targetDynamicNode.get()));
         return List.of(lifecycleContainer);
     }
+
+    public static class NodeCode {
+
+        private static final char[] ALPHABET =
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
+        private static final int BASE = ALPHABET.length; // 62
+        private static final int LENGTH = 3;
+
+        private int counter = 0;
+
+        public String next() {
+            int n = counter++;
+            char[] code = new char[LENGTH];
+            for (int i = LENGTH - 1; i >= 0; i--) {
+                code[i] = ALPHABET[n % BASE];
+                n /= BASE;
+            }
+            return new String(code);
+        }
+    }
 }
