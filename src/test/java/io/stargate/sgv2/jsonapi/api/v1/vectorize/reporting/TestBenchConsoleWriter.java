@@ -207,9 +207,8 @@ public class TestBenchConsoleWriter {
       writeTestDesc(buffer, tracker);
       buffer.newline();
       buffer.newline();
-      buffer.a("```").newline();
-      buffer.a(tracker.throwable().get().getMessage()).newline();
-      buffer.a("```").newline().newline();
+      buffer.a(tracker.throwable().get().getMessage());
+      buffer.newline().a("-----").newline().newline();
     }
     tracker.children().forEach(child -> writeFailureMessages(buffer, child));
   }
