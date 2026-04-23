@@ -204,7 +204,7 @@ public class TestBenchConsoleWriter {
 
     // timing info if available
     if (tracker.stats() != null){
-      buffer.a(" - %s s".formatted(tracker.stats().elapsedMillis() / 1000);
+      buffer.a(" - %s s".formatted(tracker.stats().elapsedMillis() / 1000));
     }
 
     // if we have stats write a stats line, these are aggregate for all things below.

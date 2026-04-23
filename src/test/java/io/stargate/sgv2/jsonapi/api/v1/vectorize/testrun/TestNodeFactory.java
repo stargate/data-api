@@ -28,6 +28,7 @@ import java.util.stream.Stream;
  */
 public class TestNodeFactory {
 
+    private final NodeCode nodeCode = new NodeCode();
     private final TestPlan testPlan;
     private int totalNodeCount = 0;
 
@@ -54,13 +55,17 @@ public class TestNodeFactory {
     public DynamicContainer testPlanContainer(String displayName, URI testSourceUri,
                                       List<? extends DynamicNode> dynamicNodes){
         totalNodeCount++;
-        return DynamicContainer.dynamicContainer(displayName, testSourceUri, dynamicNodes.stream());
+        return DynamicContainer.dynamicContainer(appendNodeCode(displayName), testSourceUri, dynamicNodes.stream());
     }
 
     public DynamicTest testPlanTest(String description, URI uri, Executable executable){
 
         totalNodeCount++;
-        return DynamicTest.dynamicTest(description, uri, executable);
+        return DynamicTest.dynamicTest(appendNodeCode(description), uri, executable);
+    }
+
+    private String appendNodeCode(String displayName){
+        return "%s (node:%s)".formatted(displayName, nodeCode.next());
     }
 
     public List<? extends DynamicNode> addLifecycle(
@@ -135,22 +140,6 @@ public class TestNodeFactory {
         return nodes;
     }
 
-//    private  Optional<DynamicContainer> containerIfPresent(
-//            TestUri.Builder uriBuilder,
-//            String namePrefix,
-//            TestSpecMeta meta,
-//            Optional<DynamicNode> dynamicNode) {
-//
-//        return dynamicNode.map(
-//                node ->
-//                        testPlanContainer(
-//                                namePrefix + ": " + meta.name(), uriBuilder.build().uri(), List.of(node)));
-//    }
-//
-//    private  Stream<DynamicNode> streamIfPresent(Optional<DynamicContainer> container) {
-//        return container.stream().flatMap(Stream::of);
-//    }
-
     private  List<DynamicNode> lifecycleNodes(
             TestUri.Builder uriBuilder,
             String namePrefix,
@@ -173,6 +162,8 @@ public class TestNodeFactory {
         private static final char[] ALPHABET =
                 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
         private static final int BASE = ALPHABET.length; // 62
+
+        // 3 characters of base 62 coding above gives 62^3 = 238,328
         private static final int LENGTH = 3;
 
         private int counter = 0;

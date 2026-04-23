@@ -7,7 +7,7 @@
     {
       "meta": {
         "name": "open-ai-vectorize",
-        "tags": [
+        "tags": ["disabled"
         ]
       },
       "fromEnvironment": {
@@ -32,7 +32,7 @@
     {
       "meta": {
         "name": "voyageAI-vectorize",
-        "tags": [
+        "tags": ["disabled"
         ]
       },
       "fromEnvironment": {
@@ -59,7 +59,7 @@
     {
       "meta": {
         "name": "jinaAI-vectorize",
-        "tags": [
+        "tags": ["disabled"
         ]
       },
       "fromEnvironment": {
@@ -86,7 +86,7 @@
     {
       "meta": {
         "name": "huggingface-non-dedicated-vectorize",
-        "tags": [
+        "tags": ["disabled"
 
         ]
       },
@@ -116,7 +116,7 @@
       "meta": {
         "name": "mistral-vectorize",
         "tags": [
-
+          "disabled"
         ]
       },
       "fromEnvironment": {
@@ -140,7 +140,7 @@
       "meta": {
         "name": "upstageAI-vectorize",
         "tags": [
-
+          "disabled"
         ]
       },
       "fromEnvironment": {
