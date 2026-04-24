@@ -319,11 +319,7 @@ public class DynamicTreeListener implements TestExecutionListener {
     public int skipped() {
       return skipped;
     }
-
-//    public boolean noErrors() {
-//      return aborted == 0 && failures == 0;
-//    }
-
+    
     public void testCompleted(TestReportingTracker tracker,  TestExecutionResult result) {
       lastFinishedAtMillis = System.currentTimeMillis();
 
