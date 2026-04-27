@@ -24,7 +24,6 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupB
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -309,7 +308,7 @@ class FindAndRerankOperationBuilder {
           "message", "Reranking provider '%s' is disabled.".formatted(provider));
     }
 
-    RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig =
+    var modelConfig =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(modelName))
             .findFirst()
@@ -318,6 +317,28 @@ class FindAndRerankOperationBuilder {
       throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
           "message",
           "Model '%s' is not supported by reranking provider '%s'.".formatted(modelName, provider));
+    }
+
+    // Block DEPRECATED and END_OF_LIFE models for per-request overrides (user is actively
+    // choosing this model, so both statuses should be rejected)
+    if (modelConfig.apiModelSupport().status() != ApiModelSupport.SupportStatus.SUPPORTED) {
+      var errorCode =
+          modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.DEPRECATED
+              ? SchemaException.Code.DEPRECATED_AI_MODEL
+              : SchemaException.Code.END_OF_LIFE_AI_MODEL;
+      throw errorCode.get(
+          Map.of(
+              "model",
+              modelConfig.name(),
+              "modelStatus",
+              modelConfig.apiModelSupport().status().name(),
+              "message",
+              modelConfig
+                  .apiModelSupport()
+                  .message()
+                  .orElse(
+                      "The model is %s."
+                          .formatted(modelConfig.apiModelSupport().status().name()))));
     }
   }
 
