@@ -109,7 +109,6 @@ public record FindAndRerankCommand(
               description = "Return vector embedding used for ANN sorting.",
               type = SchemaType.BOOLEAN)
           boolean includeSortVector,
-      /** ---- */
       @Nullable
           @Valid
           @Schema(
@@ -150,13 +149,12 @@ public record FindAndRerankCommand(
     public RerankServiceOverride {
       provider = StringUtil.blankToNull(provider);
       modelName = StringUtil.blankToNull(modelName);
+      authentication = (authentication == null || authentication.isEmpty()) ? null : authentication;
     }
 
     @JsonIgnore
     public boolean isEmpty() {
-      return provider == null
-          && modelName == null
-          && (authentication == null || authentication.isEmpty());
+      return provider == null && modelName == null && authentication == null;
     }
   }
 
