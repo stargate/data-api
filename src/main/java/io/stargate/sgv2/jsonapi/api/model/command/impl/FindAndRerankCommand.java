@@ -145,9 +145,19 @@ public record FindAndRerankCommand(
           @JsonInclude(JsonInclude.Include.NON_NULL)
           Map<String, String> authentication) {
 
+    /** Normalize blank strings to null so downstream code can use simple null checks. */
+    public RerankServiceOverride {
+      provider = blankToNull(provider);
+      modelName = blankToNull(modelName);
+    }
+
     @JsonIgnore
     public boolean isEmpty() {
       return provider == null && modelName == null && authentication == null;
+    }
+
+    private static String blankToNull(String value) {
+      return (value != null && value.isBlank()) ? null : value;
     }
   }
 
