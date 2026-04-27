@@ -24,7 +24,9 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupB
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
@@ -55,6 +57,10 @@ class FindAndRerankOperationBuilder {
   // things set in the builder pattern.
   private FindAndRerankCommand command;
   private FindCommandResolver findCommandResolver;
+
+  // lazily computed effective rerank service def (collection default merged with per-request
+  // override)
+  private CollectionRerankDef.RerankServiceDef effectiveRerankServiceDef;
 
   public FindAndRerankOperationBuilder(CommandContext<CollectionSchemaObject> commandContext) {
     this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
@@ -164,11 +170,13 @@ class FindAndRerankOperationBuilder {
       // TODO: more info in the error
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
+
+    // Resolve effective provider/model (collection default merged with any per-request override)
+    var effectiveServiceDef = resolveEffectiveRerankServiceDef();
+
     // Read is not supported for rerank model at END_OF_LIFE support status.
     var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
-    var modelConfig =
-        rerankingProvidersConfig.filterByRerankServiceDef(
-            commandContext.schemaObject().rerankingConfig().rerankServiceDef());
+    var modelConfig = rerankingProvidersConfig.filterByRerankServiceDef(effectiveServiceDef);
     // Validate if the model is END_OF_LIFE
     if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
       throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
@@ -188,8 +196,9 @@ class FindAndRerankOperationBuilder {
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
       rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
-    // Previous code will check reranking is supported
-    var providerConfig = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
+    // Previous code will check reranking is supported; use the effective service def which
+    // may include per-request overrides
+    var providerConfig = resolveEffectiveRerankServiceDef();
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
@@ -236,6 +245,80 @@ class FindAndRerankOperationBuilder {
         deferredCommandResults.stream()
             .map(RerankingTask.DeferredCommandWithSource::deferredRead)
             .collect(java.util.stream.Collectors.toUnmodifiableList()));
+  }
+
+  /**
+   * Resolves the effective RerankServiceDef by merging any per-request override from the command
+   * options with the collection's configured defaults. Result is memoized for the lifetime of this
+   * builder.
+   */
+  private CollectionRerankDef.RerankServiceDef resolveEffectiveRerankServiceDef() {
+    if (effectiveRerankServiceDef != null) {
+      return effectiveRerankServiceDef;
+    }
+
+    var collectionDef = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
+    var override =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
+
+    if (override == null || override.isEmpty()) {
+      effectiveRerankServiceDef = collectionDef;
+      return effectiveRerankServiceDef;
+    }
+
+    // If provider is specified without modelName, error: we don't know which model
+    // the user wants from the new provider
+    if (override.provider() != null && override.modelName() == null) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message", "When overriding the reranking provider, 'modelName' must also be specified.");
+    }
+
+    // Merge: override fields take precedence, nulls fall back to collection defaults
+    String effectiveProvider =
+        override.provider() != null ? override.provider() : collectionDef.provider();
+    String effectiveModelName =
+        override.modelName() != null ? override.modelName() : collectionDef.modelName();
+    Map<String, String> effectiveAuth =
+        override.authentication() != null
+            ? override.authentication()
+            : collectionDef.authentication();
+
+    // Validate the effective provider+model against the provider registry
+    validateRerankOverride(effectiveProvider, effectiveModelName);
+
+    effectiveRerankServiceDef =
+        new CollectionRerankDef.RerankServiceDef(
+            effectiveProvider, effectiveModelName, effectiveAuth, collectionDef.parameters());
+    return effectiveRerankServiceDef;
+  }
+
+  /**
+   * Validates that the overridden provider and model exist and are usable in the reranking
+   * providers configuration.
+   */
+  private void validateRerankOverride(String provider, String modelName) {
+    var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
+
+    var providerConfig = rerankingProvidersConfig.providers().get(provider);
+    if (providerConfig == null) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message", "Reranking provider '%s' is not supported.".formatted(provider));
+    }
+    if (!providerConfig.enabled()) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message", "Reranking provider '%s' is disabled.".formatted(provider));
+    }
+
+    RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig =
+        providerConfig.models().stream()
+            .filter(m -> m.name().equals(modelName))
+            .findFirst()
+            .orElse(null);
+    if (modelConfig == null) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message",
+          "Model '%s' is not supported by reranking provider '%s'.".formatted(modelName, provider));
+    }
   }
 
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(

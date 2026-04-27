@@ -271,6 +271,16 @@ request-errors:
       
       Resend using a supported collection. 
 
+  - scope:
+    code: INVALID_RERANK_OVERRIDE
+    title: Invalid reranking service override
+    body: |-
+      The per-request reranking service override in the findAndRerank command is invalid.
+
+      ${message}
+
+      Resend the command with a valid reranking service override, or omit the override to use the collection's default reranking configuration.
+
   # unscoped because this touches both the sort and the options
   - scope:
     code: MISSING_RERANK_QUERY_TEXT
