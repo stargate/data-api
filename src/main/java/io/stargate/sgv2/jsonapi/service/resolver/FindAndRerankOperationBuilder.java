@@ -196,10 +196,15 @@ class FindAndRerankOperationBuilder {
     }
   }
 
+  /**
+   * Returns true when the per-request override specifies a different provider or model. Auth-only
+   * overrides return false because the collection's own provider/model is unchanged and should go
+   * through the normal (EOL-only) validation path rather than the stricter override validation.
+   */
   private boolean hasRerankOverride() {
     var override =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
-    return override != null && !override.isEmpty();
+    return override != null && (override.provider() != null || override.modelName() != null);
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
@@ -295,8 +300,13 @@ class FindAndRerankOperationBuilder {
             ? override.authentication()
             : collectionDef.authentication();
 
-    // Validate the effective provider+model against the provider registry
-    validateRerankOverride(rerankingProvidersConfig, effectiveProvider, effectiveModelName);
+    // Validate the effective provider+model against the provider registry, but only when
+    // the provider or model is actually being overridden. Auth-only overrides reuse the
+    // collection's provider/model unchanged, so they go through the normal EOL-only check
+    // in checkSupported() instead of the stricter DEPRECATED+EOL check here.
+    if (override.provider() != null || override.modelName() != null) {
+      validateRerankOverride(rerankingProvidersConfig, effectiveProvider, effectiveModelName);
+    }
 
     effectiveRerankServiceDef =
         new CollectionRerankDef.RerankServiceDef(

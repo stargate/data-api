@@ -154,7 +154,9 @@ public record FindAndRerankCommand(
 
     @JsonIgnore
     public boolean isEmpty() {
-      return provider == null && modelName == null && authentication == null;
+      return provider == null
+          && modelName == null
+          && (authentication == null || authentication.isEmpty());
     }
   }
 
