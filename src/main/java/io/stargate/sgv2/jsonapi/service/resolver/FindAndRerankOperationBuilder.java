@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupB
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -170,26 +171,35 @@ class FindAndRerankOperationBuilder {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
 
-    // Resolve effective provider/model (collection default merged with any per-request override)
-    var effectiveServiceDef = resolveEffectiveRerankServiceDef();
-
-    // Read is not supported for rerank model at END_OF_LIFE support status.
+    // Resolve effective provider/model (collection default merged with any per-request override).
+    // For overrides, validateRerankOverride() already checks DEPRECATED and END_OF_LIFE.
+    // For collection defaults (no override), we still need the END_OF_LIFE check below since
+    // the model may have become EOL after the collection was created.
     var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
-    var modelConfig = rerankingProvidersConfig.filterByRerankServiceDef(effectiveServiceDef);
-    // Validate if the model is END_OF_LIFE
-    if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
-          Map.of(
-              "model",
-              modelConfig.name(),
-              "modelStatus",
-              modelConfig.apiModelSupport().status().name(),
-              "message",
-              modelConfig
-                  .apiModelSupport()
-                  .message()
-                  .orElse("The model is no longer supported (reached its end-of-life).")));
+    var effectiveServiceDef = resolveEffectiveRerankServiceDef(rerankingProvidersConfig);
+
+    if (!hasRerankOverride()) {
+      var modelConfig = rerankingProvidersConfig.filterByRerankServiceDef(effectiveServiceDef);
+      if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
+        throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
+            Map.of(
+                "model",
+                modelConfig.name(),
+                "modelStatus",
+                modelConfig.apiModelSupport().status().name(),
+                "message",
+                modelConfig
+                    .apiModelSupport()
+                    .message()
+                    .orElse("The model is no longer supported (reached its end-of-life).")));
+      }
     }
+  }
+
+  private boolean hasRerankOverride() {
+    var override =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
+    return override != null && !override.isEmpty();
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
@@ -197,7 +207,9 @@ class FindAndRerankOperationBuilder {
 
     // Previous code will check reranking is supported; use the effective service def which
     // may include per-request overrides
-    var providerConfig = resolveEffectiveRerankServiceDef();
+    var providerConfig =
+        resolveEffectiveRerankServiceDef(
+            commandContext.rerankingProviderFactory().getRerankingConfig());
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
@@ -251,7 +263,8 @@ class FindAndRerankOperationBuilder {
    * options with the collection's configured defaults. Result is memoized for the lifetime of this
    * builder.
    */
-  private CollectionRerankDef.RerankServiceDef resolveEffectiveRerankServiceDef() {
+  private CollectionRerankDef.RerankServiceDef resolveEffectiveRerankServiceDef(
+      RerankingProvidersConfig rerankingProvidersConfig) {
     if (effectiveRerankServiceDef != null) {
       return effectiveRerankServiceDef;
     }
@@ -283,7 +296,7 @@ class FindAndRerankOperationBuilder {
             : collectionDef.authentication();
 
     // Validate the effective provider+model against the provider registry
-    validateRerankOverride(effectiveProvider, effectiveModelName);
+    validateRerankOverride(rerankingProvidersConfig, effectiveProvider, effectiveModelName);
 
     effectiveRerankServiceDef =
         new CollectionRerankDef.RerankServiceDef(
@@ -295,9 +308,8 @@ class FindAndRerankOperationBuilder {
    * Validates that the overridden provider and model exist and are usable in the reranking
    * providers configuration.
    */
-  private void validateRerankOverride(String provider, String modelName) {
-    var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
-
+  private void validateRerankOverride(
+      RerankingProvidersConfig rerankingProvidersConfig, String provider, String modelName) {
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
     if (providerConfig == null) {
       throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
