@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
+import io.stargate.sgv2.jsonapi.util.StringUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -147,17 +148,13 @@ public record FindAndRerankCommand(
 
     /** Normalize blank strings to null so downstream code can use simple null checks. */
     public RerankServiceOverride {
-      provider = blankToNull(provider);
-      modelName = blankToNull(modelName);
+      provider = StringUtil.blankToNull(provider);
+      modelName = StringUtil.blankToNull(modelName);
     }
 
     @JsonIgnore
     public boolean isEmpty() {
       return provider == null && modelName == null && authentication == null;
-    }
-
-    private static String blankToNull(String value) {
-      return (value != null && value.isBlank()) ? null : value;
     }
   }
 

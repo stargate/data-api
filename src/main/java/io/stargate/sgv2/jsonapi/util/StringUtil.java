@@ -13,4 +13,12 @@ public class StringUtil {
   public static String normalizeOptionalString(Optional<String> string) {
     return normalizeOptionalString(string.orElse(""));
   }
+
+  /**
+   * Returns null if the string is null, empty, or contains only whitespace; otherwise String
+   * itself.
+   */
+  public static String blankToNull(String value) {
+    return (value != null && value.isBlank()) ? null : value;
+  }
 }
