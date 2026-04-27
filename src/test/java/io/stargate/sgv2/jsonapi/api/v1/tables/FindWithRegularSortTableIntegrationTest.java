@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
@@ -39,8 +40,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
+  private static final int DEFAULT_PAGE_SIZE = OperationsConfig.DEFAULT_PAGE_SIZE;
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "sort_testing";
-  private static final List<Object> testDatas = getDocuments(25);
+  private static final List<Object> testDatas = getDocuments(DEFAULT_PAGE_SIZE + 5);
 
   @BeforeAll
   public final void createDefaultTables() {
@@ -74,8 +76,8 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     public void sortByTextAndNullValue() throws Exception {
       sortByName(testDatas, true);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
+      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
+      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
@@ -87,7 +89,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
           .templated()
           .find(Map.of(), List.of(), Map.of("name", 1), Map.of())
           .wasSuccessful()
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -119,8 +121,8 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     public void sortDescendingTextValue() throws Exception {
       sortByName(testDatas, false);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
+      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
+      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
@@ -132,7 +134,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
           .templated()
           .find(Map.of(), List.of(), Map.of("name", -1), Map.of())
           .wasSuccessful()
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -142,8 +144,8 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
       sortByAge(testDatas, true);
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
+      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
+      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
@@ -155,7 +157,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
           .templated()
           .find(Map.of(), List.of(), Map.of("age", 1), Map.of())
           .wasSuccessful()
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -164,8 +166,8 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     public void sortNumericFieldDescending() throws Exception {
       sortByAge(testDatas, false);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
+      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
+      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
@@ -176,7 +178,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
           .templated()
           .find(Map.of(), List.of(), Map.of("age", -1), Map.of())
           .wasSuccessful()
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -209,8 +211,8 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     public void sortMultiColumns() throws Exception {
       sortByUserNameUserId(testDatas, true, true);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
+      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
+      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
@@ -224,7 +226,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
           .templated()
           .find(Map.of(), List.of(), ordering, Map.of())
           .wasSuccessful()
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 

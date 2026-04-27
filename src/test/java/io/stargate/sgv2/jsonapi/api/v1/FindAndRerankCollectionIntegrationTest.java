@@ -98,6 +98,37 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         "only be used on collections for which Lexical feature is enabled");
   }
 
+  @Test
+  void failOnHybridLimitsAboveMax() {
+    // Deserialization fails before any business logic, so no collection setup is needed.
+    String collectionName = "find_rerank_hybrid_limits_too_large";
+
+    var rerank =
+        """
+            {"findAndRerank": {
+                    "filter": {},
+                    "projection": {},
+                    "sort": {
+                        "$hybrid": "hybrid sort"
+                    },
+                    "options": {
+                        "limit" : 10,
+                        "hybridLimits" : 101,
+                        "includeScores": false,
+                        "includeSortVector": false
+                    }
+                }
+            }
+            """;
+
+    givenHeadersPostJsonThen(keyspaceName, collectionName, rerank)
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.REQUEST_STRUCTURE_MISMATCH.name()))
+        .body(
+            "errors[0].message",
+            containsString("hybridLimits must be less than or equal to 100, got 101 for $vector"));
+  }
+
   // https://github.com/stargate/data-api/issues/2057
   @Test
   void failOnEmptyRequest() {

@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -18,8 +19,8 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(1)
   class NormalFunction {
-    private static final int defaultPageSize = 20;
-    private static final int documentAmount = 50;
+    private static final int defaultPageSize = OperationsConfig.DEFAULT_PAGE_SIZE;
+    private static final int documentAmount = 120;
     private static final int documentLimit = 5;
 
     @Test

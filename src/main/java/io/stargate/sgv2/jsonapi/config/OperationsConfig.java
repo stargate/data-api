@@ -35,6 +35,12 @@ public interface OperationsConfig {
   /** Defines the default max size of filter fields. */
   int DEFAULT_MAX_FILTER_SIZE = 64;
 
+  /** Defines the default page size for read queries. */
+  int DEFAULT_PAGE_SIZE = 50;
+
+  /** Defines the maximum configurable default page size for read queries. */
+  int MAX_CONFIGURABLE_PAGE_SIZE = 500;
+
   /**
    * Defines the default maximum documents to insert setting for {@code InsertMany} command;
    * defaults to 100
@@ -42,11 +48,11 @@ public interface OperationsConfig {
   int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
 
   /**
-   * @return Defines the default document page size, defaults to <code>20</code>.
+   * @return Defines the default document page size, defaults to <code>50</code>.
    */
-  @Max(500)
+  @Max(MAX_CONFIGURABLE_PAGE_SIZE)
   @Positive
-  @WithDefault("20")
+  @WithDefault("" + DEFAULT_PAGE_SIZE)
   int defaultPageSize();
 
   /**

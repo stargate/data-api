@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
@@ -38,6 +39,8 @@ public record FindAndRerankCommand(
     @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Windowable {
+  public static final int MAX_HYBRID_LIMIT = 100;
+
   public FindAndRerankCommand {
     sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
   }
@@ -112,7 +115,11 @@ public record FindAndRerankCommand(
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
       CommandFeatures commandFeatures)
       implements Recordable {
-    public static final HybridLimits DEFAULT = new HybridLimits(50, 50, CommandFeatures.EMPTY);
+    public static final HybridLimits DEFAULT =
+        new HybridLimits(
+            OperationsConfig.DEFAULT_PAGE_SIZE,
+            OperationsConfig.DEFAULT_PAGE_SIZE,
+            CommandFeatures.EMPTY);
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
@@ -188,6 +195,12 @@ public record FindAndRerankCommand(
         throw new JsonMappingException(
             jsonParser,
             "hybridLimits must be zero or greater, got %s for %s".formatted(limit, fieldName));
+      }
+      if (limit > MAX_HYBRID_LIMIT) {
+        throw new JsonMappingException(
+            jsonParser,
+            "hybridLimits must be less than or equal to %s, got %s for %s"
+                .formatted(MAX_HYBRID_LIMIT, limit, fieldName));
       }
       return limit;
     }

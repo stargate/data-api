@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
@@ -38,6 +39,16 @@ public class HybridLimitsDeserializerTest {
   void setUp() {
     MockitoAnnotations.openMocks(this);
     deserializer = new FindAndRerankCommand.HybridLimitsDeserializer();
+  }
+
+  @Test
+  public void defaultLimitsUseDefaultPageSize() {
+    assertThat(FindAndRerankCommand.HybridLimits.DEFAULT.vectorLimit())
+        .as("default vector limit")
+        .isEqualTo(OperationsConfig.DEFAULT_PAGE_SIZE);
+    assertThat(FindAndRerankCommand.HybridLimits.DEFAULT.lexicalLimit())
+        .as("default lexical limit")
+        .isEqualTo(OperationsConfig.DEFAULT_PAGE_SIZE);
   }
 
   @Test
@@ -85,6 +96,12 @@ public class HybridLimitsDeserializerTest {
             """,
             new FindAndRerankCommand.HybridLimits(
                 99, 99, CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER))),
+        Arguments.of(
+            """
+            100
+            """,
+            new FindAndRerankCommand.HybridLimits(
+                100, 100, CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER))),
         Arguments.of(
             """
             0
@@ -160,6 +177,16 @@ public class HybridLimitsDeserializerTest {
             { "$vector" : -1, "$lexical" : -1}
             """,
             "hybridLimits must be zero or greater, got -1 for $vector"),
+        Arguments.of(
+            """
+            101
+            """,
+            "hybridLimits must be less than or equal to 100, got 101 for $vector"),
+        Arguments.of(
+            """
+            { "$vector" : 100, "$lexical" : 101}
+            """,
+            "hybridLimits must be less than or equal to 100, got 101 for $lexical"),
         // ----
         // unexpected
         Arguments.of(
