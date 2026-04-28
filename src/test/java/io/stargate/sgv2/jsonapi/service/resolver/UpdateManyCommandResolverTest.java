@@ -72,7 +72,7 @@ public class UpdateManyCommandResolverTest {
               assertThat(op.returnUpdatedDocument()).isFalse();
               assertThat(op.upsert()).isFalse();
               assertThat(op.documentShredder()).isEqualTo(documentShredder);
-              assertThat(op.updateLimit()).isEqualTo(operationsConfig.defaultPageSize());
+              assertThat(op.updateLimit()).isEqualTo(operationsConfig.maxDocumentUpdateCount());
               assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
               assertThat(op.documentUpdater())
                   .isInstanceOfSatisfying(
