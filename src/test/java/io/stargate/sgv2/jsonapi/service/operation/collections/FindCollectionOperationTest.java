@@ -1293,6 +1293,10 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void findOrWithAllFilter() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? OR (array_contains CONTAINS ? AND array_contains CONTAINS ?)) LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
       String doc1 =
           """
                       {
@@ -1303,25 +1307,16 @@ public class FindCollectionOperationTest extends OperationTestBase {
                       }
                       """;
 
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              collectionReadCql, "username Suser1", "tags Stag1", "tags Stag2");
       List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(
-              eq(requestContext), any(SimpleStatement.class), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
-                SimpleStatement actualStatement = invocation.getArgument(1, SimpleStatement.class);
-                assertThat(actualStatement.getQuery())
-                    .contains(
-                        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE"
-                            .formatted(KEYSPACE_NAME, COLLECTION_NAME))
-                    .contains("array_contains CONTAINS ?")
-                    .contains(" OR ")
-                    .contains(" AND ")
-                    .endsWith("LIMIT 1");
-                assertThat(actualStatement.getPositionalValues())
-                    .containsExactlyInAnyOrder("username Suser1", "tags Stag1", "tags Stag2");
                 callCount.incrementAndGet();
                 return Uni.createFrom().item(results);
               });
@@ -1366,6 +1361,10 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
     @Test
     public void findOrWithAllFilterWithNegation() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? OR (array_contains NOT CONTAINS ? OR array_contains NOT CONTAINS ?)) LIMIT 1"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+
       String doc1 =
           """
                           {
@@ -1376,25 +1375,16 @@ public class FindCollectionOperationTest extends OperationTestBase {
                           }
                           """;
 
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(
+              collectionReadCql, "username Suser1", "tags Stag1", "tags Stag2");
       List<Row> rows = List.of(resultRow(0, "doc1", UUID.randomUUID(), doc1));
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(
-              eq(requestContext), any(SimpleStatement.class), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
-                SimpleStatement actualStatement = invocation.getArgument(1, SimpleStatement.class);
-                assertThat(actualStatement.getQuery())
-                    .contains(
-                        "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE"
-                            .formatted(KEYSPACE_NAME, COLLECTION_NAME))
-                    .contains("array_contains CONTAINS ?")
-                    .contains("array_contains NOT CONTAINS ?")
-                    .contains(" OR ")
-                    .endsWith("LIMIT 1");
-                assertThat(actualStatement.getPositionalValues())
-                    .containsExactlyInAnyOrder("username Suser1", "tags Stag1", "tags Stag2");
                 callCount.incrementAndGet();
                 return Uni.createFrom().item(results);
               });

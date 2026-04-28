@@ -101,7 +101,7 @@ public class UpdateManyCommandResolver implements CommandResolver<UpdateManyComm
         DocumentProjector.includeAllProjector(),
         null != command.options() ? command.options().pageState() : null,
         Integer.MAX_VALUE,
-        operationsConfig.maxDocumentUpdateCount(),
+        operationsConfig.defaultPageSize(),
         CollectionReadType.DOCUMENT,
         objectMapper,
         false);

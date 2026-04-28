@@ -72,7 +72,7 @@ public class UpdateManyCommandResolverTest {
               assertThat(op.returnUpdatedDocument()).isFalse();
               assertThat(op.upsert()).isFalse();
               assertThat(op.documentShredder()).isEqualTo(documentShredder);
-              assertThat(op.updateLimit()).isEqualTo(operationsConfig.maxDocumentUpdateCount());
+              assertThat(op.updateLimit()).isEqualTo(operationsConfig.defaultPageSize());
               assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
               assertThat(op.documentUpdater())
                   .isInstanceOfSatisfying(
@@ -96,8 +96,7 @@ public class UpdateManyCommandResolverTest {
 
                         assertThat(find.objectMapper()).isEqualTo(objectMapper);
                         assertThat(find.commandContext()).isEqualTo(commandContext);
-                        assertThat(find.pageSize())
-                            .isEqualTo(operationsConfig.maxDocumentUpdateCount());
+                        assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                         assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                         assertThat(find.pageState()).isNull();
                         assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
@@ -149,8 +148,7 @@ public class UpdateManyCommandResolverTest {
                       find -> {
                         assertThat(find.objectMapper()).isEqualTo(objectMapper);
                         assertThat(find.commandContext()).isEqualTo(commandContext);
-                        assertThat(find.pageSize())
-                            .isEqualTo(operationsConfig.maxDocumentUpdateCount());
+                        assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                         assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                         assertThat(find.pageState()).isNull();
                         assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
@@ -206,8 +204,7 @@ public class UpdateManyCommandResolverTest {
 
                         assertThat(find.objectMapper()).isEqualTo(objectMapper);
                         assertThat(find.commandContext()).isEqualTo(commandContext);
-                        assertThat(find.pageSize())
-                            .isEqualTo(operationsConfig.maxDocumentUpdateCount());
+                        assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                         assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                         assertThat(find.pageState()).isNull();
                         assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
@@ -260,8 +257,7 @@ public class UpdateManyCommandResolverTest {
                       find -> {
                         assertThat(find.objectMapper()).isEqualTo(objectMapper);
                         assertThat(find.commandContext()).isEqualTo(commandContext);
-                        assertThat(find.pageSize())
-                            .isEqualTo(operationsConfig.maxDocumentUpdateCount());
+                        assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                         assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                         assertThat(find.pageState()).isNull();
                         assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);

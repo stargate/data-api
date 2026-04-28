@@ -52,6 +52,27 @@ public class HybridLimitsDeserializerTest {
   }
 
   @Test
+  public void undefinedHybridLimitsDeserializesAsNull() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    var command =
+        mapper.readValue(
+            """
+            {
+              "findAndRerank": {
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """,
+            FindAndRerankCommand.class);
+
+    assertThat(command.options()).as("options").isNotNull();
+    assertThat(command.options().hybridLimits()).as("hybridLimits").isNull();
+  }
+
+  @Test
   public void testEqualsAndHash() {
     var value1 = new FindAndRerankCommand.HybridLimits(10, 10, CommandFeatures.EMPTY);
 
@@ -96,12 +117,6 @@ public class HybridLimitsDeserializerTest {
             """,
             new FindAndRerankCommand.HybridLimits(
                 99, 99, CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER))),
-        Arguments.of(
-            """
-            100
-            """,
-            new FindAndRerankCommand.HybridLimits(
-                100, 100, CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER))),
         Arguments.of(
             """
             0

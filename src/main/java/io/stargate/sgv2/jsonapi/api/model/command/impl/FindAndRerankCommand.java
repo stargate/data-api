@@ -39,6 +39,10 @@ public record FindAndRerankCommand(
     @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Windowable {
+
+  public static final int DEFAULT_LIMIT = 10;
+  public static final int MAX_HYBRID_LIMIT = 100;
+
   public FindAndRerankCommand {
     sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
   }
@@ -64,14 +68,22 @@ public record FindAndRerankCommand(
   public record Options(
       @Positive(message = "limit should be greater than `0`")
           @Schema(
-              description = "The maximum number of documents to return after reranking.",
+              description =
+                  "The maximum number of documents to return after reranking. Defaults to "
+                      + DEFAULT_LIMIT
+                      + ".",
               type = SchemaType.INTEGER,
-              implementation = Integer.class)
+              implementation = Integer.class,
+              defaultValue = "" + DEFAULT_LIMIT)
           Integer limit,
       /** ---- */
       @Schema(
               description =
-                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be an number or an object with $vector and $lexical fields.",
+                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. Defaults to "
+                      + OperationsConfig.DEFAULT_PAGE_SIZE
+                      + " for each query, with a maximum of "
+                      + MAX_HYBRID_LIMIT
+                      + ". May be a number or an object with $vector and $lexical fields.",
               examples =
                   """
                 {"hybridLimits" : 100}
@@ -193,6 +205,12 @@ public record FindAndRerankCommand(
         throw new JsonMappingException(
             jsonParser,
             "hybridLimits must be zero or greater, got %s for %s".formatted(limit, fieldName));
+      }
+      if (limit > MAX_HYBRID_LIMIT) {
+        throw new JsonMappingException(
+            jsonParser,
+            "hybridLimits must be less than or equal to %s, got %s for %s"
+                .formatted(MAX_HYBRID_LIMIT, limit, fieldName));
       }
       return limit;
     }

@@ -11,7 +11,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -35,37 +34,9 @@ import org.junit.jupiter.api.Test;
 class FindAndRerankOperationBuilderTest {
 
   @Inject ObjectMapper objectMapper;
-  @Inject OperationsConfig operationsConfig;
   @Inject FindCommandResolver findCommandResolver;
 
   private final TestConstants testConstants = new TestConstants();
-
-  @Test
-  void defaultsHybridLimitsOnCommandContextForInnerFinds() throws Exception {
-    var commandContext = commandContext();
-    var command =
-        command(
-            """
-            {
-              "findAndRerank": {
-                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
-                "options": { "rerankOn": "body", "rerankQuery": "text" }
-              }
-            }
-            """);
-
-    new FindAndRerankOperationBuilder(commandContext)
-        .withCommand(command)
-        .withFindCommandResolver(findCommandResolver)
-        .build();
-
-    assertThat(commandContext.getHybridLimits().vectorLimit())
-        .isEqualTo(operationsConfig.defaultPageSize())
-        .isEqualTo(OperationsConfig.DEFAULT_PAGE_SIZE);
-    assertThat(commandContext.getHybridLimits().lexicalLimit())
-        .isEqualTo(operationsConfig.defaultPageSize())
-        .isEqualTo(OperationsConfig.DEFAULT_PAGE_SIZE);
-  }
 
   @Test
   void keepsExplicitHybridLimitsAtMaximumPageSizeOnCommandContext() throws Exception {

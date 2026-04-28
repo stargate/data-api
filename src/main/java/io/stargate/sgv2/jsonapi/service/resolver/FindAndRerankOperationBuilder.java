@@ -204,7 +204,11 @@ class FindAndRerankOperationBuilder {
     // todo: move to a builder pattern, mosty to make it easier to manage the task position and
     // retry
     // policy
-    int commandLimit = getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10);
+    int commandLimit =
+        getOrDefault(
+            command.options(),
+            FindAndRerankCommand.Options::limit,
+            FindAndRerankCommand.DEFAULT_LIMIT);
     RerankingTask<CollectionSchemaObject> task =
         new RerankingTask<>(
             0,

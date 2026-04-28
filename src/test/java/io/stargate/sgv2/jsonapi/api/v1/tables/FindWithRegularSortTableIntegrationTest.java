@@ -10,7 +10,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -75,15 +74,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     @Order(1)
     public void sortByTextAndNullValue() throws Exception {
       sortByName(testDatas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
-      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
 
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
@@ -97,17 +88,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     @Order(2)
     public void sortWithSkipLimit() throws Exception {
       sortByName(testDatas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(10);
-      for (int i = 0; i < 20; i++) {
-        if (i >= 10) {
-          arrayNode.add(
-              objectMapper.readTree(
-                  objectMapper
-                      .writerWithDefaultPrettyPrinter()
-                      .writeValueAsString(testDatas.get(i))));
-        }
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 10, 10);
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
           .find(Map.of(), List.of(), Map.of("name", 1), Map.of("skip", 10, "limit", 10))
@@ -120,15 +101,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     @Order(3)
     public void sortDescendingTextValue() throws Exception {
       sortByName(testDatas, false);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
-      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
 
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
@@ -142,16 +115,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     @Order(4)
     public void sortNumericField() throws Exception {
       sortByAge(testDatas, true);
-
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
-      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
 
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
@@ -165,15 +129,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     @Order(5)
     public void sortNumericFieldDescending() throws Exception {
       sortByAge(testDatas, false);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
-      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
           .find(Map.of(), List.of(), Map.of("age", -1), Map.of())
@@ -190,13 +146,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
               .filter(obj -> (obj instanceof TestData o) && o.active_user())
               .collect(Collectors.toList());
       sortByAge(datas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (Object data : datas) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data)));
-      }
+      final ArrayNode arrayNode = testDataArray(datas, 0, datas.size());
 
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
@@ -210,15 +160,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     @Order(7)
     public void sortMultiColumns() throws Exception {
       sortByUserNameUserId(testDatas, true, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(DEFAULT_PAGE_SIZE);
-      for (int i = 0; i < DEFAULT_PAGE_SIZE; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       final LinkedHashMap ordering = new LinkedHashMap<>();
       ordering.put("name", 1);
       ordering.put("age", 1);
@@ -238,13 +180,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
               .filter(obj -> (obj instanceof TestData o) && o.active_user())
               .collect(Collectors.toList());
       sortByUserNameUserId(datas, true, false);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (Object data : datas) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data)));
-      }
+      final ArrayNode arrayNode = testDataArray(datas, 0, datas.size());
       final LinkedHashMap ordering = new LinkedHashMap<>();
       ordering.put("name", 1);
       ordering.put("age", -1);
@@ -352,6 +288,17 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
   }
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
+
+  private static ArrayNode testDataArray(List<Object> datas, int offset, int limit)
+      throws JsonProcessingException {
+    final ArrayNode arrayNode = objectMapper.getNodeFactory().arrayNode(limit);
+    for (int i = offset; i < offset + limit; i++) {
+      arrayNode.add(
+          objectMapper.readTree(
+              objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
+    }
+    return arrayNode;
+  }
 
   private JsonNode getUserNameAsJsonNode(Object data) {
     if (data instanceof TestData td) {
