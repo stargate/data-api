@@ -42,13 +42,13 @@ public class HybridLimitsDeserializerTest {
   }
 
   @Test
-  public void defaultLimitsUseDefaultPageSize() {
+  public void defaultLimitsUseHybridSearchDefault() {
     assertThat(FindAndRerankCommand.HybridLimits.DEFAULT.vectorLimit())
         .as("default vector limit")
-        .isEqualTo(OperationsConfig.DEFAULT_PAGE_SIZE);
+        .isEqualTo(OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT);
     assertThat(FindAndRerankCommand.HybridLimits.DEFAULT.lexicalLimit())
         .as("default lexical limit")
-        .isEqualTo(OperationsConfig.DEFAULT_PAGE_SIZE);
+        .isEqualTo(OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT);
   }
 
   @Test

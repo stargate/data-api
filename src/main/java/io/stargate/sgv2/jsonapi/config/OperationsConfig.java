@@ -38,6 +38,26 @@ public interface OperationsConfig {
   /** Defines the default page size for read queries. */
   int DEFAULT_PAGE_SIZE = 50;
 
+  /** Defines the default number of documents returned by findAndRerank. */
+  int DEFAULT_FIND_AND_RERANK_LIMIT = 10;
+
+  /** Defines the minimum hybrid search read limit. */
+  int MIN_HYBRID_SEARCH_LIMIT = 0;
+
+  /** Defines the default hybrid search read limit. */
+  int DEFAULT_HYBRID_SEARCH_LIMIT = 50;
+
+  /** Defines the maximum hybrid search read limit. */
+  int MAX_HYBRID_SEARCH_LIMIT = 100;
+
+  /** Defines the hybrid search read limit config default as min,default,max. */
+  String DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG =
+      MIN_HYBRID_SEARCH_LIMIT
+          + ","
+          + DEFAULT_HYBRID_SEARCH_LIMIT
+          + ","
+          + MAX_HYBRID_SEARCH_LIMIT;
+
   /** Defines the maximum configurable default page size for read queries. */
   int MAX_CONFIGURABLE_PAGE_SIZE = 500;
 
@@ -161,6 +181,14 @@ public interface OperationsConfig {
   @Positive
   @WithDefault("100")
   int defaultCountPageSize();
+
+  /**
+   * @return Defines the default number of documents returned by {@code findAndRerank}, defaults to
+   *     <code>10</code>.
+   */
+  @Positive
+  @WithDefault("" + DEFAULT_FIND_AND_RERANK_LIMIT)
+  int defaultFindAndRerankLimit();
 
   @NotNull
   @Valid
@@ -330,12 +358,12 @@ public interface OperationsConfig {
   }
 
   @NotNull
-  @WithDefault("0,50,100")
+  @WithDefault(DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG)
   @WithConverter(IntConfigWithBoundsConverter.class)
   IntConfigWithBounds hybridSearchVectorLimit();
 
   @NotNull
-  @WithDefault("0,50,100")
+  @WithDefault(DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG)
   @WithConverter(IntConfigWithBoundsConverter.class)
   IntConfigWithBounds hybridSearchLexicalLimit();
 }

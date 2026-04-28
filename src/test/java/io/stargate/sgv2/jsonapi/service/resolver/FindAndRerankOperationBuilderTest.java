@@ -11,6 +11,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -62,7 +63,7 @@ class FindAndRerankOperationBuilderTest {
         .build();
 
     assertThat(commandContext.getHybridLimits().vectorLimit())
-        .isEqualTo(FindAndRerankCommand.MAX_HYBRID_LIMIT);
+        .isEqualTo(OperationsConfig.MAX_HYBRID_SEARCH_LIMIT);
     assertThat(commandContext.getHybridLimits().lexicalLimit()).isEqualTo(25);
   }
 

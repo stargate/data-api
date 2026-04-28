@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -208,7 +209,7 @@ class FindAndRerankOperationBuilder {
         getOrDefault(
             command.options(),
             FindAndRerankCommand.Options::limit,
-            FindAndRerankCommand.DEFAULT_LIMIT);
+            operationsConfig.defaultFindAndRerankLimit());
     RerankingTask<CollectionSchemaObject> task =
         new RerankingTask<>(
             0,
@@ -374,7 +375,7 @@ class FindAndRerankOperationBuilder {
         getOrDefault(
             command.options(),
             FindAndRerankCommand.Options::hybridLimits,
-            FindAndRerankCommand.HybridLimits.DEFAULT);
+            defaultHybridLimits());
 
     var findLimit = forVectorRead ? hybridLimits.vectorLimit() : hybridLimits.lexicalLimit();
 
@@ -384,6 +385,13 @@ class FindAndRerankOperationBuilder {
         null,
         getOrDefault(command.options(), FindAndRerankCommand.Options::includeScores, false),
         getOrDefault(command.options(), FindAndRerankCommand.Options::includeSortVector, false));
+  }
+
+  private FindAndRerankCommand.HybridLimits defaultHybridLimits() {
+    return new FindAndRerankCommand.HybridLimits(
+        operationsConfig.hybridSearchVectorLimit().defaultValue(),
+        operationsConfig.hybridSearchLexicalLimit().defaultValue(),
+        CommandFeatures.EMPTY);
   }
 
   private PathMatchLocator passageLocator() {

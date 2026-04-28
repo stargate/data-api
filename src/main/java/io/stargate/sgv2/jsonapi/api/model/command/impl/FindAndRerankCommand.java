@@ -40,9 +40,6 @@ public record FindAndRerankCommand(
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Windowable {
 
-  public static final int DEFAULT_LIMIT = 10;
-  public static final int MAX_HYBRID_LIMIT = 100;
-
   public FindAndRerankCommand {
     sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
   }
@@ -70,19 +67,19 @@ public record FindAndRerankCommand(
           @Schema(
               description =
                   "The maximum number of documents to return after reranking. Defaults to "
-                      + DEFAULT_LIMIT
+                      + OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT
                       + ".",
               type = SchemaType.INTEGER,
               implementation = Integer.class,
-              defaultValue = "" + DEFAULT_LIMIT)
+              defaultValue = "" + OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT)
           Integer limit,
       /** ---- */
       @Schema(
               description =
                   "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. Defaults to "
-                      + OperationsConfig.DEFAULT_PAGE_SIZE
+                      + OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT
                       + " for each query, with a maximum of "
-                      + MAX_HYBRID_LIMIT
+                      + OperationsConfig.MAX_HYBRID_SEARCH_LIMIT
                       + ". May be a number or an object with $vector and $lexical fields.",
               examples =
                   """
@@ -127,8 +124,8 @@ public record FindAndRerankCommand(
       implements Recordable {
     public static final HybridLimits DEFAULT =
         new HybridLimits(
-            OperationsConfig.DEFAULT_PAGE_SIZE,
-            OperationsConfig.DEFAULT_PAGE_SIZE,
+            OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT,
+            OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT,
             CommandFeatures.EMPTY);
 
     @Override
@@ -206,11 +203,11 @@ public record FindAndRerankCommand(
             jsonParser,
             "hybridLimits must be zero or greater, got %s for %s".formatted(limit, fieldName));
       }
-      if (limit > MAX_HYBRID_LIMIT) {
+      if (limit > OperationsConfig.MAX_HYBRID_SEARCH_LIMIT) {
         throw new JsonMappingException(
             jsonParser,
             "hybridLimits must be less than or equal to %s, got %s for %s"
-                .formatted(MAX_HYBRID_LIMIT, limit, fieldName));
+                .formatted(OperationsConfig.MAX_HYBRID_SEARCH_LIMIT, limit, fieldName));
       }
       return limit;
     }
