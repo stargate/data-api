@@ -39,7 +39,6 @@ public record FindAndRerankCommand(
     @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Windowable {
-  public static final int MAX_HYBRID_LIMIT = 100;
 
   public FindAndRerankCommand {
     sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
@@ -195,12 +194,6 @@ public record FindAndRerankCommand(
         throw new JsonMappingException(
             jsonParser,
             "hybridLimits must be zero or greater, got %s for %s".formatted(limit, fieldName));
-      }
-      if (limit > MAX_HYBRID_LIMIT) {
-        throw new JsonMappingException(
-            jsonParser,
-            "hybridLimits must be less than or equal to %s, got %s for %s"
-                .formatted(MAX_HYBRID_LIMIT, limit, fieldName));
       }
       return limit;
     }
