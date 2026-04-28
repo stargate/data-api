@@ -165,8 +165,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
-          .body("status.moreData", is(true))
-          .body("status.nextPageState", not(emptyOrNullString()));
+          .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue());
 
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -182,7 +182,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
 
     @Test
     public void limitMoreDataFlag() {
-      insert(25);
+      insert(55);
       givenHeadersPostJsonThenOkNoErrors(
               """
           {
@@ -193,8 +193,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """)
           .body("$", responseIsStatusOnly())
-          .body("status.matchedCount", is(20))
-          .body("status.modifiedCount", is(20))
+          .body("status.matchedCount", is(50))
+          .body("status.modifiedCount", is(50))
           .body("status.moreData", is(true))
           .body("status.nextPageState", not(emptyOrNullString()));
 
@@ -212,7 +212,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
 
     @Test
     public void updatePagination() {
-      insert(25);
+      insert(55);
       String nextPageState =
           givenHeadersPostJsonThenOkNoErrors(
                   """
@@ -224,8 +224,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               }
               """)
               .body("$", responseIsStatusOnly())
-              .body("status.matchedCount", is(20))
-              .body("status.modifiedCount", is(20))
+              .body("status.matchedCount", is(50))
+              .body("status.modifiedCount", is(50))
               .body("status.moreData", is(true))
               .body("status.nextPageState", notNullValue())
               .extract()
@@ -248,6 +248,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.modifiedCount", is(5))
           .body("status.moreData", nullValue())
           .body("status.nextPageState", nullValue());
+
       givenHeadersPostJsonThenOkNoErrors(
               """
         {
