@@ -373,9 +373,7 @@ class FindAndRerankOperationBuilder {
 
     var hybridLimits =
         getOrDefault(
-            command.options(),
-            FindAndRerankCommand.Options::hybridLimits,
-            defaultHybridLimits());
+            command.options(), FindAndRerankCommand.Options::hybridLimits, defaultHybridLimits());
 
     var findLimit = forVectorRead ? hybridLimits.vectorLimit() : hybridLimits.lexicalLimit();
 

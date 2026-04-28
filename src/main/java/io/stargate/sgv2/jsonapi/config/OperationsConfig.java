@@ -52,11 +52,7 @@ public interface OperationsConfig {
 
   /** Defines the hybrid search read limit config default as min,default,max. */
   String DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG =
-      MIN_HYBRID_SEARCH_LIMIT
-          + ","
-          + DEFAULT_HYBRID_SEARCH_LIMIT
-          + ","
-          + MAX_HYBRID_SEARCH_LIMIT;
+      MIN_HYBRID_SEARCH_LIMIT + "," + DEFAULT_HYBRID_SEARCH_LIMIT + "," + MAX_HYBRID_SEARCH_LIMIT;
 
   /** Defines the maximum configurable default page size for read queries. */
   int MAX_CONFIGURABLE_PAGE_SIZE = 500;
