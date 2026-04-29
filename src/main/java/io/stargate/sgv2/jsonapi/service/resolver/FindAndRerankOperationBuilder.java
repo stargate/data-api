@@ -265,7 +265,8 @@ class FindAndRerankOperationBuilder {
    * Validates that the overridden provider and model exist and are usable in the reranking
    * providers configuration.
    */
-  private void validateRerankOverride(
+  // package-private for unit testing
+  void validateRerankOverride(
       RerankingProvidersConfig rerankingProvidersConfig, String provider, String modelName) {
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
     if (providerConfig == null) {
