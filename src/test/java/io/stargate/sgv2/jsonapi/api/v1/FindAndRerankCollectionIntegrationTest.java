@@ -268,63 +268,45 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
 
   @Test
   void overrideWithAuthPassesValidation() {
-    // Override with valid provider+model and authentication credentials.
-    // Override validation passes; pipeline proceeds to embedding (vectorize) step which
-    // fails with EMBEDDING_PROVIDER_CLIENT_ERROR (no real OpenAI API key in test env).
-    String collectionName = "rerank_override_with_auth";
-    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
-
-    givenHeadersPostJsonThen(
-            keyspaceName,
-            collectionName,
-            findAndRerankWithOverride(
-                """
-                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
-                 "authentication": {"providerKey": "my-test-key"}}
-                """))
-        .body("$", responseIsError())
-        .body(
-            "errors[0].errorCode",
-            is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
+    overridePassesValidation(
+        "rerank_override_with_auth",
+        """
+        {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+         "authentication": {"providerKey": "my-test-key"}}
+        """);
   }
 
   @Test
   void overrideWithAuthAndParametersPassesValidation() {
-    // Override with valid provider+model, authentication, and parameters.
-    // Override validation passes; fails downstream at embedding step.
-    String collectionName = "rerank_override_auth_params";
-    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
-
-    givenHeadersPostJsonThen(
-            keyspaceName,
-            collectionName,
-            findAndRerankWithOverride(
-                """
-                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
-                 "authentication": {"providerKey": "my-test-key"},
-                 "parameters": {"truncate": "END"}}
-                """))
-        .body("$", responseIsError())
-        .body(
-            "errors[0].errorCode",
-            is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
+    overridePassesValidation(
+        "rerank_override_auth_params",
+        """
+        {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+         "authentication": {"providerKey": "my-test-key"},
+         "parameters": {"truncate": "END"}}
+        """);
   }
 
   @Test
   void overrideWithParametersOnlyPassesValidation() {
-    // Override with valid provider+model and parameters but no authentication.
-    // Override validation passes; fails downstream at embedding step.
-    String collectionName = "rerank_override_params_only";
+    overridePassesValidation(
+        "rerank_override_params_only",
+        """
+        {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+         "parameters": {"truncate": "END"}}
+        """);
+  }
+
+  /**
+   * Verifies that a valid rerank override passes validation and the pipeline proceeds to the
+   * embedding (vectorize) step, which fails with EMBEDDING_PROVIDER_CLIENT_ERROR because there is
+   * no real OpenAI API key in the test environment.
+   */
+  private void overridePassesValidation(String collectionName, String rerankOverrideJson) {
     createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
 
     givenHeadersPostJsonThen(
-            keyspaceName,
-            collectionName,
-            findAndRerankWithOverride(
-                """
-                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
-                 "parameters": {"truncate": "END"}}
-                """))
+            keyspaceName, collectionName, findAndRerankWithOverride(rerankOverrideJson))
         .body("$", responseIsError())
         .body(
             "errors[0].errorCode",

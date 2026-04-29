@@ -70,28 +70,26 @@ class FindAndRerankOperationBuilderTest {
   @Nested
   class ValidateRerankOverride {
 
+    // Shared config: nvidia provider enabled with a single supported model
+    private final RerankingProvidersConfig NVIDIA_SUPPORTED =
+        configWithProvider(
+            "nvidia",
+            true,
+            List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
+
     @Test
     void shouldAcceptSupportedProviderAndModel() {
-      var config =
-          configWithProvider(
-              "nvidia",
-              true,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
-
-      assertThatCode(() -> builder.validateRerankOverride(config, "nvidia", "nvidia/rerank-v1"))
+      assertThatCode(
+              () -> builder.validateRerankOverride(NVIDIA_SUPPORTED, "nvidia", "nvidia/rerank-v1"))
           .doesNotThrowAnyException();
     }
 
     @Test
     void shouldRejectUnknownProvider() {
-      var config =
-          configWithProvider(
-              "nvidia",
-              true,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
-
       assertThatThrownBy(
-              () -> builder.validateRerankOverride(config, "unknown-provider", "some-model"))
+              () ->
+                  builder.validateRerankOverride(
+                      NVIDIA_SUPPORTED, "unknown-provider", "some-model"))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("unknown-provider");
@@ -99,13 +97,14 @@ class FindAndRerankOperationBuilderTest {
 
     @Test
     void shouldRejectDisabledProvider() {
-      var config =
+      var disabledConfig =
           configWithProvider(
               "nvidia",
               false,
               List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
 
-      assertThatThrownBy(() -> builder.validateRerankOverride(config, "nvidia", "nvidia/rerank-v1"))
+      assertThatThrownBy(
+              () -> builder.validateRerankOverride(disabledConfig, "nvidia", "nvidia/rerank-v1"))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("disabled");
@@ -113,13 +112,7 @@ class FindAndRerankOperationBuilderTest {
 
     @Test
     void shouldRejectNullModelName() {
-      var config =
-          configWithProvider(
-              "nvidia",
-              true,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
-
-      assertThatThrownBy(() -> builder.validateRerankOverride(config, "nvidia", null))
+      assertThatThrownBy(() -> builder.validateRerankOverride(NVIDIA_SUPPORTED, "nvidia", null))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("modelName");
@@ -127,14 +120,10 @@ class FindAndRerankOperationBuilderTest {
 
     @Test
     void shouldRejectUnknownModel() {
-      var config =
-          configWithProvider(
-              "nvidia",
-              true,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
-
       assertThatThrownBy(
-              () -> builder.validateRerankOverride(config, "nvidia", "nvidia/nonexistent-model"))
+              () ->
+                  builder.validateRerankOverride(
+                      NVIDIA_SUPPORTED, "nvidia", "nvidia/nonexistent-model"))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("nonexistent-model");
@@ -167,34 +156,11 @@ class FindAndRerankOperationBuilderTest {
     }
 
     @Test
-    void shouldRejectNullModelNameBeforeCheckingModelExistence() {
-      // Even when the provider has models, null modelName should be caught
-      // before the stream filter (which would NPE on .equals(null))
-      var config =
-          configWithProvider(
-              "nvidia",
-              true,
-              List.of(
-                  modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED),
-                  modelConfig("nvidia/rerank-v2", ApiModelSupport.SupportStatus.SUPPORTED)));
-
-      assertThatThrownBy(() -> builder.validateRerankOverride(config, "nvidia", null))
-          .isInstanceOf(RequestException.class)
-          .hasFieldOrPropertyWithValue(
-              "code", RequestException.Code.INVALID_RERANK_OVERRIDE.name());
-    }
-
-    @Test
     void shouldRejectUnknownProviderBeforeCheckingModelName() {
       // When both provider is unknown AND modelName is null, the provider check should
       // come first — user gets the more actionable "provider not supported" error
-      var config =
-          configWithProvider(
-              "nvidia",
-              true,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
-
-      assertThatThrownBy(() -> builder.validateRerankOverride(config, "unknown-provider", null))
+      assertThatThrownBy(
+              () -> builder.validateRerankOverride(NVIDIA_SUPPORTED, "unknown-provider", null))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("unknown-provider")
@@ -205,13 +171,13 @@ class FindAndRerankOperationBuilderTest {
     void shouldRejectDisabledProviderBeforeCheckingModelName() {
       // When provider is disabled AND modelName is null, the disabled check should
       // come first — user gets "provider disabled" instead of "modelName required"
-      var config =
+      var disabledConfig =
           configWithProvider(
               "nvidia",
               false,
               List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
 
-      assertThatThrownBy(() -> builder.validateRerankOverride(config, "nvidia", null))
+      assertThatThrownBy(() -> builder.validateRerankOverride(disabledConfig, "nvidia", null))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("disabled");
