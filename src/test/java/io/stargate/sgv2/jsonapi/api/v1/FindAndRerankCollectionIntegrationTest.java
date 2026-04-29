@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -267,8 +269,8 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
   @Test
   void overrideWithAuthPassesValidation() {
     // Override with valid provider+model and authentication credentials.
-    // Should pass all override validation and fail downstream (e.g., embedding provider),
-    // NOT with a rerank validation error.
+    // Override validation passes; pipeline proceeds to embedding (vectorize) step which
+    // fails with EMBEDDING_PROVIDER_CLIENT_ERROR (no real OpenAI API key in test env).
     String collectionName = "rerank_override_with_auth";
     createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
 
@@ -283,17 +285,13 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         .body("$", responseIsError())
         .body(
             "errors[0].errorCode",
-            not(
-                anyOf(
-                    is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()),
-                    is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()))));
+            is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
   }
 
   @Test
   void overrideWithAuthAndParametersPassesValidation() {
     // Override with valid provider+model, authentication, and parameters.
-    // Should pass all override validation and fail downstream,
-    // NOT with a rerank validation error.
+    // Override validation passes; fails downstream at embedding step.
     String collectionName = "rerank_override_auth_params";
     createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
 
@@ -309,10 +307,28 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         .body("$", responseIsError())
         .body(
             "errors[0].errorCode",
-            not(
-                anyOf(
-                    is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()),
-                    is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()))));
+            is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
+  }
+
+  @Test
+  void overrideWithParametersOnlyPassesValidation() {
+    // Override with valid provider+model and parameters but no authentication.
+    // Override validation passes; fails downstream at embedding step.
+    String collectionName = "rerank_override_params_only";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+                 "parameters": {"truncate": "END"}}
+                """))
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
   }
 
   /**
