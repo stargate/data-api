@@ -169,7 +169,7 @@ class FindAndRerankOperationBuilder {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
 
-    // Resolve effective provider/model (collection default merged with any per-request override).
+    // Resolve effective provider/model (per-request override replaces collection config entirely).
     // For overrides, validateRerankOverride() already checks DEPRECATED and END_OF_LIFE.
     // For collection defaults (no override), we still need the END_OF_LIFE check below since
     // the model may have become EOL after the collection was created.
