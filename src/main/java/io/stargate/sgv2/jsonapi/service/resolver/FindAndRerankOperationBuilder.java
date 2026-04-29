@@ -165,19 +165,34 @@ class FindAndRerankOperationBuilder {
       }
     }
 
-    if (!commandContext.schemaObject().rerankingConfig().enabled() && !hasRerankOverride()) {
+    var rerankOverride =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
+    boolean hasOverride = rerankOverride != null && !rerankOverride.isEmpty();
+
+    if (!commandContext.schemaObject().rerankingConfig().enabled() && !hasOverride) {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
 
-    // Resolve effective provider/model (per-request override replaces collection config entirely).
-    // For overrides, validateRerankOverride() already checks DEPRECATED and END_OF_LIFE.
-    // For collection defaults (no override), we still need the END_OF_LIFE check below since
-    // the model may have become EOL after the collection was created.
-    var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
-    var effectiveServiceDef = resolveEffectiveRerankServiceDef(rerankingProvidersConfig);
-
-    if (!hasRerankOverride()) {
-      var modelConfig = rerankingProvidersConfig.filterByRerankServiceDef(effectiveServiceDef);
+    // Resolve effective rerank service def: per-request override replaces collection config
+    // entirely; otherwise fall back to the collection's configured defaults.
+    if (hasOverride) {
+      var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
+      validateRerankOverride(
+          rerankingProvidersConfig, rerankOverride.provider(), rerankOverride.modelName());
+      effectiveRerankServiceDef =
+          new CollectionRerankDef.RerankServiceDef(
+              rerankOverride.provider(),
+              rerankOverride.modelName(),
+              rerankOverride.authentication(),
+              rerankOverride.parameters());
+    } else {
+      // Collection defaults: check END_OF_LIFE since model may have become EOL after creation.
+      // (validateRerankOverride already covers DEPRECATED+EOL for overrides above.)
+      effectiveRerankServiceDef =
+          commandContext.schemaObject().rerankingConfig().rerankServiceDef();
+      var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
+      var modelConfig =
+          rerankingProvidersConfig.filterByRerankServiceDef(effectiveRerankServiceDef);
       if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
         throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
             Map.of(
@@ -194,30 +209,19 @@ class FindAndRerankOperationBuilder {
     }
   }
 
-  /** Returns true when a per-request reranking service override is present. */
-  private boolean hasRerankOverride() {
-    var override =
-        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
-    return override != null && !override.isEmpty();
-  }
-
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
       rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
-    // Previous code will check reranking is supported; use the effective service def which
-    // may include per-request overrides
-    var providerConfig =
-        resolveEffectiveRerankServiceDef(
-            commandContext.rerankingProviderFactory().getRerankingConfig());
+    // checkSupported() already resolved effectiveRerankServiceDef
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
             .create(
                 commandContext.requestContext().tenant(),
                 commandContext.requestContext().authToken(),
-                providerConfig.provider(),
-                providerConfig.modelName(),
-                providerConfig.authentication(),
+                effectiveRerankServiceDef.provider(),
+                effectiveRerankServiceDef.modelName(),
+                effectiveRerankServiceDef.authentication(),
                 commandContext.commandName());
 
     // todo: move to a builder pattern, mosty to make it easier to manage the task position and
@@ -255,39 +259,6 @@ class FindAndRerankOperationBuilder {
         deferredCommandResults.stream()
             .map(RerankingTask.DeferredCommandWithSource::deferredRead)
             .collect(java.util.stream.Collectors.toUnmodifiableList()));
-  }
-
-  /**
-   * Resolves the effective RerankServiceDef: uses the per-request override if present (completely
-   * replacing collection config), otherwise falls back to the collection's configured defaults.
-   * Result is memoized for the lifetime of this builder.
-   */
-  private CollectionRerankDef.RerankServiceDef resolveEffectiveRerankServiceDef(
-      RerankingProvidersConfig rerankingProvidersConfig) {
-    if (effectiveRerankServiceDef != null) {
-      return effectiveRerankServiceDef;
-    }
-
-    var override =
-        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
-
-    if (override != null && !override.isEmpty()) {
-      // Per-request override: use it entirely, no merge with collection config.
-      validateRerankOverride(rerankingProvidersConfig, override.provider(), override.modelName());
-
-      effectiveRerankServiceDef =
-          new CollectionRerankDef.RerankServiceDef(
-              override.provider(),
-              override.modelName(),
-              override.authentication(),
-              override.parameters());
-    } else {
-      // No override: use collection config (guaranteed non-null here because checkSupported()
-      // already blocked the disabled-collection-without-override case).
-      effectiveRerankServiceDef =
-          commandContext.schemaObject().rerankingConfig().rerankServiceDef();
-    }
-    return effectiveRerankServiceDef;
   }
 
   /**
