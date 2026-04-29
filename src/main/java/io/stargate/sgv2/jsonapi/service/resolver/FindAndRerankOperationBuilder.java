@@ -267,14 +267,6 @@ class FindAndRerankOperationBuilder {
    */
   private void validateRerankOverride(
       RerankingProvidersConfig rerankingProvidersConfig, String provider, String modelName) {
-    // provider is guaranteed non-null by @NotNull on RerankServiceDesc.provider;
-    // modelName has no @NotNull so we must check explicitly
-    if (modelName == null) {
-      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
-          "message",
-          "The 'modelName' field is required when specifying a reranking service override.");
-    }
-
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
     if (providerConfig == null) {
       throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
@@ -284,7 +276,13 @@ class FindAndRerankOperationBuilder {
       throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
           "message", "Reranking provider '%s' is disabled.".formatted(provider));
     }
-
+    // provider is guaranteed non-null by @NotNull on RerankServiceDesc.provider;
+    // modelName has no @NotNull so we must check explicitly
+    if (modelName == null) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message",
+          "The 'modelName' field is required when specifying a reranking service override.");
+    }
     var modelConfig =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(modelName))
