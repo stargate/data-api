@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -23,7 +22,7 @@ import org.junit.jupiter.api.Test;
 @WithTestResource(value = DseTestResource.class)
 public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
-  // used to cleanup the collection from a previous test, if non-null
+  // used to clean up the collection from a previous test, if non-null
   private String cleanupCollectionName = null;
 
   @BeforeAll
@@ -263,6 +262,57 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
                 """))
         .body("$", responseIsError())
         .body("errors[0].errorCode", is(SchemaException.Code.END_OF_LIFE_AI_MODEL.name()));
+  }
+
+  @Test
+  void overrideWithAuthPassesValidation() {
+    // Override with valid provider+model and authentication credentials.
+    // Should pass all override validation and fail downstream (e.g., embedding provider),
+    // NOT with a rerank validation error.
+    String collectionName = "rerank_override_with_auth";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+                 "authentication": {"providerKey": "my-test-key"}}
+                """))
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            not(
+                anyOf(
+                    is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()),
+                    is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()))));
+  }
+
+  @Test
+  void overrideWithAuthAndParametersPassesValidation() {
+    // Override with valid provider+model, authentication, and parameters.
+    // Should pass all override validation and fail downstream,
+    // NOT with a rerank validation error.
+    String collectionName = "rerank_override_auth_params";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+                 "authentication": {"providerKey": "my-test-key"},
+                 "parameters": {"truncate": "END"}}
+                """))
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            not(
+                anyOf(
+                    is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()),
+                    is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()))));
   }
 
   /**
