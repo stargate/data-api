@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.is;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -164,6 +165,123 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         .body(
             "errors[0].message",
             containsString(errorMessageContains.formatted(keyspaceName, collectionName)));
+  }
+
+  // ---- Per-request reranking override tests ----
+  // These use a collection with vectorize enabled but NO reranking configured.
+  // Sort uses $hybrid with only $vectorize (no $lexical) to avoid needing lexical support.
+
+  private static final String VECTORIZE_NO_RERANK_SPEC =
+      """
+      {
+        "name" : "%s",
+        "options": {
+          "vector": {
+            "metric": "cosine",
+            "dimension": 1024,
+            "service": {
+              "provider": "openai",
+              "modelName": "text-embedding-3-small"
+            }
+          }
+        }
+      }
+      """;
+
+  @Test
+  void failOnRerankingDisabledNoOverride() {
+    String collectionName = "rerank_disabled_no_override";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(keyspaceName, collectionName, findAndRerankWithOverride(null))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()))
+        .body("errors[0].message", containsString("per-request reranking service override"));
+  }
+
+  @Test
+  void failOnRerankOverrideUnknownProvider() {
+    String collectionName = "rerank_override_bad_provider";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "unknown-provider", "modelName": "some-model"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("unknown-provider"));
+  }
+
+  @Test
+  void failOnRerankOverrideMissingModelName() {
+    String collectionName = "rerank_override_no_model";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("modelName"));
+  }
+
+  @Test
+  void failOnRerankOverrideDeprecatedModel() {
+    String collectionName = "rerank_override_deprecated";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/a-random-deprecated-model"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(SchemaException.Code.DEPRECATED_AI_MODEL.name()));
+  }
+
+  @Test
+  void failOnRerankOverrideEolModel() {
+    String collectionName = "rerank_override_eol";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/a-random-EOL-model"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(SchemaException.Code.END_OF_LIFE_AI_MODEL.name()));
+  }
+
+  /**
+   * Builds a findAndRerank command JSON with an optional rerank override in options.
+   *
+   * @param rerankOverrideJson JSON object for the "rerank" option, or null for no override.
+   */
+  private static String findAndRerankWithOverride(String rerankOverrideJson) {
+    String rerankOption = rerankOverrideJson != null ? ", \"rerank\": " + rerankOverrideJson : "";
+    return
+        """
+        {"findAndRerank": {
+            "sort": {"$hybrid": {"$vectorize": "search text"}},
+            "options": {
+                "limit": 10%s
+            }
+        }}
+        """
+        .formatted(rerankOption);
   }
 
   private void createCollectionWithCleanup(String collectionName, String collectionSpec) {
