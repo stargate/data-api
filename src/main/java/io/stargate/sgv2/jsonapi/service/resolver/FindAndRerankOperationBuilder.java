@@ -58,8 +58,7 @@ class FindAndRerankOperationBuilder {
   private FindAndRerankCommand command;
   private FindCommandResolver findCommandResolver;
 
-  // lazily computed effective rerank service def (collection default merged with per-request
-  // override)
+  // lazily computed effective rerank service def (per-request override or collection default)
   private CollectionRerankDef.RerankServiceDef effectiveRerankServiceDef;
 
   public FindAndRerankOperationBuilder(CommandContext<CollectionSchemaObject> commandContext) {
@@ -166,8 +165,7 @@ class FindAndRerankOperationBuilder {
       }
     }
 
-    if (!commandContext.schemaObject().rerankingConfig().enabled()) {
-      // TODO: more info in the error
+    if (!commandContext.schemaObject().rerankingConfig().enabled() && !hasRerankOverride()) {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
 
@@ -196,15 +194,11 @@ class FindAndRerankOperationBuilder {
     }
   }
 
-  /**
-   * Returns true when the per-request override specifies a different provider or model. Auth-only
-   * overrides return false because the collection's own provider/model is unchanged and should go
-   * through the normal (EOL-only) validation path rather than the stricter override validation.
-   */
+  /** Returns true when a per-request reranking service override is present. */
   private boolean hasRerankOverride() {
     var override =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
-    return override != null && (override.provider() != null || override.modelName() != null);
+    return override != null && !override.isEmpty();
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
@@ -264,9 +258,9 @@ class FindAndRerankOperationBuilder {
   }
 
   /**
-   * Resolves the effective RerankServiceDef by merging any per-request override from the command
-   * options with the collection's configured defaults. Result is memoized for the lifetime of this
-   * builder.
+   * Resolves the effective RerankServiceDef: uses the per-request override if present (completely
+   * replacing collection config), otherwise falls back to the collection's configured defaults.
+   * Result is memoized for the lifetime of this builder.
    */
   private CollectionRerankDef.RerankServiceDef resolveEffectiveRerankServiceDef(
       RerankingProvidersConfig rerankingProvidersConfig) {
@@ -274,43 +268,25 @@ class FindAndRerankOperationBuilder {
       return effectiveRerankServiceDef;
     }
 
-    var collectionDef = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
     var override =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
 
-    if (override == null || override.isEmpty()) {
-      effectiveRerankServiceDef = collectionDef;
-      return effectiveRerankServiceDef;
+    if (override != null && !override.isEmpty()) {
+      // Per-request override: use it entirely, no merge with collection config.
+      validateRerankOverride(rerankingProvidersConfig, override.provider(), override.modelName());
+
+      effectiveRerankServiceDef =
+          new CollectionRerankDef.RerankServiceDef(
+              override.provider(),
+              override.modelName(),
+              override.authentication(),
+              override.parameters());
+    } else {
+      // No override: use collection config (guaranteed non-null here because checkSupported()
+      // already blocked the disabled-collection-without-override case).
+      effectiveRerankServiceDef =
+          commandContext.schemaObject().rerankingConfig().rerankServiceDef();
     }
-
-    // If provider is specified without modelName, error: we don't know which model
-    // the user wants from the new provider
-    if (override.provider() != null && override.modelName() == null) {
-      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
-          "message", "When overriding the reranking provider, 'modelName' must also be specified.");
-    }
-
-    // Merge: override fields take precedence, nulls fall back to collection defaults
-    String effectiveProvider =
-        override.provider() != null ? override.provider() : collectionDef.provider();
-    String effectiveModelName =
-        override.modelName() != null ? override.modelName() : collectionDef.modelName();
-    Map<String, String> effectiveAuth =
-        override.authentication() != null
-            ? override.authentication()
-            : collectionDef.authentication();
-
-    // Validate the effective provider+model against the provider registry, but only when
-    // the provider or model is actually being overridden. Auth-only overrides reuse the
-    // collection's provider/model unchanged, so they go through the normal EOL-only check
-    // in checkSupported() instead of the stricter DEPRECATED+EOL check here.
-    if (override.provider() != null || override.modelName() != null) {
-      validateRerankOverride(rerankingProvidersConfig, effectiveProvider, effectiveModelName);
-    }
-
-    effectiveRerankServiceDef =
-        new CollectionRerankDef.RerankServiceDef(
-            effectiveProvider, effectiveModelName, effectiveAuth, collectionDef.parameters());
     return effectiveRerankServiceDef;
   }
 
@@ -320,6 +296,14 @@ class FindAndRerankOperationBuilder {
    */
   private void validateRerankOverride(
       RerankingProvidersConfig rerankingProvidersConfig, String provider, String modelName) {
+    // provider is guaranteed non-null by @NotNull on RerankServiceDesc.provider;
+    // modelName has no @NotNull so we must check explicitly
+    if (modelName == null) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message",
+          "The 'modelName' field is required when specifying a reranking service override.");
+    }
+
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
     if (providerConfig == null) {
       throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(

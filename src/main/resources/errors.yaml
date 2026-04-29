@@ -265,11 +265,11 @@ request-errors:
     code: UNSUPPORTED_RERANKING_COMMAND
     title: Reranking not enabled for collection
     body: |-
-      The `findAndRerank` is not enabled for the collection.
-      
-      The Command is only supported for collections that have `vector`, `lexical`, and `rerank` configured. They additionally require a vectorize configuration if `$vectorize` is used.
-      
-      Resend using a supported collection. 
+      The `findAndRerank` is not enabled for the collection and no per-request reranking service override was provided.
+
+      The Command is only supported for collections that have `vector`, `lexical`, and `rerank` configured, or when a per-request reranking service override is provided via the `rerank` option. They additionally require a vectorize configuration if `$vectorize` is used.
+
+      Resend using a supported collection or provide a reranking service override in the command options.
 
   - scope:
     code: INVALID_RERANK_OVERRIDE

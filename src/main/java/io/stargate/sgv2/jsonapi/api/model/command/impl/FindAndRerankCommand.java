@@ -2,8 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonParser;
@@ -18,17 +16,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
-import io.stargate.sgv2.jsonapi.util.StringUtil;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -113,50 +108,12 @@ public record FindAndRerankCommand(
           @Valid
           @Schema(
               description =
-                  "Optional per-request override for the reranking service. Overrides the collection-level reranking provider, model, and/or authentication.",
-              implementation = RerankServiceOverride.class)
+                  "Optional per-request override for the reranking service. Completely replaces the"
+                      + " collection-level reranking configuration when provided. Both provider and"
+                      + " modelName are required.",
+              implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)
           @JsonProperty("rerank")
-          RerankServiceOverride rerankServiceOverride) {}
-
-  /**
-   * Optional per-request override for the reranking service configuration. All fields are optional;
-   * unspecified fields fall back to the collection's defaults.
-   */
-  public record RerankServiceOverride(
-      @Nullable
-          @Schema(
-              description = "Override reranking service provider.",
-              type = SchemaType.STRING,
-              implementation = String.class)
-          @JsonProperty(ServiceDescConstants.PROVIDER)
-          String provider,
-      @Nullable
-          @Schema(
-              description = "Override reranking service model.",
-              type = SchemaType.STRING,
-              implementation = String.class)
-          @JsonProperty(ServiceDescConstants.MODEL_NAME)
-          String modelName,
-      @Nullable
-          @Schema(
-              description = "Override authentication config for reranking service.",
-              type = SchemaType.OBJECT)
-          @JsonProperty(ServiceDescConstants.AUTHENTICATION)
-          @JsonInclude(JsonInclude.Include.NON_NULL)
-          Map<String, String> authentication) {
-
-    /** Normalize blank strings to null so downstream code can use simple null checks. */
-    public RerankServiceOverride {
-      provider = StringUtil.blankToNull(provider);
-      modelName = StringUtil.blankToNull(modelName);
-      authentication = (authentication == null || authentication.isEmpty()) ? null : authentication;
-    }
-
-    @JsonIgnore
-    public boolean isEmpty() {
-      return provider == null && modelName == null && authentication == null;
-    }
-  }
+          CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
   public record HybridLimits(
