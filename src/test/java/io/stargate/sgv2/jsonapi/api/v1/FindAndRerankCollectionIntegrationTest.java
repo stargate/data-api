@@ -100,8 +100,31 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
 
   @Test
   void failOnHybridLimitsAboveMax() {
-    // Deserialization fails before any business logic, so no collection setup is needed.
+    // Validation now runs in FindAndRerankOperationBuilder.build(), so the collection must exist.
+    Assumptions.assumeTrue(isLexicalAvailableForDB());
+
     String collectionName = "find_rerank_hybrid_limits_too_large";
+    createCollectionWithCleanup(
+        collectionName,
+        """
+            {
+              "name" : "%s",
+              "options": {
+                "vector": {
+                        "metric": "cosine",
+                        "dimension": 1024,
+                        "service": {
+                            "provider": "openai",
+                            "modelName": "text-embedding-3-small"
+                        }
+                    },
+                "lexical": {
+                  "enabled": true,
+                  "analyzer": "standard"
+                }
+              }
+            }
+            """);
 
     var rerank =
         """
@@ -123,10 +146,10 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
 
     givenHeadersPostJsonThen(keyspaceName, collectionName, rerank)
         .body("$", responseIsError())
-        .body("errors[0].errorCode", is(RequestException.Code.REQUEST_STRUCTURE_MISMATCH.name()))
-        .body(
-            "errors[0].message",
-            containsString("hybridLimits must be less than or equal to 100, got 101 for $vector"));
+        .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
+        .body("errors[0].message", containsString("hybridLimits.$vector"))
+        .body("errors[0].message", containsString("101"))
+        .body("errors[0].message", containsString("must be between 1 and 100"));
   }
 
   // https://github.com/stargate/data-api/issues/2057

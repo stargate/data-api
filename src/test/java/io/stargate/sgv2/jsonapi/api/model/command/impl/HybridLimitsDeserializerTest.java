@@ -163,6 +163,8 @@ public class HybridLimitsDeserializerTest {
   }
 
   private static Stream<Arguments> invalidLimitsTestCases() {
+    // Range validation (negative / above-max) lives in FindAndRerankOperationBuilder now —
+    // this deserializer test only covers JSON-shape errors.
     return Stream.of(
         // ----
         Arguments.of(
@@ -170,38 +172,6 @@ public class HybridLimitsDeserializerTest {
             true
             """,
             "hybridLimits must be an integer or an object"),
-        // ----
-        // out of range
-        Arguments.of(
-            """
-            -1
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
-        Arguments.of(
-            """
-            { "$vector" : -1, "$lexical" : 99}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
-        Arguments.of(
-            """
-            { "$vector" : 99, "$lexical" : -1}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $lexical"),
-        Arguments.of(
-            """
-            { "$vector" : -1, "$lexical" : -1}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
-        Arguments.of(
-            """
-            101
-            """,
-            "hybridLimits must be less than or equal to 100, got 101 for $vector"),
-        Arguments.of(
-            """
-            { "$vector" : 100, "$lexical" : 101}
-            """,
-            "hybridLimits must be less than or equal to 100, got 101 for $lexical"),
         // ----
         // unexpected
         Arguments.of(

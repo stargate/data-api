@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -79,6 +80,7 @@ class FindAndRerankOperationBuilder {
     Objects.requireNonNull(command, "command cannot be null");
 
     checkSupported();
+    validateHybridLimits();
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
     // Making the deferrables here so we can associate them with read types that will fill them
@@ -123,6 +125,40 @@ class FindAndRerankOperationBuilder {
         rerankTasksAndDeferrables.taskGroup(),
         TaskRetryPolicy.NO_RETRY,
         rerankTasksAndDeferrables.accumulator());
+  }
+
+  /**
+   * Validate user-supplied hybridLimits against the dynamic OperationsConfig bounds. Cannot be done
+   * in the Jackson deserializer because it has no access to OperationsConfig (config-file and
+   * env-var overrides).
+   */
+  private void validateHybridLimits() {
+    if (command.options() == null || command.options().hybridLimits() == null) {
+      return;
+    }
+    var hybridLimits = command.options().hybridLimits();
+    checkLimitInBounds(
+        "hybridLimits.$vector",
+        hybridLimits.vectorLimit(),
+        operationsConfig.hybridSearchVectorLimit());
+    checkLimitInBounds(
+        "hybridLimits.$lexical",
+        hybridLimits.lexicalLimit(),
+        operationsConfig.hybridSearchLexicalLimit());
+  }
+
+  private void checkLimitInBounds(String field, int value, IntConfigWithBounds bounds) {
+    if (bounds.isValid(value)) {
+      return;
+    }
+    throw RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
+        Map.of(
+            "field",
+            field,
+            "value",
+            String.valueOf(value),
+            "message",
+            "must be between %d and %d".formatted(bounds.min(), bounds.max())));
   }
 
   /**
@@ -256,9 +292,7 @@ class FindAndRerankOperationBuilder {
     // when the command runs later, so we can set the page size to be the same as the limit
     commandContext.setHybridLimits(
         getOrDefault(
-            command.options(),
-            FindAndRerankCommand.Options::hybridLimits,
-            FindAndRerankCommand.HybridLimits.DEFAULT));
+            command.options(), FindAndRerankCommand.Options::hybridLimits, defaultHybridLimits()));
 
     // these are the actions the reads should call when done, to pass the command result into the
     // next tasks

@@ -171,13 +171,12 @@ public record FindAndRerankCommand(
       };
     }
 
-    private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber)
-        throws JsonMappingException {
-
+    // Range validation against dynamic OperationsConfig bounds happens later in
+    // FindAndRerankOperationBuilder.build(); the deserializer only handles JSON shape.
+    private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber) {
+      int limit = limitsNumber.asInt();
       return new HybridLimits(
-          normaliseLimit(jsonParser, limitsNumber, VECTOR_EMBEDDING_FIELD),
-          normaliseLimit(jsonParser, limitsNumber, LEXICAL_CONTENT_FIELD),
-          CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER));
+          limit, limit, CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER));
     }
 
     private HybridLimits deserialize(JsonParser jsonParser, ObjectNode limitsObject)
@@ -186,30 +185,10 @@ public record FindAndRerankCommand(
       var limitMatch = MATCH_LIMIT_FIELDS.matchAndThrow(limitsObject, jsonParser, ERROR_CONTEXT);
 
       return new HybridLimits(
-          normaliseLimit(
-              jsonParser, limitMatch.matched().get(VECTOR_EMBEDDING_FIELD), VECTOR_EMBEDDING_FIELD),
-          normaliseLimit(
-              jsonParser, limitMatch.matched().get(LEXICAL_CONTENT_FIELD), LEXICAL_CONTENT_FIELD),
+          limitMatch.matched().get(VECTOR_EMBEDDING_FIELD).asInt(),
+          limitMatch.matched().get(LEXICAL_CONTENT_FIELD).asInt(),
           CommandFeatures.of(
               CommandFeature.HYBRID_LIMITS_VECTOR, CommandFeature.HYBRID_LIMITS_LEXICAL));
-    }
-
-    private int normaliseLimit(JsonParser jsonParser, NumericNode limitNode, String fieldName)
-        throws JsonMappingException {
-      int limit = limitNode.asInt();
-
-      if (limit < 0) {
-        throw new JsonMappingException(
-            jsonParser,
-            "hybridLimits must be zero or greater, got %s for %s".formatted(limit, fieldName));
-      }
-      if (limit > OperationsConfig.MAX_HYBRID_SEARCH_LIMIT) {
-        throw new JsonMappingException(
-            jsonParser,
-            "hybridLimits must be less than or equal to %s, got %s for %s"
-                .formatted(OperationsConfig.MAX_HYBRID_SEARCH_LIMIT, limit, fieldName));
-      }
-      return limit;
     }
   }
 }

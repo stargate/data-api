@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -13,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
@@ -65,6 +67,140 @@ class FindAndRerankOperationBuilderTest {
     assertThat(commandContext.getHybridLimits().vectorLimit())
         .isEqualTo(OperationsConfig.MAX_HYBRID_SEARCH_LIMIT);
     assertThat(commandContext.getHybridLimits().lexicalLimit()).isEqualTo(25);
+  }
+
+  @Test
+  void failsWhenVectorLimitAboveConfiguredMax() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "hybridLimits": { "$vector": 101, "$lexical": 50 }
+                }
+              }
+            }
+            """);
+
+    assertThatThrownBy(
+            () ->
+                new FindAndRerankOperationBuilder(commandContext)
+                    .withCommand(command)
+                    .withFindCommandResolver(findCommandResolver)
+                    .build())
+        .isInstanceOf(RequestException.class)
+        .hasMessageContaining("hybridLimits.$vector")
+        .hasMessageContaining("101")
+        .hasMessageContaining("must be between 1 and 100");
+  }
+
+  @Test
+  void failsWhenLexicalLimitAboveConfiguredMax() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "hybridLimits": { "$vector": 50, "$lexical": 101 }
+                }
+              }
+            }
+            """);
+
+    assertThatThrownBy(
+            () ->
+                new FindAndRerankOperationBuilder(commandContext)
+                    .withCommand(command)
+                    .withFindCommandResolver(findCommandResolver)
+                    .build())
+        .isInstanceOf(RequestException.class)
+        .hasMessageContaining("hybridLimits.$lexical")
+        .hasMessageContaining("101")
+        .hasMessageContaining("must be between 1 and 100");
+  }
+
+  @Test
+  void failsWhenLimitBelowConfiguredMin() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "hybridLimits": 0
+                }
+              }
+            }
+            """);
+
+    assertThatThrownBy(
+            () ->
+                new FindAndRerankOperationBuilder(commandContext)
+                    .withCommand(command)
+                    .withFindCommandResolver(findCommandResolver)
+                    .build())
+        .isInstanceOf(RequestException.class)
+        .hasMessageContaining("hybridLimits.$vector")
+        .hasMessageContaining("must be between 1 and 100");
+  }
+
+  @Test
+  void acceptsBoundaryValues() throws Exception {
+    var commandContextLow = commandContext();
+    var commandLow =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "hybridLimits": 1
+                }
+              }
+            }
+            """);
+
+    new FindAndRerankOperationBuilder(commandContextLow)
+        .withCommand(commandLow)
+        .withFindCommandResolver(findCommandResolver)
+        .build();
+
+    var commandContextHigh = commandContext();
+    var commandHigh =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "hybridLimits": 100
+                }
+              }
+            }
+            """);
+
+    new FindAndRerankOperationBuilder(commandContextHigh)
+        .withCommand(commandHigh)
+        .withFindCommandResolver(findCommandResolver)
+        .build();
   }
 
   private FindAndRerankCommand command(String json) throws Exception {
