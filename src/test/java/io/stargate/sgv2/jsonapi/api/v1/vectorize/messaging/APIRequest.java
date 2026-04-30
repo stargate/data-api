@@ -46,12 +46,11 @@ public class APIRequest {
   public APIResponse execute() {
 
     boolean retry = true;
-    int maxAttempts = 3;
+    int maxAttempts = 4; // 4 attempts, means 3 retries
     int attempt = 1;
     ValidatableResponse lastValidatableResponse = null;
 
     while (retry && attempt <=maxAttempts){
-      attempt++;
       retry = false;
 
       // Create a new request spec, there is some state that is left in it when a request is run
@@ -71,9 +70,9 @@ public class APIRequest {
         for (var match : retryMatch) {
           if (body.contains(match)) {
             retry = true;
-            // Exponential backoff with jitter: 2^attempt seconds base (1s, 2s, 4s...) plus up to 500ms
+            // Exponential backoff with jitter: 2^attempt seconds base (1s, 2s, 4s...) plus up to 1000ms
             // random jitter to avoid thundering herd if multiple tests hit the rate limit simultaneously
-            long sleepMs = (long) (1000 * Math.pow(2, attempt)) + ThreadLocalRandom.current().nextLong(500);
+            long sleepMs = (long) (1000 * Math.pow(2, attempt)) + ThreadLocalRandom.current().nextLong(1000);
             LOGGER.info("executeRequest() - Retrying, found retry string in response. match={}, sleepMs={} ms, attemptCount={}", match, sleepMs, attempt);
             try {
               Thread.sleep(sleepMs);
@@ -81,9 +80,11 @@ public class APIRequest {
               Thread.currentThread().interrupt();
               throw new RuntimeException("Interrupted during retry sleep", e);
             }
+            break;
           }
         }
       }
+      attempt++;
     }
     return new APIResponse(this, lastValidatableResponse);
 
