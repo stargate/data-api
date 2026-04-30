@@ -70,9 +70,13 @@ public class APIRequest {
         for (var match : retryMatch) {
           if (body.contains(match)) {
             retry = true;
-            // Exponential backoff with jitter: 2^attempt seconds base (1s, 2s, 4s...) plus up to 1000ms
-            // random jitter to avoid thundering herd if multiple tests hit the rate limit simultaneously
-            long sleepMs = (long) (1000 * Math.pow(2, attempt)) + ThreadLocalRandom.current().nextLong(1000);
+            // Service has a concurrency limit and retrying runners can collide regardless of jitter.
+            // Base backoff is long enough to wait out an in-flight request (5s, 10s, 20s...),
+            // plus a small random offset to avoid re-synchronising after the wait.
+            long baseMs = (long) (5000 * Math.pow(2, attempt));
+            long jitterMs = ThreadLocalRandom.current().nextLong(2000);
+            long sleepMs = baseMs + jitterMs;
+
             LOGGER.info("executeRequest() - Retrying, found retry string in response. match={}, sleepMs={} ms, attemptCount={}", match, sleepMs, attempt);
             try {
               Thread.sleep(sleepMs);
