@@ -88,7 +88,7 @@ public class APIRequest {
     validatableResponse.log().status().and().log().body();
 
     if (attemptCount <=3 ) {
-      var body = rawRresponse.body().print();
+      var body = rawRresponse.body().asString();
       // TODO: XXXX: put this in the test plan
       var retryMatch = List.of("EMBEDDING_PROVIDER_RATE_LIMITED", "EMBEDDING_PROVIDER_TIMEOUT");
       for (var match : retryMatch) {
