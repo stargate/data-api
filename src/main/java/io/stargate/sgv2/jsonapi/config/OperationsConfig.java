@@ -42,7 +42,7 @@ public interface OperationsConfig {
   int DEFAULT_FIND_AND_RERANK_LIMIT = 10;
 
   /** Defines the minimum hybrid search read limit. */
-  int MIN_HYBRID_SEARCH_LIMIT = 0;
+  int MIN_HYBRID_SEARCH_LIMIT = 1;
 
   /** Defines the default hybrid search read limit. */
   int DEFAULT_HYBRID_SEARCH_LIMIT = 50;
