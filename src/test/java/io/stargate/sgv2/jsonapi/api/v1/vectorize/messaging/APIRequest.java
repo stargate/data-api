@@ -46,7 +46,7 @@ public class APIRequest {
   public APIResponse execute() {
 
     boolean retry = true;
-    int maxAttempts = 4; // 4 attempts, means 3 retries
+    int maxAttempts = 6; // 6 attempts, means 5 retries
     int attempt = 1;
     ValidatableResponse lastValidatableResponse = null;
 
