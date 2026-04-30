@@ -45,8 +45,48 @@ public class APIRequest {
 
   public APIResponse execute() {
 
-    var requestSpec = requestSpec();
-    return new APIResponse(this, executeRequest(requestSpec));
+    boolean retry = true;
+    int maxAttempts = 3;
+    int attempt = 1;
+    ValidatableResponse lastValidatableResponse = null;
+
+    while (retry && attempt <=maxAttempts){
+      attempt++;
+      retry = false;
+
+      // Create a new request spec, there is some state that is left in it when a request is run
+      // for path params
+      var requestSpec = requestSpec();
+      var rawResponse = executeRequest(requestSpec);
+      lastValidatableResponse = rawResponse.then();
+
+      // logg even if we retry
+      lastValidatableResponse.log().status().and().log().body();
+
+      if (attempt < maxAttempts) {
+        var body = rawResponse.body().asString();
+        // TODO: XXXX: put this in the test plan
+        var retryMatch = List.of("EMBEDDING_PROVIDER_RATE_LIMITED", "EMBEDDING_PROVIDER_TIMEOUT");
+
+        for (var match : retryMatch) {
+          if (body.contains(match)) {
+            retry = true;
+            // Exponential backoff with jitter: 2^attempt seconds base (1s, 2s, 4s...) plus up to 500ms
+            // random jitter to avoid thundering herd if multiple tests hit the rate limit simultaneously
+            long sleepMs = (long) (1000 * Math.pow(2, attempt)) + ThreadLocalRandom.current().nextLong(500);
+            LOGGER.info("executeRequest() - Retrying, found retry string in response. match={}, sleepMs={} ms, attemptCount={}", match, sleepMs, attempt);
+            try {
+              Thread.sleep(sleepMs);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new RuntimeException("Interrupted during retry sleep", e);
+            }
+          }
+        }
+      }
+    }
+    return new APIResponse(this, lastValidatableResponse);
+
   }
 
   private RequestSpecification requestSpec() {
@@ -61,10 +101,7 @@ public class APIRequest {
     return jsonRequest().body(requestString).when();
   }
 
-  private ValidatableResponse executeRequest(RequestSpecification requestSpec){
-    return executeRequest(requestSpec, 1);
-  }
-  private ValidatableResponse executeRequest(RequestSpecification requestSpec, int attemptCount) {
+  private Response executeRequest(RequestSpecification requestSpec) {
 
     var commandName = TestCommand.commandName(request);
     Response rawRresponse;
@@ -83,31 +120,7 @@ public class APIRequest {
       throw new IllegalArgumentException("Do not know how to execute command: " + commandName);
     }
 
-    var validatableResponse = rawRresponse.then();
-    // Logging the response we got, even we want to retry, will want the result in the output
-    validatableResponse.log().status().and().log().body();
-
-    if (attemptCount <=3 ) {
-      var body = rawRresponse.body().asString();
-      // TODO: XXXX: put this in the test plan
-      var retryMatch = List.of("EMBEDDING_PROVIDER_RATE_LIMITED", "EMBEDDING_PROVIDER_TIMEOUT");
-      for (var match : retryMatch) {
-        if (body.contains(match)) {
-          // Exponential backoff with jitter: 2^attempt seconds base (1s, 2s, 4s...) plus up to 500ms
-          // random jitter to avoid thundering herd if multiple tests hit the rate limit simultaneously
-          long sleepMs = (long) (1000 * Math.pow(2, attemptCount)) + ThreadLocalRandom.current().nextLong(500);
-          LOGGER.info("executeRequest() - Retrying, found retry string in response. match={}, sleepMs={} ms, attemptCount={}", match, sleepMs, attemptCount);
-          try {
-            Thread.sleep(sleepMs);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted during retry sleep", e);
-          }
-          return executeRequest(requestSpec, attemptCount + 1);
-        }
-      }
-    }
-    return validatableResponse;
+    return rawRresponse;
   }
 
   protected Map<String, String> getHeaders() {
