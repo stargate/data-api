@@ -24,7 +24,9 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupB
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
@@ -55,6 +57,9 @@ class FindAndRerankOperationBuilder {
   // things set in the builder pattern.
   private FindAndRerankCommand command;
   private FindCommandResolver findCommandResolver;
+
+  // lazily computed effective rerank service def (per-request override or collection default)
+  private CollectionRerankDef.RerankServiceDef effectiveRerankServiceDef;
 
   public FindAndRerankOperationBuilder(CommandContext<CollectionSchemaObject> commandContext) {
     this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
@@ -160,45 +165,63 @@ class FindAndRerankOperationBuilder {
       }
     }
 
-    if (!commandContext.schemaObject().rerankingConfig().enabled()) {
-      // TODO: more info in the error
+    var rerankOverride =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
+    boolean hasOverride = rerankOverride != null && !rerankOverride.isEmpty();
+
+    if (!commandContext.schemaObject().rerankingConfig().enabled() && !hasOverride) {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
-    // Read is not supported for rerank model at END_OF_LIFE support status.
-    var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
-    var modelConfig =
-        rerankingProvidersConfig.filterByRerankServiceDef(
-            commandContext.schemaObject().rerankingConfig().rerankServiceDef());
-    // Validate if the model is END_OF_LIFE
-    if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
-          Map.of(
-              "model",
-              modelConfig.name(),
-              "modelStatus",
-              modelConfig.apiModelSupport().status().name(),
-              "message",
-              modelConfig
-                  .apiModelSupport()
-                  .message()
-                  .orElse("The model is no longer supported (reached its end-of-life).")));
+
+    // Resolve effective rerank service def: per-request override replaces collection config
+    // entirely; otherwise fall back to the collection's configured defaults.
+    if (hasOverride) {
+      var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
+      validateRerankOverride(
+          rerankingProvidersConfig, rerankOverride.provider(), rerankOverride.modelName());
+      effectiveRerankServiceDef =
+          new CollectionRerankDef.RerankServiceDef(
+              rerankOverride.provider(),
+              rerankOverride.modelName(),
+              rerankOverride.authentication(),
+              rerankOverride.parameters());
+    } else {
+      // Collection defaults: check END_OF_LIFE since model may have become EOL after creation.
+      // (validateRerankOverride already covers DEPRECATED+EOL for overrides above.)
+      effectiveRerankServiceDef =
+          commandContext.schemaObject().rerankingConfig().rerankServiceDef();
+      var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
+      var modelConfig =
+          rerankingProvidersConfig.filterByRerankServiceDef(effectiveRerankServiceDef);
+      if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
+        throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
+            Map.of(
+                "model",
+                modelConfig.name(),
+                "modelStatus",
+                modelConfig.apiModelSupport().status().name(),
+                "message",
+                modelConfig
+                    .apiModelSupport()
+                    .message()
+                    .orElse("The model is no longer supported (reached its end-of-life).")));
+      }
     }
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
       rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
-    // Previous code will check reranking is supported
-    var providerConfig = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
+    // checkSupported() already resolved effectiveRerankServiceDef
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
             .create(
                 commandContext.requestContext().tenant(),
                 commandContext.requestContext().authToken(),
-                providerConfig.provider(),
-                providerConfig.modelName(),
-                providerConfig.authentication(),
+                effectiveRerankServiceDef.provider(),
+                effectiveRerankServiceDef.modelName(),
+                effectiveRerankServiceDef.authentication(),
                 commandContext.commandName());
 
     // todo: move to a builder pattern, mosty to make it easier to manage the task position and
@@ -236,6 +259,63 @@ class FindAndRerankOperationBuilder {
         deferredCommandResults.stream()
             .map(RerankingTask.DeferredCommandWithSource::deferredRead)
             .collect(java.util.stream.Collectors.toUnmodifiableList()));
+  }
+
+  /**
+   * Validates that the overridden provider and model exist and are usable in the reranking
+   * providers configuration.
+   */
+  // package-private for unit testing
+  void validateRerankOverride(
+      RerankingProvidersConfig rerankingProvidersConfig, String provider, String modelName) {
+    var providerConfig = rerankingProvidersConfig.providers().get(provider);
+    if (providerConfig == null) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message", "Reranking provider '%s' is not supported.".formatted(provider));
+    }
+    if (!providerConfig.enabled()) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message", "Reranking provider '%s' is disabled.".formatted(provider));
+    }
+    // provider is guaranteed non-null by @NotNull on RerankServiceDesc.provider;
+    // modelName has no @NotNull so we must check explicitly
+    if (modelName == null) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message",
+          "The 'modelName' field is required when specifying a reranking service override.");
+    }
+    var modelConfig =
+        providerConfig.models().stream()
+            .filter(m -> m.name().equals(modelName))
+            .findFirst()
+            .orElse(null);
+    if (modelConfig == null) {
+      throw RequestException.Code.INVALID_RERANK_OVERRIDE.get(
+          "message",
+          "Model '%s' is not supported by reranking provider '%s'.".formatted(modelName, provider));
+    }
+
+    // Block DEPRECATED and END_OF_LIFE models for per-request overrides (user is actively
+    // choosing this model, so both statuses should be rejected)
+    if (modelConfig.apiModelSupport().status() != ApiModelSupport.SupportStatus.SUPPORTED) {
+      var errorCode =
+          modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.DEPRECATED
+              ? SchemaException.Code.DEPRECATED_AI_MODEL
+              : SchemaException.Code.END_OF_LIFE_AI_MODEL;
+      throw errorCode.get(
+          Map.of(
+              "model",
+              modelConfig.name(),
+              "modelStatus",
+              modelConfig.apiModelSupport().status().name(),
+              "message",
+              modelConfig
+                  .apiModelSupport()
+                  .message()
+                  .orElse(
+                      "The model is %s."
+                          .formatted(modelConfig.apiModelSupport().status().name()))));
+    }
   }
 
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(

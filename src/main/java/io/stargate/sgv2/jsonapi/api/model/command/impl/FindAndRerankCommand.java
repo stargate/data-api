@@ -103,7 +103,17 @@ public record FindAndRerankCommand(
       @Schema(
               description = "Return vector embedding used for ANN sorting.",
               type = SchemaType.BOOLEAN)
-          boolean includeSortVector) {}
+          boolean includeSortVector,
+      @Nullable
+          @Valid
+          @Schema(
+              description =
+                  "Optional per-request override for the reranking service. Completely replaces the"
+                      + " collection-level reranking configuration when provided. Both provider and"
+                      + " modelName are required.",
+              implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)
+          @JsonProperty("rerank")
+          CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
   public record HybridLimits(
