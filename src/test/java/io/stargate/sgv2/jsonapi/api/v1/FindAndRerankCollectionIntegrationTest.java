@@ -184,6 +184,9 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
               "provider": "openai",
               "modelName": "text-embedding-3-small"
             }
+          },
+          "rerank": {
+            "enabled": false
           }
         }
       }
