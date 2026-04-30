@@ -15,11 +15,16 @@ import io.stargate.sgv2.jsonapi.api.v1.vectorize.targets.Connection;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.api.v1.vectorize.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class APIRequest {
+  private static final Logger LOGGER = LoggerFactory.getLogger(APIRequest.class);
 
   public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -56,26 +61,53 @@ public class APIRequest {
     return jsonRequest().body(requestString).when();
   }
 
-  private ValidatableResponse executeRequest(RequestSpecification requestSpec) {
+  private ValidatableResponse executeRequest(RequestSpecification requestSpec){
+    return executeRequest(requestSpec, 1);
+  }
+  private ValidatableResponse executeRequest(RequestSpecification requestSpec, int attemptCount) {
 
     var commandName = TestCommand.commandName(request);
-    Response response;
+    Response rawRresponse;
     if (commandName.getTargets().contains(CommandTarget.COLLECTION)
         || commandName.getTargets().contains(CommandTarget.TABLE)) {
-      response =
+      rawRresponse =
           requestSpec.post(
               COLLECTION_PATH,
               integrationEnv.requiredValue("KEYSPACE_NAME"),
               integrationEnv.requiredValue("COLLECTION_NAME"));
     } else if (commandName.getTargets().contains(CommandTarget.KEYSPACE)) {
-      response = requestSpec.post(KEYSPACE_PATH, integrationEnv.requiredValue("KEYSPACE_NAME"));
+      rawRresponse = requestSpec.post(KEYSPACE_PATH, integrationEnv.requiredValue("KEYSPACE_NAME"));
     } else if (commandName.getTargets().contains(CommandTarget.DATABASE)) {
-      response = requestSpec.post(DB_PATH);
+      rawRresponse = requestSpec.post(DB_PATH);
     } else {
       throw new IllegalArgumentException("Do not know how to execute command: " + commandName);
     }
 
-    return response.then().log().status().and().log().body();
+    var validatableResponse = rawRresponse.then();
+    // Logging the response we got, even we want to retry, will want the result in the output
+    validatableResponse.log().status().and().log().body();
+
+    if (attemptCount <=3 ) {
+      var body = rawRresponse.body().print();
+      // TODO: XXXX: put this in the test plan
+      var retryMatch = List.of("EMBEDDING_PROVIDER_RATE_LIMITED", "EMBEDDING_PROVIDER_TIMEOUT");
+      for (var match : retryMatch) {
+        if (body.contains(match)) {
+          // Exponential backoff with jitter: 2^attempt seconds base (1s, 2s, 4s...) plus up to 500ms
+          // random jitter to avoid thundering herd if multiple tests hit the rate limit simultaneously
+          long sleepMs = (long) (1000 * Math.pow(2, attemptCount)) + ThreadLocalRandom.current().nextLong(500);
+          LOGGER.info("executeRequest() - Retrying, found retry string in response. match={}, sleepMs={} ms, attemptCount={}", match, sleepMs, attemptCount);
+          try {
+            Thread.sleep(sleepMs);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted during retry sleep", e);
+          }
+          return executeRequest(requestSpec, attemptCount + 1);
+        }
+      }
+    }
+    return validatableResponse;
   }
 
   protected Map<String, String> getHeaders() {
