@@ -17,7 +17,7 @@
       "variables": {
         "PROVIDER": "openai",
         "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
-        "CREDENTIAL" : "kent-open-ai-key"
+        "CREDENTIAL" : "open-ai-key"
       },
       "matrix": {
         "MODEL": [
@@ -72,7 +72,7 @@
       "variables": {
         "PROVIDER": "jinaAI",
         "COLLECTION_NAME": "${PROVIDER}-${MODEL}",
-        "CREDENTIAL" : "kent-jinaai-key"
+        "CREDENTIAL" : "aaron-jinaai-key"
       },
       "matrix": {
         "MODEL": [
