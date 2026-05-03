@@ -129,7 +129,7 @@ jobs:
 
       - name: Build & Test
         env:
-          TEST_PLAN_FILE: classpath:integration-tests/test-plans/test-plan-astra-vectorize.yaml
+          TEST_PLAN_FILE: classpath:testbench/testplans/test-plan-astra-vectorize.yaml
           DATA_API_TOKEN: ${{ secrets.DATA_API_TOKEN }}
           TARGET_NAME: ${{ matrix.name }}
           ENDPOINT: ${{ matrix.endpoint }}
@@ -149,7 +149,7 @@ jobs:
             -Dorg.fusesource.jansi.Ansi.disable=true \
             -Dfailsafe.printSummary=false \
             -Dfailsafe.trimStackTrace=true \
-            -Dit.test=TestBenchTests \
+            -Dit.test=TestBenchByTestPlan \
             -Dtest-bench-report-path=$TEST_BENCH_REPORT
 
       - name: Write summary

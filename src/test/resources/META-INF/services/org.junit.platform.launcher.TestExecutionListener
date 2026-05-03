@@ -1,1 +1,1 @@
-io.stargate.sgv2.jsonapi.api.v1.vectorize.reporting.DynamicTreeListener
+io.stargate.sgv2.jsonapi.testbench.reporting.DynamicTreeListener
