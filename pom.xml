@@ -54,11 +54,7 @@
     <!-- Testing -->
     <skipTests>false</skipTests>
     <skipUnitTests>${skipTests}</skipUnitTests>
-    <!-- 09-Apr-2026, tatu: Wrt [data-api#2447] need to use not-latest
-        (specifically, 3.5.3; latest being 3.5.5)
-        See: https://github.com/fabriciorby/maven-surefire-junit5-tree-reporter?tab=readme-ov-file#important
-      -->
-    <surefire-plugin.version>3.5.3</surefire-plugin.version>
+    <surefire-plugin.version>3.5.5</surefire-plugin.version>
     <skipITs>false</skipITs>
   </properties>
   <dependencyManagement>
@@ -102,6 +98,11 @@
     </repository>
   </repositories>
   <dependencies>
+    <dependency>
+      <groupId>com.jayway.jsonpath</groupId>
+      <artifactId>json-path</artifactId>
+      <version>2.10.0</version>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc</artifactId>
@@ -345,6 +346,18 @@
       <artifactId>quarkus-mcp-server-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-surefire-plugin</artifactId>
+      <version>${surefire-plugin.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>me.fabriciorby</groupId>
+      <artifactId>maven-surefire-junit5-tree-reporter</artifactId>
+      <version>1.5.1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -466,6 +479,7 @@
               <goal>verify</goal>
             </goals>
             <configuration>
+              <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter"/>
               <systemPropertyVariables>
                 <!-- Pass JaCoCo agent args to Quarkus application JVM for @QuarkusIntegrationTest coverage -->
                 <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>

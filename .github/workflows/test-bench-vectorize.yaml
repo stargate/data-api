@@ -1,0 +1,158 @@
+name: Test Bench - Vectorize Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: true
+        type: environment
+  pull_request:
+
+# needed when a workflow wants to use OIDC (OpenID Connect) to authenticate to cloud
+permissions:
+  id-token: write
+  contents: write
+  packages: write
+  pull-requests: write
+
+# global env vars, available in all jobs and steps
+env:
+  MAVEN_OPTS: '-Xmx4g'
+  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
+  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'PROD' }}
+
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.TEST_TARGETS }}
+    steps:
+      - id: set-matrix
+        env:
+          TEST_TARGETS: ${{ vars.TEST_TARGETS }}
+        run: |
+          {
+            echo "TEST_TARGETS<<EOF"
+            echo "$TEST_TARGETS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - id: write-setup-summary
+        name: Write setup summary
+        env:
+          TEST_TARGETS: ${{ vars.TEST_TARGETS }}
+        run: |
+          FORMATTED_TARGETS=$(echo "$TEST_TARGETS" | jq '.')
+          
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## Test Run Setup
+          
+          **Environment:** ${{ github.event.inputs.environment || 'PROD' }}
+          **Triggered by:** ${{ github.actor }}
+          
+          ### Test Targets
+          EOF
+          
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo "$FORMATTED_TARGETS" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # runs unit tests
+  build:
+    name: Test Bench- ENV-${{ github.event.inputs.environment || 'PROD' }} Target- ${{ matrix.name }}
+    needs: setup
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'PROD' }}
+
+    timeout-minutes: 120
+
+    strategy:
+      # do not fail fast, we want to run on all the different target dbs
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.setup.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: maven
+
+      - name: Setup Maven
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>stargate-central</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>stargate-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+              <server>
+                <id>artifactory</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-releases</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+           </servers>
+          </settings>
+          EOF
+
+      - name: Set env
+        # Sanitize the name of the target, it could be things like "smoketest-prod-gcp-us-east4 (astra-serverless-prod-49)"
+        # TEST_BENCH_REPORT path to where the summary report will be written so we can include in the GH summary
+        run: |
+          SAFE_NAME=$(echo "${{ matrix.name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
+          echo "TEST_BENCH_REPORT=test-bench-report-${SAFE_NAME}.md" >> $GITHUB_ENV
+
+      - name: Build & Test
+        env:
+          TEST_PLAN_FILE: classpath:testbench/testplans/test-plan-astra-vectorize.yaml
+          DATA_API_TOKEN: ${{ secrets.DATA_API_TOKEN }}
+          TARGET_NAME: ${{ matrix.name }}
+          ENDPOINT: ${{ matrix.endpoint }}
+          HUGGINGFACE_KEY: ${{ secrets.HUGGINGFACE_KEY }}
+          JINA_AI_KEY: ${{ secrets.JINA_AI_KEY }}
+          MISTRAL_KEY: ${{ secrets.MISTRAL_KEY }}
+          OPEN_AI_KEY: ${{ secrets.OPEN_AI_KEY }}
+          UPSTAGE_AI_KEY: ${{ secrets.UPSTAGE_AI_KEY }}
+          VOYAGE_AI_KEY: ${{ secrets.VOYAGE_AI_KEY }}
+
+        # reducing extra output with the -Dfailsafe.printSummary=false -Dfailsafe.trimStackTrace=true
+        # -Dorg.fusesource.jansi.Ansi.disable=true - disable ansi because GH action summary does not handle
+        run: |
+          ./mvnw -B -ntp verify \
+            -Dfmt.skip \
+            -DskipUnitTests \
+            -Dorg.fusesource.jansi.Ansi.disable=true \
+            -Dfailsafe.printSummary=false \
+            -Dfailsafe.trimStackTrace=true \
+            -Dit.test=TestBenchByTestPlan \
+            -Dtest-bench-report-path=$TEST_BENCH_REPORT
+
+      - name: Write summary
+        if: always()
+        run: |
+          cat "$TEST_BENCH_REPORT" >> $GITHUB_STEP_SUMMARY

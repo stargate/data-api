@@ -1,0 +1,48 @@
+package io.stargate.sgv2.jsonapi.testbench.assertions;
+
+
+
+import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.testbench.testrun.TestExecutionCondition;
+import io.stargate.sgv2.jsonapi.testbench.testrun.TestNodeFactory;
+import io.stargate.sgv2.jsonapi.testbench.testrun.TestRunResponse;
+import io.stargate.sgv2.jsonapi.testbench.testrun.TestUri;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.DynamicNode;
+
+public record TestAssertionContainer(String name, JsonNode args, List<TestAssertion> assertions)
+    implements TestAssertion {
+
+  @Override
+  public void run(TestRunResponse testResponse) {
+    for (TestAssertion assertion : assertions) {
+      try {
+        assertion.run(testResponse);
+      } catch (AssertionError e) {
+        System.out.printf(
+            "Failed Assertion Container: name=%s, args=%s\n\t Caused By: name=%s, args=%s",
+            name, args, assertion.name(), assertion.args());
+        throw e;
+      } catch (Exception e) {
+        System.out.printf(
+            "Error In Assertion Container: name=%s, args=%s\n\t Caused By: name=%s, args=%s",
+            name, args, assertion.name(), assertion.args());
+        throw e;
+      }
+    }
+  }
+
+  @Override
+  public DynamicNode testNodes(
+          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition) {
+
+    uriBuilder.addSegment(TestUri.Segment.ASSERTION, name());
+    var childs =
+        assertions.stream()
+            .map(assertion -> assertion.testNodes(testNodeFactory, uriBuilder.clone(), testResponse, testExecutionCondition))
+                .toList();
+
+    return testNodeFactory.testPlanContainer(name, uriBuilder.build().uri(), childs);
+  }
+}
