@@ -3,14 +3,14 @@ package io.stargate.sgv2.jsonapi.testbench.testspec;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Spec file that contains targets
+ */
 public record TargetsSpec(TestSpecMeta meta, List<TargetConfiguration> targets)
     implements TestSpec {
 
@@ -19,6 +19,7 @@ public record TargetsSpec(TestSpecMeta meta, List<TargetConfiguration> targets)
 
   public TargetsSpec {
     Set<String> seen = new HashSet<String>();
+
     for (TargetConfiguration target : targets) {
       if (seen.contains(target.name())) {
         throw new IllegalArgumentException("target name already exists: " + target.name());
@@ -27,11 +28,11 @@ public record TargetsSpec(TestSpecMeta meta, List<TargetConfiguration> targets)
     }
   }
 
-  public TargetConfiguration configuration(String name) {
+  public TargetConfiguration getTarget(String targetName) {
     return targets.stream()
-        .filter(target -> target.name().equals(name))
+        .filter(target -> target.name().equals(targetName))
         .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("target name not found: " + name));
+        .orElseThrow(() -> new IllegalArgumentException("target targetName not found: " + targetName));
   }
 
   public static TargetsSpec loadAll(String path) {

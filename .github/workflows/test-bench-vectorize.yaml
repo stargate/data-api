@@ -70,8 +70,6 @@ jobs:
     timeout-minutes: 120
 
     strategy:
-      # aaron - temp parallel 1 to avoid Jina concurrency errors
-      max-parallel: 1
       # do not fail fast, we want to run on all the different target dbs
       fail-fast: false
       matrix:

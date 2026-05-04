@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.testbench;
 
 
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,7 +64,7 @@ public record TestPlan(
 
   public static TestPlan create(String targetName, List<String> workflows, Boolean ignoreDisabled) {
     var targetConfigs = TargetsSpec.loadAll("testbench/targets/targets.json");
-    return create(targetConfigs.configuration(targetName), workflows, ignoreDisabled);
+    return create(targetConfigs.getTarget(targetName), workflows, ignoreDisabled);
   }
 
   public static TestPlan create(
