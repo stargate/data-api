@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
@@ -114,11 +113,6 @@ public record FindAndRerankCommand(
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
       CommandFeatures commandFeatures)
       implements Recordable {
-    public static final HybridLimits DEFAULT =
-        new HybridLimits(
-            OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT,
-            OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT,
-            CommandFeatures.EMPTY);
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {

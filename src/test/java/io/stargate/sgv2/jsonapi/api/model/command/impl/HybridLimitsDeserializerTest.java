@@ -9,7 +9,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
@@ -39,16 +38,6 @@ public class HybridLimitsDeserializerTest {
   void setUp() {
     MockitoAnnotations.openMocks(this);
     deserializer = new FindAndRerankCommand.HybridLimitsDeserializer();
-  }
-
-  @Test
-  public void defaultLimitsUseHybridSearchDefault() {
-    assertThat(FindAndRerankCommand.HybridLimits.DEFAULT.vectorLimit())
-        .as("default vector limit")
-        .isEqualTo(OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT);
-    assertThat(FindAndRerankCommand.HybridLimits.DEFAULT.lexicalLimit())
-        .as("default lexical limit")
-        .isEqualTo(OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT);
   }
 
   @Test
