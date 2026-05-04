@@ -32,25 +32,32 @@ import javax.annotation.Nullable;
 /** Configuration for the operation execution. */
 @ConfigMapping(prefix = "stargate.jsonapi.operations")
 public interface OperationsConfig {
-  /** Defines the default max size of filter fields. */
+  /** Defines the built-in default max size of filter fields. */
   int DEFAULT_MAX_FILTER_SIZE = 64;
 
-  /** Defines the default page size for read queries. */
+  /**
+   * Built-in default page size for read queries. The effective default may be overridden via
+   * application.yaml, system properties, or environment variables (see {@link #defaultPageSize()}).
+   */
   int DEFAULT_PAGE_SIZE = 50;
 
-  /** Defines the default number of documents returned by findAndRerank. */
+  /**
+   * Built-in default number of documents returned by findAndRerank. The effective default may be
+   * overridden via application.yaml, system properties, or environment variables (see {@link
+   * #defaultFindAndRerankLimit()}).
+   */
   int DEFAULT_FIND_AND_RERANK_LIMIT = 10;
 
-  /** Defines the minimum hybrid search read limit. */
+  /** Built-in minimum hybrid search read limit (may be overridden via configuration). */
   int MIN_HYBRID_SEARCH_LIMIT = 1;
 
-  /** Defines the default hybrid search read limit. */
+  /** Built-in default hybrid search read limit (may be overridden via configuration). */
   int DEFAULT_HYBRID_SEARCH_LIMIT = 50;
 
-  /** Defines the maximum hybrid search read limit. */
+  /** Built-in maximum hybrid search read limit (may be overridden via configuration). */
   int MAX_HYBRID_SEARCH_LIMIT = 100;
 
-  /** Defines the hybrid search read limit config default as min,default,max. */
+  /** Built-in hybrid search read limit config default as min,default,max. */
   String DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG =
       MIN_HYBRID_SEARCH_LIMIT + "," + DEFAULT_HYBRID_SEARCH_LIMIT + "," + MAX_HYBRID_SEARCH_LIMIT;
 

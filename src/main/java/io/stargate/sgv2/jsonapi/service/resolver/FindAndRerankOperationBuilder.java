@@ -158,7 +158,7 @@ class FindAndRerankOperationBuilder {
             "value",
             String.valueOf(value),
             "message",
-            "must be between %d and %d".formatted(bounds.min(), bounds.max())));
+            "must be between %d and %d (inclusive)".formatted(bounds.min(), bounds.max())));
   }
 
   /**

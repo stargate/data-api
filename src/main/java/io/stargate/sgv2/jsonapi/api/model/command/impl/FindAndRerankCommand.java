@@ -65,22 +65,14 @@ public record FindAndRerankCommand(
   public record Options(
       @Positive(message = "limit should be greater than `0`")
           @Schema(
-              description =
-                  "The maximum number of documents to return after reranking. Defaults to "
-                      + OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT
-                      + ".",
+              description = "The maximum number of documents to return after reranking.",
               type = SchemaType.INTEGER,
-              implementation = Integer.class,
-              defaultValue = "" + OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT)
+              implementation = Integer.class)
           Integer limit,
       /** ---- */
       @Schema(
               description =
-                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. Defaults to "
-                      + OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT
-                      + " for each query, with a maximum of "
-                      + OperationsConfig.MAX_HYBRID_SEARCH_LIMIT
-                      + ". May be a number or an object with $vector and $lexical fields.",
+                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be a number or an object with $vector and $lexical fields. The accepted range is determined by server configuration.",
               examples =
                   """
                 {"hybridLimits" : 100}

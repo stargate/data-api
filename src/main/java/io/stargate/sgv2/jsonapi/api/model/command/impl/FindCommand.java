@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.validation.CheckFindOption;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -33,12 +32,10 @@ public record FindCommand(
       @Positive(message = "limit should be greater than `0`")
           @Schema(
               description =
-                  "Maximum number of documents to return. Defaults to the default page size, "
-                      + OperationsConfig.DEFAULT_PAGE_SIZE
-                      + ". If the limit is higher than the default page size, the response will include up to the default page size of documents and a page state so the caller can continue paging through documents.",
+                  "Maximum number of documents to return. Defaults to the configured page size."
+                      + " If the limit is higher than the configured page size, the response will include up to the configured page size of documents and a page state so the caller can continue paging through documents.",
               type = SchemaType.INTEGER,
-              implementation = Integer.class,
-              defaultValue = "" + OperationsConfig.DEFAULT_PAGE_SIZE)
+              implementation = Integer.class)
           Integer limit,
 
       // amount of documents to skip
