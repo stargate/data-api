@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * Entry point for running a Test Bench from a Test Plan file.
  * <p>
  * Put the name of the test plan file in the <code>TEST_PLAN_FILE</code> env var, this can
- * set the target to hit, and the workflows to run. See {@link TestPlan.TestPlanFile}
+ * set the target to hit, and the workflows to run. See {@link TestPlanFile}
  * </p>
  */
 public class TestBenchByTestPlan {

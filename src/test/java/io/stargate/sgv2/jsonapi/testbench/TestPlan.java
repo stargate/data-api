@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -27,12 +26,8 @@ import org.slf4j.LoggerFactory;
 
 public record TestPlan(
         Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled) {
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestPlan.class);
 
-  private static final ObjectMapper JSON_MAPPER =
-      new ObjectMapper(
-              JsonFactory.builder().enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION).build())
-          .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestPlan.class);
 
   private static final ObjectMapper YAML_MAPPER =
       new ObjectMapper(
@@ -51,14 +46,14 @@ public record TestPlan(
       throw new RuntimeException(e);
     }
 
-    if (planFile.targetName() != null && planFile.customTarget != null) {
+    if (planFile.targetName() != null && planFile.customTarget() != null) {
       throw new RuntimeException(
           "Both targetName and customTarget set, use only one. testPlanFile=" + path);
     }
 
     var testPlan =
         planFile.customTarget() != null
-            ? create(planFile.customTarget(), planFile.workflows, planFile.ignoreDisabled)
+            ? create(planFile.customTarget(), planFile.workflows(), planFile.ignoreDisabled())
             : create(planFile.targetName(), planFile.workflows(), planFile.ignoreDisabled());
 
     return testPlan;
@@ -127,14 +122,6 @@ public record TestPlan(
   public void updateJobForTarget(Job job) {
     target.updateJobForTarget(job);
   }
-
-  public record TestPlanFile(
-      String name,
-      String targetName,
-      TargetConfiguration customTarget,
-      List<String> workflows,
-      Boolean ignoreDisabled,
-      Map<String, String> envVars) {}
 
   public record TestPlanNodeTree(DynamicNode root,
                                  int totalNodeCount){}
