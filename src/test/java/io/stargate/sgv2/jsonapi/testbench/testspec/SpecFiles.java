@@ -12,7 +12,11 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/** Collection of all the test spec files read for this execution. */
+/** Collection of all the {@link io.stargate.sgv2.jsonapi.testbench.testspec.SpecFile} we have loaded
+ * from disk.
+ * <p>
+ * Call {@link #loadAll(List)} to load spec files from multiple directories,
+ */
 public class SpecFiles {
 
   private static final ObjectMapper MAPPER =
@@ -25,38 +29,54 @@ public class SpecFiles {
 
     for (SpecFile file : specFiles) {
       if (file.spec() instanceof TestSuiteSpec it) {
+        // expand the includes
         it.expand(this);
       }
     }
   }
 
+  /**
+   * Loads all the spec file, paths is a list of resource dirs in the jar.
+   */
   public static SpecFiles loadAll(List<String> paths) {
 
     var specFiles = resourceDirs(paths).flatMap(SpecFiles::loadAll).toList();
     return new SpecFiles(specFiles);
   }
 
+  /**
+   * Get all the SpecFiles by their metadata kind
+   */
   public Stream<SpecFile> byKind(TestSpecKind kind) {
-    return specFiles.stream().filter(itFile -> itFile.spec().meta().kind() == kind);
+    return match(kind, x -> true);
   }
 
+  /**
+   * Get all the SpecFiles by the class of the Specification, the object that
+   * implements {@link TestSpec}
+   */
   public <T extends TestSpec> Stream<T> byType(Class<T> clazz) {
-    return byKind(TestSpecKind.fromType(clazz)).map(specFile -> specFile.spec().asSpecType(clazz));
+    return match(TestSpecKind.fromType(clazz), x -> true)
+            .map(specFile -> specFile.spec().asSpecType(clazz));
   }
 
-  public Stream<SpecFile> byName(TestSpecKind kind, String name) {
-    return match(kind, specFiles -> specFiles.meta().name().equals(name));
-  }
-
+  /**
+   * Get all the spec files of the type matched by name, e.g. get all the test-suites called "monkey"
+   */
   public <T extends TestSpec> Stream<T> byNameAsType(Class<T> clazz, String name) {
     return match(TestSpecKind.fromType(clazz), specFiles -> specFiles.meta().name().equals(name))
         .map(specFile -> specFile.spec().asSpecType(clazz));
   }
 
   private Stream<SpecFile> match(TestSpecKind kind, Predicate<TestSpec> predicate) {
-    return byKind(kind).filter(specFile -> predicate.test(specFile.spec()));
+    return specFiles.stream()
+            .filter(itFile -> itFile.spec().meta().kind() == kind)
+            .filter(specFile -> predicate.test(specFile.spec()));
   }
 
+  /**
+   * Load all the spec files in the directory at the path
+   */
   private static Stream<SpecFile> loadAll(Path path) {
 
     try (Stream<Path> pathStream = Files.walk(path)) {
@@ -71,9 +91,18 @@ public class SpecFiles {
     }
   }
 
+  private static boolean isJsonFile(Path file) {
+    return file.getFileName().toString().endsWith(".json");
+  }
+
+
+  /**
+   * Load a single spec file denoted by path.
+   */
   private static SpecFile loadOne(Path path) {
     var file = path.toFile();
     try {
+      // It's always JSON
       var root = MAPPER.readTree(file);
 
       var kindNode = root.path("meta").path("kind");
@@ -94,33 +123,31 @@ public class SpecFiles {
     }
   }
 
-  private static boolean isJsonFile(Path file) {
-    return file.getFileName().toString().endsWith(".json");
-  }
 
-  private static Stream<Path> resourceDirs(List<String> paths) {
-
-    var cl = Thread.currentThread().getContextClassLoader();
+  public static Stream<Path> resourceDirs(List<String> paths) {
 
     return paths.stream()
-        .map(
-            path -> {
-              String normalized = path.startsWith("/") ? path.substring(1) : path;
+            .map(SpecFiles::resourceDir);
+  }
 
-              var url = cl.getResource(normalized);
-              if (url == null) {
-                throw new IllegalArgumentException("Test resource folder not found: " + path);
-              }
+  public static Path resourceDir(String path) {
 
-              try {
-                // Works for file: URLs; if you run tests from a jar, switch to
-                // getResourceAsStream-based
-                // walking.
-                return Paths.get(url.toURI());
-              } catch (URISyntaxException e) {
-                throw new IllegalArgumentException(
-                    "Bad resource URI for: " + path + " -> " + url, e);
-              }
-            });
+    var cl = Thread.currentThread().getContextClassLoader();
+    String normalized = path.startsWith("/") ? path.substring(1) : path;
+
+    var url = cl.getResource(normalized);
+    if (url == null) {
+      throw new IllegalArgumentException("Test resource folder not found: " + path);
+    }
+
+    try {
+      // Works for file: URLs; if you run tests from a jar, switch to
+      // getResourceAsStream-based
+      // walking.
+      return Paths.get(url.toURI());
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException(
+          "Bad resource URI for: " + path + " -> " + url, e);
+    }
   }
 }

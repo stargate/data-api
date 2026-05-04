@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.testbench;
 
+import io.stargate.sgv2.jsonapi.testbench.testspec.SpecFiles;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TargetsSpec;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -28,7 +29,7 @@ public class TestBenchByTestPlan {
 
     var path =
         rawPath.startsWith("classpath:")
-            ? TargetsSpec.resourceDir(rawPath.substring("classpath:".length()))
+            ? SpecFiles.resourceDir(rawPath.substring("classpath:".length()))
             : Path.of(rawPath);
 
     var testPlan = TestPlan.fromFile(path);

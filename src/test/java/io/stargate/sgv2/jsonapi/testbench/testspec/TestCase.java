@@ -6,6 +6,13 @@ import io.stargate.sgv2.jsonapi.testbench.assertions.TestAssertion;
 import io.stargate.sgv2.jsonapi.testbench.testrun.*;
 import org.junit.jupiter.api.DynamicContainer;
 
+/**
+ * Spec for a single test case in a test suite, a test case is a command to run and assertions to run after.
+ * @param name
+ * @param command
+ * @param asserts
+ * @param include
+ */
 public record TestCase(
     String name,
     TestCommand command,

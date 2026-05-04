@@ -64,6 +64,7 @@
       "meta": {
         "name": "jinaAI-vectorize",
         "tags": [
+          "disabled"
         ]
       },
       "fromEnvironment": {
