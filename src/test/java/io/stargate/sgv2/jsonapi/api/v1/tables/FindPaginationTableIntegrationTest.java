@@ -9,6 +9,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.PartitionedKeyValueTableScenario;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.ThreeClusteringKeysTableScenario;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
@@ -53,10 +54,19 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
 
       String pageState = null;
 
-      // each partition should have 3 pages
-      for (int page = 0; page < 3; page++) {
+      int pageCount =
+          Math.ceilDiv(
+              PartitionedKeyValueTableScenario.ROWS_PER_PARTITION,
+              OperationsConfig.DEFAULT_PAGE_SIZE);
+
+      for (int page = 0; page < pageCount; page++) {
         Map<String, Object> options =
             pageState == null ? ImmutableMap.of() : ImmutableMap.of("pageState", pageState);
+        int pageStart = page * OperationsConfig.DEFAULT_PAGE_SIZE;
+        int expectedPageSize =
+            Math.min(
+                OperationsConfig.DEFAULT_PAGE_SIZE,
+                PartitionedKeyValueTableScenario.ROWS_PER_PARTITION - pageStart);
 
         // send the command and get the result
         var result =
@@ -64,15 +74,15 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
                 .templated()
                 .find(filter, List.of(), null, options) // find all rows in each partition
                 .wasSuccessful()
-                .hasDocuments(
-                    page < 2 ? 20 : 10) // verify the number of documents that are returned
+                .hasDocuments(expectedPageSize)
                 .verifyDataDocuments(
                     SCENARIO.getPageContent(
-                        page * 20, 20, partitionedKeyValue)); // verify the page content;
+                        pageStart,
+                        expectedPageSize,
+                        partitionedKeyValue)); // verify the page content;
 
-        if (page < 2) {
-          // The first two pages should have next page state, extract it and use it for the next
-          // command
+        if (page < pageCount - 1) {
+          // Extract the next page state and use it for the next command.
           pageState = result.hasNextPageState().extractNextPageState();
         } else {
           // The last page should not have next page state

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
@@ -38,6 +39,37 @@ public class HybridLimitsDeserializerTest {
   void setUp() {
     MockitoAnnotations.openMocks(this);
     deserializer = new FindAndRerankCommand.HybridLimitsDeserializer();
+  }
+
+  @Test
+  public void defaultLimitsUseHybridSearchDefault() {
+    assertThat(FindAndRerankCommand.HybridLimits.DEFAULT.vectorLimit())
+        .as("default vector limit")
+        .isEqualTo(OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT);
+    assertThat(FindAndRerankCommand.HybridLimits.DEFAULT.lexicalLimit())
+        .as("default lexical limit")
+        .isEqualTo(OperationsConfig.DEFAULT_HYBRID_SEARCH_LIMIT);
+  }
+
+  @Test
+  public void undefinedHybridLimitsDeserializesAsNull() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    var command =
+        mapper.readValue(
+            """
+            {
+              "findAndRerank": {
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """,
+            FindAndRerankCommand.class);
+
+    assertThat(command.options()).as("options").isNotNull();
+    assertThat(command.options().hybridLimits()).as("hybridLimits").isNull();
   }
 
   @Test
@@ -131,6 +163,8 @@ public class HybridLimitsDeserializerTest {
   }
 
   private static Stream<Arguments> invalidLimitsTestCases() {
+    // Range validation (negative / above-max) lives in FindAndRerankOperationBuilder now —
+    // this deserializer test only covers JSON-shape errors.
     return Stream.of(
         // ----
         Arguments.of(
@@ -138,28 +172,6 @@ public class HybridLimitsDeserializerTest {
             true
             """,
             "hybridLimits must be an integer or an object"),
-        // ----
-        // out of range
-        Arguments.of(
-            """
-            -1
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
-        Arguments.of(
-            """
-            { "$vector" : -1, "$lexical" : 99}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
-        Arguments.of(
-            """
-            { "$vector" : 99, "$lexical" : -1}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $lexical"),
-        Arguments.of(
-            """
-            { "$vector" : -1, "$lexical" : -1}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
         // ----
         // unexpected
         Arguments.of(

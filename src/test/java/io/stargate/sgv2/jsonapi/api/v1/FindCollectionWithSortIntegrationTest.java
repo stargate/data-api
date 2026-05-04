@@ -9,10 +9,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.uuid.Generators;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
@@ -31,11 +31,13 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 public class FindCollectionWithSortIntegrationTest extends AbstractCollectionIntegrationTestBase {
+  private static final int DEFAULT_PAGE_SIZE = OperationsConfig.DEFAULT_PAGE_SIZE;
+
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindCollectionOperationWithSort {
     // should be static, since UUID should not be generated multiple times across all test methods
-    private static final List<Object> testDatas = getDocuments(25);
+    private static final List<Object> testDatas = getDocuments(DEFAULT_PAGE_SIZE + 5);
 
     @Test
     @Order(1)
@@ -47,15 +49,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortByTextAndNullValue() throws Exception {
       sortByUserName(testDatas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -65,24 +59,14 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
     @Test
     public void sortWithSkipLimit() throws Exception {
       sortByUserName(testDatas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(10);
-      for (int i = 0; i < 20; i++) {
-        if (i >= 10) {
-          arrayNode.add(
-              objectMapper.readTree(
-                  objectMapper
-                      .writerWithDefaultPrettyPrinter()
-                      .writeValueAsString(testDatas.get(i))));
-        }
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 10, 10);
 
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -101,15 +85,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortDescendingTextValue() throws Exception {
       sortByUserName(testDatas, false);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
 
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -120,22 +96,14 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
     @Test
     public void sortBooleanValueAndMissing() throws Exception {
       sortByActiveUser(testDatas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -145,22 +113,14 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
     @Test
     public void sortBooleanValueAndMissingDescending() throws Exception {
       sortByActiveUser(testDatas, false);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -170,22 +130,14 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
     @Test
     public void sortNumericField() throws Exception {
       sortByUserId(testDatas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -195,22 +147,14 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
     @Test
     public void sortNumericFieldDescending() throws Exception {
       sortByUserId(testDatas, false);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -220,7 +164,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -231,13 +175,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
       sortByUserId(datas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (int i = 0; i < datas.size(); i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(datas, 0, datas.size());
 
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -249,22 +187,14 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(Math.min(20, datas.size())))
+          .body("data.documents", hasSize(Math.min(DEFAULT_PAGE_SIZE, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
     @Test
     public void sortMultiColumns() throws Exception {
       sortByUserNameUserId(testDatas, true, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(testDatas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -274,7 +204,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(20))
+          .body("data.documents", hasSize(DEFAULT_PAGE_SIZE))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -285,13 +215,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
       sortByUserNameUserId(datas, true, false);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (int i = 0; i < datas.size(); i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(datas, 0, datas.size());
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -302,7 +226,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(Math.min(20, datas.size())))
+          .body("data.documents", hasSize(Math.min(DEFAULT_PAGE_SIZE, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -313,13 +237,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
       sortByDate(datas, true);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (int i = 0; i < datas.size(); i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(datas, 0, datas.size());
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -330,7 +248,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(Math.min(20, datas.size())))
+          .body("data.documents", hasSize(Math.min(DEFAULT_PAGE_SIZE, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -341,13 +259,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
       sortByDate(datas, false);
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (int i = 0; i < datas.size(); i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-      }
+      final ArrayNode arrayNode = testDataArray(datas, 0, datas.size());
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -358,7 +270,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(Math.min(20, datas.size())))
+          .body("data.documents", hasSize(Math.min(DEFAULT_PAGE_SIZE, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -370,17 +282,10 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o))
               .collect(Collectors.toList());
       sortByUUID(datas, true);
-      // Create a sublist of the first 20 elements
-      List<Object> first20Datas = new ArrayList<>(datas.subList(0, Math.min(20, datas.size())));
-      JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodeFactory.arrayNode(first20Datas.size());
-      for (int i = 0; i < first20Datas.size(); i++) {
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(first20Datas.get(i))));
-      }
+      // Create a sublist of the first page.
+      List<Object> firstPageDatas =
+          new ArrayList<>(datas.subList(0, Math.min(DEFAULT_PAGE_SIZE, datas.size())));
+      final ArrayNode arrayNode = testDataArray(firstPageDatas, 0, firstPageDatas.size());
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -393,7 +298,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(Math.min(20, first20Datas.size())))
+          .body("data.documents", hasSize(Math.min(DEFAULT_PAGE_SIZE, firstPageDatas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -549,6 +454,17 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
   }
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
+
+  private static ArrayNode testDataArray(List<Object> datas, int offset, int limit)
+      throws JsonProcessingException {
+    final ArrayNode arrayNode = objectMapper.getNodeFactory().arrayNode(limit);
+    for (int i = offset; i < offset + limit; i++) {
+      arrayNode.add(
+          objectMapper.readTree(
+              objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
+    }
+    return arrayNode;
+  }
 
   private JsonNode getUserNameAsJsonNode(Object data) {
     if (data instanceof TestData td) {
