@@ -207,10 +207,11 @@ public record CreateCollectionOperation(
                 // In addition, we need to check that new lexical settings are for defaults
                 // (difficult to check the same for reranking; for now assume that if lexical
                 // is default, reranking is also default).
-                if (oldLexical == CollectionLexicalConfig.configForPreLexical()
-                    && newLexical == CollectionLexicalConfig.configForDefault()
-                    && oldReranking == CollectionRerankDef.configForPreRerankingCollection()
-                    && newReranking == CollectionRerankDef.configForDefault()) {
+                if (Objects.equals(oldLexical, CollectionLexicalConfig.configForPreLexical())
+                    && Objects.equals(newLexical, CollectionLexicalConfig.configForDefault())
+                    && Objects.equals(
+                        oldReranking, CollectionRerankDef.configForPreRerankingCollection())
+                    && Objects.equals(newReranking, CollectionRerankDef.configForDefault())) {
                   var originalNewSettings = newCollectionSettings;
                   newCollectionSettings =
                       newCollectionSettings.withLexicalAndRerankOverrides(

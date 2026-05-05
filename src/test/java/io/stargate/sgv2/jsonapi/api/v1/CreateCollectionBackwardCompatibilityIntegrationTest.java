@@ -200,6 +200,214 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
                                   }
                               """
                       .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME)));
+
+      // clean up and delete the collection
+      deleteCollection(PRE_LEXICAL_RERANK_COLLECTION_NAME);
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class CreateCollectionWithLexicalRerankDisabledButThenEnabledBackwardCompatibility {
+    private static final String LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME =
+        "lexical_rerank_feature_disabled_collection";
+
+    @Test
+    @Order(1)
+    public final void createLexicalRerankFeatureDisabledCollection() {
+      String collectionWithLexicalRerankDisabled =
+          """
+              CREATE TABLE IF NOT EXISTS "%s"."%s" (
+                  key frozen<tuple<tinyint, text>> PRIMARY KEY,
+                  array_contains set<text>,
+                  array_size map<text, int>,
+                  doc_json text,
+                  exist_keys set<text>,
+                  query_bool_values map<text, tinyint>,
+                  query_dbl_values map<text, decimal>,
+                  query_null_values set<text>,
+                  query_text_values map<text, text>,
+                  query_timestamp_values map<text, timestamp>,
+                  query_vector_value vector<float, 123>,
+                  tx_id timeuuid
+              ) WITH comment = '{"collection":{"name":"%s","schema_version":1,"options":{"defaultId":{"type":""}, "indexing":{"allow":["documentId","projectId","userId"]}, "lexical":{"enabled":false},"rerank":{"enabled":false}}}}';
+              """;
+      executeCqlStatement(
+          SimpleStatement.newInstance(
+              collectionWithLexicalRerankDisabled.formatted(
+                  keyspaceName,
+                  LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+                  LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME)));
+
+      // create indexes for the collection
+      String[] createIndexCqls = {
+        String.format(
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (values(array_contains)) USING 'StorageAttachedIndex';",
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+            keyspaceName,
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME),
+        String.format(
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex';",
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+            keyspaceName,
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME),
+        String.format(
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (values(exist_keys)) USING 'StorageAttachedIndex';",
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+            keyspaceName,
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME),
+        String.format(
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex';",
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+            keyspaceName,
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME),
+        String.format(
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex';",
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+            keyspaceName,
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME),
+        String.format(
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (values(query_null_values)) USING 'StorageAttachedIndex';",
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+            keyspaceName,
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME),
+        String.format(
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex';",
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+            keyspaceName,
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME),
+        String.format(
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex';",
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME,
+            keyspaceName,
+            LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME)
+      };
+      for (String indexCql : createIndexCqls) {
+        assertThat(executeCqlStatement(SimpleStatement.newInstance(indexCql))).isTrue();
+      }
+
+      // verify the collection using FindCollection
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                {
+                  "findCollections": {
+                      "options" : {
+                          "explain": true
+                      }
+                   }
+                }
+                """)
+          .body("$", responseIsDDLSuccess())
+          .body("status.collections", hasSize(1))
+          .body(
+              "status.collections[0]",
+              jsonEquals(
+                      """
+                            {
+                                "name": "%s",
+                                "options": {
+                                    "indexing": {"allow": ["documentId","projectId","userId"]},
+                                    "lexical": {
+                                        "enabled": false
+                                    },
+                                    "rerank": {
+                                        "enabled": false
+                                    }
+                                }
+                            }
+                        """
+                      .formatted(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME)));
+    }
+
+    @Test
+    @Order(2)
+    public final void createCollectionWithLexicalRerankFeatureEnabledUsingAPI() {
+      // Can only test if we have BM25 support by backend, otherwise skip the test
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      // verify the preexisting collection（generated by the above CQL) using FindCollection
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+              {
+                "findCollections": {
+                    "options" : {
+                        "explain": true
+                    }
+                 }
+              }
+              """)
+          .body("$", responseIsDDLSuccess())
+          .body("status.collections", hasSize(1))
+          .body(
+              "status.collections[0]",
+              jsonEquals(
+                      """
+                          {
+                              "name": "%s",
+                              "options": {
+                                  "indexing": {"allow": ["documentId","projectId","userId"]},
+                                  "lexical": {
+                                      "enabled": false
+                                  },
+                                  "rerank": {
+                                      "enabled": false
+                                  }
+                              }
+                          }
+                      """
+                      .formatted(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME)));
+
+      // create the same collection using API - should not get
+      // COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS error
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
+                    {
+                        "createCollection": {
+                            "name": "%s",
+                            "options": {
+                               "indexing": {"allow": ["documentId","projectId","userId"]}
+                            }
+                        }
+                    }
+            """
+                  .formatted(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME))
+          .body("$", responseIsStatusOnly())
+          .body("status.ok", is(1));
+
+      // verify the collection using FindCollection again
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                    {
+                      "findCollections": {
+                          "options" : {
+                              "explain": true
+                          }
+                       }
+                    }
+                    """)
+          .body("$", responseIsDDLSuccess())
+          .body("status.collections", hasSize(1))
+          .body(
+              "status.collections[0]",
+              jsonEquals(
+                      """
+                            {
+                                "name": "%s",
+                                "options": {
+                                    "indexing": {"allow": ["documentId","projectId","userId"]},
+                                    "lexical": {
+                                        "enabled": false
+                                    },
+                                    "rerank": {
+                                        "enabled": false
+                                    }
+                                }
+                            }
+                        """
+                      .formatted(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME)));
+
+      // clean up and delete the collection
+      deleteCollection(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME);
     }
   }
 }
