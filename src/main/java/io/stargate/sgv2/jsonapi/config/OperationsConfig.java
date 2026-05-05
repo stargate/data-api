@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
@@ -49,13 +50,13 @@ public interface OperationsConfig {
   int DEFAULT_FIND_AND_RERANK_LIMIT = 10;
 
   /** Built-in minimum hybrid search read limit (may be overridden via configuration). */
-  int MIN_HYBRID_SEARCH_LIMIT = 1;
+  int MIN_HYBRID_SEARCH_LIMIT = RerankingConstants.HybridSearchLimits.MIN;
 
   /** Built-in default hybrid search read limit (may be overridden via configuration). */
-  int DEFAULT_HYBRID_SEARCH_LIMIT = 50;
+  int DEFAULT_HYBRID_SEARCH_LIMIT = RerankingConstants.HybridSearchLimits.DEFAULT;
 
   /** Built-in maximum hybrid search read limit (may be overridden via configuration). */
-  int MAX_HYBRID_SEARCH_LIMIT = 100;
+  int MAX_HYBRID_SEARCH_LIMIT = RerankingConstants.HybridSearchLimits.MAX;
 
   /** Built-in hybrid search read limit config default as min,default,max. */
   String DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG =

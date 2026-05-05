@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
@@ -113,6 +114,12 @@ public record FindAndRerankCommand(
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
       CommandFeatures commandFeatures)
       implements Recordable {
+
+    public static final HybridLimits DEFAULT =
+        new HybridLimits(
+            RerankingConstants.HybridSearchLimits.DEFAULT,
+            RerankingConstants.HybridSearchLimits.DEFAULT,
+            CommandFeatures.EMPTY);
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
