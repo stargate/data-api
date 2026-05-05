@@ -131,13 +131,13 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
       // create the same collection using API - should not get
       // COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS error
       createCollectionViaApi(
-          """
-          {
-              "createCollection": {
-                  "name": "%s"
+              """
+              {
+                  "createCollection": {
+                      "name": "%s"
+                  }
               }
-          }
-          """
+              """
               .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME));
 
       assertSingleCollection(PRE_LEXICAL_RERANK_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
@@ -168,8 +168,7 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
     @Test
     @Order(1)
     public final void createLexicalRerankFeatureDisabledCollection() {
-      createCollectionViaCql(
-          LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME, COMMENT_OPTIONS_JSON);
+      createCollectionViaCql(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME, COMMENT_OPTIONS_JSON);
 
       assertSingleCollection(
           LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
@@ -187,7 +186,7 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
       // create the same collection using API - should not get
       // COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS error
       createCollectionViaApi(
-          """
+              """
           {
               "createCollection": {
                   "name": "%s",
