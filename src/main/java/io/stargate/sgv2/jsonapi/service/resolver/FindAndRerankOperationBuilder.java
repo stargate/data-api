@@ -121,7 +121,7 @@ class FindAndRerankOperationBuilder {
   }
 
   /**
-   * Check the collection supports hybrid search with the features the request uses, throw if it
+   * Check that collection supports hybrid search with the features the request uses, throw if it
    * does not
    */
   private void checkSupported() {
@@ -208,9 +208,8 @@ class FindAndRerankOperationBuilder {
                 effectiveRerankServiceDef.authentication(),
                 commandContext.commandName());
 
-    // todo: move to a builder pattern, mosty to make it easier to manage the task position and
-    // retry
-    // policy
+    // todo: move to a builder pattern, mostly to make it easier to manage the task position and
+    // retry policy
     int commandLimit = getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10);
     RerankingTask<CollectionSchemaObject> task =
         new RerankingTask<>(
