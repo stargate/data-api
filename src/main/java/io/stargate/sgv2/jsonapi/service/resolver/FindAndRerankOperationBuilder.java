@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
@@ -48,9 +47,6 @@ class FindAndRerankOperationBuilder {
 
   private final CommandContext<CollectionSchemaObject> commandContext;
 
-  // we use this in a bunch of places
-  private final OperationsConfig operationsConfig;
-
   // things set in the builder pattern.
   private FindAndRerankCommand command;
   private FindCommandResolver findCommandResolver;
@@ -60,8 +56,6 @@ class FindAndRerankOperationBuilder {
 
   public FindAndRerankOperationBuilder(CommandContext<CollectionSchemaObject> commandContext) {
     this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
-
-    operationsConfig = commandContext.config().get(OperationsConfig.class);
   }
 
   public FindAndRerankOperationBuilder withCommand(FindAndRerankCommand command) {
@@ -400,15 +394,14 @@ class FindAndRerankOperationBuilder {
     var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
     var isRerankOn = rerankOn != null && !rerankOn.isBlank();
 
-    String finalRerankField = null;
+    String finalRerankField;
 
     if (isVectorizeSort()) {
       // use the vectorize field, unless the user has overridden
       finalRerankField = isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
     } else if (isRerankOn) {
-      // user has to provide a field to rererank on
+      // user has to provide a field to rerank on
       finalRerankField = rerankOn;
-
     } else {
       throw new IllegalArgumentException("rerankOn() - rerankOn required and not specified");
     }

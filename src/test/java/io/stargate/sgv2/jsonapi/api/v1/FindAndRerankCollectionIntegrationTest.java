@@ -200,7 +200,9 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
     givenHeadersPostJsonThen(keyspaceName, collectionName, findAndRerankWithOverride(null))
         .body("$", responseIsError())
         .body("errors[0].errorCode", is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()))
-        .body("errors[0].message", containsString("per-request reranking service override"));
+        .body(
+            "errors[0].message",
+            containsString("reranking service override was not provided with the command"));
   }
 
   @Test
