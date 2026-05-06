@@ -6,20 +6,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.TestConstants;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -27,11 +24,8 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class FindAndRerankOperationBuilderTest {
 
+  // @QuarkusTest needed for error template initialization
   @InjectMock protected RequestContext dataApiRequestInfo;
-
-  private final TestConstants testConstants = new TestConstants();
-
-  private FindAndRerankOperationBuilder builder;
 
   // Reusable request properties for model configs
   private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
@@ -39,12 +33,6 @@ class FindAndRerankOperationBuilderTest {
       REQUEST_PROPERTIES =
           new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
               .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
-
-  @BeforeEach
-  void beforeEach() {
-    CommandContext<CollectionSchemaObject> commandContext = testConstants.collectionContext();
-    builder = new FindAndRerankOperationBuilder(commandContext);
-  }
 
   private static RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig(
       String name, ApiModelSupport.SupportStatus status) {
@@ -67,6 +55,13 @@ class FindAndRerankOperationBuilderTest {
                 false, providerName, enabled, Map.of(), models)));
   }
 
+  /** Helper that calls the centralized validation with the override error code. */
+  private static void validateOverride(
+      RerankingProvidersConfig config, String provider, String modelName) {
+    CollectionRerankDef.validateServiceDesc(
+        config, provider, modelName, null, null, RequestException.Code.INVALID_RERANK_OVERRIDE);
+  }
+
   @Nested
   class ValidateRerankOverride {
 
@@ -79,17 +74,13 @@ class FindAndRerankOperationBuilderTest {
 
     @Test
     void shouldAcceptSupportedProviderAndModel() {
-      assertThatCode(
-              () -> builder.validateRerankOverride(NVIDIA_SUPPORTED, "nvidia", "nvidia/rerank-v1"))
+      assertThatCode(() -> validateOverride(NVIDIA_SUPPORTED, "nvidia", "nvidia/rerank-v1"))
           .doesNotThrowAnyException();
     }
 
     @Test
     void shouldRejectUnknownProvider() {
-      assertThatThrownBy(
-              () ->
-                  builder.validateRerankOverride(
-                      NVIDIA_SUPPORTED, "unknown-provider", "some-model"))
+      assertThatThrownBy(() -> validateOverride(NVIDIA_SUPPORTED, "unknown-provider", "some-model"))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("unknown-provider");
@@ -103,8 +94,7 @@ class FindAndRerankOperationBuilderTest {
               false,
               List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
 
-      assertThatThrownBy(
-              () -> builder.validateRerankOverride(disabledConfig, "nvidia", "nvidia/rerank-v1"))
+      assertThatThrownBy(() -> validateOverride(disabledConfig, "nvidia", "nvidia/rerank-v1"))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("disabled");
@@ -112,18 +102,16 @@ class FindAndRerankOperationBuilderTest {
 
     @Test
     void shouldRejectNullModelName() {
-      assertThatThrownBy(() -> builder.validateRerankOverride(NVIDIA_SUPPORTED, "nvidia", null))
+      assertThatThrownBy(() -> validateOverride(NVIDIA_SUPPORTED, "nvidia", null))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
-          .hasMessageContaining("modelName");
+          .hasMessageContaining("Model name is required");
     }
 
     @Test
     void shouldRejectUnknownModel() {
       assertThatThrownBy(
-              () ->
-                  builder.validateRerankOverride(
-                      NVIDIA_SUPPORTED, "nvidia", "nvidia/nonexistent-model"))
+              () -> validateOverride(NVIDIA_SUPPORTED, "nvidia", "nvidia/nonexistent-model"))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("nonexistent-model");
@@ -137,7 +125,7 @@ class FindAndRerankOperationBuilderTest {
               true,
               List.of(modelConfig("nvidia/old-model", ApiModelSupport.SupportStatus.DEPRECATED)));
 
-      assertThatThrownBy(() -> builder.validateRerankOverride(config, "nvidia", "nvidia/old-model"))
+      assertThatThrownBy(() -> validateOverride(config, "nvidia", "nvidia/old-model"))
           .isInstanceOf(SchemaException.class)
           .hasFieldOrPropertyWithValue("code", SchemaException.Code.DEPRECATED_AI_MODEL.name());
     }
@@ -150,7 +138,7 @@ class FindAndRerankOperationBuilderTest {
               true,
               List.of(modelConfig("nvidia/eol-model", ApiModelSupport.SupportStatus.END_OF_LIFE)));
 
-      assertThatThrownBy(() -> builder.validateRerankOverride(config, "nvidia", "nvidia/eol-model"))
+      assertThatThrownBy(() -> validateOverride(config, "nvidia", "nvidia/eol-model"))
           .isInstanceOf(SchemaException.class)
           .hasFieldOrPropertyWithValue("code", SchemaException.Code.END_OF_LIFE_AI_MODEL.name());
     }
@@ -159,8 +147,7 @@ class FindAndRerankOperationBuilderTest {
     void shouldRejectUnknownProviderBeforeCheckingModelName() {
       // When both provider is unknown AND modelName is null, the provider check should
       // come first — user gets the more actionable "provider not supported" error
-      assertThatThrownBy(
-              () -> builder.validateRerankOverride(NVIDIA_SUPPORTED, "unknown-provider", null))
+      assertThatThrownBy(() -> validateOverride(NVIDIA_SUPPORTED, "unknown-provider", null))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("unknown-provider")
@@ -177,7 +164,7 @@ class FindAndRerankOperationBuilderTest {
               false,
               List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
 
-      assertThatThrownBy(() -> builder.validateRerankOverride(disabledConfig, "nvidia", null))
+      assertThatThrownBy(() -> validateOverride(disabledConfig, "nvidia", null))
           .isInstanceOf(RequestException.class)
           .hasFieldOrPropertyWithValue("code", RequestException.Code.INVALID_RERANK_OVERRIDE.name())
           .hasMessageContaining("disabled");
