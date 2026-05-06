@@ -74,7 +74,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
     @Order(1)
     public void sortByTextAndNullValue() throws Exception {
       sortByName(testDatas, true);
-      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
+      var arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
 
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
@@ -291,7 +291,7 @@ public class FindWithRegularSortTableIntegrationTest extends AbstractTableIntegr
 
   private static ArrayNode testDataArray(List<Object> datas, int offset, int limit)
       throws JsonProcessingException {
-    final ArrayNode arrayNode = objectMapper.getNodeFactory().arrayNode(limit);
+    var arrayNode = objectMapper.getNodeFactory().arrayNode(limit);
     for (int i = offset; i < offset + limit; i++) {
       arrayNode.add(
           objectMapper.readTree(

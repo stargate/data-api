@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
@@ -25,6 +26,11 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
   @Nested
   @Order(1)
   class UpdateMany {
+    private static final int DEFAULT_PAGE_SIZE = OperationsConfig.DEFAULT_PAGE_SIZE;
+    private static final int PARTIAL_PAGE_SIZE = DEFAULT_PAGE_SIZE - 20;
+    private static final int PARTIAL_NEXT_PAGE_SIZE = 5;
+    private static final int DOCUMENTS_WITH_PARTIAL_NEXT_PAGE =
+        DEFAULT_PAGE_SIZE + PARTIAL_NEXT_PAGE_SIZE;
 
     private void insert(int countOfDocument) {
       for (int i = 1; i <= countOfDocument; i++) {
@@ -151,8 +157,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     @Test
-    public void limit() {
-      insert(20);
+    public void updateLessThanDefaultPageSizeDoesNotSetMoreData() {
+      insert(PARTIAL_PAGE_SIZE);
       givenHeadersPostJsonThenOkNoErrors(
               """
           {
@@ -163,8 +169,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """)
           .body("$", responseIsStatusOnly())
-          .body("status.matchedCount", is(20))
-          .body("status.modifiedCount", is(20))
+          .body("status.matchedCount", is(PARTIAL_PAGE_SIZE))
+          .body("status.modifiedCount", is(PARTIAL_PAGE_SIZE))
           .body("status.moreData", nullValue())
           .body("status.nextPageState", nullValue());
 
@@ -181,8 +187,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     @Test
-    public void limitMoreDataFlag() {
-      insert(55);
+    public void updateFirstPageAndSetsMoreDataForPartialNextPage() {
+      insert(DOCUMENTS_WITH_PARTIAL_NEXT_PAGE);
       givenHeadersPostJsonThenOkNoErrors(
               """
           {
@@ -193,8 +199,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """)
           .body("$", responseIsStatusOnly())
-          .body("status.matchedCount", is(50))
-          .body("status.modifiedCount", is(50))
+          .body("status.matchedCount", is(DEFAULT_PAGE_SIZE))
+          .body("status.modifiedCount", is(DEFAULT_PAGE_SIZE))
           .body("status.moreData", is(true))
           .body("status.nextPageState", not(emptyOrNullString()));
 
@@ -212,7 +218,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
 
     @Test
     public void updatePagination() {
-      insert(55);
+      insert(DOCUMENTS_WITH_PARTIAL_NEXT_PAGE);
       String nextPageState =
           givenHeadersPostJsonThenOkNoErrors(
                   """
@@ -224,8 +230,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               }
               """)
               .body("$", responseIsStatusOnly())
-              .body("status.matchedCount", is(50))
-              .body("status.modifiedCount", is(50))
+              .body("status.matchedCount", is(DEFAULT_PAGE_SIZE))
+              .body("status.modifiedCount", is(DEFAULT_PAGE_SIZE))
               .body("status.moreData", is(true))
               .body("status.nextPageState", notNullValue())
               .extract()
@@ -244,8 +250,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               """
                   .formatted(nextPageState))
           .body("$", responseIsStatusOnly())
-          .body("status.matchedCount", is(5))
-          .body("status.modifiedCount", is(5))
+          .body("status.matchedCount", is(PARTIAL_NEXT_PAGE_SIZE))
+          .body("status.modifiedCount", is(PARTIAL_NEXT_PAGE_SIZE))
           .body("status.moreData", nullValue())
           .body("status.nextPageState", nullValue());
 

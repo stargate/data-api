@@ -188,7 +188,7 @@ public interface OperationsConfig {
 
   /**
    * @return Defines the default number of documents returned by {@code findAndRerank}, defaults to
-   *     <code>10</code>.
+   *     {@link #DEFAULT_FIND_AND_RERANK_LIMIT}.
    */
   @Positive
   @WithDefault("" + DEFAULT_FIND_AND_RERANK_LIMIT)

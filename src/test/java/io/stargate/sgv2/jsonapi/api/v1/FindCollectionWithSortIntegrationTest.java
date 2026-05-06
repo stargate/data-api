@@ -49,7 +49,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortByTextAndNullValue() throws Exception {
       sortByUserName(testDatas, true);
-      final ArrayNode arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
+      var arrayNode = testDataArray(testDatas, 0, DEFAULT_PAGE_SIZE);
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
