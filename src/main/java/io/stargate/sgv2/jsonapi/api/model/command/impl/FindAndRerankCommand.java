@@ -108,7 +108,7 @@ public record FindAndRerankCommand(
           @Valid
           @Schema(
               description =
-                  "Optional per-request override for the reranking service. Completely replaces the"
+                  "Optional override for the reranking service. Completely replaces the"
                       + " collection-level reranking configuration when provided. Both provider and"
                       + " modelName are required.",
               implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)

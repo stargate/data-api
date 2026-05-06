@@ -58,7 +58,7 @@ class FindAndRerankOperationBuilder {
   private FindAndRerankCommand command;
   private FindCommandResolver findCommandResolver;
 
-  // lazily computed effective rerank service def (per-request override or collection default)
+  // lazily computed effective rerank service def (command override or collection default)
   private CollectionRerankDef.RerankServiceDef effectiveRerankServiceDef;
 
   public FindAndRerankOperationBuilder(CommandContext<CollectionSchemaObject> commandContext) {
@@ -173,7 +173,12 @@ class FindAndRerankOperationBuilder {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
 
-    // Resolve effective rerank service def: per-request override replaces collection config
+    // Guard: effectiveRerankServiceDef must only be resolved once per builder use.
+    if (effectiveRerankServiceDef != null) {
+      throw new IllegalStateException("effectiveRerankServiceDef has already been resolved");
+    }
+
+    // Resolve effective rerank service def: command override replaces collection config
     // entirely; otherwise fall back to the collection's configured defaults.
     if (hasOverride) {
       var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
@@ -212,7 +217,9 @@ class FindAndRerankOperationBuilder {
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
       rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
-    // checkSupported() already resolved effectiveRerankServiceDef
+    Objects.requireNonNull(
+        effectiveRerankServiceDef,
+        "effectiveRerankServiceDef must be resolved by checkSupported()");
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
@@ -295,7 +302,7 @@ class FindAndRerankOperationBuilder {
           "Model '%s' is not supported by reranking provider '%s'.".formatted(modelName, provider));
     }
 
-    // Block DEPRECATED and END_OF_LIFE models for per-request overrides (user is actively
+    // Block DEPRECATED and END_OF_LIFE models for command overrides (user is actively
     // choosing this model, so both statuses should be rejected)
     if (modelConfig.apiModelSupport().status() != ApiModelSupport.SupportStatus.SUPPORTED) {
       var errorCode =
