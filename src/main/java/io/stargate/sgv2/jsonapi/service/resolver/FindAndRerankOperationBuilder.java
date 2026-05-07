@@ -81,8 +81,9 @@ class FindAndRerankOperationBuilder {
 
     Objects.requireNonNull(command, "command cannot be null");
 
-    checkSupported();
+    checkSortAndSchemaSupported();
     validateHybridLimits();
+    this.effectiveRerankServiceDef = resolveRerankServiceDef();
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
     // Making the deferrables here so we can associate them with read types that will fill them
@@ -164,10 +165,10 @@ class FindAndRerankOperationBuilder {
   }
 
   /**
-   * Check that collection supports hybrid search with the features the request uses, throw if it
-   * does not
+   * Check that collection supports the sort features the request uses (vector / vectorize /
+   * lexical), throw if it does not.
    */
-  private void checkSupported() {
+  private void checkSortAndSchemaSupported() {
 
     if (isVectorSort() || isVectorizeSort()) {
       if (!commandContext.schemaObject().vectorConfig().vectorEnabled()) {
@@ -198,7 +199,15 @@ class FindAndRerankOperationBuilder {
             errVars(commandContext.schemaObject()));
       }
     }
+  }
 
+  /**
+   * Resolve the effective {@link CollectionRerankDef.RerankServiceDef} for this command: a
+   * non-empty command override replaces the collection-level config entirely; otherwise fall back
+   * to the collection's configured defaults. Throws {@link
+   * RequestException.Code#UNSUPPORTED_RERANKING_COMMAND} if neither source provides a service.
+   */
+  private CollectionRerankDef.RerankServiceDef resolveRerankServiceDef() {
     var rerankOverride =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
     boolean hasOverride = rerankOverride != null && !rerankOverride.isEmpty();
@@ -207,31 +216,21 @@ class FindAndRerankOperationBuilder {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
 
-    // Guard: effectiveRerankServiceDef must only be resolved once per builder use.
-    if (effectiveRerankServiceDef != null) {
-      throw new IllegalStateException("effectiveRerankServiceDef has already been resolved");
-    }
-
-    // Resolve effective rerank service def: command override replaces collection config
-    // entirely; otherwise fall back to the collection's configured defaults.
     var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
 
     if (hasOverride) {
-      effectiveRerankServiceDef =
-          CollectionRerankDef.validateServiceDesc(
-              rerankingProvidersConfig,
-              rerankOverride.provider(),
-              rerankOverride.modelName(),
-              rerankOverride.authentication(),
-              rerankOverride.parameters(),
-              RequestException.Code.INVALID_RERANK_OVERRIDE);
-    } else {
-      // Collection defaults: check END_OF_LIFE since model may have become EOL after creation.
-      effectiveRerankServiceDef =
-          commandContext.schemaObject().rerankingConfig().rerankServiceDef();
-      CollectionRerankDef.checkExistingModelStatus(
-          rerankingProvidersConfig, effectiveRerankServiceDef);
+      return CollectionRerankDef.validateServiceDesc(
+          rerankingProvidersConfig,
+          rerankOverride.provider(),
+          rerankOverride.modelName(),
+          rerankOverride.authentication(),
+          rerankOverride.parameters(),
+          RequestException.Code.INVALID_RERANK_OVERRIDE);
     }
+    // Collection defaults: check END_OF_LIFE since model may have become EOL after creation.
+    var serviceDef = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
+    CollectionRerankDef.checkExistingModelStatus(rerankingProvidersConfig, serviceDef);
+    return serviceDef;
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
@@ -239,7 +238,7 @@ class FindAndRerankOperationBuilder {
 
     Objects.requireNonNull(
         effectiveRerankServiceDef,
-        "effectiveRerankServiceDef must be resolved by checkSupported()");
+        "effectiveRerankServiceDef must be resolved before rerankTasks()");
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
