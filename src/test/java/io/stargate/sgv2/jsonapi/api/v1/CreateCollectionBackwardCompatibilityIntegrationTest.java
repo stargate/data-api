@@ -11,13 +11,160 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
-@TestClassOrder(ClassOrderer.OrderAnnotation.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CreateCollectionBackwardCompatibilityIntegrationTest
     extends AbstractKeyspaceIntegrationTestBase {
+
+  private static final String EXPECTED_OPTIONS_PRE_LEXICAL_RERANK =
+      """
+      {
+          "lexical": {"enabled": false},
+          "rerank": {"enabled": false}
+      }
+      """;
+
+  private static final String EXPECTED_OPTIONS_DISABLED_LEXICAL_RERANK =
+      """
+      {
+          "indexing": {"allow": ["documentId","projectId","userId"]},
+          "lexical": {"enabled": false},
+          "rerank": {"enabled": false}
+      }
+      """;
+
+  /** Collection names registered by a test method, dropped in {@link #cleanupCollections()}. */
+  private final List<String> collectionsToCleanup = new ArrayList<>();
+
+  @BeforeAll
+  void requireLexicalSupport() {
+    // Skip the whole test class if BM25/lexical is not supported by the backend, since both
+    // scenarios below depend on the API defaulting to lexical/rerank enabled.
+    Assumptions.assumeTrue(
+        isLexicalAvailableForDB(), "Backend does not support BM25/lexical features");
+  }
+
+  @AfterEach
+  void cleanupCollections() {
+    for (String name : collectionsToCleanup) {
+      deleteCollection(name);
+    }
+    collectionsToCleanup.clear();
+  }
+
+  /**
+   * Verifies that re-issuing {@code createCollection} for a collection that was created BEFORE the
+   * lexical/rerank feature existed (its CQL comment carries no {@code lexical} or {@code rerank}
+   * fields at all) does NOT fail with {@code COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS} once the
+   * deployment has switched to lexical/rerank-enabled-by-default.
+   *
+   * <p>Background: the codebase has gone through three states:
+   *
+   * <ol>
+   *   <li>No lexical/rerank feature at all — older collections persist with no such fields.
+   *   <li>Feature exists in code but disabled by config — collections persist with explicit {@code
+   *       "enabled": false}.
+   *   <li>Feature enabled by default — new collections persist with the feature on.
+   * </ol>
+   *
+   * This test covers the (1) → (3) transition. Without backward-compat handling in {@link
+   * io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation}, recreating a
+   * state (1) collection while the deployment is in state (3) would be rejected as "settings
+   * differ", even though the user is asking for the same collection. The existing options must also
+   * remain unchanged after the no-op recreate.
+   */
+  @Test
+  public final void preLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled() {
+    final String collectionName = "pre_lexical_rerank_collection";
+
+    // 1. simulate a legacy collection created before lexical/rerank existed (empty options)
+    createCollectionViaCql(collectionName, "{}");
+    collectionsToCleanup.add(collectionName);
+
+    // 2. sanity-check that findCollections renders the backward-compat defaults (disabled)
+    assertSingleCollection(collectionName, EXPECTED_OPTIONS_PRE_LEXICAL_RERANK);
+
+    // 3. recreate the same collection via the API — must succeed, not fail with
+    //    COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS
+    createCollectionViaApi(
+            """
+        {
+            "createCollection": {
+                "name": "%s"
+            }
+        }
+        """
+            .formatted(collectionName));
+
+    // 4. existing settings must be preserved (no silent overwrite to enabled)
+    assertSingleCollection(collectionName, EXPECTED_OPTIONS_PRE_LEXICAL_RERANK);
+  }
+
+  /**
+   * Verifies that re-issuing {@code createCollection} for a collection that was created when the
+   * lexical/rerank feature existed in code but was config-disabled at the time (its CQL comment
+   * carries explicit {@code "lexical":{"enabled":false}} and {@code "rerank":{"enabled":false}})
+   * does NOT fail with {@code COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS} once the deployment has
+   * switched to lexical/rerank-enabled-by-default.
+   *
+   * <p>This is the (2) → (3) transition (see {@link
+   * #preLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled()} for the full state list). It
+   * is distinct from (1) → (3) because the persisted comment here has the fields written out
+   * explicitly with {@code enabled:false}, not omitted entirely; the backward-compat check must
+   * therefore compare the persisted disabled config against the new enabled defaults using value
+   * equality (not reference equality) to recognize them as backward-compatible.
+   *
+   * <p>The test collection also carries a non-trivial {@code indexing.allow} list to surface any
+   * unrelated mismatch between the persisted comment and the recreate request payload — an
+   * empty-options collection would be too weak a probe.
+   */
+  @Test
+  public final void disabledLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled() {
+    final String collectionName = "lexical_rerank_feature_disabled_collection";
+    final String commentOptionsJson =
+        """
+        {
+            "indexing": {"allow": ["documentId","projectId","userId"]},
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
+
+    // 1. simulate a collection created when lexical/rerank existed in code but was config-disabled
+    createCollectionViaCql(collectionName, commentOptionsJson);
+    collectionsToCleanup.add(collectionName);
+
+    // 2. sanity-check that findCollections returns the persisted (disabled) options
+    assertSingleCollection(collectionName, EXPECTED_OPTIONS_DISABLED_LEXICAL_RERANK);
+
+    // 3. recreate via API — request includes indexing.allow to match the existing non-lexical
+    //    settings; lexical/rerank are intentionally omitted so the API's enabled-by-default kicks
+    //    in. Backward-compat must accept this against the persisted disabled values.
+    createCollectionViaApi(
+            """
+        {
+            "createCollection": {
+                "name": "%s",
+                "options": {
+                    "indexing": {"allow": ["documentId","projectId","userId"]}
+                }
+            }
+        }
+        """
+            .formatted(collectionName));
+
+    // 4. existing settings must be preserved (still disabled lexical/rerank)
+    assertSingleCollection(collectionName, EXPECTED_OPTIONS_DISABLED_LEXICAL_RERANK);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Test helpers
+  // ---------------------------------------------------------------------------
 
   // NOTE(2025/04/17): Using raw CQL here to precisely simulate the schema state before
   // lexical/rerank options were introduced in collection comments. It would be better to use
@@ -94,131 +241,5 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
     givenHeadersPostJsonThenOkNoErrors(createCollectionPayload)
         .body("$", responseIsStatusOnly())
         .body("status.ok", is(1));
-  }
-
-  @Nested
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class CreateCollectionWithLexicalRerankBackwardCompatibility {
-    private static final String PRE_LEXICAL_RERANK_COLLECTION_NAME =
-        "pre_lexical_rerank_collection";
-
-    private static final String COMMENT_OPTIONS_JSON = "{}";
-
-    private static final String EXPECTED_OPTIONS_JSON =
-        """
-        {
-            "lexical": {"enabled": false},
-            "rerank": {"enabled": false}
-        }
-        """;
-
-    @BeforeAll
-    void requireLexicalSupport() {
-      // Skip the whole nested class if BM25/lexical is not supported by the backend
-      Assumptions.assumeTrue(
-          isLexicalAvailableForDB(), "Backend does not support BM25/lexical features");
-    }
-
-    @Test
-    @Order(1)
-    public final void createPreLexicalRerankCollection() {
-      createCollectionViaCql(PRE_LEXICAL_RERANK_COLLECTION_NAME, COMMENT_OPTIONS_JSON);
-
-      assertSingleCollection(PRE_LEXICAL_RERANK_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
-    }
-
-    @Test
-    @Order(2)
-    public final void createCollectionWithoutLexicalRerankUsingAPI() {
-      assertSingleCollection(PRE_LEXICAL_RERANK_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
-
-      // create the same collection using API - should not get
-      // COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS error
-      createCollectionViaApi(
-              """
-              {
-                  "createCollection": {
-                      "name": "%s"
-                  }
-              }
-              """
-              .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME));
-
-      assertSingleCollection(PRE_LEXICAL_RERANK_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
-
-      // clean up and delete the collection
-      deleteCollection(PRE_LEXICAL_RERANK_COLLECTION_NAME);
-    }
-  }
-
-  @Nested
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class CreateCollectionWithLexicalRerankDisabledButThenEnabledBackwardCompatibility {
-    private static final String LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME =
-        "lexical_rerank_feature_disabled_collection";
-
-    private static final String COMMENT_OPTIONS_JSON =
-        """
-        {
-            "indexing": {"allow": ["documentId","projectId","userId"]},
-            "lexical": {"enabled": false},
-            "rerank": {"enabled": false}
-        }
-        """;
-
-    private static final String EXPECTED_OPTIONS_JSON =
-        """
-        {
-            "indexing": {"allow": ["documentId","projectId","userId"]},
-            "lexical": {"enabled": false},
-            "rerank": {"enabled": false}
-        }
-        """;
-
-    @BeforeAll
-    void requireLexicalSupport() {
-      // Skip the whole nested class if BM25/lexical is not supported by the backend
-      Assumptions.assumeTrue(
-          isLexicalAvailableForDB(), "Backend does not support BM25/lexical features");
-    }
-
-    @Test
-    @Order(1)
-    public final void createLexicalRerankFeatureDisabledCollection() {
-      createCollectionViaCql(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME, COMMENT_OPTIONS_JSON);
-
-      assertSingleCollection(
-          LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
-    }
-
-    @Test
-    @Order(2)
-    public final void createCollectionWithLexicalRerankFeatureEnabledUsingAPI() {
-      assertSingleCollection(
-          LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
-
-      // create the same collection using API - should not get
-      // COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS error
-      createCollectionViaApi(
-              """
-          {
-              "createCollection": {
-                  "name": "%s",
-                  "options": {
-                     "indexing": {"allow": ["documentId","projectId","userId"]}
-                  }
-              }
-          }
-          """
-              .formatted(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME));
-
-      assertSingleCollection(
-          LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
-
-      // clean up and delete the collection
-      deleteCollection(LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME);
-    }
   }
 }
