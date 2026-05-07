@@ -81,7 +81,7 @@ class FindAndRerankOperationBuilder {
 
     Objects.requireNonNull(command, "command cannot be null");
 
-    checkSortAndSchemaSupported();
+    checkSortSupported();
     validateHybridLimits();
     this.effectiveRerankServiceDef = resolveRerankServiceDef();
 
@@ -168,7 +168,7 @@ class FindAndRerankOperationBuilder {
    * Check that collection supports the sort features the request uses (vector / vectorize /
    * lexical), throw if it does not.
    */
-  private void checkSortAndSchemaSupported() {
+  private void checkSortSupported() {
 
     if (isVectorSort() || isVectorizeSort()) {
       if (!commandContext.schemaObject().vectorConfig().vectorEnabled()) {

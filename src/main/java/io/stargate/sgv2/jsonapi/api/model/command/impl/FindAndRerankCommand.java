@@ -111,8 +111,8 @@ public record FindAndRerankCommand(
           @Schema(
               description =
                   "Optional override for the reranking service. Completely replaces the"
-                      + " collection-level reranking configuration when provided. Both provider and"
-                      + " modelName are required.",
+                      + " collection-level reranking configuration when provided. Both 'provider' and"
+                      + " 'modelName' are required.",
               implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
