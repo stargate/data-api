@@ -1190,7 +1190,7 @@ request-errors:
       The database recorded the previously dropped column type as: ${previousType}.
       The command used the table: ${keyspace}.${table}.
 
-      This can happen after dropping a user-defined type column because the database may retain the dropped column as its expanded tuple type rather than the UDT name.
+      This can happen after dropping a user-defined type (UDT) column because the database may retain the dropped column as its expanded tuple type rather than the UDT name.
 
       Resend the command using a different column name, or recreate the table before adding this column again.
 
