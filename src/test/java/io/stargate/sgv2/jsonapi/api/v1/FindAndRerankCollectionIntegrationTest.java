@@ -259,6 +259,20 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
             containsString("reranking service override was not provided with the command"));
   }
 
+  // Empty override object (`"rerank": {}`) is treated as no override, falling back to the
+  // collection's reranking config. On a collection without reranking enabled, this surfaces as
+  // UNSUPPORTED_RERANKING_COMMAND — not INVALID_RERANK_OVERRIDE — confirming the empty payload
+  // is intentionally ignored rather than validated as a (malformed) override.
+  @Test
+  void emptyRerankOverrideIgnoredAndFallsThroughToCollectionConfig() {
+    String collectionName = "rerank_override_empty";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(keyspaceName, collectionName, findAndRerankWithOverride("{}"))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()));
+  }
+
   @Test
   void failOnRerankOverrideUnknownProvider() {
     String collectionName = "rerank_override_bad_provider";
