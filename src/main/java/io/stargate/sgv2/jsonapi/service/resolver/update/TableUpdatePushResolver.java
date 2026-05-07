@@ -230,7 +230,19 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
     }
 
     // only allowed to have $each in the json object.
-    if (objectNode.size() != 1 || !(eachOpRHS instanceof ArrayNode arrayNode)) {
+    if (objectNode.size() != 1) {
+      throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "reason",
+                    "extraneous %s field encountered"
+                        .formatted(firstFieldOtherThanEach(objectNode)));
+              }));
+    }
+
+    if (!(eachOpRHS instanceof ArrayNode arrayNode)) {
       throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
           errVars(
               tableSchemaObject,
@@ -239,6 +251,15 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
               }));
     }
     return arrayNode;
+  }
+
+  private String firstFieldOtherThanEach(ObjectNode objectNode) {
+    for (var field : objectNode.properties()) {
+      if (!UpdateOperatorModifier.EACH.apiName().equals(field.getKey())) {
+        return field.getKey();
+      }
+    }
+    throw new IllegalStateException("Expected a field other than $each");
   }
 
   /**
