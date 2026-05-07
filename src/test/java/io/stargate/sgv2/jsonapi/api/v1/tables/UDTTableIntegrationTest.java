@@ -24,6 +24,9 @@ public class UDTTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TABLE = "udt_table";
 
+  private static final String READD_DROPPED_COLUMN_TYPE_NAME = "person";
+  private static final String READD_DROPPED_COLUMN_TABLE = "udt_readd_dropped_column_table";
+
   // [data-api#2410]: UDT with inet-typed field
   private static final String INET_TYPE_NAME = "address_with_inet";
   private static final String INET_TABLE = "udt_inet_table";
@@ -236,6 +239,51 @@ public class UDTTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(2)
+  class AlterTable {
+    @Test
+    public void cannotReAddDroppedUdtColumn() {
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createType(
+              READD_DROPPED_COLUMN_TYPE_NAME, Map.of("firstName", "text", "lastName", "text"))
+          .wasSuccessful();
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              READD_DROPPED_COLUMN_TABLE,
+              Map.ofEntries(
+                  Map.entry("id", "text"),
+                  Map.entry(
+                      "president",
+                      Map.of("type", "userDefined", "udtName", READD_DROPPED_COLUMN_TYPE_NAME))),
+              "id")
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, READD_DROPPED_COLUMN_TABLE)
+          .templated()
+          .alterTable("drop", List.of("president"))
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, READD_DROPPED_COLUMN_TABLE)
+          .templated()
+          .alterTable(
+              "add",
+              Map.of(
+                  "president",
+                  Map.of("type", "userDefined", "udtName", READD_DROPPED_COLUMN_TYPE_NAME)))
+          .hasSingleApiError(
+              SchemaException.Code.CANNOT_ADD_PREVIOUSLY_DROPPED_COLUMN,
+              SchemaException.class,
+              "The command attempted to add the column: president.",
+              "The command used the column type: %s.".formatted(READD_DROPPED_COLUMN_TYPE_NAME),
+              "The database recorded the previously dropped column type as: tuple<text, text>.",
+              "Resend the command using a different column name");
+    }
+  }
+
+  @Nested
+  @Order(3)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class WriteAndRead {
 
@@ -651,7 +699,7 @@ public class UDTTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   // [data-api#2410]: Test for UDT with inet-typed field
   @Nested
-  @Order(3)
+  @Order(4)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class WriteAndReadUdtWithInet {
     @Test
