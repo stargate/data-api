@@ -25,6 +25,13 @@ import org.junit.jupiter.api.DynamicNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The
+ * @param target
+ * @param specFiles
+ * @param workflows
+ * @param ignoreDisabled
+ */
 public record TestPlan(
         Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled) implements JobLifeCycle {
 
