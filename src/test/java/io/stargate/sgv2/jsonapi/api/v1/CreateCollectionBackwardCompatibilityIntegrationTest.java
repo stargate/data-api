@@ -160,7 +160,13 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
         "lexical_rerank_feature_disabled_collection";
 
     private static final String COMMENT_OPTIONS_JSON =
-        "{\"indexing\":{\"allow\":[\"documentId\",\"projectId\",\"userId\"]}, \"lexical\":{\"enabled\":false},\"rerank\":{\"enabled\":false}}";
+        """
+        {
+            "indexing": {"allow": ["documentId","projectId","userId"]},
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
 
     private static final String EXPECTED_OPTIONS_JSON =
         """
