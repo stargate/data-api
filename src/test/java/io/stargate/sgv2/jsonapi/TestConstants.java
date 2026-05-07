@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
@@ -105,6 +106,7 @@ public class TestConstants {
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
+  public final CollectionSchemaObject VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
   public final TableSchemaObject TABLE_SCHEMA_OBJECT;
   public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
   public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
@@ -209,6 +211,25 @@ public class TestConstants {
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
 
+    VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        -1,
+                        SimilarityFunction.COSINE,
+                        EmbeddingSourceModel.OTHER,
+                        null))),
+            null,
+            CollectionLexicalConfig.configForDefault(),
+            new CollectionRerankDef(
+                true,
+                new CollectionRerankDef.RerankServiceDef(
+                    "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
+
     TABLE_SCHEMA_OBJECT = new TableSchemaObject(TABLE_IDENTIFIER);
 
     KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
@@ -227,6 +248,11 @@ public class TestConstants {
   // CommandContext for working on the schema objects above
   public CommandContext<CollectionSchemaObject> collectionContext() {
     return collectionContext(COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
+  }
+
+  public CommandContext<CollectionSchemaObject> collectionContext(
+      CommandName commandName, CollectionSchemaObject schema) {
+    return collectionContext(commandName.getApiName(), schema, null, null);
   }
 
   public CommandContext<CollectionSchemaObject> collectionContext(
