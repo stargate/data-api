@@ -11,8 +11,6 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
@@ -21,40 +19,12 @@ import org.junit.jupiter.api.*;
 public class CreateCollectionBackwardCompatibilityIntegrationTest
     extends AbstractKeyspaceIntegrationTestBase {
 
-  private static final String EXPECTED_OPTIONS_PRE_LEXICAL_RERANK =
-      """
-      {
-          "lexical": {"enabled": false},
-          "rerank": {"enabled": false}
-      }
-      """;
-
-  private static final String EXPECTED_OPTIONS_DISABLED_LEXICAL_RERANK =
-      """
-      {
-          "indexing": {"allow": ["documentId","projectId","userId"]},
-          "lexical": {"enabled": false},
-          "rerank": {"enabled": false}
-      }
-      """;
-
-  /** Collection names registered by a test method, dropped in {@link #cleanupCollections()}. */
-  private final List<String> collectionsToCleanup = new ArrayList<>();
-
   @BeforeAll
   void requireLexicalSupport() {
     // Skip the whole test class if BM25/lexical is not supported by the backend, since both
     // scenarios below depend on the API defaulting to lexical/rerank enabled.
     Assumptions.assumeTrue(
         isLexicalAvailableForDB(), "Backend does not support BM25/lexical features");
-  }
-
-  @AfterEach
-  void cleanupCollections() {
-    for (String name : collectionsToCleanup) {
-      deleteCollection(name);
-    }
-    collectionsToCleanup.clear();
   }
 
   /**
@@ -81,13 +51,20 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
   @Test
   public final void preLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled() {
     final String collectionName = "pre_lexical_rerank_collection";
+    final String commentOptionsJson = "{}";
+    final String expectedOptions =
+        """
+        {
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
 
     // 1. simulate a legacy collection created before lexical/rerank existed (empty options)
-    createCollectionViaCql(collectionName, "{}");
-    collectionsToCleanup.add(collectionName);
+    createCollectionViaCql(collectionName, commentOptionsJson);
 
     // 2. sanity-check that findCollections renders the backward-compat defaults (disabled)
-    assertSingleCollection(collectionName, EXPECTED_OPTIONS_PRE_LEXICAL_RERANK);
+    assertSingleCollection(collectionName, expectedOptions);
 
     // 3. recreate the same collection via the API — must succeed, not fail with
     //    COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS
@@ -102,7 +79,10 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
             .formatted(collectionName));
 
     // 4. existing settings must be preserved (no silent overwrite to enabled)
-    assertSingleCollection(collectionName, EXPECTED_OPTIONS_PRE_LEXICAL_RERANK);
+    assertSingleCollection(collectionName, expectedOptions);
+
+    // cleanup
+    deleteCollection(collectionName);
   }
 
   /**
@@ -134,13 +114,20 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
             "rerank": {"enabled": false}
         }
         """;
+    final String expectedOptions =
+        """
+        {
+            "indexing": {"allow": ["documentId","projectId","userId"]},
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
 
     // 1. simulate a collection created when lexical/rerank existed in code but was config-disabled
     createCollectionViaCql(collectionName, commentOptionsJson);
-    collectionsToCleanup.add(collectionName);
 
     // 2. sanity-check that findCollections returns the persisted (disabled) options
-    assertSingleCollection(collectionName, EXPECTED_OPTIONS_DISABLED_LEXICAL_RERANK);
+    assertSingleCollection(collectionName, expectedOptions);
 
     // 3. recreate via API — request includes indexing.allow to match the existing non-lexical
     //    settings; lexical/rerank are intentionally omitted so the API's enabled-by-default kicks
@@ -159,7 +146,10 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
             .formatted(collectionName));
 
     // 4. existing settings must be preserved (still disabled lexical/rerank)
-    assertSingleCollection(collectionName, EXPECTED_OPTIONS_DISABLED_LEXICAL_RERANK);
+    assertSingleCollection(collectionName, expectedOptions);
+
+    // cleanup
+    deleteCollection(collectionName);
   }
 
   // ---------------------------------------------------------------------------
