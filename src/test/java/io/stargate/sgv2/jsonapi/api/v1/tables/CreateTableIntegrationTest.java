@@ -67,6 +67,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
     // Set of passing ITs
     static Stream<Arguments> testCasesForCreateTablePass() {
       List<Arguments> testCases = new ArrayList<>();
+
       // create table with all types
       testCases.add(
           Arguments.of(
@@ -394,6 +395,27 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                            }
                                         }
                                         """)));
+
+      // [data-api#1806]: table name "ann" must be quoted
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  "ann",
+                  """
+                                {
+                                 "name": "ann",
+                                 "definition": {
+                                     "columns": {
+                                         "t": "text",
+                                         "v": {
+                                              "type": "vector",
+                                              "dimension": 5
+                                          }
+                                     },
+                                     "primaryKey": "t"
+                                 }
+                                }
+                                """)));
 
       return testCases.stream();
     }
