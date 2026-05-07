@@ -49,18 +49,13 @@ public interface OperationsConfig {
    */
   int DEFAULT_FIND_AND_RERANK_LIMIT = 10;
 
-  /** Built-in minimum hybrid search read limit (may be overridden via configuration). */
-  int MIN_HYBRID_SEARCH_LIMIT = RerankingConstants.HybridSearchLimits.MIN;
-
-  /** Built-in default hybrid search read limit (may be overridden via configuration). */
-  int DEFAULT_HYBRID_SEARCH_LIMIT = RerankingConstants.HybridSearchLimits.DEFAULT;
-
-  /** Built-in maximum hybrid search read limit (may be overridden via configuration). */
-  int MAX_HYBRID_SEARCH_LIMIT = RerankingConstants.HybridSearchLimits.MAX;
-
   /** Built-in hybrid search read limit config default as min,default,max. */
   String DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG =
-      MIN_HYBRID_SEARCH_LIMIT + "," + DEFAULT_HYBRID_SEARCH_LIMIT + "," + MAX_HYBRID_SEARCH_LIMIT;
+      RerankingConstants.HybridSearchLimits.MIN
+          + ","
+          + RerankingConstants.HybridSearchLimits.DEFAULT
+          + ","
+          + RerankingConstants.HybridSearchLimits.MAX;
 
   /** Defines the maximum configurable default page size for read queries. */
   int MAX_CONFIGURABLE_PAGE_SIZE = 500;
