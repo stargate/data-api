@@ -294,6 +294,23 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
   }
 
   @Test
+  void failOnRerankOverrideMissingProvider() {
+    String collectionName = "rerank_override_no_provider";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("Provider name is required"));
+  }
+
+  @Test
   void failOnRerankOverrideMissingModelName() {
     String collectionName = "rerank_override_no_model";
     createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
