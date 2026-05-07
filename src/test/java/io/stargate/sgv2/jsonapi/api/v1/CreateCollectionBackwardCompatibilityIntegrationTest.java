@@ -97,6 +97,7 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class CreateCollectionWithLexicalRerankBackwardCompatibility {
     private static final String PRE_LEXICAL_RERANK_COLLECTION_NAME =
@@ -112,6 +113,13 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
         }
         """;
 
+    @BeforeAll
+    void requireLexicalSupport() {
+      // Skip the whole nested class if BM25/lexical is not supported by the backend
+      Assumptions.assumeTrue(
+          isLexicalAvailableForDB(), "Backend does not support BM25/lexical features");
+    }
+
     @Test
     @Order(1)
     public final void createPreLexicalRerankCollection() {
@@ -123,9 +131,6 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
     @Test
     @Order(2)
     public final void createCollectionWithoutLexicalRerankUsingAPI() {
-      // Can only test if we have BM25 support by backend, otherwise skip the test
-      Assumptions.assumeTrue(isLexicalAvailableForDB());
-
       assertSingleCollection(PRE_LEXICAL_RERANK_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
 
       // create the same collection using API - should not get
@@ -148,6 +153,7 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class CreateCollectionWithLexicalRerankDisabledButThenEnabledBackwardCompatibility {
     private static final String LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME =
@@ -165,6 +171,13 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
         }
         """;
 
+    @BeforeAll
+    void requireLexicalSupport() {
+      // Skip the whole nested class if BM25/lexical is not supported by the backend
+      Assumptions.assumeTrue(
+          isLexicalAvailableForDB(), "Backend does not support BM25/lexical features");
+    }
+
     @Test
     @Order(1)
     public final void createLexicalRerankFeatureDisabledCollection() {
@@ -177,9 +190,6 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
     @Test
     @Order(2)
     public final void createCollectionWithLexicalRerankFeatureEnabledUsingAPI() {
-      // Can only test if we have BM25 support by backend, otherwise skip the test
-      Assumptions.assumeTrue(isLexicalAvailableForDB());
-
       assertSingleCollection(
           LEXICAL_RERANK_FEATURE_DISABLED_COLLECTION_NAME, EXPECTED_OPTIONS_JSON);
 
