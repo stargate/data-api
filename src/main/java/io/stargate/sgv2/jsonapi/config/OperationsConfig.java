@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
@@ -32,8 +33,32 @@ import javax.annotation.Nullable;
 /** Configuration for the operation execution. */
 @ConfigMapping(prefix = "stargate.jsonapi.operations")
 public interface OperationsConfig {
-  /** Defines the default max size of filter fields. */
+  /** Defines the built-in default max size of filter fields. */
   int DEFAULT_MAX_FILTER_SIZE = 64;
+
+  /**
+   * Built-in default page size for read queries. The effective default may be overridden via
+   * application.yaml, system properties, or environment variables (see {@link #defaultPageSize()}).
+   */
+  int DEFAULT_PAGE_SIZE = 50;
+
+  /**
+   * Built-in default number of documents returned by findAndRerank. The effective default may be
+   * overridden via application.yaml, system properties, or environment variables (see {@link
+   * #defaultFindAndRerankLimit()}).
+   */
+  int DEFAULT_FIND_AND_RERANK_LIMIT = 10;
+
+  /** Built-in hybrid search read limit config default as min,default,max. */
+  String DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG =
+      RerankingConstants.HybridSearchLimits.MIN
+          + ","
+          + RerankingConstants.HybridSearchLimits.DEFAULT
+          + ","
+          + RerankingConstants.HybridSearchLimits.MAX;
+
+  /** Defines the maximum configurable default page size for read queries. */
+  int MAX_CONFIGURABLE_PAGE_SIZE = 500;
 
   /**
    * Defines the default maximum documents to insert setting for {@code InsertMany} command;
@@ -42,11 +67,11 @@ public interface OperationsConfig {
   int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
 
   /**
-   * @return Defines the default document page size, defaults to <code>20</code>.
+   * @return Defines the default document page size, defaults to <code>50</code>.
    */
-  @Max(500)
+  @Max(MAX_CONFIGURABLE_PAGE_SIZE)
   @Positive
-  @WithDefault("20")
+  @WithDefault("" + DEFAULT_PAGE_SIZE)
   int defaultPageSize();
 
   /**
@@ -155,6 +180,14 @@ public interface OperationsConfig {
   @Positive
   @WithDefault("100")
   int defaultCountPageSize();
+
+  /**
+   * @return Defines the default number of documents returned by {@code findAndRerank}, defaults to
+   *     {@link #DEFAULT_FIND_AND_RERANK_LIMIT}.
+   */
+  @Positive
+  @WithDefault("" + DEFAULT_FIND_AND_RERANK_LIMIT)
+  int defaultFindAndRerankLimit();
 
   @NotNull
   @Valid
@@ -324,12 +357,12 @@ public interface OperationsConfig {
   }
 
   @NotNull
-  @WithDefault("0,50,100")
+  @WithDefault(DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG)
   @WithConverter(IntConfigWithBoundsConverter.class)
   IntConfigWithBounds hybridSearchVectorLimit();
 
   @NotNull
-  @WithDefault("0,50,100")
+  @WithDefault(DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG)
   @WithConverter(IntConfigWithBoundsConverter.class)
   IntConfigWithBounds hybridSearchLexicalLimit();
 }
