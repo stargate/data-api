@@ -237,7 +237,7 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
               map -> {
                 map.put(
                     "reason",
-                    "extraneous %s field encountered"
+                    "extraneous '%s' field encountered"
                         .formatted(firstFieldOtherThanEach(objectNode)));
               }));
     }

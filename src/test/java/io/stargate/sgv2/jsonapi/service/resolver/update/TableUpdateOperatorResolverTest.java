@@ -175,7 +175,7 @@ public class TableUpdateOperatorResolverTest {
                 .formatted(names().CQL_MAP_COLUMN),
             null,
             UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE,
-            "extraneous $position field encountered"),
+            "extraneous '$position' field encountered"),
         Arguments.of(
                 """
             {"%s": {"$each": ["abc"]}}
@@ -191,7 +191,7 @@ public class TableUpdateOperatorResolverTest {
                 .formatted(names().CQL_LIST_COLUMN),
             null,
             UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE,
-            "extraneous $position field encountered"),
+            "extraneous '$position' field encountered"),
         Arguments.of(
                 """
             {"%s": {"$each": ["abc"]}}
