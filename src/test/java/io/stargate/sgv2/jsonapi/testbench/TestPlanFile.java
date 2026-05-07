@@ -1,10 +1,9 @@
 package io.stargate.sgv2.jsonapi.testbench;
 
-import io.stargate.sgv2.jsonapi.testbench.testspec.TargetConfiguration;
+import io.stargate.sgv2.jsonapi.testbench.targets.TargetConfiguration;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Structure of a test plane file stored in a jar resource or external file. These are used with the

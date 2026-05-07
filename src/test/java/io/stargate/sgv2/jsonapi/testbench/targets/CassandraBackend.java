@@ -1,8 +1,5 @@
 package io.stargate.sgv2.jsonapi.testbench.targets;
 
-import static io.stargate.sgv2.jsonapi.testbench.testrun.TestRunEnv.toSafeSchemaIdentifier;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.testbench.assertions.TestAssertion;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestExecutionCondition;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestNodeFactory;
@@ -10,18 +7,23 @@ import io.stargate.sgv2.jsonapi.testbench.testrun.TestRunRequest;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.testbench.testspec.Job;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestCommand;
-import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.DynamicNode;
 
-/** Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh */
+import java.util.Optional;
+
+/**
+ * A classic Cassandra backend, running locally or elsewhere.
+ *  */
 public class CassandraBackend extends Backend {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  public static final String NAME = "cassandra";
 
   @Override
   public void updateJobForTarget(Job job) {
-    // max length for keyspace is 48 chars
+
+    // We are going to create the keyspace for every job, so making a new name here based on the name
+    // of the job, and some random because the name will be trunc'd
     var keyspaceName =
         toSafeSchemaIdentifier(
             "job_"
@@ -31,6 +33,9 @@ public class CassandraBackend extends Backend {
     job.variables().put("KEYSPACE_NAME", keyspaceName);
   }
 
+  /**
+   * Need to create a keyspace, because C* does not have a default one.
+   */
   @Override
   public Optional<DynamicNode> beforeJob(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
 
@@ -57,6 +62,9 @@ public class CassandraBackend extends Backend {
     return Optional.of(setupRequest.testNodes(testNodeFactory, uriBuilder));
   }
 
+  /**
+   * Drop the keyspace we made for this job.
+   */
   @Override
   public Optional<DynamicNode> afterJob(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
     var command =

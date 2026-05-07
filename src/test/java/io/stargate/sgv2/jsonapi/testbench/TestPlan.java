@@ -6,7 +6,9 @@ import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.stargate.sgv2.jsonapi.testbench.lifecycle.JobLifeCycle;
 import io.stargate.sgv2.jsonapi.testbench.targets.Target;
+import io.stargate.sgv2.jsonapi.testbench.targets.TargetConfiguration;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.testbench.testspec.*;
@@ -24,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public record TestPlan(
-        Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled) {
+        Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled) implements JobLifeCycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestPlan.class);
 
@@ -118,6 +120,7 @@ public record TestPlan(
     return new TestPlanNodeTree(root, testNodeFactory.testNodeCount());
   }
 
+  @Override
   public void updateJobForTarget(Job job) {
     target.updateJobForTarget(job);
   }

@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.testbench.testspec;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.testbench.targets.TargetConfiguration;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;

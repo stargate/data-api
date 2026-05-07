@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.testbench.testrun;
 
+import io.stargate.sgv2.jsonapi.testbench.targets.Backend;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestSuiteSpec;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,6 @@ import org.slf4j.LoggerFactory;
 public class TestRunEnv {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestRunEnv.class);
-  private static final Pattern PATTERN_NOT_WORD_CHARS = Pattern.compile("\\W+");
 
   private static final Set<String> SCHEMA_IDENTIFIER = Set.of("KEYSPACE_NAME", "COLLECTION_NAME");
 
@@ -104,23 +104,12 @@ public class TestRunEnv {
 
     var substituted = substitutor().replace(value);
     var cleaned =
-        SCHEMA_IDENTIFIER.contains(name) ? toSafeSchemaIdentifier(substituted) : substituted;
+        SCHEMA_IDENTIFIER.contains(name) ? Backend.toSafeSchemaIdentifier(substituted) : substituted;
 
     return cleaned;
   }
 
-  public static String toSafeSchemaIdentifier(String name) {
-
-    var newValue = PATTERN_NOT_WORD_CHARS.matcher(name).replaceAll("_");
-    if (newValue.length() > 48) {
-      return newValue.substring(0, 47);
-      //      throw new RuntimeException("Schema Identifier longer than 48 characters
-      // orginalName=%s, afterNormalisation==%s".formatted(name,newValue));
-    }
-    return newValue;
-  }
-
-  @Override
+    @Override
   public String toString() {
     return vars.toString();
   }

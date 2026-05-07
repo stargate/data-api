@@ -11,7 +11,7 @@ import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
-import io.stargate.sgv2.jsonapi.testbench.targets.Connection;
+import io.stargate.sgv2.jsonapi.testbench.targets.ConnectionConfiguration;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
@@ -32,11 +32,11 @@ public class APIRequest {
   private static String KEYSPACE_PATH = "/{keyspace}";
   private static String DB_PATH = "/";
 
-  private final Connection connection;
+  private final ConnectionConfiguration connection;
   private final TestRunEnv integrationEnv;
   private final ObjectNode request;
 
-  public APIRequest(Connection connection, TestRunEnv integrationEnv, ObjectNode request) {
+  public APIRequest(ConnectionConfiguration connection, TestRunEnv integrationEnv, ObjectNode request) {
 
     this.connection = connection;
     this.integrationEnv = integrationEnv;
