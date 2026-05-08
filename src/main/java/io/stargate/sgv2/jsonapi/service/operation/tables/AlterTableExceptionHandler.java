@@ -16,7 +16,7 @@ public class AlterTableExceptionHandler extends TableDriverExceptionHandler {
 
   private static final Pattern PREVIOUSLY_DROPPED_COLUMN_PATTERN =
       Pattern.compile(
-          "Cannot re-add previously dropped column '([^']+)' of type (.+), incompatible with previous type (.+)");
+          "Cannot re-add (?:a )?previously dropped column '([^']+)' of type (.+), incompatible with previous type (.+)");
 
   private final CqlIdentifier tableName;
 
@@ -33,8 +33,8 @@ public class AlterTableExceptionHandler extends TableDriverExceptionHandler {
    * <ul>
    *   <li>If the message contains "Unknown type", it indicates an error for trying to alter a table
    *       with unknown user defined type (UDT).
-   *   <li>If the message contains "Cannot re-add previously dropped column", it indicates an error
-   *       for trying to add a previously dropped column with a different underlying type.
+   *   <li>If the message contains "Cannot re-add a previously dropped column", it indicates an
+   *       error for trying to add a previously dropped column with a different underlying type.
    * </ul>
    */
   @Override
