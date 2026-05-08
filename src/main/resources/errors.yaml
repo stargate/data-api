@@ -1190,6 +1190,21 @@ request-errors:
       Resend the command using only new field names.
 
   - scope: SCHEMA
+    code: CANNOT_ADD_PREVIOUSLY_DROPPED_COLUMN
+    title: Column cannot be re-added with a different type
+    body: |-
+      The command attempted to add a column that was previously dropped, and the database rejected it because the new type is incompatible with the type retained in dropped-column metadata.
+
+      The command attempted to add the column: ${columnName}.
+      The command used the column type: ${columnType}.
+      The database recorded the previously dropped column type as: ${previousType}.
+      The command used the table: ${keyspace}.${table}.
+
+      This can happen after dropping a user-defined type (UDT) column because the database may retain the dropped column as its expanded tuple type rather than the UDT name.
+
+      Resend the command using a different column name, or recreate the table before adding this column again.
+
+  - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
     title: Can not create index on map column with index function entries and specify analyze options
     body: |-
