@@ -1,15 +1,18 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -152,6 +155,111 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
     deleteCollection(collectionName);
   }
 
+  /**
+   * Verifies that re-issuing {@code createCollection} for a collection persisted with explicit
+   * {@code "lexical":{"enabled":false}} / {@code "rerank":{"enabled":false}} options, while
+   * **explicitly** asking for {@code lexical/rerank} to be enabled, IS rejected with {@code
+   * EXISTING_COLLECTION_DIFFERENT_SETTINGS}.
+   *
+   * <p>This is the negative counterpart to {@link
+   * #disabledLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled()}. The success case relies
+   * on the user NOT specifying lexical/rerank in the recreate payload — backward-compat then treats
+   * the conflict between persisted-disabled and default-enabled as a no-op. Once the user
+   * explicitly requests enabling, they are asking for a real settings change and backward-compat
+   * must NOT swallow the conflict; the request has to fail.
+   *
+   * <p>Setup uses raw CQL to model the on-disk shape from a deployment that had the feature
+   * config-disabled when the collection was created.
+   */
+  @Test
+  public final void
+      disabledLexicalRerankCollection_cannotBeRecreatedWithExplicitEnable_viaCqlSetup() {
+    final String collectionName = "explicit_enable_disabled_collection_cql";
+    final String commentOptionsJson =
+        """
+        {
+            "indexing": {"allow": ["documentId","projectId","userId"]},
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
+
+    // 1. simulate a collection persisted with lexical/rerank explicitly disabled
+    createCollectionViaCql(collectionName, commentOptionsJson);
+
+    // 2. recreate via API with EXPLICIT lexical/rerank enabled — must be rejected as
+    //    a real settings change, not silently accepted by backward-compat
+    assertCreateCollectionFailsWithDifferentSettings(
+            """
+        {
+            "createCollection": {
+                "name": "%s",
+                "options": {
+                    "indexing": {"allow": ["documentId","projectId","userId"]},
+                    "lexical": {"enabled": true},
+                    "rerank": {"enabled": true}
+                }
+            }
+        }
+        """
+            .formatted(collectionName),
+        collectionName);
+
+    // cleanup
+    deleteCollection(collectionName);
+  }
+
+  /**
+   * Verifies that the same explicit-enable rejection holds when the disabled collection was
+   * originally created through the public API (not via raw CQL).
+   *
+   * <p>Same backward-compat invariant as {@link
+   * #disabledLexicalRerankCollection_cannotBeRecreatedWithExplicitEnable_viaCqlSetup()}, but with a
+   * setup path that does not depend on the legacy CQL-comment workaround — it covers the case where
+   * the user originally created the collection through {@code createCollection} with {@code
+   * lexical/rerank} explicitly disabled, and later tries to flip them on with another {@code
+   * createCollection} call.
+   */
+  @Test
+  public final void
+      disabledLexicalRerankCollection_cannotBeRecreatedWithExplicitEnable_viaApiSetup() {
+    final String collectionName = "explicit_enable_disabled_collection_api";
+
+    // 1. create the collection via API with lexical/rerank explicitly disabled
+    createCollectionViaApi(
+            """
+        {
+            "createCollection": {
+                "name": "%s",
+                "options": {
+                    "lexical": {"enabled": false},
+                    "rerank": {"enabled": false}
+                }
+            }
+        }
+        """
+            .formatted(collectionName));
+
+    // 2. recreate via API with EXPLICIT lexical/rerank enabled — must be rejected
+    assertCreateCollectionFailsWithDifferentSettings(
+            """
+        {
+            "createCollection": {
+                "name": "%s",
+                "options": {
+                    "lexical": {"enabled": true},
+                    "rerank": {"enabled": true}
+                }
+            }
+        }
+        """
+            .formatted(collectionName),
+        collectionName);
+
+    // cleanup
+    deleteCollection(collectionName);
+  }
+
   // ---------------------------------------------------------------------------
   // Test helpers
   // ---------------------------------------------------------------------------
@@ -231,5 +339,21 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
     givenHeadersPostJsonThenOkNoErrors(createCollectionPayload)
         .body("$", responseIsStatusOnly())
         .body("status.ok", is(1));
+  }
+
+  private void assertCreateCollectionFailsWithDifferentSettings(
+      String createCollectionPayload, String collectionName) {
+    givenHeadersPostJsonThenOk(createCollectionPayload)
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
+        .body(
+            "errors[0].message",
+            containsString(
+                "Collection '"
+                    + collectionName
+                    + "' already exists but with settings different from ones passed with"
+                    + " 'createCollection' command"));
   }
 }
