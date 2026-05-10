@@ -19,39 +19,61 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * The lowest level to represent a request sent to the API, that is only concerned with the
+ * mechanics of sending the request.
+ * <p>
+ * Handles retries based on detecting substrings in the response body, these occur before
+ * {@link #execute()} returns.
+ * </p>
+ */
 public class APIRequest {
   private static final Logger LOGGER = LoggerFactory.getLogger(APIRequest.class);
 
   public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private static String COLLECTION_PATH = "/{keyspace}/{collection}";
+  private static int RETRY_MAX_ATTEMPTS = 5;
+
+  // API paths based on the target of the command.
+  private static String COLLECTION_TABLE_PATH = "/{keyspace}/{collection}";
   private static String KEYSPACE_PATH = "/{keyspace}";
   private static String DB_PATH = "/";
 
   private final ConnectionConfiguration connection;
-  private final TestRunEnv integrationEnv;
+  private final TestRunEnv testRunEnv;
   private final ObjectNode request;
+  private final APIRetryPolicy retryPolicy;
 
-  public APIRequest(ConnectionConfiguration connection, TestRunEnv integrationEnv, ObjectNode request) {
+  /**
+   * Initializes a new instance of the class.
+   * @param connection Connection info for the API instance to use.
+   * @param testRunEnv Environment for this test run, used to find schema names to use in the URL path.
+   * @param request the complete API request to send, <b>NOTE:</b> any substitutions into the body of the
+   *                request must also be done.
+   */
+  public APIRequest(ConnectionConfiguration connection, TestRunEnv testRunEnv, ObjectNode request) {
 
     this.connection = connection;
-    this.integrationEnv = integrationEnv;
+    this.testRunEnv = testRunEnv;
     this.request = request;
+    this.retryPolicy = APIRetryPolicy.createRetryPolicy(testRunEnv);
   }
 
+  /**
+   * Executes the request, including any retries.
+   * <p>
+   * No validation of the response is performed, that is left for assertions to handle later.
+   * </p>
+   * @return {@link APIResponse} holding the response of the request.
+   */
   public APIResponse execute() {
 
-    boolean retry = true;
-    int maxAttempts = 6; // 6 attempts, means 5 retries
-    int attempt = 1;
     ValidatableResponse lastValidatableResponse = null;
 
-    while (retry && attempt <=maxAttempts){
-      retry = false;
+    var retryDecision = retryPolicy.firstAttempt();
+    while (retryDecision.retry()){
 
       // Create a new request spec, there is some state that is left in it when a request is run
       // for path params
@@ -59,41 +81,18 @@ public class APIRequest {
       var rawResponse = executeRequest(requestSpec);
       lastValidatableResponse = rawResponse.then();
 
-      // logg even if we retry
+      // log even if we retry, the request will be logged and it makes sense to see the respose that
+      // caused the retry
       lastValidatableResponse.log().status().and().log().body();
-
-      if (attempt < maxAttempts) {
-        var body = rawResponse.body().asString();
-        // TODO: XXXX: put this in the test plan
-        var retryMatch = List.of("EMBEDDING_PROVIDER_RATE_LIMITED", "EMBEDDING_PROVIDER_TIMEOUT");
-
-        for (var match : retryMatch) {
-          if (body.contains(match)) {
-            retry = true;
-            // Service has a concurrency limit and retrying runners can collide regardless of jitter.
-            // Base backoff is long enough to wait out an in-flight request (5s, 10s, 20s...),
-            // plus a small random offset to avoid re-synchronising after the wait.
-            long baseMs = (long) (5000 * Math.pow(2, attempt));
-            long jitterMs = ThreadLocalRandom.current().nextLong(2000);
-            long sleepMs = baseMs + jitterMs;
-
-            LOGGER.info("executeRequest() - Retrying, found retry string in response. match={}, sleepMs={} ms, attemptCount={}", match, sleepMs, attempt);
-            try {
-              Thread.sleep(sleepMs);
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              throw new RuntimeException("Interrupted during retry sleep", e);
-            }
-            break;
-          }
-        }
-      }
-      attempt++;
+      retryDecision = retryPolicy.decide(retryDecision, rawResponse);
     }
     return new APIResponse(this, lastValidatableResponse);
-
   }
 
+  /**
+   * Get the request ready to send our request.
+   * @return
+   */
   private RequestSpecification requestSpec() {
 
     String requestString;
@@ -102,23 +101,57 @@ public class APIRequest {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
+    return requestForTaget()
+            .headers(getHeaders())
+            .body(requestString).when();
+  }
 
-    return jsonRequest().body(requestString).when();
+  /**
+   * Create a new RequestSpecification for JSON to send to the target
+   */
+  private RequestSpecification requestForTaget() {
+
+    return given()
+            .log()
+            .uri()
+            .log()
+            .body()
+            .baseUri(connection.domain())
+            .port(connection.port())
+            .basePath(connection.basePath())
+            .contentType(ContentType.JSON);
+  }
+
+  /**
+   * Get the wellknown headers we need to send with the request.
+   */
+  protected Map<String, String> getHeaders() {
+
+    var headers = new HashMap<String, String>();
+    headers.put(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, testRunEnv.requiredValue(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME));
+
+    var embeddingApiKey = testRunEnv.get(HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME);
+    if (!Strings.isNullOrEmpty(embeddingApiKey)){
+      headers.put(HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, embeddingApiKey);
+    }
+    return headers;
   }
 
   private Response executeRequest(RequestSpecification requestSpec) {
 
     var commandName = TestCommand.commandName(request);
     Response rawRresponse;
+
+    // URL to send to depends on the target of the command.
     if (commandName.getTargets().contains(CommandTarget.COLLECTION)
         || commandName.getTargets().contains(CommandTarget.TABLE)) {
       rawRresponse =
           requestSpec.post(
-              COLLECTION_PATH,
-              integrationEnv.requiredValue("KEYSPACE_NAME"),
-              integrationEnv.requiredValue("COLLECTION_NAME"));
+                  COLLECTION_TABLE_PATH,
+              testRunEnv.requiredValue(TestRunEnv.ENV_KEYSPACE_NAME),
+              testRunEnv.requiredValue(TestRunEnv.ENV_COLLECTION_NAME));
     } else if (commandName.getTargets().contains(CommandTarget.KEYSPACE)) {
-      rawRresponse = requestSpec.post(KEYSPACE_PATH, integrationEnv.requiredValue("KEYSPACE_NAME"));
+      rawRresponse = requestSpec.post(KEYSPACE_PATH, testRunEnv.requiredValue(TestRunEnv.ENV_KEYSPACE_NAME));
     } else if (commandName.getTargets().contains(CommandTarget.DATABASE)) {
       rawRresponse = requestSpec.post(DB_PATH);
     } else {
@@ -128,29 +161,4 @@ public class APIRequest {
     return rawRresponse;
   }
 
-  protected Map<String, String> getHeaders() {
-
-    var headers = new HashMap<String, String>();
-    headers.put(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, integrationEnv.requiredValue(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME));
-
-    var embeddingApiKey = integrationEnv.get(HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME);
-    if (!Strings.isNullOrEmpty(embeddingApiKey)){
-      headers.put(HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, embeddingApiKey);
-    }
-    return headers;
-  }
-
-  public RequestSpecification jsonRequest() {
-
-    return given()
-        .log()
-        .uri()
-        .log()
-        .body()
-        .baseUri(connection.domain())
-        .port(connection.port())
-        .basePath(connection.basePath())
-        .headers(getHeaders())
-        .contentType(ContentType.JSON);
-  }
 }

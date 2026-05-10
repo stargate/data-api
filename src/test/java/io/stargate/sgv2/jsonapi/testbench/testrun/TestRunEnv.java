@@ -16,7 +16,15 @@ public class TestRunEnv {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestRunEnv.class);
 
-  private static final Set<String> SCHEMA_IDENTIFIER = Set.of("KEYSPACE_NAME", "COLLECTION_NAME");
+  // Wellknown environment variables use this because we know they are schema identifiers
+  public static final String ENV_KEYSPACE_NAME = "KEYSPACE_NAME";
+  // Also for tables
+  public static final String ENV_COLLECTION_NAME = "COLLECTION_NAME";
+
+  private static final Set<String> SCHEMA_IDENTIFIER = Set.of(
+      ENV_KEYSPACE_NAME,
+      ENV_COLLECTION_NAME
+  );
 
   private final Map<String, String> vars = new HashMap<>();
 
@@ -95,18 +103,18 @@ public class TestRunEnv {
         .setEnableUndefinedVariableException(true);
   }
 
-  public String get(String name) {
+  public String get(String name){
+    return get(name, "");
+  }
+  public String get(String name, String defaultValue) {
 
     var value = vars.get(name);
     if (value == null) {
-      return "";
+      value = defaultValue;
     }
 
     var substituted = substitutor().replace(value);
-    var cleaned =
-        SCHEMA_IDENTIFIER.contains(name) ? Backend.toSafeSchemaIdentifier(substituted) : substituted;
-
-    return cleaned;
+    return SCHEMA_IDENTIFIER.contains(name) ? Backend.toSafeSchemaIdentifier(substituted) : substituted;
   }
 
     @Override
