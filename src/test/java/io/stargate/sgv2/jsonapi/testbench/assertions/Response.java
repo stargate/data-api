@@ -5,18 +5,18 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestCommand;
 
-/**
- * Assertions that check the structure of the API response, e.g. should it have a `data` field
- *
- * <p>See {@link TestAssertion}
- */
+/** Assertions that check the structure of the API response, e.g. should it have a `data` field */
 public class Response {
 
   static {
     AssertionFactory.REGISTRY.register(Response.class);
   }
 
-  /** Checks the hTTP status AND the shape of the response doc */
+  /**
+   * Checks the HTTP status AND the shape of the response doc
+   *
+   * <p>Assertion factory, see {@link AssertionFactory.AssertionMatcherFactory}
+   */
   public static AssertionMatcher isSuccess(TestCommand testCommand, JsonNode args) {
 
     var commandName = testCommand.commandName();
@@ -24,9 +24,9 @@ public class Response {
       case DDL -> isDDLSuccess(testCommand, args);
       case DML ->
           switch (commandName) {
-            case FIND_ONE, FIND -> Response.isFindSuccess(testCommand, args);
+            case FIND_ONE, FIND -> isFindSuccess(testCommand, args);
             case FIND_ONE_AND_DELETE, FIND_ONE_AND_REPLACE, FIND_ONE_AND_UPDATE ->
-                Response.isFindAndSuccess(testCommand, args);
+                isFindAndSuccess(testCommand, args);
             case INSERT_ONE, INSERT_MANY -> Response.isWriteSuccess(testCommand, args);
             default ->
                 throw new IllegalStateException(

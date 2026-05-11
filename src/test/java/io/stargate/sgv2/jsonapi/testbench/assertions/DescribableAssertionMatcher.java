@@ -3,6 +3,10 @@ package io.stargate.sgv2.jsonapi.testbench.assertions;
 import io.stargate.sgv2.jsonapi.testbench.messaging.APIResponse;
 import org.jspecify.annotations.NonNull;
 
+/**
+ * Hold an assertion matcher and a description for it, used with very simple assertions that are
+ * just a function.
+ */
 public record DescribableAssertionMatcher(String description, AssertionMatcher matcher)
     implements Describable, AssertionMatcher {
 

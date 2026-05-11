@@ -14,12 +14,20 @@ public class DynamicTestExecutable implements Executable {
   private final boolean isTrimmed;
   private final TestExecutionCondition testExecutionCondition;
 
-  public DynamicTestExecutable(String description, TestUri.Builder testUri, TestExecutionCondition testExecutionCondition, Executable executable) {
+  public DynamicTestExecutable(
+      String description,
+      TestUri.Builder testUri,
+      TestExecutionCondition testExecutionCondition,
+      Executable executable) {
     this(description, testUri.build(), testExecutionCondition, executable);
   }
 
   @SuppressWarnings("StringEquality")
-  public DynamicTestExecutable(String description, TestUri testUri, TestExecutionCondition testExecutionCondition, Executable executable) {
+  public DynamicTestExecutable(
+      String description,
+      TestUri testUri,
+      TestExecutionCondition testExecutionCondition,
+      Executable executable) {
     this.description = description;
     this.testUri = testUri;
     this.testExecutionCondition = testExecutionCondition;
@@ -45,12 +53,11 @@ public class DynamicTestExecutable implements Executable {
 
   @Override
   public void execute() throws Throwable {
-    Assumptions.assumeTrue(testExecutionCondition,  testExecutionCondition.message());
+    Assumptions.assumeTrue(testExecutionCondition, testExecutionCondition.message());
     beforeExecute();
     try {
       executable.execute();
-    }
-    catch (Throwable e) {
+    } catch (Throwable e) {
       testExecutionCondition.abortFutureTests("Failed Upstream: " + trimmedDisplayName);
       throw e;
     }

@@ -1,15 +1,11 @@
 package io.stargate.sgv2.jsonapi.testbench.testrun;
 
-
-
 import io.stargate.sgv2.jsonapi.testbench.assertions.TestAssertion;
 import io.stargate.sgv2.jsonapi.testbench.targets.Target;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestCommand;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 
@@ -54,13 +50,17 @@ public record TestRunRequest(
         testAssertions().stream()
             .map(
                 testAssertion ->
-                    testAssertion.testNodes(testNodeFactory, assertionsUriBuilder.clone(), atomicResponse, testExecutionCondition))
+                    testAssertion.testNodes(
+                        testNodeFactory,
+                        assertionsUriBuilder.clone(),
+                        atomicResponse,
+                        testExecutionCondition))
             .toList();
 
     // if we have assertion tests, put them in a container
     if (!assertionTests.isEmpty()) {
       nodes.add(
-              testNodeFactory.testPlanContainer(
+          testNodeFactory.testPlanContainer(
               "Assertions", assertionsUriBuilder.build().uri(), assertionTests));
     }
 

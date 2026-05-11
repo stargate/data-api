@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.testbench.reporting;
 import static org.apache.maven.surefire.shared.utils.logging.MessageUtils.buffer;
 
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestUri;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,9 +16,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Writes messages for the output of Test Bench using the logging system.
  *
- * <p>
- * NOTE: to get the best output via the logging system, we need to configure to remove the normal formatting
- * that comes with logging. Below should be in the `applicaiton.yaml` in addition to the regular config
+ * <p>NOTE: to get the best output via the logging system, we need to configure to remove the normal
+ * formatting that comes with logging. Below should be in the `applicaiton.yaml` in addition to the
+ * regular config
+ *
  * <pre>
  * quarkus:
  *   log:
@@ -36,20 +36,18 @@ import org.slf4j.LoggerFactory;
  *           - PLAIN_CONSOLE
  *         use-parent-handlers: false
  * </pre>
- * </p>
  *
  * <p>Works in two modes because we need to wait for all the tests to complete so we know what was
  * successful. For info on how the output will look see {@link Theme} and {@link
  * org.apache.maven.surefire.shared.utils.logging.AnsiMessageBuilder}
- * </p>
- * <p>Call {@link #testStarted(int, int, DynamicTreeListener.TestReportingTracker)} when a test starts
- * executing, will print the progress of the tests
- * </p>
- * <p>Call {@link #allTestsFinished(DynamicTreeListener.TestReportingTracker)} with the root
- * tracker for the rest run, this should be called once all the tests have completed so we know what
- * failed and how long things took. This will print the full test tree, but only go down to the
- * request + assertion level for test scenarios that have failed.
- * </p>
+ *
+ * <p>Call {@link #testStarted(int, int, DynamicTreeListener.TestReportingTracker)} when a test
+ * starts executing, will print the progress of the tests
+ *
+ * <p>Call {@link #allTestsFinished(DynamicTreeListener.TestReportingTracker)} with the root tracker
+ * for the rest run, this should be called once all the tests have completed so we know what failed
+ * and how long things took. This will print the full test tree, but only go down to the request +
+ * assertion level for test scenarios that have failed.
  */
 public class TestBenchConsoleWriter {
 
@@ -72,9 +70,10 @@ public class TestBenchConsoleWriter {
   /**
    * Writes that a test has started, without knowing how it will end, used when the test suite is
    * running.
-   * <p>
-   *  Example output:
-   *  <pre>
+   *
+   * <p>Example output:
+   *
+   * <pre>
    * ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ──
    * Running Test Bench, results shown at completion...
    * ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ──
@@ -86,12 +85,13 @@ public class TestBenchConsoleWriter {
    *             ├─ 6 of 1465: Request: SetupRequest[1]: CREATE_COLLECTION (node:aaf)
    *                ├─ 7 of 1465: Command: createCollection (node:aaa)
    *  </pre>
-   * </p>
+   *
    * @param totalTestCount the total number of tests that will be run
    * @param startedTestCount the number of tests that have started running, including this one
    * @param tracker the tracker for the test that started
    */
-  public void testStarted(int totalTestCount, int startedTestCount, DynamicTreeListener.TestReportingTracker tracker) {
+  public void testStarted(
+      int totalTestCount, int startedTestCount, DynamicTreeListener.TestReportingTracker tracker) {
 
     var buffer = buffer();
     if (firstLine) {
@@ -108,53 +108,57 @@ public class TestBenchConsoleWriter {
 
     writeTreeOutline(buffer, tracker);
 
-    // the progress "x of Y" and the displayName from the node set when it was created by the TestPlan.
-    // NOTE: the "(node:aaN)" is part of the displayName, it is so that when we print failed nodes we can
+    // the progress "x of Y" and the displayName from the node set when it was created by the
+    // TestPlan.
+    // NOTE: the "(node:aaN)" is part of the displayName, it is so that when we print failed nodes
+    // we can
     // find them in the full log easily.
     buffer
-            .a(startedTestCount)
-            .a(" of ")
-            .a(totalTestCount)
-            .a(": ")
-            .strong(tracker.identifier().getDisplayName());
+        .a(startedTestCount)
+        .a(" of ")
+        .a(totalTestCount)
+        .a(": ")
+        .strong(tracker.identifier().getDisplayName());
 
     LOGGER.info(buffer.toString());
   }
 
   /**
-   * Call when all the tests have finished running, so we can print a summary for test suites that pass and
-   * details for those that fail.
-   * <p>
-   * Writes two types of output:
+   * Call when all the tests have finished running, so we can print a summary for test suites that
+   * pass and details for those that fail.
+   *
+   * <p>Writes two types of output:
+   *
    * <ul>
-   *     <li>If {@link LOGGER#isInfoEnabled()} logs a detailed report of the test results, skips details of
-   *     assertions that have completed successfully. See {@link #writeCompletedSummary(MessageBuilder, DynamicTreeListener.TestReportingTracker, boolean)}
-   *     </li>
-   *     <li>If {@link #ENV_TEST_BENCH_REPORT_PATH} is set in the path, writes a markdown file in a format
-   *     to be included in the summary for GitHub actions via the <code>$GITHUB_STEP_SUMMARY</code>.
-   *      </li>
+   *   <li>If {@link LOGGER#isInfoEnabled()} logs a detailed report of the test results, skips
+   *       details of assertions that have completed successfully. See {@link
+   *       #writeCompletedSummary(MessageBuilder, DynamicTreeListener.TestReportingTracker,
+   *       boolean)}
+   *   <li>If {@link #ENV_TEST_BENCH_REPORT_PATH} is set in the path, writes a markdown file in a
+   *       format to be included in the summary for GitHub actions via the <code>
+   *       $GITHUB_STEP_SUMMARY</code>.
    * </ul>
-   * </p>
-   * @param rootTracker Tracker for the root of the test tree, this is the one that has the full test tree
-   *                    under it.
+   *
+   * @param rootTracker Tracker for the root of the test tree, this is the one that has the full
+   *     test tree under it.
    */
   public void allTestsFinished(DynamicTreeListener.TestReportingTracker rootTracker) {
 
     var reportBuffer = buffer();
-    writeCompletedSummary(reportBuffer, rootTracker,  false);
+    writeCompletedSummary(reportBuffer, rootTracker, false);
     var testReport = reportBuffer.toString();
 
-    if (LOGGER.isInfoEnabled()){
+    if (LOGGER.isInfoEnabled()) {
 
       var logLineBuffer = buffer();
       logLineBuffer
-              .newline()
-              .a(theme.dash().repeat(20))
-              .newline()
-              .a("Test Bench Results")
-              .newline()
-              .a(theme.dash().repeat(20))
-              .newline();
+          .newline()
+          .a(theme.dash().repeat(20))
+          .newline()
+          .a("Test Bench Results")
+          .newline()
+          .a(theme.dash().repeat(20))
+          .newline();
       logLineBuffer.a(testReport);
       LOGGER.info(logLineBuffer.toString());
     }
@@ -170,7 +174,7 @@ public class TestBenchConsoleWriter {
 
       // the failed nodes and their throwable, if any
       String failureReport;
-      if (rootTracker.stats().failures() == 0){
+      if (rootTracker.stats().failures() == 0) {
         failureReport = "No failures";
       } else {
         var failureReportBuffer = buffer();
@@ -181,44 +185,52 @@ public class TestBenchConsoleWriter {
       // report is a markdown file
       // Using GitHub collapsable sections
       // https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-collapsed-sections
-      var markdownReport = """
+      var markdownReport =
+              """
               ## %s
-              
-              %s
-              
-              <details>
-              
-              <summary>Test Bench Summary</summary>
-              
-              ```
-              %s
-              ```
-              
-              </details>
-              
-              <details>
-              
-              <summary>Test Bench Failures</summary>
-              
-              ```
-              %s
-              ```
-              
-              </details>
-              """.formatted(rootTracker.identifier().getDisplayName(), testPlanNodeDesc.toString(), testReport, failureReport);
 
-        try {
-            Files.writeString(Path.of(reportFilePath), markdownReport);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+              %s
+
+              <details>
+
+              <summary>Test Bench Summary</summary>
+
+              ```
+              %s
+              ```
+
+              </details>
+
+              <details>
+
+              <summary>Test Bench Failures</summary>
+
+              ```
+              %s
+              ```
+
+              </details>
+              """
+              .formatted(
+                  rootTracker.identifier().getDisplayName(),
+                  testPlanNodeDesc.toString(),
+                  testReport,
+                  failureReport);
+
+      try {
+        Files.writeString(Path.of(reportFilePath), markdownReport);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
   /**
-   * Walks the test tree, outputs the results of running each node now that we know the completed results.
-   * <p>
-   * Example (the header is put in th by the caller) :
+   * Walks the test tree, outputs the results of running each node now that we know the completed
+   * results.
+   *
+   * <p>Example (the header is put in th by the caller) :
+   *
    * <pre>
    * ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ── ──
    * Test Bench Results
@@ -231,11 +243,12 @@ public class TestBenchConsoleWriter {
    *          ├─ ✔ TestEnv: [CREDENTIAL=open-ai-key, MODEL=text-embedding-3-large, PROVIDER=openai]  (node:abr) - 23 s   Successful: 21, Failures: 0, Aborted: 0
    *          ├─ ✔ TestEnv: [CREDENTIAL=open-ai-key, MODEL=text-embedding-ada-002, PROVIDER=openai]  (node:ab5) - 22 s   Successful: 21, Failures: 0, Aborted: 0
    * </pre>
-   * </p>
-   * <p>
-   * <b>NOTE:</b> Because there can be 1,000s of test nodes, we do not below the TestEnv nodes unless there is a failure.
-   * Below those nodes are where the assertions that will have failed exist. We traverse down to the first failed test node,
-   * and then want to show which sibling (or cousin) nodes aborted because of the failure. For example:
+   *
+   * <p><b>NOTE:</b> Because there can be 1,000s of test nodes, we do not below the TestEnv nodes
+   * unless there is a failure. Below those nodes are where the assertions that will have failed
+   * exist. We traverse down to the first failed test node, and then want to show which sibling (or
+   * cousin) nodes aborted because of the failure. For example:
+   *
    * <pre>
    * ┬─ ✘ TestPlan: smoketest-prod-aws-eu-central-1 (105817733955) on astra (node:axM) - 413 s   Successful: 436, Failures: 20, Aborted: 300
    * ├─ ✘ Workflow: vectorize-shared-workflow  (node:alW) - 41 s   Successful: 90, Failures: 18, Aborted: 270
@@ -256,11 +269,12 @@ public class TestBenchConsoleWriter {
    * </pre>
    *
    * In the first example we do not go down to the Request nodes because they did not fail or abort.
-   * </p>
    *
    * @param buffer Buffer to append the message to.
-   * @param tracker The tracker we are writing out the summary for, and may then traverse its children.
-   * @param parentFailures Set true if any parent nodes have failures, this will cause us to traverse down to the children
+   * @param tracker The tracker we are writing out the summary for, and may then traverse its
+   *     children.
+   * @param parentFailures Set true if any parent nodes have failures, this will cause us to
+   *     traverse down to the children
    */
   private void writeCompletedSummary(
       MessageBuilder buffer,
@@ -275,20 +289,23 @@ public class TestBenchConsoleWriter {
     // descend until we get one
     // OR if there are FAILURES then we descend, these are tests that ran but assertion failed.
     // we do not descend for aborted, these are tests that did not run because of previous failure.
-    for (var child : tracker.children()){
+    for (var child : tracker.children()) {
       var hasFailures = child.stats() != null && child.stats().failures() > 0;
 
-      if (!child.runUri().leafType().descendantOf(TestUri.Segment.ENV) || hasFailures || parentFailures) {
+      if (!child.runUri().leafType().descendantOf(TestUri.Segment.ENV)
+          || hasFailures
+          || parentFailures) {
         writeCompletedSummary(buffer, child, hasFailures);
       }
     }
   }
 
   /**
-   * Writes the test node name, and it's throwable if it Failed, as in the assertions failed or it threw
-   * an exception.
-   * <p>
-   * Example:
+   * Writes the test node name, and it's throwable if it Failed, as in the assertions failed or it
+   * threw an exception.
+   *
+   * <p>Example:
+   *
    * <pre>
    * ✘ isDDLSuccess [body('$') - responseIsDDLSuccess: REQUIRED:[status], OPTIONAL:[], FORBIDDEN:[data, errors]] (node:aac)
    *
@@ -310,13 +327,14 @@ public class TestBenchConsoleWriter {
    *   "status"
    * -----
    * </pre>
-   * </p>
    */
-  private void writeFailureMessages(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
+  private void writeFailureMessages(
+      MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
 
     // if we have a throwable, write out the tree node test and the error it generated.
     // ignoring the ABORTED
-    if (tracker.throwable().isPresent() && (tracker.junitStatus() == TestExecutionResult.Status.FAILED )) {
+    if (tracker.throwable().isPresent()
+        && (tracker.junitStatus() == TestExecutionResult.Status.FAILED)) {
       writeTestDesc(buffer, tracker);
       buffer.newline();
       buffer.newline();
@@ -326,18 +344,20 @@ public class TestBenchConsoleWriter {
     tracker.children().forEach(child -> writeFailureMessages(buffer, child));
   }
 
-  private void writeTestDesc(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
+  private void writeTestDesc(
+      MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
 
     // Icon for success for failure,
-    // if we have stats then this is a container we use that status, otherwise we use the JUNIT execution status
-    if (tracker.stats() == null){
+    // if we have stats then this is a container we use that status, otherwise we use the JUNIT
+    // execution status
+    if (tracker.stats() == null) {
       switch (tracker.junitStatus()) {
         case SUCCESSFUL -> buffer.a(theme.successful());
         case FAILED, ABORTED -> buffer.a(theme.failed());
         case null -> {}
       }
     } else {
-      if (tracker.stats().failures() ==0 && tracker.stats().aborted() == 0) {
+      if (tracker.stats().failures() == 0 && tracker.stats().aborted() == 0) {
         buffer.a(theme.successful());
       } else {
         buffer.a(theme.failed());
@@ -355,24 +375,29 @@ public class TestBenchConsoleWriter {
     // NOTE: does not add new line, caller should
   }
 
-  private void writeTestStats(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
+  private void writeTestStats(
+      MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
     buffer
-            .a(" - %s s".formatted(tracker.stats().elapsedMillis() / 1000))
-    .a(theme.blank())
-            .a("Successful: ").a( tracker.stats().successful()).a(", ")
-            .a("Failures: ").a( tracker.stats().failures()).a(", ")
-            .a("Aborted: ").a( tracker.stats().aborted());
+        .a(" - %s s".formatted(tracker.stats().elapsedMillis() / 1000))
+        .a(theme.blank())
+        .a("Successful: ")
+        .a(tracker.stats().successful())
+        .a(", ")
+        .a("Failures: ")
+        .a(tracker.stats().failures())
+        .a(", ")
+        .a("Aborted: ")
+        .a(tracker.stats().aborted());
   }
 
-  private void writeTreeOutline(MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
+  private void writeTreeOutline(
+      MessageBuilder buffer, DynamicTreeListener.TestReportingTracker tracker) {
 
     // Indenting and tree building
     if (tracker.parent() == null) {
       buffer.a(theme.down());
     } else {
-      buffer
-              .a(theme.blank().repeat(tracker.depth() - 1))
-              .a(theme.entry());
+      buffer.a(theme.blank().repeat(tracker.depth() - 1)).a(theme.entry());
     }
   }
 }

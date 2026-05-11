@@ -2,14 +2,16 @@ package io.stargate.sgv2.jsonapi.testbench.testspec;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.testbench.assertions.AssertionFactory;
-
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * Spec defintions about re-usable assertions that are defined in JSON. See {@link AssertionFactory}.
- * <p>
- * Example, showing the defintion for "isSuccess" assertion and how it is defined on a per command basis.
+ * Spec defintions about re-usable assertions that are defined in JSON. See {@link
+ * AssertionFactory}.
+ *
+ * <p>Example, showing the defintion for "isSuccess" assertion and how it is defined on a per
+ * command basis.
+ *
  * <pre>
  * {
  *   "meta": {
@@ -28,10 +30,9 @@ import java.util.Optional;
  *       },
  * </pre>
  *
- * </p>
  * @param meta Metadata for the spec.
- * @param templates JSON Object that is a map of assertion name to a map of implementations per API command,
- *                  see example
+ * @param templates JSON Object that is a map of assertion name to a map of implementations per API
+ *     command, see example
  */
 public record AssertionTemplateSpec(TestSpecMeta meta, Map<String, JsonNode> templates)
     implements TestSpec {

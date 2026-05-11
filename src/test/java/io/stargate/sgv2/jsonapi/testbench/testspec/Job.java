@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.testbench.testspec;
 
-
-
 import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestRunEnv;
@@ -31,7 +29,8 @@ public record Job(
 
     testNodeFactory.testPlan().updateJobForTarget(this);
     var allEnvs = allEnvironments(testNodeFactory.testPlan());
-    var testSuiteNodes = testSuites(testNodeFactory.testPlan())
+    var testSuiteNodes =
+        testSuites(testNodeFactory.testPlan())
             .map(testSuite -> testSuite.testNode(testNodeFactory, uriBuilder.clone(), allEnvs))
             .toList();
 

@@ -4,10 +4,9 @@ import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
 
 /**
  * A specification for objects in the TestBench world, such as a test suite.
- * <p>
- * Implement this for any object types a {@link TestBenchPlan} needs
- * to read from disk or know about.
- * </p>
+ *
+ * <p>Implement this for any object types a {@link TestBenchPlan} needs to read from disk or know
+ * about.
  */
 public sealed interface TestSpec
     permits AssertionTemplateSpec, TargetsSpec, TestSuiteSpec, WorkflowSpec {
@@ -15,7 +14,8 @@ public sealed interface TestSpec
   TestSpecMeta meta();
 
   /**
-   * Gets the object as the  implementing class
+   * Gets the object as the implementing class
+   *
    * @param type the implementing class of the {@link TestSpec}
    * @return The implementing object, as the type.
    * @param <T> the implementing class of the {@link TestSpec}

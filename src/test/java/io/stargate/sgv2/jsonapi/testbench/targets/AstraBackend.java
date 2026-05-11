@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.testbench.targets;
 
 import io.stargate.sgv2.jsonapi.testbench.testspec.Job;
 
-/**
- * DataStax / IBM Astra
- */
+/** DataStax / IBM Astra */
 public class AstraBackend extends Backend {
 
   public static final String NAME = "astra";

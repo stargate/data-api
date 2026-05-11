@@ -2,7 +2,11 @@ package io.stargate.sgv2.jsonapi.testbench.assertions;
 
 import io.stargate.sgv2.jsonapi.testbench.messaging.APIResponse;
 
-/** Contract for running an assertion on the response from the API. */
+/**
+ * Contract for matching the result of an API call to an assertion.
+ *
+ * <p>This is the raw function to do the work, without any descriptive elements around it.
+ */
 @FunctionalInterface
 public interface AssertionMatcher {
 

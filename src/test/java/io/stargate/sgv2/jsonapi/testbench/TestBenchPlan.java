@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.testbench;
 
-
-
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,32 +10,28 @@ import io.stargate.sgv2.jsonapi.testbench.targets.TargetConfiguration;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestUri;
 import io.stargate.sgv2.jsonapi.testbench.testspec.*;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.apache.commons.text.StringSubstitutor;
 import org.junit.jupiter.api.DynamicNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
- * <p>
  * NOTE: called "TestBenchPlan" to avoid collision with "org.junit.platform.launcher.TestPlan"
- * </p>
+ *
  * @param target
  * @param specFiles
  * @param workflows
  * @param ignoreDisabled
  */
-public record
-TestBenchPlan(
-        Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled) implements JobLifeCycle {
+public record TestBenchPlan(
+    Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled)
+    implements JobLifeCycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestBenchPlan.class);
 
@@ -77,22 +71,19 @@ TestBenchPlan(
     return create(targetName, workflows, true);
   }
 
-  public static TestBenchPlan create(String targetName, List<String> workflows, Boolean ignoreDisabled) {
+  public static TestBenchPlan create(
+      String targetName, List<String> workflows, Boolean ignoreDisabled) {
     var targetConfigs = TargetsSpec.loadAll("testbench/targets/targets.json");
     return create(targetConfigs.getTarget(targetName), workflows, ignoreDisabled);
   }
 
   public static TestBenchPlan create(
-          TargetConfiguration targetConfiguration, List<String> workflows, Boolean ignoreDisabled) {
+      TargetConfiguration targetConfiguration, List<String> workflows, Boolean ignoreDisabled) {
     var target = new Target(targetConfiguration);
 
     var specFiles =
         SpecFiles.loadAll(
-            List.of(
-                    "testbench/assertions",
-                    "testbench/testsuites",
-                    "testbench/workflows"
-                    ));
+            List.of("testbench/assertions", "testbench/testsuites", "testbench/workflows"));
 
     return new TestBenchPlan(
         target,
@@ -114,9 +105,7 @@ TestBenchPlan(
 
     var desc =
         "TestPlan: %s on %s"
-            .formatted(
-                target.configuration().name(),
-                target.configuration().backend());
+            .formatted(target.configuration().name(), target.configuration().backend());
 
     var uriBuilder =
         TestUri.builder(TestUri.Scheme.DATAAPI)
@@ -124,12 +113,15 @@ TestBenchPlan(
 
     var testNodeFactory = new TestNodeFactory(this);
 
-    var root = testNodeFactory.testPlanContainer(
+    var root =
+        testNodeFactory.testPlanContainer(
             desc,
             uriBuilder.build().uri(),
             selectedWorkflows()
-                .map(workflow -> workflow.testNode(testNodeFactory, uriBuilder.clone(), ignoreDisabled))
-                    .toList());
+                .map(
+                    workflow ->
+                        workflow.testNode(testNodeFactory, uriBuilder.clone(), ignoreDisabled))
+                .toList());
     return new TestPlanNodeTree(root, testNodeFactory.testNodeCount());
   }
 
@@ -138,6 +130,5 @@ TestBenchPlan(
     target.updateJobForTarget(job);
   }
 
-  public record TestPlanNodeTree(DynamicNode root,
-                                 int totalNodeCount){}
+  public record TestPlanNodeTree(DynamicNode root, int totalNodeCount) {}
 }

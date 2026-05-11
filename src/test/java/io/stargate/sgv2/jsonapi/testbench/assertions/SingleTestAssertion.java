@@ -1,31 +1,32 @@
 package io.stargate.sgv2.jsonapi.testbench.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
-import java.util.concurrent.atomic.AtomicReference;
-
 import io.stargate.sgv2.jsonapi.testbench.testrun.*;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DynamicNode;
 
+/**
+ * A single test assertion that performs a single test of the results of a request.
+ *
+ * @param name Name of the assertion, e.g. "Documents.count"
+ * @param args Raw arguments passed into the assertion factory, from the test case definition
+ * @param matcher The actual logic that will be run to assert the result of the request.
+ */
 public record SingleTestAssertion(String name, JsonNode args, AssertionMatcher matcher)
     implements TestAssertion {
 
+  @Override
   public void run(TestRunResponse testResponse) {
-
-    try {
-      matcher.match(testResponse.apiResponse());
-    } catch (AssertionError e) {
-//      System.out.printf("Failed Assertion: name=%s, args=%s", name, args);
-      throw e;
-    } catch (Exception e) {
-//      System.out.printf("Error In Assertion: name=%s, args=%s", name, args);
-      throw e;
-    }
+    // exceptions can bubble out, that's how the frameworks know the assertion result.
+    matcher.match(testResponse.apiResponse());
   }
 
   @Override
   public DynamicNode testNodes(
-          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition) {
+      TestNodeFactory testNodeFactory,
+      TestUri.Builder uriBuilder,
+      AtomicReference<TestRunResponse> testResponse,
+      TestExecutionCondition testExecutionCondition) {
 
     var matcherDesc = (matcher instanceof Describable d) ? d.describe() : "";
 

@@ -17,11 +17,21 @@ public class Documents {
     AssertionFactory.REGISTRY.register(Documents.class);
   }
 
+  /**
+   * Check the count of the `data.documents` array.
+   *
+   * <p>Assertion factory, see {@link AssertionFactory.AssertionMatcherFactory}
+   */
   public static AssertionMatcher count(TestCommand testCommand, JsonNode args) {
     var expectedCount = args.asInt();
     return new BodyAssertion("data.documents", hasSize(expectedCount));
   }
 
+  /**
+   * Check that the `data.document` matches the given JSON.
+   *
+   * <p>Assertion factory, see {@link AssertionFactory.AssertionMatcherFactory}
+   */
   public static AssertionMatcher isExactly(TestCommand testCommand, JsonNode args) {
     return new BodyAssertion("data.document", jsonEquals(args));
   }

@@ -1,13 +1,9 @@
 package io.stargate.sgv2.jsonapi.testbench.testspec;
 
-
-
 import io.stargate.sgv2.jsonapi.testbench.assertions.TestAssertion;
-
+import io.stargate.sgv2.jsonapi.testbench.testrun.*;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.stargate.sgv2.jsonapi.testbench.testrun.*;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 
@@ -16,22 +12,23 @@ public record TestSuiteSpec(
     implements TestSpec {
 
   public DynamicContainer testNode(
-          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, List<TestRunEnv> allEnvs) {
+      TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, List<TestRunEnv> allEnvs) {
 
     uriBuilder.addSegment(TestUri.Segment.SUITE, meta().name());
 
     var desc = "TestSuite: %s ".formatted(meta.name());
-    var childs = allEnvs.stream()
+    var childs =
+        allEnvs.stream()
             .map(testEnv -> testEnv.testNode(testNodeFactory, uriBuilder.clone(), this))
             .toList();
-    return testNodeFactory.testPlanContainer(
-        desc,
-        uriBuilder.build().uri(),
-            childs);
+    return testNodeFactory.testPlanContainer(desc, uriBuilder.build().uri(), childs);
   }
 
   public List<? extends DynamicNode> testNodesForEnvironment(
-          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestRunEnv testEnvironment, TestExecutionCondition testExecutionCondition) {
+      TestNodeFactory testNodeFactory,
+      TestUri.Builder uriBuilder,
+      TestRunEnv testEnvironment,
+      TestExecutionCondition testExecutionCondition) {
 
     // not increasing the count of test nodes here, because this code is not actually making any
     // test nodes, it is all in things we call, they do the increasing
@@ -45,7 +42,7 @@ public record TestSuiteSpec(
           new TestRunRequest(
               "SetupRequest[%s]: %s".formatted(i++, setupCommand.commandName()),
               setupCommand,
-                  testNodeFactory.testPlan().target(),
+              testNodeFactory.testPlan().target(),
               testEnvironment,
               TestAssertion.forSuccess(testNodeFactory.testPlan(), setupCommand),
               testExecutionCondition);
@@ -56,18 +53,22 @@ public record TestSuiteSpec(
     var testUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.STAGE, "test");
     for (var testCase : tests()) {
       nodes.add(
-          testCase.testNodesForEnvironment(testNodeFactory, testUriBuilder.clone(), testEnvironment, testExecutionCondition));
+          testCase.testNodesForEnvironment(
+              testNodeFactory, testUriBuilder.clone(), testEnvironment, testExecutionCondition));
     }
 
-    // NOTE: For Cleanup we use a condition that is always TRUE because we always want to try to run a cleanup task.
-    var alwaysTrueCondition = new TestExecutionCondition.AlwaysTrue("Cleanup Commands for parent URL: " + uriBuilder.build().uri().toString());
+    // NOTE: For Cleanup we use a condition that is always TRUE because we always want to try to run
+    // a cleanup task.
+    var alwaysTrueCondition =
+        new TestExecutionCondition.AlwaysTrue(
+            "Cleanup Commands for parent URL: " + uriBuilder.build().uri().toString());
     var cleanupUriBuilder = uriBuilder.clone().addSegment(TestUri.Segment.STAGE, "cleanup");
     for (TestCommand cleanupCommand : cleanup()) {
       var cleanupRequest =
           new TestRunRequest(
               "CleanupRequest[%s]: %s".formatted(i++, cleanupCommand.commandName()),
               cleanupCommand,
-                  testNodeFactory.testPlan().target(),
+              testNodeFactory.testPlan().target(),
               testEnvironment,
               TestAssertion.forSuccess(testNodeFactory.testPlan(), cleanupCommand),
               alwaysTrueCondition);

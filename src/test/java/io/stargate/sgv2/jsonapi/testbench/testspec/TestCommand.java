@@ -11,12 +11,13 @@ import io.stargate.sgv2.jsonapi.testbench.testrun.TestRunEnv;
 import org.apache.commons.text.StringSubstitutor;
 
 /**
- * A API command to send, that may be part of a setup, test, cleanup, or lifecycle process. This is a
- * basic command to send, without any checks etc.
- * <p>
- * This class is re-used in Spec configurations where an API command is needed. For example below, the TestCommand
- * is the Objects in the setup array. The structure is then a normal Data API command object, with a single top level
- * member that is the name of the command.
+ * A API command to send, that may be part of a setup, test, cleanup, or lifecycle process. This is
+ * a basic command to send, without any checks etc.
+ *
+ * <p>This class is re-used in Spec configurations where an API command is needed. For example
+ * below, the TestCommand is the Objects in the setup array. The structure is then a normal Data API
+ * command object, with a single top level member that is the name of the command.
+ *
  * <pre>
  *   "setup": [
  *     {
@@ -36,7 +37,6 @@ import org.apache.commons.text.StringSubstitutor;
  *       "insertMany": {
  *         "documents": [....
  * </pre>
- * </p>
  */
 public class TestCommand {
 
@@ -48,6 +48,7 @@ public class TestCommand {
 
   /**
    * Constructor called when this class is used in a record etc that is deserialized using Jackson.
+   *
    * @param request The JSON object to deserialize from, e.g. the objects in the array above.
    */
   @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
@@ -66,17 +67,13 @@ public class TestCommand {
     }
   }
 
-  /**
-   * Get the complete request to send
-   */
+  /** Get the complete request to send */
   public ObjectNode request() {
     throwIfHasInclude();
     return request;
   }
 
-  /**
-   * The name of the Data API command, extracted from the definition.
-   */
+  /** The name of the Data API command, extracted from the definition. */
   public CommandName commandName() {
     throwIfHasInclude();
     return commandName;
@@ -84,8 +81,8 @@ public class TestCommand {
 
   /**
    * Name of the test-suite to include command from, rather than use the definition in here.
-   * <p>
-   * For example, this says to include setup commands from 'vectorize-base'
+   *
+   * <p>For example, this says to include setup commands from 'vectorize-base'
    *
    * <pre>
    *   "setup": [
@@ -94,16 +91,14 @@ public class TestCommand {
    *     }
    *   ],
    * </pre>
-   * </p>
+   *
    * @return value of the '$include' from the json
    */
   public String includeFrom() {
     return includeFrom;
   }
 
-  /**
-   * Build from a string, useful for lifecycle commands that are created on the fly.
-   */
+  /** Build from a string, useful for lifecycle commands that are created on the fly. */
   public static TestCommand fromJson(String json) {
 
     try {
@@ -115,9 +110,8 @@ public class TestCommand {
 
   /**
    * Extracts the name of the API command from the request.
-   * <p>
-   *  Public for re-use.
-   * </p>
+   *
+   * <p>Public for re-use.
    */
   public static CommandName commandName(ObjectNode request) {
     var requestCommandName = commandNameString(request);
@@ -152,7 +146,6 @@ public class TestCommand {
     }
     return name;
   }
-
 
   private static void walk(ObjectNode obj, StringSubstitutor subs) {
     obj.properties()

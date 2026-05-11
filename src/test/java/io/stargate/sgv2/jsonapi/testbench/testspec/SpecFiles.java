@@ -12,10 +12,11 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/** Collection of all the {@link io.stargate.sgv2.jsonapi.testbench.testspec.SpecFile} we have loaded
+/**
+ * Collection of all the {@link io.stargate.sgv2.jsonapi.testbench.testspec.SpecFile} we have loaded
  * from disk.
- * <p>
- * Call {@link #loadAll(List)} to load spec files from multiple directories,
+ *
+ * <p>Call {@link #loadAll(List)} to load spec files from multiple directories,
  */
 public class SpecFiles {
 
@@ -35,33 +36,30 @@ public class SpecFiles {
     }
   }
 
-  /**
-   * Loads all the spec file, paths is a list of resource dirs in the jar.
-   */
+  /** Loads all the spec file, paths is a list of resource dirs in the jar. */
   public static SpecFiles loadAll(List<String> paths) {
 
     var specFiles = resourceDirs(paths).flatMap(SpecFiles::loadAll).toList();
     return new SpecFiles(specFiles);
   }
 
-  /**
-   * Get all the SpecFiles by their metadata kind
-   */
+  /** Get all the SpecFiles by their metadata kind */
   public Stream<SpecFile> byKind(TestSpecKind kind) {
     return match(kind, x -> true);
   }
 
   /**
-   * Get all the SpecFiles by the class of the Specification, the object that
-   * implements {@link TestSpec}
+   * Get all the SpecFiles by the class of the Specification, the object that implements {@link
+   * TestSpec}
    */
   public <T extends TestSpec> Stream<T> byType(Class<T> clazz) {
     return match(TestSpecKind.fromType(clazz), x -> true)
-            .map(specFile -> specFile.spec().asSpecType(clazz));
+        .map(specFile -> specFile.spec().asSpecType(clazz));
   }
 
   /**
-   * Get all the spec files of the type matched by name, e.g. get all the test-suites called "monkey"
+   * Get all the spec files of the type matched by name, e.g. get all the test-suites called
+   * "monkey"
    */
   public <T extends TestSpec> Stream<T> byNameAsType(Class<T> clazz, String name) {
     return match(TestSpecKind.fromType(clazz), specFiles -> specFiles.meta().name().equals(name))
@@ -70,13 +68,11 @@ public class SpecFiles {
 
   private Stream<SpecFile> match(TestSpecKind kind, Predicate<TestSpec> predicate) {
     return specFiles.stream()
-            .filter(itFile -> itFile.spec().meta().kind() == kind)
-            .filter(specFile -> predicate.test(specFile.spec()));
+        .filter(itFile -> itFile.spec().meta().kind() == kind)
+        .filter(specFile -> predicate.test(specFile.spec()));
   }
 
-  /**
-   * Load all the spec files in the directory at the path
-   */
+  /** Load all the spec files in the directory at the path */
   private static Stream<SpecFile> loadAll(Path path) {
 
     try (Stream<Path> pathStream = Files.walk(path)) {
@@ -95,10 +91,7 @@ public class SpecFiles {
     return file.getFileName().toString().endsWith(".json");
   }
 
-
-  /**
-   * Load a single spec file denoted by path.
-   */
+  /** Load a single spec file denoted by path. */
   private static SpecFile loadOne(Path path) {
     var file = path.toFile();
     try {
@@ -123,11 +116,9 @@ public class SpecFiles {
     }
   }
 
-
   public static Stream<Path> resourceDirs(List<String> paths) {
 
-    return paths.stream()
-            .map(SpecFiles::resourceDir);
+    return paths.stream().map(SpecFiles::resourceDir);
   }
 
   public static Path resourceDir(String path) {
@@ -146,8 +137,7 @@ public class SpecFiles {
       // walking.
       return Paths.get(url.toURI());
     } catch (URISyntaxException e) {
-      throw new IllegalArgumentException(
-          "Bad resource URI for: " + path + " -> " + url, e);
+      throw new IllegalArgumentException("Bad resource URI for: " + path + " -> " + url, e);
     }
   }
 }

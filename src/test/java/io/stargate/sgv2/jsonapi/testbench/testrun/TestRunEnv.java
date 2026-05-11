@@ -5,7 +5,6 @@ import io.stargate.sgv2.jsonapi.testbench.testspec.TestSuiteSpec;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
 import org.junit.jupiter.api.DynamicContainer;
@@ -21,10 +20,8 @@ public class TestRunEnv {
   // Also for tables
   public static final String ENV_COLLECTION_NAME = "COLLECTION_NAME";
 
-  private static final Set<String> SCHEMA_IDENTIFIER = Set.of(
-      ENV_KEYSPACE_NAME,
-      ENV_COLLECTION_NAME
-  );
+  private static final Set<String> SCHEMA_IDENTIFIER =
+      Set.of(ENV_KEYSPACE_NAME, ENV_COLLECTION_NAME);
 
   private final Map<String, String> vars = new HashMap<>();
 
@@ -37,19 +34,21 @@ public class TestRunEnv {
   }
 
   public DynamicContainer testNode(
-          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestSuiteSpec testSuite) {
+      TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestSuiteSpec testSuite) {
 
     var d = description();
     uriBuilder.addSegment(TestUri.Segment.ENV, d);
     var desc = "TestEnv: %s ".formatted(d);
 
     var testExecutionCondition = new TestExecutionCondition.Default(desc);
-    var envNodes = testSuite.testNodesForEnvironment(testNodeFactory, uriBuilder.clone(), this, testExecutionCondition);
+    var envNodes =
+        testSuite.testNodesForEnvironment(
+            testNodeFactory, uriBuilder.clone(), this, testExecutionCondition);
 
     return testNodeFactory.testPlanContainer(
         desc,
         uriBuilder.build().uri(),
-            testNodeFactory.addLifecycle(uriBuilder.clone(), testSuite, this, envNodes));
+        testNodeFactory.addLifecycle(uriBuilder.clone(), testSuite, this, envNodes));
   }
 
   private String description() {
@@ -103,9 +102,10 @@ public class TestRunEnv {
         .setEnableUndefinedVariableException(true);
   }
 
-  public String get(String name){
+  public String get(String name) {
     return get(name, "");
   }
+
   public String get(String name, String defaultValue) {
 
     var value = vars.get(name);
@@ -114,10 +114,12 @@ public class TestRunEnv {
     }
 
     var substituted = substitutor().replace(value);
-    return SCHEMA_IDENTIFIER.contains(name) ? Backend.toSafeSchemaIdentifier(substituted) : substituted;
+    return SCHEMA_IDENTIFIER.contains(name)
+        ? Backend.toSafeSchemaIdentifier(substituted)
+        : substituted;
   }
 
-    @Override
+  @Override
   public String toString() {
     return vars.toString();
   }

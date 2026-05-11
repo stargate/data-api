@@ -10,24 +10,21 @@ import io.stargate.sgv2.jsonapi.testbench.testspec.Job;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestCommand;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestSuiteSpec;
 import io.stargate.sgv2.jsonapi.testbench.testspec.WorkflowSpec;
+import java.util.Optional;
 import org.junit.jupiter.api.DynamicNode;
 
-import java.util.Optional;
-
 /**
- * A particular instance of a {@link Backend} we are going to run the test against,
- * so includes connection information etc.
- * <p>
- * A run of the Test Bench is run against a Target, e.g. cassandra on localhost, or
- * an astra db called monkeys.
- * </p>
- * <p>
- *  This is the important entry point for the lifecycle interfaces, because the life cycle is there
- *  to handle different target / backends that tests run against.
- * </p>
- * <p>
- *  Because this holds the connection information, it can also make a request, see {@link #apiRequest(TestCommand, TestRunEnv)}
- * </p>
+ * A particular instance of a {@link Backend} we are going to run the test against, so includes
+ * connection information etc.
+ *
+ * <p>A run of the Test Bench is run against a Target, e.g. cassandra on localhost, or an astra db
+ * called monkeys.
+ *
+ * <p>This is the important entry point for the lifecycle interfaces, because the life cycle is
+ * there to handle different target / backends that tests run against.
+ *
+ * <p>Because this holds the connection information, it can also make a request, see {@link
+ * #apiRequest(TestCommand, TestRunEnv)}
  */
 public class Target implements TestPlanLifecycle, JobLifeCycle {
 
@@ -52,12 +49,13 @@ public class Target implements TestPlanLifecycle, JobLifeCycle {
   }
 
   /**
-   * Call this to get a new {@link APIRequest} that is configured to talk to the target
-   * this class represents.
-   * @param testCommand The command the request will send, this is needed to get the actual
-   *                    DataAPI request we want to send.
+   * Call this to get a new {@link APIRequest} that is configured to talk to the target this class
+   * represents.
+   *
+   * @param testCommand The command the request will send, this is needed to get the actual DataAPI
+   *     request we want to send.
    * @param env Environment the commands will be run in, used to make the replacements in the
-   *            command to execute for this particular test run.
+   *     command to execute for this particular test run.
    * @return Configured {@link APIRequest}
    */
   public APIRequest apiRequest(TestCommand testCommand, TestRunEnv env) {
@@ -71,35 +69,43 @@ public class Target implements TestPlanLifecycle, JobLifeCycle {
 
   @Override
   public Optional<DynamicNode> beforeWorkflow(
-          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, WorkflowSpec workflow) {
+      TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, WorkflowSpec workflow) {
     return backend.beforeWorkflow(testNodeFactory, uriBuilder, workflow);
   }
 
   @Override
   public Optional<DynamicNode> afterWorkflow(
-          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, WorkflowSpec workflow) {
+      TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, WorkflowSpec workflow) {
     return backend.afterWorkflow(testNodeFactory, uriBuilder, workflow);
   }
 
   @Override
-  public Optional<DynamicNode> beforeJob(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
+  public Optional<DynamicNode> beforeJob(
+      TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
     return backend.beforeJob(testNodeFactory, uriBuilder, job);
   }
 
   @Override
-  public Optional<DynamicNode> afterJob(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
+  public Optional<DynamicNode> afterJob(
+      TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, Job job) {
     return backend.afterJob(testNodeFactory, uriBuilder, job);
   }
 
   @Override
   public Optional<DynamicNode> beforeTestSuite(
-          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestSuiteSpec test, TestRunEnv env) {
+      TestNodeFactory testNodeFactory,
+      TestUri.Builder uriBuilder,
+      TestSuiteSpec test,
+      TestRunEnv env) {
     return backend.beforeTestSuite(testNodeFactory, uriBuilder, test, env);
   }
 
   @Override
   public Optional<DynamicNode> afterTestSuite(
-          TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestSuiteSpec test, TestRunEnv env) {
+      TestNodeFactory testNodeFactory,
+      TestUri.Builder uriBuilder,
+      TestSuiteSpec test,
+      TestRunEnv env) {
     return backend.afterTestSuite(testNodeFactory, uriBuilder, test, env);
   }
 }

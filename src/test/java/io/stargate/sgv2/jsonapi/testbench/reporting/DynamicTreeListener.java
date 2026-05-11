@@ -4,7 +4,6 @@ import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestUri;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.support.descriptor.UriSource;
@@ -13,24 +12,24 @@ import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
 
 /**
- * Listens to the execution of the dynammic tests created by the {@link TestPlan} and logs
- * the results using the {@link TestBenchConsoleWriter}.
- * <p>
- *  The class mus tbe registeded by a text file at
- *  <code>META-INF/services/org.junit.platform.launcher.TestExecutionListener</code> that contains the
- *  fully qualitified path to the class.
- * </p>
- * <p>
- * Type types of output are generated:
+ * Listens to the execution of the dynammic tests created by the {@link TestPlan} and logs the
+ * results using the {@link TestBenchConsoleWriter}.
+ *
+ * <p>The class mus tbe registeded by a text file at <code>
+ * META-INF/services/org.junit.platform.launcher.TestExecutionListener</code> that contains the
+ * fully qualitified path to the class.
+ *
+ * <p>Type types of output are generated:
+ *
  * <ul>
- *     <li>As the tests are running the name of every test node is outputted together with progress, so we can
- *     see how long there is to go. See {@link TestBenchConsoleWriter#testStarted(int, int, TestReportingTracker)}.
- *     At this point we do not know how long child nodes will take to process and what their result will be.</li>
- *     <li>Once complet a summary is outputted that does not include every node to brevity,
- *     see {@link TestBenchConsoleWriter#allTestsFinished(TestReportingTracker)}. At this point we know
- *     how long child nodes took to process and their result.</li>
+ *   <li>As the tests are running the name of every test node is outputted together with progress,
+ *       so we can see how long there is to go. See {@link TestBenchConsoleWriter#testStarted(int,
+ *       int, TestReportingTracker)}. At this point we do not know how long child nodes will take to
+ *       process and what their result will be.
+ *   <li>Once complet a summary is outputted that does not include every node to brevity, see {@link
+ *       TestBenchConsoleWriter#allTestsFinished(TestReportingTracker)}. At this point we know how
+ *       long child nodes took to process and their result.
  * </ul>
- * </p>
  */
 public class DynamicTreeListener implements TestExecutionListener {
 
@@ -60,14 +59,16 @@ public class DynamicTreeListener implements TestExecutionListener {
       return;
     }
 
-    // Test count will not be in the system properties until we see the first dymamic test node we create, e.g.
+    // Test count will not be in the system properties until we see the first dymamic test node we
+    // create, e.g.
     // "TestPlan: smoketest-aws-us-east-1 on astra workflows vectorize-header-workflow"
     // because the nodes will not have been created until then.
     if (totalTestCount == null) {
-      totalTestCount = Integer.parseInt(System.getProperty(TestBenchPlan.TEST_PLAN_TEST_COUNT_PROPERTY, "0"));
+      totalTestCount =
+          Integer.parseInt(System.getProperty(TestBenchPlan.TEST_PLAN_TEST_COUNT_PROPERTY, "0"));
     }
 
-    writer.testStarted(totalTestCount,++startedTestCount,  tracker);
+    writer.testStarted(totalTestCount, ++startedTestCount, tracker);
   }
 
   @Override
@@ -91,9 +92,7 @@ public class DynamicTreeListener implements TestExecutionListener {
     tracker.executionSkipped();
   }
 
-  /**
-   * Determine if tests are running that we should be tracking.
-   */
+  /** Determine if tests are running that we should be tracking. */
   private static boolean isTestBenchNode(TestIdentifier testIdentifier) {
 
     // This is the uniqueID created by jupiter as it is traversing the code, once we get to the
@@ -104,8 +103,8 @@ public class DynamicTreeListener implements TestExecutionListener {
   }
 
   /**
-   * We use a Tracker for every node in the test plan, to track the execution time
-   * and result of it and all of its children.
+   * We use a Tracker for every node in the test plan, to track the execution time and result of it
+   * and all of its children.
    */
   private TestReportingTracker getCreateTestTracker(TestIdentifier testIdentifier) {
 
@@ -114,7 +113,8 @@ public class DynamicTreeListener implements TestExecutionListener {
       return existingTracker;
     }
 
-    // The getSource() is a URI, jupiter / junit use it to identify the test file, but we dont have those.
+    // The getSource() is a URI, jupiter / junit use it to identify the test file, but we dont have
+    // those.
     // We use the {@link TestUri} instead. We need one to know what sort of test node this is
     var testUri =
         testIdentifier
@@ -149,8 +149,9 @@ public class DynamicTreeListener implements TestExecutionListener {
 
   /**
    * Container for tracking the execution of a test, and all of its children.
-   * <p> --- </p>
-   * */
+   *
+   * <p>---
+   */
   public class TestReportingTracker {
 
     private final TestIdentifier identifier;
@@ -184,7 +185,7 @@ public class DynamicTreeListener implements TestExecutionListener {
       return throwable;
     }
 
-    public TestExecutionResult.Status junitStatus(){
+    public TestExecutionResult.Status junitStatus() {
       return junitStatus;
     }
 
@@ -213,8 +214,9 @@ public class DynamicTreeListener implements TestExecutionListener {
     }
 
     /**
-     * Call when the execution of the test is finished, updates tracking for the node and
-     * for any ancestors.
+     * Call when the execution of the test is finished, updates tracking for the node and for any
+     * ancestors.
+     *
      * @param result
      */
     public void executionFinished(TestExecutionResult result) {
@@ -229,7 +231,8 @@ public class DynamicTreeListener implements TestExecutionListener {
       }
     }
 
-    private void descendantExecutionFinished(TestReportingTracker originalTracker,  TestExecutionResult result) {
+    private void descendantExecutionFinished(
+        TestReportingTracker originalTracker, TestExecutionResult result) {
       if (stats != null) {
         stats.testCompleted(originalTracker, result);
       }
@@ -250,10 +253,9 @@ public class DynamicTreeListener implements TestExecutionListener {
 
   /**
    * Count the tests that failed etc.
-   * <p>
-   * Modeled on org.apache.maven.plugin.surefire.report.TestSetStats
-   * </p>
-   * */
+   *
+   * <p>Modeled on org.apache.maven.plugin.surefire.report.TestSetStats
+   */
   public class TestContainerStats {
 
     private final long startedAtMillis;
@@ -297,11 +299,12 @@ public class DynamicTreeListener implements TestExecutionListener {
     public int skipped() {
       return skipped;
     }
-    
-    public void testCompleted(TestReportingTracker tracker,  TestExecutionResult result) {
+
+    public void testCompleted(TestReportingTracker tracker, TestExecutionResult result) {
       selfOrDescendantFinishedAtMillis = System.currentTimeMillis();
 
-      // we only update the stats IF the test we are tracking is a TEST, we do not update for containers.
+      // we only update the stats IF the test we are tracking is a TEST, we do not update for
+      // containers.
       if (tracker.identifier().isTest()) {
         switch (result.getStatus()) {
           case FAILED -> failures++;

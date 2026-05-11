@@ -3,16 +3,13 @@ package io.stargate.sgv2.jsonapi.testbench.testspec;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.testbench.targets.TargetConfiguration;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Spec file that contains targets
- */
+/** Spec file that contains targets */
 public record TargetsSpec(TestSpecMeta meta, List<TargetConfiguration> targets)
     implements TestSpec {
 
@@ -34,7 +31,8 @@ public record TargetsSpec(TestSpecMeta meta, List<TargetConfiguration> targets)
     return targets.stream()
         .filter(target -> target.name().equals(targetName))
         .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("target targetName not found: " + targetName));
+        .orElseThrow(
+            () -> new IllegalArgumentException("target targetName not found: " + targetName));
   }
 
   public static TargetsSpec loadAll(String path) {
@@ -46,5 +44,4 @@ public record TargetsSpec(TestSpecMeta meta, List<TargetConfiguration> targets)
       throw new RuntimeException(e);
     }
   }
-
 }

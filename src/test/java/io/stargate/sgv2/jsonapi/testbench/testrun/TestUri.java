@@ -82,7 +82,7 @@ public record TestUri(Scheme scheme, List<SegmentValue> segments) {
     }
 
     public boolean descendantOf(Segment segment) {
-      if (parent == null){
+      if (parent == null) {
         return false;
       }
       if (this.parent == segment) {
