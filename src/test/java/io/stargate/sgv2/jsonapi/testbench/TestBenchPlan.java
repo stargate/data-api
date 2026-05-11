@@ -26,23 +26,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The
+ *
+ * <p>
+ * NOTE: called "TestBenchPlan" to avoid collision with "org.junit.platform.launcher.TestPlan"
+ * </p>
  * @param target
  * @param specFiles
  * @param workflows
  * @param ignoreDisabled
  */
-public record TestPlan(
+public record
+TestBenchPlan(
         Target target, SpecFiles specFiles, Set<String> workflows, boolean ignoreDisabled) implements JobLifeCycle {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestPlan.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestBenchPlan.class);
+
+  public static final String TEST_PLAN_TEST_COUNT_PROPERTY = "testbench.test.count";
 
   private static final ObjectMapper YAML_MAPPER =
       new ObjectMapper(
               YAMLFactory.builder().enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION).build())
           .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
-  public static TestPlan fromFile(Path path) {
+  public static TestBenchPlan fromFile(Path path) {
 
     LOGGER.info("fromFile() - Loading test plan file, path={}", path);
     TestPlanFile planFile;
@@ -67,16 +73,16 @@ public record TestPlan(
     return testPlan;
   }
 
-  public static TestPlan create(String targetName, List<String> workflows) {
+  public static TestBenchPlan create(String targetName, List<String> workflows) {
     return create(targetName, workflows, true);
   }
 
-  public static TestPlan create(String targetName, List<String> workflows, Boolean ignoreDisabled) {
+  public static TestBenchPlan create(String targetName, List<String> workflows, Boolean ignoreDisabled) {
     var targetConfigs = TargetsSpec.loadAll("testbench/targets/targets.json");
     return create(targetConfigs.getTarget(targetName), workflows, ignoreDisabled);
   }
 
-  public static TestPlan create(
+  public static TestBenchPlan create(
           TargetConfiguration targetConfiguration, List<String> workflows, Boolean ignoreDisabled) {
     var target = new Target(targetConfiguration);
 
@@ -88,7 +94,7 @@ public record TestPlan(
                     "testbench/workflows"
                     ));
 
-    return new TestPlan(
+    return new TestBenchPlan(
         target,
         specFiles,
         workflows == null ? Set.of() : Set.copyOf(workflows),

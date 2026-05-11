@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.testbench;
 
 import io.stargate.sgv2.jsonapi.testbench.testspec.SpecFiles;
-import io.stargate.sgv2.jsonapi.testbench.testspec.TargetsSpec;
+
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
@@ -32,12 +32,12 @@ public class TestBenchByTestPlan {
             ? SpecFiles.resourceDir(rawPath.substring("classpath:".length()))
             : Path.of(rawPath);
 
-    var testPlan = TestPlan.fromFile(path);
+    var testPlan = TestBenchPlan.fromFile(path);
     LOGGER.info("runTestPlanFile() - building test plan tree");
     var testPlanNodeTree = testPlan.testNode();
 
     LOGGER.info("runTestPlanFile() - test plan tree build, totalNodeCount={}", testPlanNodeTree.totalNodeCount());
-    System.setProperty("testbench.test.count", String.valueOf(testPlanNodeTree.totalNodeCount()));
+    System.setProperty(TestBenchPlan.TEST_PLAN_TEST_COUNT_PROPERTY, String.valueOf(testPlanNodeTree.totalNodeCount()));
     return Stream.of(testPlanNodeTree.root());
   }
 }

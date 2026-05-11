@@ -27,7 +27,7 @@ import java.util.List;
  * </pre>
  * </p>
  *<p>
- * The {@link TestPlan#fromFile(Path)} will run Apache command style substituions using {@link System#getenv(String)}
+ * The {@link TestBenchPlan#fromFile(Path)} will run Apache command style substituions using {@link System#getenv(String)}
  * as the source for replacements. This allows some sensitive information to be put into the env rather than a
  * file, and for the runner to make multiple calls with different env vars.
  * </p>

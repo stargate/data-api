@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.testbench.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.testbench.TestPlan;
+import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestExecutionCondition;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestRunResponse;
@@ -25,7 +25,7 @@ public interface TestAssertion {
 
   DynamicNode testNodes(TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, AtomicReference<TestRunResponse> testResponse, TestExecutionCondition testExecutionCondition);
 
-  static List<TestAssertion> forSuccess(TestPlan testPlan, TestCommand testCommand) {
+  static List<TestAssertion> forSuccess(TestBenchPlan testPlan, TestCommand testCommand) {
 
     var builder =
         Stream.<AssertionDefinition>builder()
@@ -34,20 +34,20 @@ public interface TestAssertion {
     return buildAssertions(testPlan, testCommand, builder.build());
   }
 
-  static List<TestAssertion> buildAssertions(TestPlan testPlan, TestCase testCase) {
+  static List<TestAssertion> buildAssertions(TestBenchPlan testPlan, TestCase testCase) {
 
     var defs = testCase.asserts().properties().stream().map(AssertionDefinition::create);
     return buildAssertions(testPlan, testCase.command(), defs);
   }
 
   static List<TestAssertion> buildAssertions(
-      TestPlan testPlan, TestCommand testCommand, Stream<AssertionDefinition> defs) {
+          TestBenchPlan testPlan, TestCommand testCommand, Stream<AssertionDefinition> defs) {
 
     return defs.map(def -> buildAssertion(testPlan, testCommand, def)).toList();
   }
 
   static TestAssertion buildAssertion(
-      TestPlan testPlan, TestCommand testCommand, AssertionDefinition def) {
+          TestBenchPlan testPlan, TestCommand testCommand, AssertionDefinition def) {
     return def.addFactory(AssertionFactory.REGISTRY).build(testPlan, testCommand);
   }
 
@@ -71,7 +71,7 @@ public interface TestAssertion {
   /** */
   record AssertionDefWithFactory(AssertionFactory.WrappedMethod method, JsonNode args) {
 
-    TestAssertion build(TestPlan testPlan, TestCommand testCommand) {
+    TestAssertion build(TestBenchPlan testPlan, TestCommand testCommand) {
 
       return switch (method) {
         case AssertionFactory.WrappedAssertionMatcherFactory factory ->

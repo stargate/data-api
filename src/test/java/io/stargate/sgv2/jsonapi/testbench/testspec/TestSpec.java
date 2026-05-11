@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi.testbench.testspec;
 
+import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
+
 /**
  * A specification for objects in the TestBench world, such as a test suite.
  * <p>
- * Implement this for any object types a {@link io.stargate.sgv2.jsonapi.testbench.TestPlan} needs
+ * Implement this for any object types a {@link TestBenchPlan} needs
  * to read from disk or know about.
  * </p>
  */

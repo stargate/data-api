@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.testbench.testrun;
 
-import io.stargate.sgv2.jsonapi.testbench.TestPlan;
+import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
 import io.stargate.sgv2.jsonapi.testbench.testspec.Job;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestSpecMeta;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestSuiteSpec;
@@ -28,14 +28,14 @@ import java.util.function.Supplier;
 public class TestNodeFactory {
 
     private final NodeCode nodeCode = new NodeCode();
-    private final TestPlan testPlan;
+    private final TestBenchPlan testPlan;
     private int totalNodeCount = 0;
 
-    public TestNodeFactory(TestPlan testPlan) {
+    public TestNodeFactory(TestBenchPlan testPlan) {
         this.testPlan = testPlan;
     }
 
-    public TestPlan testPlan() {
+    public TestBenchPlan testPlan() {
         return testPlan;
     }
 

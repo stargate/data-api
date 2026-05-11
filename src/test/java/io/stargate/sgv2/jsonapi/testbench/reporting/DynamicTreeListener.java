@@ -1,45 +1,52 @@
 package io.stargate.sgv2.jsonapi.testbench.reporting;
 
+import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestUri;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.maven.plugin.surefire.report.*;
+
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.support.descriptor.UriSource;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-
+/**
+ * Listens to the execution of the dynammic tests created by the {@link TestPlan} and logs
+ * the results using the {@link TestBenchConsoleWriter}.
+ * <p>
+ *  The class mus tbe registeded by a text file at
+ *  <code>META-INF/services/org.junit.platform.launcher.TestExecutionListener</code> that contains the
+ *  fully qualitified path to the class.
+ * </p>
+ * <p>
+ * Type types of output are generated:
+ * <ul>
+ *     <li>As the tests are running the name of every test node is outputted together with progress, so we can
+ *     see how long there is to go. See {@link TestBenchConsoleWriter#testStarted(int, int, TestReportingTracker)}.
+ *     At this point we do not know how long child nodes will take to process and what their result will be.</li>
+ *     <li>Once complet a summary is outputted that does not include every node to brevity,
+ *     see {@link TestBenchConsoleWriter#allTestsFinished(TestReportingTracker)}. At this point we know
+ *     how long child nodes took to process and their result.</li>
+ * </ul>
+ * </p>
+ */
 public class DynamicTreeListener implements TestExecutionListener {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTreeListener.class);
 
   private Integer totalTestCount = null;
   private int startedTestCount = 0;
-  private TestReportingTracker rootTracker;
-  private final Map<UniqueId, TestReportingTracker> testTrackers = new ConcurrentHashMap<>();
 
-  private final Map<String, Long> startTimes = new ConcurrentHashMap<>();
-  private final Map<String, TestSetStats> containerStats = new ConcurrentHashMap<>();
+  private TestReportingTracker rootTracker;
+  // Keyed on TestIdentifier.uniqueID() see {@link TestIdentifier#uniqueId()}
+  private final Map<UniqueId, TestReportingTracker> testTrackers = new ConcurrentHashMap<>();
 
   private final TestBenchConsoleWriter writer = new TestBenchConsoleWriter();
 
   @Override
-  public void testPlanExecutionStarted(TestPlan testPlan) {
-  }
-
-  @Override
   public void testPlanExecutionFinished(TestPlan testPlan) {
+    // All done, write the summary.
     writer.allTestsFinished(rootTracker);
-  }
-
-  @Override
-  public void dynamicTestRegistered(TestIdentifier id) {
   }
 
   @Override
@@ -47,16 +54,17 @@ public class DynamicTreeListener implements TestExecutionListener {
     if (!isTestBenchNode(id)) {
       return;
     }
+
     var tracker = getCreateTestTracker(id);
     if (tracker == null) {
       return;
     }
 
-    // we will not see the test count until we see the first dymamic test node we create, e.g.
-    //TestPlan: smoketest-aws-us-east-1 on astra workflows vectorize-header-workflow
-    // if we have a tracker, its one of our tests.
+    // Test count will not be in the system properties until we see the first dymamic test node we create, e.g.
+    // "TestPlan: smoketest-aws-us-east-1 on astra workflows vectorize-header-workflow"
+    // because the nodes will not have been created until then.
     if (totalTestCount == null) {
-      totalTestCount = Integer.parseInt(System.getProperty("testbench.test.count", "0"));
+      totalTestCount = Integer.parseInt(System.getProperty(TestBenchPlan.TEST_PLAN_TEST_COUNT_PROPERTY, "0"));
     }
 
     writer.testStarted(totalTestCount,++startedTestCount,  tracker);
@@ -74,6 +82,7 @@ public class DynamicTreeListener implements TestExecutionListener {
 
   @Override
   public void executionSkipped(TestIdentifier id, String reason) {
+    // Looks like we never get skipped, included for completeness.
     var tracker = getCreateTestTracker(id);
     if (tracker == null) {
       return;
@@ -82,74 +91,22 @@ public class DynamicTreeListener implements TestExecutionListener {
     tracker.executionSkipped();
   }
 
+  /**
+   * Determine if tests are running that we should be tracking.
+   */
   private static boolean isTestBenchNode(TestIdentifier testIdentifier) {
+
+    // This is the uniqueID created by jupiter as it is traversing the code, once we get to the
+    // nodes that are created by the test plan that have different formatting
     return testIdentifier
         .getUniqueId()
-        .startsWith("[engine:junit-jupiter]/[class:io.stargate.sgv2.jsonapi.");
+        .startsWith("[engine:junit-jupiter]/[class:io.stargate.sgv2.jsonapi.testbench.");
   }
 
-  //    private String buildClassName(TestIdentifier id) {
-  //        List<String> parts = new ArrayList<>();
-  //        Optional<TestIdentifier> current = Optional.of(id);
-  //        while (current.isPresent()) {
-  //            TestIdentifier node = current.get();
-  //            if (isEngineOrClass(node)) {
-  //                break;
-  //            }
-  //            parts.add(0, node.getDisplayName());
-  //            current = testPlan.getParent(node);
-  //        }
-  //        return rootClassName(id) + (parts.isEmpty() ? "" : "$" + String.join("$", parts));
-  //    }
-  //
-  //    private String rootClassName(TestIdentifier id) {
-  //        Optional<TestIdentifier> current = Optional.of(id);
-  //        while (current.isPresent()) {
-  //            TestIdentifier node = current.get();
-  //            if (isClassNode(node)) {
-  //                return node.getDisplayName();
-  //            }
-  //            current = testPlan.getParent(node);
-  //        }
-  //        return "Unknown";
-  //    }
-  //
-  //    private SimpleReportEntry toReportEntry(TestIdentifier id, String methodName, String
-  // methodDisplay) {
-  //        return new SimpleReportEntry(
-  //                RunMode.NORMAL_RUN,
-  //                System.currentTimeMillis(),
-  //                buildClassName(id),
-  //                id.getDisplayName(),
-  //                methodName,
-  //                methodDisplay
-  //        );
-  //    }
-  //
-  //    private boolean isEngineOrClass(TestIdentifier id) {
-  //        return id.getUniqueId().startsWith("[engine:") || isClassNode(id);
-  //    }
-  //
-  //    private boolean isClassNode(TestIdentifier id) {
-  //        return id.getUniqueId().contains("[class:");
-  //    }
-  //
-  //    private long elapsed(TestIdentifier id) {
-  //        return System.currentTimeMillis() - startTimes.getOrDefault(id.getUniqueId(),
-  // System.currentTimeMillis());
-  //    }
-  //
-  //    private Optional<TestSetStats> nearestContainerStats(TestIdentifier id) {
-  //        Optional<TestIdentifier> current = testPlan.getParent(id);
-  //        while (current.isPresent()) {
-  //            if (containerStats.containsKey(current.get().getUniqueId())) {
-  //                return Optional.of(containerStats.get(current.get().getUniqueId()));
-  //            }
-  //            current = testPlan.getParent(current.get());
-  //        }
-  //        return Optional.empty();
-  //    }
-
+  /**
+   * We use a Tracker for every node in the test plan, to track the execution time
+   * and result of it and all of its children.
+   */
   private TestReportingTracker getCreateTestTracker(TestIdentifier testIdentifier) {
 
     var existingTracker = testTrackers.get(testIdentifier.getUniqueIdObject());
@@ -157,7 +114,8 @@ public class DynamicTreeListener implements TestExecutionListener {
       return existingTracker;
     }
 
-    // if this is not a TESTRUN:// it is not a node we care about
+    // The getSource() is a URI, jupiter / junit use it to identify the test file, but we dont have those.
+    // We use the {@link TestUri} instead. We need one to know what sort of test node this is
     var testUri =
         testIdentifier
             .getSource()
@@ -177,7 +135,7 @@ public class DynamicTreeListener implements TestExecutionListener {
         testUri.get().leafType() != TestUri.Segment.TARGET
             ? Objects.requireNonNull(
                 testTrackers.get(testIdentifier.getParentIdObject().get()),
-                "parentID not found for testIdentifier: " + testIdentifier.toString())
+                "parentID not found for testIdentifier: " + testIdentifier)
             : null;
 
     var tracker = new TestReportingTracker(testIdentifier, testUri.get(), parentTracker);
@@ -189,22 +147,28 @@ public class DynamicTreeListener implements TestExecutionListener {
     return tracker;
   }
 
-  /** */
+  /**
+   * Container for tracking the execution of a test, and all of its children.
+   * <p> --- </p>
+   * */
   public class TestReportingTracker {
 
     private final TestIdentifier identifier;
     private final TestUri runUri;
     private final TestReportingTracker parent;
     private final int depth;
+    private final TestContainerStats stats;
 
     private final List<TestReportingTracker> children = new ArrayList<>();
 
+    // Set when we know the test completed, value on the test result is an optional
     private Optional<Throwable> throwable = Optional.empty();
+    // Set when we know the test completed
     private TestExecutionResult.Status junitStatus;
-    private final TestContainerStats stats;
 
     public TestReportingTracker(
         TestIdentifier identifier, TestUri runUri, TestReportingTracker parent) {
+
       this.identifier = identifier;
       this.runUri = runUri;
       this.parent = parent;
@@ -220,10 +184,10 @@ public class DynamicTreeListener implements TestExecutionListener {
       return throwable;
     }
 
-    @Nullable
     public TestExecutionResult.Status junitStatus(){
       return junitStatus;
     }
+
     public TestIdentifier identifier() {
       return identifier;
     }
@@ -237,7 +201,7 @@ public class DynamicTreeListener implements TestExecutionListener {
     }
 
     public List<TestReportingTracker> children() {
-      return children;
+      return Collections.unmodifiableList(children);
     }
 
     public int depth() {
@@ -248,6 +212,11 @@ public class DynamicTreeListener implements TestExecutionListener {
       return stats;
     }
 
+    /**
+     * Call when the execution of the test is finished, updates tracking for the node and
+     * for any ancestors.
+     * @param result
+     */
     public void executionFinished(TestExecutionResult result) {
       junitStatus = result.getStatus();
       throwable = result.getThrowable();
@@ -268,6 +237,7 @@ public class DynamicTreeListener implements TestExecutionListener {
         parent.descendantExecutionFinished(originalTracker, result);
       }
     }
+
     public void executionSkipped() {
       if (stats != null) {
         stats.testSkipped();
@@ -278,20 +248,28 @@ public class DynamicTreeListener implements TestExecutionListener {
     }
   }
 
-  /** Modeled on org.apache.maven.plugin.surefire.report.TestSetStats */
+  /**
+   * Count the tests that failed etc.
+   * <p>
+   * Modeled on org.apache.maven.plugin.surefire.report.TestSetStats
+   * </p>
+   * */
   public class TestContainerStats {
 
-    private TestContainerStats parent;
-
     private final long startedAtMillis;
-    private long lastFinishedAtMillis;
+    private long selfOrDescendantFinishedAtMillis;
 
     private int successful;
 
+    // Aborted happens when the test node decided not to run, normally by calling
+    // Assumptions.assumeTrue() which throws a TestAbortedException which is tracked
+    // differently by junit.
     private int aborted;
 
+    // An actual failure of an assertion or unexpected error thrown
     private int failures;
 
+    // dont think used, kept for completeness
     private int skipped;
 
     public TestContainerStats() {
@@ -299,9 +277,9 @@ public class DynamicTreeListener implements TestExecutionListener {
     }
 
     public long elapsedMillis() {
-      return lastFinishedAtMillis == 0
+      return selfOrDescendantFinishedAtMillis == 0
           ? System.currentTimeMillis() - startedAtMillis
-          : lastFinishedAtMillis - startedAtMillis;
+          : selfOrDescendantFinishedAtMillis - startedAtMillis;
     }
 
     public int successful() {
@@ -321,7 +299,7 @@ public class DynamicTreeListener implements TestExecutionListener {
     }
     
     public void testCompleted(TestReportingTracker tracker,  TestExecutionResult result) {
-      lastFinishedAtMillis = System.currentTimeMillis();
+      selfOrDescendantFinishedAtMillis = System.currentTimeMillis();
 
       // we only update the stats IF the test we are tracking is a TEST, we do not update for containers.
       if (tracker.identifier().isTest()) {
@@ -334,7 +312,7 @@ public class DynamicTreeListener implements TestExecutionListener {
     }
 
     public void testSkipped() {
-      lastFinishedAtMillis = System.currentTimeMillis();
+      selfOrDescendantFinishedAtMillis = System.currentTimeMillis();
       skipped++;
     }
   }

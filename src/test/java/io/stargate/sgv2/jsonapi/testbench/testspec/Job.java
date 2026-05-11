@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.testbench.testspec;
 
 
 
-import io.stargate.sgv2.jsonapi.testbench.TestPlan;
+import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestNodeFactory;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestRunEnv;
 import io.stargate.sgv2.jsonapi.testbench.testrun.TestUri;
@@ -41,7 +41,7 @@ public record Job(
         testNodeFactory.addLifecycle(uriBuilder.clone(), this, testSuiteNodes));
   }
 
-  public Stream<TestSuiteSpec> testSuites(TestPlan testPlan) {
+  public Stream<TestSuiteSpec> testSuites(TestBenchPlan testPlan) {
     Stream.Builder<TestSuiteSpec> allTests = Stream.builder();
     tests()
         .forEach(
@@ -52,7 +52,7 @@ public record Job(
     return allTests.build();
   }
 
-  public TestRunEnv withoutMatrix(TestPlan testPlan) {
+  public TestRunEnv withoutMatrix(TestBenchPlan testPlan) {
 
     var fromEnv = new TestRunEnv();
 
@@ -65,7 +65,7 @@ public record Job(
     return fromEnv.clone().put(fromVariables);
   }
 
-  public List<TestRunEnv> allEnvironments(TestPlan testPlan) {
+  public List<TestRunEnv> allEnvironments(TestBenchPlan testPlan) {
 
     var fromEnv = new TestRunEnv();
 

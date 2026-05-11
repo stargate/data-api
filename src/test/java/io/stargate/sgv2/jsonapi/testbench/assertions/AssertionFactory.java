@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.testbench.assertions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.testbench.TestPlan;
+import io.stargate.sgv2.jsonapi.testbench.TestBenchPlan;
 import io.stargate.sgv2.jsonapi.testbench.testspec.TestCommand;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -21,7 +21,7 @@ public sealed interface AssertionFactory {
   @FunctionalInterface
   non-sealed interface TemplatedAssertionFactory extends AssertionFactory {
     List<TestAssertion> create(
-        TestPlan testPlan, JsonNode template, TestCommand testCommand, JsonNode args);
+            TestBenchPlan testPlan, JsonNode template, TestCommand testCommand, JsonNode args);
   }
 
   static boolean isValidFactoryMethod(Method method) {
@@ -34,7 +34,7 @@ public sealed interface AssertionFactory {
     if (List.class.isAssignableFrom(method.getReturnType())) {
       var p = method.getParameterTypes();
       return p.length == 4
-          && p[0] == TestPlan.class
+          && p[0] == TestBenchPlan.class
           && p[1] == JsonNode.class
           && p[2] == TestCommand.class
           && p[3] == JsonNode.class;
@@ -114,7 +114,7 @@ public sealed interface AssertionFactory {
 
     @Override
     public List<TestAssertion> create(
-        TestPlan testPlan, JsonNode template, TestCommand testCommand, JsonNode args) {
+            TestBenchPlan testPlan, JsonNode template, TestCommand testCommand, JsonNode args) {
       return invoke(testPlan, template, testCommand, args);
     }
   }
