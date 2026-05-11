@@ -16,7 +16,7 @@ stargate:
 
   database:
     limits:
-      max-collections: 5
+      max-collections: 15
 
   debug:
     enabled: false
