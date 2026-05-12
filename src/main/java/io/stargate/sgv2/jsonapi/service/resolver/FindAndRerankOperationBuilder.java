@@ -202,15 +202,18 @@ class FindAndRerankOperationBuilder {
   }
 
   /**
-   * Resolve the effective {@link CollectionRerankDef.RerankServiceDef} for this command: a
-   * non-empty command override replaces the collection-level config entirely; otherwise fall back
-   * to the collection's configured defaults. Throws {@link
-   * RequestException.Code#UNSUPPORTED_RERANKING_COMMAND} if neither source provides a service.
+   * Resolve the effective {@link CollectionRerankDef.RerankServiceDef} for this command: a command
+   * override replaces the collection-level config entirely; otherwise fall back to the collection's
+   * configured defaults. Any non-null {@code rerank} payload is treated as an override attempt and
+   * validated — {@code "rerank": {}} or a payload whose fields are all explicit nulls fails with
+   * {@link RequestException.Code#INVALID_RERANK_OVERRIDE} rather than silently falling back. Throws
+   * {@link RequestException.Code#UNSUPPORTED_RERANKING_COMMAND} when no override is supplied and
+   * the collection itself has reranking disabled.
    */
   private CollectionRerankDef.RerankServiceDef resolveRerankServiceDef() {
     var rerankOverride =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
-    boolean hasOverride = rerankOverride != null && !rerankOverride.isEmpty();
+    boolean hasOverride = rerankOverride != null;
 
     if (!commandContext.schemaObject().rerankingConfig().enabled() && !hasOverride) {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();

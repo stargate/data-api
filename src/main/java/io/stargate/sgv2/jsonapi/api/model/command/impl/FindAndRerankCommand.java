@@ -106,11 +106,11 @@ public record FindAndRerankCommand(
               description = "Return vector embedding used for ANN sorting.",
               type = SchemaType.BOOLEAN)
           boolean includeSortVector,
-      // Note: intentionally NOT annotated @Valid. Jakarta Bean Validation would cascade into
-      // RerankServiceDesc and reject `"rerank": {}` via @NotNull on provider before we get a
-      // chance to treat the empty payload as "no override". Field-level validation of provider
-      // and modelName runs in CollectionRerankDef.validateServiceDesc with the
-      // INVALID_RERANK_OVERRIDE error code instead.
+      // Note: intentionally NOT annotated @Valid. Jakarta Bean Validation would reject any
+      // missing/null provider with its generic violation message; we want the explicit
+      // INVALID_RERANK_OVERRIDE error code produced by CollectionRerankDef.validateServiceDesc.
+      // Any non-null payload — including `"rerank": {}` and payloads whose fields are all
+      // explicit nulls — is treated as an override attempt and validated there.
       @Nullable
           @Schema(
               description =
