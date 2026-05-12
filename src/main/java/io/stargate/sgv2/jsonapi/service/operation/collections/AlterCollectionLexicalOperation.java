@@ -79,11 +79,13 @@ public record AlterCollectionLexicalOperation(
                     + " WITH OPTIONS = { 'index_analyzer': '%s' }")
                 .formatted(table, keyspace, table, analyzerString));
 
+    // Cassandra does not accept bind parameters for table options like `comment`; embed the
+    // JSON directly with CQL single-quote escaping (matches
+    // CreateCollectionOperation.getCreateTable).
     SimpleStatement alterCommentStmt =
-        SimpleStatement.builder(
-                "ALTER TABLE \"%s\".\"%s\" WITH comment = ?".formatted(keyspace, table))
-            .addPositionalValue(newComment)
-            .build();
+        SimpleStatement.newInstance(
+            "ALTER TABLE \"%s\".\"%s\" WITH comment = '%s'"
+                .formatted(keyspace, table, newComment.replace("'", "''")));
 
     final Duration delay = Duration.ofMillis(ddlDelayMillis > 0 ? ddlDelayMillis : 100);
 
