@@ -453,6 +453,77 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
             is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
   }
 
+  // Collection with both vectorize and rerank enabled (using the default reranking provider/model).
+  // Used to verify the override path is applied even when the collection already has working
+  // rerank config — i.e. the override is not silently ignored in favor of the collection default.
+  private static final String VECTORIZE_AND_RERANK_SPEC =
+      """
+      {
+        "name" : "%s",
+        "options": {
+          "vector": {
+            "metric": "cosine",
+            "dimension": 1024,
+            "service": {
+              "provider": "openai",
+              "modelName": "text-embedding-3-small"
+            }
+          },
+          "rerank": {
+            "enabled": true
+          }
+        }
+      }
+      """;
+
+  /**
+   * Positive verification that the override replaces the collection's reranking config. The
+   * collection has valid rerank set up; if the override were silently ignored, the request would
+   * pass validation and fail later at the embedding step. Sending an unknown provider in the
+   * override surfaces INVALID_RERANK_OVERRIDE, proving the override path is taken even when the
+   * collection's own rerank config would have worked.
+   */
+  @Test
+  void overrideIsAppliedEvenWhenCollectionRerankEnabled() {
+    String collectionName = "rerank_override_on_enabled_collection_bad";
+    createCollectionWithCleanup(collectionName, VECTORIZE_AND_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "unknown-provider", "modelName": "some-model"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("unknown-provider"));
+  }
+
+  /**
+   * Companion to {@link #overrideIsAppliedEvenWhenCollectionRerankEnabled}: a valid override on a
+   * rerank-enabled collection also passes validation and proceeds to the embedding step (failing
+   * with EMBEDDING_PROVIDER_CLIENT_ERROR for the same reason as {@link
+   * #overrideWithProviderAndModelPassesValidation}).
+   */
+  @Test
+  void validOverridePassesValidationOnRerankEnabledCollection() {
+    String collectionName = "rerank_override_on_enabled_collection_ok";
+    createCollectionWithCleanup(collectionName, VECTORIZE_AND_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"}
+                """))
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
+  }
+
   /**
    * Builds a findAndRerank command JSON with an optional rerank override in options.
    *

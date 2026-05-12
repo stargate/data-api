@@ -263,7 +263,7 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_RERANKING_COMMAND
-    title: Reranking not enabled for collection
+    title: Reranking not enabled and no override provided
     body: |-
       The `findAndRerank` is not enabled for the collection, and a reranking service override was not provided with the command.
 
