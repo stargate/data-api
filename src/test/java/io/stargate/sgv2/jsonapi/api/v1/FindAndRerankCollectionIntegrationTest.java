@@ -259,21 +259,36 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
             containsString("reranking service override was not provided with the command"));
   }
 
-  // Empty override object (`"rerank": {}`) is treated as no override, falling back to the
-  // collection's reranking config. On a collection without reranking enabled, this surfaces as
-  // UNSUPPORTED_RERANKING_COMMAND — not INVALID_RERANK_OVERRIDE — confirming the empty payload
-  // is intentionally ignored rather than validated as a (malformed) override.
+  // Any non-null `"rerank"` payload is treated as an override attempt and validated; `{}` and
+  // payloads whose fields are all explicit nulls both surface INVALID_RERANK_OVERRIDE rather
+  // than silently falling back to the collection's reranking config — so a client mistake like
+  // `{"provider": null}` cannot be misread as "no override".
   @Test
-  void emptyRerankOverrideIgnoredAndFallsThroughToCollectionConfig() {
+  void failOnRerankOverrideEmptyObject() {
     String collectionName = "rerank_override_empty";
     createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
 
     givenHeadersPostJsonThen(keyspaceName, collectionName, findAndRerankWithOverride("{}"))
         .body("$", responseIsError())
-        .body("errors[0].errorCode", is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()))
-        .body(
-            "errors[0].message",
-            containsString("reranking service override was not provided with the command"));
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("Provider name is required"));
+  }
+
+  @Test
+  void failOnRerankOverrideAllExplicitNullFields() {
+    String collectionName = "rerank_override_null_fields";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": null, "modelName": null}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("Provider name is required"));
   }
 
   @Test
