@@ -44,11 +44,8 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
       CommandContext<CollectionSchemaObject> ctx, AlterCollectionCommand command) {
 
     if (command.lexical() == null) {
-      throw SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.get(
-          Map.of("message", "must specify 'lexical' field"));
+      throw badOptions("must specify 'lexical' field");
     }
-
-    final boolean lexicalAvailableForDB = ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
 
     // validateAndConstruct throws:
     //   - LEXICAL_NOT_AVAILABLE_FOR_DATABASE if requested.enabled && !lexicalAvailableForDB
@@ -56,25 +53,20 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
     final CollectionLexicalConfig requested =
         CollectionLexicalConfig.validateAndConstruct(
             objectMapper,
-            lexicalAvailableForDB,
+            ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL),
             command.lexical(),
             SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS);
 
     // Phase 1: disabling lexical is not supported.
     if (!requested.enabled()) {
-      throw SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.get(
-          Map.of(
-              "message",
-              "'lexical.enabled' must be true; alterCollection cannot disable lexical search"));
+      throw badOptions(
+          "'lexical.enabled' must be true; alterCollection cannot disable lexical search");
     }
 
     // Reject legacy / pre-lexical collections: must have a V1 comment with collection.options.
-    final String rawComment = readTableComment(ctx.schemaObject());
-    if (isLegacyComment(rawComment)) {
-      throw SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.get(
-          Map.of(
-              "message",
-              "collection has legacy metadata (pre-lexical schema); recreate the collection to enable lexical"));
+    if (isLegacyComment(ctx.schemaObject())) {
+      throw badOptions(
+          "collection has legacy metadata (pre-lexical schema); recreate the collection to enable lexical");
     }
 
     final CollectionLexicalConfig current = ctx.schemaObject().lexicalConfig();
@@ -89,39 +81,39 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
         current.enabled()
             && ctx.schemaObject().tableMetadata().getColumn(LEXICAL_COLUMN).isPresent();
 
-    if (trulyEnabled) {
-      // Both analyzer definitions are guaranteed non-null here (CollectionLexicalConfig's
-      // constructor requires non-null analyzer when enabled=true). JsonNode.equals is value-based,
-      // so this gives strict structural comparison for both string and object analyzers.
-      if (Objects.equals(current.analyzerDefinition(), requested.analyzerDefinition())) {
-        // Same settings already in effect: no-op success.
-        return new AlterCollectionLexicalOperation(
-            ctx, objectMapper, ddlDelayMillis, requested, /* noOp */ true);
-      }
-      throw SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.get(
-          Map.of(
-              "message",
-              "lexical is already enabled for this collection with a different analyzer configuration"));
+    if (!trulyEnabled) {
+      return new AlterCollectionLexicalOperation(
+          ctx, objectMapper, ddlDelayMillis, requested, /* noOp */ false);
     }
 
+    // Both analyzer definitions are guaranteed non-null here (CollectionLexicalConfig's
+    // constructor requires non-null analyzer when enabled=true). JsonNode.equals is value-based,
+    // so this gives strict structural comparison for both string and object analyzers.
+    if (!Objects.equals(current.analyzerDefinition(), requested.analyzerDefinition())) {
+      throw badOptions(
+          "lexical is already enabled for this collection with a different analyzer configuration");
+    }
+    // Same settings already in effect: no-op success.
     return new AlterCollectionLexicalOperation(
-        ctx, objectMapper, ddlDelayMillis, requested, /* noOp */ false);
+        ctx, objectMapper, ddlDelayMillis, requested, /* noOp */ true);
   }
 
-  private static String readTableComment(CollectionSchemaObject schemaObject) {
+  private static SchemaException badOptions(String message) {
+    return SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.get(Map.of("message", message));
+  }
+
+  private boolean isLegacyComment(CollectionSchemaObject schemaObject) {
     final Object commentObj = schemaObject.tableMetadata().getOptions().get(COMMENT_OPTION);
-    return commentObj == null ? null : commentObj.toString();
-  }
-
-  private boolean isLegacyComment(String rawComment) {
-    if (rawComment == null || rawComment.isBlank()) {
+    if (commentObj == null) {
       return true;
     }
     try {
-      JsonNode root = objectMapper.readTree(rawComment);
       JsonNode optionsNode =
-          root.path(TableCommentConstants.TOP_LEVEL_KEY).path(TableCommentConstants.OPTIONS_KEY);
-      return optionsNode.isMissingNode() || !optionsNode.isObject();
+          objectMapper
+              .readTree(commentObj.toString())
+              .path(TableCommentConstants.TOP_LEVEL_KEY)
+              .path(TableCommentConstants.OPTIONS_KEY);
+      return !optionsNode.isObject();
     } catch (Exception e) {
       return true;
     }
