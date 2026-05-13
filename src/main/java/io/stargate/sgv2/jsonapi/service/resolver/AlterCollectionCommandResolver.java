@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -22,6 +23,9 @@ import java.util.Objects;
 public class AlterCollectionCommandResolver implements CommandResolver<AlterCollectionCommand> {
 
   private static final CqlIdentifier COMMENT_OPTION = CqlIdentifier.fromInternal("comment");
+
+  private static final CqlIdentifier LEXICAL_COLUMN =
+      CqlIdentifier.fromInternal(DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME);
 
   private final ObjectMapper objectMapper;
 
@@ -77,8 +81,19 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
     final int ddlDelayMillis =
         ctx.config().get(OperationsConfig.class).databaseConfig().ddlDelayMillis();
 
-    if (current.enabled()) {
-      if (analyzersEqual(current.analyzerDefinition(), requested.analyzerDefinition())) {
+    // "Truly enabled" means both the stored comment claims lexical is on AND the underlying
+    // column actually exists. If the comment says enabled but the column is missing (an
+    // inconsistent state from manual surgery or an interrupted prior alter), treat it as
+    // not-enabled and run the full DDL pipeline so the table catches up to the comment.
+    final boolean trulyEnabled =
+        current.enabled()
+            && ctx.schemaObject().tableMetadata().getColumn(LEXICAL_COLUMN).isPresent();
+
+    if (trulyEnabled) {
+      // Both analyzer definitions are guaranteed non-null here (CollectionLexicalConfig's
+      // constructor requires non-null analyzer when enabled=true). JsonNode.equals is value-based,
+      // so this gives strict structural comparison for both string and object analyzers.
+      if (Objects.equals(current.analyzerDefinition(), requested.analyzerDefinition())) {
         // Same settings already in effect: no-op success.
         return new AlterCollectionLexicalOperation(
             ctx, objectMapper, ddlDelayMillis, requested, /* noOp */ true);
@@ -110,12 +125,5 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
     } catch (Exception e) {
       return true;
     }
-  }
-
-  private static boolean analyzersEqual(JsonNode a, JsonNode b) {
-    if (a == null || b == null) {
-      return a == b;
-    }
-    return Objects.equals(a, b);
   }
 }

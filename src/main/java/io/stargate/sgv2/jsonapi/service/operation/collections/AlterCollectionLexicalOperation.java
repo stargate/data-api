@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -9,6 +11,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -39,11 +42,17 @@ public record AlterCollectionLexicalOperation(
 
   private static final CqlIdentifier COMMENT_OPTION = CqlIdentifier.fromInternal("comment");
 
+  private static final CqlIdentifier LEXICAL_COLUMN =
+      CqlIdentifier.fromInternal(DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME);
+
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext requestContext, QueryExecutor queryExecutor) {
 
     if (noOp) {
+      // Type witness needed: Mutiny's item(T) and item(Supplier<? extends T>) overloads otherwise
+      // both match SchemaChangeResult (which is a Supplier<CommandResult>), and inference picks
+      // the wrong T.
       return Uni.createFrom().<Supplier<CommandResult>>item(new SchemaChangeResult(true));
     }
 
@@ -54,7 +63,7 @@ public record AlterCollectionLexicalOperation(
     final String newComment;
     try {
       newComment = buildUpdatedComment(schemaObject);
-    } catch (Exception e) {
+    } catch (JacksonException e) {
       return Uni.createFrom().failure(e);
     }
 
@@ -62,9 +71,9 @@ public record AlterCollectionLexicalOperation(
     final String analyzerString =
         analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
 
-    SimpleStatement addColumnStmt =
-        SimpleStatement.newInstance(
-            "ALTER TABLE \"%s\".\"%s\" ADD query_lexical_value text".formatted(keyspace, table));
+    // Idempotent for retry after partial failure: skip ADD COLUMN if the column already exists.
+    final boolean columnAlreadyExists =
+        schemaObject.tableMetadata().getColumn(LEXICAL_COLUMN).isPresent();
 
     SimpleStatement createIndexStmt =
         SimpleStatement.newInstance(
@@ -84,14 +93,25 @@ public record AlterCollectionLexicalOperation(
 
     final Duration delay = Duration.ofMillis(ddlDelayMillis > 0 ? ddlDelayMillis : 100);
 
-    return queryExecutor
-        .executeCreateSchemaChange(requestContext, addColumnStmt)
-        .onItem()
-        .delayIt()
-        .by(delay)
-        .onItem()
-        .transformToUni(
-            r1 -> queryExecutor.executeCreateSchemaChange(requestContext, createIndexStmt))
+    Uni<AsyncResultSet> pipeline;
+    if (columnAlreadyExists) {
+      pipeline = queryExecutor.executeCreateSchemaChange(requestContext, createIndexStmt);
+    } else {
+      SimpleStatement addColumnStmt =
+          SimpleStatement.newInstance(
+              "ALTER TABLE \"%s\".\"%s\" ADD query_lexical_value text".formatted(keyspace, table));
+      pipeline =
+          queryExecutor
+              .executeCreateSchemaChange(requestContext, addColumnStmt)
+              .onItem()
+              .delayIt()
+              .by(delay)
+              .onItem()
+              .transformToUni(
+                  r1 -> queryExecutor.executeCreateSchemaChange(requestContext, createIndexStmt));
+    }
+
+    return pipeline
         .onItem()
         .delayIt()
         .by(delay)
@@ -109,7 +129,7 @@ public record AlterCollectionLexicalOperation(
    * <p>The resolver guarantees we are operating on a V1-shaped comment (legacy/V0 collections are
    * rejected before reaching the operation).
    */
-  private String buildUpdatedComment(CollectionSchemaObject schemaObject) throws Exception {
+  private String buildUpdatedComment(CollectionSchemaObject schemaObject) throws JacksonException {
     final Object commentObj = schemaObject.tableMetadata().getOptions().get(COMMENT_OPTION);
     final String comment = commentObj == null ? null : commentObj.toString();
     if (comment == null || comment.isBlank()) {
