@@ -647,19 +647,31 @@ public record CreateCollectionOperation(
     }
 
     if (lexicalConfig.enabled()) {
-      var analyzerDef = lexicalConfig.analyzerDefinition();
-      // Note: needs to be either plain (unquoted) String (NOT quoted JSON String) OR JSON Object
-      final String analyzerString =
-          analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
-      final String lexicalCol = DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
-      final String lexicalCreateStmt =
-              """
-                    %s "%s_%s" ON "%s"."%s" (%s)
-                      USING 'StorageAttachedIndex' WITH OPTIONS = { 'index_analyzer': '%s' }
-                    """
-              .formatted(appender, table, lexicalCol, keyspace, table, lexicalCol, analyzerString);
-      statements.add(SimpleStatement.newInstance(lexicalCreateStmt));
+      statements.add(buildLexicalIndexStatement(keyspace, table, lexicalConfig, collectionExisted));
     }
     return statements;
+  }
+
+  /**
+   * Builds the {@code CREATE CUSTOM INDEX} statement for the lexical column, used both by
+   * createCollection (when the table is fresh or being recreated) and by alterCollection (when
+   * enabling lexical on an existing collection).
+   *
+   * @param ifNotExists when true, emits {@code IF NOT EXISTS} for idempotent retries
+   */
+  public static SimpleStatement buildLexicalIndexStatement(
+      String keyspace, String table, CollectionLexicalConfig lexicalConfig, boolean ifNotExists) {
+    var analyzerDef = lexicalConfig.analyzerDefinition();
+    // Note: needs to be either plain (unquoted) String (NOT quoted JSON String) OR JSON Object
+    final String analyzerString =
+        analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
+    final String lexicalCol = DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
+    final String prefix = ifNotExists ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
+    return SimpleStatement.newInstance(
+            """
+                %s "%s_%s" ON "%s"."%s" (%s)
+                  USING 'StorageAttachedIndex' WITH OPTIONS = { 'index_analyzer': '%s' }
+                """
+            .formatted(prefix, table, lexicalCol, keyspace, table, lexicalCol, analyzerString));
   }
 }

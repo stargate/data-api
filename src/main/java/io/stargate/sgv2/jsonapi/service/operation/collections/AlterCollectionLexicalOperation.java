@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Uni;
@@ -67,22 +66,14 @@ public record AlterCollectionLexicalOperation(
       return Uni.createFrom().failure(e);
     }
 
-    final JsonNode analyzerDef = newLexicalConfig.analyzerDefinition();
-    final String analyzerString =
-        analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
-
     // Idempotent for retry after partial failure: skip ADD COLUMN if the column already exists.
     final boolean columnAlreadyExists =
         schemaObject.tableMetadata().getColumn(LEXICAL_COLUMN).isPresent();
 
     final String lexicalCol = DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
     SimpleStatement createIndexStmt =
-        SimpleStatement.newInstance(
-            ("CREATE CUSTOM INDEX IF NOT EXISTS \"%s_%s\""
-                    + " ON \"%s\".\"%s\" (%s)"
-                    + " USING 'StorageAttachedIndex'"
-                    + " WITH OPTIONS = { 'index_analyzer': '%s' }")
-                .formatted(table, lexicalCol, keyspace, table, lexicalCol, analyzerString));
+        CreateCollectionOperation.buildLexicalIndexStatement(
+            keyspace, table, newLexicalConfig, /* ifNotExists */ true);
 
     // Cassandra does not accept bind parameters for table options like `comment`; embed the
     // JSON directly with CQL single-quote escaping (matches
