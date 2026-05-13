@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.resolver.CreateCollectionCommandResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.time.Duration;
@@ -145,9 +146,7 @@ public record AlterCollectionLexicalOperation(
       optionsNode = objectMapper.createObjectNode();
       collectionNode.set(TableCommentConstants.OPTIONS_KEY, optionsNode);
     }
-    optionsNode.set(
-        TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY,
-        objectMapper.valueToTree(newLexicalConfig));
+    CreateCollectionCommandResolver.addLexicalToOptionsNode(optionsNode, newLexicalConfig);
     return objectMapper.writeValueAsString(rootNode);
   }
 }

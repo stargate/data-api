@@ -209,7 +209,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
 
     // Store Lexical Config as-is:
-    optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, lexicalConfig);
+    addLexicalToOptionsNode(optionsNode, lexicalConfig);
 
     // Store Reranking Config as-is:
     optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, rerankDef);
@@ -221,6 +221,16 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     final ObjectNode tableCommentNode = objectMapper.createObjectNode();
     tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
     return tableCommentNode.toString();
+  }
+
+  /**
+   * Writes the lexical config entry into a collection's options node. Shared between {@link
+   * #generateComment} (when building a fresh comment for createCollection) and {@code
+   * AlterCollectionLexicalOperation} (when updating the lexical sub-node of an existing comment).
+   */
+  public static void addLexicalToOptionsNode(
+      ObjectNode optionsNode, CollectionLexicalConfig lexicalConfig) {
+    optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, lexicalConfig);
   }
 
   /**
