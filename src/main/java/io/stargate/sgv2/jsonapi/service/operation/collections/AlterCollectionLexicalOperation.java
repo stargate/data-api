@@ -16,8 +16,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConf
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.time.Duration;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Operation that enables the lexical feature on an existing collection by adding the {@code
@@ -38,9 +36,6 @@ public record AlterCollectionLexicalOperation(
     CollectionLexicalConfig newLexicalConfig,
     boolean noOp)
     implements Operation<CollectionSchemaObject> {
-
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(AlterCollectionLexicalOperation.class);
 
   private static final CqlIdentifier COMMENT_OPTION = CqlIdentifier.fromInternal("comment");
 
@@ -127,6 +122,7 @@ public record AlterCollectionLexicalOperation(
     final ObjectNode collectionNode =
         (ObjectNode) rootNode.get(TableCommentConstants.TOP_LEVEL_KEY);
     if (collectionNode == null) {
+      // Defensive: resolver should have rejected this case.
       throw new IllegalStateException(
           "Cannot alter collection: comment does not have '"
               + TableCommentConstants.TOP_LEVEL_KEY

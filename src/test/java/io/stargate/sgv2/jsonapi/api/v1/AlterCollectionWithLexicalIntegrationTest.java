@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
@@ -100,6 +101,95 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
+
+      deleteCollection(name);
+    }
+
+    // Locks in the surgical-replace contract of buildUpdatedComment: when alterCollection enables
+    // lexical, all other previously-configured collection options (vector, indexing, defaultId,
+    // rerank) must remain unchanged in the stored comment.
+    @Test
+    void preservesOtherOptionsAcrossAlter() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String name = freshCollectionName();
+      String createBody =
+              """
+              {
+                "createCollection": {
+                  "name": "%s",
+                  "options": {
+                    "defaultId": { "type": "objectId" },
+                    "vector": { "dimension": 5, "metric": "cosine" },
+                    "indexing": { "deny": ["comment"] },
+                    "lexical": { "enabled": false },
+                    "rerank": { "enabled": false }
+                  }
+                }
+              }
+              """
+              .formatted(name);
+      given()
+          .port(getTestPort())
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createBody)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+
+      // Enable lexical via alterCollection.
+      String alterBody =
+          """
+          {
+            "alterCollection": {
+              "lexical": { "enabled": true }
+            }
+          }
+          """;
+      postToCollection(name, alterBody)
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+
+      // Verify via findCollections + explain that everything except lexical is unchanged,
+      // and that lexical has flipped to enabled with the default analyzer.
+      String expected =
+              """
+              {
+                "name": "%s",
+                "options": {
+                  "defaultId": { "type": "objectId" },
+                  "vector": { "dimension": 5, "metric": "cosine", "sourceModel": "other" },
+                  "indexing": { "deny": ["comment"] },
+                  "lexical": { "enabled": true, "analyzer": "standard" },
+                  "rerank": { "enabled": false }
+                }
+              }
+              """
+              .formatted(name);
+      given()
+          .port(getTestPort())
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "findCollections": {
+                  "options": { "explain": true }
+                }
+              }
+              """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body(
+              "status.collections.find { it.name == '%s' }".formatted(name), jsonEquals(expected));
 
       deleteCollection(name);
     }
