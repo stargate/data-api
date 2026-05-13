@@ -28,9 +28,20 @@ import java.util.function.Supplier;
  * <p>When {@link #noOp} is true the operation returns success without executing any DDL: this is
  * the "already enabled with same settings" case.
  *
- * <p>On partial failure (e.g. column added but index creation failed) earlier steps are not rolled
- * back; the failure is propagated to the caller, matching {@link CreateCollectionOperation}'s
- * behavior. The command is safe to retry once the underlying issue is resolved.
+ * <p><b>No rollback on partial failure.</b> If e.g. ADD COLUMN succeeds but CREATE INDEX fails, the
+ * column is left in place and the failure is propagated to the caller. This matches {@link
+ * CreateCollectionOperation}'s behavior and is intentional:
+ *
+ * <ul>
+ *   <li>Reverse DDL (DROP COLUMN, DROP INDEX) is itself fallible — a rollback that fails leaves the
+ *       schema in a worse state than the original partial failure and obscures the root cause.
+ *   <li>The operation is designed to be retry-safe: ADD COLUMN is skipped when the column already
+ *       exists, CREATE INDEX uses {@code IF NOT EXISTS}, and ALTER TABLE WITH comment is naturally
+ *       idempotent. Re-issuing the same {@code alterCollection} command after the underlying issue
+ *       is resolved completes the unfinished steps without re-running the finished ones.
+ *   <li>Users get a consistent mental model with {@code createCollection}, which has the same
+ *       partial-failure semantics.
+ * </ul>
  */
 public record AlterCollectionLexicalOperation(
     CommandContext<CollectionSchemaObject> commandContext,

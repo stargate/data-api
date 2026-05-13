@@ -66,7 +66,7 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
     // Reject legacy / pre-lexical collections: must have a V1 comment with collection.options.
     if (isLegacyComment(ctx.schemaObject())) {
       throw badOptions(
-          "collection has legacy metadata (pre-lexical schema); recreate the collection to enable lexical");
+          "collection has legacy metadata (pre-lexical schema); recreate the collection with lexical enabled");
     }
 
     final CollectionLexicalConfig current = ctx.schemaObject().lexicalConfig();
