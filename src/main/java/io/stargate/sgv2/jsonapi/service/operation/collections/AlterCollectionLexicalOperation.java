@@ -82,7 +82,6 @@ public record AlterCollectionLexicalOperation(
     final boolean columnAlreadyExists =
         schemaObject.tableMetadata().getColumn(LEXICAL_COLUMN).isPresent();
 
-    final String lexicalCol = DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
     SimpleStatement createIndexStmt =
         CreateCollectionOperation.buildLexicalIndexStatement(
             keyspace, table, newLexicalConfig, /* ifNotExists */ true);
@@ -103,7 +102,8 @@ public record AlterCollectionLexicalOperation(
     } else {
       SimpleStatement addColumnStmt =
           SimpleStatement.newInstance(
-              "ALTER TABLE \"%s\".\"%s\" ADD %s text".formatted(keyspace, table, lexicalCol));
+              "ALTER TABLE \"%s\".\"%s\" ADD %s text"
+                  .formatted(keyspace, table, DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME));
       pipeline =
           queryExecutor
               .executeCreateSchemaChange(requestContext, addColumnStmt)
