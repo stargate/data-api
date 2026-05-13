@@ -75,13 +75,14 @@ public record AlterCollectionLexicalOperation(
     final boolean columnAlreadyExists =
         schemaObject.tableMetadata().getColumn(LEXICAL_COLUMN).isPresent();
 
+    final String lexicalCol = DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
     SimpleStatement createIndexStmt =
         SimpleStatement.newInstance(
-            ("CREATE CUSTOM INDEX IF NOT EXISTS \"%s_query_lexical_value\""
-                    + " ON \"%s\".\"%s\" (query_lexical_value)"
+            ("CREATE CUSTOM INDEX IF NOT EXISTS \"%s_%s\""
+                    + " ON \"%s\".\"%s\" (%s)"
                     + " USING 'StorageAttachedIndex'"
                     + " WITH OPTIONS = { 'index_analyzer': '%s' }")
-                .formatted(table, keyspace, table, analyzerString));
+                .formatted(table, lexicalCol, keyspace, table, lexicalCol, analyzerString));
 
     // Cassandra does not accept bind parameters for table options like `comment`; embed the
     // JSON directly with CQL single-quote escaping (matches
@@ -99,7 +100,7 @@ public record AlterCollectionLexicalOperation(
     } else {
       SimpleStatement addColumnStmt =
           SimpleStatement.newInstance(
-              "ALTER TABLE \"%s\".\"%s\" ADD query_lexical_value text".formatted(keyspace, table));
+              "ALTER TABLE \"%s\".\"%s\" ADD %s text".formatted(keyspace, table, lexicalCol));
       pipeline =
           queryExecutor
               .executeCreateSchemaChange(requestContext, addColumnStmt)
