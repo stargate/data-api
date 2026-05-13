@@ -71,31 +71,12 @@ public record CollectionLexicalConfig(
   }
 
   /**
-   * Method for validating the lexical config passed and constructing actual configuration object to
-   * use. Invalid-option errors are reported as {@link
-   * SchemaException.Code#INVALID_CREATE_COLLECTION_OPTIONS}; use {@link
-   * #validateAndConstruct(ObjectMapper, boolean,
-   * CreateCollectionCommand.Options.LexicalConfigDefinition, SchemaException.Code)} from commands
-   * other than {@code createCollection}.
+   * Validates the lexical config passed and constructs the runtime configuration object to use.
+   * Invalid-option errors are reported with {@code optionsErrorCode} so they get attributed to the
+   * invoking command (e.g. {@code INVALID_CREATE_COLLECTION_OPTIONS} from {@code createCollection},
+   * {@code INVALID_ALTER_COLLECTION_OPTIONS} from {@code alterCollection}).
    *
    * @return Valid CollectionLexicalConfig object
-   */
-  public static CollectionLexicalConfig validateAndConstruct(
-      ObjectMapper mapper,
-      boolean lexicalAvailableForDB,
-      CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
-    return validateAndConstruct(
-        mapper,
-        lexicalAvailableForDB,
-        lexicalConfig,
-        SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS);
-  }
-
-  /**
-   * Same as {@link #validateAndConstruct(ObjectMapper, boolean,
-   * CreateCollectionCommand.Options.LexicalConfigDefinition)} but lets the caller specify which
-   * {@link SchemaException.Code} to use for invalid-option errors so the reported error is
-   * attributed to the invoking command (e.g. {@code alterCollection}).
    */
   public static CollectionLexicalConfig validateAndConstruct(
       ObjectMapper mapper,

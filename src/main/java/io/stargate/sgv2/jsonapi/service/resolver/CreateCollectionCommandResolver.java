@@ -102,7 +102,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     CreateCollectionCommand.Options.VectorSearchConfig vector = options.vector();
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(
-            objectMapper, lexicalAvailableForDB, options.lexical());
+            objectMapper,
+            lexicalAvailableForDB,
+            options.lexical(),
+            SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS);
 
     final CollectionRerankDef rerankDef =
         CollectionRerankDef.fromApiDesc(
