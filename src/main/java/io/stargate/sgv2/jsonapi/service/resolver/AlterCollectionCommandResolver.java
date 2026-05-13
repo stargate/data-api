@@ -48,10 +48,13 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
 
     // validateAndConstruct throws:
     //   - LEXICAL_NOT_AVAILABLE_FOR_DATABASE if requested.enabled && !lexicalAvailableForDB
-    //   - INVALID_CREATE_COLLECTION_OPTIONS for malformed analyzer / missing 'enabled' / etc.
+    //   - INVALID_ALTER_COLLECTION_OPTIONS for malformed analyzer / missing 'enabled' / etc.
     final CollectionLexicalConfig requested =
         CollectionLexicalConfig.validateAndConstruct(
-            objectMapper, lexicalAvailableForDB, command.lexical());
+            objectMapper,
+            lexicalAvailableForDB,
+            command.lexical(),
+            SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS);
 
     // Phase 1: disabling lexical is not supported.
     if (!requested.enabled()) {

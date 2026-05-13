@@ -11,7 +11,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(
     description =
-        "Command that alters mutable settings of an existing collection. Initial phase supports enabling the 'lexical' feature only.")
+        "Command that alters mutable settings of an existing collection. Currently supports enabling the 'lexical' feature.")
 @JsonTypeName(CommandName.Names.ALTER_COLLECTION)
 public record AlterCollectionCommand(
     @Valid
@@ -19,7 +19,7 @@ public record AlterCollectionCommand(
         @Nullable
         @Schema(
             description =
-                "Lexical configuration to apply. Currently only enabling lexical is supported ('enabled' must be true).",
+                "Lexical configuration to apply. Currently only enabling is supported ('enabled' must be true).",
             type = SchemaType.OBJECT,
             implementation = CreateCollectionCommand.Options.LexicalConfigDefinition.class)
         CreateCollectionCommand.Options.LexicalConfigDefinition lexical)

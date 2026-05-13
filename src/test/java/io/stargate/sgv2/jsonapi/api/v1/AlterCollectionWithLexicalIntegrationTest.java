@@ -234,6 +234,103 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
       deleteCollection(name);
     }
 
+    // Malformed `lexical` body must yield INVALID_ALTER_COLLECTION_OPTIONS (not the
+    // createCollection variant). Mirrors the equivalent CreateCollectionWithLexicalIntegrationTest
+    // failure cases, but with the alterCollection-specific error code.
+    @Test
+    void failMissingEnabledFlag() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String name = freshCollectionName();
+      createCollectionWithLexicalDisabled(name);
+
+      String json =
+          """
+          {
+            "alterCollection": {
+              "lexical": { }
+            }
+          }
+          """;
+      postToCollection(name, json)
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.name()))
+          .body(
+              "errors[0].message",
+              containsString("'enabled' is required property for 'lexical' Object value"));
+
+      deleteCollection(name);
+    }
+
+    @Test
+    void failAnalyzerWrongJsonType() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String name = freshCollectionName();
+      createCollectionWithLexicalDisabled(name);
+
+      String json =
+          """
+          {
+            "alterCollection": {
+              "lexical": {
+                "enabled": true,
+                "analyzer": [1, 2, 3]
+              }
+            }
+          }
+          """;
+      postToCollection(name, json)
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.name()))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'analyzer' property of 'lexical' must be either JSON Object or String, is: Array"));
+
+      deleteCollection(name);
+    }
+
+    @Test
+    void failAnalyzerMisspelledField() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String name = freshCollectionName();
+      createCollectionWithLexicalDisabled(name);
+
+      String json =
+          """
+          {
+            "alterCollection": {
+              "lexical": {
+                "enabled": true,
+                "analyzer": {
+                  "tokeniser": { "name": "standard" }
+                }
+              }
+            }
+          }
+          """;
+      postToCollection(name, json)
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.name()))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid field for 'lexical.analyzer'. Valid fields are: [charFilters, filters, tokenizer], found: [tokeniser]"));
+
+      deleteCollection(name);
+    }
+
     @Test
     void failEnableWhenLexicalNotAvailableForDB() {
       Assumptions.assumeFalse(isLexicalAvailableForDB());
