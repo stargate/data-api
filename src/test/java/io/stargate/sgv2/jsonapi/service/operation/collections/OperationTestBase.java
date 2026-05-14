@@ -24,8 +24,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
@@ -78,8 +76,8 @@ public class OperationTestBase {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
     KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
 

@@ -37,8 +37,6 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
@@ -100,8 +98,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                    LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-                    RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
+                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
             jsonProcessingMetricsReporter,
             null);
   }

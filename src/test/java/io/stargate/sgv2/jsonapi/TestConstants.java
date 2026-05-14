@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
@@ -214,8 +213,8 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
     VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -248,8 +247,8 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-                LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
-                RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
   }
 
   // CommandContext for working on the schema objects above
