@@ -21,11 +21,13 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Optional;
@@ -178,12 +180,14 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDefault(),
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionLexicalDef.LEXICAL_DISABLED),
             // Use default reranking config - hardcode the value to avoid reading config
-            new CollectionRerankDef(
-                true,
-                new CollectionRerankDef.RerankServiceDef(
-                    "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef(
+                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
 
     // Schema object for testing with legacy (pre-lexical-config) defaults
     COLLECTION_SCHEMA_OBJECT_LEGACY =
@@ -192,8 +196,10 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection());
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionLexicalDef.LEXICAL_DISABLED),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionRerankDef.configForPreRerankingCollection()));
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -208,8 +214,10 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection());
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionLexicalDef.LEXICAL_DISABLED),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionRerankDef.configForPreRerankingCollection()));
 
     VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -224,11 +232,13 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            CollectionLexicalConfig.configForDefault(),
-            new CollectionRerankDef(
-                true,
-                new CollectionRerankDef.RerankServiceDef(
-                    "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionLexicalDef.LEXICAL_DISABLED),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef(
+                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
 
     TABLE_SCHEMA_OBJECT = new TableSchemaObject(TABLE_IDENTIFIER);
 
@@ -241,8 +251,10 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForDisabled());
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionLexicalDef.LEXICAL_DISABLED),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionRerankDef.configForDisabled()));
   }
 
   // CommandContext for working on the schema objects above

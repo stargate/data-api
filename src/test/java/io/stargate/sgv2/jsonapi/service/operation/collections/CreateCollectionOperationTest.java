@@ -30,8 +30,8 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -94,9 +94,11 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     when(driverMetadata.getKeyspaces()).thenReturn(allKeyspaces);
   }
 
-  private final CollectionLexicalConfig LEXICAL_CONFIG = CollectionLexicalConfig.configForDefault();
-
-  private final CollectionRerankDef RERANKING_DEF = CollectionRerankDef.configForDefault();
+  // TODO: XXX remove
+  //  private final VersioCollectionLexicalDef LEXICAL_CONFIG =
+  // CollectionLexicalDef.configForDefault();
+  //
+  //  private final CollectionRerankDef RERANKING_DEF = CollectionRerankDef.configForDefault();
 
   @BeforeEach
   public void init() {}
@@ -110,18 +112,23 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
     var operation =
-        CreateCollectionOperation.withoutVectorSearch(
+        new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            objectMapper,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
+            false,
+            0,
+            "",
             "",
             10,
             false,
+            null,
             false,
-            LEXICAL_CONFIG,
-            RERANKING_DEF);
+            null,
+            null,
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -142,21 +149,23 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
     var operation =
-        CreateCollectionOperation.withVectorSearch(
+        new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            objectMapper,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
+            true,
             5,
             "cosine",
             "",
-            "",
             10,
             false,
+            null,
             false,
-            LEXICAL_CONFIG,
-            RERANKING_DEF);
+            null,
+            null,
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -177,18 +186,23 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
     var operation =
-        CreateCollectionOperation.withoutVectorSearch(
+        new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            objectMapper,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
+            false,
+            0,
+            "",
             "",
             10,
             false,
+            null,
             true,
-            LEXICAL_CONFIG,
-            RERANKING_DEF);
+            null,
+            null,
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -210,21 +224,23 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
     var operation =
-        CreateCollectionOperation.withVectorSearch(
+        new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            objectMapper,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
+            true,
             5,
             "cosine",
             "",
-            "",
             10,
             false,
+            null,
             true,
-            LEXICAL_CONFIG,
-            RERANKING_DEF);
+            null,
+            null,
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -279,18 +295,23 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
     var operation =
-        CreateCollectionOperation.withoutVectorSearch(
+        new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            objectMapper,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
+            false,
+            0,
+            "",
             "",
             10,
-            true,
             false,
-            LEXICAL_CONFIG,
-            RERANKING_DEF);
+            null,
+            false,
+            null,
+            null,
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)

@@ -36,17 +36,17 @@ public record CreateCollectionCommand(
           @Schema(
               description = "Id configuration for the collection",
               type = SchemaType.OBJECT,
-              implementation = VectorSearchConfig.class)
+              implementation = VectorSearchDesc.class)
           @JsonProperty("defaultId")
-          IdConfig idConfig,
+          CreateCollectionCommand.Options.DocIdDesc idConfig,
       @Valid
           @Nullable
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
               description = "Vector search configuration for the collection",
               type = SchemaType.OBJECT,
-              implementation = VectorSearchConfig.class)
-          VectorSearchConfig vector,
+              implementation = VectorSearchDesc.class)
+          CreateCollectionCommand.Options.VectorSearchDesc vector,
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
@@ -54,8 +54,8 @@ public record CreateCollectionCommand(
               description =
                   "Optional indexing configuration to provide allow/deny list of fields for indexing",
               type = SchemaType.OBJECT,
-              implementation = IndexingConfig.class)
-          IndexingConfig indexing,
+              implementation = IndexingDesc.class)
+          CreateCollectionCommand.Options.IndexingDesc indexing,
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
@@ -63,8 +63,8 @@ public record CreateCollectionCommand(
               description =
                   "Optional configuration defining if and how to support use of '$lexical' field",
               type = SchemaType.OBJECT,
-              implementation = LexicalConfigDefinition.class)
-          LexicalConfigDefinition lexical,
+              implementation = LexicalDesc.class)
+          CreateCollectionCommand.Options.LexicalDesc lexical,
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
@@ -75,7 +75,7 @@ public record CreateCollectionCommand(
               implementation = RerankDesc.class)
           RerankDesc rerank) {
 
-    public record IdConfig(
+    public record DocIdDesc(
         @Nullable
             @Pattern(
                 regexp = "(objectId|uuid|uuidv6|uuidv7)",
@@ -88,7 +88,7 @@ public record CreateCollectionCommand(
             @JsonProperty("type")
             String idType) {}
 
-    public record VectorSearchConfig(
+    public record VectorSearchDesc(
         @Nullable
             @Positive(message = "dimension should be greater than `0`")
             @Schema(
@@ -135,7 +135,7 @@ public record CreateCollectionCommand(
             @JsonProperty("service")
             VectorizeConfig vectorizeConfig) {
 
-      public VectorSearchConfig(
+      public VectorSearchDesc(
           Integer dimension, String metric, String sourceModel, VectorizeConfig vectorizeConfig) {
         this.dimension = dimension;
         this.metric = metric;
@@ -144,7 +144,7 @@ public record CreateCollectionCommand(
       }
     }
 
-    public record IndexingConfig(
+    public record IndexingDesc(
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
                 description = "List of allowed indexing fields",
@@ -238,7 +238,7 @@ public record CreateCollectionCommand(
       }
     }
 
-    public record LexicalConfigDefinition(
+    public record LexicalDesc(
         @Schema(
                 description = "Whether to enable the use of '$lexical' field (default: 'true')",
                 defaultValue = "true",

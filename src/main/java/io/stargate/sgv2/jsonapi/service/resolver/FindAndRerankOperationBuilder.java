@@ -190,13 +190,13 @@ class FindAndRerankOperationBuilder {
     }
 
     if (isLexicalSort()) {
-      if (!commandContext.schemaObject().lexicalConfig().enabled()) {
+      if (!commandContext.schemaObject().lexicalDef().enabled()) {
         throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
             errVars(commandContext.schemaObject()));
       }
     }
 
-    if (!commandContext.schemaObject().rerankingConfig().enabled()) {
+    if (!commandContext.schemaObject().rerankDef().enabled()) {
       // TODO: more info in the error
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
@@ -204,7 +204,7 @@ class FindAndRerankOperationBuilder {
     var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
     var modelConfig =
         rerankingProvidersConfig.filterByRerankServiceDef(
-            commandContext.schemaObject().rerankingConfig().rerankServiceDef());
+            commandContext.schemaObject().rerankDef().rerankServiceDef());
     // Validate if the model is END_OF_LIFE
     if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
       throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
@@ -225,7 +225,7 @@ class FindAndRerankOperationBuilder {
       rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
     // Previous code will check reranking is supported
-    var providerConfig = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
+    var providerConfig = commandContext.schemaObject().rerankDef().rerankServiceDef();
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()

@@ -30,5 +30,6 @@ public interface TableCommentConstants {
   String DEFAULT_ID_KEY = "defaultId";
 
   /** Schema version value */
-  int SCHEMA_VERSION_VALUE = 1;
+  // TODO: XXX
+  //  int SCHEMA_VERSION_VALUE = 1;
 }

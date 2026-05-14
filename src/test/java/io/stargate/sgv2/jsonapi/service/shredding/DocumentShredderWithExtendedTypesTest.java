@@ -17,6 +17,8 @@ import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.*;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.*;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -196,16 +198,21 @@ public class DocumentShredderWithExtendedTypesTest {
   class OkCasesGeneratedId {
     @Test
     public void shredSimpleWithoutIdGenLegacyUUID() throws Exception {
+
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
+
       var collectionSchemaObject =
           new CollectionSchemaObject(
               testConstants.COLLECTION_IDENTIFIER,
               new IdConfig(CollectionIdType.UNDEFINED),
               VectorConfig.NOT_ENABLED_CONFIG,
               null,
-              CollectionLexicalConfig.configForDisabled(),
-              CollectionRerankDef.configForDisabled());
+              LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                  CollectionLexicalDef.LEXICAL_DISABLED),
+              RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                  CollectionRerankDef.configForDisabled()));
+
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
@@ -252,8 +259,10 @@ public class DocumentShredderWithExtendedTypesTest {
               new IdConfig(CollectionIdType.OBJECT_ID),
               VectorConfig.NOT_ENABLED_CONFIG,
               null,
-              CollectionLexicalConfig.configForDisabled(),
-              CollectionRerankDef.configForDisabled());
+              LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                  CollectionLexicalDef.LEXICAL_DISABLED),
+              RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                  CollectionRerankDef.configForDisabled()));
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
@@ -318,8 +327,10 @@ public class DocumentShredderWithExtendedTypesTest {
               new IdConfig(idType),
               VectorConfig.NOT_ENABLED_CONFIG,
               null,
-              CollectionLexicalConfig.configForDisabled(),
-              CollectionRerankDef.configForDisabled());
+              LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                  CollectionLexicalDef.LEXICAL_DISABLED),
+              RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                  CollectionRerankDef.configForDisabled()));
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,

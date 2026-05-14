@@ -24,10 +24,12 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.inject.Inject;
@@ -76,8 +78,10 @@ public class OperationTestBase {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection());
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionLexicalDef.configForPreLexical()),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionRerankDef.configForPreRerankingCollection()));
 
     KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
 

@@ -37,10 +37,12 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -98,8 +100,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                CollectionLexicalConfig.configForDisabled(),
-                CollectionRerankDef.configForPreRerankingCollection()),
+                LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                    CollectionLexicalDef.LEXICAL_DISABLED),
+                RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                    CollectionRerankDef.configForPreRerankingCollection())),
             jsonProcessingMetricsReporter,
             null);
   }

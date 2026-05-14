@@ -16,10 +16,12 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -94,8 +96,10 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
                         EmbeddingSourceModel.OTHER,
                         new VectorizeDefinition("custom", "custom", null, null)))),
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection()),
+            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionLexicalDef.LEXICAL_DISABLED),
+            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+                CollectionRerankDef.configForPreRerankingCollection())),
         null,
         TEST_EMBEDDING_PROVIDER);
   }

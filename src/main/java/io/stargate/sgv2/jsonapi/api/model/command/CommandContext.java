@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
@@ -23,6 +22,7 @@ import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.VersionedSchema;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -73,11 +73,6 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
   // used to track the features used in the command
   private final CommandFeatures commandFeatures;
 
-  // created on demand or set via builder, otherwise we need to read from config too early when
-  // running tests, See the {@link Builder#withApiFeatures}
-  // access via {@link CommandContext#apiFeatures()}
-  private ApiFeatures apiFeatures;
-
   private CommandContext(
       SchemaT schemaObject,
       EmbeddingProvider embeddingProvider,
@@ -86,7 +81,6 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
       CommandConfig commandConfig,
-      ApiFeatures apiFeatures,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory,
       MeterRegistry meterRegistry) {
@@ -104,21 +98,20 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     this.requestContext = requestContext;
     this.schemaObject = schemaObject;
     this.commandName = commandName; // TODO: remove the command name, but it is used in 14 places
-    this.apiFeatures = apiFeatures;
 
     this.loggingMDCContexts.add(this.requestContext);
     this.loggingMDCContexts.add(this.schemaObject.identifier());
 
     var anyTracing =
-        apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
-            || apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
+        requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
+            || requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
 
     this.requestTracing =
         anyTracing
             ? new DefaultRequestTracing(
                 requestContext.requestId(),
                 requestContext.tenant(),
-                apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
+                requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
             : RequestTracing.NO_OP;
 
     this.commandFeatures = CommandFeatures.create();
@@ -169,23 +162,16 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     return requestContext;
   }
 
-  public ApiFeatures apiFeatures() {
-    // using a sync block here because the context can be accessed by multiple tasks concurrently
-    if (apiFeatures == null) {
-      synchronized (this) {
-        if (apiFeatures == null) {
-          // Merging the config for features with the request headers to get the final feature set
-          apiFeatures =
-              ApiFeatures.fromConfigAndRequest(
-                  commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
-        }
-      }
-    }
-    return apiFeatures;
-  }
-
   public CommandFeatures commandFeatures() {
     return commandFeatures;
+  }
+
+  public ApiFeatures apiFeatures() {
+    return requestContext.apiFeatures();
+  }
+
+  public VersionedSchema versionedSchema() {
+    return requestContext.versionedSchema();
   }
 
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {
@@ -386,7 +372,6 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
                 jsonProcessingMetricsReporter,
                 cqlSessionCache,
                 commandConfig,
-                apiFeatures,
                 embeddingProviderFactory,
                 rerankingProviderFactory,
                 meterRegistry);
