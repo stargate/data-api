@@ -376,6 +376,33 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
       deleteCollection(name);
     }
 
+    // Locks in that the `enableLexical` body rejects unknown fields via Jackson's
+    // FAIL_ON_UNKNOWN_PROPERTIES setting.
+    @Test
+    void failEnableLexicalUnknownField() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String name = freshCollectionName();
+      createCollectionWithLexicalDisabled(name);
+
+      String json =
+          """
+          {
+            "alterCollection": {
+              "operation": {
+                "enableLexical": {
+                  "analyzer": "standard",
+                  "foo": "bar"
+                }
+              }
+            }
+          }
+          """;
+      postToCollection(name, json).statusCode(200).body("$", responseIsError());
+
+      deleteCollection(name);
+    }
+
     @Test
     void failEnableWhenLexicalNotAvailableForDB() {
       Assumptions.assumeFalse(isLexicalAvailableForDB());
