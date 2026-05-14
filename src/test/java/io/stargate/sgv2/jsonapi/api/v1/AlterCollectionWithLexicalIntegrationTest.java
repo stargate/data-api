@@ -12,6 +12,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -284,8 +285,7 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
     }
 
     // Unknown operation key under "operation" — Jackson surfaces this via the global
-    // CommandObjectMapperHandler.handleUnknownTypeId path; we just assert that an error is
-    // returned with no DDL effect.
+    // CommandObjectMapperHandler.handleUnknownTypeId path which throws COMMAND_UNKNOWN.
     @Test
     void failUnknownOperation() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
@@ -303,7 +303,14 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
             }
           }
           """;
-      postToCollection(name, json).statusCode(200).body("$", responseIsError());
+      postToCollection(name, json)
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_UNKNOWN.name()))
+          .body(
+              "errors[0].message",
+              containsString("Command 'unknownOp' is not a AlterCollection Operation recognized"))
+          .body("errors[0].message", containsString("AlterCollection Operations: [enableLexical]"));
 
       deleteCollection(name);
     }
@@ -398,7 +405,11 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
             }
           }
           """;
-      postToCollection(name, json).statusCode(200).body("$", responseIsError());
+      postToCollection(name, json)
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_UNKNOWN.name()))
+          .body("errors[0].message", containsString("Command field 'foo' not recognized"));
 
       deleteCollection(name);
     }

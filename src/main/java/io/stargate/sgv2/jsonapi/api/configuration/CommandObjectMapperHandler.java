@@ -65,6 +65,13 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     int ix = baseCommand.indexOf("Command");
     if (ix > 0) {
       baseCommand = baseCommand.substring(0, ix) + " " + "Command";
+    } else {
+      // Also handle nested polymorphic operations like "AlterCollectionOperation" ->
+      // "AlterCollection Operation" so the error message reads more naturally.
+      int opIx = baseCommand.indexOf("Operation");
+      if (opIx > 0) {
+        baseCommand = baseCommand.substring(0, opIx) + " " + "Operation";
+      }
     }
 
     throw RequestException.Code.COMMAND_UNKNOWN.get(
