@@ -305,10 +305,8 @@ public class DataVectorizerTest {
                           EmbeddingSourceModel.OTHER,
                           new VectorizeDefinition("custom", "custom", null, null)))),
               null,
-              LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                  CollectionLexicalDef.LEXICAL_DISABLED),
-              RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                  CollectionRerankDef.configForPreRerankingCollection()));
+              LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+              RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
         documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));

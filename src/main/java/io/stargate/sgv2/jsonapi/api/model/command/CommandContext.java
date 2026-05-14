@@ -57,7 +57,8 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
 
   // Request specific
   private final SchemaT schemaObject;
-  private final RequestTracing requestTracing;
+  // Tracing is created lazily in the getter — volatile required for double-checked locking
+  private volatile RequestTracing requestTracing;
   private final RequestContext requestContext;
   private final EmbeddingProvider
       embeddingProvider; // to be removed later, this is a single provider
@@ -102,18 +103,6 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     this.loggingMDCContexts.add(this.requestContext);
     this.loggingMDCContexts.add(this.schemaObject.identifier());
 
-    var anyTracing =
-        requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
-            || requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
-
-    this.requestTracing =
-        anyTracing
-            ? new DefaultRequestTracing(
-                requestContext.requestId(),
-                requestContext.tenant(),
-                requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
-            : RequestTracing.NO_OP;
-
     this.commandFeatures = CommandFeatures.create();
   }
 
@@ -154,8 +143,28 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     return commandName;
   }
 
+  // Lazy init: apiFeatures config is accessed too early in unit tests if done at construction time
   public RequestTracing requestTracing() {
+    if (requestTracing == null) {
+      synchronized (this) {
+        if (requestTracing == null) {
+          requestTracing = buildRequestTracing();
+        }
+      }
+    }
     return requestTracing;
+  }
+
+  private RequestTracing buildRequestTracing() {
+    boolean anyTracing =
+            requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
+            || requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
+    return anyTracing
+        ? new DefaultRequestTracing(
+            requestContext.requestId(),
+            requestContext.tenant(),
+            requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
+        : RequestTracing.NO_OP;
   }
 
   public RequestContext requestContext() {

@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
@@ -101,6 +102,8 @@ public class TestConstants {
    */
   public final CollectionSchemaObject MISSING_COLLECTION;
 
+  public final ApiFeatures API_FEATURES = ApiFeatures.empty();
+
   // ============================================================
   // Schema Objects
   // ============================================================
@@ -180,10 +183,9 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionLexicalDef.LEXICAL_DISABLED),
+            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
             // Use default reranking config - hardcode the value to avoid reading config
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(
                 new CollectionRerankDef(
                     true,
                     new CollectionRerankDef.RerankServiceDef(
@@ -196,10 +198,8 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionLexicalDef.LEXICAL_DISABLED),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionRerankDef.configForPreRerankingCollection()));
+            LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -214,10 +214,8 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionLexicalDef.LEXICAL_DISABLED),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionRerankDef.configForPreRerankingCollection()));
+                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
     VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -232,9 +230,8 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionLexicalDef.LEXICAL_DISABLED),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
+            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(
                 new CollectionRerankDef(
                     true,
                     new CollectionRerankDef.RerankServiceDef(
@@ -251,10 +248,8 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionLexicalDef.LEXICAL_DISABLED),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionRerankDef.configForDisabled()));
+                LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+                RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
   }
 
   // CommandContext for working on the schema objects above
@@ -276,6 +271,7 @@ public class TestConstants {
     var requestContext = mock(RequestContext.class);
     when(requestContext.tenant()).thenReturn(TENANT);
     when(requestContext.getEmbeddingCredentials()).thenReturn(EMBEDDING_CREDENTIALS);
+    when(requestContext.apiFeatures()).thenReturn(API_FEATURES);
 
     var embeddingCredentials = mock(EmbeddingCredentials.class);
     when(embeddingCredentials.tenant()).thenReturn(TENANT);

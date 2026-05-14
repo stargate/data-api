@@ -50,8 +50,8 @@ public class RequestContext implements LoggingMDCContext {
 
   // created on demand, otherwise we need to read from config too early when
   // access via {@link CommandContext#apiFeatures()}
-  private ApiFeatures apiFeatures;
-  private VersionedSchema versionedSchema;
+  private volatile ApiFeatures apiFeatures;
+  private volatile VersionedSchema versionedSchema;
   private CommandConfig commandConfig = ConfigPreLoader.getPreLoadOrEmpty();
 
   /** For testing purposes only. */

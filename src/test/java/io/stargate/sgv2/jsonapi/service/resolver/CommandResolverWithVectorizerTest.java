@@ -103,10 +103,8 @@ public class CommandResolverWithVectorizerTest {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                    CollectionLexicalDef.LEXICAL_DISABLED),
-                RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                    CollectionRerankDef.configForDisabled())),
+                    LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                    RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
             null,
             null);
   }

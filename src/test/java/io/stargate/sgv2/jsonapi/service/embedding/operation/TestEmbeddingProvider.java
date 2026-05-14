@@ -96,10 +96,8 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
                         EmbeddingSourceModel.OTHER,
                         new VectorizeDefinition("custom", "custom", null, null)))),
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionLexicalDef.LEXICAL_DISABLED),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionRerankDef.configForPreRerankingCollection())),
+                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
         null,
         TEST_EMBEDDING_PROVIDER);
   }

@@ -208,10 +208,8 @@ public class DocumentShredderWithExtendedTypesTest {
               new IdConfig(CollectionIdType.UNDEFINED),
               VectorConfig.NOT_ENABLED_CONFIG,
               null,
-              LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                  CollectionLexicalDef.LEXICAL_DISABLED),
-              RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                  CollectionRerankDef.configForDisabled()));
+                  LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                  RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
       WritableShreddedDocument doc =
           documentShredder.shred(
@@ -259,10 +257,8 @@ public class DocumentShredderWithExtendedTypesTest {
               new IdConfig(CollectionIdType.OBJECT_ID),
               VectorConfig.NOT_ENABLED_CONFIG,
               null,
-              LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                  CollectionLexicalDef.LEXICAL_DISABLED),
-              RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                  CollectionRerankDef.configForDisabled()));
+                  LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                  RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,
@@ -327,10 +323,8 @@ public class DocumentShredderWithExtendedTypesTest {
               new IdConfig(idType),
               VectorConfig.NOT_ENABLED_CONFIG,
               null,
-              LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                  CollectionLexicalDef.LEXICAL_DISABLED),
-              RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                  CollectionRerankDef.configForDisabled()));
+                  LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                  RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
       WritableShreddedDocument doc =
           documentShredder.shred(
               inputDoc,

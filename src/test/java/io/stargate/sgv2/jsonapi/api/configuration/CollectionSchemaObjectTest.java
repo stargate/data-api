@@ -33,10 +33,8 @@ public class CollectionSchemaObjectTest {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             indexingConfig,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionLexicalDef.LEXICAL_DISABLED),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionRerankDef.configForPreRerankingCollection()));
+                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
     IndexingProjector indexingProj = settings.indexingProjector();
 

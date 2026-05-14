@@ -100,10 +100,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                    CollectionLexicalDef.LEXICAL_DISABLED),
-                RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                    CollectionRerankDef.configForPreRerankingCollection())),
+                    LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                    RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
             jsonProcessingMetricsReporter,
             null);
   }

@@ -6,7 +6,10 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 public class LexicalDefSchemaValueDef extends SchemaValueDef<CollectionLexicalDef> {
 
   @VisibleForTesting
-  public static final LexicalDefSchemaValueDef FOR_TESTING = new LexicalDefSchemaValueDef(false);
+  public static final LexicalDefSchemaValueDef FOR_TESTING_ENABLED = new LexicalDefSchemaValueDef(false);
+
+  @VisibleForTesting
+  public static final LexicalDefSchemaValueDef FOR_TESTING_DISABLED = new LexicalDefSchemaValueDef(true);
 
   LexicalDefSchemaValueDef(boolean featureDisabled) {
     super(

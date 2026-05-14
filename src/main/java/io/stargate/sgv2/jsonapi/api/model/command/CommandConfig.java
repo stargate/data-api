@@ -34,7 +34,7 @@ public class CommandConfig {
   private final ConcurrentMap<Class<?>, Object> configCache = new ConcurrentHashMap<>();
 
   // use getConfigProvider()
-  private SmallRyeConfig configProvider;
+  private volatile SmallRyeConfig configProvider;
 
   /**
    * Call to preload and log the config classes.

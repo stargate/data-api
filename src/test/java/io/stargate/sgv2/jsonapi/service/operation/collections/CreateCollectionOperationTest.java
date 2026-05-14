@@ -127,8 +127,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             false,
             null,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -164,8 +164,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             false,
             null,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -201,8 +201,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             true,
             null,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -239,8 +239,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             true,
             null,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -305,13 +305,13 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             "",
             "",
             10,
-            false,
+            true,
             null,
             false,
             null,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)

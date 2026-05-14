@@ -78,10 +78,8 @@ public class OperationTestBase {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionLexicalDef.configForPreLexical()),
-            RerankDefSchemaValueDef.FOR_TESTING.currentVersion(
-                CollectionRerankDef.configForPreRerankingCollection()));
+                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
     KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
 

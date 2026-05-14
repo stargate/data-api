@@ -6,7 +6,10 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 public class RerankDefSchemaValueDef extends SchemaValueDef<CollectionRerankDef> {
 
   @VisibleForTesting
-  public static final RerankDefSchemaValueDef FOR_TESTING = new RerankDefSchemaValueDef(false);
+  public static final RerankDefSchemaValueDef FOR_TESTING_ENABLED = new RerankDefSchemaValueDef(false);
+
+  @VisibleForTesting
+  public static final RerankDefSchemaValueDef FOR_TESTING_DISABLED = new RerankDefSchemaValueDef(true);
 
   RerankDefSchemaValueDef(boolean featureDisabled) {
     super(
