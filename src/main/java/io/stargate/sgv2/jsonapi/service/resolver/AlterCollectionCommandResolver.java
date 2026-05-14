@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterCollectionOperationImpl;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
@@ -43,25 +45,37 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
   public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, AlterCollectionCommand command) {
 
-    if (command.lexical() == null) {
-      throw badOptions("must specify 'lexical' field");
+    if (command.operation() == null) {
+      throw badOptions("must specify 'operation' field");
     }
 
+    return switch (command.operation()) {
+      case AlterCollectionOperationImpl.EnableLexical op -> handleEnableLexical(ctx, op);
+      default ->
+          throw new IllegalStateException(
+              "Unexpected AlterCollectionOperation class: "
+                  + command.operation().getClass().getSimpleName());
+    };
+  }
+
+  private Operation<CollectionSchemaObject> handleEnableLexical(
+      CommandContext<CollectionSchemaObject> ctx, AlterCollectionOperationImpl.EnableLexical op) {
+
+    // Synthesize a LexicalConfigDefinition with enabled=true so we can reuse the existing
+    // validation pipeline that createCollection uses.
+    final var lexicalConfigDef =
+        new CreateCollectionCommand.Options.LexicalConfigDefinition(
+            /* enabled */ Boolean.TRUE, op.analyzerDef());
+
     // validateAndConstruct throws:
-    //   - LEXICAL_NOT_AVAILABLE_FOR_DATABASE if requested.enabled && !lexicalAvailableForDB
-    //   - INVALID_ALTER_COLLECTION_OPTIONS for malformed analyzer / missing 'enabled' / etc.
+    //   - LEXICAL_NOT_AVAILABLE_FOR_DATABASE if !lexicalAvailableForDB
+    //   - INVALID_ALTER_COLLECTION_OPTIONS for malformed analyzer
     final CollectionLexicalConfig requested =
         CollectionLexicalConfig.validateAndConstruct(
             objectMapper,
             ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL),
-            command.lexical(),
+            lexicalConfigDef,
             SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS);
-
-    // Phase 1: disabling lexical is not supported.
-    if (!requested.enabled()) {
-      throw badOptions(
-          "'lexical.enabled' must be true; alterCollection cannot disable lexical search");
-    }
 
     // Reject legacy / pre-lexical collections: must have a V1 comment with collection.options.
     if (isLegacyComment(ctx.schemaObject())) {

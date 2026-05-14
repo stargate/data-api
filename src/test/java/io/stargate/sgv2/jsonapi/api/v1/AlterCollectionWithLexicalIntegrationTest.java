@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -41,7 +42,9 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": { "enabled": true }
+              "operation": {
+                "enableLexical": { }
+              }
             }
           }
           """;
@@ -59,9 +62,7 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
             }
           }
           """;
-      postToCollection(name, insertOk)
-          .statusCode(200)
-          .body("errors", is(org.hamcrest.Matchers.nullValue()));
+      postToCollection(name, insertOk).statusCode(200).body("errors", is(nullValue()));
 
       String find =
           """
@@ -73,7 +74,7 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """;
       postToCollection(name, find)
           .statusCode(200)
-          .body("errors", is(org.hamcrest.Matchers.nullValue()))
+          .body("errors", is(nullValue()))
           .body("data.document._id", is("doc1"));
 
       deleteCollection(name);
@@ -90,9 +91,10 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": {
-                "enabled": true,
-                "analyzer": { "tokenizer": { "name": "whitespace" } }
+              "operation": {
+                "enableLexical": {
+                  "analyzer": { "tokenizer": { "name": "whitespace" } }
+                }
               }
             }
           }
@@ -146,7 +148,9 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": { "enabled": true }
+              "operation": {
+                "enableLexical": { }
+              }
             }
           }
           """;
@@ -206,7 +210,9 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": { "enabled": true, "analyzer": "standard" }
+              "operation": {
+                "enableLexical": { "analyzer": "standard" }
+              }
             }
           }
           """;
@@ -234,9 +240,10 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": {
-                "enabled": true,
-                "analyzer": { "tokenizer": { "name": "whitespace" } }
+              "operation": {
+                "enableLexical": {
+                  "analyzer": { "tokenizer": { "name": "whitespace" } }
+                }
               }
             }
           }
@@ -253,55 +260,7 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
     }
 
     @Test
-    void failDisableLexical() {
-      Assumptions.assumeTrue(isLexicalAvailableForDB());
-
-      final String name = freshCollectionName();
-      createCollectionWithLexical(name, "{ \"enabled\": true }");
-
-      String json =
-          """
-          {
-            "alterCollection": {
-              "lexical": { "enabled": false }
-            }
-          }
-          """;
-      postToCollection(name, json)
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].errorCode",
-              is(SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.name()))
-          .body("errors[0].message", containsString("cannot disable lexical"));
-
-      deleteCollection(name);
-    }
-
-    @Test
-    void failUnknownRootField() {
-      Assumptions.assumeTrue(isLexicalAvailableForDB());
-
-      final String name = freshCollectionName();
-      createCollectionWithLexicalDisabled(name);
-
-      String json =
-          """
-          {
-            "alterCollection": {
-              "lexical": { "enabled": true },
-              "unknownField": 1
-            }
-          }
-          """;
-      // Jackson rejects the unknown root property; we just assert an error is returned.
-      postToCollection(name, json).statusCode(200).body("$", responseIsError());
-
-      deleteCollection(name);
-    }
-
-    @Test
-    void failMissingLexical() {
+    void failMissingOperation() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
       final String name = freshCollectionName();
@@ -319,16 +278,16 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.name()))
-          .body("errors[0].message", containsString("must specify 'lexical' field"));
+          .body("errors[0].message", containsString("must specify 'operation' field"));
 
       deleteCollection(name);
     }
 
-    // Malformed `lexical` body must yield INVALID_ALTER_COLLECTION_OPTIONS (not the
-    // createCollection variant). Mirrors the equivalent CreateCollectionWithLexicalIntegrationTest
-    // failure cases, but with the alterCollection-specific error code.
+    // Unknown operation key under "operation" — Jackson surfaces this via the global
+    // CommandObjectMapperHandler.handleUnknownTypeId path; we just assert that an error is
+    // returned with no DDL effect.
     @Test
-    void failMissingEnabledFlag() {
+    void failUnknownOperation() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
       final String name = freshCollectionName();
@@ -338,19 +297,13 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": { }
+              "operation": {
+                "unknownOp": { }
+              }
             }
           }
           """;
-      postToCollection(name, json)
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].errorCode",
-              is(SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS.name()))
-          .body(
-              "errors[0].message",
-              containsString("'enabled' is required property for 'lexical' Object value"));
+      postToCollection(name, json).statusCode(200).body("$", responseIsError());
 
       deleteCollection(name);
     }
@@ -366,9 +319,10 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": {
-                "enabled": true,
-                "analyzer": [1, 2, 3]
+              "operation": {
+                "enableLexical": {
+                  "analyzer": [1, 2, 3]
+                }
               }
             }
           }
@@ -398,10 +352,11 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": {
-                "enabled": true,
-                "analyzer": {
-                  "tokeniser": { "name": "standard" }
+              "operation": {
+                "enableLexical": {
+                  "analyzer": {
+                    "tokeniser": { "name": "standard" }
+                  }
                 }
               }
             }
@@ -432,7 +387,9 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           """
           {
             "alterCollection": {
-              "lexical": { "enabled": true }
+              "operation": {
+                "enableLexical": { }
+              }
             }
           }
           """;
