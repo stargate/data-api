@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
@@ -7,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -55,178 +56,52 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   @Override
   public Operation resolveKeyspaceCommand(
-      CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
+      CommandContext<KeyspaceSchemaObject> context, CreateCollectionCommand command) {
 
     // XXX TODO: USE THIS IN HERE TO CHECK
-    //    var lexicalAvailableForDB = ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
+    //    var lexicalAvailableForDB = context.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
 
     var collectionName = NamingRules.COLLECTION.checkRule(command.name());
-    final CreateCollectionCommand.Options options = command.options();
-    boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
 
-    if (options == null) {
-      //      final CollectionLexicalConfig lexicalConfig =
-      //          lexicalAvailableForDB
-      //              ? CollectionLexicalConfig.configForDefault()
-      //              : CollectionLexicalConfig.configForDisabled();
+    var docIdDesc =
+        getOrDefault(command.options(), CreateCollectionCommand.Options::idConfig, null);
 
-      // no options, so no lexical, reuse same factory
-      var lexicalDef =
-          CollectionLexicalDef.fromApiDesc(OBJECT_MAPPER, null, ctx.versionedSchema().lexicalDef());
-
-      //      final CollectionRerankDef rerankDef =
-      //          CollectionRerankDef.configForNewCollections(
-      //              isRerankingEnabledForAPI, rerankingProvidersConfig);
-      var rerankDef =
-          CollectionRerankDef.fromApiDesc(
-              null, rerankingProvidersConfig, ctx.versionedSchema().rerankDef());
-
-      // XXX TODO: need to make sure these values are valid according to feature enabled !
-
-      // TODO: XXXL REMOVE
-      //      return CreateCollectionOperation.withoutVectorSearch(
-      //          ctx,
-      //          dbLimitsConfig,
-      //          objectMapper,
-      //          ctx.cqlSessionCache(),
-      //          collectionName,
-      //          generateComment(
-      //              objectMapper,
-      //              false,
-      //              false,
-      //              collectionName,
-      //              null,
-      //              null,
-      //              null,
-      //              lexicalConfig,
-      //              rerankDef),
-      //          operationsConfig.databaseConfig().ddlDelayMillis(),
-      //          operationsConfig.tooManyIndexesRollbackEnabled(),
-      //          false,
-      //          lexicalConfig,
-      //          rerankDef);
-
-      return new CreateCollectionOperation(
-          ctx,
-          dbLimitsConfig,
-          ctx.cqlSessionCache(),
-          collectionName,
-          false,
-          0,
-          null,
-          null,
-          operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled(),
-          null,
-          false,
-          null,
-          null,
-          lexicalDef,
-          rerankDef);
+    var vectorSearchDesc =
+        getOrDefault(command.options(), CreateCollectionCommand.Options::vector, null);
+    if (vectorSearchDesc != null) {
+      vectorSearchDesc = validateVectorOptions(vectorSearchDesc);
     }
 
-    boolean hasIndexing = options.indexing() != null;
-    boolean hasVectorSearch = options.vector() != null;
-    CreateCollectionCommand.Options.VectorSearchDesc vector = options.vector();
+    var indexingDesc =
+        getOrDefault(command.options(), CreateCollectionCommand.Options::indexing, null);
+    if (indexingDesc != null) {
+      indexingDesc.validate();
+    }
 
     var lexicalDef =
         CollectionLexicalDef.fromApiDesc(
-            OBJECT_MAPPER, options.lexical(), ctx.versionedSchema().lexicalDef());
+            OBJECT_MAPPER,
+            getOrDefault(command.options(), CreateCollectionCommand.Options::lexical, null),
+            context.versionedSchema().lexicalDef());
+
     var rerankDef =
         CollectionRerankDef.fromApiDesc(
-            options.rerank(), rerankingProvidersConfig, ctx.versionedSchema().rerankDef());
+            getOrDefault(command.options(), CreateCollectionCommand.Options::rerank, null),
+            rerankingProvidersConfig,
+            context.versionedSchema().rerankDef());
 
-    boolean indexingDenyAll = false;
-    // handling indexing options
-    if (hasIndexing) {
-      // validation of configuration
-      options.indexing().validate();
-      indexingDenyAll = options.indexing().denyAll();
-      // No need to process if both are null or empty
-    }
-
-    // handling vector option
-    if (hasVectorSearch) {
-      vector = validateVectorOptions(vector);
-    }
-
-    //    String comment =
-    //        generateComment(
-    //            objectMapper,
-    //            hasIndexing,
-    //            hasVectorSearch,
-    //            collectionName,
-    //            options.indexing(),
-    //            vector,
-    //            options.idConfig(),
-    //            lexicalConfig,
-    //            rerankDef);
-
-    if (hasVectorSearch) {
-      return new CreateCollectionOperation(
-          ctx,
-          dbLimitsConfig,
-          ctx.cqlSessionCache(),
-          collectionName,
-          hasVectorSearch,
-          vector.dimension(),
-          vector.metric(),
-          vector.sourceModel(),
-          operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled(),
-          options.idConfig(),
-          indexingDenyAll,
-          options.indexing(),
-          null,
-          lexicalDef,
-          rerankDef);
-
-      //      return CreateCollectionOperation.withVectorSearch(
-      //          ctx,
-      //          dbLimitsConfig,
-      //          objectMapper,
-      //          ctx.cqlSessionCache(),
-      //          collectionName,
-      //          vector.dimension(),
-      //          vector.metric(),
-      //          vector.sourceModel(),
-      //          comment,
-      //          operationsConfig.databaseConfig().ddlDelayMillis(),
-      //          operationsConfig.tooManyIndexesRollbackEnabled(),
-      //          indexingDenyAll,
-      //          lexicalConfig,
-      //          rerankDef);
-    } else {
-      return new CreateCollectionOperation(
-          ctx,
-          dbLimitsConfig,
-          ctx.cqlSessionCache(),
-          collectionName,
-          hasVectorSearch,
-          0,
-          null,
-          null,
-          operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled(),
-          options.idConfig(),
-          indexingDenyAll,
-          options.indexing(),
-          null,
-          lexicalDef,
-          rerankDef);
-      //      return CreateCollectionOperation.withoutVectorSearch(
-      //          ctx,
-      //          dbLimitsConfig,
-      //          objectMapper,
-      //          ctx.cqlSessionCache(),
-      //          collectionName,
-      //          comment,
-      //          operationsConfig.databaseConfig().ddlDelayMillis(),
-      //          operationsConfig.tooManyIndexesRollbackEnabled(),
-      //          indexingDenyAll,
-      //          lexicalConfig,
-      //          rerankDef);
-    }
+    return new CreateCollectionOperation(
+        context,
+        dbLimitsConfig,
+        context.cqlSessionCache(),
+        collectionName,
+        operationsConfig.databaseConfig().ddlDelayMillis(),
+        operationsConfig.tooManyIndexesRollbackEnabled(),
+        docIdDesc,
+        indexingDesc,
+        vectorSearchDesc,
+        lexicalDef,
+        rerankDef);
   }
 
   /**
@@ -244,6 +119,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    */
   private CreateCollectionCommand.Options.VectorSearchDesc validateVectorOptions(
       CreateCollectionCommand.Options.VectorSearchDesc vector) {
+
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
       throw SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.get();
     }

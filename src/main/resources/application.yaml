@@ -129,7 +129,7 @@ quarkus:
         level: DEBUG
       # noisy for ITs (which run with prod, not test, settings)
       'io.stargate.sgv2.jsonapi.service.operation':
-        level: INFO
+        level: DEBUG
 
     min-level: trace
 

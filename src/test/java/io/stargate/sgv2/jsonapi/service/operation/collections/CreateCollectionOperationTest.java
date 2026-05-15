@@ -27,6 +27,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -117,14 +118,9 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
-            false,
-            0,
-            "",
-            "",
             10,
             false,
             null,
-            false,
             null,
             null,
             LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
@@ -148,24 +144,42 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
+
+    var vectorDesc = new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null);
+
     var operation =
         new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
-            true,
-            5,
-            "cosine",
-            "",
             10,
             false,
             null,
-            false,
             null,
-            null,
+            vectorDesc,
             LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
             RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+
+    // TODO: XXX: AARON
+    //    var operation =
+    //        new CreateCollectionOperation(
+    //            KEYSPACE_CONTEXT,
+    //            databaseLimitsConfig,
+    //            mock(CQLSessionCache.class),
+    //            COLLECTION_NAME,
+    //            true,
+    //            5,
+    //            "cosine",
+    //            "",
+    //            10,
+    //            false,
+    //            null,
+    //            false,
+    //            null,
+    //            null,
+    //            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+    //            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -185,24 +199,41 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
+
+    var indexingDesc = new CreateCollectionCommand.Options.IndexingDesc(null, List.of("*"));
     var operation =
         new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
-            false,
-            0,
-            "",
-            "",
             10,
             false,
             null,
-            true,
-            null,
+            indexingDesc,
             null,
             LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
             RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+
+    // TOD: XXX: AARON
+    //    var operation =
+    //        new CreateCollectionOperation(
+    //            KEYSPACE_CONTEXT,
+    //            databaseLimitsConfig,
+    //            mock(CQLSessionCache.class),
+    //            COLLECTION_NAME,
+    //            false,
+    //            0,
+    //            "",
+    //            "",
+    //            10,
+    //            false,
+    //            null,
+    //            true,
+    //            null,
+    //            null,
+    //            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+    //            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -223,24 +254,42 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
+    var vectorDesc = new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null);
+
+    var indexingDesc = new CreateCollectionCommand.Options.IndexingDesc(null, List.of("*"));
     var operation =
         new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
-            true,
-            5,
-            "cosine",
-            "",
             10,
             false,
             null,
-            true,
-            null,
-            null,
+            indexingDesc,
+            vectorDesc,
             LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
             RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+
+    // TODO: XXX: AARON
+    //    var operation =
+    //        new CreateCollectionOperation(
+    //            KEYSPACE_CONTEXT,
+    //            databaseLimitsConfig,
+    //            mock(CQLSessionCache.class),
+    //            COLLECTION_NAME,
+    //            true,
+    //            5,
+    //            "cosine",
+    //            "",
+    //            10,
+    //            false,
+    //            null,
+    //            true,
+    //            null,
+    //            null,
+    //            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+    //            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -300,18 +349,33 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
             COLLECTION_NAME,
-            false,
-            0,
-            "",
-            "",
             10,
             true,
             null,
-            false,
             null,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
+            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+    // TODO: XXX: AARON
+    //
+    //    var operation =
+    //        new CreateCollectionOperation(
+    //            KEYSPACE_CONTEXT,
+    //            databaseLimitsConfig,
+    //            mock(CQLSessionCache.class),
+    //            COLLECTION_NAME,
+    //            false,
+    //            0,
+    //            "",
+    //            "",
+    //            10,
+    //            true,
+    //            null,
+    //            false,
+    //            null,
+    //            null,
+    //            LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
+    //            RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)

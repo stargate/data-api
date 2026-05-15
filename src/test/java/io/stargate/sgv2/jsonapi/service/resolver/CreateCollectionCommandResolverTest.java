@@ -58,9 +58,7 @@ class CreateCollectionCommandResolverTest {
               op -> {
                 assertThat(op.collectionName()).isEqualTo("my_collection");
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.vectorSearch()).isEqualTo(false);
-                assertThat(op.vectorSize()).isEqualTo(0);
-                assertThat(op.vectorFunction()).isNull();
+                assertThat(op.vectorDesc()).isNull();
               });
     }
 
@@ -90,9 +88,9 @@ class CreateCollectionCommandResolverTest {
               op -> {
                 assertThat(op.collectionName()).isEqualTo("my_collection");
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.vectorSearch()).isEqualTo(true);
-                assertThat(op.vectorSize()).isEqualTo(4);
-                assertThat(op.vectorFunction()).isEqualTo("cosine");
+                assertThat(op.vectorDesc()).isNotNull();
+                assertThat(op.vectorDesc().dimension()).isEqualTo(4);
+                assertThat(op.vectorDesc().metric()).isEqualTo("cosine");
               });
     }
 
@@ -224,9 +222,9 @@ class CreateCollectionCommandResolverTest {
               op -> {
                 assertThat(op.collectionName()).isEqualTo("my_collection");
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.vectorSearch()).isEqualTo(true);
-                assertThat(op.vectorSize()).isEqualTo(4);
-                assertThat(op.vectorFunction()).isEqualTo("COSINE");
+                assertThat(op.vectorDesc()).isNotNull();
+                assertThat(op.vectorDesc().dimension()).isEqualTo(4);
+                assertThat(op.vectorDesc().metric()).isEqualTo("COSINE");
               });
     }
 
@@ -254,9 +252,7 @@ class CreateCollectionCommandResolverTest {
                 op -> {
                   assertThat(op.collectionName()).isEqualTo(name);
                   assertThat(op.commandContext()).isEqualTo(commandContext);
-                  assertThat(op.vectorSearch()).isEqualTo(false);
-                  assertThat(op.vectorSize()).isEqualTo(0);
-                  assertThat(op.vectorFunction()).isNull();
+                  assertThat(op.vectorDesc()).isNull();
                 });
       }
     }
