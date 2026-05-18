@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
+import io.stargate.sgv2.jsonapi.service.provider.BillingEventLogger;
 import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
@@ -114,6 +115,10 @@ public class MeteredEmbeddingProviderWrapper {
                         : aggregatedModelUsage.merge(vectorizedBatch.modelUsage());
                 // create the final ordered result
                 result.addAll(vectorizedBatch.embeddings());
+              }
+              // Emit billing event with aggregated token usage across all batches
+              if (aggregatedModelUsage != null) {
+                BillingEventLogger.logBillingEvent(aggregatedModelUsage);
               }
               var embeddingResponse =
                   new EmbeddingProvider.BatchedEmbeddingResponse(1, result, aggregatedModelUsage);

@@ -46,6 +46,14 @@ public enum ModelProvider {
     return apiName;
   }
 
+  /** Returns the billing region for this provider, or {@code null} if not applicable. */
+  public String billingRegion() {
+    return switch (this) {
+      case NVIDIA -> "us-west-2";
+      default -> null;
+    };
+  }
+
   public static Optional<ModelProvider> fromApiName(String apiName) {
     return Optional.ofNullable(API_NAME_TO_PROVIDER.get(apiName));
   }

@@ -24,6 +24,17 @@ public enum ModelType {
     };
   }
 
+  /**
+   * Returns the name used in billing event_type, e.g. {@code "embeddings"} or {@code "reranking"}.
+   */
+  public String billingName() {
+    return switch (this) {
+      case EMBEDDING -> "embeddings";
+      case RERANKING -> "reranking";
+      case MODEL_TYPE_UNSPECIFIED -> "unspecified";
+    };
+  }
+
   public EmbeddingGateway.ModelUsage.ModelType toEmbeddingGateway() {
     return switch (this) {
       case MODEL_TYPE_UNSPECIFIED -> EmbeddingGateway.ModelUsage.ModelType.MODEL_TYPE_UNSPECIFIED;
