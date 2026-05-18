@@ -28,14 +28,26 @@ public final class BillingEventLogger {
    * Logs a billing event for the given aggregated model usage. No-ops if the tenant is not Astra.
    */
   public static void logBillingEvent(ModelUsage modelUsage) {
+    String json = buildBillingEventJson(modelUsage);
+    if (json != null) {
+      BILLING_LOGGER.info(json);
+    }
+  }
+
+  /**
+   * Builds the billing event JSON string, or returns {@code null} if the tenant is not Astra.
+   * Package-private for testing.
+   */
+  static String buildBillingEventJson(ModelUsage modelUsage) {
     if (modelUsage.tenant().databaseType() != DatabaseType.ASTRA) {
-      return;
+      return null;
     }
     try {
       BillingEvent event = BillingEvent.from(modelUsage, PRODUCT, RESOURCE_TYPE);
-      BILLING_LOGGER.info(OBJECT_WRITER.writeValueAsString(event));
+      return OBJECT_WRITER.writeValueAsString(event);
     } catch (JacksonException e) {
       LOGGER.error("Failed to serialize billing event", e);
+      return null;
     }
   }
 }
