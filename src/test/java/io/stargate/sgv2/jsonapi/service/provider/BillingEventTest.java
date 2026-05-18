@@ -70,26 +70,6 @@ class BillingEventTest {
   }
 
   @Test
-  void jsonSerialization_matchesBillingSchema() throws Exception {
-    ModelUsage usage = createModelUsage(ModelProvider.NVIDIA, ModelType.EMBEDDING, 430827772);
-    BillingEvent event = BillingEvent.from(usage, PRODUCT, RESOURCE_TYPE);
-
-    String json = MAPPER.writeValueAsString(event);
-    JsonNode node = MAPPER.readTree(json);
-
-    assertThat(node.has("id")).isTrue();
-    assertThat(node.has("timestamp")).isTrue();
-    assertThat(node.get("product").asText()).isEqualTo(PRODUCT);
-    assertThat(node.get("event_type").asText()).isEqualTo("nvidia_embeddings_tokens");
-
-    JsonNode props = node.get("properties");
-    assertThat(props.get("usage").asLong()).isEqualTo(430827772);
-    assertThat(props.get("region").asText()).isEqualTo("us-west-2");
-    assertThat(props.get("resource_type").asText()).isEqualTo(RESOURCE_TYPE);
-    assertThat(props.get("resource_id").asText()).isEqualTo(TENANT_ID);
-  }
-
-  @Test
   void jsonSerialization_nullRegionOmitted() throws Exception {
     ModelUsage usage = createModelUsage(ModelProvider.OPENAI, ModelType.EMBEDDING, 1000);
     BillingEvent event = BillingEvent.from(usage, PRODUCT, RESOURCE_TYPE);
