@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -203,6 +204,10 @@ public abstract class RerankingProvider extends ProviderBase {
       for (Rank rank : batchResponse.ranks()) {
         finalRanks.add(new Rank(batchStartIndex + rank.index(), rank.score()));
       }
+    }
+    // Emit billing event with aggregated token usage across all batches
+    if (aggregatedModelUsage != null) {
+      BillingEventLogger.logBillingEvent(aggregatedModelUsage);
     }
     // This is the original order of all the passages.
     finalRanks.sort(Comparator.comparingInt(Rank::index));

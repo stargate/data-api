@@ -127,6 +127,8 @@ quarkus:
         level: INFO
       'io.stargate':
         level: DEBUG
+      'billing.events':
+        level: INFO
       # noisy for ITs (which run with prod, not test, settings)
       'io.stargate.sgv2.jsonapi.service.operation':
         level: INFO
