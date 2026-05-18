@@ -47,6 +47,13 @@ stargate:
     global-tags:
       module: sgv2-jsonapi
 
+  jsonapi:
+    # Opt-in pre-validation of Authorization tokens against Astra control plane.
+    # Off by default; OSS deployments are unaffected.
+    # see io.stargate.sgv2.jsonapi.config.GpuPlaneAuthConfig
+    gpu-plane-auth:
+      enabled: false
+
   # multi tenancy settings
   # see io.stargate.sgv2.jsonapi.config.MultiTenancyConfig  for all config properties and options
   multi-tenancy:
@@ -68,6 +75,11 @@ quarkus:
       "credentials":
         maximum-size: 1000
         expire-after-access: 5m
+      # GPU-plane token validation results (positive + negative).
+      # Off when stargate.jsonapi.gpu-plane-auth.enabled=false.
+      "gpu-plane-tokens":
+        maximum-size: 10000
+        expire-after-write: 5m
 
   # properties for the gRPC clients
   grpc:
@@ -161,6 +173,17 @@ quarkus:
   rest-client:
     credentials:
       url: http://localhost:8084/v1
+      connect-timeout: 2000
+      read-timeout: 5000
+    # GPU-plane Astra control-plane endpoints. Defaults point at prod; per-env overrides
+    # set via env vars at deploy time. URLs are only called when
+    # stargate.jsonapi.gpu-plane-auth.enabled=true.
+    gpu-plane-current-org:
+      url: https://api.astra.datastax.com
+      connect-timeout: 2000
+      read-timeout: 5000
+    gpu-plane-token-authorize:
+      url: https://api.astra.datastax.com
       connect-timeout: 2000
       read-timeout: 5000
 
