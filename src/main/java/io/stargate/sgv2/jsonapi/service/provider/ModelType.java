@@ -24,7 +24,9 @@ public enum ModelType {
     };
   }
 
-  /** Returns the name used in billing event_type, e.g. {@code "embeddings"} or {@code "reranking"}. */
+  /**
+   * Returns the name used in billing event_type, e.g. {@code "embeddings"} or {@code "reranking"}.
+   */
   public String billingName() {
     return switch (this) {
       case EMBEDDING -> "embeddings";

@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
-
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.ArrayList;
