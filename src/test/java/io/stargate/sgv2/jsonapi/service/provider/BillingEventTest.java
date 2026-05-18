@@ -7,10 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class BillingEventTest {
 
@@ -19,9 +22,9 @@ class BillingEventTest {
   private static final String PRODUCT = "serverless";
   private static final String RESOURCE_TYPE = "serverless_database";
   private static final String TENANT_ID = "53950f2d-4d4c-4346-a84e-7a07e2ab23f4";
+  private static final int TOTAL_TOKENS = 430827772;
 
-  private ModelUsage createModelUsage(
-      ModelProvider provider, ModelType modelType, int totalTokens) {
+  private ModelUsage createModelUsage(ModelProvider provider, ModelType modelType) {
     Tenant tenant = Tenant.create(DatabaseType.ASTRA, TENANT_ID);
     return new ModelUsage(
         provider,
@@ -30,64 +33,45 @@ class BillingEventTest {
         tenant,
         ModelInputType.INDEX,
         100,
-        totalTokens,
+        TOTAL_TOKENS,
         0,
         0,
         1000L);
   }
 
-  @Test
-  void fromModelUsage_nvidiaEmbedding() throws Exception {
-    ModelUsage usage = createModelUsage(ModelProvider.NVIDIA, ModelType.EMBEDDING, 430827772);
+  static Stream<Arguments> providerModelTypeCombinations() {
+    return Arrays.stream(ModelProvider.values())
+        .flatMap(
+            provider ->
+                Stream.of(ModelType.EMBEDDING, ModelType.RERANKING)
+                    .map(modelType -> Arguments.of(provider, modelType)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("providerModelTypeCombinations")
+  void billingEventFields(ModelProvider provider, ModelType modelType) {
+    ModelUsage usage = createModelUsage(provider, modelType);
     BillingEvent event = BillingEvent.from(usage, PRODUCT, RESOURCE_TYPE);
 
     assertThat(UUID.fromString(event.id())).isNotNull();
     assertThat(Instant.parse(event.timestamp())).isNotNull();
     assertThat(event.product()).isEqualTo(PRODUCT);
-    assertThat(event.eventType()).isEqualTo("nvidia_embeddings_tokens");
-    assertThat(event.properties().usage()).isEqualTo(430827772);
-    assertThat(event.properties().region()).isEqualTo("us-west-2");
+    assertThat(event.eventType())
+        .isEqualTo(provider.apiName() + "_" + modelType.billingName() + "_tokens");
+    assertThat(event.properties().usage()).isEqualTo(TOTAL_TOKENS);
+    assertThat(event.properties().region()).isEqualTo(provider.billingRegion());
     assertThat(event.properties().resourceType()).isEqualTo(RESOURCE_TYPE);
     assertThat(event.properties().resourceId()).isEqualTo(TENANT_ID);
   }
 
   @Test
-  void fromModelUsage_nvidiaReranking() {
-    ModelUsage usage = createModelUsage(ModelProvider.NVIDIA, ModelType.RERANKING, 500);
-    BillingEvent event = BillingEvent.from(usage, PRODUCT, RESOURCE_TYPE);
-
-    assertThat(event.eventType()).isEqualTo("nvidia_reranking_tokens");
-    assertThat(event.properties().region()).isEqualTo("us-west-2");
-  }
-
-  @Test
-  void fromModelUsage_openaiEmbedding_noRegion() {
-    ModelUsage usage = createModelUsage(ModelProvider.OPENAI, ModelType.EMBEDDING, 1000);
-    BillingEvent event = BillingEvent.from(usage, PRODUCT, RESOURCE_TYPE);
-
-    assertThat(event.eventType()).isEqualTo("openai_embeddings_tokens");
-    assertThat(event.properties().region()).isNull();
-  }
-
-  @Test
   void jsonSerialization_nullRegionOmitted() throws Exception {
-    ModelUsage usage = createModelUsage(ModelProvider.OPENAI, ModelType.EMBEDDING, 1000);
+    ModelUsage usage = createModelUsage(ModelProvider.OPENAI, ModelType.EMBEDDING);
     BillingEvent event = BillingEvent.from(usage, PRODUCT, RESOURCE_TYPE);
 
     String json = MAPPER.writeValueAsString(event);
     JsonNode props = MAPPER.readTree(json).get("properties");
 
     assertThat(props.has("region")).isFalse();
-  }
-
-  @ParameterizedTest
-  @EnumSource(
-      value = ModelProvider.class,
-      names = {"NVIDIA", "OPENAI", "COHERE", "MISTRAL"})
-  void eventType_dynamicForAllProviders(ModelProvider provider) {
-    ModelUsage usage = createModelUsage(provider, ModelType.EMBEDDING, 100);
-    BillingEvent event = BillingEvent.from(usage, PRODUCT, RESOURCE_TYPE);
-
-    assertThat(event.eventType()).isEqualTo(provider.apiName() + "_embeddings_tokens");
   }
 }
