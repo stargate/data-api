@@ -71,15 +71,18 @@ public record CollectionLexicalConfig(
   }
 
   /**
-   * Method for validating the lexical config passed and constructing actual configuration object to
-   * use.
+   * Validates the lexical config passed and constructs the runtime configuration object to use.
+   * Invalid-option errors are reported with {@code optionsErrorCode} so they get attributed to the
+   * invoking command (e.g. {@code INVALID_CREATE_COLLECTION_OPTIONS} from {@code createCollection},
+   * {@code INVALID_ALTER_COLLECTION_OPTIONS} from {@code alterCollection}).
    *
    * @return Valid CollectionLexicalConfig object
    */
   public static CollectionLexicalConfig validateAndConstruct(
       ObjectMapper mapper,
       boolean lexicalAvailableForDB,
-      CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
+      CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig,
+      SchemaException.Code optionsErrorCode) {
     // Case 1: No lexical body provided - use defaults if available, otherwise disable
     if (lexicalConfig == null) {
       return lexicalAvailableForDB ? configForDefault() : configForDisabled();
@@ -88,7 +91,7 @@ public record CollectionLexicalConfig(
     // Case 2: Validate 'enabled' flag is present
     Boolean enabled = lexicalConfig.enabled();
     if (enabled == null) {
-      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw optionsErrorCode.get(
           "message", "'enabled' is required property for 'lexical' Object value");
     }
 
@@ -106,7 +109,7 @@ public record CollectionLexicalConfig(
     if (!enabled) {
       if (!analyzerNotDefined) {
         String nodeType = JsonUtil.nodeTypeAsString(analyzerDef);
-        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw optionsErrorCode.get(
             "message",
             ("'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: %s. "
                     + "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or an empty Object '{ }'.")
@@ -135,7 +138,7 @@ public record CollectionLexicalConfig(
       // First: check for any invalid (misspelled etc) fields
       foundNames.removeAll(VALID_ANALYZER_FIELDS);
       if (!foundNames.isEmpty()) {
-        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw optionsErrorCode.get(
             "message",
             "Invalid field%s for 'lexical.analyzer'. Valid fields are: %s, found: %s"
                 .formatted(
@@ -163,7 +166,7 @@ public record CollectionLexicalConfig(
               }
             };
         if (!valueOk) {
-          throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          throw optionsErrorCode.get(
               "message",
               "'%s' property of 'lexical.analyzer' must be JSON %s, is: %s"
                   .formatted(entry.getKey(), expectedType, JsonUtil.nodeTypeAsString(fieldValue)));
@@ -171,7 +174,7 @@ public record CollectionLexicalConfig(
       }
     } else {
       // Otherwise, invalid definition
-      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw optionsErrorCode.get(
           "message",
           "'analyzer' property of 'lexical' must be either JSON Object or String, is: %s"
               .formatted(JsonUtil.nodeTypeAsString(analyzerDef)));
