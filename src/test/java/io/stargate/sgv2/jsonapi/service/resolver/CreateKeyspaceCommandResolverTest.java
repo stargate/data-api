@@ -58,8 +58,8 @@ class CreateKeyspaceCommandResolverTest {
               CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
+                assertThat(op.strategy()).isNull();
+                assertThat(op.strategyOptions()).isNull();
               });
     }
 
@@ -87,8 +87,7 @@ class CreateKeyspaceCommandResolverTest {
               CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
+                assertThat(op.strategy()).isEqualTo("SimpleStrategy");
               });
     }
 
@@ -117,8 +116,8 @@ class CreateKeyspaceCommandResolverTest {
               CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 2}");
+                assertThat(op.strategy()).isEqualTo("SimpleStrategy");
+                assertThat(op.strategyOptions()).containsEntry("replication_factor", 2);
               });
     }
 
@@ -148,10 +147,10 @@ class CreateKeyspaceCommandResolverTest {
               CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap())
-                    .isIn(
-                        "{'class': 'NetworkTopologyStrategy', 'Boston': 2, 'Berlin': 3}",
-                        "{'class': 'NetworkTopologyStrategy', 'Berlin': 3, 'Boston': 2}");
+                assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
+                assertThat(op.strategyOptions())
+                    .containsEntry("Boston", 2)
+                    .containsEntry("Berlin", 3);
               });
     }
 
@@ -180,7 +179,7 @@ class CreateKeyspaceCommandResolverTest {
               CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap()).isEqualTo("{'class': 'NetworkTopologyStrategy'}");
+                assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
               });
     }
 
@@ -206,8 +205,7 @@ class CreateKeyspaceCommandResolverTest {
                 CreateKeyspaceOperation.class,
                 op -> {
                   assertThat(op.name()).isEqualTo(name);
-                  assertThat(op.replicationMap())
-                      .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
+                  assertThat(op.strategy()).isNull();
                 });
       }
     }
@@ -347,6 +345,122 @@ class CreateKeyspaceCommandResolverTest {
           "The command attempted to create a Keyspace with a name that is not supported.",
           "The supported Keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
           "The command used the unsupported Keyspace name: '!@-'.");
+    }
+
+    @Test
+    public void rejectsInjectionInDataCenterName() throws Exception {
+      // A datacenter key with characters outside the API allowlist is rejected up front.
+      // The driver's SchemaBuilder.withNetworkTopologyStrategy(Map) does NOT escape map keys
+      // (see OptionsUtils.extractOptionValue in java-driver-query-builder), so this allowlist
+      // is the actual security control for the replication map.
+      String json =
+          """
+            {
+              "createNamespace": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "dc1', 'class': 'SimpleStrategy" : 1
+                    }
+                }
+              }
+            }
+            """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+
+      verifySchemaException(
+          throwable,
+          SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME,
+          "data center name in the NetworkTopologyStrategy replication options that is not supported",
+          "must not be empty, more than 48 characters long, and may contain only alphanumeric, underscore, and hyphen characters",
+          "The command used the unsupported data center name: 'dc1', 'class': 'SimpleStrategy'.");
+    }
+
+    @Test
+    public void rejectsDataCenterNameWithSpace() throws Exception {
+      String json =
+          """
+            {
+              "createNamespace": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "dc one" : 1
+                    }
+                }
+              }
+            }
+            """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+
+      verifySchemaException(
+          throwable, SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME, "dc one");
+    }
+
+    @Test
+    public void rejectsDataCenterNameTooLong() throws Exception {
+      String dcName = RandomStringUtils.insecure().nextAlphabetic(49);
+      String json =
+              """
+            {
+              "createNamespace": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "%s" : 1
+                    }
+                }
+              }
+            }
+            """
+              .formatted(dcName);
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+
+      verifySchemaException(
+          throwable, SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME, dcName);
+    }
+  }
+
+  @Nested
+  class CreateKeyspaceDataCenterNameSuccess {
+
+    @Test
+    public void hyphenatedDataCenterNameIsAllowed() throws Exception {
+      // Cloud-style DC names (Astra, AWS regions) contain hyphens and must keep working.
+      String json =
+          """
+            {
+              "createNamespace": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "us-east-1" : 3
+                    }
+                }
+              }
+            }
+            """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateKeyspaceOperation.class,
+              op -> {
+                assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
+                assertThat(op.strategyOptions()).containsEntry("us-east-1", 3);
+              });
     }
   }
 
