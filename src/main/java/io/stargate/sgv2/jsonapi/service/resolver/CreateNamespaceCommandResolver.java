@@ -30,8 +30,7 @@ public class CreateNamespaceCommandResolver
     var replication =
         getOrDefault(command.options(), CreateNamespaceCommand.Options::replication, null);
 
-    String strategy =
-        getOrDefault(replication, CreateNamespaceCommand.Replication::strategy, null);
+    String strategy = getOrDefault(replication, CreateNamespaceCommand.Replication::strategy, null);
 
     Map<String, Integer> strategyOptions =
         getOrDefault(replication, CreateNamespaceCommand.Replication::strategyOptions, null);

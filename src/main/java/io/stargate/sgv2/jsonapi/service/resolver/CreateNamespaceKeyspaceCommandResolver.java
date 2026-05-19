@@ -11,7 +11,8 @@ public abstract class CreateNamespaceKeyspaceCommandResolver<C extends Command>
 
   private static final String NETWORK_TOPOLOGY_STRATEGY = "NetworkTopologyStrategy";
 
-  // The driver writes NetworkTopologyStrategy map keys as CQL string literals without escaping them.
+  // The driver writes NetworkTopologyStrategy map keys as CQL string literals without escaping
+  // them.
   private static final Pattern VALID_DATA_CENTER_NAME = Pattern.compile("[^']+");
 
   protected static void validateStrategyOptions(
@@ -31,9 +32,7 @@ public abstract class CreateNamespaceKeyspaceCommandResolver<C extends Command>
   private static void checkDataCenterName(String name) {
     if (name == null || !VALID_DATA_CENTER_NAME.matcher(name).matches()) {
       throw SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME.get(
-          Map.of(
-              "unsupportedDataCenterName",
-              ErrorTemplate.replaceIfNull(name)));
+          Map.of("unsupportedDataCenterName", ErrorTemplate.replaceIfNull(name)));
     }
   }
 }

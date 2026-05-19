@@ -22,7 +22,8 @@ import java.util.function.Supplier;
  * datacenter names before creating this operation.
  */
 public record CreateKeyspaceOperation(
-    CqlIdentifier name, String strategy, Map<String, Integer> strategyOptions) implements Operation {
+    CqlIdentifier name, String strategy, Map<String, Integer> strategyOptions)
+    implements Operation {
 
   private static final String NETWORK_TOPOLOGY_STRATEGY = "NetworkTopologyStrategy";
   private static final int DEFAULT_REPLICATION_FACTOR = 1;
