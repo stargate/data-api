@@ -6,7 +6,9 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -22,7 +24,7 @@ import org.junit.jupiter.api.Test;
 @WithTestResource(value = DseTestResource.class)
 public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
-  // used to cleanup the collection from a previous test, if non-null
+  // used to clean up the collection from a previous test, if non-null
   private String cleanupCollectionName = null;
 
   @BeforeAll
@@ -218,6 +220,327 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         .body(
             "errors[0].message",
             containsString(errorMessageContains.formatted(keyspaceName, collectionName)));
+  }
+
+  // ---- Reranking override tests ----
+  // These use a collection with vectorize enabled but NO reranking configured.
+  // Sort uses $hybrid with only $vectorize (no $lexical) to avoid needing lexical support.
+
+  private static final String VECTORIZE_NO_RERANK_SPEC =
+      """
+      {
+        "name" : "%s",
+        "options": {
+          "vector": {
+            "metric": "cosine",
+            "dimension": 1024,
+            "service": {
+              "provider": "openai",
+              "modelName": "text-embedding-3-small"
+            }
+          },
+          "rerank": {
+            "enabled": false
+          }
+        }
+      }
+      """;
+
+  @Test
+  void failOnRerankingDisabledNoOverride() {
+    String collectionName = "rerank_disabled_no_override";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(keyspaceName, collectionName, findAndRerankWithOverride(null))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.name()))
+        .body(
+            "errors[0].message",
+            containsString("reranking service override was not provided with the command"));
+  }
+
+  // Any non-null `"rerank"` payload is treated as an override attempt and validated; `{}` and
+  // payloads whose fields are all explicit nulls both surface INVALID_RERANK_OVERRIDE rather
+  // than silently falling back to the collection's reranking config — so a client mistake like
+  // `{"provider": null}` cannot be misread as "no override".
+  @Test
+  void failOnRerankOverrideEmptyObject() {
+    String collectionName = "rerank_override_empty";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(keyspaceName, collectionName, findAndRerankWithOverride("{}"))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("Provider name is required"));
+  }
+
+  @Test
+  void failOnRerankOverrideAllExplicitNullFields() {
+    String collectionName = "rerank_override_null_fields";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": null, "modelName": null}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("Provider name is required"));
+  }
+
+  @Test
+  void failOnRerankOverrideUnknownProvider() {
+    String collectionName = "rerank_override_bad_provider";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "unknown-provider", "modelName": "some-model"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("unknown-provider"));
+  }
+
+  @Test
+  void failOnRerankOverrideMissingProvider() {
+    String collectionName = "rerank_override_no_provider";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("Provider name is required"));
+  }
+
+  @Test
+  void failOnRerankOverrideMissingModelName() {
+    String collectionName = "rerank_override_no_model";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("Model name is required"));
+  }
+
+  @Test
+  void failOnRerankOverrideDeprecatedModel() {
+    String collectionName = "rerank_override_deprecated";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/a-random-deprecated-model"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(SchemaException.Code.DEPRECATED_AI_MODEL.name()));
+  }
+
+  @Test
+  void failOnRerankOverrideEolModel() {
+    String collectionName = "rerank_override_eol";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/a-random-EOL-model"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(SchemaException.Code.END_OF_LIFE_AI_MODEL.name()));
+  }
+
+  @Test
+  void failOnRerankOverrideWithUnsupportedAuth() {
+    String collectionName = "rerank_override_with_auth";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+                 "authentication": {"providerKey": "my-test-key"}}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("authentication"));
+  }
+
+  @Test
+  void failOnRerankOverrideWithAuthAndParameters() {
+    String collectionName = "rerank_override_auth_params";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+                 "authentication": {"providerKey": "my-test-key"},
+                 "parameters": {"truncate": "END"}}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("authentication"));
+  }
+
+  @Test
+  void failOnRerankOverrideWithUnsupportedParameters() {
+    String collectionName = "rerank_override_params_only";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+                 "parameters": {"truncate": "END"}}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("parameters"));
+  }
+
+  /**
+   * Verifies that a valid rerank override (provider + model only, no auth or params) passes
+   * validation and the pipeline proceeds to the embedding (vectorize) step, which fails with
+   * EMBEDDING_PROVIDER_CLIENT_ERROR because there is no real OpenAI API key in the test
+   * environment.
+   */
+  @Test
+  void overrideWithProviderAndModelPassesValidation() {
+    String collectionName = "rerank_override_valid";
+    createCollectionWithCleanup(collectionName, VECTORIZE_NO_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"}
+                """))
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
+  }
+
+  // Collection with both vectorize and rerank enabled (using the default reranking provider/model).
+  // Used to verify the override path is applied even when the collection already has working
+  // rerank config — i.e. the override is not silently ignored in favor of the collection default.
+  private static final String VECTORIZE_AND_RERANK_SPEC =
+      """
+      {
+        "name" : "%s",
+        "options": {
+          "vector": {
+            "metric": "cosine",
+            "dimension": 1024,
+            "service": {
+              "provider": "openai",
+              "modelName": "text-embedding-3-small"
+            }
+          },
+          "rerank": {
+            "enabled": true
+          }
+        }
+      }
+      """;
+
+  /**
+   * Positive verification that the override replaces the collection's reranking config. The
+   * collection has valid rerank set up; if the override were silently ignored, the request would
+   * pass validation and fail later at the embedding step. Sending an unknown provider in the
+   * override surfaces INVALID_RERANK_OVERRIDE, proving the override path is taken even when the
+   * collection's own rerank config would have worked.
+   */
+  @Test
+  void overrideIsAppliedEvenWhenCollectionRerankEnabled() {
+    String collectionName = "rerank_override_on_enabled_collection_bad";
+    createCollectionWithCleanup(collectionName, VECTORIZE_AND_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "unknown-provider", "modelName": "some-model"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.INVALID_RERANK_OVERRIDE.name()))
+        .body("errors[0].message", containsString("unknown-provider"));
+  }
+
+  /**
+   * Companion to {@link #overrideIsAppliedEvenWhenCollectionRerankEnabled}: a valid override on a
+   * rerank-enabled collection also passes validation and proceeds to the embedding step (failing
+   * with EMBEDDING_PROVIDER_CLIENT_ERROR for the same reason as {@link
+   * #overrideWithProviderAndModelPassesValidation}).
+   */
+  @Test
+  void validOverridePassesValidationOnRerankEnabledCollection() {
+    String collectionName = "rerank_override_on_enabled_collection_ok";
+    createCollectionWithCleanup(collectionName, VECTORIZE_AND_RERANK_SPEC);
+
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            findAndRerankWithOverride(
+                """
+                {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"}
+                """))
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name()));
+  }
+
+  /**
+   * Builds a findAndRerank command JSON with an optional rerank override in options.
+   *
+   * @param rerankOverrideJson JSON object for the "rerank" option, or null for no override.
+   */
+  private static String findAndRerankWithOverride(String rerankOverrideJson) {
+    String rerankOption = rerankOverrideJson != null ? ", \"rerank\": " + rerankOverrideJson : "";
+    return
+        """
+        {"findAndRerank": {
+            "sort": {"$hybrid": {"$vectorize": "search text"}},
+            "options": {
+                "limit": 10%s
+            }
+        }}
+        """
+        .formatted(rerankOption);
   }
 
   private void createCollectionWithCleanup(String collectionName, String collectionSpec) {
