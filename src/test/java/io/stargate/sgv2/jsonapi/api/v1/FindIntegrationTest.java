@@ -543,9 +543,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data.documents", hasSize(1));
     }
 
-    // [data-api#2325] $exists on the _id field used to fail with a misleading
-    // "$exists operator must have `Boolean`" error. After the fix, $exists:true on _id
-    // matches every document (since _id is always present) and $exists:false matches none.
     @Test
     public void withExistOperatorOnIdField() {
       String json =

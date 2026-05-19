@@ -678,9 +678,6 @@ public class FilterClauseBuilderTest {
           .isEqualTo(expectedResult.getPath());
     }
 
-    // [data-api#2325] $exists on the _id field must accept a Boolean operand, like any other
-    // field. Before the fix, the _id-specific path wrapped the Boolean as a DocumentId, causing
-    // a misleading "$exists operator must have `Boolean`" error.
     @Test
     public void mustHandleIdFieldExistsTrue() throws Exception {
       String json =
@@ -745,7 +742,8 @@ public class FilterClauseBuilderTest {
           .isEqualTo(List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "Tim")));
     }
 
-    // $not should flip the boolean operand of $exists; ensure the _id path doesn't break that.
+    // $not flips the boolean operand of $exists via ComparisonExpression.getFlippedOperandValue,
+    // which casts the operand to Boolean. Guards against regression to DocumentId wrapping.
     @Test
     public void mustHandleIdFieldExistsUnderNot() throws Exception {
       String json =
@@ -753,8 +751,12 @@ public class FilterClauseBuilderTest {
            {"$not": {"_id" : {"$exists": true}}}
           """;
       FilterClause filterClause = readCollectionFilterClause(json);
-      // $not is inverted away: the inner $exists:true becomes $exists:false on _id
       assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(1);
+      ComparisonExpression expr = filterClause.logicalExpression().comparisonExpressions.get(0);
+      assertThat(expr.getPath()).isEqualTo("_id");
+      assertThat(expr.getFilterOperations())
+          .isEqualTo(
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, false)));
     }
 
     @Test
