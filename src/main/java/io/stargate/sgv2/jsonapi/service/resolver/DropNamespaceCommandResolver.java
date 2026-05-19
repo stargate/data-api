@@ -5,7 +5,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.DropKeyspaceOperation;
 import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
@@ -25,7 +24,6 @@ public class DropNamespaceCommandResolver implements CommandResolver<DropNamespa
   @Override
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, DropNamespaceCommand command) {
-    var keyspaceName = NamingRules.KEYSPACE.checkRule(command.name());
-    return new DropKeyspaceOperation(keyspaceName);
+    return new DropKeyspaceOperation(command.name());
   }
 }
