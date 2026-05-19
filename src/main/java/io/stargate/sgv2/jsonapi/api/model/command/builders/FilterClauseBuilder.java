@@ -241,7 +241,12 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
 
       String entryKey = validateFilterClausePath(entry.getKey(), operator);
       JsonNode value = updateField.getValue();
-      Object valueObject = jsonNodeValue(entryKey, value);
+      // $exists checks field presence; its operand is always a plain Boolean and must not be
+      // wrapped as a DocumentId even when filtering on `_id` (see issue #2325).
+      Object valueObject =
+          (operator == ElementComparisonOperator.EXISTS)
+              ? jsonNodeValue(value)
+              : jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT

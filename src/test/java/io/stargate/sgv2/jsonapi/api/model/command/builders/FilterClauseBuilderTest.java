@@ -678,6 +678,85 @@ public class FilterClauseBuilderTest {
           .isEqualTo(expectedResult.getPath());
     }
 
+    // [data-api#2325] $exists on the _id field must accept a Boolean operand, like any other
+    // field. Before the fix, the _id-specific path wrapped the Boolean as a DocumentId, causing
+    // a misleading "$exists operator must have `Boolean`" error.
+    @Test
+    public void mustHandleIdFieldExistsTrue() throws Exception {
+      String json =
+          """
+           {"_id" : {"$exists": true}}
+          """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "_id",
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, true)),
+              null);
+      FilterClause filterClause = readCollectionFilterClause(json);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleIdFieldExistsFalse() throws Exception {
+      String json =
+          """
+           {"_id" : {"$exists": false}}
+          """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "_id",
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, false)),
+              null);
+      FilterClause filterClause = readCollectionFilterClause(json);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleIdFieldExistsCombinedWithOtherField() throws Exception {
+      String json =
+          """
+           {"_id" : {"$exists": true}, "name": "Tim"}
+          """;
+      FilterClause filterClause = readCollectionFilterClause(json);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(2);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo("_id");
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, true)));
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(1).getPath())
+          .isEqualTo("name");
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(1).getFilterOperations())
+          .isEqualTo(List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "Tim")));
+    }
+
+    // $not should flip the boolean operand of $exists; ensure the _id path doesn't break that.
+    @Test
+    public void mustHandleIdFieldExistsUnderNot() throws Exception {
+      String json =
+          """
+           {"$not": {"_id" : {"$exists": true}}}
+          """;
+      FilterClause filterClause = readCollectionFilterClause(json);
+      // $not is inverted away: the inner $exists:true becomes $exists:false on _id
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(1);
+    }
+
     @Test
     public void mustHandleNonIdFieldIn() throws Exception {
       String json =
