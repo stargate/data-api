@@ -56,7 +56,8 @@ public abstract class SchemaValueDef<T> {
     // if the feature is disabled in this schema factory, then the persisted value MUST be value
     // equal
     // to the value we use when the feature is disabled.
-    if (featureDisabled && !candidatePersisted.equals(featureDisabledDefault)) {
+    if (featureDisabled
+        && (candidatePersisted != null && !candidatePersisted.equals(featureDisabledDefault))) {
       onInvalidValueFeatureDisabled(candidateVersion, candidatePersisted);
     }
   }
