@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.versioning;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 
 public class LexicalDefSchemaValueDef extends SchemaValueDef<CollectionLexicalDef> {
@@ -22,5 +23,11 @@ public class LexicalDefSchemaValueDef extends SchemaValueDef<CollectionLexicalDe
         CollectionLexicalDef.configForDefault(),
         featureDisabled,
         CollectionLexicalDef.LEXICAL_DISABLED);
+  }
+
+  @Override
+  protected void onInvalidValueFeatureDisabled(
+      SchemaVersion candidateVersion, CollectionLexicalDef candidatePersisted) {
+    throw SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.get();
   }
 }

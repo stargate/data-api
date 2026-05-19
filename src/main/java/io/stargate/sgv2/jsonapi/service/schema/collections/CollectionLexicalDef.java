@@ -123,7 +123,7 @@ public record CollectionLexicalDef(
     // TODO XXX - MOVE THIS DOWN INTO THE RESOLVER
     //    // Case 4: Can only enable if feature is available
     //    if (enabled && !lexicalAvailableForDB) {
-    //      throw SchemaException.Code.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.get();
+    //      throw SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.get();
     //    }
 
     // Case 5: Enabled and analyzer provided - validate and use

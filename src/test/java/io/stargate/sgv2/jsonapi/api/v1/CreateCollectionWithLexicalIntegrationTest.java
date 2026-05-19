@@ -314,8 +314,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
             .body(
-                "errors[0].errorCode",
-                is(SchemaException.Code.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.name()));
+                "errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
       }
     }
 
@@ -348,8 +347,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
             .body(
-                "errors[0].errorCode",
-                is(SchemaException.Code.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.name()));
+                "errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
       }
     }
 

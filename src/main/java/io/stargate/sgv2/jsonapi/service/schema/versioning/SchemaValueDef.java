@@ -31,9 +31,7 @@ public abstract class SchemaValueDef<T> {
   }
 
   public SchemaValue<T> currentVersion(T persistedValue) {
-
-    // TODO: XXXL HERE IS disabled check, maybe other ? call absrract method
-    return new SchemaValue<>(this, SchemaVersion.CURRENT_VERSION, persistedValue);
+    return create(SchemaVersion.CURRENT_VERSION, persistedValue);
   }
 
   public SchemaValue<T> namedVersion(SchemaVersion persistedVersion, T persistedValue) {
@@ -45,8 +43,26 @@ public abstract class SchemaValueDef<T> {
               .formatted(persistedVersion, persistedValue, errorContext()));
     }
 
+    return create(persistedVersion, persistedValue);
+  }
+
+  protected SchemaValue<T> create(SchemaVersion persistedVersion, T persistedValue) {
+    checkValidPersistedValue(persistedVersion, persistedValue);
     return new SchemaValue<>(this, persistedVersion, persistedValue);
   }
+
+  protected void checkValidPersistedValue(SchemaVersion candidateVersion, T candidatePersisted) {
+
+    // if the feature is disabled in this schema factory, then the persisted value MUST be value
+    // equal
+    // to the value we use when the feature is disabled.
+    if (featureDisabled && !candidatePersisted.equals(featureDisabledDefault)) {
+      onInvalidValueFeatureDisabled(candidateVersion, candidatePersisted);
+    }
+  }
+
+  protected abstract void onInvalidValueFeatureDisabled(
+      SchemaVersion candidateVersion, T candidatePersisted);
 
   public T preReleaseValue() {
     return preReleaseValue;

@@ -1383,7 +1383,7 @@ request-errors:
       Resend command with only '$vector' or '$vectorize'.
 
   - scope: SCHEMA
-    code: LEXICAL_NOT_AVAILABLE_FOR_DATABASE
+    code: LEXICAL_FEATURE_NOT_ENABLED
     title: Lexical search is not available on this database
     body: |-
       The command attempted to enable lexical search functionality but lexical search is not supported by this database.
