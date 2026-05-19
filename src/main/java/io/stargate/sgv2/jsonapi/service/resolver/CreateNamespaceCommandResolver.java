@@ -10,8 +10,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
 /**
- * Command resolver for {@link CreateNamespaceCommand}. Responsible for creating the replication
- * map. Resolve a {@link CreateNamespaceCommand} to a {@link CreateKeyspaceOperation}
+ * Command resolver for {@link CreateNamespaceCommand}. Resolves to a {@link
+ * CreateKeyspaceOperation} which builds the {@code CREATE KEYSPACE} statement via the driver's
+ * {@code SchemaBuilder}.
  */
 @ApplicationScoped
 public class CreateNamespaceCommandResolver
@@ -39,7 +40,7 @@ public class CreateNamespaceCommandResolver
             ? command.options().replication().strategyOptions()
             : null;
 
-    String replicationMap = getReplicationMap(strategy, strategyOptions);
-    return new CreateKeyspaceOperation(keyspaceName, replicationMap);
+    validateStrategyOptions(strategy, strategyOptions);
+    return new CreateKeyspaceOperation(keyspaceName, strategy, strategyOptions);
   }
 }

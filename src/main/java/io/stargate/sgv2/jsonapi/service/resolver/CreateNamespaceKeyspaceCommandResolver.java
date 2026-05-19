@@ -1,44 +1,50 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public abstract class CreateNamespaceKeyspaceCommandResolver<C extends Command>
     implements CommandResolver<C> {
 
-  // default if omitted
-  private static final String DEFAULT_REPLICATION_MAP =
-      "{'class': 'SimpleStrategy', 'replication_factor': 1}";
+  private static final String NETWORK_TOPOLOGY_STRATEGY = "NetworkTopologyStrategy";
 
-  // resolve the replication map
-  String getReplicationMap(String strategy, Map<String, Integer> strategyOptions) {
-    if (strategy == null && strategyOptions == null) {
-      return DEFAULT_REPLICATION_MAP;
+  // Allowlist for datacenter names. The driver's SchemaBuilder.withNetworkTopologyStrategy(Map)
+  // does NOT escape map keys (see OptionsUtils.extractOptionValue in java-driver-query-builder),
+  // so a hostile DC-name key passed to the driver would still produce broken CQL. This allowlist
+  // is therefore the actual security control for the replication map, not just API policy —
+  // do not remove without first ensuring DC names are escaped before reaching the driver.
+  private static final Pattern VALID_DATA_CENTER_NAME = Pattern.compile("[A-Za-z0-9_\\-]+");
+  private static final int MAX_DATA_CENTER_NAME_LENGTH = 48;
+
+  /**
+   * Validate datacenter-name map keys when the strategy is {@code NetworkTopologyStrategy}. For
+   * other strategies the {@code strategyOptions} map is interpreted by the driver as simple-
+   * strategy options (e.g. {@code replication_factor}) and is not validated here.
+   */
+  protected static void validateStrategyOptions(
+      String strategy, Map<String, Integer> strategyOptions) {
+    if (!NETWORK_TOPOLOGY_STRATEGY.equals(strategy) || strategyOptions == null) {
+      return;
     }
-    if ("NetworkTopologyStrategy".equals(strategy)) {
-      return networkTopologyStrategyMap(strategyOptions);
-    } else {
-      return simpleStrategyMap(strategyOptions);
+    for (String dcName : strategyOptions.keySet()) {
+      checkDataCenterName(dcName);
     }
   }
 
-  private static String networkTopologyStrategyMap(Map<String, Integer> strategyOptions) {
-    StringBuilder map = new StringBuilder("{'class': 'NetworkTopologyStrategy'");
-    if (null != strategyOptions) {
-      for (Map.Entry<String, Integer> dcEntry : strategyOptions.entrySet()) {
-        map.append(", '%s': %d".formatted(dcEntry.getKey(), dcEntry.getValue()));
-      }
+  private static void checkDataCenterName(String name) {
+    if (name == null
+        || name.isEmpty()
+        || name.length() > MAX_DATA_CENTER_NAME_LENGTH
+        || !VALID_DATA_CENTER_NAME.matcher(name).matches()) {
+      throw SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME.get(
+          Map.of(
+              "maxNameLength",
+              String.valueOf(MAX_DATA_CENTER_NAME_LENGTH),
+              "unsupportedDataCenterName",
+              ErrorTemplate.replaceIfNull(name)));
     }
-    map.append("}");
-    return map.toString();
-  }
-
-  private static String simpleStrategyMap(Map<String, Integer> strategyOptions) {
-    if (null == strategyOptions || strategyOptions.isEmpty()) {
-      return DEFAULT_REPLICATION_MAP;
-    }
-
-    Integer replicationFactor = strategyOptions.getOrDefault("replication_factor", 1);
-    return "{'class': 'SimpleStrategy', 'replication_factor': " + replicationFactor + "}";
   }
 }
