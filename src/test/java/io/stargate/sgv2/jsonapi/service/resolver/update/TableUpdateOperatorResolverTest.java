@@ -170,12 +170,28 @@ public class TableUpdateOperatorResolverTest {
             null),
         Arguments.of(
                 """
+            {"%s": {"$each": [["key1", "value1"]], "$position": 1}}
+            """
+                .formatted(names().CQL_MAP_COLUMN),
+            null,
+            UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE,
+            "extraneous '$position' field encountered"),
+        Arguments.of(
+                """
             {"%s": {"$each": ["abc"]}}
             """
                 .formatted(names().CQL_LIST_COLUMN),
             List.of("abc"),
             null,
             null),
+        Arguments.of(
+                """
+            {"%s": {"$each": ["abc"], "$position": 1}}
+            """
+                .formatted(names().CQL_LIST_COLUMN),
+            null,
+            UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE,
+            "extraneous '$position' field encountered"),
         Arguments.of(
                 """
             {"%s": {"$each": ["abc"]}}
