@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -678,46 +679,18 @@ public class FilterClauseBuilderTest {
           .isEqualTo(expectedResult.getPath());
     }
 
-    @Test
-    public void mustHandleIdFieldExistsTrue() throws Exception {
-      String json =
-          """
-           {"_id" : {"$exists": true}}
-          """;
-      final ComparisonExpression expectedResult =
-          new ComparisonExpression(
-              "_id",
-              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, true)),
-              null);
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void mustHandleIdFieldExists(boolean operand) throws Exception {
+      String json = "{\"_id\" : {\"$exists\": " + operand + "}}";
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
-      assertThat(
-              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
-          .isEqualTo(expectedResult.getFilterOperations());
-      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo(expectedResult.getPath());
-    }
-
-    @Test
-    public void mustHandleIdFieldExistsFalse() throws Exception {
-      String json =
-          """
-           {"_id" : {"$exists": false}}
-          """;
-      final ComparisonExpression expectedResult =
-          new ComparisonExpression(
-              "_id",
-              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, false)),
-              null);
-      FilterClause filterClause = readCollectionFilterClause(json);
-      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
-      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
-      assertThat(
-              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
-          .isEqualTo(expectedResult.getFilterOperations());
-      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo(expectedResult.getPath());
+      ComparisonExpression expr = filterClause.logicalExpression().comparisonExpressions.get(0);
+      assertThat(expr.getPath()).isEqualTo("_id");
+      assertThat(expr.getFilterOperations())
+          .isEqualTo(
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, operand)));
     }
 
     @Test
