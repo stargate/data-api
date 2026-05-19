@@ -39,7 +39,7 @@ public record CreateKeyspaceCommand(
               + "For NetworkTopologyStrategy, use {\"class\": \"NetworkTopologyStrategy\", \"datacenter_name\": N, ...}.")
   public record Replication(
       @NotNull
-          @Pattern(regexp = "SimpleStrategy|NetworkTopologyStrategy")
+          @Pattern(regexp = "(?i)(SimpleStrategy|NetworkTopologyStrategy)")
           @JsonProperty("class")
           @Schema(
               description =
@@ -53,7 +53,7 @@ public record CreateKeyspaceCommand(
                       + "For NetworkTopologyStrategy, use datacenter names as keys with replication factor as values "
                       + "(e.g. 'dc1': 3, 'dc2': 2).",
               type = SchemaType.OBJECT)
-          Map<String, Integer> strategyOptions) {}
+          Map<String, @NotNull Integer> strategyOptions) {}
 
   /** {@inheritDoc} */
   @Override

@@ -1630,7 +1630,7 @@ request-errors:
     body: |-
       The command included a data center name in the NetworkTopologyStrategy replication options that is not supported.
 
-      Supported data center names must not be empty, more than ${maxNameLength} characters long, and may contain only alphanumeric, underscore, and hyphen characters.
+      Supported data center names must not be empty or contain single quote characters.
       The command used the unsupported data center name: '${unsupportedDataCenterName}'.
 
       Resend the command using a supported data center name.

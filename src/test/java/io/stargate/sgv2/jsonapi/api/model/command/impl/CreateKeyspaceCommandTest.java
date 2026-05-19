@@ -66,6 +66,32 @@ class CreateKeyspaceCommandTest {
     }
 
     @Test
+    public void strategyOptionValueNull() throws Exception {
+      String json =
+          """
+          {
+            "createKeyspace": {
+              "name": "red_star_belgrade",
+              "options": {
+                "replication": {
+                    "class": "NetworkTopologyStrategy",
+                    "dc1": null
+                }
+              }
+            }
+          }
+          """;
+
+      CreateKeyspaceCommand command = objectMapper.readValue(json, CreateKeyspaceCommand.class);
+      Set<ConstraintViolation<CreateKeyspaceCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("must not be null");
+    }
+
+    @Test
     public void strategyWrong() throws Exception {
       String json =
           """
@@ -87,7 +113,29 @@ class CreateKeyspaceCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("must match \"SimpleStrategy|NetworkTopologyStrategy\"");
+          .contains("must match \"(?i)(SimpleStrategy|NetworkTopologyStrategy)\"");
+    }
+
+    @Test
+    public void strategyPatternIsCaseInsensitive() throws Exception {
+      String json =
+          """
+          {
+            "createKeyspace": {
+              "name": "red_star_belgrade",
+              "options": {
+                "replication": {
+                    "class": "networktopologystrategy"
+                }
+              }
+            }
+          }
+          """;
+
+      CreateKeyspaceCommand command = objectMapper.readValue(json, CreateKeyspaceCommand.class);
+      Set<ConstraintViolation<CreateKeyspaceCommand>> result = validator.validate(command);
+
+      assertThat(result).isEmpty();
     }
   }
 
@@ -136,6 +184,32 @@ class CreateKeyspaceCommandTest {
     }
 
     @Test
+    public void strategyOptionValueNull() throws Exception {
+      String json =
+          """
+              {
+                "createNamespace": {
+                  "name": "red_star_belgrade",
+                  "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "dc1": null
+                    }
+                  }
+                }
+              }
+              """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("must not be null");
+    }
+
+    @Test
     public void strategyWrong() throws Exception {
       String json =
           """
@@ -157,7 +231,29 @@ class CreateKeyspaceCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("must match \"SimpleStrategy|NetworkTopologyStrategy\"");
+          .contains("must match \"(?i)(SimpleStrategy|NetworkTopologyStrategy)\"");
+    }
+
+    @Test
+    public void strategyPatternIsCaseInsensitive() throws Exception {
+      String json =
+          """
+              {
+                "createNamespace": {
+                  "name": "red_star_belgrade",
+                  "options": {
+                    "replication": {
+                        "class": "networktopologystrategy"
+                    }
+                  }
+                }
+              }
+              """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
+
+      assertThat(result).isEmpty();
     }
   }
 }

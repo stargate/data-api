@@ -11,16 +11,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.SchemaChangeResult;
 import java.util.function.Supplier;
 
-/**
- * Operation that drops a Cassandra keyspace if it exists.
- *
- * <p>The CQL statement is constructed via the driver's {@link SchemaBuilder} using a {@link
- * CqlIdentifier}, which handles identifier quoting/escaping. This removes the previous {@code
- * String.format} interpolation sink so CQL safety no longer depends on upstream name validation.
- *
- * @param name Name of the keyspace to drop.
- */
-public record DropKeyspaceOperation(String name) implements Operation {
+public record DropKeyspaceOperation(CqlIdentifier name) implements Operation {
 
   /** {@inheritDoc} */
   @Override
@@ -28,12 +19,10 @@ public record DropKeyspaceOperation(String name) implements Operation {
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     return queryExecutor
         .executeDropSchemaChange(dataApiRequestInfo, buildStatement())
-
-        // if we have a result always respond positively
         .map(any -> new SchemaChangeResult(any.wasApplied()));
   }
 
-  SimpleStatement buildStatement() {
-    return SchemaBuilder.dropKeyspace(CqlIdentifier.fromInternal(name)).ifExists().build();
+  private SimpleStatement buildStatement() {
+    return SchemaBuilder.dropKeyspace(name).ifExists().build();
   }
 }

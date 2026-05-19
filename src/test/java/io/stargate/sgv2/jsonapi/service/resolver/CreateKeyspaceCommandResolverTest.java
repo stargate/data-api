@@ -57,7 +57,7 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
                 assertThat(op.strategy()).isNull();
                 assertThat(op.strategyOptions()).isNull();
               });
@@ -86,7 +86,7 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
                 assertThat(op.strategy()).isEqualTo("SimpleStrategy");
               });
     }
@@ -115,7 +115,7 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
                 assertThat(op.strategy()).isEqualTo("SimpleStrategy");
                 assertThat(op.strategyOptions()).containsEntry("replication_factor", 2);
               });
@@ -146,7 +146,7 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
                 assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
                 assertThat(op.strategyOptions())
                     .containsEntry("Boston", 2)
@@ -178,7 +178,7 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
                 assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
               });
     }
@@ -204,7 +204,7 @@ class CreateKeyspaceCommandResolverTest {
             .isInstanceOfSatisfying(
                 CreateKeyspaceOperation.class,
                 op -> {
-                  assertThat(op.name()).isEqualTo(name);
+                  assertThat(op.name().asInternal()).isEqualTo(name);
                   assertThat(op.strategy()).isNull();
                 });
       }
@@ -349,10 +349,8 @@ class CreateKeyspaceCommandResolverTest {
 
     @Test
     public void rejectsInjectionInDataCenterName() throws Exception {
-      // A datacenter key with characters outside the API allowlist is rejected up front.
-      // The driver's SchemaBuilder.withNetworkTopologyStrategy(Map) does NOT escape map keys
-      // (see OptionsUtils.extractOptionValue in java-driver-query-builder), so this allowlist
-      // is the actual security control for the replication map.
+      // The driver does not escape NetworkTopologyStrategy map keys, so reject names that could
+      // break out of the generated CQL string literal.
       String json =
           """
             {
@@ -375,12 +373,12 @@ class CreateKeyspaceCommandResolverTest {
           throwable,
           SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME,
           "data center name in the NetworkTopologyStrategy replication options that is not supported",
-          "must not be empty, more than 48 characters long, and may contain only alphanumeric, underscore, and hyphen characters",
+          "must not be empty or contain single quote characters",
           "The command used the unsupported data center name: 'dc1', 'class': 'SimpleStrategy'.");
     }
 
     @Test
-    public void rejectsDataCenterNameWithSpace() throws Exception {
+    public void allowsDataCenterNameWithSpace() throws Exception {
       String json =
           """
             {
@@ -397,14 +395,16 @@ class CreateKeyspaceCommandResolverTest {
             """;
 
       CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+      Operation result = resolver.resolveCommand(commandContext, command);
 
-      verifySchemaException(
-          throwable, SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME, "dc one");
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateKeyspaceOperation.class,
+              op -> assertThat(op.strategyOptions()).containsEntry("dc one", 1));
     }
 
     @Test
-    public void rejectsDataCenterNameTooLong() throws Exception {
+    public void allowsDataCenterNameWithoutLengthLimit() throws Exception {
       String dcName = RandomStringUtils.insecure().nextAlphabetic(49);
       String json =
               """
@@ -423,10 +423,12 @@ class CreateKeyspaceCommandResolverTest {
               .formatted(dcName);
 
       CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+      Operation result = resolver.resolveCommand(commandContext, command);
 
-      verifySchemaException(
-          throwable, SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME, dcName);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateKeyspaceOperation.class,
+              op -> assertThat(op.strategyOptions()).containsEntry(dcName, 1));
     }
   }
 

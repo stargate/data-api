@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.service.resolver.KeyspaceCommandResolverSupport.keyspaceIdentifierForDrop;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -21,6 +23,6 @@ public class DropKeyspaceCommandResolver implements CommandResolver<DropKeyspace
   @Override
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, DropKeyspaceCommand command) {
-    return new DropKeyspaceOperation(command.name());
+    return new DropKeyspaceOperation(keyspaceIdentifierForDrop(command.name()));
   }
 }
