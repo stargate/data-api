@@ -544,6 +544,36 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    public void withExistOperatorOnIdField() {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : {"$exists" : true}}
+            }
+          }
+          """;
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(6));
+    }
+
+    @Test
+    public void withExistFalseOperatorOnIdField() {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : {"$exists" : false}}
+            }
+          }
+          """;
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
+    }
+
+    @Test
     public void withAllOperator() {
       String json =
           """
