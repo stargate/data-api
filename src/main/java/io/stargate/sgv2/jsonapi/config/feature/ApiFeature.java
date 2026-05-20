@@ -69,7 +69,20 @@ public enum ApiFeature {
   /**
    * The request will return a trace of the processing that includes both the message and the data.
    */
-  REQUEST_TRACING_FULL("request-tracing-full", false);
+  REQUEST_TRACING_FULL("request-tracing-full", false),
+
+  /**
+   * Billing feature flag: if enabled, the API will emit per-request billing events (token usage and
+   * egress bytes) on the dedicated {@code billing.events} logger for Astra tenants. If left as
+   * default, no billing events are emitted.
+   *
+   * <p>Set via {@code stargate.feature.flags.billing=true} at startup (authoritative; request
+   * headers cannot disable a startup-enabled flag) or per-request via {@code Feature-Flag-billing}
+   * header when not configured at startup.
+   *
+   * <p>Disabled by default.
+   */
+  BILLING("billing", false);
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before
