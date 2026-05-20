@@ -49,10 +49,12 @@ public class RequestContext implements LoggingMDCContext {
   private final RerankingCredentials rerankingCredentials;
 
   // created on demand, otherwise we need to read from config too early when
-  // access via {@link CommandContext#apiFeatures()}
+  // or we create things that are normally not needed for a request.
+  // See getters for this values
   private volatile ApiFeatures apiFeatures;
   private volatile VersionedSchema versionedSchema;
-  private CommandConfig commandConfig = ConfigPreLoader.getPreLoadOrEmpty();
+
+  private final CommandConfig commandConfig = ConfigPreLoader.getPreLoadOrEmpty();
 
   /** For testing purposes only. */
   @VisibleForTesting

@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinitio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaVersion;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
 import java.util.List;
 
 /**
@@ -56,8 +56,14 @@ public class CollectionSettingsV0Reader {
         vectorConfig,
         indexingConfig,
         // Legacy config, there is nothing, versioned value decides based on the version
-        requestContext.versionedSchema().lexicalDef().namedVersion(SchemaVersion.V_0, null),
+        requestContext
+            .versionedSchema()
+            .lexicalDef()
+            .namedVersion(CollectionSchemaVersion.V_0, null),
         // Legacy config, there is nothing, versioned value decides based on the version
-        requestContext.versionedSchema().rerankDef().namedVersion(SchemaVersion.V_0, null));
+        requestContext
+            .versionedSchema()
+            .rerankDef()
+            .namedVersion(CollectionSchemaVersion.V_0, null));
   }
 }

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaValue;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Arrays;
@@ -83,7 +82,7 @@ public record CollectionLexicalDef(
   public static SchemaValue<CollectionLexicalDef> fromApiDesc(
       ObjectMapper mapper,
       CreateCollectionCommand.Options.LexicalDesc lexicalDesc,
-      LexicalDefSchemaValueDef lexicalDefSchema) {
+      CollectionLexicalDefSchemaFactory lexicalDefSchema) {
 
     // Case 1: No lexical body provided - so no value from the user
     if (lexicalDesc == null) {
@@ -119,12 +118,6 @@ public record CollectionLexicalDef(
       // use our clean disabled instance
       return lexicalDefSchema.currentVersion(LEXICAL_DISABLED);
     }
-
-    // TODO XXX - MOVE THIS DOWN INTO THE RESOLVER
-    //    // Case 4: Can only enable if feature is available
-    //    if (enabled && !lexicalAvailableForDB) {
-    //      throw SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.get();
-    //    }
 
     // Case 5: Enabled and analyzer provided - validate and use
     // Case 5a: missing/null/Empty Object - use default analyzer

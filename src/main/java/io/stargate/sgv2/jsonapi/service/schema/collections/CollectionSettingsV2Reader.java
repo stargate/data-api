@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaVersion;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
 
 /**
  * schema_version 1 sample: {"collection":{"name":"newVectorize","schema_version":1,
@@ -12,8 +12,8 @@ import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaVersion;
 public class CollectionSettingsV2Reader extends CollectionSettingsV1Reader {
 
   @Override
-  protected SchemaVersion decideSchemaVersion(
+  protected CollectionSchemaVersion decideSchemaVersion(
       CollectionLexicalDef persistedLexical, CollectionRerankDef persistedRerank) {
-    return SchemaVersion.V_2;
+    return CollectionSchemaVersion.V_2;
   }
 }

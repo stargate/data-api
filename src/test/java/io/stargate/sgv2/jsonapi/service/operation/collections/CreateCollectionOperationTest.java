@@ -31,8 +31,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -82,7 +82,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     var allKeyspaces = new HashMap<CqlIdentifier, KeyspaceMetadata>();
     var keyspaceMetadata =
         new DefaultKeyspaceMetadata(
-            CqlIdentifier.fromInternal(KEYSPACE_NAME),
+            CqlIdentifier.fromInternal(TEST_CONSTANTS.KEYSPACE_NAME),
             false,
             false,
             new HashMap<>(),
@@ -117,14 +117,14 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
-            COLLECTION_NAME,
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             false,
             null,
             null,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
     operation
         .execute(requestContext, queryExecutor)
@@ -152,14 +152,14 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
-            COLLECTION_NAME,
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             false,
             null,
             null,
             vectorDesc,
-            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
     // TODO: XXX: AARON
     //    var operation =
@@ -206,14 +206,14 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
-            COLLECTION_NAME,
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             false,
             null,
             indexingDesc,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
     // TOD: XXX: AARON
     //    var operation =
@@ -262,14 +262,14 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
-            COLLECTION_NAME,
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             false,
             null,
             indexingDesc,
             vectorDesc,
-            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
     // TODO: XXX: AARON
     //    var operation =
@@ -348,14 +348,14 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
             mock(CQLSessionCache.class),
-            COLLECTION_NAME,
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             true,
             null,
             null,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
     // TODO: XXX: AARON
     //
     //    var operation =

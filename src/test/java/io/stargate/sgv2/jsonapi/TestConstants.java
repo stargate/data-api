@@ -22,12 +22,12 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Optional;
@@ -182,9 +182,9 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
             // Use default reranking config - hardcode the value to avoid reading config
-            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
                 new CollectionRerankDef(
                     true,
                     new CollectionRerankDef.RerankServiceDef(
@@ -197,8 +197,8 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -213,8 +213,8 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
 
     VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -229,8 +229,8 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
                 new CollectionRerankDef(
                     true,
                     new CollectionRerankDef.RerankServiceDef(
@@ -247,8 +247,8 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            LexicalDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null),
-            RerankDefSchemaValueDef.FOR_TESTING_ENABLED.currentVersion(null));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
   }
 
   // CommandContext for working on the schema objects above

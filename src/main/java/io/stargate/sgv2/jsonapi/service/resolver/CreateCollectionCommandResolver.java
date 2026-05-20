@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -24,6 +25,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
 
+/**
+ * Resolves the {@link CreateCollectionCommand } command into a {@link CreateCollectionOperation}
+ */
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
 
@@ -58,8 +62,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> context, CreateCollectionCommand command) {
 
-    var collectionName = NamingRules.COLLECTION.checkRule(command.name());
+    var collectionName =
+        cqlIdentifierFromUserInput(NamingRules.COLLECTION.checkRule(command.name()));
 
+    // for these config options we only have the public API sided *Desc classes
+    // no different internal representation
     var docIdDesc =
         getOrDefault(command.options(), CreateCollectionCommand.Options::idConfig, null);
 
@@ -75,6 +82,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       indexingDesc.validate();
     }
 
+    // for these config options we have a *Def internal representation that we build from the
+    // public API sided *Desc classes
     var lexicalDef =
         CollectionLexicalDef.fromApiDesc(
             OBJECT_MAPPER,

@@ -37,10 +37,10 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -87,7 +87,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                COLLECTION_IDENTIFIER,
+                TEST_CONSTANTS.COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -98,8 +98,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
+                CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+                CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null)),
             jsonProcessingMetricsReporter,
             null);
   }
@@ -122,7 +122,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   private SimpleStatement nonVectorUpdateStatement(WritableShreddedDocument shredDocument) {
     String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
-            KEYSPACE_NAME, COLLECTION_NAME, false, false);
+            TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, false, false);
     return ReadAndUpdateCollectionOperation.bindUpdateValues(
         updateCql, shredDocument, false, false);
   }
@@ -130,7 +130,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   private SimpleStatement vectorUpdateStatement(WritableShreddedDocument shredDocument) {
     String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
-            KEYSPACE_NAME, COLLECTION_NAME, true, false);
+            TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, true, false);
     return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, true, false);
   }
 
@@ -144,7 +144,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
             {
@@ -251,7 +251,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                 {
@@ -476,7 +476,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       UUID tx_id2 = UUID.randomUUID();
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
               {
@@ -764,7 +764,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                 {
@@ -872,7 +872,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1_select_update =
           """
                 {
@@ -975,7 +975,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       UUID tx_id2 = UUID.randomUUID();
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
               {
@@ -1142,7 +1142,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       UUID tx_id2 = UUID.randomUUID();
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
               {
@@ -1302,7 +1302,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
@@ -1399,7 +1399,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
@@ -1477,7 +1477,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 21"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       UUID tx_id1 = UUID.randomUUID();
       UUID tx_id2 = UUID.randomUUID();
@@ -1624,7 +1624,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 21"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
@@ -1722,7 +1722,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 21"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(

@@ -30,10 +30,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
@@ -111,7 +111,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                COLLECTION_IDENTIFIER,
+                TEST_CONSTANTS.COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -122,8 +122,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
+                CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+                CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null)),
             jsonProcessingMetricsReporter,
             null);
   }
@@ -1034,7 +1034,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
   }
 
   private SimpleStatement nonVectorInsertStatement(WritableShreddedDocument shredDocument) {
-    String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String insertCql =
+        INSERT_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),
@@ -1051,7 +1052,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
   }
 
   private SimpleStatement vectorInsertStatement(WritableShreddedDocument shredDocument) {
-    String insertCql = INSERT_VECTOR_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String insertCql =
+        INSERT_VECTOR_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),

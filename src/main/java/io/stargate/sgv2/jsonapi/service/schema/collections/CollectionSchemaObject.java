@@ -25,8 +25,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaValue;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaVersion;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Map;
@@ -220,13 +220,19 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       // If no "comment", must assume Legacy (no Lexical) config
       // CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForPreLexical();
       var lexicalConfig =
-          requestContext.versionedSchema().lexicalDef().namedVersion(SchemaVersion.V_0, null);
+          requestContext
+              .versionedSchema()
+              .lexicalDef()
+              .namedVersion(CollectionSchemaVersion.V_0, null);
 
       // If no "comment", must assume Legacy (no Reranking) config
       //      CollectionRerankDef rerankingConfig =
       // CollectionRerankDef.configForPreRerankingCollection();
       var rerankingConfig =
-          requestContext.versionedSchema().rerankDef().namedVersion(SchemaVersion.V_0, null);
+          requestContext
+              .versionedSchema()
+              .rerankDef()
+              .namedVersion(CollectionSchemaVersion.V_0, null);
       if (vectorEnabled) {
         return new CollectionSchemaObject(
             requestContext.tenant(),

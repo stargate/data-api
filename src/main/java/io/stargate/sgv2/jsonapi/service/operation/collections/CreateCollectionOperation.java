@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
@@ -33,8 +34,8 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaValue;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaVersion;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
@@ -45,7 +46,7 @@ public record CreateCollectionOperation(
     CommandContext<KeyspaceSchemaObject> commandContext,
     DatabaseLimitsConfig dbLimitsConfig,
     CQLSessionCache cqlSessionCache,
-    String collectionName,
+    CqlIdentifier collectionName,
     int ddlDelayMillis,
     boolean tooManyIndexesRollbackEnabled,
     // nullable
@@ -192,7 +193,7 @@ public record CreateCollectionOperation(
               return Uni.createFrom()
                   .failure(
                       SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.get(
-                          Map.of("collectionName", collectionName)));
+                          Map.of("collectionName", cqlIdentifierToMessageString(collectionName))));
             });
   }
 
@@ -230,9 +231,11 @@ public record CreateCollectionOperation(
         TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, overrideRerankDef.runningValue());
 
     var collectionNode = OBJECT_MAPPER.createObjectNode();
-    collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, collectionName);
     collectionNode.put(
-        TableCommentConstants.SCHEMA_VERSION_KEY, SchemaVersion.CURRENT_VERSION.toString());
+        TableCommentConstants.COLLECTION_NAME_KEY, cqlIdentifierToJsonKey(collectionName));
+    collectionNode.put(
+        TableCommentConstants.SCHEMA_VERSION_KEY,
+        CollectionSchemaVersion.CURRENT_VERSION.toString());
     collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
 
     var tableCommentNode = OBJECT_MAPPER.createObjectNode();
@@ -261,7 +264,7 @@ public record CreateCollectionOperation(
         queryExecutor.executeCreateSchemaChange(
             requestContext,
             getCreateTable(
-                commandContext.schemaObject().identifier().keyspace().asInternal(),
+                commandContext.schemaObject().identifier().keyspace(),
                 collectionName,
                 vectorDesc != null,
                 getOrDefault(
@@ -280,7 +283,7 @@ public record CreateCollectionOperation(
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(
-                            commandContext.schemaObject().identifier().keyspace().asInternal(),
+                            commandContext.schemaObject().identifier().keyspace(),
                             collectionName,
                             lexicalConfig,
                             collectionExisted);
@@ -422,7 +425,7 @@ public record CreateCollectionOperation(
       RequestContext requestContext, QueryExecutor queryExecutor) {
 
     DeleteCollectionCollectionOperation deleteCollectionCollectionOperation =
-        new DeleteCollectionCollectionOperation(commandContext, collectionName);
+        new DeleteCollectionCollectionOperation(commandContext, collectionName.asInternal());
 
     // amorton - 13 jan  2026 - keeping the existing logic here, where the error was returning in
     // two situations
@@ -466,15 +469,15 @@ public record CreateCollectionOperation(
   TableMetadata findTableAndValidateLimits(
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces,
       KeyspaceMetadata currKeyspace,
-      String tableName) {
+      CqlIdentifier tableName) {
 
     // First: do we already have a Table with the same name?
     for (TableMetadata table : currKeyspace.getTables().values()) {
-      if (table.getName().asInternal().equals(tableName)) {
+      if (table.getName().equals(tableName)) {
         // If that is not a valid Data API collection, error out the createCollectionCommand
         if (!COLLECTION_MATCHER.test(table)) {
           throw SchemaException.Code.EXISTING_TABLE_NOT_DATA_API_COLLECTION.get(
-              Map.of("tableName", tableName));
+              Map.of("tableName", cqlIdentifierToMessageString(tableName)));
         }
         // If that is a valid Data API table, we returned it
         return table;
@@ -494,7 +497,7 @@ public record CreateCollectionOperation(
       throw SchemaException.Code.TOO_MANY_COLLECTIONS.get(
           Map.of(
               "table",
-              tableName,
+              cqlIdentifierToMessageString(tableName),
               "collectionCount",
               String.valueOf(collectionCount),
               "collectionMaxCount",
@@ -518,8 +521,8 @@ public record CreateCollectionOperation(
   }
 
   public static SimpleStatement getCreateTable(
-      String keyspace,
-      String table,
+      CqlIdentifier keyspace,
+      CqlIdentifier table,
       boolean vectorSearch,
       int vectorSize,
       String comment,
@@ -548,7 +551,9 @@ public record CreateCollectionOperation(
       if (comment != null) {
         createTableWithVector = createTableWithVector + " WITH comment = '" + comment + "'";
       }
-      return SimpleStatement.newInstance(String.format(createTableWithVector, keyspace, table));
+      return SimpleStatement.newInstance(
+          String.format(
+              createTableWithVector, cqlIdentifierToCQL(keyspace), cqlIdentifierToCQL(table)));
     }
     String createTable =
         "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -568,7 +573,8 @@ public record CreateCollectionOperation(
     if (comment != null) {
       createTable = createTable + " WITH comment = '" + comment + "'";
     }
-    return SimpleStatement.newInstance(String.format(createTable, keyspace, table));
+    return SimpleStatement.newInstance(
+        String.format(createTable, cqlIdentifierToCQL(keyspace), cqlIdentifierToCQL(table)));
   }
 
   /*
@@ -576,8 +582,8 @@ public record CreateCollectionOperation(
    * For a new table they are run without IF NOT EXISTS.
    */
   public List<SimpleStatement> getIndexStatements(
-      String keyspace,
-      String table,
+      CqlIdentifier keyspace,
+      CqlIdentifier table,
       CollectionLexicalDef lexicalConfig,
       boolean collectionExisted) {
     List<SimpleStatement> statements = new ArrayList<>(10);
@@ -591,39 +597,79 @@ public record CreateCollectionOperation(
           appender
               + " \"%s_exists_keys\" ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
 
-      statements.add(SimpleStatement.newInstance(String.format(existKeys, table, keyspace, table)));
+      statements.add(
+          SimpleStatement.newInstance(
+              String.format(
+                  existKeys,
+                  cqlIdentifierToCQL(table),
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
 
       String arraySize =
           appender
               + " \"%s_array_size\" ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(arraySize, table, keyspace, table)));
+      statements.add(
+          SimpleStatement.newInstance(
+              String.format(
+                  arraySize,
+                  cqlIdentifierToCQL(table),
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
 
       String arrayContains =
           appender
               + " \"%s_array_contains\" ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
       statements.add(
-          SimpleStatement.newInstance(String.format(arrayContains, table, keyspace, table)));
+          SimpleStatement.newInstance(
+              String.format(
+                  arrayContains,
+                  cqlIdentifierToCQL(table),
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
 
       String boolQuery =
           appender
               + " \"%s_query_bool_values\" ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(boolQuery, table, keyspace, table)));
+      statements.add(
+          SimpleStatement.newInstance(
+              String.format(
+                  boolQuery,
+                  cqlIdentifierToCQL(table),
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
 
       String dblQuery =
           appender
               + " \"%s_query_dbl_values\" ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(dblQuery, table, keyspace, table)));
+      statements.add(
+          SimpleStatement.newInstance(
+              String.format(
+                  dblQuery,
+                  cqlIdentifierToCQL(table),
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
 
       String textQuery =
           appender
               + " \"%s_query_text_values\" ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(textQuery, table, keyspace, table)));
+      statements.add(
+          SimpleStatement.newInstance(
+              String.format(
+                  textQuery,
+                  cqlIdentifierToCQL(table),
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
 
       String timestampQuery =
           appender
               + " \"%s_query_timestamp_values\" ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
       statements.add(
-          SimpleStatement.newInstance(String.format(timestampQuery, table, keyspace, table)));
+          SimpleStatement.newInstance(
+              String.format(
+                  timestampQuery,
+                  cqlIdentifierToCQL(table),
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
 
       String nullQuery =
           appender

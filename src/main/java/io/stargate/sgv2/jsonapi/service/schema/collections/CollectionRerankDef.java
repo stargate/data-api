@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProviderConfigProducer;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaValue;
 import java.util.*;
 import org.slf4j.Logger;
@@ -286,7 +285,7 @@ public class CollectionRerankDef {
   public static SchemaValue<CollectionRerankDef> fromApiDesc(
       CreateCollectionCommand.Options.RerankDesc rerankingDesc,
       RerankingProvidersConfig providerConfigs,
-      RerankDefSchemaValueDef rerankDefSchema) {
+      CollectionRerankDefSchemaFactory rerankDefSchema) {
 
     //    // If reranking is not enabled for the API, allow explicit "enabled: false" but error out
     //    // if user tries to enable it (fix for #2423).

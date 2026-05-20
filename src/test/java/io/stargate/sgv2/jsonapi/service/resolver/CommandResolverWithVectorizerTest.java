@@ -35,10 +35,10 @@ import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
@@ -101,8 +101,8 @@ public class CommandResolverWithVectorizerTest {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
+                CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+                CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null)),
             null,
             null);
   }

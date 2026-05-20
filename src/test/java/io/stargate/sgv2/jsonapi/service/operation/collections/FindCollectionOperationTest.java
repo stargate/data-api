@@ -38,10 +38,10 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
@@ -87,7 +87,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                COLLECTION_IDENTIFIER,
+                TEST_CONSTANTS.COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -98,8 +98,8 @@ public class FindCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-                RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null)),
+                CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+                CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null)),
             jsonProcessingMetricsReporter,
             null);
   }
@@ -111,7 +111,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findAll() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" LIMIT %s"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, 20);
 
       String doc1 =
           """
@@ -244,7 +244,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void byIdWithInOperator() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 2"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
               {
@@ -328,7 +328,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findnonVsearchWithSortVectorFlag() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 2"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                       {
@@ -449,7 +449,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void byIdWithInAndOtherOperator() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 2"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                   {
@@ -537,7 +537,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findOneByIdWithInOperator() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                   {
@@ -619,7 +619,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithId() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
             {
@@ -679,7 +679,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithIdNoData() {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
@@ -732,7 +732,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithDynamic() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -793,7 +793,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithDynamicGT() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_dbl_values[?] > ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -856,7 +856,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithDynamicGTE() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_dbl_values[?] >= ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -919,7 +919,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithDynamicLT() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_timestamp_values[?] < ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -983,7 +983,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithDynamicLTE() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_timestamp_values[?] <= ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1047,7 +1047,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithBooleanFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                   {
@@ -1109,7 +1109,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithDateFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1173,7 +1173,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithExistsFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE exist_keys CONTAINS ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1233,7 +1233,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithAllFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? AND array_contains CONTAINS ?) LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1295,7 +1295,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findOrWithAllFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? OR (array_contains CONTAINS ? AND array_contains CONTAINS ?)) LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1363,7 +1363,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findOrWithAllFilterWithNegation() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (array_contains CONTAINS ? OR (array_contains NOT CONTAINS ? OR array_contains NOT CONTAINS ?)) LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1431,7 +1431,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithSizeFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_size[?] = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1497,7 +1497,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       // Due to trimming of indexes, former "array_equals" moved under "query_text_values":
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1564,7 +1564,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithArrayNotEqualFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] != ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1631,7 +1631,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithSubDocEqualFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1697,7 +1697,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findWithSubDocNotEqualFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE query_text_values[?] != ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       String doc1 =
           """
@@ -1767,7 +1767,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void failurePropagated() {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       RuntimeException exception = new RuntimeException("Ivan breaks tests.");
 
       SimpleStatement stmt =
@@ -1814,7 +1814,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findAllSort() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, 20);
 
       String doc1 =
           """
@@ -1996,7 +1996,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findAllSortByDate() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['sort_date'], query_dbl_values['sort_date'], query_bool_values['sort_date'], query_null_values['sort_date'], query_timestamp_values['sort_date'] FROM \"%s\".\"%s\" LIMIT %s"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, 20);
 
       String doc1 =
           """
@@ -2197,7 +2197,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findAllSortWithSkip() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, 20);
 
       String doc1 =
           """
@@ -2373,7 +2373,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void findAllSortDescending() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" LIMIT %s"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, 20);
 
       String doc1 =
           """
@@ -2557,7 +2557,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     // same for uuidv7
     String collectionReadCql =
         "SELECT key, tx_id, doc_json, query_text_values['uuidv6'], query_dbl_values['uuidv6'], query_bool_values['uuidv6'], query_null_values['uuidv6'], query_timestamp_values['uuidv6'] FROM \"%s\".\"%s\" LIMIT %s"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, 20);
 
     // These are UUIDv6 ids generated at 30 second intervals.
     String doc1 =
@@ -2686,7 +2686,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void vectorSearch() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
             {
@@ -2761,7 +2761,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void vectorSearchReturnSortVector() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                     {
@@ -2836,7 +2836,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
     public void vectorSearchWithFilter() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? ORDER BY query_vector_value ANN OF ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                 {

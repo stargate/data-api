@@ -27,10 +27,10 @@ import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.LexicalDefSchemaValueDef;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.RerankDefSchemaValueDef;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
@@ -303,8 +303,8 @@ public class DataVectorizerTest {
                           EmbeddingSourceModel.OTHER,
                           new VectorizeDefinition("custom", "custom", null, null)))),
               null,
-              LexicalDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null),
-              RerankDefSchemaValueDef.FOR_TESTING_DISABLED.currentVersion(null));
+              CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+              CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
         documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));

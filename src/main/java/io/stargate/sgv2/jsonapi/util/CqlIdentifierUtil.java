@@ -32,4 +32,9 @@ public abstract class CqlIdentifierUtil {
   public static String cqlIdentifierToJsonKey(CqlIdentifier identifier) {
     return identifier.asInternal();
   }
+
+  public static String cqlIdentifierToCQL(CqlIdentifier identifier) {
+    // pretty == false means force double quotes
+    return identifier.asCql(false);
+  }
 }

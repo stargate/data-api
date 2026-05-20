@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaVersion;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
 import java.util.List;
 
 /**
@@ -94,7 +94,7 @@ public class CollectionSettingsV1Reader {
         requestContext.versionedSchema().rerankDef().namedVersion(schemaVersion, persistedRerank));
   }
 
-  protected SchemaVersion decideSchemaVersion(
+  protected CollectionSchemaVersion decideSchemaVersion(
       CollectionLexicalDef persistedLexical, CollectionRerankDef persistedRerank) {
 
     // XXXX AARON - HACK
@@ -107,6 +107,6 @@ public class CollectionSettingsV1Reader {
 
     // IF we have a persisted lexical than we call this version TWO 2 !
     // VERSION 1 was when we had the proper json structure, but did not have the lexical
-    return persistedLexical != null ? SchemaVersion.V_2 : SchemaVersion.V_1;
+    return persistedLexical != null ? CollectionSchemaVersion.V_2 : CollectionSchemaVersion.V_1;
   }
 }
