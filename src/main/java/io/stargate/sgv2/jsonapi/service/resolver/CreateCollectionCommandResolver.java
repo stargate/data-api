@@ -58,9 +58,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> context, CreateCollectionCommand command) {
 
-    // XXX TODO: USE THIS IN HERE TO CHECK
-    //    var lexicalAvailableForDB = context.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
-
     var collectionName = NamingRules.COLLECTION.checkRule(command.name());
 
     var docIdDesc =

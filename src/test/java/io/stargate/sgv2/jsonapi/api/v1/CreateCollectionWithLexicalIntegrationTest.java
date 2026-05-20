@@ -171,6 +171,26 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
   @Nested
   @Order(2)
   class CreateLexicalFail {
+
+    void failCreateLexicalFeatureDisabled() {
+      Assumptions.assumeTrue(!isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                                            {
+                                              "enabled": true,
+                                              "analyzer": "standard"
+                                            }
+                                      """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
+    }
+
     @Test
     void failCreateLexicalWithDisabledAndAnalyzerString() {
       final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
@@ -300,22 +320,16 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                 }
                           """);
 
-      if (isLexicalAvailableForDB()) {
-        givenHeadersPostJsonThenOk(json)
-            .body("$", responseIsError())
-            .body(
-                "errors[0].errorCode",
-                is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-            // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
-            // analyzers
-            .body("errors[0].message", containsString("Invalid analyzer config"))
-            .body("errors[0].message", containsString("token 'unknown'"));
-      } else {
-        givenHeadersPostJsonThenOk(json)
-            .body("$", responseIsError())
-            .body(
-                "errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
-      }
+      // Does not matter if the feature is enabled, the option valid is first validated
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
+          // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
+          // analyzers
+          .body("errors[0].message", containsString("Invalid analyzer config"))
+          .body("errors[0].message", containsString("token 'unknown'"));
     }
 
     @Test
@@ -331,24 +345,19 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                     }
                               """);
 
-      if (isLexicalAvailableForDB()) {
-        givenHeadersPostJsonThenOk(json)
-            .body("$", responseIsError())
-            .body(
-                "errors[0].errorCode",
-                is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-            // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
-            // analyzers
-            .body(
-                "errors[0].message",
-                containsString(
-                    "'analyzer' property of 'lexical' must be either JSON Object or String, is: Array"));
-      } else {
-        givenHeadersPostJsonThenOk(json)
-            .body("$", responseIsError())
-            .body(
-                "errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
-      }
+      /// Does not matter if lexical is enabled or not, the value is validated before the enabled
+      // feature is checked
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
+          // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
+          // analyzers
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'analyzer' property of 'lexical' must be either JSON Object or String, is: Array"));
     }
 
     // [data-api#2011]

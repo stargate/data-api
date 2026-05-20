@@ -379,7 +379,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   /** Helper method for determining if lexical search is available for the database backend */
   protected boolean isLexicalAvailableForDB() {
-    return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
+    return !"true".equals(System.getProperty(TEST_PROP_LEXICAL_DISABLED));
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
