@@ -241,7 +241,12 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
 
       String entryKey = validateFilterClausePath(entry.getKey(), operator);
       JsonNode value = updateField.getValue();
-      Object valueObject = jsonNodeValue(entryKey, value);
+      // $exists checks field presence; its operand is always a plain Boolean and must not be
+      // wrapped as a DocumentId even when filtering on `_id`.
+      Object valueObject =
+          (operator == ElementComparisonOperator.EXISTS)
+              ? jsonNodeValue(value)
+              : jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT
@@ -289,16 +294,17 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   }
 
   /**
-   * Method to parse each filter clause and return node value.
+   * Method to parse each filter clause and return operand value for operator. Considers special
+   * case of field being Document Id ("_id") to produce {@code DocumentId} otherwise just "natural"
+   * Java value for JSON type (like {@code String} or {@code Boolean}.
    *
-   * @param path - If the path refers to Document Id (see {@link #isDocId}, then the value is
-   *     resolved as DocumentId
+   * @param path - Path for filter clause
    * @param node - JsonNode which has the operand value of a filter clause
-   * @return
+   * @return Value for filter operator to compare
    */
   protected Object jsonNodeValue(String path, JsonNode node) {
-    // If the path is _id, then the value is resolved as DocumentId and Array type handled for `$in`
-    // operator in filter
+    // If the path is _id, then the value is resolved as DocumentId and Array type
+    // handled for `$in` operator in filter
     if (isDocId(path)) {
       if (node.getNodeType() == JsonNodeType.ARRAY) {
         ArrayNode arrayNode = (ArrayNode) node;
