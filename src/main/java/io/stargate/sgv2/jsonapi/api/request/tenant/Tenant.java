@@ -29,30 +29,63 @@ public class Tenant implements Recordable {
   // TenantID used when the DB is single-tenant.
   private static final String SINGLE_TENANT_ID = "SINGLE-TENANT";
 
+  /**
+   * Region value baked into the Cassandra (single-tenant) Tenant instance. Cassandra deployments
+   * don't have a per-request region concept, so all Cassandra tenants report this fixed string.
+   */
+  public static final String CASSANDRA_REGION_DEFAULT = "CASSANDRA_REGION";
+
+  /**
+   * Fallback region value for multi-tenant databases (e.g. Astra) when the request URL doesn't
+   * carry a parseable region segment. Downstream billing pipelines can detect and investigate these
+   * events.
+   */
+  public static final String UNKNOWN_REGION = "unknown";
+
   private static final Tenant SINGLE_TENANT_CASSANDRA =
-      new Tenant(DatabaseType.CASSANDRA, SINGLE_TENANT_ID);
+      new Tenant(DatabaseType.CASSANDRA, SINGLE_TENANT_ID, CASSANDRA_REGION_DEFAULT);
 
   private final DatabaseType databaseType;
   private final String tenantId;
+  private final String region;
 
-  private Tenant(DatabaseType databaseType, String tenantId) {
+  private Tenant(DatabaseType databaseType, String tenantId, String region) {
     this.databaseType = databaseType;
     // this is just for sanity checking, keep it lower case
     this.tenantId = tenantId;
+    this.region = region;
+  }
+
+  /**
+   * Factory method to create a Tenant instance with no explicit region (region defaults per
+   * database type — Cassandra gets {@link #CASSANDRA_REGION_DEFAULT}, other types get {@link
+   * #UNKNOWN_REGION}).
+   *
+   * <p>Visible for testing, you should use the {@link TenantFactory} to create instances.
+   */
+  @VisibleForTesting
+  public static Tenant create(DatabaseType databaseType, String tenantId) {
+    return create(databaseType, tenantId, null);
   }
 
   /**
    * Factory method to create a Tenant instance.
+   *
+   * <p>For single-tenant database types (e.g. Cassandra), the {@code region} argument is ignored
+   * and the type's built-in default is used. For multi-tenant types, a null/blank {@code region} is
+   * replaced by {@link #UNKNOWN_REGION}.
    *
    * <p>Visible for testing, you should use the {@link TenantFactory} to create instances
    *
    * @param databaseType the type of database this tenant is for, must not be null.
    * @param tenantId the tenant id, must be null or blank for single-tenant. Otherwise, null is
    *     normalized, and validated to be non-blank.
+   * @param region the deployment region for the tenant (e.g. {@code us-west-2}, {@code
+   *     southcentralus}), or null to use the type's default.
    * @return a Tenant instance
    */
   @VisibleForTesting
-  public static Tenant create(DatabaseType databaseType, String tenantId) {
+  public static Tenant create(DatabaseType databaseType, String tenantId, String region) {
     Objects.requireNonNull(databaseType, "databaseType must not be null");
 
     var normalizedValidated = databaseType.normalizeValidateTenantId(tenantId);
@@ -66,11 +99,17 @@ public class Tenant implements Recordable {
                 "Unsupported single tenant database type: " + databaseType);
       };
     }
-    return new Tenant(databaseType, normalizedValidated.toLowerCase());
+    String normalizedRegion = (region == null || region.isBlank()) ? UNKNOWN_REGION : region;
+    return new Tenant(databaseType, normalizedValidated.toLowerCase(), normalizedRegion);
   }
 
   public DatabaseType databaseType() {
     return databaseType;
+  }
+
+  /** The deployment region for this tenant. Never null. */
+  public String region() {
+    return region;
   }
 
   /** Get the tenant id, this is a non-null String. */
@@ -87,7 +126,8 @@ public class Tenant implements Recordable {
 
   /**
    * Equals based on the combined values of {@link #databaseType} and a CASE INSENSITIVE {@link
-   * #tenantId}.
+   * #tenantId}. {@link #region} is excluded because it is metadata about where the tenant runs, not
+   * part of its identity.
    */
   @Override
   public boolean equals(Object obj) {
@@ -103,6 +143,9 @@ public class Tenant implements Recordable {
 
   @Override
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
-    return dataRecorder.append("tenantId", tenantId).append("databaseType", databaseType);
+    return dataRecorder
+        .append("tenantId", tenantId)
+        .append("databaseType", databaseType)
+        .append("region", region);
   }
 }

@@ -62,7 +62,8 @@ public class SubdomainTenantResolver implements RequestTenantResolver {
     // if subdomain exists, take tenant id
     // otherwise empty
     if (index > 0) {
-      String tenantId = host.substring(0, index);
+      String subdomain = host.substring(0, index);
+      String tenantId = subdomain;
 
       // if max chars is present
       // ensure subdomain is trimmed
@@ -78,7 +79,15 @@ public class SubdomainTenantResolver implements RequestTenantResolver {
         }
       }
 
-      return TenantFactory.instance().create(tenantId);
+      // Astra subdomains follow the pattern {tenantId}-{region}, so anything past the
+      // tenantId + '-' separator is the region. Empty / missing region is fine — Tenant.create
+      // will fall back to Tenant.UNKNOWN_REGION.
+      String region = null;
+      if (subdomain.length() > tenantId.length() + 1) {
+        region = subdomain.substring(tenantId.length() + 1);
+      }
+
+      return TenantFactory.instance().create(tenantId, region);
     } else {
       // it's up to the tenant factory to know what to do with null
       return TenantFactory.instance().create(null);
