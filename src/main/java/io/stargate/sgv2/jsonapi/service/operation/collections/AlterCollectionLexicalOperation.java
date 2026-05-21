@@ -35,7 +35,7 @@ import java.util.function.Supplier;
  * "comment" JSON to record the new lexical config.
  *
  * <p>When {@link #noOp} is true the operation returns success without executing any DDL: this is
- * the "already enabled with same settings" case.
+ * used for the "already enabled with same settings" case.
  *
  * <p><b>No rollback on partial failure.</b> If e.g. ADD COLUMN succeeds but CREATE INDEX fails, the
  * column is left in place and the failure is propagated to the caller. This matches {@link
@@ -75,9 +75,6 @@ public record AlterCollectionLexicalOperation(
       RequestContext requestContext, QueryExecutor queryExecutor) {
 
     if (noOp) {
-      // Type witness needed: Mutiny's item(T) and item(Supplier<? extends T>) overloads otherwise
-      // both match SchemaChangeResult (which is a Supplier<CommandResult>), and inference picks
-      // the wrong T.
       return Uni.createFrom().<Supplier<CommandResult>>item(new SchemaChangeResult(true));
     }
 
@@ -89,8 +86,8 @@ public record AlterCollectionLexicalOperation(
     try {
       newComment = buildUpdatedComment(schemaObject);
     } catch (JacksonException | RuntimeException e) {
-      // Resolver guarantees a V1 comment; if reading/updating it still fails, surface a clean error
-      // rather than a raw Jackson/IllegalState exception.
+      // Resolver guarantees a V1 comment; if reading/updating still fails, surface a clean error
+      // rather than a raw JacksonException/IllegalStateException.
       return Uni.createFrom()
           .failure(
               DatabaseException.Code.CORRUPTED_COLLECTION_SCHEMA.get(
