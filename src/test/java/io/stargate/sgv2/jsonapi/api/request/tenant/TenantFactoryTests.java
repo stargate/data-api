@@ -49,4 +49,24 @@ public class TenantFactoryTests {
     assertThat(tenant.databaseType()).isEqualTo(DatabaseType.ASTRA);
     assertThat(tenant.toString()).isEqualTo("abc");
   }
+
+  @Test
+  public void shouldCreateTenantWithRegion() {
+    TenantFactory.initialize(DatabaseType.ASTRA);
+    TenantFactory factory = TenantFactory.instance();
+
+    Tenant tenant = factory.create("abc", "us-west-2");
+
+    assertThat(tenant.region()).isEqualTo("us-west-2");
+  }
+
+  @Test
+  public void shouldDefaultUnknownRegionWhenNotProvided() {
+    TenantFactory.initialize(DatabaseType.ASTRA);
+    TenantFactory factory = TenantFactory.instance();
+
+    Tenant tenant = factory.create("abc");
+
+    assertThat(tenant.region()).isEqualTo(Tenant.UNKNOWN_REGION);
+  }
 }

@@ -126,8 +126,7 @@ public class Tenant implements Recordable {
 
   /**
    * Equals based on the combined values of {@link #databaseType} and a CASE INSENSITIVE {@link
-   * #tenantId}. {@link #region} is excluded because it is metadata about where the tenant runs, not
-   * part of its identity.
+   * #tenantId}.
    */
   @Override
   public boolean equals(Object obj) {
@@ -138,7 +137,8 @@ public class Tenant implements Recordable {
       return false;
     }
     return Objects.equals(databaseType, that.databaseType)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(region, that.region);
   }
 
   @Override

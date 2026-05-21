@@ -98,12 +98,13 @@ public class TenantTests {
   @Test
   public void recordTo() {
 
-    var tenant = Tenant.create(DatabaseType.ASTRA, "tenant-123");
+    var tenant = Tenant.create(DatabaseType.ASTRA, "tenant-123", "us-west-2");
 
     assertThat(PrettyPrintable.pprint(tenant))
         .as("Recording to pretty print")
         .contains("tenantId", "tenant-123")
-        .contains("databaseType", DatabaseType.ASTRA.name());
+        .contains("databaseType", DatabaseType.ASTRA.name())
+        .contains("region", "us-west-2");
 
     var tenantJson = Jsonable.toJson(tenant);
     var expected = JsonNodeFactory.instance.objectNode();
@@ -111,7 +112,32 @@ public class TenantTests {
     var contents = expected.withObjectProperty("Tenant");
     contents.put("tenantId", "tenant-123");
     contents.put("databaseType", DatabaseType.ASTRA.name());
+    contents.put("region", "us-west-2");
 
     assertThat(tenantJson).as("Recording to JSON").isEqualTo(expected);
+  }
+
+  @Test
+  public void astraDbCarriesProvidedRegion() {
+    var tenant = Tenant.create(DatabaseType.ASTRA, "aa11zz", "us-west-2");
+    assertThat(tenant.region()).isEqualTo("us-west-2");
+  }
+
+  @Test
+  public void astraDbWithNullRegionFallsBackToUnknown() {
+    var tenant = Tenant.create(DatabaseType.ASTRA, "aa11zz", null);
+    assertThat(tenant.region()).isEqualTo(Tenant.UNKNOWN_REGION);
+  }
+
+  @Test
+  public void astraDbWithBlankRegionFallsBackToUnknown() {
+    var tenant = Tenant.create(DatabaseType.ASTRA, "aa11zz", "  ");
+    assertThat(tenant.region()).isEqualTo(Tenant.UNKNOWN_REGION);
+  }
+
+  @Test
+  public void cassandraDbAlwaysUsesCassandraRegionDefault() {
+    var tenant = Tenant.create(DatabaseType.CASSANDRA, null, "anything-ignored");
+    assertThat(tenant.region()).isEqualTo(Tenant.CASSANDRA_REGION_DEFAULT);
   }
 }
