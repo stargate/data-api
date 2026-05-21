@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterCollectionOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
@@ -30,10 +31,13 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
       CqlIdentifier.fromInternal(DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME);
 
   private final ObjectMapper objectMapper;
+  private final DatabaseLimitsConfig dbLimitsConfig;
 
   @Inject
-  public AlterCollectionCommandResolver(ObjectMapper objectMapper) {
+  public AlterCollectionCommandResolver(
+      ObjectMapper objectMapper, DatabaseLimitsConfig dbLimitsConfig) {
     this.objectMapper = objectMapper;
+    this.dbLimitsConfig = dbLimitsConfig;
   }
 
   @Override
@@ -49,12 +53,10 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
       throw badOptions("must specify 'operation' field");
     }
 
+    // Sealed interface: switch is exhaustive, so a new operation subtype fails to compile until
+    // handled here.
     return switch (command.operation()) {
       case AlterCollectionOperationImpl.EnableLexical op -> handleEnableLexical(ctx, op);
-      default ->
-          throw new IllegalStateException(
-              "Unexpected AlterCollectionOperation class: "
-                  + command.operation().getClass().getSimpleName());
     };
   }
 
@@ -97,7 +99,7 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
 
     if (!trulyEnabled) {
       return new AlterCollectionLexicalOperation(
-          ctx, objectMapper, ddlDelayMillis, requested, /* noOp */ false);
+          ctx, objectMapper, dbLimitsConfig, ddlDelayMillis, requested, /* noOp */ false);
     }
 
     // Both analyzer definitions are guaranteed non-null here (CollectionLexicalConfig's
@@ -109,7 +111,7 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
     }
     // Same settings already in effect: no-op success.
     return new AlterCollectionLexicalOperation(
-        ctx, objectMapper, ddlDelayMillis, requested, /* noOp */ true);
+        ctx, objectMapper, dbLimitsConfig, ddlDelayMillis, requested, /* noOp */ true);
   }
 
   private static SchemaException badOptions(String message) {

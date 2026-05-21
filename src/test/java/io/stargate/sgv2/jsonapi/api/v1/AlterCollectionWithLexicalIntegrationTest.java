@@ -7,11 +7,13 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -437,6 +439,76 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
           .body(
               "errors[0].errorCode",
               is(SchemaException.Code.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.name()));
+
+      deleteCollection(name);
+    }
+  }
+
+  @Nested
+  @Order(3)
+  class AlterCollectionEnableLexicalIdempotency {
+
+    // An interrupted prior run (or a concurrent op) can leave the lexical column present while the
+    // stored comment still says lexical is disabled. The resolver then treats the collection as
+    // "not truly enabled" and re-runs the full DDL pipeline. The operation checks freshly-fetched
+    // metadata, sees the column already exists, and skips ADD COLUMN (the backend does not support
+    // ADD IF NOT EXISTS), so enableLexical still succeeds and reconciles the state instead of
+    // failing with "column already exists".
+    @Test
+    void enableLexicalWhenColumnAlreadyPresent() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String name = freshCollectionName();
+      createCollectionWithLexicalDisabled(name);
+
+      // Simulate the leftover column from an interrupted alter, bypassing the Data API.
+      boolean applied =
+          executeCqlStatement(
+              "ALTER TABLE \"%s\".\"%s\" ADD %s text"
+                  .formatted(
+                      keyspaceName, name, DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME));
+      assertTrue(applied, "Pre-condition: manual ADD COLUMN should apply");
+
+      // enableLexical forces a schema refresh, so the resolver sees the orphan column; the DDL
+      // then runs ADD IF NOT EXISTS (no-op) + CREATE INDEX IF NOT EXISTS + comment update.
+      String alter =
+          """
+          {
+            "alterCollection": {
+              "operation": {
+                "enableLexical": { }
+              }
+            }
+          }
+          """;
+      postToCollection(name, alter)
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+
+      // Lexical must actually work now (column + index + comment all consistent).
+      String insertOk =
+          """
+          {
+            "insertOne": {
+              "document": { "_id": "doc1", "$lexical": "hello world" }
+            }
+          }
+          """;
+      postToCollection(name, insertOk).statusCode(200).body("errors", is(nullValue()));
+
+      String find =
+          """
+          {
+            "findOne": {
+              "sort": { "$lexical": "hello" }
+            }
+          }
+          """;
+      postToCollection(name, find)
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.document._id", is("doc1"));
 
       deleteCollection(name);
     }

@@ -2044,13 +2044,13 @@ request-errors:
 
   - scope: SCHEMA
     code: TOO_MANY_INDEXES_FOR_COLLECTION
-    title: Cannot create collection due to number of existing indexes
+    title: Cannot create indexes for collection due to number of existing indexes
     body: |-
-      The command attempted to create an collection, however the number of indexes in the database has reached the maximum allowed.
-      
-      Failed to create Collection: ${keyspace}.${table}.
-      The number of indexes needed for each collection is: ${indexesPerCollection}.
-      
+      The command attempted to create one or more indexes for a collection, however the number of indexes in the database has reached the maximum allowed.
+
+      Failed for Collection: ${keyspace}.${table}.
+      The number of indexes the command needs is: ${indexesPerCollection}.
+
       Reduce the number of indexes in the database and resend the command.
 
   - scope: SCHEMA

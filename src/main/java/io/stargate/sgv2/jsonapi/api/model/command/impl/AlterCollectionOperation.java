@@ -10,4 +10,5 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes({@JsonSubTypes.Type(value = AlterCollectionOperationImpl.EnableLexical.class)})
-public interface AlterCollectionOperation {}
+public sealed interface AlterCollectionOperation
+    permits AlterCollectionOperationImpl.EnableLexical {}

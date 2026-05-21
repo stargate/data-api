@@ -669,9 +669,19 @@ public record CreateCollectionOperation(
     final String prefix = ifNotExists ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
     return SimpleStatement.newInstance(
             """
-                %s "%s_%s" ON "%s"."%s" (%s)
+                %s "%s" ON "%s"."%s" (%s)
                   USING 'StorageAttachedIndex' WITH OPTIONS = { 'index_analyzer': '%s' }
                 """
-            .formatted(prefix, table, lexicalCol, keyspace, table, lexicalCol, analyzerString));
+            .formatted(
+                prefix, lexicalIndexName(table), keyspace, table, lexicalCol, analyzerString));
+  }
+
+  /**
+   * Name of the lexical SAI: {@code "<table>_<lexicalColumn>"}. Shared with {@link
+   * #buildLexicalIndexStatement} so callers referencing the index by name stay in sync with how it
+   * is created.
+   */
+  public static String lexicalIndexName(String table) {
+    return table + "_" + DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
   }
 }
