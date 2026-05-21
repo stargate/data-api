@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
-import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -280,7 +279,6 @@ public class TestConstants {
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
-        .withBilling(mock(Billing.class))
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
@@ -310,7 +308,6 @@ public class TestConstants {
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
-        .withBilling(mock(Billing.class))
         .getBuilder(schema)
         .withCommandName(commandName)
         .withRequestContext(requestContext())
@@ -325,7 +322,6 @@ public class TestConstants {
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
-        .withBilling(mock(Billing.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
         .withCommandName(COMMAND_NAME)
         .withRequestContext(requestContext())
