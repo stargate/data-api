@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CreateCollectionCommandResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableComment;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -65,8 +66,6 @@ public record AlterCollectionLexicalOperation(
     CollectionLexicalConfig newLexicalConfig,
     boolean noOp)
     implements Operation<CollectionSchemaObject> {
-
-  private static final CqlIdentifier COMMENT_OPTION = CqlIdentifier.fromInternal("comment");
 
   private static final CqlIdentifier LEXICAL_COLUMN =
       CqlIdentifier.fromInternal(DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME);
@@ -215,8 +214,7 @@ public record AlterCollectionLexicalOperation(
    * rejected before reaching the operation).
    */
   private String buildUpdatedComment(CollectionSchemaObject schemaObject) throws JacksonException {
-    final Object commentObj = schemaObject.tableMetadata().getOptions().get(COMMENT_OPTION);
-    final String comment = commentObj == null ? null : commentObj.toString();
+    final String comment = CollectionTableComment.rawComment(schemaObject.tableMetadata());
     if (comment == null || comment.isBlank()) {
       // Defensive: resolver should have rejected this case.
       throw new IllegalStateException(
