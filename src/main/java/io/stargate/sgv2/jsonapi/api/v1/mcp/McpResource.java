@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
-import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.vertx.ext.web.RoutingContext;
@@ -67,8 +66,7 @@ public class McpResource {
       Provider<RoutingContext> routingContextProvider,
       Provider<SecurityIdentity> securityIdentityProvider,
       Instance<RequestTenantResolver> tenantResolver,
-      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver,
-      Billing billing) {
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
 
     // TODO: these vars are needed to replicate what we do in GeneralResource,
     // KeyspaceResource, etc. We should refactor to avoid duplication later.
@@ -89,8 +87,7 @@ public class McpResource {
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
             .withRerankingProviderFactory(rerankingProviderFactory)
-            .withMeterRegistry(meterRegistry)
-            .withBilling(billing);
+            .withMeterRegistry(meterRegistry);
   }
 
   /**
