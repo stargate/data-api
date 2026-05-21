@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.service.resolver.KeyspaceCommandResolverSupport.keyspaceIdentifierForDrop;
-
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -11,7 +9,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 /** Command resolver for {@link DropNamespaceCommand}. */
 @ApplicationScoped
-public class DropNamespaceCommandResolver implements CommandResolver<DropNamespaceCommand> {
+public class DropNamespaceCommandResolver
+    extends KeyspaceDDLCommandResolver<DropNamespaceCommand> {
 
   /** {@inheritDoc} */
   @Override

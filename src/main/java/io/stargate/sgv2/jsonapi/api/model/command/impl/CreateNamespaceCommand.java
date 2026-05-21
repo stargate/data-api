@@ -53,7 +53,7 @@ public record CreateNamespaceCommand(
       deprecated = true)
   public record Replication(
       @NotNull()
-          @Pattern(regexp = "(?i)(SimpleStrategy|NetworkTopologyStrategy)")
+          @Pattern(regexp = "(SimpleStrategy|NetworkTopologyStrategy)")
           @JsonProperty("class")
           @Schema(
               description =

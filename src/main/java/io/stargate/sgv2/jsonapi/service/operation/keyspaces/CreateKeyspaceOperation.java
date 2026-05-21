@@ -40,18 +40,30 @@ public record CreateKeyspaceOperation(
 
   private SimpleStatement buildStatement() {
     CreateKeyspaceStart start = SchemaBuilder.createKeyspace(name).ifNotExists();
+    Map<String, Integer> safeStrategyOptions = strategyOptionsOrEmpty();
 
     CreateKeyspace withReplication;
-    if (NETWORK_TOPOLOGY_STRATEGY.equalsIgnoreCase(strategy)) {
-      withReplication =
-          start.withNetworkTopologyStrategy(strategyOptions != null ? strategyOptions : Map.of());
+    if (NETWORK_TOPOLOGY_STRATEGY.equals(strategy)) {
+      withReplication = start.withNetworkTopologyStrategy(safeStrategyOptions);
     } else {
       int replicationFactor =
-          (strategyOptions != null)
-              ? strategyOptions.getOrDefault("replication_factor", DEFAULT_REPLICATION_FACTOR)
-              : DEFAULT_REPLICATION_FACTOR;
+          safeStrategyOptions.getOrDefault("replication_factor", DEFAULT_REPLICATION_FACTOR);
       withReplication = start.withSimpleStrategy(replicationFactor);
     }
     return withReplication.build();
+  }
+
+  private Map<String, Integer> strategyOptionsOrEmpty() {
+    if (strategyOptions == null) {
+      return Map.of();
+    }
+    strategyOptions.forEach(
+        (key, value) -> {
+          if (value == null) {
+            throw new IllegalArgumentException(
+                "Replication strategy option value must not be null for key '%s'".formatted(key));
+          }
+        });
+    return strategyOptions;
   }
 }

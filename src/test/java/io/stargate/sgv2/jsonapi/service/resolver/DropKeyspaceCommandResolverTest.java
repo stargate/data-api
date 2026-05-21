@@ -99,7 +99,8 @@ class DropKeyspaceCommandResolverTest {
         .satisfies(
             e -> {
               SchemaException exception = (SchemaException) e;
-              assertThat(exception.code).isEqualTo(SchemaException.Code.INVALID_KEYSPACE.name());
+              assertThat(exception.code)
+                  .isEqualTo(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name());
               assertThat(exception.getMessage()).contains("bad-name");
             });
   }

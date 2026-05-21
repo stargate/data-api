@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.keyspaces;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -13,6 +14,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,6 +55,21 @@ class CreateKeyspaceOperationTest {
       String cql = createCql(op);
       assertThat(cql).contains("'class':'SimpleStrategy'");
     }
+
+    @Test
+    public void rejectsNullReplicationFactorValue() {
+      var op =
+          new CreateKeyspaceOperation(
+              identifier("ks"),
+              "SimpleStrategy",
+              Collections.singletonMap("replication_factor", null));
+
+      Throwable throwable = catchThrowable(() -> createCql(op));
+
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("replication_factor");
+    }
   }
 
   @Nested
@@ -75,12 +92,27 @@ class CreateKeyspaceOperationTest {
     }
 
     @Test
-    public void strategyNameIsCaseInsensitive() {
+    public void strategyNameIsCaseSensitive() {
       var op =
           new CreateKeyspaceOperation(
               identifier("ks"), "networktopologystrategy", Map.of("dc1", 3));
       String cql = createCql(op);
-      assertThat(cql).contains("'class':'NetworkTopologyStrategy'").contains("'dc1':3");
+      assertThat(cql).contains("'class':'SimpleStrategy'").doesNotContain("'dc1':3");
+    }
+
+    @Test
+    public void rejectsNullDataCenterReplicationFactorValue() {
+      var op =
+          new CreateKeyspaceOperation(
+              identifier("ks"),
+              "NetworkTopologyStrategy",
+              Collections.singletonMap("dc1", null));
+
+      Throwable throwable = catchThrowable(() -> createCql(op));
+
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("dc1");
     }
   }
 

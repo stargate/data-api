@@ -113,11 +113,11 @@ class CreateKeyspaceCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("must match \"(?i)(SimpleStrategy|NetworkTopologyStrategy)\"");
+          .contains("must match \"(SimpleStrategy|NetworkTopologyStrategy)\"");
     }
 
     @Test
-    public void strategyPatternIsCaseInsensitive() throws Exception {
+    public void strategyPatternIsCaseSensitive() throws Exception {
       String json =
           """
           {
@@ -135,7 +135,10 @@ class CreateKeyspaceCommandTest {
       CreateKeyspaceCommand command = objectMapper.readValue(json, CreateKeyspaceCommand.class);
       Set<ConstraintViolation<CreateKeyspaceCommand>> result = validator.validate(command);
 
-      assertThat(result).isEmpty();
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("must match \"(SimpleStrategy|NetworkTopologyStrategy)\"");
     }
   }
 
@@ -231,11 +234,11 @@ class CreateKeyspaceCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("must match \"(?i)(SimpleStrategy|NetworkTopologyStrategy)\"");
+          .contains("must match \"(SimpleStrategy|NetworkTopologyStrategy)\"");
     }
 
     @Test
-    public void strategyPatternIsCaseInsensitive() throws Exception {
+    public void strategyPatternIsCaseSensitive() throws Exception {
       String json =
           """
               {
@@ -253,7 +256,10 @@ class CreateKeyspaceCommandTest {
       CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
       Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
 
-      assertThat(result).isEmpty();
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("must match \"(SimpleStrategy|NetworkTopologyStrategy)\"");
     }
   }
 }

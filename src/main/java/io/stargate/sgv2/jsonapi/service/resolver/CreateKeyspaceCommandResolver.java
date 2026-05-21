@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.service.resolver.KeyspaceCommandResolverSupport.keyspaceIdentifierForCreate;
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -14,7 +13,7 @@ import java.util.Map;
 /** Command resolver for {@link CreateKeyspaceCommand}. */
 @ApplicationScoped
 public class CreateKeyspaceCommandResolver
-    extends CreateNamespaceKeyspaceCommandResolver<CreateKeyspaceCommand> {
+    extends KeyspaceDDLCommandResolver<CreateKeyspaceCommand> {
 
   @Override
   public Class<CreateKeyspaceCommand> getCommandClass() {

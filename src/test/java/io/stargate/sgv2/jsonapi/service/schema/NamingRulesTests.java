@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.naming.SchemaObjectNamingRule;
 import java.util.Arrays;
@@ -24,6 +26,32 @@ public class NamingRulesTests {
       String description) {
 
     assertThat(namingRule.apply(invalidName)).as(description).isEqualTo(expectedResult);
+  }
+
+  @ParameterizedTest
+  @MethodSource("schemaObjectNamingRules")
+  public void sanitizeInputAllowsNamesLongerThanMaxLength(SchemaObjectNamingRule namingRule) {
+    String name = "a".repeat(namingRule.getMaxLength() + 1);
+
+    assertThat(namingRule.sanitizeInput(name)).isEqualTo(name);
+  }
+
+  @ParameterizedTest
+  @MethodSource("schemaObjectNamingRules")
+  public void sanitizeInputRejectsUnsupportedCharacters(SchemaObjectNamingRule namingRule) {
+    String name = "bad-name";
+
+    Throwable throwable = catchThrowable(() -> namingRule.sanitizeInput(name));
+
+    assertThat(throwable)
+        .isInstanceOf(SchemaException.class)
+        .satisfies(
+            e -> {
+              SchemaException exception = (SchemaException) e;
+              assertThat(exception.code)
+                  .isEqualTo(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name());
+              assertThat(exception.getMessage()).contains(name);
+            });
   }
 
   private static Stream<Arguments> schemaObjectNamingTestCases() {
@@ -79,5 +107,13 @@ public class NamingRulesTests {
                 "Index name can be longer than 48 characters"));
 
     return Stream.concat(generalTestCases, specialTestCases);
+  }
+
+  private static Stream<Arguments> schemaObjectNamingRules() {
+    return Stream.of(
+        Arguments.of(NamingRules.KEYSPACE),
+        Arguments.of(NamingRules.COLLECTION),
+        Arguments.of(NamingRules.TABLE),
+        Arguments.of(NamingRules.INDEX));
   }
 }

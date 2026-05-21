@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.keyspaces.CreateKeyspaceOperat
 import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -371,10 +372,10 @@ class CreateKeyspaceCommandResolverTest {
 
       verifySchemaException(
           throwable,
-          SchemaException.Code.UNSUPPORTED_REPLICATION_DATA_CENTER_NAME,
-          "data center name in the NetworkTopologyStrategy replication options that is not supported",
-          "must not be empty or contain single quote characters",
-          "The command used the unsupported data center name: 'dc1', 'class': 'SimpleStrategy'.");
+          SchemaException.Code.INVALID_REPLICATION_DATA_CENTER_NAME,
+          "data center name in the NetworkTopologyStrategy replication options that is not valid",
+          "must not be empty or contain ASCII single quote characters",
+          "The command used the invalid data center name: 'dc1', 'class': 'SimpleStrategy'.");
     }
 
     @Test
@@ -463,6 +464,24 @@ class CreateKeyspaceCommandResolverTest {
                 assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
                 assertThat(op.strategyOptions()).containsEntry("us-east-1", 3);
               });
+    }
+
+    @Test
+    public void onlyAsciiSingleQuoteIsRejectedAsCqlStringDelimiter() {
+      String dcName = "dc`\"\u2018\u2019\u201C\u201D";
+      CreateNamespaceCommand command =
+          new CreateNamespaceCommand(
+              "red_star_belgrade",
+              new CreateNamespaceCommand.Options(
+                  new CreateNamespaceCommand.Replication(
+                      "NetworkTopologyStrategy", Map.of(dcName, 1))));
+
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateKeyspaceOperation.class,
+              op -> assertThat(op.strategyOptions()).containsEntry(dcName, 1));
     }
   }
 

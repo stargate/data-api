@@ -39,7 +39,7 @@ public record CreateKeyspaceCommand(
               + "For NetworkTopologyStrategy, use {\"class\": \"NetworkTopologyStrategy\", \"datacenter_name\": N, ...}.")
   public record Replication(
       @NotNull
-          @Pattern(regexp = "(?i)(SimpleStrategy|NetworkTopologyStrategy)")
+          @Pattern(regexp = "(SimpleStrategy|NetworkTopologyStrategy)")
           @JsonProperty("class")
           @Schema(
               description =

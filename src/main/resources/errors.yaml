@@ -1625,15 +1625,15 @@ request-errors:
       Resend the command using a supported value type.
 
   - scope: SCHEMA
-    code: UNSUPPORTED_REPLICATION_DATA_CENTER_NAME
-    title: The used data center name in the replication options is not supported
+    code: INVALID_REPLICATION_DATA_CENTER_NAME
+    title: The used data center name in the replication options is not valid
     body: |-
-      The command included a data center name in the NetworkTopologyStrategy replication options that is not supported.
+      The command included a data center name in the NetworkTopologyStrategy replication options that is not valid.
 
-      Supported data center names must not be empty or contain single quote characters.
-      The command used the unsupported data center name: '${unsupportedDataCenterName}'.
+      Valid data center names must not be empty or contain ASCII single quote characters.
+      The command used the invalid data center name: '${invalidDataCenterName}'.
 
-      Resend the command using a supported data center name.
+      Resend the command using a valid data center name.
 
   - scope: SCHEMA
     code: UNSUPPORTED_SCHEMA_NAME
