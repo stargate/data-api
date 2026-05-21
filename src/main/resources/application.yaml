@@ -42,16 +42,6 @@ stargate:
       max-attempts: 1
       policy: custom
 
-  # billing event pipeline
-  # see io.stargate.sgv2.jsonapi.config.BillingConfig for all config properties and options
-  jsonapi:
-    billing:
-      # Region of the database used as the `properties.region` field on each
-      # emitted billing event. Required for billing — if not configured here or
-      # via STARGATE_JSONAPI_BILLING_REGION, an error is logged and the event
-      # is skipped (no malformed events are emitted).
-      # region:
-
   # metrics properties
   metrics:
     global-tags:
