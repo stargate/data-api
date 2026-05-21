@@ -87,6 +87,7 @@ public abstract class SchemaFactory<T> {
       T currentDefault,
       boolean featureDisabled,
       T featureDisabledDefault) {
+
     this.clazz = Objects.requireNonNull(clazz, "clazz must not be null");
     this.releasedVersion =
         Objects.requireNonNull(releasedVersion, "releasedVersion must not be null");

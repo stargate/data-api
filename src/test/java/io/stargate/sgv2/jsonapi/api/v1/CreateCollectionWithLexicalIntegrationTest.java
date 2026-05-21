@@ -320,16 +320,29 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                 }
                           """);
 
-      // Does not matter if the feature is enabled, the option valid is first validated
-      givenHeadersPostJsonThenOk(json)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].errorCode",
-              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
-          // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
-          // analyzers
-          .body("errors[0].message", containsString("Invalid analyzer config"))
-          .body("errors[0].message", containsString("token 'unknown'"));
+      // This one is a little tricky: other code that creates a INVALID_CREATE_COLLECTION_OPTIONS
+      // happens because the API validates, in this case it is because the call went through to the
+      // DB
+      // that returned an error, and we turned that into the INVALID_CREATE_COLLECTION_OPTIONS
+      // See {@link KeyspaceDriverExceptionHandler}
+      // So for this, if Lexical is enabled we expect INVALID_CREATE_COLLECTION_OPTIONS otherwise
+      // we expect LEXICAL_FEATURE_NOT_ENABLED when it is not enabled.
+      if (isLexicalAvailableForDB()) {
+        givenHeadersPostJsonThenOk(json)
+            .body("$", responseIsError())
+            .body(
+                "errors[0].errorCode",
+                is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
+            // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
+            // analyzers
+            .body("errors[0].message", containsString("Invalid analyzer config"))
+            .body("errors[0].message", containsString("token 'unknown'"));
+      } else {
+        givenHeadersPostJsonThenOk(json)
+            .body("$", responseIsError())
+            .body(
+                "errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
+      }
     }
 
     @Test

@@ -530,8 +530,9 @@ public record CreateCollectionOperation(
     // The keyspace and table name are quoted to make it case-sensitive
     final String lexicalField = lexicalConfig.enabled() ? "    query_lexical_value   text, " : "";
     if (vectorSearch) {
+      // Quotes on identifiers come from cqlIdentifierToCQL
       String createTableWithVector =
-          "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
+          "CREATE TABLE IF NOT EXISTS %s.%s ("
               + "    key                 tuple<tinyint,text>,"
               + "    tx_id               timeuuid, "
               + "    doc_json            text,"
@@ -555,8 +556,9 @@ public record CreateCollectionOperation(
           String.format(
               createTableWithVector, cqlIdentifierToCQL(keyspace), cqlIdentifierToCQL(table)));
     }
+    // Quotes on identifiers come from cqlIdentifierToCQL
     String createTable =
-        "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
+        "CREATE TABLE IF NOT EXISTS %s.%s ("
             + "    key                 tuple<tinyint,text>,"
             + "    tx_id               timeuuid, "
             + "    doc_json            text,"
@@ -586,107 +588,139 @@ public record CreateCollectionOperation(
       CqlIdentifier table,
       CollectionLexicalDef lexicalConfig,
       boolean collectionExisted) {
+
     List<SimpleStatement> statements = new ArrayList<>(10);
+
     String appender =
         collectionExisted ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
     // All index names are quoted to make them case-sensitive.
     var denyAllIndexes =
         getOrDefault(indexingDesc, CreateCollectionCommand.Options.IndexingDesc::denyAll, false);
+
     if (!denyAllIndexes) {
+      // Quotes on identifiers come from cqlIdentifierToCQL
       String existKeys =
-          appender
-              + " \"%s_exists_keys\" ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
+          appender + " \"%s_exists_keys\" ON %s.%s (exist_keys) USING 'StorageAttachedIndex'";
 
       statements.add(
           SimpleStatement.newInstance(
               String.format(
                   existKeys,
-                  cqlIdentifierToCQL(table),
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
       String arraySize =
           appender
-              + " \"%s_array_size\" ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
+              + " \"%s_array_size\" ON %s.%s (entries(array_size)) USING 'StorageAttachedIndex'";
       statements.add(
           SimpleStatement.newInstance(
               String.format(
                   arraySize,
-                  cqlIdentifierToCQL(table),
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
       String arrayContains =
           appender
-              + " \"%s_array_contains\" ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
+              + " \"%s_array_contains\" ON %s.%s (array_contains) USING 'StorageAttachedIndex'";
       statements.add(
           SimpleStatement.newInstance(
               String.format(
                   arrayContains,
-                  cqlIdentifierToCQL(table),
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
       String boolQuery =
           appender
-              + " \"%s_query_bool_values\" ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
+              + " \"%s_query_bool_values\" ON %s.%s (entries(query_bool_values)) USING 'StorageAttachedIndex'";
       statements.add(
           SimpleStatement.newInstance(
               String.format(
                   boolQuery,
-                  cqlIdentifierToCQL(table),
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
       String dblQuery =
           appender
-              + " \"%s_query_dbl_values\" ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
+              + " \"%s_query_dbl_values\" ON %s.%s (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
       statements.add(
           SimpleStatement.newInstance(
               String.format(
                   dblQuery,
-                  cqlIdentifierToCQL(table),
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
       String textQuery =
           appender
-              + " \"%s_query_text_values\" ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
+              + " \"%s_query_text_values\" ON %s.%s (entries(query_text_values)) USING 'StorageAttachedIndex'";
       statements.add(
           SimpleStatement.newInstance(
               String.format(
                   textQuery,
-                  cqlIdentifierToCQL(table),
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
       String timestampQuery =
           appender
-              + " \"%s_query_timestamp_values\" ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
+              + " \"%s_query_timestamp_values\" ON %s.%s (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
       statements.add(
           SimpleStatement.newInstance(
               String.format(
                   timestampQuery,
-                  cqlIdentifierToCQL(table),
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
       String nullQuery =
           appender
-              + " \"%s_query_null_values\" ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(nullQuery, table, keyspace, table)));
+              + " \"%s_query_null_values\" ON %s.%s (query_null_values) USING 'StorageAttachedIndex'";
+      statements.add(
+          SimpleStatement.newInstance(
+              String.format(
+                  nullQuery,
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
     }
 
     if (vectorDesc != null) {
       String vectorSearch =
           appender
-              + " \"%s_query_vector_value\" ON \"%s\".\"%s\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
+              + " \"%s_query_vector_value\" ON %s.%s (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
               + vectorDesc.metric()
               + "', 'source_model': '"
               + vectorDesc.sourceModel()
               + "'}";
       statements.add(
-          SimpleStatement.newInstance(String.format(vectorSearch, table, keyspace, table)));
+          SimpleStatement.newInstance(
+              String.format(
+                  vectorSearch,
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table))));
     }
 
     if (lexicalConfig.enabled()) {
@@ -694,12 +728,20 @@ public record CreateCollectionOperation(
       // Note: needs to be either plain (unquoted) String (NOT quoted JSON String) OR JSON Object
       final String analyzerString =
           analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
+      // Quotes on identifiers come from cqlIdentifierToCQL
       final String lexicalCreateStmt =
               """
-                    %s "%s_query_lexical_value" ON "%s"."%s" (query_lexical_value)
+                    %s "%s_query_lexical_value" ON %s.%s (query_lexical_value)
                       USING 'StorageAttachedIndex' WITH OPTIONS = { 'index_analyzer': '%s' }
                     """
-              .formatted(appender, table, keyspace, table, analyzerString);
+              .formatted(
+                  appender,
+                  table
+                      .asInternal(), // we want internal (without the quotes) for the name of the
+                                     // index
+                  cqlIdentifierToCQL(keyspace),
+                  cqlIdentifierToCQL(table),
+                  analyzerString);
       statements.add(SimpleStatement.newInstance(lexicalCreateStmt));
     }
     return statements;

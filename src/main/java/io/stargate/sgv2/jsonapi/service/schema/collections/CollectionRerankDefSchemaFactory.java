@@ -12,23 +12,56 @@ import io.stargate.sgv2.jsonapi.service.schema.versioning.VersionedSchema;
  */
 public class CollectionRerankDefSchemaFactory extends SchemaFactory<CollectionRerankDef> {
 
+  private static final CollectionRerankDef FOR_TESTING_DEFAULT =
+      new CollectionRerankDef(
+          true,
+          new CollectionRerankDef.RerankServiceDef("nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null));
+
   @VisibleForTesting
   public static final CollectionRerankDefSchemaFactory FOR_TESTING_ENABLED =
-      new CollectionRerankDefSchemaFactory(false);
+      new CollectionRerankDefSchemaFactory(
+          CollectionSchemaVersion.V_2,
+          CollectionRerankDef.configForPreRerankingCollection(),
+          CollectionSchemaVersion.V_2,
+          FOR_TESTING_DEFAULT,
+          false,
+          CollectionRerankDef.configForDisabled());
 
   @VisibleForTesting
   public static final CollectionRerankDefSchemaFactory FOR_TESTING_DISABLED =
-      new CollectionRerankDefSchemaFactory(true);
+      new CollectionRerankDefSchemaFactory(
+          CollectionSchemaVersion.V_2,
+          CollectionRerankDef.configForPreRerankingCollection(),
+          CollectionSchemaVersion.V_2,
+          FOR_TESTING_DEFAULT,
+          true,
+          CollectionRerankDef.configForDisabled());
 
   public CollectionRerankDefSchemaFactory(boolean featureDisabled) {
-    super(
-        CollectionRerankDef.class,
+    this(
         CollectionSchemaVersion.V_2,
         CollectionRerankDef.configForPreRerankingCollection(),
         CollectionSchemaVersion.V_2,
         CollectionRerankDef.configForDefault(),
         featureDisabled,
         CollectionRerankDef.configForDisabled());
+  }
+
+  private CollectionRerankDefSchemaFactory(
+      CollectionSchemaVersion releasedVersion,
+      CollectionRerankDef preReleaseValue,
+      CollectionSchemaVersion currentVersion,
+      CollectionRerankDef currentDefault,
+      boolean featureDisabled,
+      CollectionRerankDef featureDisabledDefault) {
+    super(
+        CollectionRerankDef.class,
+        releasedVersion,
+        preReleaseValue,
+        currentVersion,
+        currentDefault,
+        featureDisabled,
+        featureDisabledDefault);
   }
 
   @Override
