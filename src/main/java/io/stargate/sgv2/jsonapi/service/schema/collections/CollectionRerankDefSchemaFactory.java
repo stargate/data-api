@@ -15,7 +15,8 @@ public class CollectionRerankDefSchemaFactory extends SchemaFactory<CollectionRe
   private static final CollectionRerankDef FOR_TESTING_DEFAULT =
       new CollectionRerankDef(
           true,
-          new CollectionRerankDef.RerankServiceDef("nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null));
+          new CollectionRerankDef.RerankServiceDef(
+              "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null));
 
   @VisibleForTesting
   public static final CollectionRerankDefSchemaFactory FOR_TESTING_ENABLED =

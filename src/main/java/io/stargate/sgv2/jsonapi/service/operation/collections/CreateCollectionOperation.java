@@ -606,9 +606,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   existKeys,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
@@ -619,9 +618,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   arraySize,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
@@ -632,9 +630,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   arrayContains,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
@@ -645,9 +642,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   boolQuery,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
@@ -658,9 +654,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   dblQuery,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
@@ -671,9 +666,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   textQuery,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
@@ -684,9 +678,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   timestampQuery,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
 
@@ -697,9 +690,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   nullQuery,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
     }
@@ -716,9 +708,8 @@ public record CreateCollectionOperation(
           SimpleStatement.newInstance(
               String.format(
                   vectorSearch,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table))));
     }
@@ -736,9 +727,8 @@ public record CreateCollectionOperation(
                     """
               .formatted(
                   appender,
-                  table
-                      .asInternal(), // we want internal (without the quotes) for the name of the
-                                     // index
+                  table.asInternal(), // we want internal (without the quotes) for the name of the
+                  // index
                   cqlIdentifierToCQL(keyspace),
                   cqlIdentifierToCQL(table),
                   analyzerString);
