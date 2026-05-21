@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinitio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
@@ -47,6 +48,7 @@ public class DataVectorizerTest {
 
   @Inject ObjectMapper objectMapper;
   @Inject JsonApiMetricsConfig metricsConfig;
+  @Inject Billing billing;
 
   // We need actual working MeterRegistry (or sophisticated mock :) ):
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -70,7 +72,9 @@ public class DataVectorizerTest {
         metricsConfig,
         commandContext.requestContext(),
         p,
-        commandContext.commandName());
+        commandContext.commandName(),
+        billing,
+        commandContext.apiFeatures());
   }
 
   @Nested

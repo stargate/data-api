@@ -9,9 +9,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -32,6 +34,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   private final DocumentProjector userProjection;
   private final List<DeferredCommandWithSource> deferredReads;
   private final int limit;
+  private final Billing billing;
 
   private float[] sortVector = null;
   // captured in onSuccess
@@ -46,7 +49,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       PathMatchLocator passageLocator,
       DocumentProjector userProjection,
       List<DeferredCommandWithSource> deferredReads,
-      int limit) {
+      int limit,
+      Billing billing) {
     super(position, schemaObject, retryPolicy);
 
     this.rerankingProvider = rerankingProvider;
@@ -55,6 +59,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     this.userProjection = userProjection;
     this.deferredReads = deferredReads;
     this.limit = limit;
+    this.billing = Objects.requireNonNull(billing, "billing must not be null");
 
     setStatus(TaskStatus.READY);
   }
@@ -119,7 +124,9 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         query,
         dedupResult.deduplicatedDocuments(),
         limit,
-        rerankMetrics);
+        rerankMetrics,
+        billing,
+        commandContext.apiFeatures());
   }
 
   @Override
@@ -222,6 +229,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
     private final RerankingMetrics rerankingMetrics;
+    private final Billing billing;
+    private final ApiFeatures apiFeatures;
 
     RerankingResultSupplier(
         RequestTracing requestTracing,
@@ -230,7 +239,9 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         RerankingQuery query,
         List<ScoredDocument> unrankedDocs,
         int limit,
-        RerankingMetrics rerankingMetrics) {
+        RerankingMetrics rerankingMetrics,
+        Billing billing,
+        ApiFeatures apiFeatures) {
       this.requestTracing = requestTracing;
       this.rerankingProvider = rerankingProvider;
       this.credentials = credentials;
@@ -238,6 +249,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
       this.rerankingMetrics = rerankingMetrics;
+      this.billing = billing;
+      this.apiFeatures = apiFeatures;
     }
 
     @Override
@@ -310,9 +323,11 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
           .eventually(
               () -> rerankingMetrics.recordCallLatency(sample)) // Stop timer regardless of outcome
           .map(
-              rerankingResponse ->
-                  RerankingTaskResult.create(
-                      requestTracing, rerankingProvider, rerankingResponse, unrankedDocs, limit));
+              rerankingResponse -> {
+                billing.bill(rerankingResponse.modelUsage(), apiFeatures);
+                return RerankingTaskResult.create(
+                    requestTracing, rerankingProvider, rerankingResponse, unrankedDocs, limit);
+              });
     }
   }
 

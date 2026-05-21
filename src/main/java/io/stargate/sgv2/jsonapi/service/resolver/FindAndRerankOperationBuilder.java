@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAc
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -49,6 +50,7 @@ class FindAndRerankOperationBuilder {
       JsonNodeFactory.instance.objectNode().put("*", 1);
 
   private final CommandContext<CollectionSchemaObject> commandContext;
+  private final Billing billing;
 
   // we use this in a bunch of places
   private final OperationsConfig operationsConfig;
@@ -60,8 +62,10 @@ class FindAndRerankOperationBuilder {
   // lazily computed effective rerank service def (command override or collection default)
   private CollectionRerankDef.RerankServiceDef effectiveRerankServiceDef;
 
-  public FindAndRerankOperationBuilder(CommandContext<CollectionSchemaObject> commandContext) {
+  public FindAndRerankOperationBuilder(
+      CommandContext<CollectionSchemaObject> commandContext, Billing billing) {
     this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
+    this.billing = Objects.requireNonNull(billing, "billing cannot be null");
 
     operationsConfig = commandContext.config().get(OperationsConfig.class);
   }
@@ -270,7 +274,8 @@ class FindAndRerankOperationBuilder {
             passageLocator(),
             command.buildProjector(),
             deferredCommandResults,
-            commandLimit);
+            commandLimit,
+            billing);
 
     // there is only 1 task, but making it clear that we want sequential for this step
     TaskGroup<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject> taskGroup =
