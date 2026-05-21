@@ -1,66 +1,66 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.config.DatabaseType;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.UUID;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class BillingEventTest {
 
-  private static final String PRODUCT = "serverless";
-  private static final String RESOURCE_TYPE = "serverless_database";
-  private static final String TENANT_ID = "53950f2d-4d4c-4346-a84e-7a07e2ab23f4";
-  private static final int TOTAL_TOKENS = 430827772;
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private ModelUsage createModelUsage(ModelProvider provider, ModelType modelType) {
-    Tenant tenant = Tenant.create(DatabaseType.ASTRA, TENANT_ID);
-    return new ModelUsage(
-        provider,
-        modelType,
-        "test-model",
-        tenant,
-        ModelInputType.INDEX,
-        100,
-        TOTAL_TOKENS,
-        0,
-        0,
-        1000L);
+  private static BillingEvent.BillingProperties props() {
+    return new BillingEvent.BillingProperties(123L, "us-west-2", "serverless_database", "tenant-x");
   }
 
-  static Stream<Arguments> providerModelTypeCombinations() {
-    return Arrays.stream(ModelProvider.values())
-        .flatMap(
-            provider -> {
-              // Only NVIDIA supports reranking currently
-              Stream<ModelType> types =
-                  provider == ModelProvider.NVIDIA
-                      ? Stream.of(ModelType.EMBEDDING, ModelType.RERANKING)
-                      : Stream.of(ModelType.EMBEDDING);
-              return types.map(modelType -> Arguments.of(provider, modelType));
-            });
+  @Test
+  void canonicalConstructorRejectsNulls() {
+    UUID id = UUID.randomUUID();
+    Instant now = Instant.now();
+    assertThatThrownBy(() -> new BillingEvent(null, now, "p", "t", props()))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new BillingEvent(id, null, "p", "t", props()))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new BillingEvent(id, now, null, "t", props()))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new BillingEvent(id, now, "p", null, props()))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new BillingEvent(id, now, "p", "t", null))
+        .isInstanceOf(NullPointerException.class);
   }
 
-  @ParameterizedTest
-  @MethodSource("providerModelTypeCombinations")
-  void billingEventFields(ModelProvider provider, ModelType modelType) {
-    ModelUsage usage = createModelUsage(provider, modelType);
-    BillingEvent event = BillingEvent.from(usage, PRODUCT, RESOURCE_TYPE);
+  @Test
+  void billingPropertiesRejectsNulls() {
+    assertThatThrownBy(() -> new BillingEvent.BillingProperties(1L, null, "rt", "rid"))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new BillingEvent.BillingProperties(1L, "r", null, "rid"))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new BillingEvent.BillingProperties(1L, "r", "rt", null))
+        .isInstanceOf(NullPointerException.class);
+  }
 
-    assertThat(UUID.fromString(event.id())).isNotNull();
-    assertThat(Instant.parse(event.timestamp())).isNotNull();
-    assertThat(event.product()).isEqualTo(PRODUCT);
-    assertThat(event.eventType())
-        .isEqualTo(provider.apiName() + "_" + modelType.billingName() + "_tokens");
-    assertThat(event.properties().usage()).isEqualTo(TOTAL_TOKENS);
-    assertThat(event.properties().region()).isEqualTo(provider.billingRegion());
-    assertThat(event.properties().resourceType()).isEqualTo(RESOURCE_TYPE);
-    assertThat(event.properties().resourceId()).isEqualTo(TENANT_ID);
+  @Test
+  void serializesIdAsStringAndTimestampAsIso8601() throws Exception {
+    UUID id = UUID.randomUUID();
+    Instant now = Instant.parse("2026-05-19T00:29:21.506481Z");
+    BillingEvent event =
+        new BillingEvent(id, now, "serverless", "nvidia_embeddings_tokens", props());
+
+    String json = MAPPER.writeValueAsString(event);
+    JsonNode node = MAPPER.readTree(json);
+
+    assertThat(node.get("id").asText()).isEqualTo(id.toString());
+    assertThat(node.get("timestamp").asText()).isEqualTo("2026-05-19T00:29:21.506481Z");
+    assertThat(node.get("product").asText()).isEqualTo("serverless");
+    assertThat(node.get("event_type").asText()).isEqualTo("nvidia_embeddings_tokens");
+    assertThat(node.get("properties").get("usage").asLong()).isEqualTo(123L);
+    assertThat(node.get("properties").get("region").asText()).isEqualTo("us-west-2");
+    assertThat(node.get("properties").get("resource_type").asText())
+        .isEqualTo("serverless_database");
+    assertThat(node.get("properties").get("resource_id").asText()).isEqualTo("tenant-x");
   }
 }

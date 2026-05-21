@@ -66,6 +66,7 @@ public class WriteableTableRowBuilderTest {
             .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
             .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
             .withMeterRegistry(mock(MeterRegistry.class))
+            .withBilling(mock(io.stargate.sgv2.jsonapi.service.provider.Billing.class))
             .getBuilder(fixture.cqlFixture().tableSchemaObject())
             .withEmbeddingProvider(mock(EmbeddingProvider.class))
             .withCommandName("testCommand")

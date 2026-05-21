@@ -11,8 +11,12 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.BillingConfig;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,12 +42,28 @@ class MeteredEmbeddingProviderWrapperTest {
     requestContext = TEST_CONSTANTS.requestContext();
   }
 
+  private static Billing noOpBilling() {
+    // BILLING feature is off by default, so bill() short-circuits and the static logger fields are
+    // never used; this is enough for the wrapper tests that only care about metrics.
+    BillingConfig billingConfig = mock(BillingConfig.class);
+    when(billingConfig.region()).thenReturn(Optional.empty());
+    when(billingConfig.product()).thenReturn("serverless");
+    when(billingConfig.resourceType()).thenReturn("serverless_database");
+    return new Billing(billingConfig);
+  }
+
   @Test
   void shouldTagMetricsWithProviderApiName() {
     var provider = new TestEmbeddingProvider();
     var wrapper =
         new MeteredEmbeddingProviderWrapper(
-            meterRegistry, metricsConfig, requestContext, provider, "testCommand");
+            meterRegistry,
+            metricsConfig,
+            requestContext,
+            provider,
+            "testCommand",
+            noOpBilling(),
+            ApiFeatures.empty());
 
     wrapper
         .vectorize(
@@ -88,7 +108,13 @@ class MeteredEmbeddingProviderWrapperTest {
     var provider = new TestEmbeddingProvider();
     var wrapper =
         new MeteredEmbeddingProviderWrapper(
-            meterRegistry, metricsConfig, requestContext, provider, "testCommand");
+            meterRegistry,
+            metricsConfig,
+            requestContext,
+            provider,
+            "testCommand",
+            noOpBilling(),
+            ApiFeatures.empty());
 
     wrapper
         .vectorize(

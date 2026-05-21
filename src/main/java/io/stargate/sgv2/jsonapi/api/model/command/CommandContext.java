@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
@@ -54,6 +55,7 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
   private final EmbeddingProviderFactory embeddingProviderFactory;
   private final RerankingProviderFactory rerankingProviderFactory;
   private final MeterRegistry meterRegistry;
+  private final Billing billing;
 
   // Request specific
   private final SchemaT schemaObject;
@@ -89,7 +91,8 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
       ApiFeatures apiFeatures,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory,
-      MeterRegistry meterRegistry) {
+      MeterRegistry meterRegistry,
+      Billing billing) {
 
     // Common for all instances
     this.cqlSessionCache = cqlSessionCache;
@@ -98,6 +101,7 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
     this.meterRegistry = meterRegistry;
     this.rerankingProviderFactory = rerankingProviderFactory;
+    this.billing = billing;
 
     // Request specific
     this.embeddingProvider = embeddingProvider; // to be removed later, this is a single provider
@@ -208,6 +212,10 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     return meterRegistry;
   }
 
+  public Billing billing() {
+    return billing;
+  }
+
   public boolean isCollectionContext() {
     return schemaObject().type() == SchemaObjectType.COLLECTION;
   }
@@ -276,6 +284,7 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     private EmbeddingProviderFactory embeddingProviderFactory;
     private RerankingProviderFactory rerankingProviderFactory;
     private MeterRegistry meterRegistry;
+    private Billing billing;
 
     BuilderSupplier() {}
 
@@ -312,6 +321,11 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
       return this;
     }
 
+    public BuilderSupplier withBilling(Billing billing) {
+      this.billing = billing;
+      return this;
+    }
+
     public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
 
       Objects.requireNonNull(
@@ -321,6 +335,7 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
       Objects.requireNonNull(embeddingProviderFactory, "embeddingProviderFactory must not be null");
       Objects.requireNonNull(rerankingProviderFactory, "rerankingProviderFactory must not be null");
       Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
+      Objects.requireNonNull(billing, "billing must not be null");
 
       // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
       Objects.requireNonNull(schemaObject, "schemaObject must not be null");
@@ -389,7 +404,8 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
                 apiFeatures,
                 embeddingProviderFactory,
                 rerankingProviderFactory,
-                meterRegistry);
+                meterRegistry,
+                billing);
         context.addToMDC();
         return context;
       }

@@ -35,6 +35,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinitio
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
@@ -94,7 +95,8 @@ public class CollectionResource {
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
-      RerankingProviderFactory rerankingProviderFactory) {
+      RerankingProviderFactory rerankingProviderFactory,
+      Billing billing) {
 
     this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
     this.embeddingProviderFactory = embeddingProviderFactory;
@@ -107,7 +109,8 @@ public class CollectionResource {
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
             .withRerankingProviderFactory(rerankingProviderFactory)
-            .withMeterRegistry(meterRegistry);
+            .withMeterRegistry(meterRegistry)
+            .withBilling(billing);
   }
 
   @Operation(

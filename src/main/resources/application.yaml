@@ -42,6 +42,16 @@ stargate:
       max-attempts: 1
       policy: custom
 
+  # billing event pipeline
+  # see io.stargate.sgv2.jsonapi.config.BillingConfig for all config properties and options
+  jsonapi:
+    billing:
+      # Region of the database used as the `properties.region` field on each
+      # emitted billing event. Required for billing — if not configured here or
+      # via STARGATE_JSONAPI_BILLING_REGION, an error is logged and the event
+      # is skipped (no malformed events are emitted).
+      # region:
+
   # metrics properties
   metrics:
     global-tags:
@@ -115,6 +125,14 @@ quarkus:
     console:
       format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
 
+    handler:
+      console:
+        # Dedicated appender for the 'billing.events' category: writes only the
+        # raw JSON event payload with no log prefix, so downstream billing
+        # pipelines can parse each line as JSON.
+        BILLING_CONSOLE:
+          format: "%m%n"
+
     level: WARN
 
     category:
@@ -127,8 +145,14 @@ quarkus:
         level: INFO
       'io.stargate':
         level: DEBUG
+      # Route billing events to the dedicated BILLING_CONSOLE handler so the
+      # log line is the raw JSON event with no prefix, and do not also write
+      # to the default console handler.
       'billing.events':
         level: INFO
+        handlers:
+          - BILLING_CONSOLE
+        use-parent-handlers: false
       # noisy for ITs (which run with prod, not test, settings)
       'io.stargate.sgv2.jsonapi.service.operation':
         level: INFO

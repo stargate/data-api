@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
@@ -67,7 +68,8 @@ public class KeyspaceResource {
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
-      RerankingProviderFactory rerankingProviderFactory) {
+      RerankingProviderFactory rerankingProviderFactory,
+      Billing billing) {
 
     this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
     this.meteredCommandProcessor = meteredCommandProcessor;
@@ -80,7 +82,8 @@ public class KeyspaceResource {
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
             .withRerankingProviderFactory(rerankingProviderFactory)
-            .withMeterRegistry(meterRegistry);
+            .withMeterRegistry(meterRegistry)
+            .withBilling(billing);
   }
 
   @Operation(
