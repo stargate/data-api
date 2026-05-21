@@ -167,9 +167,9 @@ public record AlterCollectionLexicalOperation(
         CreateCollectionOperation.buildLexicalIndexStatement(
             keyspace, table, newLexicalConfig, /* ifNotExists */ true);
 
-    // Cassandra does not accept bind parameters for table options like `comment`; embed the
-    // JSON directly with CQL single-quote escaping (matches
-    // CreateCollectionOperation.getCreateTable).
+    // Cassandra does not accept bind parameters for table options like `comment`, so the comment
+    // JSON is embedded directly into the CQL (as createCollection does); single quotes are doubled
+    // to keep the string literal valid.
     SimpleStatement alterCommentStmt =
         SimpleStatement.newInstance(
             "ALTER TABLE \"%s\".\"%s\" WITH comment = '%s'"
