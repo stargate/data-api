@@ -9,8 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 /** Command resolver for {@link DropNamespaceCommand}. */
 @ApplicationScoped
-public class DropNamespaceCommandResolver
-    extends KeyspaceDDLCommandResolver<DropNamespaceCommand> {
+public class DropNamespaceCommandResolver extends KeyspaceDDLCommandResolver<DropNamespaceCommand> {
 
   /** {@inheritDoc} */
   @Override

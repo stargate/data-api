@@ -17,8 +17,8 @@ public abstract class KeyspaceDDLCommandResolver<C extends Command> implements C
   // NetworkTopologyStrategy uses replication map option keys as data center names. Cassandra
   // validates those keys semantically against known data centers; they are not CQL identifiers.
   // The Java driver query builder renders replication map keys as single-quoted CQL string
-  // literals, appending the raw key without escaping it. Because the CQL delimiter in this position
-  // is the ASCII single quote, reject that character and leave non-delimiters such as double quotes,
+  // literals, appending the raw key without escaping it. Because the CQL delimiter here is the
+  // ASCII single quote, reject only that character. Leave non-delimiters such as double quotes,
   // backticks, and curly quotes to Cassandra's own data-center validation.
   private static final Pattern VALID_DATA_CENTER_NAME = Pattern.compile("^[^']+$");
 

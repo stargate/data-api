@@ -104,9 +104,7 @@ class CreateKeyspaceOperationTest {
     public void rejectsNullDataCenterReplicationFactorValue() {
       var op =
           new CreateKeyspaceOperation(
-              identifier("ks"),
-              "NetworkTopologyStrategy",
-              Collections.singletonMap("dc1", null));
+              identifier("ks"), "NetworkTopologyStrategy", Collections.singletonMap("dc1", null));
 
       Throwable throwable = catchThrowable(() -> createCql(op));
 
