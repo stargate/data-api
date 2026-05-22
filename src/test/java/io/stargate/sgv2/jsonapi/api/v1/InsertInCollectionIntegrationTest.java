@@ -1583,8 +1583,8 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       verifyDocCount(2);
     }
 
-    // [#1840] A single-document insertMany must still report the failing document's _id,
-    //   via the structured "documentIds" field on the error.
+    // [data-api#1840] A single-document insertMany must still report the failing document's _id,
+    // via the structured "documentIds" field on the error.
     @Test
     public void unorderedSingleBadKeyReportsDocumentId() {
       givenHeadersPostJsonThenOk(
@@ -1599,7 +1599,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   }
                   """)
           .body("$", responseIsWritePartialSuccess())
-          .body("status.insertedIds", hasSize(0))
+          .body("status.insertedIds", is(empty()))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_FIELD_NAME.name()))
           // The message is the bare shredding error: it begins with the actual error text
@@ -1609,14 +1609,13 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
               startsWith("Document field name not valid: field name '$username' starts with '$'"))
           // The whole point of #1840: the _id is reported even for a single-document insert,
           // now via the structured "documentIds" field.
-          .body("errors[0].documentIds", hasSize(1))
-          .body("errors[0].documentIds", contains("single-bad-1"));
+          .body("errors[0].documentIds", is(List.of("single-bad-1")));
 
       verifyDocCount(0);
     }
 
-    // [#1840] Multi-document insertMany reports the failing _id the same way, so behaviour is
-    //   consistent regardless of document count.
+    // [data-api#1840] Multi-document insertMany reports the failing _id the same way, so behaviour
+    // is consistent regardless of document count.
     @Test
     public void unorderedMultiBadKeyReportsDocumentId() {
       givenHeadersPostJsonThenOk(
@@ -1638,8 +1637,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body(
               "errors[0].message",
               startsWith("Document field name not valid: field name '$username' starts with '$'"))
-          .body("errors[0].documentIds", hasSize(1))
-          .body("errors[0].documentIds", contains("multi-bad-1"));
+          .body("errors[0].documentIds", is(List.of("multi-bad-1")));
 
       verifyDocCount(1);
     }
