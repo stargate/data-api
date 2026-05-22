@@ -23,22 +23,19 @@ public record CreateCollectionCommand(
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
-        @Schema(
-            description = "Configuration options for the collection",
-            type = SchemaType.OBJECT,
-            implementation = Options.class)
+        @Schema(description = "Configuration options for the collection", type = SchemaType.OBJECT)
         Options options)
     implements CollectionOnlyCommand {
+
+  /** --- */
   public record Options(
       @Nullable
           @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          @Schema(
-              description = "Id configuration for the collection",
-              type = SchemaType.OBJECT,
-              implementation = VectorSearchDesc.class)
+          @Schema(description = "Id configuration for the collection", type = SchemaType.OBJECT)
           @JsonProperty("defaultId")
           CreateCollectionCommand.Options.DocIdDesc idConfig,
+      // -----
       @Valid
           @Nullable
           @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -47,34 +44,35 @@ public record CreateCollectionCommand(
               type = SchemaType.OBJECT,
               implementation = VectorSearchDesc.class)
           CreateCollectionCommand.Options.VectorSearchDesc vector,
+      // -----
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
           @Schema(
               description =
                   "Optional indexing configuration to provide allow/deny list of fields for indexing",
-              type = SchemaType.OBJECT,
-              implementation = IndexingDesc.class)
+              type = SchemaType.OBJECT)
           CreateCollectionCommand.Options.IndexingDesc indexing,
+      // -----
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
           @Schema(
               description =
                   "Optional configuration defining if and how to support use of '$lexical' field",
-              type = SchemaType.OBJECT,
-              implementation = LexicalDesc.class)
+              type = SchemaType.OBJECT)
           CreateCollectionCommand.Options.LexicalDesc lexical,
+      // -----
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
           @Schema(
               description =
                   "Optional configuration defining if and how to support use of 'rerank' field",
-              type = SchemaType.OBJECT,
-              implementation = RerankDesc.class)
+              type = SchemaType.OBJECT)
           RerankDesc rerank) {
 
+    /** --- */
     public record DocIdDesc(
         @Nullable
             @Pattern(
@@ -88,6 +86,7 @@ public record CreateCollectionCommand(
             @JsonProperty("type")
             String idType) {}
 
+    /** --- */
     public record VectorSearchDesc(
         @Nullable
             @Positive(message = "dimension should be greater than `0`")
@@ -98,6 +97,7 @@ public record CreateCollectionCommand(
             @JsonProperty("dimension")
             @JsonAlias("size") // old name
             Integer dimension,
+        // -----
         @Nullable
             @Pattern(
                 regexp = "(dot_product|cosine|euclidean)",
@@ -111,6 +111,7 @@ public record CreateCollectionCommand(
             @JsonProperty("metric")
             @JsonAlias("function") // old name
             String metric,
+        // -----
         @Nullable
             @Pattern(
                 regexp =
@@ -125,6 +126,7 @@ public record CreateCollectionCommand(
                 implementation = String.class)
             @JsonProperty("sourceModel")
             String sourceModel,
+        // -----
         @Valid
             @Nullable
             @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -133,17 +135,9 @@ public record CreateCollectionCommand(
                 type = SchemaType.OBJECT,
                 implementation = VectorizeConfig.class)
             @JsonProperty("service")
-            VectorizeConfig vectorizeConfig) {
+            VectorizeConfig vectorizeConfig) {}
 
-      public VectorSearchDesc(
-          Integer dimension, String metric, String sourceModel, VectorizeConfig vectorizeConfig) {
-        this.dimension = dimension;
-        this.metric = metric;
-        this.sourceModel = sourceModel;
-        this.vectorizeConfig = vectorizeConfig;
-      }
-    }
-
+    /** --- */
     public record IndexingDesc(
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
@@ -152,6 +146,7 @@ public record CreateCollectionCommand(
                 implementation = String.class)
             @Nullable
             List<String> allow,
+        // -----
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
                 description = "List of denied indexing fields",
@@ -238,6 +233,7 @@ public record CreateCollectionCommand(
       }
     }
 
+    /** --- */
     public record LexicalDesc(
         @Schema(
                 description = "Whether to enable the use of '$lexical' field (default: 'true')",
@@ -255,6 +251,7 @@ public record CreateCollectionCommand(
             @JsonProperty("analyzer")
             JsonNode analyzerDef) {}
 
+    /** --- */
     public record RerankDesc(
         @Schema(
                 description = "Whether to enable the use of reranking model (default: 'true')",
@@ -273,6 +270,7 @@ public record CreateCollectionCommand(
             @JsonProperty("service")
             RerankServiceDesc rerankServiceDesc) {}
 
+    /** --- */
     public record RerankServiceDesc(
         @NotNull
             @Schema(

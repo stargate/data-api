@@ -30,7 +30,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
 
   private static String udtColName(String typeName) {
     // using dbl quotes because typeName is snakeCase
-    return "\"col_for_type_" + typeName + "\"";
+    return "col_for_type_" + typeName + "";
   }
 
   private void assertDropTable(String tableName) {
@@ -103,7 +103,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "frozen<\"" + testName + "\">");
+    assertCreateTableForUdt(testName, "frozen<" + testName + ">");
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -111,7 +111,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES,
             ProjectionException.class,
-            "The command included the following columns cannot be read: \"col_for_type_udtWithUdtField\"(UNSUPPORTED).");
+            "The command included the following columns cannot be read: col_for_type_udtWithUdtField(UNSUPPORTED).");
 
     var insertDoc =
         """
@@ -132,7 +132,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
             DocumentException.class,
-            "The command included the following columns that have unsupported data types: \"col_for_type_udtWithUdtField\"(UNSUPPORTED).");
+            "The command included the following columns that have unsupported data types: col_for_type_udtWithUdtField(UNSUPPORTED).");
   }
 
   /** Unsupported to read or write to UDT with inner list */
@@ -151,7 +151,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "\"" + testName + "\"");
+    assertCreateTableForUdt(testName, "" + testName + "");
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -159,7 +159,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES,
             ProjectionException.class,
-            "The command included the following columns cannot be read: \"col_for_type_udtWithListField\"(UNSUPPORTED).");
+            "The command included the following columns cannot be read: col_for_type_udtWithListField(UNSUPPORTED).");
 
     var insertDoc =
         """
@@ -176,7 +176,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
             DocumentException.class,
-            "The command included the following columns that have unsupported data types: \"col_for_type_udtWithListField\"(UNSUPPORTED).");
+            "The command included the following columns that have unsupported data types: col_for_type_udtWithListField(UNSUPPORTED).");
   }
 
   /** Unsupported to read or write to UDT with inner set */
@@ -195,7 +195,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "\"" + testName + "\"");
+    assertCreateTableForUdt(testName, "" + testName + "");
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -203,7 +203,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES,
             ProjectionException.class,
-            "The command included the following columns cannot be read: \"col_for_type_udtWithSetField\"(UNSUPPORTED).");
+            "The command included the following columns cannot be read: col_for_type_udtWithSetField(UNSUPPORTED).");
 
     var insertDoc =
         """
@@ -220,7 +220,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
             DocumentException.class,
-            "The command included the following columns that have unsupported data types: \"col_for_type_udtWithSetField\"(UNSUPPORTED).");
+            "The command included the following columns that have unsupported data types: col_for_type_udtWithSetField(UNSUPPORTED).");
   }
 
   /** Unsupported to read or write to UDT with inner map */
@@ -239,7 +239,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "\"" + testName + "\"");
+    assertCreateTableForUdt(testName, "" + testName + "");
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -247,7 +247,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES,
             ProjectionException.class,
-            "The command included the following columns cannot be read: \"col_for_type_udtWithMapField\"(UNSUPPORTED).");
+            "The command included the following columns cannot be read: col_for_type_udtWithMapField(UNSUPPORTED).");
 
     var insertDoc =
         """
@@ -264,7 +264,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
             DocumentException.class,
-            "The command included the following columns that have unsupported data types: \"col_for_type_udtWithMapField\"(UNSUPPORTED).");
+            "The command included the following columns that have unsupported data types: col_for_type_udtWithMapField(UNSUPPORTED).");
   }
 
   /** Unsupported to read or write to UDT with inner vector */
@@ -284,7 +284,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "\"" + testName + "\"");
+    assertCreateTableForUdt(testName, "" + testName + "");
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -292,7 +292,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES,
             ProjectionException.class,
-            "The command included the following columns cannot be read: \"col_for_type_udtWithVectorField\"(UNSUPPORTED).");
+            "The command included the following columns cannot be read: col_for_type_udtWithVectorField(UNSUPPORTED).");
 
     var insertDoc =
         """
@@ -309,6 +309,6 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
             DocumentException.class,
-            "The command included the following columns that have unsupported data types: \"col_for_type_udtWithVectorField\"(UNSUPPORTED).");
+            "The command included the following columns that have unsupported data types: col_for_type_udtWithVectorField(UNSUPPORTED).");
   }
 }
