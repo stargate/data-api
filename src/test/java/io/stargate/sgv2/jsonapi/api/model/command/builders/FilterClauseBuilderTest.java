@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -676,6 +677,59 @@ public class FilterClauseBuilderTest {
           .isEqualTo(expectedResult.getFilterOperations());
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
           .isEqualTo(expectedResult.getPath());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void mustHandleIdFieldExists(boolean operand) throws Exception {
+      String json = "{\"_id\" : {\"$exists\": " + operand + "}}";
+      FilterClause filterClause = readCollectionFilterClause(json);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      ComparisonExpression expr = filterClause.logicalExpression().comparisonExpressions.get(0);
+      assertThat(expr.getPath()).isEqualTo("_id");
+      assertThat(expr.getFilterOperations())
+          .isEqualTo(
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, operand)));
+    }
+
+    @Test
+    public void mustHandleIdFieldExistsCombinedWithOtherField() throws Exception {
+      String json =
+          """
+           {"_id" : {"$exists": true}, "name": "Tim"}
+          """;
+      FilterClause filterClause = readCollectionFilterClause(json);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(2);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo("_id");
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, true)));
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(1).getPath())
+          .isEqualTo("name");
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(1).getFilterOperations())
+          .isEqualTo(List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "Tim")));
+    }
+
+    // $not flips the boolean operand of $exists via ComparisonExpression.getFlippedOperandValue,
+    // which casts the operand to Boolean. Guards against regression to DocumentId wrapping.
+    @Test
+    public void mustHandleIdFieldExistsUnderNot() throws Exception {
+      String json =
+          """
+           {"$not": {"_id" : {"$exists": true}}}
+          """;
+      FilterClause filterClause = readCollectionFilterClause(json);
+      assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(1);
+      ComparisonExpression expr = filterClause.logicalExpression().comparisonExpressions.get(0);
+      assertThat(expr.getPath()).isEqualTo("_id");
+      assertThat(expr.getFilterOperations())
+          .isEqualTo(
+              List.of(ValueComparisonOperation.build(ElementComparisonOperator.EXISTS, false)));
     }
 
     @Test
