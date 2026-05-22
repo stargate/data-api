@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -15,7 +16,7 @@ import org.junit.jupiter.api.Test;
  * Tests for {@link EmbeddingProviderExceptionHandler}.
  *
  * <p>Companion to {@link RerankingProviderExceptionHandlerTest}: confirms the embedding handler
- * maps client-side timeouts to the {@code EMBEDDING} scoped {@link
+ * maps client-side timeouts to the {@code EMBEDDING_PROVIDER} scoped {@link
  * EmbeddingProviderException.Code#EMBEDDING_PROVIDER_TIMEOUT}, and a bad host name to {@link
  * EmbeddingProviderException.Code#EMBEDDING_PROVIDER_BAD_HOST_NAME}.
  */
@@ -31,11 +32,12 @@ public class EmbeddingProviderExceptionHandlerTest {
 
     assertThat(actual)
         .isInstanceOf(EmbeddingProviderException.class)
-        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(APIException.class))
+        .asInstanceOf(type(APIException.class))
         .satisfies(
             ex -> {
               assertThat(ex.code)
                   .isEqualTo(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name());
+              assertThat(ex.scope).isEqualTo(EmbeddingProviderException.SCOPE.scope());
               assertThat(ex.family).isEqualTo(ErrorFamily.SERVER);
             });
   }
@@ -50,11 +52,13 @@ public class EmbeddingProviderExceptionHandlerTest {
 
     assertThat(actual)
         .isInstanceOf(EmbeddingProviderException.class)
-        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(APIException.class))
+        .asInstanceOf(type(APIException.class))
         .satisfies(
-            ex ->
-                assertThat(ex.code)
-                    .isEqualTo(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name()));
+            ex -> {
+              assertThat(ex.code)
+                  .isEqualTo(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name());
+              assertThat(ex.scope).isEqualTo(EmbeddingProviderException.SCOPE.scope());
+            });
   }
 
   @Test
@@ -65,11 +69,13 @@ public class EmbeddingProviderExceptionHandlerTest {
 
     assertThat(actual)
         .isInstanceOf(EmbeddingProviderException.class)
-        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(APIException.class))
+        .asInstanceOf(type(APIException.class))
         .satisfies(
-            ex ->
-                assertThat(ex.code)
-                    .isEqualTo(
-                        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_BAD_HOST_NAME.name()));
+            ex -> {
+              assertThat(ex.code)
+                  .isEqualTo(
+                      EmbeddingProviderException.Code.EMBEDDING_PROVIDER_BAD_HOST_NAME.name());
+              assertThat(ex.scope).isEqualTo(EmbeddingProviderException.SCOPE.scope());
+            });
   }
 }

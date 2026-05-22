@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -14,10 +15,10 @@ import org.junit.jupiter.api.Test;
  * Tests for {@link RerankingProviderExceptionHandler}.
  *
  * <p>Regression coverage for <a href="https://github.com/stargate/data-api/issues/2134">#2134</a>:
- * a client-side timeout while calling a reranking provider must map to the {@code RERANKING} scoped
- * {@link RerankingProviderException.Code#RERANKING_PROVIDER_TIMEOUT}, and must NOT leak through as
- * the {@code EMBEDDING} scoped {@code EMBEDDING_PROVIDER_TIMEOUT} or a generic {@code
- * UNEXPECTED_SERVER_ERROR}.
+ * a client-side timeout while calling a reranking provider must map to the {@code
+ * RERANKING_PROVIDER} scoped {@link RerankingProviderException.Code#RERANKING_PROVIDER_TIMEOUT},
+ * and must NOT leak through as the {@code EMBEDDING_PROVIDER} scoped {@code
+ * EMBEDDING_PROVIDER_TIMEOUT} or a generic {@code UNEXPECTED_SERVER_ERROR}.
  */
 public class RerankingProviderExceptionHandlerTest {
 
@@ -30,13 +31,14 @@ public class RerankingProviderExceptionHandlerTest {
     var actual = assertDoesNotThrow(() -> handler.maybeHandle(new TimeoutException("timed out")));
 
     assertThat(actual)
-        .as("TimeoutException maps to a RERANKING scoped reranking timeout")
+        .as("TimeoutException maps to a RERANKING_PROVIDER scoped reranking timeout")
         .isInstanceOf(RerankingProviderException.class)
-        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(APIException.class))
+        .asInstanceOf(type(APIException.class))
         .satisfies(
             ex -> {
               assertThat(ex.code)
                   .isEqualTo(RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name());
+              assertThat(ex.scope).isEqualTo(RerankingProviderException.SCOPE.scope());
               assertThat(ex.family).isEqualTo(ErrorFamily.SERVER);
             });
   }
@@ -58,14 +60,14 @@ public class RerankingProviderExceptionHandlerTest {
     assertThat(actual)
         .as("Vert.x NoStackTraceTimeoutException maps to the reranking timeout, not embedding")
         .isInstanceOf(RerankingProviderException.class)
-        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(APIException.class))
+        .asInstanceOf(type(APIException.class))
         .satisfies(
             ex -> {
               assertThat(ex.code)
                   .isEqualTo(RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name());
-              assertThat(ex.code)
-                  .as("#2134: must not be reported with the EMBEDDING provider timeout code")
-                  .doesNotContain("EMBEDDING");
+              assertThat(ex.scope)
+                  .as("#2134: must be reported with the RERANKING_PROVIDER scope, not EMBEDDING")
+                  .isEqualTo(RerankingProviderException.SCOPE.scope());
               assertThat(ex.family).isEqualTo(ErrorFamily.SERVER);
             });
   }
