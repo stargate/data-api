@@ -21,26 +21,26 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       String propertyName) {
     // First: handle known/observed CreateCollectionCommand mapping discrepancies
 
-    if (deserializer.handledType() == CreateCollectionCommand.Options.class) {
+    if (CreateCollectionCommand.Options.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")"
               .formatted(propertyName));
     }
 
-    if (deserializer.handledType() == CreateCollectionCommand.Options.DocIdDesc.class) {
+    if (CreateCollectionCommand.Options.DocIdDesc.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.defaultId` (known fields: \"type\")"
               .formatted(propertyName));
     }
-    if (deserializer.handledType() == CreateCollectionCommand.Options.IndexingDesc.class) {
+    if (CreateCollectionCommand.Options.IndexingDesc.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")"
               .formatted(propertyName));
     }
-    if (deserializer.handledType() == CreateCollectionCommand.Options.VectorSearchDesc.class) {
+    if (CreateCollectionCommand.Options.VectorSearchDesc.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\")"
@@ -59,9 +59,10 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       String subTypeId,
       TypeIdResolver idResolver,
       String failureMsg) {
-    final String rawCommandClassString = baseType.getRawClass().getName();
-    String baseCommand =
-        rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
+
+    var rawCommandClassString = baseType.getRawClass().getName();
+    var baseCommand = rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
+
     // Massage "GeneralCommand" into "General Command" (and so forth)
     int ix = baseCommand.indexOf("Command");
     if (ix > 0) {
