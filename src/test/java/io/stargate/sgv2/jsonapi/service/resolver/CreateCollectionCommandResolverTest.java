@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -56,7 +57,8 @@ class CreateCollectionCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateCollectionOperation.class,
               op -> {
-                assertThat(op.collectionName()).isEqualTo("my_collection");
+                assertThat(op.collectionName())
+                    .isEqualTo(cqlIdentifierFromUserInput("my_collection"));
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.vectorDesc()).isNull();
               });
@@ -86,7 +88,8 @@ class CreateCollectionCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateCollectionOperation.class,
               op -> {
-                assertThat(op.collectionName()).isEqualTo("my_collection");
+                assertThat(op.collectionName())
+                    .isEqualTo(cqlIdentifierFromUserInput("my_collection"));
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.vectorDesc()).isNotNull();
                 assertThat(op.vectorDesc().dimension()).isEqualTo(4);
@@ -220,7 +223,8 @@ class CreateCollectionCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateCollectionOperation.class,
               op -> {
-                assertThat(op.collectionName()).isEqualTo("my_collection");
+                assertThat(op.collectionName())
+                    .isEqualTo(cqlIdentifierFromUserInput("my_collection"));
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.vectorDesc()).isNotNull();
                 assertThat(op.vectorDesc().dimension()).isEqualTo(4);
@@ -250,7 +254,7 @@ class CreateCollectionCommandResolverTest {
             .isInstanceOfSatisfying(
                 CreateCollectionOperation.class,
                 op -> {
-                  assertThat(op.collectionName()).isEqualTo(name);
+                  assertThat(op.collectionName()).isEqualTo(cqlIdentifierFromUserInput(name));
                   assertThat(op.commandContext()).isEqualTo(commandContext);
                   assertThat(op.vectorDesc()).isNull();
                 });
