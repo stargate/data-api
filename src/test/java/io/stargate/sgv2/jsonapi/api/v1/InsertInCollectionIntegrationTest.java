@@ -1602,13 +1602,9 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
           .body("status.insertedIds", is(empty()))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_FIELD_NAME.name()))
-          // The message is the bare shredding error: it begins with the actual error text
-          // (no legacy "Failed to insert document with _id ..." prefix in front of it).
           .body(
               "errors[0].message",
               startsWith("Document field name not valid: field name '$username' starts with '$'"))
-          // The whole point of #1840: the _id is reported even for a single-document insert,
-          // now via the structured "documentIds" field.
           .body("errors[0].documentIds", is(List.of("single-bad-1")));
 
       verifyDocCount(0);
