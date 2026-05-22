@@ -60,8 +60,6 @@ public class Tenant implements Recordable {
    * Factory method to create a Tenant instance with no explicit region (region defaults per
    * database type — Cassandra gets {@link #CASSANDRA_REGION_DEFAULT}, other types get {@link
    * #UNKNOWN_REGION}).
-   *
-   * <p>Visible for testing, you should use the {@link TenantFactory} to create instances.
    */
   @VisibleForTesting
   public static Tenant create(DatabaseType databaseType, String tenantId) {
