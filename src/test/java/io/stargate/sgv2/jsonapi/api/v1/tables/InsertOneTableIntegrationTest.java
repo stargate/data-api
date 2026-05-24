@@ -279,7 +279,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"asciiText\"(ascii) - Cause: String contains non-ASCII character at index #12");
+              "asciiText(ascii) - Cause: String contains non-ASCII character at index #12");
     }
   }
 
@@ -466,7 +466,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"floatValue\"(float) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+              "floatValue(float) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
       // Then double
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
@@ -474,7 +474,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"doubleValue\"(double) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+              "doubleValue(double) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
 
       // And finally BigDecimal: different error message because no String values accepted
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
@@ -483,7 +483,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"decimalValue\"(decimal) - Cause: no codec matching value type");
+              "decimalValue(decimal) - Cause: no codec matching value type");
     }
 
     private String fpDoc(String id, String floatValue, String doubleValue, String bigDecValue) {
@@ -1341,7 +1341,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"intMap\"(map) - Cause: no codec matching value type");
+              "intMap(map) - Cause: no codec matching value type");
     }
 
     @Test

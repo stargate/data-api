@@ -64,11 +64,20 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
   }
 
   private void assertCreateTableForUdt(String typeName, String columnType) {
+    assertCreateTableForUdt(typeName, true, columnType);
+  }
+
+  // Use this overload when the caller is handling the quote, e.g. to create `frozen<"udtName">`
+  private void assertCreateTableForUdt(String typeName, boolean quoteType, String columnType) {
+
+    if (quoteType) {
+      columnType = "\"" + columnType + "\"";
+    }
     var createTable =
             """
         CREATE TABLE "%s"."%s" (
             id text PRIMARY KEY,
-            %s %s
+            "%s" %s
         );
         """
             .formatted(keyspaceName, tableName(typeName), udtColName(typeName), columnType);
@@ -103,7 +112,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "frozen<" + testName + ">");
+    assertCreateTableForUdt(testName, false, "frozen<\"" + testName + "\">");
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -151,7 +160,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "" + testName + "");
+    assertCreateTableForUdt(testName, testName);
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -195,7 +204,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "" + testName + "");
+    assertCreateTableForUdt(testName, testName);
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -239,7 +248,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "" + testName + "");
+    assertCreateTableForUdt(testName, testName);
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
@@ -284,7 +293,7 @@ public class UdtCqlUnsupportedIntegrationTest extends AbstractTableIntegrationTe
         )
         """);
 
-    assertCreateTableForUdt(testName, "" + testName + "");
+    assertCreateTableForUdt(testName, testName);
 
     assertTableCommand(keyspaceName, tableName(testName))
         .templated()
