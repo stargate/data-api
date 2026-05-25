@@ -26,7 +26,7 @@ import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaValue;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaHolder;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +44,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   private final VectorConfig vectorConfig;
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
-  private final SchemaValue<CollectionLexicalDef> lexicalDef;
-  private final SchemaValue<CollectionRerankDef> rerankDef;
+  private final SchemaHolder<CollectionLexicalDef> lexicalDef;
+  private final SchemaHolder<CollectionRerankDef> rerankDef;
 
   public CollectionSchemaObject(
       Tenant tenant,
@@ -53,8 +53,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       IdConfig idConfig,
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
-      SchemaValue<CollectionLexicalDef> lexicalDef,
-      SchemaValue<CollectionRerankDef> rerankDef) {
+      SchemaHolder<CollectionLexicalDef> lexicalDef,
+      SchemaHolder<CollectionRerankDef> rerankDef) {
 
     super(SchemaObjectType.COLLECTION, tenant, tableMetadata);
 
@@ -76,8 +76,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       IdConfig idConfig,
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
-      SchemaValue<CollectionLexicalDef> lexicalDef,
-      SchemaValue<CollectionRerankDef> rerankDef) {
+      SchemaHolder<CollectionLexicalDef> lexicalDef,
+      SchemaHolder<CollectionRerankDef> rerankDef) {
 
     super(SchemaObjectType.COLLECTION, identifier);
 
@@ -88,23 +88,6 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     this.lexicalDef = Objects.requireNonNull(lexicalDef);
     this.rerankDef = Objects.requireNonNull(rerankDef);
   }
-
-  //  /**
-  //   * Method for constructing a new CollectionSchemaObject with overrides for Lexical and Rerank
-  //   * settings.
-  //   */
-  //  public CollectionSchemaObject withLexicalAndRerankOverrides(
-  //      VersionedSchemaValue<CollectionLexicalDef> lexicalOverride,
-  //      CollectionRerankDef rerankOverride) {
-  //    return new CollectionSchemaObject(
-  //        identifier().tenant(),
-  //        tableMetadata,
-  //        idConfig,
-  //        vectorConfig,
-  //        indexingConfig,
-  //        lexicalOverride,
-  //        rerankOverride);
-  //  }
 
   @Override
   public VectorConfig vectorConfig() {
@@ -375,10 +358,10 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
     // construct the CreateCollectionCommand.options.lexicalConfig
     // using the runningValue because this is what is used for DML ops
-    var lexicalDesc = collectionSetting.lexicalDef().toLexicalDesc();
+    var lexicalDesc = collectionSetting.lexicalDef().toApiDesc();
 
     // construct the CreateCollectionCommand.options.rerankDef
-    var rerankDesc = collectionSetting.rerankDef().toRerankDesc();
+    var rerankDesc = collectionSetting.rerankDef().toApiDesc();
 
     options =
         new CreateCollectionCommand.Options(
@@ -402,7 +385,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return lexicalDef.runningValue();
   }
 
-  public SchemaValue<CollectionLexicalDef> lexicalDefSchemaValue() {
+  public SchemaHolder<CollectionLexicalDef> lexicalDefSchemaValue() {
     return lexicalDef;
   }
 
@@ -410,7 +393,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return rerankDef.runningValue();
   }
 
-  public SchemaValue<CollectionRerankDef> rerankDefSchemaValue() {
+  public SchemaHolder<CollectionRerankDef> rerankDefSchemaValue() {
     return rerankDef;
   }
 

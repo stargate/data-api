@@ -7,7 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaValue;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaDefaults;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaHolder;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Arrays;
 import java.util.Map;
@@ -16,23 +17,61 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-/** Validated configuration Object for Lexical (BM-25) indexing configuration for Collections. */
+/**
+ * Validated configuration Object for Lexical (BM-25) indexing configuration for Collections.
+ *
+ * <p>This is the internal definition that we store with the collection schema. use {@link
+ * #fromApiDesc} to create from the user request, and {@link #toApiDesc} to convert back to the API
+ * representation.
+ */
 public record CollectionLexicalDef(
     boolean enabled,
     @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("analyzer")
         JsonNode analyzerDefinition) {
 
-  public static final String DEFAULT_NAMED_ANALYZER = "standard";
+  /** Config to use for collections that were created before the feature was available. */
+  private static final CollectionLexicalDef PRE_RELEASE_DEFAULT =
+      new CollectionLexicalDef(false, null);
 
-  public static final CollectionLexicalDef LEXICAL_DISABLED = new CollectionLexicalDef(false, null);
+  /**
+   * The current default configuration for lexical search, which is enabled and using standard
+   * defaults
+   */
+  private static final String DEFAULT_NAMED_ANALYZER = "standard";
 
   private static final JsonNode DEFAULT_NAMED_ANALYZER_NODE =
       JsonNodeFactory.instance.textNode(DEFAULT_NAMED_ANALYZER);
-
-  private static final CollectionLexicalDef DEFAULT_CONFIG =
+  private static final CollectionLexicalDef CURRENT_DEFAULT =
       new CollectionLexicalDef(true, DEFAULT_NAMED_ANALYZER_NODE);
 
-  private static final CollectionLexicalDef MISSING_CONFIG = new CollectionLexicalDef(false, null);
+  /**
+   * Config to use when the feature is enabled in the DB, but we want to disable for a collection.
+   */
+  private static final CollectionLexicalDef DISABLED_FEATURE_CONFIG =
+      new CollectionLexicalDef(false, null);
+
+  public static final SchemaDefaults<CollectionLexicalDef> SCHEMA_DEFAULTS =
+      new SchemaDefaults<>() {
+        @Override
+        public CollectionLexicalDef forPreRelease() {
+          return PRE_RELEASE_DEFAULT;
+        }
+
+        @Override
+        public CollectionLexicalDef currentDefault() {
+          return CURRENT_DEFAULT;
+        }
+
+        @Override
+        public CollectionLexicalDef forDisabledFeature() {
+          return DISABLED_FEATURE_CONFIG;
+        }
+      };
+
+  // Not a value for the schema defaults above, just a clean re-usable value for
+  // "feature is released and enabled, but the user disabled it"
+  private static final CollectionLexicalDef DISABLED_BY_USER =
+      new CollectionLexicalDef(false, null);
 
   // TreeSet just to retain alphabetic order for error message
   private static final Set<String> VALID_ANALYZER_FIELDS =
@@ -74,12 +113,11 @@ public record CollectionLexicalDef(
   }
 
   /**
-   * Method for validating the lexical config passed and constructing actual configuration object to
-   * use.
+   * Validate the configuration passed from the user and create the internal representation
    *
    * @return Valid CollectionLexicalConfig object
    */
-  public static SchemaValue<CollectionLexicalDef> fromApiDesc(
+  public static SchemaHolder<CollectionLexicalDef> fromApiDesc(
       ObjectMapper mapper,
       CreateCollectionCommand.Options.LexicalDesc lexicalDesc,
       CollectionLexicalDefSchemaFactory lexicalDefSchema) {
@@ -96,7 +134,7 @@ public record CollectionLexicalDef(
           "message", "'enabled' is required property for 'lexical' Object value");
     }
 
-    // Following cases mean "analyzer" is not defined:
+    // The following cases mean "analyzer" is not defined:
     // 1. No JSON value
     // 2. JSON value itself is null (`null`)
     // 3. JSON value is an empty object (`{}`)
@@ -116,7 +154,7 @@ public record CollectionLexicalDef(
                 .formatted(nodeType));
       }
       // use our clean disabled instance
-      return lexicalDefSchema.currentVersion(LEXICAL_DISABLED);
+      return lexicalDefSchema.currentVersion(DISABLED_BY_USER);
     }
 
     // Case 5: Enabled and analyzer provided - validate and use
@@ -126,9 +164,13 @@ public record CollectionLexicalDef(
       // nothing defined, so we use the config which is a string "standard:
       cleanedAnalyzerDef =
           mapper.getNodeFactory().textNode(CollectionLexicalDef.DEFAULT_NAMED_ANALYZER);
+
     } else if (lexicalDesc.analyzerDef().isTextual()) {
       // Case 5b: JSON String - use as-is -- Could/should we try to validate analyzer name?
+      // NOTE: if the analyzer is not available in the DB the KeyspaceDriverExceptionHandler will
+      // turn this into a correct error
       cleanedAnalyzerDef = lexicalDesc.analyzerDef();
+
     } else if (lexicalDesc.analyzerDef().isObject()) {
       // Case 5c: JSON Object - use as-is but first do light validation
       Set<String> foundNames =
@@ -190,32 +232,7 @@ public record CollectionLexicalDef(
   }
 
   /** Converts this internal lexical representation to the external API representation. */
-  public CreateCollectionCommand.Options.LexicalDesc toLexicalDesc() {
+  public CreateCollectionCommand.Options.LexicalDesc toApiDesc() {
     return new CreateCollectionCommand.Options.LexicalDesc(enabled(), analyzerDefinition());
-  }
-
-  //  /**
-  //   * Accessor for an instance to use for "lexical disabled" Collections (but not for ones
-  // pre-dating
-  //   * lexical search feature).
-  //   */
-  //  public static CollectionLexicalDef configForDisabled() {
-  //    return new CollectionLexicalDef(false, null);
-  //  }
-
-  /**
-   * Accessor for a singleton instance used to represent case of default lexical configuration for
-   * newly created Collections that do not specify lexical configuration.
-   */
-  public static CollectionLexicalDef configForDefault() {
-    return DEFAULT_CONFIG;
-  }
-
-  /**
-   * Accessor for a singleton instance used to represent case of missing lexical configuration for
-   * legacy Collections created before lexical search was available.
-   */
-  public static CollectionLexicalDef configForPreLexical() {
-    return MISSING_CONFIG;
   }
 }

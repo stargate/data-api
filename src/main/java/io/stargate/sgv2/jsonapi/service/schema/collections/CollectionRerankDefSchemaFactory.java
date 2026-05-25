@@ -1,8 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaDefaults;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.VersionedSchema;
 
@@ -12,57 +14,64 @@ import io.stargate.sgv2.jsonapi.service.schema.versioning.VersionedSchema;
  */
 public class CollectionRerankDefSchemaFactory extends SchemaFactory<CollectionRerankDef> {
 
+  // FOR TESTING ONLY - the default for CollectionRerankDef is built at run time from config
+  // this is a hack so we have a stable default for testing that does not depend on the injected
+  // config.
   private static final CollectionRerankDef FOR_TESTING_DEFAULT =
       new CollectionRerankDef(
           true,
           new CollectionRerankDef.RerankServiceDef(
               "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null));
 
+  private static final SchemaDefaults<CollectionRerankDef> FOR_TESTING_DEFAULTS =
+      new SchemaDefaults<>() {
+        @Override
+        public CollectionRerankDef forPreRelease() {
+          return CollectionRerankDef.SCHEMA_DEFAULTS.forPreRelease();
+        }
+
+        @Override
+        public CollectionRerankDef currentDefault() {
+          return FOR_TESTING_DEFAULT;
+        }
+
+        @Override
+        public CollectionRerankDef forDisabledFeature() {
+          return CollectionRerankDef.SCHEMA_DEFAULTS.forDisabledFeature();
+        }
+      };
+
+  /** Use this only for testing, it ignores the {@link ApiFeatures} config. */
   @VisibleForTesting
   public static final CollectionRerankDefSchemaFactory FOR_TESTING_ENABLED =
       new CollectionRerankDefSchemaFactory(
-          CollectionSchemaVersion.V_2,
-          CollectionRerankDef.configForPreRerankingCollection(),
-          CollectionSchemaVersion.V_2,
-          FOR_TESTING_DEFAULT,
-          false,
-          CollectionRerankDef.configForDisabled());
+          FOR_TESTING_DEFAULTS, CollectionSchemaVersion.V_2, CollectionSchemaVersion.V_2, false);
 
+  /** Use this only for testing, it ignores the {@link ApiFeatures} config. */
   @VisibleForTesting
   public static final CollectionRerankDefSchemaFactory FOR_TESTING_DISABLED =
       new CollectionRerankDefSchemaFactory(
-          CollectionSchemaVersion.V_2,
-          CollectionRerankDef.configForPreRerankingCollection(),
-          CollectionSchemaVersion.V_2,
-          FOR_TESTING_DEFAULT,
-          true,
-          CollectionRerankDef.configForDisabled());
+          FOR_TESTING_DEFAULTS, CollectionSchemaVersion.V_2, CollectionSchemaVersion.V_2, true);
 
   public CollectionRerankDefSchemaFactory(boolean featureDisabled) {
     this(
+        CollectionRerankDef.SCHEMA_DEFAULTS,
         CollectionSchemaVersion.V_2,
-        CollectionRerankDef.configForPreRerankingCollection(),
         CollectionSchemaVersion.V_2,
-        CollectionRerankDef.configForDefault(),
-        featureDisabled,
-        CollectionRerankDef.configForDisabled());
+        featureDisabled);
   }
 
   private CollectionRerankDefSchemaFactory(
+      SchemaDefaults<CollectionRerankDef> schemaDefaults,
       CollectionSchemaVersion releasedVersion,
-      CollectionRerankDef preReleaseValue,
       CollectionSchemaVersion currentVersion,
-      CollectionRerankDef currentDefault,
-      boolean featureDisabled,
-      CollectionRerankDef featureDisabledDefault) {
+      boolean featureDisabled) {
     super(
         CollectionRerankDef.class,
+        schemaDefaults,
         releasedVersion,
-        preReleaseValue,
         currentVersion,
-        currentDefault,
-        featureDisabled,
-        featureDisabledDefault);
+        featureDisabled);
   }
 
   @Override

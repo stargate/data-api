@@ -35,7 +35,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaValue;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaHolder;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
@@ -55,8 +55,8 @@ public record CreateCollectionOperation(
     CreateCollectionCommand.Options.IndexingDesc indexingDesc,
     // nullable
     CreateCollectionCommand.Options.VectorSearchDesc vectorDesc,
-    SchemaValue<CollectionLexicalDef> lexicalDef,
-    SchemaValue<CollectionRerankDef> rerankDef)
+    SchemaHolder<CollectionLexicalDef> lexicalDef,
+    SchemaHolder<CollectionRerankDef> rerankDef)
     implements Operation<CollectionSchemaObject> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateCollectionOperation.class);
@@ -81,6 +81,8 @@ public record CreateCollectionOperation(
         .map(Metadata::getKeyspaces)
         .flatMap(
             allKeyspaces -> {
+
+              // Step 1 - does the keyspace exist ?
               var targetKeyspace =
                   allKeyspaces.get(commandContext.schemaObject().identifier().keyspace());
               if (targetKeyspace == null) {
@@ -90,11 +92,12 @@ public record CreateCollectionOperation(
                             errVars(commandContext.schemaObject())));
               }
 
+              // Step 2 - is there an existing table and if not is there enough free indexes ?
               var existingTableMetadata =
                   findTableAndValidateLimits(allKeyspaces, targetKeyspace, collectionName);
 
-              // if table doesn't exist, continue to create collection
-              // use the running value of lexicalDef this will either be the value from user or
+              // Step 3 - create the collection if no existing table
+              // use the runningValue() of lexicalDef this will either be the value from user or
               // default
               if (existingTableMetadata == null) {
                 return executeCollectionCreation(
@@ -105,7 +108,9 @@ public record CreateCollectionOperation(
                     false);
               }
 
-              // if table exists, compare existingCollectionSettings and newCollectionSettings
+              // Step 4- Existing collection, check if the schema from the user is the same as the
+              // existing
+              // we need to merge in the current schema if the user did not specify anything
               var existingCollectionSettings =
                   CollectionSchemaObject.getCollectionSettings(
                       requestContext, existingTableMetadata, OBJECT_MAPPER);
@@ -114,7 +119,9 @@ public record CreateCollectionOperation(
                     "execute() - existingCollectionSettings: {}", existingCollectionSettings);
               }
 
-              // Use the fromNameOrDefault() so if not specified it will default
+              // Need to resolve the vector settings so we can use them to create a full
+              // representation
+              // of what the new collection will look like
               var vectorModelName =
                   getOrDefault(
                       vectorDesc,
@@ -136,12 +143,10 @@ public record CreateCollectionOperation(
                               SimilarityFunction.getUnknownFunctionException(
                                   similarityFunctionName));
 
-              // OK, we know there is an existing collection, and it is not the same as the one we
+              // OK, we know there is an existing collection, and it is different from the one we
               // already have.
               // So we will replace the lexical and rerank in the new one with the existing if the
               // user did not specify new values.
-              // AJM: HACK: NOTE: we need to do this now, and then rebuild the collection table
-              // comment because our deserialisation only works that way :(
               // NOTE: FROM NOW ON WE NEED TO USE THE OVERRIDEN VALUE, (which may or may not be
               // actually overidden)
               var overrideLexicalDef =
@@ -204,8 +209,8 @@ public record CreateCollectionOperation(
 
   @VisibleForTesting
   String generateTableComment(
-      SchemaValue<CollectionLexicalDef> overrideLexicalDef,
-      SchemaValue<CollectionRerankDef> overrideRerankDef) {
+      SchemaHolder<CollectionLexicalDef> overrideLexicalDef,
+      SchemaHolder<CollectionRerankDef> overrideRerankDef) {
 
     var optionsNode = OBJECT_MAPPER.createObjectNode();
 
@@ -249,7 +254,7 @@ public record CreateCollectionOperation(
    *
    * @param requestContext DBRequestContext
    * @param queryExecutor QueryExecutor instance
-   * @param lexicalConfig Lexical configuration for the collection
+   * @param collectionLexicalDef Lexical configuration for the collection
    * @param collectionExisted boolean that says if collection existed before
    * @return Uni<Supplier<CommandResult>>
    */
@@ -257,7 +262,7 @@ public record CreateCollectionOperation(
       RequestContext requestContext,
       QueryExecutor queryExecutor,
       String tableComment,
-      CollectionLexicalDef lexicalConfig,
+      CollectionLexicalDef collectionLexicalDef,
       boolean collectionExisted) {
 
     final Uni<AsyncResultSet> execCreateTable =
@@ -270,7 +275,7 @@ public record CreateCollectionOperation(
                 getOrDefault(
                     vectorDesc, CreateCollectionCommand.Options.VectorSearchDesc::dimension, 0),
                 tableComment,
-                lexicalConfig));
+                collectionLexicalDef));
 
     final Uni<Boolean> indexResult =
         execCreateTable
@@ -285,7 +290,7 @@ public record CreateCollectionOperation(
                         getIndexStatements(
                             commandContext.schemaObject().identifier().keyspace(),
                             collectionName,
-                            lexicalConfig,
+                            collectionLexicalDef,
                             collectionExisted);
                     Multi<AsyncResultSet> indexResultMulti;
                     /*
@@ -396,34 +401,38 @@ public record CreateCollectionOperation(
   /** Create indexes for collections in ordered. This is to avoid schema change conflicts. */
   private Multi<AsyncResultSet> createIndexOrdered(
       QueryExecutor queryExecutor,
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       List<SimpleStatement> indexStatements) {
+
     return Multi.createFrom()
         .items(indexStatements.stream())
         .onItem()
         .transformToUni(
             indexStatement ->
-                queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, indexStatement))
+                queryExecutor.executeCreateSchemaChange(requestContext, indexStatement))
         .concatenate();
   }
 
   /** Create indexes for collections in parallel. Only used to speed up the CI actions. */
   private Multi<AsyncResultSet> createIndexParallel(
       QueryExecutor queryExecutor,
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       List<SimpleStatement> indexStatements) {
+
     return Multi.createFrom()
         .items(indexStatements.stream())
         .onItem()
         .transformToUni(
             indexStatement ->
-                queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, indexStatement))
+                queryExecutor.executeCreateSchemaChange(requestContext, indexStatement))
         .merge();
   }
 
   public Uni<Supplier<CommandResult>> cleanUpCollectionFailedWithTooManyIndex(
       RequestContext requestContext, QueryExecutor queryExecutor) {
 
+    // turning the name into asInternal() because  DeleteCollectionCollectionOperation stil uses
+    // string
     DeleteCollectionCollectionOperation deleteCollectionCollectionOperation =
         new DeleteCollectionCollectionOperation(commandContext, collectionName.asInternal());
 
@@ -526,9 +535,11 @@ public record CreateCollectionOperation(
       boolean vectorSearch,
       int vectorSize,
       String comment,
-      CollectionLexicalDef lexicalConfig) {
+      CollectionLexicalDef overrideLexicalDef) {
+
     // The keyspace and table name are quoted to make it case-sensitive
-    final String lexicalField = lexicalConfig.enabled() ? "    query_lexical_value   text, " : "";
+    final String lexicalField =
+        overrideLexicalDef.enabled() ? "    query_lexical_value   text, " : "";
     if (vectorSearch) {
       // Quotes on identifiers come from cqlIdentifierToCQL
       String createTableWithVector =
@@ -586,7 +597,7 @@ public record CreateCollectionOperation(
   public List<SimpleStatement> getIndexStatements(
       CqlIdentifier keyspace,
       CqlIdentifier table,
-      CollectionLexicalDef lexicalConfig,
+      CollectionLexicalDef overrideLexicalDef,
       boolean collectionExisted) {
 
     List<SimpleStatement> statements = new ArrayList<>(10);
@@ -714,8 +725,8 @@ public record CreateCollectionOperation(
                   cqlIdentifierToCQL(table))));
     }
 
-    if (lexicalConfig.enabled()) {
-      var analyzerDef = lexicalConfig.analyzerDefinition();
+    if (overrideLexicalDef.enabled()) {
+      var analyzerDef = overrideLexicalDef.analyzerDefinition();
       // Note: needs to be either plain (unquoted) String (NOT quoted JSON String) OR JSON Object
       final String analyzerString =
           analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();

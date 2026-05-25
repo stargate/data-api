@@ -12,12 +12,12 @@ import org.slf4j.LoggerFactory;
  * this value.
  *
  * <p>If you have a value of schema from a user, which may be null, and a value from the disk /
- * existing collection call {@link #replaceIfMissing(SchemaValue)} to decide which value to use.
+ * existing collection call {@link #replaceIfMissing(SchemaHolder)} to decide which value to use.
  *
  * @param <T> The type of the schema value
  */
-public class SchemaValue<T> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SchemaValue.class);
+public class SchemaHolder<T> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(SchemaHolder.class);
 
   private final SchemaFactory<T> factory;
 
@@ -26,7 +26,7 @@ public class SchemaValue<T> {
   // Nullable
   private final T persistedValue;
 
-  SchemaValue(
+  SchemaHolder(
       SchemaFactory<T> factory, CollectionSchemaVersion persistedVersion, T persistedValue) {
     this.persistedVersion =
         Objects.requireNonNull(persistedVersion, "persistedVersion must not be null");
@@ -57,7 +57,7 @@ public class SchemaValue<T> {
    * @param replacement The value to use if this instance does not have a persisted value.
    * @return A decision on whether to use the replacement or this instance.
    */
-  public ReplaceDecision<T> replaceIfMissing(SchemaValue<T> replacement) {
+  public ReplaceDecision<T> replaceIfMissing(SchemaHolder<T> replacement) {
     Objects.requireNonNull(replacement, "replacement must be null");
 
     if (persistedValue != null) {
@@ -94,7 +94,7 @@ public class SchemaValue<T> {
    */
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof SchemaValue<?> other) {
+    if (obj instanceof SchemaHolder<?> other) {
       return Objects.equals(runningValue(), other.runningValue());
     }
     return false;
@@ -105,5 +105,5 @@ public class SchemaValue<T> {
     return Objects.hashCode(runningValue());
   }
 
-  public record ReplaceDecision<T>(boolean isReplacement, SchemaValue<T> value) {}
+  public record ReplaceDecision<T>(boolean isReplacement, SchemaHolder<T> value) {}
 }

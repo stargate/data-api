@@ -1,12 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.schema.versioning;
 
+
 /**
  * The canonical record of the versions of the collection schema.
  *
  * <p>Use {@link #CURRENT_VERSION} to get the current version. {#link #ordinalValue()} is used to
  * actually compare if a version comes before or after another
  */
-public enum CollectionSchemaVersion {
+public enum CollectionSchemaVersion implements SchemaVersion {
 
   // Table comment == null || comment.isBlank()
   V_minus(-1),
@@ -32,6 +33,7 @@ public enum CollectionSchemaVersion {
     this.ordinalValue = ordinalValue;
   }
 
+  @Override
   public int ordinalValue() {
     return ordinalValue;
   }
