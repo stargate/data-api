@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.schema.versioning;
+package io.stargate.sgv2.jsonapi.service.schema;
 
 import java.util.Objects;
 

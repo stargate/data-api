@@ -3,7 +3,10 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.*;
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaVersion;
+import io.stargate.sgv2.jsonapi.service.schema.VersionedSchema;
 
 /**
  * Factory for creating the {@link CollectionLexicalDef} as a schema value, access via the {@link

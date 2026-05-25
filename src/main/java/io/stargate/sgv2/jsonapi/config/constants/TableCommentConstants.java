@@ -1,9 +1,8 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
-/**
- * For the current schema version see {@link
- * io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion#CURRENT_VERSION}
- */
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
+
+/** For the current schema version see {@link CollectionSchemaVersion#CURRENT_VERSION} */
 public interface TableCommentConstants {
 
   /** Top-level key for table comment json */

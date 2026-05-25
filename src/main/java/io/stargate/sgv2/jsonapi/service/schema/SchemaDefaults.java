@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.schema.versioning;
+package io.stargate.sgv2.jsonapi.service.schema;
 
 /**
  * For use with the {@link SchemaFactory} this interface provides a standard way to talk about the

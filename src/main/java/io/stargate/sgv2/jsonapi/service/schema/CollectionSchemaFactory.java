@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.schema.versioning;
+package io.stargate.sgv2.jsonapi.service.schema;
 
 /**
  * Base for all SchmeaFactories for collection schema, so we set the current version in one place.

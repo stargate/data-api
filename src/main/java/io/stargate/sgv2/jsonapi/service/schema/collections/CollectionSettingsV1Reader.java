@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
 import java.util.List;
 
 /**

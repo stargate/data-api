@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
-import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
 
 /**
  * A reader when we know the schema version is V_2. This simply extends the V1 reader to make the

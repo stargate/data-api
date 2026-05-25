@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.*;
+import io.stargate.sgv2.jsonapi.service.schema.*;
 
 /**
  * Factory for creating the {@link CollectionRerankDef} as a schema value, access via the {@link
