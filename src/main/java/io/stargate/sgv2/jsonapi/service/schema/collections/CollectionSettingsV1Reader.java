@@ -25,24 +25,27 @@ public class CollectionSettingsV1Reader {
       TableMetadata tableMetadata,
       ObjectMapper objectMapper) {
 
-    JsonNode collectionOptionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
-    // construct collectionSettings VectorConfig
+    var optionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
+
+    // construct VectorConfig
     VectorConfig vectorConfig = VectorConfig.NOT_ENABLED_CONFIG;
-    JsonNode vector = collectionOptionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
-    if (!vector.isMissingNode()) {
+    var vectorNode = optionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
+    if (!vectorNode.isMissingNode()) {
       VectorColumnDefinition vectorColumnDefinition =
-          VectorColumnDefinition.fromJson(vector, objectMapper);
+          VectorColumnDefinition.fromJson(vectorNode, objectMapper);
       vectorConfig = VectorConfig.fromColumnDefinitions(List.of(vectorColumnDefinition));
     }
-    // construct collectionSettings IndexingConfig
+
+    // construct IndexingConfig
     CollectionIndexingConfig indexingConfig = null;
-    JsonNode indexing = collectionOptionsNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
-    if (!indexing.isMissingNode()) {
-      indexingConfig = CollectionIndexingConfig.fromJson(indexing);
+    var indexingNode = optionsNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
+    if (!indexingNode.isMissingNode()) {
+      indexingConfig = CollectionIndexingConfig.fromJson(indexingNode);
     }
-    // construct collectionSettings idConfig, default idType as uuid
-    final IdConfig idConfig;
-    JsonNode idConfigNode = collectionOptionsNode.path(TableCommentConstants.DEFAULT_ID_KEY);
+
+    // construct IdConfig, default idType as uuid
+    IdConfig idConfig = null;
+    var idConfigNode = optionsNode.path(TableCommentConstants.DEFAULT_ID_KEY);
     // should always have idConfigNode in table comment since schema v1
     if (idConfigNode.has("type")) {
       idConfig = new IdConfig(CollectionIdType.fromString(idConfigNode.get("type").asText()));
@@ -50,30 +53,18 @@ public class CollectionSettingsV1Reader {
       idConfig = IdConfig.defaultIdConfig();
     }
 
-    //    CollectionLexicalConfig lexicalConfig;
-    //    JsonNode lexicalNode =
-    //        collectionOptionsNode.path(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY);
-    //    if (lexicalNode.isMissingNode()) {
-    //      lexicalConfig = CollectionLexicalConfig.configForPreLexical();
-    //    } else {
-    //      boolean enabled = lexicalNode.path("enabled").asBoolean(false);
-    //      JsonNode analyzerNode = lexicalNode.get("analyzer");
-    //      lexicalConfig = new CollectionLexicalConfig(enabled, analyzerNode);
-    //    }
-
+    // construct LexicalDef
     CollectionLexicalDef persistedLexical = null;
-    var lexicalNode =
-        collectionOptionsNode.path(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY);
+    var lexicalNode = optionsNode.path(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY);
     if (!lexicalNode.isMissingNode()) {
-      // TODO XXX - can we use OBJECT MAPPER ?
       persistedLexical =
           new CollectionLexicalDef(
               lexicalNode.path("enabled").asBoolean(false), lexicalNode.get("analyzer"));
     }
 
+    // construct RerankDef
     CollectionRerankDef persistedRerank = null;
-    var rerankNode =
-        collectionOptionsNode.path(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY);
+    var rerankNode = optionsNode.path(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY);
     if (!rerankNode.isMissingNode()) {
       persistedRerank =
           CollectionRerankDef.fromCommentJson(
@@ -97,8 +88,7 @@ public class CollectionSettingsV1Reader {
   protected CollectionSchemaVersion decideSchemaVersion(
       CollectionLexicalDef persistedLexical, CollectionRerankDef persistedRerank) {
 
-    // XXXX AARON - HACK
-    // sanity check, fi we have persisted lexical we should have persisted reranking
+    // sanity check, if we have persisted lexical we should have persisted reranking
     if ((persistedLexical == null) != (persistedRerank == null)) {
       throw new IllegalStateException(
           "Persisted lexical and reranking definitions should be both null or both non-null. Got persistedLexical == null:%s, persistedReranking == null:%s "
@@ -106,7 +96,9 @@ public class CollectionSettingsV1Reader {
     }
 
     // IF we have a persisted lexical than we call this version TWO 2 !
-    // VERSION 1 was when we had the proper json structure, but did not have the lexical
+    // VERSION 1 was when we had the proper json structure, but did not have the lexical and
+    // reranking
+    // see comments on CollectionSchemaVersion
     return persistedLexical != null ? CollectionSchemaVersion.V_2 : CollectionSchemaVersion.V_1;
   }
 }

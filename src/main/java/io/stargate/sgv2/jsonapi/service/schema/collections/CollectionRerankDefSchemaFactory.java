@@ -3,16 +3,13 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaDefaults;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaFactory;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.VersionedSchema;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.*;
 
 /**
  * Factory for creating the {@link CollectionRerankDef} as a schema value, access via the {@link
  * VersionedSchema}
  */
-public class CollectionRerankDefSchemaFactory extends SchemaFactory<CollectionRerankDef> {
+public class CollectionRerankDefSchemaFactory extends CollectionSchemaFactory<CollectionRerankDef> {
 
   // FOR TESTING ONLY - the default for CollectionRerankDef is built at run time from config
   // this is a hack so we have a stable default for testing that does not depend on the injected
@@ -76,7 +73,7 @@ public class CollectionRerankDefSchemaFactory extends SchemaFactory<CollectionRe
 
   @Override
   protected void onInvalidValueFeatureDisabled(
-      CollectionSchemaVersion candidateVersion, CollectionRerankDef candidatePersisted) {
+      SchemaVersion candidateVersion, CollectionRerankDef candidatePersisted) {
     throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
   }
 }

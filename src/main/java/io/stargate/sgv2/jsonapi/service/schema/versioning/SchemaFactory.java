@@ -70,8 +70,8 @@ public abstract class SchemaFactory<T> {
   protected SchemaFactory(
       Class<T> clazz,
       SchemaDefaults<T> schemaDefaults,
-      CollectionSchemaVersion releasedVersion,
-      CollectionSchemaVersion currentVersion,
+      SchemaVersion releasedVersion,
+      SchemaVersion currentVersion,
       boolean featureDisabled) {
 
     this.clazz = Objects.requireNonNull(clazz, "clazz must not be null");
@@ -94,8 +94,14 @@ public abstract class SchemaFactory<T> {
    * @return A new {@link SchemaHolder} for the current version of the schema.
    */
   public SchemaHolder<T> currentVersion(T persistedValue) {
-    return create(CollectionSchemaVersion.CURRENT_VERSION, persistedValue);
+    return create(currentVersion(), persistedValue);
   }
+
+  /**
+   * Implementations must return the current version of the schema, recommend creating a common base
+   * for all the Collection and another for Table so it is set in one place.
+   */
+  protected abstract SchemaVersion currentVersion();
 
   /**
    * Create a new {@link SchemaHolder} for a specific version of the schema, for use when reading
@@ -109,7 +115,7 @@ public abstract class SchemaFactory<T> {
    * @param persistedValue Nullable value that was read from disk.
    * @return A new {@link SchemaHolder} for the specific version of the schema.
    */
-  public SchemaHolder<T> namedVersion(CollectionSchemaVersion persistedVersion, T persistedValue) {
+  public SchemaHolder<T> namedVersion(SchemaVersion persistedVersion, T persistedValue) {
 
     if (persistedVersion.ordinalValue() < releasedVersion.ordinalValue()
         && persistedValue != null) {
@@ -122,13 +128,12 @@ public abstract class SchemaFactory<T> {
   }
 
   /** Internal central factory for creation */
-  protected SchemaHolder<T> create(CollectionSchemaVersion persistedVersion, T persistedValue) {
+  protected SchemaHolder<T> create(SchemaVersion persistedVersion, T persistedValue) {
     checkValidPersistedValue(persistedVersion, persistedValue);
     return new SchemaHolder<>(this, persistedVersion, persistedValue);
   }
 
-  protected void checkValidPersistedValue(
-      CollectionSchemaVersion candidateVersion, T candidatePersisted) {
+  protected void checkValidPersistedValue(SchemaVersion candidateVersion, T candidatePersisted) {
 
     // if the feature is disabled in this schema factory, then the persisted value MUST be value
     // equal to the value we use when the feature is disabled.
@@ -147,7 +152,7 @@ public abstract class SchemaFactory<T> {
    * <p>Implementations should throw a relevant exception, see subclasses.
    */
   protected abstract void onInvalidValueFeatureDisabled(
-      CollectionSchemaVersion candidateVersion, T candidatePersisted);
+      SchemaVersion candidateVersion, T candidatePersisted);
 
   /**
    * Get the default value to use, given a persisted version and the feature disabled state. This is
@@ -156,7 +161,7 @@ public abstract class SchemaFactory<T> {
    * @param persistedVersion Version of the schema in the {@link SchemaHolder} enum.
    * @return The default value to use.
    */
-  protected T defaultForPersistedVersion(CollectionSchemaVersion persistedVersion) {
+  protected T defaultForPersistedVersion(SchemaVersion persistedVersion) {
 
     // Feature is disabled, the version does not matter
     if (featureDisabled) {

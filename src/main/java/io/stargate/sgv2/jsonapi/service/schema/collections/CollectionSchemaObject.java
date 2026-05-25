@@ -27,7 +27,6 @@ import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
 import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaHolder;
-import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -100,7 +99,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   }
 
   @Override
-  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
     return super.recordTo(dataRecorder)
         .append("idConfig", idConfig)
         .append("vectorConfig", vectorConfig)
@@ -197,110 +196,128 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       String comment,
       ObjectMapper objectMapper) {
 
-    if (comment == null || comment.isBlank()) {
-      // XXX AARON - Version minus
+    var schemaHolder = readCollectionSchema(objectMapper, tableMetadata, comment);
 
-      // If no "comment", must assume Legacy (no Lexical) config
-      // CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForPreLexical();
-      var lexicalConfig =
-          requestContext
-              .versionedSchema()
-              .lexicalDef()
-              .namedVersion(CollectionSchemaVersion.V_0, null);
+    return switch (schemaHolder.version()) {
+      case V_minus ->
+          createCollectionSchemaVersionMinus(
+              requestContext, tableMetadata, vectorEnabled, vectorSize, function, sourceModel);
+      case V_0 ->
+          new CollectionSettingsV0Reader()
+              .readCollectionSettings(
+                  requestContext,
+                  schemaHolder.collectionNode(),
+                  tableMetadata,
+                  vectorEnabled,
+                  vectorSize,
+                  function,
+                  sourceModel);
+      case V_1 ->
+          new CollectionSettingsV1Reader()
+              .readCollectionSettings(
+                  requestContext, schemaHolder.collectionNode(), tableMetadata, objectMapper);
+      case V_2 ->
+          new CollectionSettingsV2Reader()
+              .readCollectionSettings(
+                  requestContext, schemaHolder.collectionNode(), tableMetadata, objectMapper);
+    };
+  }
 
-      // If no "comment", must assume Legacy (no Reranking) config
-      //      CollectionRerankDef rerankingConfig =
-      // CollectionRerankDef.configForPreRerankingCollection();
-      var rerankingConfig =
-          requestContext
-              .versionedSchema()
-              .rerankDef()
-              .namedVersion(CollectionSchemaVersion.V_0, null);
-      if (vectorEnabled) {
-        return new CollectionSchemaObject(
-            requestContext.tenant(),
-            tableMetadata,
-            IdConfig.defaultIdConfig(),
-            VectorConfig.fromColumnDefinitions(
-                List.of(
-                    new VectorColumnDefinition(
-                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                        vectorSize,
-                        function,
-                        sourceModel,
-                        null))),
-            null,
-            lexicalConfig,
-            rerankingConfig);
-      } else {
-        return new CollectionSchemaObject(
-            requestContext.tenant(),
-            tableMetadata,
-            IdConfig.defaultIdConfig(),
-            VectorConfig.NOT_ENABLED_CONFIG,
-            null,
-            lexicalConfig,
-            rerankingConfig);
-      }
-    } else {
+  private static CollectionSchemaHolder readCollectionSchema(
+      ObjectMapper objectMapper, TableMetadata tableMetadata, String tableComment) {
 
-      JsonNode commentConfigNode;
-      try {
-        commentConfigNode = objectMapper.readTree(comment);
-      } catch (JacksonException e) {
-        // This should never happen, already check if vectorize is a valid JSON
-        throw ServerException.internalServerError(
-            "Invalid JSON in Table comment for Collection, problem: " + e.getMessage());
-      }
+    // ## VERSION MINUS - No schema at all
+    if (tableComment == null || tableComment.isBlank()) {
+      // No table comment at all, nothing in the comment for the table.
+      // no schema tracking at all
+      return new CollectionSchemaHolder(CollectionSchemaVersion.V_minus, null);
+    }
 
-      // new table comment design from schema_version v1, with collection as top-level key
-      var collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);
-      if (collectionNode != null) {
+    JsonNode commentConfigNode;
+    try {
+      commentConfigNode = objectMapper.readTree(tableComment);
+    } catch (JacksonException e) {
+      // This should never happen, already check if vectorize is a valid JSON
+      throw ServerException.internalServerError(
+          "Invalid JSON in Table comment for Collection, problem: " + e.getMessage());
+    }
 
-        var schemaVersionNode = collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY);
-        if (schemaVersionNode == null) {
+    // new table comment design from schema_version v1, with collection as top-level key
+    var collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);
+
+    // ## VERSION ZERO - we have a table comment that is json, but does not have
+    // 'collection' as top key
+    // backward compatibility for old indexing table comment
+    // sample comment : {"indexing":{"deny":["address"]}}}
+    if (collectionNode == null) {
+      return new CollectionSchemaHolder(CollectionSchemaVersion.V_0, commentConfigNode);
+    }
+
+    // ## VERSION 1 AND ABOVE
+    // we have a "collection" top level key, so we should have a "schema_version" under that we can
+    // read !
+    var schemaVersionNode = collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY);
+    if (schemaVersionNode == null) {
+      throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
+          Map.of(
+              "collectionName", tableMetadata.getName().asInternal(), "schemaVersion", "<null>"));
+    }
+
+    int schemaVersion = schemaVersionNode.asInt();
+    return switch (schemaVersion) {
+      case 1 -> new CollectionSchemaHolder(CollectionSchemaVersion.V_1, collectionNode);
+      case 2 -> new CollectionSchemaHolder(CollectionSchemaVersion.V_2, collectionNode);
+      default ->
           throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
               Map.of(
                   "collectionName",
                   tableMetadata.getName().asInternal(),
                   "schemaVersion",
-                  "<null>"));
-        }
+                  String.valueOf(schemaVersion)));
+    };
+  }
 
-        int schemaVersion = collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt();
-        switch (schemaVersion) {
-          case 1:
-            return new CollectionSettingsV1Reader()
-                .readCollectionSettings(
-                    requestContext, collectionNode, tableMetadata, objectMapper);
-          case 2:
-            return new CollectionSettingsV2Reader()
-                .readCollectionSettings(
-                    requestContext, collectionNode, tableMetadata, objectMapper);
-          default:
-            throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
-                Map.of(
-                    "collectionName",
-                    tableMetadata.getName().asInternal(),
-                    "schemaVersion",
-                    String.valueOf(schemaVersion)));
-        }
-      } else {
-        // AARON Version 0
+  private record CollectionSchemaHolder(CollectionSchemaVersion version, JsonNode collectionNode) {}
 
-        // backward compatibility for old indexing table comment
-        // sample comment : {"indexing":{"deny":["address"]}}}
-        return new CollectionSettingsV0Reader()
-            .readCollectionSettings(
-                requestContext,
-                commentConfigNode,
-                tableMetadata,
-                vectorEnabled,
-                vectorSize,
-                function,
-                sourceModel);
-      }
-    }
+  /**
+   * how we make the CollectionSchemaObject when there was no table comment, this is version minus
+   */
+  private static CollectionSchemaObject createCollectionSchemaVersionMinus(
+      RequestContext requestContext,
+      TableMetadata tableMetadata,
+      boolean vectorEnabled,
+      int vectorSize,
+      SimilarityFunction function,
+      EmbeddingSourceModel sourceModel) {
+
+    var lexicalConfig =
+        requestContext
+            .versionedSchema()
+            .lexicalDef()
+            .namedVersion(CollectionSchemaVersion.V_minus, null);
+
+    var rerankingConfig =
+        requestContext
+            .versionedSchema()
+            .rerankDef()
+            .namedVersion(CollectionSchemaVersion.V_minus, null);
+
+    VectorConfig vectorConfig =
+        vectorEnabled
+            ? VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        VECTOR_EMBEDDING_TEXT_FIELD, vectorSize, function, sourceModel, null)))
+            : VectorConfig.NOT_ENABLED_CONFIG;
+
+    return new CollectionSchemaObject(
+        requestContext.tenant(),
+        tableMetadata,
+        IdConfig.defaultIdConfig(),
+        vectorConfig,
+        null,
+        lexicalConfig,
+        rerankingConfig);
   }
 
   public static CreateCollectionCommand collectionSettingToCreateCollectionCommand(

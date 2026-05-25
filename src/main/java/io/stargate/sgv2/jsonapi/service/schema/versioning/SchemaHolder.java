@@ -21,13 +21,12 @@ public class SchemaHolder<T> {
 
   private final SchemaFactory<T> factory;
 
-  private final CollectionSchemaVersion persistedVersion;
+  private final SchemaVersion persistedVersion;
 
   // Nullable
   private final T persistedValue;
 
-  SchemaHolder(
-      SchemaFactory<T> factory, CollectionSchemaVersion persistedVersion, T persistedValue) {
+  SchemaHolder(SchemaFactory<T> factory, SchemaVersion persistedVersion, T persistedValue) {
     this.persistedVersion =
         Objects.requireNonNull(persistedVersion, "persistedVersion must not be null");
     this.persistedValue = persistedValue;

@@ -3,15 +3,14 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.CollectionSchemaVersion;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.SchemaFactory;
-import io.stargate.sgv2.jsonapi.service.schema.versioning.VersionedSchema;
+import io.stargate.sgv2.jsonapi.service.schema.versioning.*;
 
 /**
  * Factory for creating the {@link CollectionLexicalDef} as a schema value, access via the {@link
  * VersionedSchema}
  */
-public class CollectionLexicalDefSchemaFactory extends SchemaFactory<CollectionLexicalDef> {
+public class CollectionLexicalDefSchemaFactory
+    extends CollectionSchemaFactory<CollectionLexicalDef> {
 
   /** Use this only for testing, it ignores the {@link ApiFeatures} config. */
   @VisibleForTesting
@@ -34,7 +33,7 @@ public class CollectionLexicalDefSchemaFactory extends SchemaFactory<CollectionL
 
   @Override
   protected void onInvalidValueFeatureDisabled(
-      CollectionSchemaVersion candidateVersion, CollectionLexicalDef candidatePersisted) {
+      SchemaVersion candidateVersion, CollectionLexicalDef candidatePersisted) {
     throw SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.get();
   }
 }

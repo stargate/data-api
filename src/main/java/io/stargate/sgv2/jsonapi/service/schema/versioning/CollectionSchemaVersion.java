@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.schema.versioning;
 
-
 /**
  * The canonical record of the versions of the collection schema.
  *
