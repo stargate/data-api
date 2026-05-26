@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToCQL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,13 +30,22 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSc
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.text.StringSubstitutor;
 
 /**
  * Re-usable values for tests.
+ *
+ * <p>Quick Guide:
+ *
+ * <ul>
+ *   <li>Use the *_NAME when needed, but prefer the *_IDENTIFIER and the *_SCHEMA_OBJECT we create
+ *       here
+ *   <li>Use the context functions to make command or request context as needed.
+ * </ul>
  *
  * <p>This must be an instance so that quarkus can set up the environment, we need this because of
  * the use of their config library
@@ -64,7 +75,7 @@ public class TestConstants {
   public final String SLA_USER_AGENT_NAME = "Datastax-SLA-Checker";
 
   // ============================================================
-  // Request Context
+  // Identifiers and Request Context
   // ============================================================
 
   /** An astra database type TENANT used for test */
@@ -123,10 +134,11 @@ public class TestConstants {
 
     COMMAND_NAME = "command-" + CORRELATION_ID;
     KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;
-    var keyspaceCqlIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME);
+    var keyspaceCqlIdentifier = cqlIdentifierFromUserInput(KEYSPACE_NAME);
     COLLECTION_NAME = "collection-" + CORRELATION_ID;
-    var collectionCqlIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(COLLECTION_NAME);
+    var collectionCqlIdentifier = cqlIdentifierFromUserInput(COLLECTION_NAME);
     TABLE_NAME = "table-" + CORRELATION_ID;
+    var tableCqlIdentifier = cqlIdentifierFromUserInput(TABLE_NAME);
 
     APP_NAME = "Stargate DATA API -" + CORRELATION_ID;
 
@@ -171,10 +183,7 @@ public class TestConstants {
         SchemaObjectIdentifier.forCollection(
             TENANT, keyspaceCqlIdentifier, collectionCqlIdentifier);
     TABLE_IDENTIFIER =
-        SchemaObjectIdentifier.forTable(
-            TENANT,
-            keyspaceCqlIdentifier,
-            CqlIdentifierUtil.cqlIdentifierFromUserInput(TABLE_NAME));
+        SchemaObjectIdentifier.forTable(TENANT, keyspaceCqlIdentifier, tableCqlIdentifier);
 
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -251,7 +260,10 @@ public class TestConstants {
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
   }
 
-  // CommandContext for working on the schema objects above
+  // =============================================================
+  // Functions for working with RequestContext and  CommandContext
+  // =============================================================
+
   public CommandContext<CollectionSchemaObject> collectionContext() {
     return collectionContext(COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
   }
@@ -333,5 +345,55 @@ public class TestConstants {
         .withCommandName(COMMAND_NAME)
         .withRequestContext(requestContext())
         .build();
+  }
+
+  // ====================================================
+  // Functions for doing formatting with the names
+  // ====================================================
+
+  private StringSubstitutor createSubstitutor(Map<String, String> allValues) {
+
+    // set so IllegalArgumentException thrown if template var missing a value
+    // Disable substitution in values so user-provided strings containing "${...}" are not
+    // interpreted as template variables (see data-api#2401)
+    return new StringSubstitutor(allValues)
+        .setEnableUndefinedVariableException(true)
+        .setDisableSubstitutionInValues(true);
+  }
+
+  /** See {@link #cqlNamesSubstitutor()} for more details */
+  public String subsCqlNames(String template) {
+    return cqlNamesSubstitutor().replace(template);
+  }
+
+  /**
+   * Use this when you are formatting into CQL strings because it will use the same process to
+   * create the CQL identifiers as our code dose, in terms of how double quotes are used
+   */
+  public StringSubstitutor cqlNamesSubstitutor() {
+    var allValues =
+        Map.of(
+            "keyspace", cqlIdentifierToCQL(KEYSPACE_IDENTIFIER.keyspace()),
+            "collection", cqlIdentifierToCQL(COLLECTION_IDENTIFIER.table()),
+            "table", cqlIdentifierToCQL(TABLE_IDENTIFIER.table()));
+    return createSubstitutor(allValues);
+  }
+
+  /** See {@link #rawNamesSubstitutor()} for more details */
+  public String subsRawNames(String template) {
+    return rawNamesSubstitutor().replace(template);
+  }
+
+  /**
+   * Use this when you want the raw names for things like JSON commands, thi uses the string names
+   * before they are put into CQLIdentifiers.
+   */
+  public StringSubstitutor rawNamesSubstitutor() {
+    var allValues =
+        Map.of(
+            "keyspace", KEYSPACE_NAME,
+            "collection", COLLECTION_NAME,
+            "table", TABLE_NAME);
+    return createSubstitutor(allValues);
   }
 }

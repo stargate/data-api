@@ -180,11 +180,11 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           createRequestWithLexical(
               collectionName,
               """
-                                            {
-                                              "enabled": true,
-                                              "analyzer": "standard"
-                                            }
-                                      """);
+                            {
+                              "enabled": true,
+                              "analyzer": "standard"
+                            }
+                      """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())

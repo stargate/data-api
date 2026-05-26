@@ -10,11 +10,13 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import jakarta.inject.Inject;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -27,13 +29,13 @@ class CreateCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateCollectionCommandResolver resolver;
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   CommandContext<KeyspaceSchemaObject> commandContext;
 
   @BeforeEach
   public void beforeEach() {
-    commandContext = testConstants.keyspaceContext();
+    commandContext = TEST_CONSTANTS.keyspaceContext();
   }
 
   @Nested
@@ -41,24 +43,25 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void happyPath() throws Exception {
-      String json =
-          """
+      var json =
+          TEST_CONSTANTS.subsRawNames(
+              """
               {
                 "createCollection": {
-                  "name" : "my_collection"
+                  "name" : "${collection}"
                 }
               }
-              """;
+              """);
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
+      assertThat(operation)
           .isInstanceOfSatisfying(
               CreateCollectionOperation.class,
               op -> {
                 assertThat(op.collectionName())
-                    .isEqualTo(cqlIdentifierFromUserInput("my_collection"));
+                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.vectorDesc()).isNull();
               });
@@ -66,30 +69,31 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void happyPathVectorSearch() throws Exception {
-      String json =
-          """
-            {
-              "createCollection": {
-                "name" : "my_collection",
-                "options": {
-                  "vector": {
-                    "dimension": 4,
-                    "metric": "cosine"
-                  }
+      var json =
+          TEST_CONSTANTS.subsRawNames(
+              """
+          {
+            "createCollection": {
+              "name" : "${collection}",
+              "options": {
+                "vector": {
+                  "dimension": 4,
+                  "metric": "cosine"
                 }
               }
             }
-            """;
+          }
+          """);
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
+      assertThat(operation)
           .isInstanceOfSatisfying(
               CreateCollectionOperation.class,
               op -> {
                 assertThat(op.collectionName())
-                    .isEqualTo(cqlIdentifierFromUserInput("my_collection"));
+                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.vectorDesc()).isNotNull();
                 assertThat(op.vectorDesc().dimension()).isEqualTo(4);
@@ -97,134 +101,119 @@ class CreateCollectionCommandResolverTest {
               });
     }
 
-    // TODO: XXXX - bad test for bad code, needs to know the table comment
-    //    @Test
-    //    public void happyPathVectorizeSearch() throws Exception {
-    //      String json =
-    //          """
-    //            {
-    //                "createCollection": {
-    //                    "name": "my_collection",
-    //                    "options": {
-    //                        "vector": {
-    //                            "metric": "cosine",
-    //                            "dimension": 768,
-    //                            "service": {
-    //                                "provider": "azureOpenAI",
-    //                                "modelName": "text-embedding-3-small",
-    //                                "parameters": {
-    //                                    "resourceName": "test",
-    //                                    "deploymentId": "test"
-    //                                }
-    //                            }
-    //                        }
-    //                    }
-    //                }
-    //            }
-    //          """;
-    //
-    //      CreateCollectionCommand command = objectMapper.readValue(json,
-    // CreateCollectionCommand.class);
-    //      Operation result = resolver.resolveCommand(commandContext, command);
-    //
-    //      assertThat(result)
-    //          .isInstanceOfSatisfying(
-    //              CreateCollectionOperation.class,
-    //              op -> {
-    //                assertThat(op.collectionName()).isEqualTo("my_collection");
-    //                assertThat(op.commandContext()).isEqualTo(commandContext);
-    //                assertThat(op.vectorSearch()).isEqualTo(true);
-    //                assertThat(op.vectorSize()).isEqualTo(768);
-    //                assertThat(op.vectorFunction()).isEqualTo("cosine");
-    //                assertThat(op.comment())
-    //                    .isEqualTo(
-    //
-    // "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{"
-    //                            +
-    // "\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"sourceModel\":\"OTHER\","
-    //                            +
-    // "\"service\":{\"provider\":\"azureOpenAI\",\"modelName\":\"text-embedding-3-small\","
-    //                            +
-    // "\"parameters\":{\"resourceName\":\"test\",\"deploymentId\":\"test\"}}},\"defaultId\":{\"type\":\"\"},"
-    //                            + "\"lexical\":{\"enabled\":true,\"analyzer\":\"standard\"},"
-    //                            + "\"rerank\":{\"enabled\":false}}}"
-    //                            + "}",
-    //                            SchemaVersion.V_1.toString());
-    //              });
-    //    }
-
-    // TODO: XXXX - bad test for bad code, needs to know the table comment
-    //    @Test
-    //    public void happyPathIndexing() throws Exception {
-    //      String json =
-    //          """
-    //          {
-    //            "createCollection": {
-    //              "name" : "my_collection",
-    //              "options": {
-    //                "vector": {
-    //                  "dimension": 4,
-    //                  "metric": "cosine"
-    //                },
-    //                "indexing": {
-    //                  "deny" : ["comment"]
-    //                }
-    //              }
-    //            }
-    //          }
-    //          """;
-    //
-    //      CreateCollectionCommand command = objectMapper.readValue(json,
-    // CreateCollectionCommand.class);
-    //      Operation result = resolver.resolveCommand(commandContext, command);
-    //
-    //      assertThat(result)
-    //          .isInstanceOfSatisfying(
-    //              CreateCollectionOperation.class,
-    //              op -> {
-    //                assertThat(op.collectionName()).isEqualTo("my_collection");
-    //                assertThat(op.commandContext()).isEqualTo(commandContext);
-    //                assertThat(op.vectorSearch()).isEqualTo(true);
-    //                assertThat(op.vectorSize()).isEqualTo(4);
-    //                assertThat(op.vectorFunction()).isEqualTo("cosine");
-    //                assertThat(op.comment())
-    //                    .isEqualTo(
-    //
-    // "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"indexing\":{\"deny\":[\"comment\"]},"
-    //                            +
-    // "\"vector\":{\"dimension\":4,\"metric\":\"cosine\",\"sourceModel\":\"OTHER\"},\"defaultId\":{\"type\":\"\"},"
-    //                            + "\"lexical\":{\"enabled\":true,\"analyzer\":\"standard\"},"
-    //                            + "\"rerank\":{\"enabled\":false}}}"
-    //                            + "}",
-    //                        TableCommentConstants.SCHEMA_VERSION_VALUE);
-    //              });
-    //    }
-
     @Test
-    public void happyPathVectorSearchDefaultFunction() throws Exception {
-      String json =
-          """
-        {
-          "createCollection": {
-            "name" : "my_collection",
-            "options": {
-              "vector": {
-                "dimension": 4
-              }
+    public void happyPathVectorizeSearch() throws Exception {
+      var json =
+          TEST_CONSTANTS.subsRawNames(
+              """
+            {
+                "createCollection": {
+                    "name": "${collection}",
+                    "options": {
+                        "vector": {
+                            "metric": "cosine",
+                            "dimension": 768,
+                            "service": {
+                                "provider": "azureOpenAI",
+                                "modelName": "text-embedding-3-small",
+                                "parameters": {
+                                    "resourceName": "test",
+                                    "deploymentId": "test"
+                                }
+                            }
+                        }
+                    }
+                }
             }
-          }
-        }
-        """;
+          """);
+      var expectedVectorDesc =
+          new CreateCollectionCommand.Options.VectorSearchDesc(
+              768,
+              "cosine",
+              null,
+              new VectorizeConfig(
+                  "azureOpenAI",
+                  "text-embedding-3-small",
+                  null,
+                  Map.of("resourceName", "test", "deploymentId", "test")));
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var operation = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
+      // NOTE: this used to check the table comment string that was created, that has moved to the
+      // CreateCollectionOperationTest
+      assertThat(operation)
           .isInstanceOfSatisfying(
               CreateCollectionOperation.class,
               op -> {
                 assertThat(op.collectionName())
-                    .isEqualTo(cqlIdentifierFromUserInput("my_collection"));
+                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.vectorDesc()).isEqualTo(expectedVectorDesc);
+              });
+    }
+
+    @Test
+    public void happyPathIndexing() throws Exception {
+
+      var json =
+          TEST_CONSTANTS.subsRawNames(
+              """
+          {
+            "createCollection": {
+              "name" : "${collection}",
+              "options": {
+                "indexing": {
+                  "deny" : ["comment"]
+                }
+              }
+            }
+          }
+          """);
+      var expectedIndexing =
+          new CreateCollectionCommand.Options.IndexingDesc(null, List.of("comment"));
+
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              CreateCollectionOperation.class,
+              op -> {
+                assertThat(op.collectionName())
+                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
+                assertThat(op.commandContext()).isEqualTo(commandContext);
+                assertThat(op.indexingDesc()).isEqualTo(expectedIndexing);
+              });
+    }
+
+    @Test
+    public void happyPathVectorSearchDefaultFunction() throws Exception {
+
+      var json =
+          TEST_CONSTANTS.subsRawNames(
+              """
+          {
+            "createCollection": {
+              "name" : "${collection}",
+              "options": {
+                "vector": {
+                  "dimension": 4
+                }
+              }
+            }
+          }
+          """);
+
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              CreateCollectionOperation.class,
+              op -> {
+                assertThat(op.collectionName())
+                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.vectorDesc()).isNotNull();
                 assertThat(op.vectorDesc().dimension()).isEqualTo(4);
@@ -234,6 +223,7 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void createCollectionWithSupportedName() throws Exception {
+
       String[] supportedName = {"a", "A", "0", "_", "a0", "0a_A", "_0a"};
       for (String name : supportedName) {
         String json =
@@ -246,11 +236,10 @@ class CreateCollectionCommandResolverTest {
               """
                 .formatted(name);
 
-        CreateCollectionCommand command =
-            objectMapper.readValue(json, CreateCollectionCommand.class);
-        Operation result = resolver.resolveCommand(commandContext, command);
+        var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+        var operation = resolver.resolveCommand(commandContext, command);
 
-        assertThat(result)
+        assertThat(operation)
             .isInstanceOfSatisfying(
                 CreateCollectionOperation.class,
                 op -> {
@@ -267,11 +256,13 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void indexingOptionsError() throws Exception {
-      String json =
-          """
+
+      var json =
+          TEST_CONSTANTS.subsRawNames(
+              """
                   {
                     "createCollection": {
-                      "name" : "my_collection",
+                      "name" : "${collection}",
                       "options": {
                         "vector": {
                           "dimension": 4,
@@ -284,10 +275,10 @@ class CreateCollectionCommandResolverTest {
                       }
                     }
                   }
-                  """;
+                  """);
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
 
       assertThat(throwable)
           .isInstanceOf(SchemaException.class)
@@ -304,7 +295,8 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void createCollectionWithNull() throws Exception {
-      String json =
+
+      var json =
           """
           {
             "createCollection": {
@@ -312,8 +304,8 @@ class CreateCollectionCommandResolverTest {
           }
           """;
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
 
       verifySchemaException(
           throwable,
@@ -325,7 +317,8 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void createCollectionWithEmptyName() throws Exception {
-      String json =
+
+      var json =
           """
           {
             "createCollection": {
@@ -334,8 +327,8 @@ class CreateCollectionCommandResolverTest {
           }
           """;
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
 
       verifySchemaException(
           throwable,
@@ -347,7 +340,8 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void createCollectionWithBlankName() throws Exception {
-      String json =
+
+      var json =
           """
           {
             "createCollection": {
@@ -356,8 +350,8 @@ class CreateCollectionCommandResolverTest {
           }
           """;
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
 
       verifySchemaException(
           throwable,
@@ -369,8 +363,9 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void createCollectionWithNameTooLong() throws Exception {
-      String name = RandomStringUtils.insecure().nextAlphabetic(49);
-      String json =
+
+      var name = RandomStringUtils.insecure().nextAlphabetic(49);
+      var json =
               """
           {
             "createCollection": {
@@ -380,8 +375,8 @@ class CreateCollectionCommandResolverTest {
           """
               .formatted(name);
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
 
       verifySchemaException(
           throwable,
@@ -393,7 +388,8 @@ class CreateCollectionCommandResolverTest {
 
     @Test
     public void createCollectionWithSpecialCharacter() throws Exception {
-      String json =
+
+      var json =
           """
           {
             "createCollection": {
@@ -402,8 +398,8 @@ class CreateCollectionCommandResolverTest {
           }
           """;
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
 
       verifySchemaException(
           throwable,
@@ -415,13 +411,14 @@ class CreateCollectionCommandResolverTest {
   }
 
   private void verifySchemaException(
-      Throwable throwable, SchemaException.Code exceptedErrorCode, String... messageSnippet) {
+      Throwable throwable, SchemaException.Code expectedErrorCode, String... messageSnippet) {
+
     assertThat(throwable)
         .isInstanceOf(SchemaException.class)
         .satisfies(
             e -> {
               SchemaException exception = (SchemaException) e;
-              assertThat(exception.code).isEqualTo(exceptedErrorCode.name());
+              assertThat(exception.code).isEqualTo(expectedErrorCode.name());
               for (String snippet : messageSnippet) {
                 assertThat(exception.getMessage()).contains(snippet);
               }
