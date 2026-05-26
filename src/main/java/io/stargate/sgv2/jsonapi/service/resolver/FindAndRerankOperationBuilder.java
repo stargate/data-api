@@ -24,8 +24,8 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAc
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
-import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
@@ -57,6 +57,9 @@ class FindAndRerankOperationBuilder {
   private FindAndRerankCommand command;
   private FindCommandResolver findCommandResolver;
 
+  // lazily computed effective rerank service def (command override or collection default)
+  private CollectionRerankDef.RerankServiceDef effectiveRerankServiceDef;
+
   public FindAndRerankOperationBuilder(CommandContext<CollectionSchemaObject> commandContext) {
     this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
@@ -78,8 +81,9 @@ class FindAndRerankOperationBuilder {
 
     Objects.requireNonNull(command, "command cannot be null");
 
-    checkSupported();
+    checkSortSupported();
     validateHybridLimits();
+    this.effectiveRerankServiceDef = resolveRerankServiceDef();
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
     // Making the deferrables here so we can associate them with read types that will fill them
@@ -161,10 +165,10 @@ class FindAndRerankOperationBuilder {
   }
 
   /**
-   * Check the collection supports hybrid search with the features the request uses, throw if it
-   * does not
+   * Check that collection supports the sort features the request uses (vector / vectorize /
+   * lexical), throw if it does not.
    */
-  private void checkSupported() {
+  private void checkSortSupported() {
 
     if (isVectorSort() || isVectorizeSort()) {
       if (!commandContext.schemaObject().vectorConfig().vectorEnabled()) {
@@ -195,51 +199,62 @@ class FindAndRerankOperationBuilder {
             errVars(commandContext.schemaObject()));
       }
     }
+  }
 
-    if (!commandContext.schemaObject().rerankDef().enabled()) {
-      // TODO: more info in the error
+  /**
+   * Resolve the effective {@link CollectionRerankDef.RerankServiceDef} for this command: a command
+   * override replaces the collection-level config entirely; otherwise fall back to the collection's
+   * configured defaults. Any non-null {@code rerank} payload is treated as an override attempt and
+   * validated — {@code "rerank": {}} or a payload whose fields are all explicit nulls fails with
+   * {@link RequestException.Code#INVALID_RERANK_OVERRIDE} rather than silently falling back. Throws
+   * {@link RequestException.Code#UNSUPPORTED_RERANKING_COMMAND} when no override is supplied and
+   * the collection itself has reranking disabled.
+   */
+  private CollectionRerankDef.RerankServiceDef resolveRerankServiceDef() {
+    var rerankOverride =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
+    boolean hasOverride = rerankOverride != null;
+
+    if (!commandContext.schemaObject().rerankDef().enabled() && !hasOverride) {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
-    // Read is not supported for rerank model at END_OF_LIFE support status.
+
     var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
-    var modelConfig =
-        rerankingProvidersConfig.filterByRerankServiceDef(
-            commandContext.schemaObject().rerankDef().rerankServiceDef());
-    // Validate if the model is END_OF_LIFE
-    if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
-          Map.of(
-              "model",
-              modelConfig.name(),
-              "modelStatus",
-              modelConfig.apiModelSupport().status().name(),
-              "message",
-              modelConfig
-                  .apiModelSupport()
-                  .message()
-                  .orElse("The model is no longer supported (reached its end-of-life).")));
+
+    if (hasOverride) {
+      return CollectionRerankDef.validateServiceDesc(
+          rerankingProvidersConfig,
+          rerankOverride.provider(),
+          rerankOverride.modelName(),
+          rerankOverride.authentication(),
+          rerankOverride.parameters(),
+          RequestException.Code.INVALID_RERANK_OVERRIDE);
     }
+    // Collection defaults: check END_OF_LIFE since model may have become EOL after creation.
+    var serviceDef = commandContext.schemaObject().rerankDef().rerankServiceDef();
+    CollectionRerankDef.checkExistingModelStatus(rerankingProvidersConfig, serviceDef);
+    return serviceDef;
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
       rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
-    // Previous code will check reranking is supported
-    var providerConfig = commandContext.schemaObject().rerankDef().rerankServiceDef();
+    Objects.requireNonNull(
+        effectiveRerankServiceDef,
+        "effectiveRerankServiceDef must be resolved before rerankTasks()");
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
             .create(
                 commandContext.requestContext().tenant(),
                 commandContext.requestContext().authToken(),
-                providerConfig.provider(),
-                providerConfig.modelName(),
-                providerConfig.authentication(),
+                effectiveRerankServiceDef.provider(),
+                effectiveRerankServiceDef.modelName(),
+                effectiveRerankServiceDef.authentication(),
                 commandContext.commandName());
 
-    // todo: move to a builder pattern, mosty to make it easier to manage the task position and
-    // retry
-    // policy
+    // todo: move to a builder pattern, mostly to make it easier to manage the task position and
+    // retry policy
     int commandLimit =
         getOrDefault(
             command.options(),
@@ -427,15 +442,14 @@ class FindAndRerankOperationBuilder {
     var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
     var isRerankOn = rerankOn != null && !rerankOn.isBlank();
 
-    String finalRerankField = null;
+    String finalRerankField;
 
     if (isVectorizeSort()) {
       // use the vectorize field, unless the user has overridden
       finalRerankField = isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
     } else if (isRerankOn) {
-      // user has to provide a field to rererank on
+      // user has to provide a field to rerank on
       finalRerankField = rerankOn;
-
     } else {
       throw new IllegalArgumentException("rerankOn() - rerankOn required and not specified");
     }

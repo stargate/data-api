@@ -105,7 +105,21 @@ public record FindAndRerankCommand(
       @Schema(
               description = "Return vector embedding used for ANN sorting.",
               type = SchemaType.BOOLEAN)
-          boolean includeSortVector) {}
+          boolean includeSortVector,
+      // Note: intentionally NOT annotated @Valid. Jakarta Bean Validation would reject any
+      // missing/null provider with its generic violation message; we want the explicit
+      // INVALID_RERANK_OVERRIDE error code produced by CollectionRerankDef.validateServiceDesc.
+      // Any non-null payload — including `"rerank": {}` and payloads whose fields are all
+      // explicit nulls — is treated as an override attempt and validated there.
+      @Nullable
+          @Schema(
+              description =
+                  "Optional override for the reranking service. Completely replaces the"
+                      + " collection-level reranking configuration when provided. Both 'provider' and"
+                      + " 'modelName' are required.",
+              implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)
+          @JsonProperty("rerank")
+          CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
   public record HybridLimits(

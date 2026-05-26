@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaDefaults;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaHolder;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Arrays;
@@ -120,11 +121,11 @@ public record CollectionLexicalDef(
   public static SchemaHolder<CollectionLexicalDef> fromApiDesc(
       ObjectMapper mapper,
       CreateCollectionCommand.Options.LexicalDesc lexicalDesc,
-      CollectionLexicalDefSchemaFactory lexicalDefSchema) {
+      SchemaFactory<CollectionLexicalDef> schemaFactory) {
 
     // Case 1: No lexical body provided - so no value from the user
     if (lexicalDesc == null) {
-      return lexicalDefSchema.currentVersion(null);
+      return schemaFactory.currentVersion(null);
     }
 
     // Case 2: Validate 'enabled' flag is present
@@ -154,7 +155,7 @@ public record CollectionLexicalDef(
                 .formatted(nodeType));
       }
       // use our clean disabled instance
-      return lexicalDefSchema.currentVersion(DISABLED_BY_USER);
+      return schemaFactory.currentVersion(DISABLED_BY_USER);
     }
 
     // Case 5: Enabled and analyzer provided - validate and use
@@ -228,7 +229,7 @@ public record CollectionLexicalDef(
     }
 
     Objects.requireNonNull(cleanedAnalyzerDef, "expected cleanedAnalyzerDef to be non-null");
-    return lexicalDefSchema.currentVersion(new CollectionLexicalDef(true, cleanedAnalyzerDef));
+    return schemaFactory.currentVersion(new CollectionLexicalDef(true, cleanedAnalyzerDef));
   }
 
   /** Converts this internal lexical representation to the external API representation. */
