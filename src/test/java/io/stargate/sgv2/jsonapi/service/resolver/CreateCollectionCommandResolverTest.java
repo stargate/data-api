@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -126,11 +127,12 @@ class CreateCollectionCommandResolverTest {
                 }
             }
           """);
+      // NOTE: source model of null turns into DEFAULT
       var expectedVectorDesc =
           new CreateCollectionCommand.Options.VectorSearchDesc(
               768,
               "cosine",
-              null,
+              EmbeddingSourceModel.DEFAULT.cqlName(),
               new VectorizeConfig(
                   "azureOpenAI",
                   "text-embedding-3-small",

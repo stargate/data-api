@@ -129,15 +129,17 @@ public class TestConstants {
   public TestConstants() {
     // ============================================================
     // Names
+    // NOTE: follow the `\w` regex to ensure that the names are valid for
+    // collection names and cql identifiers
     // ============================================================
-    CORRELATION_ID = "test-id-" + RandomStringUtils.insecure().nextAlphanumeric(16);
+    CORRELATION_ID = "test_id_" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
-    COMMAND_NAME = "command-" + CORRELATION_ID;
-    KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;
+    COMMAND_NAME = "command_" + CORRELATION_ID;
+    KEYSPACE_NAME = "keyspace_" + CORRELATION_ID;
     var keyspaceCqlIdentifier = cqlIdentifierFromUserInput(KEYSPACE_NAME);
-    COLLECTION_NAME = "collection-" + CORRELATION_ID;
+    COLLECTION_NAME = "collection_" + CORRELATION_ID;
     var collectionCqlIdentifier = cqlIdentifierFromUserInput(COLLECTION_NAME);
-    TABLE_NAME = "table-" + CORRELATION_ID;
+    TABLE_NAME = "table_" + CORRELATION_ID;
     var tableCqlIdentifier = cqlIdentifierFromUserInput(TABLE_NAME);
 
     APP_NAME = "Stargate DATA API -" + CORRELATION_ID;
