@@ -57,7 +57,7 @@ public class SchemaHolder<T> {
    * @return A decision on whether to use the replacement or this instance.
    */
   public ReplaceDecision<T> replaceIfMissing(SchemaHolder<T> replacement) {
-    Objects.requireNonNull(replacement, "replacement must be null");
+    Objects.requireNonNull(replacement, "replacement must not be null");
 
     if (persistedValue != null) {
       // we have a value, so no replacement.
