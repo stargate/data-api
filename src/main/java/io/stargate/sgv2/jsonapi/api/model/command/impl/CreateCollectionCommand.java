@@ -36,7 +36,7 @@ public record CreateCollectionCommand(
           @Schema(
               description = "Id configuration for the collection",
               type = SchemaType.OBJECT,
-              implementation = VectorSearchConfig.class)
+              implementation = IdConfig.class)
           @JsonProperty("defaultId")
           IdConfig idConfig,
       @Valid
