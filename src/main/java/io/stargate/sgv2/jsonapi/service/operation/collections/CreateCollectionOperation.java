@@ -11,6 +11,10 @@ import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
+import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
@@ -26,6 +30,8 @@ import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
@@ -36,9 +42,11 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.tables.CQLSAIIndex;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -267,15 +275,7 @@ public record CreateCollectionOperation(
 
     final Uni<AsyncResultSet> execCreateTable =
         queryExecutor.executeCreateSchemaChange(
-            requestContext,
-            getCreateTable(
-                commandContext.schemaObject().identifier().keyspace(),
-                collectionName,
-                vectorDesc != null,
-                getOrDefault(
-                    vectorDesc, CreateCollectionCommand.Options.VectorSearchDesc::dimension, 0),
-                tableComment,
-                collectionLexicalDef));
+            requestContext, getCreateTable(tableComment, collectionLexicalDef));
 
     final Uni<Boolean> indexResult =
         execCreateTable
@@ -287,11 +287,7 @@ public record CreateCollectionOperation(
                 res -> {
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
-                        getIndexStatements(
-                            commandContext.schemaObject().identifier().keyspace(),
-                            collectionName,
-                            collectionLexicalDef,
-                            collectionExisted);
+                        getIndexStatements(collectionLexicalDef, collectionExisted);
                     Multi<AsyncResultSet> indexResultMulti;
                     /*
                     CI will override ddlDelayMillis to 0 using `-Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0`
@@ -529,222 +525,146 @@ public record CreateCollectionOperation(
     return null;
   }
 
-  public static SimpleStatement getCreateTable(
-      CqlIdentifier keyspace,
-      CqlIdentifier table,
-      boolean vectorSearch,
-      int vectorSize,
-      String comment,
-      CollectionLexicalDef overrideLexicalDef) {
+  private SimpleStatement getCreateTable(String comment, CollectionLexicalDef overrideLexicalDef) {
 
-    // The keyspace and table name are quoted to make it case-sensitive
-    final String lexicalField =
-        overrideLexicalDef.enabled() ? "    query_lexical_value   text, " : "";
-    if (vectorSearch) {
-      // Quotes on identifiers come from cqlIdentifierToCQL
-      String createTableWithVector =
-          "CREATE TABLE IF NOT EXISTS %s.%s ("
-              + "    key                 tuple<tinyint,text>,"
-              + "    tx_id               timeuuid, "
-              + "    doc_json            text,"
-              + "    exist_keys          set<text>,"
-              + "    array_size          map<text, int>,"
-              + "    array_contains      set<text>,"
-              + "    query_bool_values   map<text, tinyint>,"
-              + "    query_dbl_values    map<text, decimal>,"
-              + "    query_text_values   map<text, text>, "
-              + "    query_timestamp_values map<text, timestamp>, "
-              + "    query_null_values   set<text>,     "
-              + "    query_vector_value  VECTOR<FLOAT, "
-              + vectorSize
-              + ">, "
-              + lexicalField
-              + "    PRIMARY KEY (key))";
-      if (comment != null) {
-        createTableWithVector = createTableWithVector + " WITH comment = '" + comment + "'";
-      }
-      return SimpleStatement.newInstance(
-          String.format(
-              createTableWithVector, cqlIdentifierToCQL(keyspace), cqlIdentifierToCQL(table)));
+    var keyspace = commandContext.schemaObject().identifier().keyspace();
+
+    CreateTable create =
+        SchemaBuilder.createTable(keyspace, collectionName)
+            .ifNotExists()
+            .withPartitionKey("key", DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT))
+            .withColumn("tx_id", DataTypes.TIMEUUID)
+            .withColumn("doc_json", DataTypes.TEXT)
+            .withColumn("exist_keys", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("array_size", DataTypes.mapOf(DataTypes.TEXT, DataTypes.INT))
+            .withColumn("array_contains", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("query_bool_values", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TINYINT))
+            .withColumn("query_dbl_values", DataTypes.mapOf(DataTypes.TEXT, DataTypes.DECIMAL))
+            .withColumn("query_text_values", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
+            .withColumn(
+                "query_timestamp_values", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TIMESTAMP))
+            .withColumn("query_null_values", DataTypes.setOf(DataTypes.TEXT));
+
+    if (vectorDesc != null) {
+      create =
+          create.withColumn(
+              "query_vector_value",
+              new ExtendedVectorType(DataTypes.FLOAT, vectorDesc.dimension()));
     }
-    // Quotes on identifiers come from cqlIdentifierToCQL
-    String createTable =
-        "CREATE TABLE IF NOT EXISTS %s.%s ("
-            + "    key                 tuple<tinyint,text>,"
-            + "    tx_id               timeuuid, "
-            + "    doc_json            text,"
-            + "    exist_keys          set<text>,"
-            + "    array_size          map<text, int>,"
-            + "    array_contains      set<text>,"
-            + "    query_bool_values   map<text, tinyint>,"
-            + "    query_dbl_values    map<text, decimal>,"
-            + "    query_text_values   map<text, text>, "
-            + "    query_timestamp_values map<text, timestamp>, "
-            + "    query_null_values   set<text>, "
-            + lexicalField
-            + "    PRIMARY KEY (key))";
+    if (overrideLexicalDef.enabled()) {
+      create = create.withColumn("query_lexical_value", DataTypes.TEXT);
+    }
+
     if (comment != null) {
-      createTable = createTable + " WITH comment = '" + comment + "'";
+      return create.withComment(comment).build();
     }
-    return SimpleStatement.newInstance(
-        String.format(createTable, cqlIdentifierToCQL(keyspace), cqlIdentifierToCQL(table)));
+    var statement = create.build();
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("getCreateTable() - created table statement: {}", statement.getQuery());
+    }
+    return statement;
   }
 
   /*
    * When a createCollection is done on a table that already exist the index are run with IF NOT EXISTS.
    * For a new table they are run without IF NOT EXISTS.
    */
-  public List<SimpleStatement> getIndexStatements(
-      CqlIdentifier keyspace,
-      CqlIdentifier table,
-      CollectionLexicalDef overrideLexicalDef,
-      boolean collectionExisted) {
+  private List<SimpleStatement> getIndexStatements(
+      CollectionLexicalDef overrideLexicalDef, boolean collectionExisted) {
 
     List<SimpleStatement> statements = new ArrayList<>(10);
 
-    String appender =
-        collectionExisted ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
-    // All index names are quoted to make them case-sensitive.
     var denyAllIndexes =
         getOrDefault(indexingDesc, CreateCollectionCommand.Options.IndexingDesc::denyAll, false);
 
     if (!denyAllIndexes) {
-      // Quotes on identifiers come from cqlIdentifierToCQL
-      String existKeys =
-          appender + " \"%s_exists_keys\" ON %s.%s (exist_keys) USING 'StorageAttachedIndex'";
-
+      statements.add(saiColumn(collectionExisted, "exists_keys", "exist_keys"));
+      statements.add(saiEntries(collectionExisted, "array_size", "array_size"));
+      statements.add(saiColumn(collectionExisted, "array_contains", "array_contains"));
+      statements.add(saiEntries(collectionExisted, "query_bool_values", "query_bool_values"));
+      statements.add(saiEntries(collectionExisted, "query_dbl_values", "query_dbl_values"));
+      statements.add(saiEntries(collectionExisted, "query_text_values", "query_text_values"));
       statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  existKeys,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
-
-      String arraySize =
-          appender
-              + " \"%s_array_size\" ON %s.%s (entries(array_size)) USING 'StorageAttachedIndex'";
-      statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  arraySize,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
-
-      String arrayContains =
-          appender
-              + " \"%s_array_contains\" ON %s.%s (array_contains) USING 'StorageAttachedIndex'";
-      statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  arrayContains,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
-
-      String boolQuery =
-          appender
-              + " \"%s_query_bool_values\" ON %s.%s (entries(query_bool_values)) USING 'StorageAttachedIndex'";
-      statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  boolQuery,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
-
-      String dblQuery =
-          appender
-              + " \"%s_query_dbl_values\" ON %s.%s (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
-      statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  dblQuery,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
-
-      String textQuery =
-          appender
-              + " \"%s_query_text_values\" ON %s.%s (entries(query_text_values)) USING 'StorageAttachedIndex'";
-      statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  textQuery,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
-
-      String timestampQuery =
-          appender
-              + " \"%s_query_timestamp_values\" ON %s.%s (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
-      statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  timestampQuery,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
-
-      String nullQuery =
-          appender
-              + " \"%s_query_null_values\" ON %s.%s (query_null_values) USING 'StorageAttachedIndex'";
-      statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  nullQuery,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
+          saiEntries(collectionExisted, "query_timestamp_values", "query_timestamp_values"));
+      statements.add(saiColumn(collectionExisted, "query_null_values", "query_null_values"));
     }
 
+    // NOTE: This is a little sloppy, in normal request the CreateCollectionCommandResolver will
+    // make sure the vectorDesc is valid and has defaults set. So even though they are strings
+    // they have been validated as the thing we should use. See
+    // CreateCollectionCommandResolver.validateVectorOptions()
+    // it gets the proper CQL names from the Enums, replacing what the user sent in. (kind of
+    // confusing)
+    // TODO: create a VectorSearchDef that uses the SimilarityFunction and EmbeddingSourceModel
+    // enums
     if (vectorDesc != null) {
-      String vectorSearch =
-          appender
-              + " \"%s_query_vector_value\" ON %s.%s (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
-              + vectorDesc.metric()
-              + "', 'source_model': '"
-              + vectorDesc.sourceModel()
-              + "'}";
+      // Sanity checking here, if we pass a null value the map go bang, try to stop bang, bang bad
+      Map<String, Object> vectorOptions = new HashMap<>();
+      if (vectorDesc.metric() != null && !vectorDesc.metric().isBlank()) {
+        vectorOptions.put("similarity_function", vectorDesc.metric());
+      }
+      if (vectorDesc.sourceModel() != null && !vectorDesc.sourceModel().isBlank()) {
+        vectorOptions.put("source_model", vectorDesc.sourceModel());
+      }
       statements.add(
-          SimpleStatement.newInstance(
-              String.format(
-                  vectorSearch,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table))));
+          buildSaiIndex(
+              collectionExisted, "query_vector_value", "query_vector_value", false, vectorOptions));
     }
 
     if (overrideLexicalDef.enabled()) {
       var analyzerDef = overrideLexicalDef.analyzerDefinition();
-      // Note: needs to be either plain (unquoted) String (NOT quoted JSON String) OR JSON Object
-      final String analyzerString =
-          analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
-      // Quotes on identifiers come from cqlIdentifierToCQL
-      final String lexicalCreateStmt =
-              """
-                    %s "%s_query_lexical_value" ON %s.%s (query_lexical_value)
-                      USING 'StorageAttachedIndex' WITH OPTIONS = { 'index_analyzer': '%s' }
-                    """
-              .formatted(
-                  appender,
-                  table.asInternal(), // we want internal (without the quotes) for the name of the
-                  // index
-                  cqlIdentifierToCQL(keyspace),
-                  cqlIdentifierToCQL(table),
-                  analyzerString);
-      statements.add(SimpleStatement.newInstance(lexicalCreateStmt));
+      var analyzerString = analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
+      statements.add(
+          buildSaiIndex(
+              collectionExisted,
+              "query_lexical_value",
+              "query_lexical_value",
+              false,
+              Map.of("index_analyzer", analyzerString)));
+    }
+
+    if (LOGGER.isTraceEnabled()) {
+      var cqlStrings =
+          statements.stream().map(SimpleStatement::getQuery).collect(Collectors.joining("; "));
+      LOGGER.trace("getIndexStatements() - created index statements: {}", cqlStrings);
     }
     return statements;
+  }
+
+  private SimpleStatement saiColumn(boolean ifNotExists, String indexSuffix, String column) {
+    return buildSaiIndex(ifNotExists, indexSuffix, column, false, Map.of());
+  }
+
+  private SimpleStatement saiEntries(boolean ifNotExists, String indexSuffix, String column) {
+    return buildSaiIndex(ifNotExists, indexSuffix, column, true, Map.of());
+  }
+
+  private SimpleStatement buildSaiIndex(
+      boolean ifNotExists,
+      String indexSuffix,
+      String columnName, // aaron - next change will make this a CQLIdentifier
+      boolean isEntries,
+      Map<String, Object> options) {
+
+    var keyspace = commandContext.schemaObject().identifier().keyspace();
+    var index = CqlIdentifier.fromInternal(collectionName.asInternal() + "_" + indexSuffix);
+    var column = CqlIdentifier.fromInternal(columnName);
+
+    var start = SchemaBuilder.createIndex(index).custom(CQLSAIIndex.SAI_CLASS_NAME);
+    if (ifNotExists) {
+      start = start.ifNotExists();
+    }
+
+    var onTable = start.onTable(keyspace, collectionName);
+    var createIndex = isEntries ? onTable.andColumnEntries(column) : onTable.andColumn(column);
+
+    if (!options.isEmpty()) {
+      // in the CQL statement OPTIONS are the things after WITH, and for the `create index` there is
+      // an option called OPTIONS calling withSASIOptions deals with this.
+      createIndex = createIndex.withSASIOptions(options);
+    }
+
+    return new ExtendedCreateIndex((DefaultCreateIndex) createIndex).build();
   }
 }
