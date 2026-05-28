@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
@@ -124,7 +125,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @throws APIException If vector search is disabled globally or the user configuration is
    *     invalid.
    */
-  private CreateCollectionCommand.Options.VectorSearchDesc validateVectorOptions(
+  @VisibleForTesting
+  public CreateCollectionCommand.Options.VectorSearchDesc validateVectorOptions(
       CreateCollectionCommand.Options.VectorSearchDesc vector) {
 
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
