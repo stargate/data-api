@@ -556,10 +556,8 @@ public record CreateCollectionOperation(
       create = create.withColumn("query_lexical_value", DataTypes.TEXT);
     }
 
-    if (comment != null) {
-      return create.withComment(comment).build();
-    }
-    var statement = create.build();
+    // adding the comment changes the return into something to deal with options
+    var statement = comment == null ? create.build() : create.withComment(comment).build();
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("getCreateTable() - created table statement: {}", statement.getQuery());
