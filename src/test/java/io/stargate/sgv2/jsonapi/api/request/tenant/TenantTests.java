@@ -87,6 +87,17 @@ public class TenantTests {
   }
 
   @Test
+  public void equalAcrossDifferentRegions() {
+    // region is intentionally excluded from equals/hash: a tenant is the same logical tenant in
+    // every region it can be reached from.
+    var east = Tenant.create(DatabaseType.ASTRA, "tenant-123", "us-east-1");
+    var west = Tenant.create(DatabaseType.ASTRA, "tenant-123", "us-west-2");
+
+    assertThat(east).isEqualTo(west);
+    assertThat(east.hashCode()).isEqualTo(west.hashCode());
+  }
+
+  @Test
   public void notEqualDifferentDbType() {
     var tenant1 = Tenant.create(DatabaseType.ASTRA, SINGLE_TENANT_ID);
     var tenant2 = Tenant.create(DatabaseType.CASSANDRA, null);
