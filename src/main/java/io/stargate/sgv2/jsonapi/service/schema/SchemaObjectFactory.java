@@ -129,7 +129,7 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
                           });
               return IS_COLLECTION_PREDICATE.test(tableMetadata)
                   ? CollectionSchemaObject.getCollectionSettings(
-                      requestContext.tenant(), tableMetadata, OBJECT_MAPPER)
+                      requestContext, tableMetadata, OBJECT_MAPPER)
                   : TableSchemaObject.from(requestContext.tenant(), tableMetadata, OBJECT_MAPPER);
             });
   }

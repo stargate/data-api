@@ -13,6 +13,9 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProviderConfigProducer;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaDefaults;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaHolder;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,29 +41,48 @@ import org.slf4j.LoggerFactory;
  * metadata comment.
  */
 public class CollectionRerankDef {
-  /**
-   * Singleton instance for disabled reranking configuration. It can be used for disabled reranking
-   * collections and missing collections.
-   */
-  private static final CollectionRerankDef DISABLED = new CollectionRerankDef(false, null);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionRerankDef.class);
+
+  /** Config to use for collections that were created before the feature was available. */
+  private static final CollectionRerankDef PRE_RELEASE_DEFAULT =
+      new CollectionRerankDef(false, null);
 
   /**
-   * Singleton instance for disabled reranking configuration. It is to be used for existing
-   * pre-reranking collections.
-   */
-  private static final CollectionRerankDef MISSING = new CollectionRerankDef(false, null);
-
-  /**
-   * Singleton instance for default reranking configuration. It is used for newly created
-   * collections with default reranking settings.
+   * Current default for configuration that enables reranking with default provider and model.
    *
    * <p>NOTE: this is initialized during startup (via call to {@link #initializeDefaultRerankDef} by
    * {@link RerankingProviderConfigProducer}) and cannot unfortunately be made final: this because
    * initialization requires access to other configuration loaded during start up.
    */
-  private static CollectionRerankDef DEFAULT;
+  private static volatile CollectionRerankDef CURRENT_DEFAULT;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionRerankDef.class);
+  /**
+   * Config to use when the feature is enabled in the DB, but we want to disable for a collection.
+   */
+  private static final CollectionRerankDef DISABLED_FEATURE_CONFIG =
+      new CollectionRerankDef(false, null);
+
+  public static final SchemaDefaults<CollectionRerankDef> SCHEMA_DEFAULTS =
+      new SchemaDefaults<>() {
+        @Override
+        public CollectionRerankDef forPreRelease() {
+          return PRE_RELEASE_DEFAULT;
+        }
+
+        @Override
+        public CollectionRerankDef currentDefault() {
+          return CURRENT_DEFAULT;
+        }
+
+        @Override
+        public CollectionRerankDef forDisabledFeature() {
+          return DISABLED_FEATURE_CONFIG;
+        }
+      };
+
+  // Not a value for the schema defaults above, just a clean re-usable value for
+  // "feature is released and enabled, but the user disabled it"
+  private static final CollectionRerankDef DISABLED_BY_USER = new CollectionRerankDef(false, null);
 
   private final boolean enabled;
   private final RerankServiceDef rerankServiceDef;
@@ -91,6 +113,7 @@ public class CollectionRerankDef {
   public CollectionRerankDef(
       @JsonProperty("enabled") boolean enabled,
       @JsonProperty("service") RerankServiceDef rerankServiceDef) {
+
     this.enabled = enabled;
     if (enabled) {
       this.rerankServiceDef =
@@ -120,45 +143,26 @@ public class CollectionRerankDef {
   }
 
   /**
-   * Get default reranking configuration for new collections.
-   *
-   * <p>When a collection is created without explicit reranking settings, this method provides a
-   * default configuration based on the reranking providers' configuration. It looks for the
-   * provider marked as default and its default model.
-   *
-   * @param isRerankingEnabledForAPI
-   * @param rerankingProvidersConfig The configuration for all available reranking providers
-   * @return A default-configured CollectionRerankDef
-   */
-  public static CollectionRerankDef configForNewCollections(
-      boolean isRerankingEnabledForAPI, RerankingProvidersConfig rerankingProvidersConfig) {
-    Objects.requireNonNull(rerankingProvidersConfig, "Reranking providers config cannot be null");
-    // If reranking is not enabled for the API, return disabled configuration
-    if (!isRerankingEnabledForAPI) {
-      return DISABLED;
-    }
-    if (DEFAULT == null) {
-      // DEFAULT has been set during the application startup.
-      throw new IllegalStateException("No default reranking definition found");
-    }
-    return DEFAULT;
-  }
-
-  /**
    * Initializes the DEFAULT reranking definition as Singleton during the application startup. See
    * {@link RerankingProviderConfigProducer} as caller and how the configuration is validated to
    * promise a default provider and model.
    */
   public static void initializeDefaultRerankDef(RerankingProvidersConfig rerankingProvidersConfig) {
+
+    if (CURRENT_DEFAULT != null) {
+      throw new IllegalStateException("initializeDefaultRerankDef() called more than once");
+    }
+
     // Find the provider marked as default
     var defaultProviderEntry =
         rerankingProvidersConfig.providers().entrySet().stream()
             .filter(entry -> entry.getValue().isDefault())
             .findFirst();
+
     // There must be a default provider, otherwise it's a config bug.
     // It is validated in RerankingProviderConfigProducer.class during startup.
     if (defaultProviderEntry.isEmpty()) {
-      throw new IllegalStateException("No default reranking provider found");
+      throw new IllegalStateException("Default reranking provider not found");
     }
 
     // Extract provider information
@@ -206,37 +210,11 @@ public class CollectionRerankDef {
             null // No parameters for default configuration
             );
 
+    var localDefault = new CollectionRerankDef(true, defaultRerankingService);
     LOGGER.info(
-        "InitializeDefaultRerankDef during application startup, default reranking configuration initialized with provider '%s' and model '%s'"
-            .formatted(defaultProviderName, defaultModel.name()));
-    DEFAULT = new CollectionRerankDef(true, defaultRerankingService);
-  }
-
-  public static CollectionRerankDef configForDisabled() {
-    return DISABLED;
-  }
-
-  /**
-   * Accessor for getting a configuration for existing collections that predate reranking support.
-   *
-   * <p>Used for collections created before reranking functionality was available. These collections
-   * need to have reranking explicitly disabled for backward compatibility.
-   *
-   * @return A singleton CollectionRerankDef instance ({@link #MISSING}) with reranking disabled
-   */
-  public static CollectionRerankDef configForPreRerankingCollection() {
-    return MISSING;
-  }
-
-  /**
-   * Accessor for a singleton instance used to represent case of default reranking configuration for
-   * newly created Collections that do not specify reranking configuration.
-   *
-   * @return A singleton CollectionRerankDef instance ({@link #DEFAULT}) initialized during
-   *     application startup.
-   */
-  public static CollectionRerankDef configForDefault() {
-    return DEFAULT;
+        "initializeDefaultRerankDef() - default reranking configuration initialized to {}",
+        localDefault);
+    CURRENT_DEFAULT = localDefault;
   }
 
   /**
@@ -279,57 +257,51 @@ public class CollectionRerankDef {
    * @return A validated CollectionRerankDef object
    * @throws APIException if the configuration is invalid
    */
-  public static CollectionRerankDef fromApiDesc(
-      boolean isRerankingEnabledForAPI,
+  public static SchemaHolder<CollectionRerankDef> fromApiDesc(
       CreateCollectionCommand.Options.RerankDesc rerankingDesc,
-      RerankingProvidersConfig providerConfigs) {
-
-    // If reranking is not enabled for the API, allow explicit "enabled: false" but error out
-    // if user tries to enable it (fix for #2423).
-    if (!isRerankingEnabledForAPI) {
-      if (rerankingDesc != null && !Boolean.FALSE.equals(rerankingDesc.enabled())) {
-        throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
-      }
-      return DISABLED;
-    }
+      RerankingProvidersConfig providerConfigs,
+      SchemaFactory<CollectionRerankDef> schemaFactory) {
 
     // Case 1: No configuration provided - use defaults
+    // No options provided, no user-provided value
+    // this also takes care of if this schema is enabled for this request
     if (rerankingDesc == null) {
-      return configForNewCollections(isRerankingEnabledForAPI, providerConfigs);
+      return schemaFactory.currentVersion(null);
     }
 
     // Case 2: Validate 'enabled' flag is present
-    Boolean enabled = rerankingDesc.enabled();
-    var serviceConfig = rerankingDesc.rerankServiceDesc();
-    if (enabled == null) {
+    if (rerankingDesc.enabled() == null) {
       throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
           "message", "'enabled' is required property for 'rerank' Object value");
     }
 
     // Case 3: Reranking disabled - ensure no service configuration is provided
-    if (!enabled) {
-      if (serviceConfig != null && !serviceConfig.isEmpty()) {
+    if (!rerankingDesc.enabled()) {
+      if (rerankingDesc.rerankServiceDesc() != null
+          && !rerankingDesc.rerankServiceDesc().isEmpty()) {
         throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
             "message", "'rerank' is disabled, but 'rerank.service' configuration is provided");
       }
-      return DISABLED;
+      // use our clean singleton for disabled
+      return schemaFactory.currentVersion(DISABLED_BY_USER);
     }
 
     // Case 4: Enabled but no service config - use defaults
-    if (serviceConfig == null) {
-      return configForNewCollections(isRerankingEnabledForAPI, providerConfigs);
+    if (rerankingDesc.rerankServiceDesc() == null) {
+      return schemaFactory.currentVersion(SCHEMA_DEFAULTS.currentDefault());
     }
 
     // Case 5: Full configuration - validate all components
-    return new CollectionRerankDef(
-        enabled,
-        validateServiceDesc(
-            providerConfigs,
-            serviceConfig.provider(),
-            serviceConfig.modelName(),
-            serviceConfig.authentication(),
-            serviceConfig.parameters(),
-            SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS));
+    return schemaFactory.currentVersion(
+        new CollectionRerankDef(
+            true,
+            validateServiceDesc(
+                providerConfigs,
+                rerankingDesc.rerankServiceDesc().provider(),
+                rerankingDesc.rerankServiceDesc().modelName(),
+                rerankingDesc.rerankServiceDesc().authentication(),
+                rerankingDesc.rerankServiceDesc().parameters(),
+                SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS)));
   }
 
   /**
@@ -337,7 +309,7 @@ public class CollectionRerankDef {
    * is used in {@link CollectionSchemaObject} and FindCollection command, it converts collection
    * comments -> CollectionSchemaObject -> CreateCollectionCommand
    */
-  public CreateCollectionCommand.Options.RerankDesc toRerankDesc() {
+  public CreateCollectionCommand.Options.RerankDesc toApiDesc() {
     if (!enabled) {
       return new CreateCollectionCommand.Options.RerankDesc(false, null);
     }

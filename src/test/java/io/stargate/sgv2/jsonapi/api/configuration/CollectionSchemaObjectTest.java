@@ -8,6 +8,8 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.*;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,8 +33,8 @@ public class CollectionSchemaObjectTest {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             indexingConfig,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection());
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
 
     IndexingProjector indexingProj = settings.indexingProjector();
 

@@ -1,15 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -18,13 +18,16 @@ import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvide
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
 
+/**
+ * Resolves the {@link CreateCollectionCommand } command into a {@link CreateCollectionOperation}
+ */
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
 
@@ -37,18 +40,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   @Inject
   public CreateCollectionCommandResolver(
-      ObjectMapper objectMapper,
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
       VectorizeConfigValidator validateVectorize,
-      RerankingProvidersConfig rerankingProvidersConfig) {
-    this.objectMapper = objectMapper;
+      RerankingProvidersConfig rerankingProvidersConfig,
+      ObjectMapper objectMapper) {
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
     this.validateVectorize = validateVectorize;
     this.rerankingProvidersConfig = rerankingProvidersConfig;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -58,166 +61,54 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   @Override
   public Operation resolveKeyspaceCommand(
-      CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
+      CommandContext<KeyspaceSchemaObject> context, CreateCollectionCommand command) {
 
-    final boolean lexicalAvailableForDB = ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
+    var collectionName =
+        cqlIdentifierFromUserInput(NamingRules.COLLECTION.checkRule(command.name()));
 
-    var collectionName = NamingRules.COLLECTION.checkRule(command.name());
-    final CreateCollectionCommand.Options options = command.options();
-    boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
+    // for these config options we only have the public API sided *Desc classes
+    // no different internal representation
+    var docIdDesc =
+        getOrDefault(command.options(), CreateCollectionCommand.Options::idConfig, null);
 
-    if (options == null) {
-      final CollectionLexicalConfig lexicalConfig =
-          lexicalAvailableForDB
-              ? CollectionLexicalConfig.configForDefault()
-              : CollectionLexicalConfig.configForDisabled();
-      final CollectionRerankDef rerankDef =
-          CollectionRerankDef.configForNewCollections(
-              isRerankingEnabledForAPI, rerankingProvidersConfig);
-      return CreateCollectionOperation.withoutVectorSearch(
-          ctx,
-          dbLimitsConfig,
-          objectMapper,
-          ctx.cqlSessionCache(),
-          collectionName,
-          generateComment(
-              objectMapper,
-              false,
-              false,
-              collectionName,
-              null,
-              null,
-              null,
-              lexicalConfig,
-              rerankDef),
-          operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled(),
-          false,
-          lexicalConfig,
-          rerankDef);
+    var vectorSearchDesc =
+        getOrDefault(command.options(), CreateCollectionCommand.Options::vector, null);
+    if (vectorSearchDesc != null) {
+      vectorSearchDesc = validateVectorOptions(vectorSearchDesc);
     }
 
-    boolean hasIndexing = options.indexing() != null;
-    boolean hasVectorSearch = options.vector() != null;
-    CreateCollectionCommand.Options.VectorSearchConfig vector = options.vector();
-    final CollectionLexicalConfig lexicalConfig =
-        CollectionLexicalConfig.validateAndConstruct(
-            objectMapper, lexicalAvailableForDB, options.lexical());
-
-    final CollectionRerankDef rerankDef =
-        CollectionRerankDef.fromApiDesc(
-            isRerankingEnabledForAPI, options.rerank(), rerankingProvidersConfig);
-
-    boolean indexingDenyAll = false;
-    // handling indexing options
-    if (hasIndexing) {
-      // validation of configuration
-      options.indexing().validate();
-      indexingDenyAll = options.indexing().denyAll();
-      // No need to process if both are null or empty
+    var indexingDesc =
+        getOrDefault(command.options(), CreateCollectionCommand.Options::indexing, null);
+    if (indexingDesc != null) {
+      indexingDesc.validate();
     }
 
-    // handling vector option
-    if (hasVectorSearch) {
-      vector = validateVectorOptions(vector);
-    }
-
-    String comment =
-        generateComment(
+    // for these config options we have a *Def internal representation that we build from the
+    // public API sided *Desc classes
+    var lexicalDef =
+        CollectionLexicalDef.fromApiDesc(
             objectMapper,
-            hasIndexing,
-            hasVectorSearch,
-            collectionName,
-            options.indexing(),
-            vector,
-            options.idConfig(),
-            lexicalConfig,
-            rerankDef);
+            getOrDefault(command.options(), CreateCollectionCommand.Options::lexical, null),
+            context.versionedSchema().lexicalDef());
 
-    if (hasVectorSearch) {
-      return CreateCollectionOperation.withVectorSearch(
-          ctx,
-          dbLimitsConfig,
-          objectMapper,
-          ctx.cqlSessionCache(),
-          collectionName,
-          vector.dimension(),
-          vector.metric(),
-          vector.sourceModel(),
-          comment,
-          operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled(),
-          indexingDenyAll,
-          lexicalConfig,
-          rerankDef);
-    } else {
-      return CreateCollectionOperation.withoutVectorSearch(
-          ctx,
-          dbLimitsConfig,
-          objectMapper,
-          ctx.cqlSessionCache(),
-          collectionName,
-          comment,
-          operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled(),
-          indexingDenyAll,
-          lexicalConfig,
-          rerankDef);
-    }
-  }
+    var rerankDef =
+        CollectionRerankDef.fromApiDesc(
+            getOrDefault(command.options(), CreateCollectionCommand.Options::rerank, null),
+            rerankingProvidersConfig,
+            context.versionedSchema().rerankDef());
 
-  /**
-   * Generate a JSON string comment that will be stored in the database.
-   *
-   * @param hasIndexing indicating if indexing options are enabled.
-   * @param hasVectorSearch indicating if vector search options are enabled.
-   * @param commandName command name
-   * @param indexing the indexing option config
-   * @param vector vector config after validation
-   * @return the comment string
-   */
-  public static String generateComment(
-      ObjectMapper objectMapper,
-      boolean hasIndexing,
-      boolean hasVectorSearch,
-      String commandName,
-      CreateCollectionCommand.Options.IndexingConfig indexing,
-      CreateCollectionCommand.Options.VectorSearchConfig vector,
-      CreateCollectionCommand.Options.IdConfig idConfig,
-      CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankDef) {
-    final ObjectNode collectionNode = objectMapper.createObjectNode();
-    ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
-
-    // TODO: move this out of the command resolver, it is not a responsibility for this class
-    if (hasIndexing) {
-      optionsNode.putPOJO(TableCommentConstants.COLLECTION_INDEXING_KEY, indexing);
-    }
-    if (hasVectorSearch) {
-      optionsNode.putPOJO(TableCommentConstants.COLLECTION_VECTOR_KEY, vector);
-    }
-    // if default_id is not specified during createCollection, resolve type to empty string
-    if (idConfig != null) {
-      optionsNode.putPOJO(TableCommentConstants.DEFAULT_ID_KEY, idConfig);
-    } else {
-      optionsNode.putPOJO(
-          TableCommentConstants.DEFAULT_ID_KEY,
-          objectMapper.createObjectNode().putPOJO("type", ""));
-    }
-
-    // Store Lexical Config as-is:
-    optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, lexicalConfig);
-
-    // Store Reranking Config as-is:
-    optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, rerankDef);
-
-    collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);
-    collectionNode.put(
-        TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);
-    collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
-    final ObjectNode tableCommentNode = objectMapper.createObjectNode();
-    tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
-    return tableCommentNode.toString();
+    return new CreateCollectionOperation(
+        context,
+        dbLimitsConfig,
+        context.cqlSessionCache(),
+        collectionName,
+        operationsConfig.databaseConfig().ddlDelayMillis(),
+        operationsConfig.tooManyIndexesRollbackEnabled(),
+        docIdDesc,
+        indexingDesc,
+        vectorSearchDesc,
+        lexicalDef,
+        rerankDef);
   }
 
   /**
@@ -233,8 +124,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @throws APIException If vector search is disabled globally or the user configuration is
    *     invalid.
    */
-  private CreateCollectionCommand.Options.VectorSearchConfig validateVectorOptions(
-      CreateCollectionCommand.Options.VectorSearchConfig vector) {
+  private CreateCollectionCommand.Options.VectorSearchDesc validateVectorOptions(
+      CreateCollectionCommand.Options.VectorSearchDesc vector) {
+
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
       throw SchemaException.Code.VECTORIZE_FEATURE_NOT_AVAILABLE.get();
     }
@@ -276,7 +168,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       // Validate service configuration and auto populate vector dimension.
       vectorDimension = validateVectorize.validateService(service, vectorDimension);
       vector =
-          new CreateCollectionCommand.Options.VectorSearchConfig(
+          new CreateCollectionCommand.Options.VectorSearchDesc(
               vectorDimension, metric, sourceModel, vector.vectorizeConfig());
     } else {
       // Ensure vector dimension is provided when service configuration is absent.
@@ -293,7 +185,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                 String.valueOf(documentLimitsConfig.maxVectorEmbeddingLength())));
       }
       vector =
-          new CreateCollectionCommand.Options.VectorSearchConfig(
+          new CreateCollectionCommand.Options.VectorSearchDesc(
               vectorDimension, metric, sourceModel, null);
     }
     return vector;

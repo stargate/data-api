@@ -37,7 +37,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     JsonNode lexicalNode = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
     if (lexicalNode != null) {
       // We can also check if lexical sort supported by the collection:
-      if (!schema.lexicalConfig().enabled()) {
+      if (!schema.lexicalDef().enabled()) {
         throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
       }
       if (sortNode.size() > 1) {
