@@ -1583,6 +1583,61 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       verifyDocCount(2);
     }
 
+    // [data-api#1840] A single-document insertMany must still report the failing document's _id,
+    // via the structured "documentIds" field on the error.
+    @Test
+    public void unorderedSingleBadKeyReportsDocumentId() {
+      givenHeadersPostJsonThenOk(
+              """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        { "_id": "single-bad-1", "$username": "userB" }
+                      ],
+                      "options" : { "ordered": false }
+                    }
+                  }
+                  """)
+          .body("$", responseIsWritePartialSuccess())
+          .body("status.insertedIds", is(empty()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_FIELD_NAME.name()))
+          .body(
+              "errors[0].message",
+              startsWith("Document field name not valid: field name '$username' starts with '$'"))
+          .body("errors[0].documentIds", is(List.of("single-bad-1")));
+
+      verifyDocCount(0);
+    }
+
+    // [data-api#1840] Multi-document insertMany reports the failing _id the same way, so behaviour
+    // is consistent regardless of document count.
+    @Test
+    public void unorderedMultiBadKeyReportsDocumentId() {
+      givenHeadersPostJsonThenOk(
+              """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        { "_id": "multi-ok-1", "username": "userA" },
+                        { "_id": "multi-bad-1", "$username": "userB" }
+                      ],
+                      "options" : { "ordered": false }
+                    }
+                  }
+                  """)
+          .body("$", responseIsWritePartialSuccess())
+          .body("status.insertedIds", is(List.of("multi-ok-1")))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_BAD_FIELD_NAME.name()))
+          .body(
+              "errors[0].message",
+              startsWith("Document field name not valid: field name '$username' starts with '$'"))
+          .body("errors[0].documentIds", is(List.of("multi-bad-1")));
+
+      verifyDocCount(1);
+    }
+
     // [#2366] Sending _id as a plain (non-EJSON) Object in insertMany should give a clear
     //   error, not SERVER_UNHANDLED_ERROR
     @Test
