@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToCQL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -14,6 +16,7 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
@@ -21,18 +24,28 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.text.StringSubstitutor;
 
 /**
  * Re-usable values for tests.
+ *
+ * <p>Quick Guide:
+ *
+ * <ul>
+ *   <li>Use the *_NAME when needed, but prefer the *_IDENTIFIER and the *_SCHEMA_OBJECT we create
+ *       here
+ *   <li>Use the context functions to make command or request context as needed.
+ * </ul>
  *
  * <p>This must be an instance so that quarkus can set up the environment, we need this because of
  * the use of their config library
@@ -62,7 +75,7 @@ public class TestConstants {
   public final String SLA_USER_AGENT_NAME = "Datastax-SLA-Checker";
 
   // ============================================================
-  // Request Context
+  // Identifiers and Request Context
   // ============================================================
 
   /** An astra database type TENANT used for test */
@@ -99,6 +112,8 @@ public class TestConstants {
    */
   public final CollectionSchemaObject MISSING_COLLECTION;
 
+  public final ApiFeatures API_FEATURES = ApiFeatures.empty();
+
   // ============================================================
   // Schema Objects
   // ============================================================
@@ -114,15 +129,18 @@ public class TestConstants {
   public TestConstants() {
     // ============================================================
     // Names
+    // NOTE: follow the `\w` regex to ensure that the names are valid for
+    // collection names and cql identifiers
     // ============================================================
-    CORRELATION_ID = "test-id-" + RandomStringUtils.insecure().nextAlphanumeric(16);
+    CORRELATION_ID = "test_id_" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
-    COMMAND_NAME = "command-" + CORRELATION_ID;
-    KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;
-    var keyspaceCqlIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(KEYSPACE_NAME);
-    COLLECTION_NAME = "collection-" + CORRELATION_ID;
-    var collectionCqlIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(COLLECTION_NAME);
-    TABLE_NAME = "table-" + CORRELATION_ID;
+    COMMAND_NAME = "command_" + CORRELATION_ID;
+    KEYSPACE_NAME = "keyspace_" + CORRELATION_ID;
+    var keyspaceCqlIdentifier = cqlIdentifierFromUserInput(KEYSPACE_NAME);
+    COLLECTION_NAME = "collection_" + CORRELATION_ID;
+    var collectionCqlIdentifier = cqlIdentifierFromUserInput(COLLECTION_NAME);
+    TABLE_NAME = "table_" + CORRELATION_ID;
+    var tableCqlIdentifier = cqlIdentifierFromUserInput(TABLE_NAME);
 
     APP_NAME = "Stargate DATA API -" + CORRELATION_ID;
 
@@ -167,10 +185,7 @@ public class TestConstants {
         SchemaObjectIdentifier.forCollection(
             TENANT, keyspaceCqlIdentifier, collectionCqlIdentifier);
     TABLE_IDENTIFIER =
-        SchemaObjectIdentifier.forTable(
-            TENANT,
-            keyspaceCqlIdentifier,
-            CqlIdentifierUtil.cqlIdentifierFromUserInput(TABLE_NAME));
+        SchemaObjectIdentifier.forTable(TENANT, keyspaceCqlIdentifier, tableCqlIdentifier);
 
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -178,12 +193,13 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDefault(),
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
             // Use default reranking config - hardcode the value to avoid reading config
-            new CollectionRerankDef(
-                true,
-                new CollectionRerankDef.RerankServiceDef(
-                    "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef(
+                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
 
     // Schema object for testing with legacy (pre-lexical-config) defaults
     COLLECTION_SCHEMA_OBJECT_LEGACY =
@@ -192,8 +208,8 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection());
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -208,8 +224,8 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection());
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
 
     VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -224,11 +240,12 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            CollectionLexicalConfig.configForDefault(),
-            new CollectionRerankDef(
-                true,
-                new CollectionRerankDef.RerankServiceDef(
-                    "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef(
+                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
 
     TABLE_SCHEMA_OBJECT = new TableSchemaObject(TABLE_IDENTIFIER);
 
@@ -241,11 +258,14 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForDisabled());
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
   }
 
-  // CommandContext for working on the schema objects above
+  // =============================================================
+  // Functions for working with RequestContext and  CommandContext
+  // =============================================================
+
   public CommandContext<CollectionSchemaObject> collectionContext() {
     return collectionContext(COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
   }
@@ -264,6 +284,7 @@ public class TestConstants {
     var requestContext = mock(RequestContext.class);
     when(requestContext.tenant()).thenReturn(TENANT);
     when(requestContext.getEmbeddingCredentials()).thenReturn(EMBEDDING_CREDENTIALS);
+    when(requestContext.apiFeatures()).thenReturn(API_FEATURES);
 
     var embeddingCredentials = mock(EmbeddingCredentials.class);
     when(embeddingCredentials.tenant()).thenReturn(TENANT);
@@ -326,5 +347,55 @@ public class TestConstants {
         .withCommandName(COMMAND_NAME)
         .withRequestContext(requestContext())
         .build();
+  }
+
+  // ====================================================
+  // Functions for doing formatting with the names
+  // ====================================================
+
+  private StringSubstitutor createSubstitutor(Map<String, String> allValues) {
+
+    // set so IllegalArgumentException thrown if template var missing a value
+    // Disable substitution in values so user-provided strings containing "${...}" are not
+    // interpreted as template variables (see data-api#2401)
+    return new StringSubstitutor(allValues)
+        .setEnableUndefinedVariableException(true)
+        .setDisableSubstitutionInValues(true);
+  }
+
+  /** See {@link #cqlNamesSubstitutor()} for more details */
+  public String subsCqlNames(String template) {
+    return cqlNamesSubstitutor().replace(template);
+  }
+
+  /**
+   * Use this when you are formatting into CQL strings because it will use the same process to
+   * create the CQL identifiers as our code dose, in terms of how double quotes are used
+   */
+  public StringSubstitutor cqlNamesSubstitutor() {
+    var allValues =
+        Map.of(
+            "keyspace", cqlIdentifierToCQL(KEYSPACE_IDENTIFIER.keyspace()),
+            "collection", cqlIdentifierToCQL(COLLECTION_IDENTIFIER.table()),
+            "table", cqlIdentifierToCQL(TABLE_IDENTIFIER.table()));
+    return createSubstitutor(allValues);
+  }
+
+  /** See {@link #rawNamesSubstitutor()} for more details */
+  public String subsRawNames(String template) {
+    return rawNamesSubstitutor().replace(template);
+  }
+
+  /**
+   * Use this when you want the raw names for things like JSON commands, thi uses the string names
+   * before they are put into CQLIdentifiers.
+   */
+  public StringSubstitutor rawNamesSubstitutor() {
+    var allValues =
+        Map.of(
+            "keyspace", KEYSPACE_NAME,
+            "collection", COLLECTION_NAME,
+            "table", TABLE_NAME);
+    return createSubstitutor(allValues);
   }
 }
