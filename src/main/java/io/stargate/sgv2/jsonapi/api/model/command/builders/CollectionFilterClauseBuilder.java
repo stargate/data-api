@@ -65,7 +65,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
           return path;
         }
         case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD -> {
-          if (!schema.lexicalConfig().enabled()) {
+          if (!schema.lexicalDef().enabled()) {
             throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
           }
           // Only $match valid on $lexical field

@@ -14,8 +14,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.resolver.CreateCollectionCommandResolver;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -47,7 +46,7 @@ public record AlterCollectionLexicalOperation(
     CommandContext<CollectionSchemaObject> commandContext,
     ObjectMapper objectMapper,
     int ddlDelayMillis,
-    CollectionLexicalConfig newLexicalConfig,
+    CollectionLexicalDef newLexicalDef,
     boolean noOp)
     implements Operation<CollectionSchemaObject> {
 
@@ -84,7 +83,7 @@ public record AlterCollectionLexicalOperation(
 
     SimpleStatement createIndexStmt =
         CreateCollectionOperation.buildLexicalIndexStatement(
-            keyspace, table, newLexicalConfig, /* ifNotExists */ true);
+            keyspace, table, newLexicalDef, /* ifNotExists */ true);
 
     // Cassandra does not accept bind parameters for table options like `comment`; embed the
     // JSON directly with CQL single-quote escaping (matches
@@ -157,7 +156,7 @@ public record AlterCollectionLexicalOperation(
       optionsNode = objectMapper.createObjectNode();
       collectionNode.set(TableCommentConstants.OPTIONS_KEY, optionsNode);
     }
-    CreateCollectionCommandResolver.addLexicalToOptionsNode(optionsNode, newLexicalConfig);
+    optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, newLexicalDef);
     return objectMapper.writeValueAsString(rootNode);
   }
 }

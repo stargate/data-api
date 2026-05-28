@@ -439,9 +439,7 @@ class AlterCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrat
       postToCollection(name, json)
           .statusCode(200)
           .body("$", responseIsError())
-          .body(
-              "errors[0].errorCode",
-              is(SchemaException.Code.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.name()));
+          .body("errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
 
       deleteCollection(name);
     }

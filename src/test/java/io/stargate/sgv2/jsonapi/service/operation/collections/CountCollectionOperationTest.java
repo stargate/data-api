@@ -54,7 +54,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
     public void countWithNoFilter() {
 
       String collectionReadCql =
-          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\""
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
 
       List<Row> rows =
@@ -101,7 +102,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user1").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
 
@@ -150,7 +151,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
 
@@ -200,7 +201,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // failures are propagated down
       RuntimeException dbFailure = new RuntimeException("Test failure message.");
       String collectionReadCql =
-          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\""
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
 
       final AtomicInteger callCount = new AtomicInteger();
@@ -246,7 +248,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
     public void countWithNoFilter() {
 
       String collectionReadCql =
-          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
 
       List<Row> rows =
@@ -297,7 +300,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 11"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user2").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
 
@@ -345,7 +348,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 11"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
 
@@ -395,7 +398,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // Failure from reading from the DB
       RuntimeException dbFailure = new RuntimeException("Test failure message.");
       String collectionReadCql =
-          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
 
       final AtomicInteger callCount = new AtomicInteger();

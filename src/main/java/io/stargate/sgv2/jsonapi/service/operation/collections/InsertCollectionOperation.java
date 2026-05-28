@@ -174,7 +174,7 @@ public record InsertCollectionOperation(
             doc,
             vectorEnabled,
             offlineMode,
-            commandContext().schemaObject().lexicalConfig().enabled());
+            commandContext().schemaObject().lexicalDef().enabled());
     return queryExecutor
         .executeWrite(dataApiRequestInfo, boundStatement)
 
@@ -199,7 +199,7 @@ public record InsertCollectionOperation(
 
   // utility for building the insert query
   public String buildInsertQuery(boolean vectorEnabled) {
-    final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
+    var lexicalEnabled = commandContext().schemaObject().lexicalDef().enabled();
     StringBuilder insertQuery = new StringBuilder(200);
     var tableIdentifier = commandContext.schemaObject().identifier();
 

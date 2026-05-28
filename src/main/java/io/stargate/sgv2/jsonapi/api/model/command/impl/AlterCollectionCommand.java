@@ -21,8 +21,8 @@ public record AlterCollectionCommand(
             description =
                 "Lexical configuration to apply. Currently only enabling is supported ('enabled' must be true).",
             type = SchemaType.OBJECT,
-            implementation = CreateCollectionCommand.Options.LexicalConfigDefinition.class)
-        CreateCollectionCommand.Options.LexicalConfigDefinition lexical)
+            implementation = CreateCollectionCommand.Options.LexicalDesc.class)
+        CreateCollectionCommand.Options.LexicalDesc lexical)
     implements CollectionCommand {
 
   @Override
