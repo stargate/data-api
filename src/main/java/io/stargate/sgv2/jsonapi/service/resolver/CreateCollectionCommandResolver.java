@@ -31,8 +31,7 @@ import java.util.Map;
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
+  private final ObjectMapper objectMapper;
   private final DocumentLimitsConfig documentLimitsConfig;
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
@@ -45,12 +44,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
       VectorizeConfigValidator validateVectorize,
-      RerankingProvidersConfig rerankingProvidersConfig) {
+      RerankingProvidersConfig rerankingProvidersConfig,
+      ObjectMapper objectMapper) {
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
     this.validateVectorize = validateVectorize;
     this.rerankingProvidersConfig = rerankingProvidersConfig;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -86,7 +87,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // public API sided *Desc classes
     var lexicalDef =
         CollectionLexicalDef.fromApiDesc(
-            OBJECT_MAPPER,
+            objectMapper,
             getOrDefault(command.options(), CreateCollectionCommand.Options::lexical, null),
             context.versionedSchema().lexicalDef());
 

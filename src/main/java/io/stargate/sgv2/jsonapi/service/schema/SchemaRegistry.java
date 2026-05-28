@@ -13,24 +13,24 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSc
  * created by the {@link io.stargate.sgv2.jsonapi.api.request.RequestContext} and would be a waste
  * to make for every request (but APIFeatures are request scoped so kind of needed).
  */
-public class VersionedSchema {
+public class SchemaRegistry {
 
-  private final CollectionLexicalDefSchemaFactory lexicalDefSchemaValueDef;
-  private final CollectionRerankDefSchemaFactory rerankDefSchemaValueDef;
+  private final CollectionLexicalDefSchemaFactory lexicalDefFactory;
+  private final CollectionRerankDefSchemaFactory rerankDefFactory;
 
-  public VersionedSchema(ApiFeatures apiFeatures) {
+  public SchemaRegistry(ApiFeatures apiFeatures) {
 
-    this.lexicalDefSchemaValueDef =
+    this.lexicalDefFactory =
         new CollectionLexicalDefSchemaFactory(!apiFeatures.isFeatureEnabled(ApiFeature.LEXICAL));
-    this.rerankDefSchemaValueDef =
+    this.rerankDefFactory =
         new CollectionRerankDefSchemaFactory(!apiFeatures.isFeatureEnabled(ApiFeature.RERANKING));
   }
 
   public CollectionLexicalDefSchemaFactory lexicalDef() {
-    return lexicalDefSchemaValueDef;
+    return lexicalDefFactory;
   }
 
   public CollectionRerankDefSchemaFactory rerankDef() {
-    return rerankDefSchemaValueDef;
+    return rerankDefFactory;
   }
 }

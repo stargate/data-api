@@ -41,8 +41,7 @@ public record CreateCollectionCommand(
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
               description = "Vector search configuration for the collection",
-              type = SchemaType.OBJECT,
-              implementation = VectorSearchDesc.class)
+              type = SchemaType.OBJECT)
           CreateCollectionCommand.Options.VectorSearchDesc vector,
       // -----
       @Valid
@@ -81,8 +80,7 @@ public record CreateCollectionCommand(
             @Schema(
                 description = "Id type for collection, default to 'uuid'",
                 defaultValue = "uuid",
-                type = SchemaType.STRING,
-                implementation = String.class)
+                type = SchemaType.STRING)
             @JsonProperty("type")
             String idType) {}
 
@@ -90,10 +88,7 @@ public record CreateCollectionCommand(
     public record VectorSearchDesc(
         @Nullable
             @Positive(message = "dimension should be greater than `0`")
-            @Schema(
-                description = "Dimension of the vector field",
-                type = SchemaType.INTEGER,
-                implementation = Integer.class)
+            @Schema(description = "Dimension of the vector field", type = SchemaType.INTEGER)
             @JsonProperty("dimension")
             @JsonAlias("size") // old name
             Integer dimension,
@@ -106,8 +101,7 @@ public record CreateCollectionCommand(
                 description =
                     "Similarity function algorithm that needs to be used for vector search",
                 defaultValue = "cosine",
-                type = SchemaType.STRING,
-                implementation = String.class)
+                type = SchemaType.STRING)
             @JsonProperty("metric")
             @JsonAlias("function") // old name
             String metric,
@@ -122,8 +116,7 @@ public record CreateCollectionCommand(
                 description =
                     "The 'sourceModel' option configures the index with the fastest settings for a given source of embeddings vectors",
                 defaultValue = "other",
-                type = SchemaType.STRING,
-                implementation = String.class)
+                type = SchemaType.STRING)
             @JsonProperty("sourceModel")
             String sourceModel,
         // -----
@@ -132,8 +125,7 @@ public record CreateCollectionCommand(
             @JsonInclude(JsonInclude.Include.NON_NULL)
             @Schema(
                 description = "Optional vectorize configuration to provide embedding service",
-                type = SchemaType.OBJECT,
-                implementation = VectorizeConfig.class)
+                type = SchemaType.OBJECT)
             @JsonProperty("service")
             VectorizeConfig vectorizeConfig) {}
 
@@ -143,7 +135,7 @@ public record CreateCollectionCommand(
             @Schema(
                 description = "List of allowed indexing fields",
                 type = SchemaType.ARRAY,
-                implementation = String.class)
+                implementation = String.class) // leaving implementaiton= because of the List
             @Nullable
             List<String> allow,
         // -----
@@ -151,7 +143,7 @@ public record CreateCollectionCommand(
             @Schema(
                 description = "List of denied indexing fields",
                 type = SchemaType.ARRAY,
-                implementation = String.class)
+                implementation = String.class) // leaving implementaiton= because of the List
             @Nullable
             List<String> deny) {
 
@@ -239,7 +231,6 @@ public record CreateCollectionCommand(
                 description = "Whether to enable the use of '$lexical' field (default: 'true')",
                 defaultValue = "true",
                 type = SchemaType.BOOLEAN,
-                implementation = Boolean.class,
                 required = true)
             Boolean enabled,
         @Schema(
@@ -257,15 +248,13 @@ public record CreateCollectionCommand(
                 description = "Whether to enable the use of reranking model (default: 'true')",
                 defaultValue = "true",
                 type = SchemaType.BOOLEAN,
-                implementation = Boolean.class,
                 required = true)
             Boolean enabled,
         @Schema(
                 description =
                     "Reranking model configuration. Default is llama-3.2-nv-rerankqa-1b-v2 model from Nvidia.",
                 defaultValue =
-                    "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}",
-                implementation = RerankServiceDesc.class)
+                    "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}")
             @JsonInclude(JsonInclude.Include.NON_NULL)
             @JsonProperty("service")
             RerankServiceDesc rerankServiceDesc) {}
@@ -273,16 +262,10 @@ public record CreateCollectionCommand(
     /** --- */
     public record RerankServiceDesc(
         @NotNull
-            @Schema(
-                description = "Registered reranking service provider",
-                type = SchemaType.STRING,
-                implementation = String.class)
+            @Schema(description = "Registered reranking service provider", type = SchemaType.STRING)
             @JsonProperty(ServiceDescConstants.PROVIDER)
             String provider,
-        @Schema(
-                description = "Registered reranking service model",
-                type = SchemaType.STRING,
-                implementation = String.class)
+        @Schema(description = "Registered reranking service model", type = SchemaType.STRING)
             @JsonProperty(ServiceDescConstants.MODEL_NAME)
             String modelName,
         @Valid

@@ -19,7 +19,7 @@ import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
-import io.stargate.sgv2.jsonapi.service.schema.VersionedSchema;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaRegistry;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.ArrayList;
@@ -178,8 +178,8 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     return requestContext.apiFeatures();
   }
 
-  public VersionedSchema versionedSchema() {
-    return requestContext.versionedSchema();
+  public SchemaRegistry versionedSchema() {
+    return requestContext.schemaRegistry();
   }
 
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {

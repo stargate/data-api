@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema;
 import java.util.Objects;
 
 /**
- * A typed factory for creting {@link SchemaHolder} instances, see the subclasses for details on
+ * A typed factory for creating {@link SchemaHolder} instances, see the subclasses for details on
  * their configuration.
  *
  * <p>Using the factory to wrap an instance of an implementing <code>T</code> that is from either a
@@ -12,15 +12,15 @@ import java.util.Objects;
  *
  * <p><b>NOTE:</b> The factory needs to know if the feature is enabled, and this is normally done
  * via {@link io.stargate.sgv2.jsonapi.config.feature.ApiFeatures} which can be overridden per
- * reqest. So these factories need to be per request (or smart caching), see {@link
- * VersionedSchema}.
+ * request. So these factories need to be per request (or smart caching), see {@link
+ * SchemaRegistry}.
  *
  * <p>Here are the rules to follow:
  *
  * <ol>
  *   <li>To know what config value to use, always call {@link SchemaHolder#runningValue()}
- *   <li>When reading a schema value from disk, use {@link #namedVersion(CollectionSchemaVersion,
- *       Object)} with the version of the on disk schema.
+ *   <li>When reading a schema value from disk, use {@link #namedVersion(SchemaVersion, Object)}
+ *       with the version of the on disk schema.
  *   <li>When creating a new schema value from the user, use {@link #currentVersion(Object)} with
  *       the value from the user
  * </ol>
@@ -29,17 +29,15 @@ import java.util.Objects;
  *
  * <ul>
  *   <li>A collection may not have defined schema config for lexical on disk because it was created
- *       before, when you read this schema def from disk use {@link
- *       #namedVersion(CollectionSchemaVersion, Object)} because you know the name of the version
- *       and pass null. When making a decision about the lexcial config for that collection at query
- *       time use the {@link SchemaHolder#runningValue()} method - this will see null persisted
- *       value and fall back to {@link
- *       SchemaFactory#defaultForPersistedVersion(CollectionSchemaVersion)}.
+ *       before, when you read this schema def from disk use {@link #namedVersion(SchemaVersion,
+ *       Object)} because you know the name of the version and pass null. When making a decision
+ *       about the lexcial config for that collection at query time use the {@link
+ *       SchemaHolder#runningValue()} method - this will see null persisted value and fall back to
+ *       {@link SchemaFactory#defaultForPersistedVersion(SchemaVersion)}.
  *   <li>A user creates a new Collection, they did not pass options for lexical, so use {@link
  *       #currentVersion(Object)} and pass null. Then when {@link SchemaHolder#runningValue()} is
  *       called it will see null persisted value and fall back to {@link
- *       SchemaFactory#defaultForPersistedVersion(CollectionSchemaVersion)} to get the current
- *       default.
+ *       SchemaFactory#defaultForPersistedVersion(SchemaVersion)} to get the current default.
  *   <li>In either of the above cases, if you have a non-null value make the same calls and the
  *       {@link SchemaHolder#runningValue()} will see the non null persisted value and return it.
  * </ul>
@@ -61,8 +59,8 @@ public abstract class SchemaFactory<T> {
    * Configure a new instance of the factory.
    *
    * @param clazz The class of the schema value that this factory will create.
-   * @param releasedVersion The first version of schema that this feature was released in.
-   * @param currentVersion The current version of the schema, should come from {@link
+   * @param releasedVersion The first version of the schema that this feature was released in.
+   * @param currentVersion The current version of the schema should come from {@link
    *     CollectionSchemaVersion#CURRENT_VERSION}
    * @param featureDisabled Flag if the feature is disabled for this factory / request. For example,
    *     if lexical search is not available.
@@ -155,7 +153,7 @@ public abstract class SchemaFactory<T> {
       SchemaVersion candidateVersion, T candidatePersisted);
 
   /**
-   * Get the default value to use, given a persisted version and the feature disabled state. This is
+   * Get the default value to use, given a persisted version and the feature-disabled state. This is
    * designed for use by {@link SchemaHolder#runningValue()}
    *
    * @param persistedVersion Version of the schema in the {@link SchemaHolder} enum.

@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
-import io.stargate.sgv2.jsonapi.service.schema.VersionedSchema;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaRegistry;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
@@ -52,7 +52,7 @@ public class RequestContext implements LoggingMDCContext {
   // or we create things that are normally not needed for a request.
   // See getters for this values
   private volatile ApiFeatures apiFeatures;
-  private volatile VersionedSchema versionedSchema;
+  private volatile SchemaRegistry schemaRegistry;
 
   private final CommandConfig commandConfig = ConfigPreLoader.getPreLoadOrEmpty();
 
@@ -196,16 +196,16 @@ public class RequestContext implements LoggingMDCContext {
     return apiFeatures;
   }
 
-  public VersionedSchema versionedSchema() {
+  public SchemaRegistry schemaRegistry() {
     // using a sync block here because the context can be accessed by multiple tasks concurrently
-    if (versionedSchema == null) {
+    if (schemaRegistry == null) {
       synchronized (this) {
-        if (versionedSchema == null) {
-          versionedSchema = new VersionedSchema(apiFeatures());
+        if (schemaRegistry == null) {
+          schemaRegistry = new SchemaRegistry(apiFeatures());
         }
       }
     }
-    return versionedSchema;
+    return schemaRegistry;
   }
 
   /**

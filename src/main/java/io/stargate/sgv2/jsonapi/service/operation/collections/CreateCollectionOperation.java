@@ -238,9 +238,10 @@ public record CreateCollectionOperation(
     var collectionNode = OBJECT_MAPPER.createObjectNode();
     collectionNode.put(
         TableCommentConstants.COLLECTION_NAME_KEY, cqlIdentifierToJsonKey(collectionName));
+    // Use ordinalValue() to get the integer representation of the enum into the JSON
     collectionNode.put(
         TableCommentConstants.SCHEMA_VERSION_KEY,
-        CollectionSchemaVersion.CURRENT_VERSION.toString());
+        CollectionSchemaVersion.CURRENT_VERSION.ordinalValue());
     collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
 
     var tableCommentNode = OBJECT_MAPPER.createObjectNode();
