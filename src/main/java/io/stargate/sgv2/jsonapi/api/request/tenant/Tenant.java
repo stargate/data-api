@@ -15,10 +15,9 @@ import java.util.Objects;
  * correct DatabaseType. Use the {@link Tenant#create(DatabaseType, String)} method to create for
  * tests where you want to set the DB type.
  *
- * <p>A tenant is identifier by non-null String tenant id, it is normalised and validated with
- * {@link DatabaseType#normalizeValidateTenantId(String)}. Which will make it UPPER CASE and is
- * compared as such. We assumed the tenantID is something like a UUID, that should compare as
- * case-insensitive, see {@link #equals(Object)}.
+ * <p>A tenant is identified by a non-null String tenant id, normalised and validated with {@link
+ * DatabaseType#normalizeValidateTenantId(String)} and lower-cased at construction. We assumed the
+ * tenantID is something like a UUID, see {@link #equals(Object)}.
  *
  * <p><b>IMPORTANT:</b> Work with Tenant instances, rather than get the string tenant id.
  *
@@ -115,15 +114,21 @@ public class Tenant implements Recordable {
     return tenantId;
   }
 
-  /** Hashed on the combined values of {@link #databaseType} and {@link #tenantId}. */
+  /**
+   * Hashed on the combined values of {@link #databaseType} and {@link #tenantId}. {@link #region}
+   * is intentionally excluded — see {@link #equals(Object)}.
+   */
   @Override
   public int hashCode() {
     return Objects.hash(databaseType, tenantId);
   }
 
   /**
-   * Equals based on the combined values of {@link #databaseType} and a CASE INSENSITIVE {@link
-   * #tenantId}.
+   * Equals based on the combined values of {@link #databaseType} and {@link #tenantId}.
+   *
+   * <p>{@link #region} is intentionally excluded: a tenant is the same logical tenant in every
+   * region it is reached from. Tenant is used as part of {@code SchemaObjectIdentifier} which keys
+   * the schema object cache; including region here would split that cache unnecessarily.
    */
   @Override
   public boolean equals(Object obj) {
@@ -134,8 +139,7 @@ public class Tenant implements Recordable {
       return false;
     }
     return Objects.equals(databaseType, that.databaseType)
-        && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(region, that.region);
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
