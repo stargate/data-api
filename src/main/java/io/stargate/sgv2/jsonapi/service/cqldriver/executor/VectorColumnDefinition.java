@@ -44,9 +44,12 @@ public record VectorColumnDefinition(
     var similarityFunction =
         SimilarityFunction.fromApiName(functionName)
             .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(functionName));
+
     // sourceModel doesn't exist if the collection was created before supporting sourceModel; if
     // missing, it will be an empty string and sourceModel becomes the default.
-    var sourceModelName = jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText();
+    // could also be JSON null, in which case we want to pass null to the fromApiNameOrDefault()
+    var sourceModelNode = jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL);
+    var sourceModelName = sourceModelNode.isNull() ? null : sourceModelNode.asText();
     var sourceModel =
         EmbeddingSourceModel.fromApiNameOrDefault(sourceModelName)
             .orElseThrow(

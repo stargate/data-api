@@ -3,10 +3,11 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
 import java.util.List;
 
 /**
@@ -17,30 +18,34 @@ import java.util.List;
  * "rerank":{"enabled":true,"provider":"nvidia","modelName":"nvidia/llama-3.2-nv-rerankqa-1b-v2"}, }
  */
 public class CollectionSettingsV1Reader {
+
   public CollectionSchemaObject readCollectionSettings(
-      Tenant tenant,
+      RequestContext requestContext,
       JsonNode collectionNode,
       TableMetadata tableMetadata,
       ObjectMapper objectMapper) {
 
-    JsonNode collectionOptionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
-    // construct collectionSettings VectorConfig
+    var optionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
+
+    // construct VectorConfig
     VectorConfig vectorConfig = VectorConfig.NOT_ENABLED_CONFIG;
-    JsonNode vector = collectionOptionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
-    if (!vector.isMissingNode()) {
+    var vectorNode = optionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
+    if (!vectorNode.isMissingNode()) {
       VectorColumnDefinition vectorColumnDefinition =
-          VectorColumnDefinition.fromJson(vector, objectMapper);
+          VectorColumnDefinition.fromJson(vectorNode, objectMapper);
       vectorConfig = VectorConfig.fromColumnDefinitions(List.of(vectorColumnDefinition));
     }
-    // construct collectionSettings IndexingConfig
+
+    // construct IndexingConfig
     CollectionIndexingConfig indexingConfig = null;
-    JsonNode indexing = collectionOptionsNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
-    if (!indexing.isMissingNode()) {
-      indexingConfig = CollectionIndexingConfig.fromJson(indexing);
+    var indexingNode = optionsNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
+    if (!indexingNode.isMissingNode()) {
+      indexingConfig = CollectionIndexingConfig.fromJson(indexingNode);
     }
-    // construct collectionSettings idConfig, default idType as uuid
-    final IdConfig idConfig;
-    JsonNode idConfigNode = collectionOptionsNode.path(TableCommentConstants.DEFAULT_ID_KEY);
+
+    // construct IdConfig, default idType as uuid
+    IdConfig idConfig = null;
+    var idConfigNode = optionsNode.path(TableCommentConstants.DEFAULT_ID_KEY);
     // should always have idConfigNode in table comment since schema v1
     if (idConfigNode.has("type")) {
       idConfig = new IdConfig(CollectionIdType.fromString(idConfigNode.get("type").asText()));
@@ -48,38 +53,52 @@ public class CollectionSettingsV1Reader {
       idConfig = IdConfig.defaultIdConfig();
     }
 
-    CollectionLexicalConfig lexicalConfig;
-    JsonNode lexicalNode =
-        collectionOptionsNode.path(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY);
-    if (lexicalNode.isMissingNode()) {
-      lexicalConfig = CollectionLexicalConfig.configForPreLexical();
-    } else {
-      boolean enabled = lexicalNode.path("enabled").asBoolean(false);
-      JsonNode analyzerNode = lexicalNode.get("analyzer");
-      lexicalConfig = new CollectionLexicalConfig(enabled, analyzerNode);
+    // construct LexicalDef
+    CollectionLexicalDef persistedLexical = null;
+    var lexicalNode = optionsNode.path(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY);
+    if (!lexicalNode.isMissingNode()) {
+      persistedLexical =
+          new CollectionLexicalDef(
+              lexicalNode.path("enabled").asBoolean(false), lexicalNode.get("analyzer"));
     }
 
-    CollectionRerankDef rerankingConfig;
-    JsonNode rerankingNode =
-        collectionOptionsNode.path(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY);
-    if (rerankingNode.isMissingNode()) {
-      rerankingConfig = CollectionRerankDef.configForPreRerankingCollection();
-    } else {
-      rerankingConfig =
+    // construct RerankDef
+    CollectionRerankDef persistedRerank = null;
+    var rerankNode = optionsNode.path(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY);
+    if (!rerankNode.isMissingNode()) {
+      persistedRerank =
           CollectionRerankDef.fromCommentJson(
               tableMetadata.getKeyspace().asInternal(),
               tableMetadata.getName().asInternal(),
-              rerankingNode,
+              rerankNode,
               objectMapper);
     }
 
+    var schemaVersion = decideSchemaVersion(persistedLexical, persistedRerank);
     return new CollectionSchemaObject(
-        tenant,
+        requestContext.tenant(),
         tableMetadata,
         idConfig,
         vectorConfig,
         indexingConfig,
-        lexicalConfig,
-        rerankingConfig);
+        requestContext.schemaRegistry().lexicalDef().namedVersion(schemaVersion, persistedLexical),
+        requestContext.schemaRegistry().rerankDef().namedVersion(schemaVersion, persistedRerank));
+  }
+
+  protected CollectionSchemaVersion decideSchemaVersion(
+      CollectionLexicalDef persistedLexical, CollectionRerankDef persistedRerank) {
+
+    // sanity check, if we have persisted lexical we should have persisted reranking
+    if ((persistedLexical == null) != (persistedRerank == null)) {
+      throw new IllegalStateException(
+          "Persisted lexical and reranking definitions should be both null or both non-null. Got persistedLexical == null:%s, persistedReranking == null:%s "
+              .formatted(persistedLexical == null, persistedRerank == null));
+    }
+
+    // IF we have a persisted lexical than we call this version TWO 2 !
+    // VERSION 1 was when we had the proper json structure, but did not have the lexical and
+    // reranking
+    // see comments on CollectionSchemaVersion
+    return persistedLexical != null ? CollectionSchemaVersion.V_2 : CollectionSchemaVersion.V_1;
   }
 }

@@ -9,11 +9,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.AlterCollectionLexicalOperation;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableComment;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -60,21 +59,22 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
   private Operation<CollectionSchemaObject> handleEnableLexical(
       CommandContext<CollectionSchemaObject> ctx, AlterCollectionOperationImpl.EnableLexical op) {
 
-    // Synthesize a LexicalConfigDefinition with enabled=true so we can reuse the existing
+    // Synthesize a LexicalDesc with enabled=true so we can reuse the existing
     // validation pipeline that createCollection uses.
-    final var lexicalConfigDef =
-        new CreateCollectionCommand.Options.LexicalConfigDefinition(
+    final var lexicalDesc =
+        new CreateCollectionCommand.Options.LexicalDesc(
             /* enabled */ Boolean.TRUE, op.analyzerDef());
 
-    // validateAndConstruct throws:
-    //   - LEXICAL_NOT_AVAILABLE_FOR_DATABASE if !lexicalAvailableForDB
+    // fromApiDesc throws:
+    //   - LEXICAL_FEATURE_NOT_ENABLED via the SchemaFactory if the feature is disabled
     //   - INVALID_ALTER_COLLECTION_OPTIONS for malformed analyzer
-    final CollectionLexicalConfig requested =
-        CollectionLexicalConfig.validateAndConstruct(
-            objectMapper,
-            ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL),
-            lexicalConfigDef,
-            SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS);
+    final CollectionLexicalDef requested =
+        CollectionLexicalDef.fromApiDesc(
+                objectMapper,
+                lexicalDesc,
+                ctx.versionedSchema().lexicalDef(),
+                SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS)
+            .runningValue();
 
     // Reject legacy / pre-lexical collections: must have a V1 comment with collection.options.
     if (!CollectionTableComment.hasV1Options(objectMapper, ctx.schemaObject().tableMetadata())) {
@@ -82,7 +82,7 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
           "collection has legacy metadata (pre-lexical schema); recreate the collection with lexical enabled");
     }
 
-    final CollectionLexicalConfig current = ctx.schemaObject().lexicalConfig();
+    final CollectionLexicalDef current = ctx.schemaObject().lexicalDef();
     final int ddlDelayMillis =
         ctx.config().get(OperationsConfig.class).databaseConfig().ddlDelayMillis();
 
@@ -99,7 +99,7 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
           ctx, objectMapper, dbLimitsConfig, ddlDelayMillis, requested, /* noOp */ false);
     }
 
-    // Both analyzer definitions are guaranteed non-null here (CollectionLexicalConfig's
+    // Both analyzer definitions are guaranteed non-null here (CollectionLexicalDef's
     // constructor requires non-null analyzer when enabled=true). JsonNode.equals is value-based,
     // so this gives strict structural comparison for both string and object analyzers.
     if (!Objects.equals(current.analyzerDefinition(), requested.analyzerDefinition())) {

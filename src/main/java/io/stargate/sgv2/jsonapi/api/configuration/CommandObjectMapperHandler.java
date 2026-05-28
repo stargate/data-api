@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import java.util.Map;
 
@@ -20,26 +21,26 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       String propertyName) {
     // First: handle known/observed CreateCollectionCommand mapping discrepancies
 
-    final String typeStr = (deserializer == null) ? "N/A" : deserializer.handledType().toString();
-    if (typeStr.endsWith("CreateCollectionCommand$Options")) {
+    if (CreateCollectionCommand.Options.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")"
               .formatted(propertyName));
     }
-    if (typeStr.endsWith("CreateCollectionCommand$Options$IdConfig")) {
+
+    if (CreateCollectionCommand.Options.DocIdDesc.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.defaultId` (known fields: \"type\")"
               .formatted(propertyName));
     }
-    if (typeStr.endsWith("CreateCollectionCommand$Options$IndexingConfig")) {
+    if (CreateCollectionCommand.Options.IndexingDesc.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")"
               .formatted(propertyName));
     }
-    if (typeStr.endsWith("CreateCollectionCommand$Options$VectorSearchConfig")) {
+    if (CreateCollectionCommand.Options.VectorSearchDesc.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
           "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\")"
@@ -58,9 +59,10 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       String subTypeId,
       TypeIdResolver idResolver,
       String failureMsg) {
-    final String rawCommandClassString = baseType.getRawClass().getName();
-    String baseCommand =
-        rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
+
+    var rawCommandClassString = baseType.getRawClass().getName();
+    var baseCommand = rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
+
     // Massage "GeneralCommand" into "General Command" (and so forth)
     int ix = baseCommand.indexOf("Command");
     if (ix > 0) {

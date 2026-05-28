@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
+
+/** For the current schema version see {@link CollectionSchemaVersion#CURRENT_VERSION} */
 public interface TableCommentConstants {
 
   /** Top-level key for table comment json */
@@ -28,7 +31,4 @@ public interface TableCommentConstants {
 
   /** Default id type key */
   String DEFAULT_ID_KEY = "defaultId";
-
-  /** Schema version value */
-  int SCHEMA_VERSION_VALUE = 1;
 }

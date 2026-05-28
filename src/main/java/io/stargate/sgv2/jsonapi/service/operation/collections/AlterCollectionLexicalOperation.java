@@ -21,8 +21,7 @@ import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.resolver.CreateCollectionCommandResolver;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableComment;
 import java.time.Duration;
@@ -63,7 +62,7 @@ public record AlterCollectionLexicalOperation(
     ObjectMapper objectMapper,
     DatabaseLimitsConfig dbLimitsConfig,
     int ddlDelayMillis,
-    CollectionLexicalConfig newLexicalConfig,
+    CollectionLexicalDef newLexicalConfig,
     boolean noOp)
     implements Operation<CollectionSchemaObject> {
 
@@ -233,7 +232,7 @@ public record AlterCollectionLexicalOperation(
       optionsNode = objectMapper.createObjectNode();
       collectionNode.set(TableCommentConstants.OPTIONS_KEY, optionsNode);
     }
-    CreateCollectionCommandResolver.addLexicalToOptionsNode(optionsNode, newLexicalConfig);
+    optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, newLexicalConfig);
     return objectMapper.writeValueAsString(rootNode);
   }
 }

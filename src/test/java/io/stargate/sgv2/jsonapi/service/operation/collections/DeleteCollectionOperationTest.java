@@ -77,7 +77,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, keyValue);
 
@@ -100,7 +100,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement deleteStmt = SimpleStatement.newInstance(collectionDeleteCql, keyValue, tx_id);
     List<Row> deleteRows =
         Arrays.asList(new MockRow(DELETE_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
@@ -153,7 +153,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     String docJson = "{\"_id\":\"doc1\",\"a\":1}";
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, keyValue);
@@ -179,7 +179,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement deleteStmt = SimpleStatement.newInstance(collectionDeleteCql, keyValue, tx_id);
     List<Row> deleteRows =
         Arrays.asList(new MockRow(DELETE_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
@@ -312,7 +312,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     String docJson2 = "{\"_id\":\"doc2\",\"username\":2,\"status\":\"active\"}";
     String collectionReadCql =
         "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
@@ -359,7 +359,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement deleteStmt =
         SimpleStatement.newInstance(collectionDeleteCql, keyValue1, tx_id1);
     List<Row> deleteRows =
@@ -432,7 +432,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     String docJson2 = "{\"_id\":\"doc2\",\"username\":2,\"status\":\"active\"}";
     String collectionReadCql =
         "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
@@ -479,7 +479,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement deleteStmt =
         SimpleStatement.newInstance(collectionDeleteCql, keyValue2, tx_id2);
     List<Row> deleteRows =
@@ -538,7 +538,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
   public void deleteWithIdNoData() {
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, keyValue);
 
@@ -591,7 +591,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     UUID tx_id = UUID.randomUUID();
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     SimpleStatement stmt =
@@ -617,7 +617,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement deleteStmt = SimpleStatement.newInstance(collectionDeleteCql, keyValue, tx_id);
     List<Row> deleteRows =
         Arrays.asList(new MockRow(DELETE_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
@@ -670,7 +670,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     UUID tx_id2 = UUID.randomUUID();
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     SimpleStatement stmt =
@@ -696,7 +696,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionReadCql2 =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     stmt =
         SimpleStatement.newInstance(
@@ -721,7 +721,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement deleteStmt = SimpleStatement.newInstance(collectionDeleteCql, keyValue, tx_id1);
     List<Row> deleteRows =
@@ -787,7 +787,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     UUID tx_id2 = UUID.randomUUID();
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     SimpleStatement stmt =
@@ -813,7 +813,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionReadCql2 =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     stmt =
         SimpleStatement.newInstance(
@@ -838,7 +838,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement deleteStmt = SimpleStatement.newInstance(collectionDeleteCql, keyValue, tx_id1);
     List<Row> deleteRows =
@@ -902,7 +902,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     UUID tx_id1 = UUID.randomUUID();
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     final TupleValue keyValue = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     SimpleStatement stmt =
@@ -928,7 +928,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionReadCql2 =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     stmt =
         SimpleStatement.newInstance(
@@ -948,7 +948,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement deleteStmt = SimpleStatement.newInstance(collectionDeleteCql, keyValue, tx_id1);
     List<Row> deleteRows =
@@ -1002,7 +1002,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     UUID tx_id2 = UUID.randomUUID();
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
     SimpleStatement stmt =
@@ -1032,7 +1032,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement deleteStmt =
         SimpleStatement.newInstance(collectionDeleteCql, keyValue1, tx_id1);
     List<Row> deleteRows =
@@ -1099,7 +1099,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
   public void deleteWithNoResult() {
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
     SimpleStatement stmt =
         SimpleStatement.newInstance(
@@ -1157,7 +1157,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     UUID tx_id3 = UUID.randomUUID();
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
     SimpleStatement stmt =
@@ -1187,7 +1187,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionReadCql2 =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     stmt =
         SimpleStatement.newInstance(
             collectionReadCql2,
@@ -1211,7 +1211,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement deleteStmt =
         SimpleStatement.newInstance(collectionDeleteCql, keyValue1, tx_id1);
     List<Row> deleteRows =
@@ -1307,7 +1307,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     UUID tx_id4 = UUID.randomUUID();
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
     SimpleStatement stmt =
@@ -1337,7 +1337,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionReadCql2 =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     stmt =
         SimpleStatement.newInstance(
@@ -1383,7 +1383,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement deleteStmt =
         SimpleStatement.newInstance(collectionDeleteCql, keyValue1, tx_id1);
     List<Row> deleteRows =
@@ -1493,7 +1493,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
     ByteBuffer pagingStateBB = ByteBuffer.wrap(pagingState.getBytes());
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
     SimpleStatement stmt =
@@ -1543,7 +1543,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement deleteStmt =
         SimpleStatement.newInstance(collectionDeleteCql, keyValue1, tx_id1);
@@ -1620,7 +1620,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionReadCql =
         "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     final TupleValue keyValue1 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc1"));
     final TupleValue keyValue2 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc2"));
     final TupleValue keyValue3 = CQLBindValues.getDocumentIdValue(DocumentId.fromString("doc3"));
@@ -1692,7 +1692,7 @@ public class DeleteCollectionOperationTest extends OperationTestBase {
 
     String collectionDeleteCql =
         "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement deleteStmt =
         SimpleStatement.newInstance(collectionDeleteCql, keyValue1, tx_id1);
