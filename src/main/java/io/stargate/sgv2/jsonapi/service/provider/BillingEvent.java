@@ -15,6 +15,23 @@ import java.util.UUID;
  * <p>Each event represents a single billable unit from a user request (e.g. token usage or egress
  * bytes for an embedding or reranking call). Constructed and emitted by {@link Billing}.
  *
+ * <p>Example serialized form:
+ *
+ * <pre>
+ * {
+ *   "id": "8c0e9b8a-1d3a-4f6b-9c0d-1234567890ab",
+ *   "timestamp": "2026-05-20T14:23:11.482Z",
+ *   "product": "serverless",
+ *   "event_type": "nvidia_embeddings_tokens",
+ *   "properties": {
+ *     "usage": 7,
+ *     "region": "us-west-2",
+ *     "resource_type": "serverless_database",
+ *     "resource_id": "ab12cd34-5678-90ef-ghij-klmnopqrstuv"
+ *   }
+ * }
+ * </pre>
+ *
  * @param id Unique random-based (UUID v4) identifier for this event.
  * @param timestamp ISO 8601 timestamp of when the event was created.
  * @param product Product identifier, e.g. {@code "serverless"}.
