@@ -17,9 +17,4 @@ public record AlterCollectionCommand(AlterCollectionOperation operation)
   public CommandName commandName() {
     return CommandName.ALTER_COLLECTION;
   }
-
-  @Override
-  public boolean isForceSchemaRefresh() {
-    return true;
-  }
 }

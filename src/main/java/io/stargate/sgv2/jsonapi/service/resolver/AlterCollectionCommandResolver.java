@@ -59,6 +59,15 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
   private Operation<CollectionSchemaObject> handleEnableLexical(
       CommandContext<CollectionSchemaObject> ctx, AlterCollectionOperationImpl.EnableLexical op) {
 
+    // Reject legacy / pre-lexical collections up front: must have a V1 comment with
+    // collection.options. Doing this before analyzer validation gives users the actionable
+    // "recreate the collection" error on legacy schemas instead of an analyzer-validation
+    // error they can't act on.
+    if (!CollectionTableComment.hasV1Options(objectMapper, ctx.schemaObject().tableMetadata())) {
+      throw badOptions(
+          "collection has legacy metadata (pre-lexical schema); recreate the collection with lexical enabled");
+    }
+
     // Synthesize a LexicalDesc with enabled=true so we can reuse the existing
     // validation pipeline that createCollection uses.
     final var lexicalDesc =
@@ -75,12 +84,6 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
                 ctx.versionedSchema().lexicalDef(),
                 SchemaException.Code.INVALID_ALTER_COLLECTION_OPTIONS)
             .runningValue();
-
-    // Reject legacy / pre-lexical collections: must have a V1 comment with collection.options.
-    if (!CollectionTableComment.hasV1Options(objectMapper, ctx.schemaObject().tableMetadata())) {
-      throw badOptions(
-          "collection has legacy metadata (pre-lexical schema); recreate the collection with lexical enabled");
-    }
 
     final CollectionLexicalDef current = ctx.schemaObject().lexicalDef();
     final int ddlDelayMillis =

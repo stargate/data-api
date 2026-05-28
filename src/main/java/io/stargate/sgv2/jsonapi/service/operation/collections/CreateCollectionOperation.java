@@ -765,6 +765,11 @@ public record CreateCollectionOperation(
    * Name of the lexical SAI: {@code "<table>_<lexicalColumn>"}. Shared with {@link
    * #buildLexicalIndexStatement} so callers referencing the index by name stay in sync with how it
    * is created.
+   *
+   * <p>The {@code "<table>_<column>"} format is part of the on-disk schema: existing collections
+   * have indexes named this way, and recovery paths (e.g. {@code alterCollection}'s already-exists
+   * check) match by this exact name. Do not change the format without a migration for existing
+   * collections.
    */
   public static String lexicalIndexName(String table) {
     return table + "_" + DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
