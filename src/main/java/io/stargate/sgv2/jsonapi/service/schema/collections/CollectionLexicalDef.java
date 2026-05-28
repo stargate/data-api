@@ -93,7 +93,8 @@ public record CollectionLexicalDef(
    * @param analyzerDefinition The JSON configuration for the analyzer, must not be null if lexical
    *     search is enabled and must be null or empty if lexical search is disabled
    * @throws NullPointerException if lexical search is enabled and analyzerDefinition is null
-   * @throws IllegalStateException if lexical search is disabled and analyzerDefinition is not null
+   * @throws IllegalArgumentException if lexical search is disabled and analyzerDefinition is not
+   *     null
    */
   public CollectionLexicalDef(boolean enabled, JsonNode analyzerDefinition) {
     this.enabled = enabled;

@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.service.schema.*;
 
 /**
  * Factory for creating the {@link CollectionRerankDef} as a schema value, access via the {@link
- * VersionedSchema}
+ * SchemaRegistry}
  */
 public class CollectionRerankDefSchemaFactory extends CollectionSchemaFactory<CollectionRerankDef> {
 

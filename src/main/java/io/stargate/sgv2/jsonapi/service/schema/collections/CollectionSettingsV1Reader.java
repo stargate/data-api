@@ -81,8 +81,8 @@ public class CollectionSettingsV1Reader {
         idConfig,
         vectorConfig,
         indexingConfig,
-        requestContext.versionedSchema().lexicalDef().namedVersion(schemaVersion, persistedLexical),
-        requestContext.versionedSchema().rerankDef().namedVersion(schemaVersion, persistedRerank));
+        requestContext.schemaRegistry().lexicalDef().namedVersion(schemaVersion, persistedLexical),
+        requestContext.schemaRegistry().rerankDef().namedVersion(schemaVersion, persistedRerank));
   }
 
   protected CollectionSchemaVersion decideSchemaVersion(

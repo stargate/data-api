@@ -51,13 +51,13 @@ public class SchemaHolder<T> {
    * <p>This is useful when comparing schema from a user and what is already on disk. i.e. if the
    * user gave as a null value for schema, then this instance will have a null persisted value, and
    * when replacement is the value we got from disk we will use that. This allows for accurate
-   * comparision of a createCollection command schema to an existing collection schema.
+   * comparison of a createCollection command schema to an existing collection schema.
    *
    * @param replacement The value to use if this instance does not have a persisted value.
    * @return A decision on whether to use the replacement or this instance.
    */
   public ReplaceDecision<T> replaceIfMissing(SchemaHolder<T> replacement) {
-    Objects.requireNonNull(replacement, "replacement must be null");
+    Objects.requireNonNull(replacement, "replacement must not be null");
 
     if (persistedValue != null) {
       // we have a value, so no replacement.

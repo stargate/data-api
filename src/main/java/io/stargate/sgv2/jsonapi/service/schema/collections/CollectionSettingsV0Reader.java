@@ -57,12 +57,12 @@ public class CollectionSettingsV0Reader {
         indexingConfig,
         // Legacy config, there is nothing, versioned value decides based on the version
         requestContext
-            .versionedSchema()
+            .schemaRegistry()
             .lexicalDef()
             .namedVersion(CollectionSchemaVersion.V_0, null),
         // Legacy config, there is nothing, versioned value decides based on the version
         requestContext
-            .versionedSchema()
+            .schemaRegistry()
             .rerankDef()
             .namedVersion(CollectionSchemaVersion.V_0, null));
   }

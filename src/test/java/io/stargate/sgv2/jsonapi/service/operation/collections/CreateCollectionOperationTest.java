@@ -37,7 +37,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.resolver.CreateCollectionCommandResolver;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIndexingConfig;
@@ -89,16 +88,13 @@ import org.slf4j.LoggerFactory;
 public class CreateCollectionOperationTest extends OperationTestBase {
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateCollectionOperationTest.class);
 
-  // Need the CreateCollectionCommandResolver so we can use it to set defaults on values
-  @Inject CreateCollectionCommandResolver createCollectionCommandResolver;
-
   @Inject DatabaseLimitsConfig databaseLimitsConfig;
 
   @Inject ObjectMapper objectMapper;
 
   // Comment to extract comment from the crete table cql statement.
   // Assume it is delineated by single quotes
-  private static final Pattern COMMENT_PATTERN = Pattern.compile("comment='(.*?)'");
+  private static final Pattern COMMENT_PATTERN = Pattern.compile("comment = '(.*?)'");
 
   private final ColumnDefinitions RESULT_COLUMNS =
       buildColumnDefs(OperationTestBase.TestColumn.ofBoolean("[applied]"));
@@ -223,9 +219,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     // :(
 
     var vectorDesc = new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null);
-    // Must use validateVectorOptions() because it will cleanup defaults, the resolver normally does
-    // this.
-    vectorDesc = createCollectionCommandResolver.validateVectorOptions(vectorDesc);
 
     var operation =
         new CreateCollectionOperation(
@@ -337,10 +330,9 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     var schemaChangeMemento = addSchemaChangeMomento(queryExecutor);
     addKeyspaceSchema(queryExecutor);
 
+    // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
+    // :(
     var vectorDesc = new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null);
-    // Must use validateVectorOptions() because it will cleanup defaults, the resolver normally does
-    // this.
-    vectorDesc = createCollectionCommandResolver.validateVectorOptions(vectorDesc);
 
     var indexingDesc = new CreateCollectionCommand.Options.IndexingDesc(null, List.of("*"));
     var operation =

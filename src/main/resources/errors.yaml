@@ -2676,7 +2676,7 @@ server-errors:
   
 
   # ================================================================================================================
-  # Family: SERVER         Scope: EMBEDDING
+  # Family: SERVER         Scope: EMBEDDING_PROVIDER
   # ================================================================================================================
 
   - scope: EMBEDDING_PROVIDER
@@ -2791,10 +2791,10 @@ server-errors:
 
 
 # ================================================================================================================
-# Family: SERVER         Scope: RERANKING
+# Family: SERVER         Scope: RERANKING_PROVIDER
 # ================================================================================================================
 
-  - scope: RERANKING
+  - scope: RERANKING_PROVIDER
     code: RERANKING_PROVIDER_TIMEOUT
     title: Reranking Provider timed out
     body: |-

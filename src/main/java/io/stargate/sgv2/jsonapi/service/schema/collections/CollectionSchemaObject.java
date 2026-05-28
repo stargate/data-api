@@ -292,13 +292,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
     var lexicalConfig =
         requestContext
-            .versionedSchema()
+            .schemaRegistry()
             .lexicalDef()
             .namedVersion(CollectionSchemaVersion.V_minus, null);
 
     var rerankingConfig =
         requestContext
-            .versionedSchema()
+            .schemaRegistry()
             .rerankDef()
             .namedVersion(CollectionSchemaVersion.V_minus, null);
 
@@ -430,17 +430,27 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     if (obj == this) return true;
     if (obj == null || obj.getClass() != this.getClass()) return false;
     var that = (CollectionSchemaObject) obj;
+
+    // using explicit calls to runningValue() for the SchemaHolder to make it clear
+    // we use the value of the schema object. Even though the SchemaHolder equals
+    // also uses the runningValue()
     return Objects.equals(this.identifier(), that.identifier())
         && Objects.equals(this.idConfig, that.idConfig)
         && Objects.equals(this.vectorConfig, that.vectorConfig)
         && Objects.equals(this.indexingConfig, that.indexingConfig)
-        && Objects.equals(this.lexicalDef, that.lexicalDef)
-        && Objects.equals(this.rerankDef, that.rerankDef);
+        && Objects.equals(this.lexicalDef.runningValue(), that.lexicalDef.runningValue())
+        && Objects.equals(this.rerankDef.runningValue(), that.rerankDef.runningValue());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(identifier(), idConfig, vectorConfig, indexingConfig);
+    return Objects.hash(
+        identifier(),
+        idConfig,
+        vectorConfig,
+        indexingConfig,
+        lexicalDef.runningValue(),
+        rerankDef.runningValue());
   }
 
   @Override
@@ -459,10 +469,10 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         + indexingConfig
         + ", "
         + "lexicalDef="
-        + lexicalDef()
+        + lexicalDef.runningValue()
         + ", "
         + "rerankDef="
-        + rerankDef()
+        + rerankDef.runningValue()
         + ']';
   }
 }

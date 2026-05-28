@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
@@ -32,8 +31,7 @@ import java.util.Map;
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
+  private final ObjectMapper objectMapper;
   private final DocumentLimitsConfig documentLimitsConfig;
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
@@ -46,12 +44,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
       VectorizeConfigValidator validateVectorize,
-      RerankingProvidersConfig rerankingProvidersConfig) {
+      RerankingProvidersConfig rerankingProvidersConfig,
+      ObjectMapper objectMapper) {
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
     this.validateVectorize = validateVectorize;
     this.rerankingProvidersConfig = rerankingProvidersConfig;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -87,7 +87,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // public API sided *Desc classes
     var lexicalDef =
         CollectionLexicalDef.fromApiDesc(
-            OBJECT_MAPPER,
+            objectMapper,
             getOrDefault(command.options(), CreateCollectionCommand.Options::lexical, null),
             context.versionedSchema().lexicalDef());
 
@@ -124,8 +124,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @throws APIException If vector search is disabled globally or the user configuration is
    *     invalid.
    */
-  @VisibleForTesting
-  public CreateCollectionCommand.Options.VectorSearchDesc validateVectorOptions(
+  private CreateCollectionCommand.Options.VectorSearchDesc validateVectorOptions(
       CreateCollectionCommand.Options.VectorSearchDesc vector) {
 
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
