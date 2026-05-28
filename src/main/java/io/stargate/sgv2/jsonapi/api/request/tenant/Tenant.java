@@ -40,7 +40,7 @@ public class Tenant implements Recordable {
    * carry a parseable region segment. Downstream billing pipelines can detect and investigate these
    * events.
    */
-  public static final String UNKNOWN_REGION = "unknown";
+  public static final String UNKNOWN_REGION = "UNKNOWN_REGION";
 
   private static final Tenant SINGLE_TENANT_CASSANDRA =
       new Tenant(DatabaseType.CASSANDRA, SINGLE_TENANT_ID, CASSANDRA_REGION_DEFAULT);
@@ -51,7 +51,6 @@ public class Tenant implements Recordable {
 
   private Tenant(DatabaseType databaseType, String tenantId, String region) {
     this.databaseType = databaseType;
-    // this is just for sanity checking, keep it lower case
     this.tenantId = tenantId;
     this.region = region;
   }
@@ -97,7 +96,7 @@ public class Tenant implements Recordable {
                 "Unsupported single tenant database type: " + databaseType);
       };
     }
-    String normalizedRegion = (region == null || region.isBlank()) ? UNKNOWN_REGION : region;
+    var normalizedRegion = (region == null || region.isBlank()) ? UNKNOWN_REGION : region;
     return new Tenant(databaseType, normalizedValidated.toLowerCase(), normalizedRegion);
   }
 
