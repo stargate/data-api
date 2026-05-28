@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.provider;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -11,6 +12,7 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,12 +40,15 @@ public class Billing {
   private static final Logger BILLING_LOGGER = LoggerFactory.getLogger("billing.events");
   private static final Logger LOGGER = LoggerFactory.getLogger(Billing.class);
 
-  private final BillingConfig config;
+  private final String product;
+  private final String resourceType;
   private final ObjectWriter objectWriter;
 
   @Inject
   public Billing(BillingConfig config) {
-    this.config = config;
+    Objects.requireNonNull(config, "config must not be null");
+    this.product = requireNonBlank(config.product(), "billing.product");
+    this.resourceType = requireNonBlank(config.resourceType(), "billing.resource_type");
     this.objectWriter = new ObjectMapper().writer();
   }
 
@@ -64,9 +69,8 @@ public class Billing {
     }
   }
 
-  /**
-   * Whether a billing event should be emitted for the given request. Package-private for testing.
-   */
+  /** Whether a billing event should be emitted for the given request. */
+  @VisibleForTesting
   boolean shouldEmit(ModelUsage modelUsage, ApiFeatures apiFeatures) {
     return apiFeatures.isFeatureEnabled(ApiFeature.BILLING)
         && BILLING_LOGGER.isInfoEnabled()
@@ -77,28 +81,29 @@ public class Billing {
    * Builds the list of billing events for one {@link ModelUsage}: a {@code *_tokens} event with
    * {@link ModelUsage#totalTokens()}, a {@code {provider}_egress_bytes} event with {@link
    * ModelUsage#requestBytes()}, and for NVIDIA also a {@code nvidia_gpu_plane_egress_bytes} event
-   * with {@link ModelUsage#responseBytes()}. Package-private for testing.
+   * with {@link ModelUsage#responseBytes()}.
    *
    * <p>E.g. for an NVIDIA embeddings call with 7 tokens, 512 request bytes and 1024 response bytes,
    * this returns three events of the form:
    *
-   * <pre>{@code
+   * <pre>
    * {"id":"...","timestamp":"...","product":"serverless",
    *  "event_type":"nvidia_embeddings_tokens",
    *  "properties":{"usage":7,"region":"us-west-2",
-   *                "resource_type":"serverless_database","resource_id":"<tenant>"}}
+   *                "resource_type":"serverless_database","resource_id":"&lt;tenant&gt;"}}
    *
    * {"id":"...","timestamp":"...","product":"serverless",
    *  "event_type":"nvidia_egress_bytes",
    *  "properties":{"usage":512,"region":"us-west-2",
-   *                "resource_type":"serverless_database","resource_id":"<tenant>"}}
+   *                "resource_type":"serverless_database","resource_id":"&lt;tenant&gt;"}}
    *
    * {"id":"...","timestamp":"...","product":"serverless",
    *  "event_type":"nvidia_gpu_plane_egress_bytes",
    *  "properties":{"usage":1024,"region":"us-west-2",
-   *                "resource_type":"serverless_database","resource_id":"<tenant>"}}
-   * }</pre>
+   *                "resource_type":"serverless_database","resource_id":"&lt;tenant&gt;"}}
+   * </pre>
    */
+  @VisibleForTesting
   List<BillingEvent> buildEvents(ModelUsage modelUsage) {
     ModelProvider provider = modelUsage.modelProvider();
     String providerApi = provider.apiName();
@@ -123,9 +128,14 @@ public class Billing {
   }
 
   private BillingEvent newEvent(String eventType, long usage, String region, String resourceId) {
-    var properties =
-        new BillingEvent.BillingProperties(usage, region, config.resourceType(), resourceId);
-    return new BillingEvent(
-        UUID.randomUUID(), Instant.now(), config.product(), eventType, properties);
+    var properties = new BillingEvent.BillingProperties(usage, region, resourceType, resourceId);
+    return new BillingEvent(UUID.randomUUID(), Instant.now(), product, eventType, properties);
+  }
+
+  private static String requireNonBlank(String value, String name) {
+    if (value == null || value.isBlank()) {
+      throw new IllegalArgumentException(name + " must not be null or blank");
+    }
+    return value;
   }
 }
