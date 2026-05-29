@@ -20,7 +20,6 @@ import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
-import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
@@ -99,7 +98,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    new FindAndRerankOperationBuilder(commandContext, mock(Billing.class))
+    new FindAndRerankOperationBuilder(commandContext)
         .withCommand(command)
         .withFindCommandResolver(findCommandResolver)
         .build();
@@ -129,7 +128,7 @@ class FindAndRerankOperationBuilderTest {
 
     assertThatThrownBy(
             () ->
-                new FindAndRerankOperationBuilder(commandContext, mock(Billing.class))
+                new FindAndRerankOperationBuilder(commandContext)
                     .withCommand(command)
                     .withFindCommandResolver(findCommandResolver)
                     .build())
@@ -159,7 +158,7 @@ class FindAndRerankOperationBuilderTest {
 
     assertThatThrownBy(
             () ->
-                new FindAndRerankOperationBuilder(commandContext, mock(Billing.class))
+                new FindAndRerankOperationBuilder(commandContext)
                     .withCommand(command)
                     .withFindCommandResolver(findCommandResolver)
                     .build())
@@ -189,7 +188,7 @@ class FindAndRerankOperationBuilderTest {
 
     assertThatThrownBy(
             () ->
-                new FindAndRerankOperationBuilder(commandContext, mock(Billing.class))
+                new FindAndRerankOperationBuilder(commandContext)
                     .withCommand(command)
                     .withFindCommandResolver(findCommandResolver)
                     .build())
@@ -216,7 +215,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    new FindAndRerankOperationBuilder(commandContextLow, mock(Billing.class))
+    new FindAndRerankOperationBuilder(commandContextLow)
         .withCommand(commandLow)
         .withFindCommandResolver(findCommandResolver)
         .build();
@@ -237,7 +236,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    new FindAndRerankOperationBuilder(commandContextHigh, mock(Billing.class))
+    new FindAndRerankOperationBuilder(commandContextHigh)
         .withCommand(commandHigh)
         .withFindCommandResolver(findCommandResolver)
         .build();

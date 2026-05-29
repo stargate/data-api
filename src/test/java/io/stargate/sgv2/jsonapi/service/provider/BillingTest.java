@@ -26,14 +26,19 @@ class BillingTest {
   private static final int REQUEST_BYTES = 256;
   private static final int RESPONSE_BYTES = 12_345;
 
-  private Billing newBilling() {
+  private static Billing newBilling(ApiFeatures apiFeatures) {
     BillingConfig config = mock(BillingConfig.class);
     when(config.product()).thenReturn(PRODUCT);
     when(config.resourceType()).thenReturn(RESOURCE_TYPE);
-    return new Billing(config);
+    return new Billing(config, apiFeatures);
   }
 
-  private ApiFeatures featuresWithBilling(boolean enabled) {
+  /** Default Billing with BILLING feature enabled — sufficient for buildEvents tests. */
+  private static Billing newBilling() {
+    return newBilling(featuresWithBilling(true));
+  }
+
+  private static ApiFeatures featuresWithBilling(boolean enabled) {
     FeaturesConfig config = mock(FeaturesConfig.class);
     when(config.flags()).thenReturn(Map.of(ApiFeature.BILLING, String.valueOf(enabled)));
     return ApiFeatures.fromConfigAndRequest(config, null);
@@ -134,32 +139,32 @@ class BillingTest {
 
   @Test
   void shouldEmit_trueWhenFeatureEnabledAndUsageNonNull() {
-    Billing billing = newBilling();
+    Billing billing = newBilling(featuresWithBilling(true));
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
-    assertThat(billing.shouldEmit(modelUsage, featuresWithBilling(true))).isTrue();
+    assertThat(billing.shouldEmit(modelUsage)).isTrue();
   }
 
   @Test
   void shouldEmit_falseForNullUsage() {
-    assertThat(newBilling().shouldEmit(null, featuresWithBilling(true))).isFalse();
+    assertThat(newBilling(featuresWithBilling(true)).shouldEmit(null)).isFalse();
   }
 
   @Test
   void shouldEmit_falseWhenFeatureDisabled() {
-    Billing billing = newBilling();
+    Billing billing = newBilling(featuresWithBilling(false));
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
-    assertThat(billing.shouldEmit(modelUsage, featuresWithBilling(false))).isFalse();
+    assertThat(billing.shouldEmit(modelUsage)).isFalse();
   }
 
   @Test
   void bill_isNoOpWhenGatesFail() {
-    Billing billing = newBilling();
-    billing.bill(null, featuresWithBilling(true));
-    billing.bill(
-        usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)),
-        featuresWithBilling(false));
+    // null usage is always a no-op
+    newBilling(featuresWithBilling(true)).bill(null);
+    // BILLING disabled is always a no-op
+    newBilling(featuresWithBilling(false))
+        .bill(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
   }
 
   /**
@@ -179,13 +184,13 @@ class BillingTest {
 
     ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
 
-    Billing billing = newBilling();
+    Billing billing = newBilling(apiFeatures);
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
     assertThat(apiFeatures.isFeatureEnabled(ApiFeature.BILLING))
         .as("config=true must win over header=false")
         .isTrue();
-    assertThat(billing.shouldEmit(modelUsage, apiFeatures)).isTrue();
+    assertThat(billing.shouldEmit(modelUsage)).isTrue();
   }
 
   /**
@@ -204,9 +209,9 @@ class BillingTest {
 
     ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
 
-    Billing billing = newBilling();
+    Billing billing = newBilling(apiFeatures);
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
-    assertThat(billing.shouldEmit(modelUsage, apiFeatures)).isTrue();
+    assertThat(billing.shouldEmit(modelUsage)).isTrue();
   }
 }
