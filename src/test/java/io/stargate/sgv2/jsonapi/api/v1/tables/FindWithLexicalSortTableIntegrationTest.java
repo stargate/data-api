@@ -152,7 +152,7 @@ public class FindWithLexicalSortTableIntegrationTest extends AbstractTableIntegr
               SortException.Code.CANNOT_SORT_UNKNOWN_COLUMNS,
               SortException.class,
               "command attempted to sort using columns that are not in the table schema",
-              "\"lexicalSortTableTest\" defines the columns");
+              "lexicalSortTableTest defines the columns");
     }
 
     @Test

@@ -198,7 +198,7 @@ class FindAndRerankOperationBuilder {
     }
 
     if (isLexicalSort()) {
-      if (!commandContext.schemaObject().lexicalConfig().enabled()) {
+      if (!commandContext.schemaObject().lexicalDef().enabled()) {
         throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
             errVars(commandContext.schemaObject()));
       }
@@ -219,7 +219,7 @@ class FindAndRerankOperationBuilder {
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
     boolean hasOverride = rerankOverride != null;
 
-    if (!commandContext.schemaObject().rerankingConfig().enabled() && !hasOverride) {
+    if (!commandContext.schemaObject().rerankDef().enabled() && !hasOverride) {
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
 
@@ -235,7 +235,7 @@ class FindAndRerankOperationBuilder {
           RequestException.Code.INVALID_RERANK_OVERRIDE);
     }
     // Collection defaults: check END_OF_LIFE since model may have become EOL after creation.
-    var serviceDef = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
+    var serviceDef = commandContext.schemaObject().rerankDef().rerankServiceDef();
     CollectionRerankDef.checkExistingModelStatus(rerankingProvidersConfig, serviceDef);
     return serviceDef;
   }

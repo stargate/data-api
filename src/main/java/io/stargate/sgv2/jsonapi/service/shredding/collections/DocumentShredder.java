@@ -175,7 +175,7 @@ public class DocumentShredder {
     WritableShreddedDocument shreddedDoc = b.build();
 
     // Verify that "$lexical" field is not present if lexical indexing is disabled
-    if (!collectionSettings.lexicalConfig().enabled() && shreddedDoc.queryLexicalValue() != null) {
+    if (!collectionSettings.lexicalDef().enabled() && shreddedDoc.queryLexicalValue() != null) {
       throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
           errVars(collectionSettings));
     }
