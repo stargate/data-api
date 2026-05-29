@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProviderWrapper;
-import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
@@ -36,18 +35,15 @@ public class DataVectorizerService {
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
-  private final Billing billing;
 
   @Inject
   public DataVectorizerService(
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      JsonApiMetricsConfig jsonApiMetricsConfig,
-      Billing billing) {
+      JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    this.billing = billing;
   }
 
   /**
@@ -86,9 +82,7 @@ public class DataVectorizerService {
                         jsonApiMetricsConfig,
                         commandContext.requestContext(),
                         provider,
-                        commandContext.commandName(),
-                        billing,
-                        commandContext.apiFeatures()))
+                        commandContext.commandName()))
             .orElse(null);
     return new DataVectorizer(
         embeddingProvider,

@@ -9,9 +9,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
-import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
@@ -37,24 +35,18 @@ public class MeteredEmbeddingProviderWrapper {
   private final RequestContext requestContext;
   private final EmbeddingProvider embeddingProvider;
   private final String commandName;
-  private final Billing billing;
-  private final ApiFeatures apiFeatures;
 
   public MeteredEmbeddingProviderWrapper(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       RequestContext requestContext,
       EmbeddingProvider embeddingProvider,
-      String commandName,
-      Billing billing,
-      ApiFeatures apiFeatures) {
+      String commandName) {
     this.meterRegistry = Objects.requireNonNull(meterRegistry);
     this.jsonApiMetricsConfig = Objects.requireNonNull(jsonApiMetricsConfig);
     this.requestContext = Objects.requireNonNull(requestContext);
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider);
     this.commandName = Objects.requireNonNull(commandName);
-    this.billing = Objects.requireNonNull(billing);
-    this.apiFeatures = Objects.requireNonNull(apiFeatures);
   }
 
   /**
@@ -124,7 +116,7 @@ public class MeteredEmbeddingProviderWrapper {
                 result.addAll(vectorizedBatch.embeddings());
               }
               // Emit billing event with aggregated token usage across all batches
-              billing.bill(aggregatedModelUsage, apiFeatures);
+              requestContext.billing().bill(aggregatedModelUsage);
               var embeddingResponse =
                   new EmbeddingProvider.BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
               if (LOGGER.isTraceEnabled()) {

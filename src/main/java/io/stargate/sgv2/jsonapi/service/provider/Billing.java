@@ -7,8 +7,6 @@ import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +18,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Emits billing events as structured JSON log lines for downstream billing pipelines.
  *
- * <p>Each call to {@link #bill(ModelUsage, ApiFeatures)} for an eligible request emits:
+ * <p>One instance is created per request and lives on the {@link
+ * io.stargate.sgv2.jsonapi.api.request.RequestContext} — get it via {@code
+ * requestContext.billing()}. {@link ApiFeatures} is captured at construction time so callers only
+ * need to pass the {@link ModelUsage}.
+ *
+ * <p>Each call to {@link #bill(ModelUsage)} for an eligible request emits:
  *
  * <ul>
  *   <li>a {@code {provider}_{modelType}_tokens} event with {@link ModelUsage#totalTokens()}
@@ -34,7 +37,6 @@ import org.slf4j.LoggerFactory;
  * logger is enabled, and the {@link ModelUsage} is non-null. The region for each event is read from
  * {@link ModelUsage#tenant()} ({@code Tenant.region()}).
  */
-@ApplicationScoped
 public class Billing {
 
   private static final Logger BILLING_LOGGER = LoggerFactory.getLogger("billing.events");
@@ -42,11 +44,12 @@ public class Billing {
 
   private final String product;
   private final String resourceType;
+  private final ApiFeatures apiFeatures;
   private final ObjectWriter objectWriter;
 
-  @Inject
-  public Billing(BillingConfig config) {
+  public Billing(BillingConfig config, ApiFeatures apiFeatures) {
     Objects.requireNonNull(config, "config must not be null");
+    this.apiFeatures = Objects.requireNonNull(apiFeatures, "apiFeatures must not be null");
     this.product = requireNonBlank(config.product(), "billing.product");
     this.resourceType = requireNonBlank(config.resourceType(), "billing.resource_type");
     this.objectWriter = new ObjectMapper().writer();
@@ -56,8 +59,8 @@ public class Billing {
    * Emits billing events for the given aggregated model usage, if the request and configuration
    * allow it. No-op otherwise (feature disabled, logger disabled, null usage).
    */
-  public void bill(ModelUsage modelUsage, ApiFeatures apiFeatures) {
-    if (!shouldEmit(modelUsage, apiFeatures)) {
+  public void bill(ModelUsage modelUsage) {
+    if (!shouldEmit(modelUsage)) {
       return;
     }
     for (BillingEvent event : buildEvents(modelUsage)) {
@@ -71,7 +74,7 @@ public class Billing {
 
   /** Whether a billing event should be emitted for the given request. */
   @VisibleForTesting
-  boolean shouldEmit(ModelUsage modelUsage, ApiFeatures apiFeatures) {
+  boolean shouldEmit(ModelUsage modelUsage) {
     return apiFeatures.isFeatureEnabled(ApiFeature.BILLING)
         && BILLING_LOGGER.isInfoEnabled()
         && modelUsage != null;

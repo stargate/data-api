@@ -11,9 +11,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
+import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaRegistry;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
@@ -53,6 +55,7 @@ public class RequestContext implements LoggingMDCContext {
   // See getters for this values
   private volatile ApiFeatures apiFeatures;
   private volatile SchemaRegistry schemaRegistry;
+  private volatile Billing billing;
 
   private final CommandConfig commandConfig = ConfigPreLoader.getPreLoadOrEmpty();
 
@@ -206,6 +209,24 @@ public class RequestContext implements LoggingMDCContext {
       }
     }
     return schemaRegistry;
+  }
+
+  /**
+   * Per-request {@link Billing} that emits structured billing events when {@link
+   * io.stargate.sgv2.jsonapi.config.feature.ApiFeature#BILLING} is enabled. {@link ApiFeatures} is
+   * captured at construction so callers only need to pass the {@link
+   * io.stargate.sgv2.jsonapi.service.provider.ModelUsage} to {@link Billing#bill}.
+   */
+  public Billing billing() {
+    // using a sync block here because the context can be accessed by multiple tasks concurrently
+    if (billing == null) {
+      synchronized (this) {
+        if (billing == null) {
+          billing = new Billing(commandConfig.get(BillingConfig.class), apiFeatures());
+        }
+      }
+    }
+    return billing;
   }
 
   /**

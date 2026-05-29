@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,7 +22,6 @@ public class FindAndRerankCommandResolver implements CommandResolver<FindAndRera
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
   private final FindCommandResolver findCommandResolver;
-  private final Billing billing;
 
   @Inject
   public FindAndRerankCommandResolver(
@@ -31,15 +29,13 @@ public class FindAndRerankCommandResolver implements CommandResolver<FindAndRera
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
-      FindCommandResolver findCommandResolver,
-      Billing billing) {
+      FindCommandResolver findCommandResolver) {
 
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     this.findCommandResolver = findCommandResolver;
-    this.billing = billing;
   }
 
   @Override
@@ -59,7 +55,7 @@ public class FindAndRerankCommandResolver implements CommandResolver<FindAndRera
       throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
     }
 
-    return new FindAndRerankOperationBuilder(commandContext, billing)
+    return new FindAndRerankOperationBuilder(commandContext)
         .withCommand(command)
         .withFindCommandResolver(findCommandResolver)
         .build();
