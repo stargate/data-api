@@ -122,4 +122,19 @@ public class SubdomainTenantResolverTests {
     assertThatThrownBy(() -> prodConfigResolver().resolve(context, null))
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  @Test
+  public void noMaxCharsAndNoRegexAcceptsRawSubdomain() {
+    // With neither maxChars nor regex configured, no validation happens and there is no way to
+    // separate tenantId from region — the whole subdomain becomes the tenantId and region falls
+    // back to UNKNOWN_REGION. This is not the production setup (Helm chart configures both), but
+    // exercises the no-config branch of the resolver.
+    var resolver = resolver(OptionalInt.empty(), Optional.empty());
+    var context = routingContextWithHost("any-tenant-string-and-region.apps.astra.datastax.com");
+
+    Tenant tenant = resolver.resolve(context, null);
+
+    assertThat(tenant.toString()).isEqualTo("any-tenant-string-and-region");
+    assertThat(tenant.region()).isEqualTo(Tenant.UNKNOWN_REGION);
+  }
 }
