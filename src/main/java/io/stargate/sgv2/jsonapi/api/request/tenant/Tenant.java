@@ -49,9 +49,9 @@ public class Tenant implements Recordable {
   private final String region;
 
   private Tenant(DatabaseType databaseType, String tenantId, String region) {
-    this.databaseType = databaseType;
-    this.tenantId = tenantId;
-    this.region = region;
+    this.databaseType = Objects.requireNonNull(databaseType, "databaseType must not be null");
+    this.tenantId = Objects.requireNonNull(tenantId, "tenantId must not be null");
+    this.region = Objects.requireNonNull(region, "region must not be null");
   }
 
   /**

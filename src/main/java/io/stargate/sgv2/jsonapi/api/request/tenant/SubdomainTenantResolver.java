@@ -1,20 +1,3 @@
-/*
- * Copyright The Stargate Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 package io.stargate.sgv2.jsonapi.api.request.tenant;
 
 import io.stargate.sgv2.jsonapi.config.MultiTenancyConfig;
@@ -80,10 +63,12 @@ public class SubdomainTenantResolver implements RequestTenantResolver {
       }
 
       // Astra subdomains follow the pattern {tenantId}-{region}, so anything past the
-      // tenantId + '-' separator is the region. Empty / missing region is fine — Tenant.create
-      // will fall back to Tenant.UNKNOWN_REGION.
+      // tenantId + '-' separator is the region. Verify the separator is actually '-' before
+      // extracting — anything else means the subdomain doesn't match the expected pattern, so
+      // leave region null and let Tenant.create fall back to Tenant.UNKNOWN_REGION.
       String region = null;
-      if (subdomain.length() > tenantId.length() + 1) {
+      if (subdomain.length() > tenantId.length() + 1
+          && subdomain.charAt(tenantId.length()) == '-') {
         region = subdomain.substring(tenantId.length() + 1);
       }
 

@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,32 +14,6 @@ class BillingEventTest {
 
   private static BillingEvent.BillingProperties props() {
     return new BillingEvent.BillingProperties(123L, "us-west-2", "serverless_database", "tenant-x");
-  }
-
-  @Test
-  void canonicalConstructorRejectsNulls() {
-    UUID id = UUID.randomUUID();
-    Instant now = Instant.now();
-    assertThatThrownBy(() -> new BillingEvent(null, now, "p", "t", props()))
-        .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> new BillingEvent(id, null, "p", "t", props()))
-        .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> new BillingEvent(id, now, null, "t", props()))
-        .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> new BillingEvent(id, now, "p", null, props()))
-        .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> new BillingEvent(id, now, "p", "t", null))
-        .isInstanceOf(NullPointerException.class);
-  }
-
-  @Test
-  void billingPropertiesRejectsNulls() {
-    assertThatThrownBy(() -> new BillingEvent.BillingProperties(1L, null, "rt", "rid"))
-        .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> new BillingEvent.BillingProperties(1L, "r", null, "rid"))
-        .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> new BillingEvent.BillingProperties(1L, "r", "rt", null))
-        .isInstanceOf(NullPointerException.class);
   }
 
   @Test

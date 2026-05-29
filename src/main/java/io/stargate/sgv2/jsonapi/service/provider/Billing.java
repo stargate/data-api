@@ -42,17 +42,19 @@ public class Billing {
   private static final Logger BILLING_LOGGER = LoggerFactory.getLogger("billing.events");
   private static final Logger LOGGER = LoggerFactory.getLogger(Billing.class);
 
+  // ObjectMapper / ObjectWriter construction is expensive (serializers are built and cached on
+  // first use); share a single thread-safe writer across all per-request Billing instances.
+  private static final ObjectWriter OBJECT_WRITER = new ObjectMapper().writer();
+
   private final String product;
   private final String resourceType;
   private final ApiFeatures apiFeatures;
-  private final ObjectWriter objectWriter;
 
   public Billing(BillingConfig config, ApiFeatures apiFeatures) {
     Objects.requireNonNull(config, "config must not be null");
     this.apiFeatures = Objects.requireNonNull(apiFeatures, "apiFeatures must not be null");
     this.product = requireNonBlank(config.product(), "billing.product");
     this.resourceType = requireNonBlank(config.resourceType(), "billing.resource_type");
-    this.objectWriter = new ObjectMapper().writer();
   }
 
   /**
@@ -65,7 +67,7 @@ public class Billing {
     }
     for (BillingEvent event : buildEvents(modelUsage)) {
       try {
-        BILLING_LOGGER.info(objectWriter.writeValueAsString(event));
+        BILLING_LOGGER.info(OBJECT_WRITER.writeValueAsString(event));
       } catch (JacksonException e) {
         LOGGER.error("Failed to serialize billing event of type {}", event.eventType(), e);
       }
@@ -127,7 +129,7 @@ public class Billing {
           newEvent(
               "nvidia_gpu_plane_egress_bytes", modelUsage.responseBytes(), region, resourceId));
     }
-    return List.copyOf(events);
+    return events;
   }
 
   private BillingEvent newEvent(String eventType, long usage, String region, String resourceId) {
