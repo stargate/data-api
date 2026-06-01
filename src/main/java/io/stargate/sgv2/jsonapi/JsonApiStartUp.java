@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi;
 
 import io.quarkus.runtime.StartupEvent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
+import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.event.Observes;
@@ -12,7 +13,8 @@ public class JsonApiStartUp {
   private final OperationsConfig operationsConfig;
 
   @Inject
-  public JsonApiStartUp(DebugModeConfig config, OperationsConfig operationsConfig) {
+  public JsonApiStartUp(
+      DebugModeConfig config, OperationsConfig operationsConfig, BillingConfig billingConfig) {
     this.operationsConfig = operationsConfig;
   }
 
