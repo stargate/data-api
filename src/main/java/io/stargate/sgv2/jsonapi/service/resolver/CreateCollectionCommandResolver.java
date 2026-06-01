@@ -171,7 +171,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       vectorDimension = validateVectorize.validateService(service, vectorDimension);
       vector =
           new CreateCollectionCommand.Options.VectorSearchDesc(
-              vectorDimension, metric, sourceModel, vector.vectorizeConfig());
+              vectorDimension,
+              metric,
+              sourceModel,
+              vector.vectorizeConfig(),
+              vector.indexOptions());
     } else {
       // Ensure vector dimension is provided when service configuration is absent.
       if (vectorDimension == null) {
@@ -188,7 +192,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       }
       vector =
           new CreateCollectionCommand.Options.VectorSearchDesc(
-              vectorDimension, metric, sourceModel, null);
+              vectorDimension, metric, sourceModel, null, vector.indexOptions());
     }
     return vector;
   }

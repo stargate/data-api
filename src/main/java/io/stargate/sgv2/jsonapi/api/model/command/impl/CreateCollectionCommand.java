@@ -127,7 +127,53 @@ public record CreateCollectionCommand(
                 description = "Optional vectorize configuration to provide embedding service",
                 type = SchemaType.OBJECT)
             @JsonProperty("service")
-            VectorizeConfig vectorizeConfig) {}
+            VectorizeConfig vectorizeConfig,
+        // -----
+        @Valid
+            @Nullable
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Schema(
+                description =
+                    "Optional advanced tuning options for the underlying vector (ANN) index",
+                type = SchemaType.OBJECT)
+            @JsonProperty("indexOptions")
+            CreateCollectionCommand.Options.VectorIndexDesc indexOptions) {}
+
+    /**
+     * Advanced tuning options for the underlying vector (SAI ANN) index. All options are optional;
+     * when omitted the database defaults are used. See issue #2487 and the Cassandra SAI VECTOR.md.
+     */
+    public record VectorIndexDesc(
+        @Nullable
+            @Min(value = 1, message = "maximumNodeConnections must be between 1 and 512")
+            @Max(value = 512, message = "maximumNodeConnections must be between 1 and 512")
+            @Schema(
+                description =
+                    "Maximum number of connections per node in the vector index graph (HNSW 'M'). Valid range 1-512, default 16.",
+                defaultValue = "16",
+                type = SchemaType.INTEGER)
+            @JsonProperty("maximumNodeConnections")
+            Integer maximumNodeConnections,
+        // -----
+        @Nullable
+            @Min(value = 1, message = "constructionBeamWidth must be between 1 and 3200")
+            @Max(value = 3200, message = "constructionBeamWidth must be between 1 and 3200")
+            @Schema(
+                description =
+                    "Beam width used while building the vector index graph (HNSW 'ef_construction'). Valid range 1-3200, default 100.",
+                defaultValue = "100",
+                type = SchemaType.INTEGER)
+            @JsonProperty("constructionBeamWidth")
+            Integer constructionBeamWidth,
+        // -----
+        @Nullable
+            @Schema(
+                description =
+                    "Whether to enable hierarchical graph layers in the vector index. Default false.",
+                defaultValue = "false",
+                type = SchemaType.BOOLEAN)
+            @JsonProperty("enableHierarchy")
+            Boolean enableHierarchy) {}
 
     /** --- */
     public record IndexingDesc(

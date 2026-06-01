@@ -132,6 +132,19 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     return memento;
   }
 
+  /** Captures the full CQL of every schema-change statement (table + indexes) that is executed. */
+  private List<String> captureSchemaChangeQueries(QueryExecutor queryExecutor) {
+    List<String> queries = new ArrayList<>();
+    when(queryExecutor.executeCreateSchemaChange(eq(requestContext), any()))
+        .then(
+            invocation -> {
+              SimpleStatement statement = invocation.getArgument(1);
+              queries.add(statement.getQuery());
+              return Uni.createFrom().item(mockSuccessSchemaResultset());
+            });
+    return queries;
+  }
+
   private void addKeyspaceSchema(QueryExecutor queryExecutor) {
 
     var driverMetadata = mock(Metadata.class);
@@ -222,7 +235,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     // aaron - 19-nov-2025 - best I can tell the sessionCache is not used but we need to pass it
     // :(
 
-    var vectorDesc = new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null);
+    var vectorDesc =
+        new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null, null);
     // Must use validateVectorOptions() because it will cleanup defaults, the resolver normally does
     // this.
     vectorDesc = createCollectionCommandResolver.validateVectorOptions(vectorDesc);
@@ -274,6 +288,56 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     assertThat(vectorColumnDefinition.vectorizeDefinition())
         .as("Vectorize definition from table comment matches")
         .isNull();
+  }
+
+  @Test
+  public void createCollectionVectorWithIndexOptions() {
+
+    var queryExecutor = mock(QueryExecutor.class);
+    var queries = captureSchemaChangeQueries(queryExecutor);
+    addKeyspaceSchema(queryExecutor);
+
+    var indexOptions = new CreateCollectionCommand.Options.VectorIndexDesc(32, 200, Boolean.TRUE);
+    var vectorDesc =
+        new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null, indexOptions);
+    // Must use validateVectorOptions() because it will cleanup defaults, the resolver normally does
+    // this.
+    vectorDesc = createCollectionCommandResolver.validateVectorOptions(vectorDesc);
+
+    var operation =
+        new CreateCollectionOperation(
+            KEYSPACE_CONTEXT,
+            databaseLimitsConfig,
+            mock(CQLSessionCache.class),
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
+            10,
+            false,
+            null,
+            null,
+            vectorDesc,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
+
+    operation
+        .execute(requestContext, queryExecutor)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem();
+
+    // Find the vector index statement and check it carries the new tuning options (as quoted
+    // string values, alongside the existing similarity_function/source_model options).
+    var vectorIndexCql =
+        queries.stream()
+            .filter(q -> q.startsWith("CREATE CUSTOM INDEX") && q.contains("query_vector_value"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(vectorIndexCql)
+        .as("Vector index CQL carries the advanced tuning options")
+        .contains("'maximum_node_connections':'32'")
+        .contains("'construction_beam_width':'200'")
+        .contains("'enable_hierarchy':'true'")
+        .contains("'similarity_function':'cosine'");
   }
 
   @Test
@@ -337,7 +401,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     var schemaChangeMemento = addSchemaChangeMomento(queryExecutor);
     addKeyspaceSchema(queryExecutor);
 
-    var vectorDesc = new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null);
+    var vectorDesc =
+        new CreateCollectionCommand.Options.VectorSearchDesc(5, "cosine", null, null, null);
     // Must use validateVectorOptions() because it will cleanup defaults, the resolver normally does
     // this.
     vectorDesc = createCollectionCommandResolver.validateVectorOptions(vectorDesc);

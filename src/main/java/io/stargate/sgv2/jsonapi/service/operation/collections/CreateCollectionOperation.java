@@ -26,6 +26,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -605,6 +606,26 @@ public record CreateCollectionOperation(
       }
       if (vectorDesc.sourceModel() != null && !vectorDesc.sourceModel().isBlank()) {
         vectorOptions.put("source_model", vectorDesc.sourceModel());
+      }
+      // Additional vector index tuning options (issue #2487). SAI index OPTIONS values must be
+      // strings, so convert to String to have them rendered as quoted CQL values.
+      var indexOptions = vectorDesc.indexOptions();
+      if (indexOptions != null) {
+        if (indexOptions.maximumNodeConnections() != null) {
+          vectorOptions.put(
+              VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS,
+              String.valueOf(indexOptions.maximumNodeConnections()));
+        }
+        if (indexOptions.constructionBeamWidth() != null) {
+          vectorOptions.put(
+              VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH,
+              String.valueOf(indexOptions.constructionBeamWidth()));
+        }
+        if (indexOptions.enableHierarchy() != null) {
+          vectorOptions.put(
+              VectorConstants.CQLAnnIndex.ENABLE_HIERARCHY,
+              String.valueOf(indexOptions.enableHierarchy()));
+        }
       }
       statements.add(
           buildSaiIndex(

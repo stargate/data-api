@@ -103,6 +103,44 @@ class CreateCollectionCommandResolverTest {
     }
 
     @Test
+    public void happyPathVectorSearchWithIndexOptions() throws Exception {
+      var json =
+          TEST_CONSTANTS.subsRawNames(
+              """
+          {
+            "createCollection": {
+              "name" : "${collection}",
+              "options": {
+                "vector": {
+                  "dimension": 4,
+                  "metric": "cosine",
+                  "indexOptions": {
+                    "maximumNodeConnections": 32,
+                    "constructionBeamWidth": 200,
+                    "enableHierarchy": true
+                  }
+                }
+              }
+            }
+          }
+          """);
+
+      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
+      var operation = resolver.resolveCommand(commandContext, command);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              CreateCollectionOperation.class,
+              op -> {
+                assertThat(op.vectorDesc()).isNotNull();
+                assertThat(op.vectorDesc().indexOptions()).isNotNull();
+                assertThat(op.vectorDesc().indexOptions().maximumNodeConnections()).isEqualTo(32);
+                assertThat(op.vectorDesc().indexOptions().constructionBeamWidth()).isEqualTo(200);
+                assertThat(op.vectorDesc().indexOptions().enableHierarchy()).isTrue();
+              });
+    }
+
+    @Test
     public void happyPathVectorizeSearch() throws Exception {
       var json =
           TEST_CONSTANTS.subsRawNames(
@@ -137,7 +175,8 @@ class CreateCollectionCommandResolverTest {
                   "azureOpenAI",
                   "text-embedding-3-small",
                   null,
-                  Map.of("resourceName", "test", "deploymentId", "test")));
+                  Map.of("resourceName", "test", "deploymentId", "test")),
+              null);
 
       var command = objectMapper.readValue(json, CreateCollectionCommand.class);
       var operation = resolver.resolveCommand(commandContext, command);

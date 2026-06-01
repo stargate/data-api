@@ -92,6 +92,64 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
 
     @Test
+    public void vectorCollectionWithIndexOptions() {
+      // Vector collection with the additional SAI vector index tuning options (issue #2487)
+      final String collectionName = "col" + RandomStringUtils.insecure().nextNumeric(16);
+      givenHeadersPostJsonThenOk(
+                  """
+                      {
+                        "createCollection": {
+                          "name": "%s",
+                          "options" : {
+                            "vector" : {
+                              "dimension" : 5,
+                              "metric" : "cosine",
+                              "indexOptions" : {
+                                "maximumNodeConnections" : 32,
+                                "constructionBeamWidth" : 200,
+                                "enableHierarchy" : true
+                              }
+                            }
+                          }
+                        }
+                      }
+                      """
+                  .formatted(collectionName))
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+      deleteCollection(collectionName);
+    }
+
+    @Test
+    public void vectorCollectionWithInvalidIndexOptions() {
+      // maximumNodeConnections out of the valid 1-512 range must be rejected
+      final String collectionName = "col" + RandomStringUtils.insecure().nextNumeric(16);
+      givenHeadersPostJsonThenOk(
+                  """
+                      {
+                        "createCollection": {
+                          "name": "%s",
+                          "options" : {
+                            "vector" : {
+                              "dimension" : 5,
+                              "metric" : "cosine",
+                              "indexOptions" : {
+                                "maximumNodeConnections" : 1000
+                              }
+                            }
+                          }
+                        }
+                      }
+                      """
+                  .formatted(collectionName))
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
+          .body(
+              "errors[0].message",
+              containsString("maximumNodeConnections must be between 1 and 512"));
+    }
+
+    @Test
     public void caseSensitive() {
       givenHeadersPostJsonThenOk(
                   """

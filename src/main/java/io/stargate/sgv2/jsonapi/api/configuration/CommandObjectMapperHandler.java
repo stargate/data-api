@@ -43,7 +43,13 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     if (CreateCollectionCommand.Options.VectorSearchDesc.class.equals(deserializer.handledType())) {
       throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
           "message",
-          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\")"
+          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"indexOptions\", \"metric\", \"service\", \"sourceModel\")"
+              .formatted(propertyName));
+    }
+    if (CreateCollectionCommand.Options.VectorIndexDesc.class.equals(deserializer.handledType())) {
+      throw RequestException.Code.INVALID_CREATE_COLLECTION_FIELD.get(
+          "message",
+          "Unrecognized field \"%s\" for `createCollection.options.vector.indexOptions` (known fields: \"constructionBeamWidth\", \"enableHierarchy\", \"maximumNodeConnections\")"
               .formatted(propertyName));
     }
 

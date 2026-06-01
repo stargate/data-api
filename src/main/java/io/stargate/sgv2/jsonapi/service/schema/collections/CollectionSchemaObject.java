@@ -355,7 +355,10 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
               vectorColumnDefinition.vectorSize(),
               vectorColumnDefinition.similarityFunction().name().toLowerCase(),
               vectorColumnDefinition.sourceModel().apiName(),
-              vectorizeConfig);
+              vectorizeConfig,
+              // Advanced vector index tuning options (issue #2487) are write-only: they are not
+              // read back from the CQL index metadata, so they are not echoed in findCollections.
+              null);
     }
 
     // populate the indexingConfig
