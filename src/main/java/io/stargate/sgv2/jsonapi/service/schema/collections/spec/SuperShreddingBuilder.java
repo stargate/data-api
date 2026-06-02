@@ -25,6 +25,7 @@ import java.util.*;
  */
 public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T, U>> {
 
+    protected boolean ifNotExists = true;
     protected CqlIdentifier keyspace;
     protected CqlIdentifier collection;
     protected int vectorLength = 0;
@@ -42,6 +43,11 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
 
 
     protected abstract U self();
+
+    public U withIfNotExists(boolean ifNotExists) {
+        this.ifNotExists = ifNotExists;
+        return self();
+    }
 
     public U withKeyspace(CqlIdentifier keyspace) {
         this.keyspace = keyspace;

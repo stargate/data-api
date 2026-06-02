@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;import io
 import io.stargate.sgv2.jsonapi.util.ColumnMetadataPredicate;
 
 import java.util.*;
-import java.util.function.Predicate;import java.util.stream.Collectors;
+import java.util.function.Predicate;import java.util.stream.Collectors;import java.util.stream.Stream;
 
 /**
  * Names of columns in Document-containing Tables
@@ -157,10 +157,9 @@ public interface SuperShreddingMetadata {
         List<ColumnDef> OPTIONAL            = List.of(QUERY_VECTOR_VALUE, QUERY_LEXICAL_VALUE);
         List<ColumnDef> REQUIRED            = listDifference(ALL_REGULAR_COLUMNS, OPTIONAL);
 
-        static List<ColumnMetadata> toColumnMetadata(CqlIdentifier keyspace, CqlIdentifier table, List<ColumnDef> columns){
+        static Stream<ColumnMetadata> toColumnMetadata(CqlIdentifier keyspace, CqlIdentifier table, List<ColumnDef> columns){
             return columns.stream()
-                    .map(column -> column.columnMetadata(keyspace, table))
-                    .toList();
+                    .map(column -> column.columnMetadata(keyspace, table));
         }
     }
 

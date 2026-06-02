@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections.spec;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.Describable;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
@@ -10,6 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata.ColumnDefs;
 
 /**
  * Builder that will create {@link com.datastax.oss.driver.api.core.metadata.schema.TableMetadata} and
@@ -27,20 +29,27 @@ public class SuperShreddingMetadataBuilder extends SuperShreddingBuilder<Describ
     @Override
     public List<SuperShreddingComponent<Describable>> build() {
 
+        // Primary key first
+        var primaryKey = ColumnDefs.toColumnMetadata(keyspace, collection, ColumnDefs.PARTITION_KEY)
+                .toList();
+        // LinkedHashMap to maintain order
+        Map<CqlIdentifier, ColumnMetadata> allColumns = new LinkedHashMap<>(ColumnDefs.ALL.size());
+        primaryKey.forEach(col -> allColumns.put(col.getName(), col));
+
+        // non primary key
         var columnDefs = anyOptional() ?
-                new ArrayList<>(SuperShreddingMetadata.ColumnDefs.REQUIRED)
+                new ArrayList<>(ColumnDefs.REQUIRED)
                 :
-                SuperShreddingMetadata.ColumnDefs.REQUIRED;
+                ColumnDefs.REQUIRED;
         if (withVector()) {
-            columnDefs.add(SuperShreddingMetadata.ColumnDefs.QUERY_VECTOR_VALUE);
+            columnDefs.add(ColumnDefs.QUERY_VECTOR_VALUE);
         }
         if (withLexical()) {
-            columnDefs.add(SuperShreddingMetadata.ColumnDefs.QUERY_LEXICAL_VALUE);
+            columnDefs.add(ColumnDefs.QUERY_LEXICAL_VALUE);
         }
+        ColumnDefs.toColumnMetadata(keyspace, collection, columnDefs)
+                .forEach(col -> allColumns.put(col.getName(), col));
 
-        var primaryKey = SuperShreddingMetadata.ColumnDefs.toColumnMetadata(keyspace, collection, SuperShreddingMetadata.ColumnDefs.PARTITION_KEY);
-        var regularColumns = SuperShreddingMetadata.ColumnDefs.toColumnMetadata(keyspace, collection, columnDefs).stream()
-                .collect(Collectors.toMap(ColumnMetadata::getName, Function.identity()));
 
         // map<CqlIdentifier, IndexMetadata> needed for the TableMetadata
         var indexMetadata = buildIndexMetadata()
@@ -54,7 +63,7 @@ public class SuperShreddingMetadataBuilder extends SuperShreddingBuilder<Describ
                 false,
                 primaryKey,
                 Collections.emptyMap(), // no grouping keys
-                regularColumns,
+                allColumns,
                 new HashMap<>(), // options on the table would include the comment, TODO: add when used in builder
                 indexMetadata);
 

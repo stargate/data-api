@@ -18,17 +18,17 @@ public interface SuperShreddingCQL {
         String CREATE_TABLE_TEMPLATE =
                 """
                         CREATE TABLE ${IF_NOT_EXISTS:-} ${KEYSPACE}.${TABLE} (
-                            key                    tuple<tinyint, text> PRIMARY KEY,
-                            tx_id                  timeuuid,
-                            doc_json               text,
-                            exist_keys             set<text>,
-                            array_size             map<text, int>,
-                            array_contains         set<text>,
-                            query_bool_values      map<text, tinyint>,
-                            query_dbl_values       map<text, decimal>,
-                            query_text_values      map<text, text>,
-                            query_timestamp_values map<text, timestamp>,
-                            query_null_values      set<text>,
+                            "key"                     tuple<tinyint, text> PRIMARY KEY,
+                            "tx_id"                   timeuuid,
+                            "doc_json"                text,
+                            "exist_keys"              set<text>,
+                            "array_size"              map<text, int>,
+                            "array_contains"          set<text>,
+                            "query_bool_values"       map<text, tinyint>,
+                            "query_dbl_values"        map<text, decimal>,
+                            "query_text_values"       map<text, text>,
+                            "query_timestamp_values"  map<text, timestamp>,
+                            "query_null_values"       set<text>,
                             ${VECTOR_COLUMN:-}
                             ${LEXICAL_COLUMN:-}
                         ) ${COMMENT_CLAUSE:-};
@@ -36,11 +36,11 @@ public interface SuperShreddingCQL {
 
         String TABLE_VECTOR_COLUMN_TEMPLATE =
                 """
-                        query_vector_value vector<float, ${VECTOR_DIM}>,""";
+                        "query_vector_value"      vector<float, ${VECTOR_DIM}>,""";
 
         String TABLE_LEXICAL_COLUMN_TEMPLATE =
                 """
-                        query_lexical_value text,""";
+                        "query_lexical_value"     text,""";
 
         String TABLE_COMMENT_CLAUSE_TEMPLATE =
                 """
@@ -48,64 +48,64 @@ public interface SuperShreddingCQL {
 
         String INDEX_EXIST_KEYS_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_exist_keys"
-                        ON "${KEYSPACE}"."${TABLE}" (values(exist_keys))
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_exist_keys
+                        ON ${KEYSPACE}.${TABLE} (values("exist_keys"))
                         USING 'StorageAttachedIndex';
                         """;
 
         String INDEX_ARRAY_SIZE_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_array_size"
-                        ON "${KEYSPACE}"."${TABLE}" (entries(array_size))
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_array_size
+                        ON ${KEYSPACE}.${TABLE} (entries("array_size"))
                         USING 'StorageAttachedIndex';
                         """;
 
         String INDEX_ARRAY_CONTAINS_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_array_contains"
-                        ON "${KEYSPACE}"."${TABLE}" (values(array_contains))
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_array_contains
+                        ON ${KEYSPACE}.${TABLE} (values("array_contains"))
                         USING 'StorageAttachedIndex';
                         """;
 
         String INDEX_QUERY_BOOLEAN_VALUES_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_query_bool_values"
-                        ON "${KEYSPACE}"."${TABLE}" (entries(query_bool_values))
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_query_bool_values
+                        ON ${KEYSPACE}.${TABLE} (entries("query_bool_values"))
                         USING 'StorageAttachedIndex';
                         """;
 
         String INDEX_QUERY_DBL_VALUES_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_query_dbl_values"
-                        ON "${KEYSPACE}"."${TABLE}" (entries(query_dbl_values))
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_query_dbl_values
+                        ON ${KEYSPACE}.${TABLE} (entries("query_dbl_values"))
                         USING 'StorageAttachedIndex';
                         """;
 
         String INDEX_QUERY_TEXT_VALUES_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_query_text_values"
-                        ON "${KEYSPACE}"."${TABLE}" (entries(query_text_values))
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_query_text_values
+                        ON ${KEYSPACE}.${TABLE} (entries("query_text_values"))
                         USING 'StorageAttachedIndex';
                         """;
 
         String INDEX_QUERY_TIMESTAMP_VALUES_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_query_timestamp_values"
-                        ON "${KEYSPACE}"."${TABLE}" (entries(query_timestamp_values))
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_query_timestamp_values
+                        ON ${KEYSPACE}.${TABLE} (entries("query_timestamp_values"))
                         USING 'StorageAttachedIndex';
                         """;
 
         String INDEX_QUERY_NULL_VALUES_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_query_null_values"
-                        ON "${KEYSPACE}"."${TABLE}" (values(query_null_values))
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_query_null_values
+                        ON ${KEYSPACE}.${TABLE} (values("query_null_values"))
                         USING 'StorageAttachedIndex';
                         """;
 
         String INDEX_QUERY_VECTOR_VALUE_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_query_vector_value"
-                        ON "${KEYSPACE}"."${TABLE}" (query_vector_value)
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_query_vector_value
+                        ON ${KEYSPACE}.${TABLE} ("query_vector_value")
                         USING 'StorageAttachedIndex'
                         ${VECTOR_WITH_OPTIONS:-};
                         """;
@@ -117,8 +117,8 @@ public interface SuperShreddingCQL {
 
         String INDEX_QUERY_LEXICAL_VALUE_TEMPLATE =
                 """
-                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} "${TABLE}_query_lexical_value"
-                        ON "${KEYSPACE}"."${TABLE}" (query_lexical_value)
+                        CREATE CUSTOM INDEX ${IF_NOT_EXISTS:-} ${TABLE}_query_lexical_value
+                        ON ${KEYSPACE}.${TABLE} ("query_lexical_value")
                         USING 'StorageAttachedIndex'
                         ${LEXICAL_WITH_OPTIONS:-};
                         """;

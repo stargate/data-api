@@ -43,6 +43,9 @@ public class SuperShreddingCQLBuilder extends SuperShreddingBuilder<String, Supe
   private String tableCQL() {
 
     Map<String, String> vars = new HashMap<>();
+    if (ifNotExists) {
+      vars.put("IF_NOT_EXISTS", "IF NOT EXISTS");
+    }
     vars.put("KEYSPACE", cqlIdentifierToCQL(keyspace));
     vars.put("TABLE", cqlIdentifierToCQL(collection));
 
@@ -93,6 +96,10 @@ public class SuperShreddingCQLBuilder extends SuperShreddingBuilder<String, Supe
     // using internal the keyspace and table names because the collection name is
     // used as part of the index name, so we dont want quotes on them
     // templates needs to put the quotes on
+    if (ifNotExists) {
+      indexVars.put("IF_NOT_EXISTS", "IF NOT EXISTS");
+    }
+
     indexVars.put("KEYSPACE", keyspace.asInternal());
     indexVars.put("TABLE", collection.asInternal());
     var substitutor = new StringSubstitutor(indexVars);
