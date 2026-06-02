@@ -114,14 +114,12 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
             commandContext.schemaObject());
 
     return new RerankingResultSupplier(
-        commandContext.requestTracing(),
+        commandContext,
         rerankingProvider,
-        commandContext.requestContext().getRerankingCredentials(),
         query,
         dedupResult.deduplicatedDocuments(),
         limit,
-        rerankMetrics,
-        commandContext.requestContext().billing());
+        rerankMetrics);
   }
 
   @Override
@@ -217,32 +215,26 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
    */
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
-    private final RequestTracing requestTracing;
+    private final CommandContext<?> commandContext;
     private final RerankingProvider rerankingProvider;
-    private final RerankingCredentials credentials;
     private final RerankingQuery query;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
     private final RerankingMetrics rerankingMetrics;
-    private final Billing billing;
 
     RerankingResultSupplier(
-        RequestTracing requestTracing,
+        CommandContext<?> commandContext,
         RerankingProvider rerankingProvider,
-        RerankingCredentials credentials,
         RerankingQuery query,
         List<ScoredDocument> unrankedDocs,
         int limit,
-        RerankingMetrics rerankingMetrics,
-        Billing billing) {
-      this.requestTracing = requestTracing;
+        RerankingMetrics rerankingMetrics) {
+      this.commandContext = commandContext;
       this.rerankingProvider = rerankingProvider;
-      this.credentials = credentials;
       this.query = query;
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
       this.rerankingMetrics = rerankingMetrics;
-      this.billing = billing;
     }
 
     @Override
@@ -263,7 +255,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
       if (passages.isEmpty()) {
         // avoid making a call we don't need to
-        requestTracing.maybeTrace(
+        commandContext.requestTracing().maybeTrace(
             () ->
                 new TraceMessage(
                     "Reranking call skipped because 0 passages to rerank using %s with model %s"
@@ -279,15 +271,15 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         return Uni.createFrom()
             .item(
                 RerankingTaskResult.create(
-                    requestTracing,
+                    commandContext.requestTracing(),
                     rerankingProvider,
                     new RerankingProvider.RerankingResponse(
-                        List.of(), rerankingProvider.createEmptyModelUsage(credentials)),
+                        List.of(), rerankingProvider.createEmptyModelUsage(commandContext.requestContext().getRerankingCredentials())),
                     unrankedDocs,
                     limit));
       }
 
-      requestTracing.maybeTrace(
+      commandContext.requestTracing().maybeTrace(
           () ->
               new TraceMessage(
                   "Reranking %s passages using %s with model %s"
@@ -307,7 +299,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       var sample = rerankingMetrics.startCallLatency();
 
       return rerankingProvider
-          .rerank(query.query(), passages, credentials)
+          .rerank(query.query(), passages, commandContext.requestContext().getRerankingCredentials())
           // Use .eventually() to execute the provided Runnable when the Uni terminates,
           // either successfully (onItem) or with a failure (onFailure).
           // This is preferred over .onItemOrFailure() when the side-effect action is identical
@@ -316,9 +308,9 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
               () -> rerankingMetrics.recordCallLatency(sample)) // Stop timer regardless of outcome
           .map(
               rerankingResponse -> {
-                billing.bill(rerankingResponse.modelUsage());
+                commandContext.requestContext().billing().bill(rerankingResponse.modelUsage());
                 return RerankingTaskResult.create(
-                    requestTracing, rerankingProvider, rerankingResponse, unrankedDocs, limit);
+                    commandContext.requestTracing(), rerankingProvider, rerankingResponse, unrankedDocs, limit);
               });
     }
   }
