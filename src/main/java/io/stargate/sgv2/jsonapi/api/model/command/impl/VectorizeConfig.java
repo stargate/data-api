@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.HuggingFaceDedicatedEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.*;
 import javax.annotation.Nullable;
@@ -27,8 +26,7 @@ public record VectorizeConfig(
             implementation = String.class)
         @JsonProperty(VectorConstants.Vectorize.MODEL_NAME)
         String modelName,
-    @Valid
-        @Nullable
+    @Nullable
         @Schema(
             description = "Authentication config for chosen embedding service",
             type = SchemaType.OBJECT)
