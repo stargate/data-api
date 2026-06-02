@@ -47,6 +47,11 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   // Property to disable lexical search tests when lexical/BM25 functionality not available
   public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
+  // Property to disable tests using the 'enable_hierarchy' vector index option when the backend's
+  // SAI does not support it (e.g. DSE 6.9 rejects it; HCD supports it)
+  public static final String TEST_PROP_VECTOR_HIERARCHY_DISABLED =
+      "testing.db.vector-hierarchy-disabled";
+
   // keyspace automatically created in this test
   protected static final String keyspaceName =
       "ks" + RandomStringUtils.insecure().nextAlphanumeric(16);
@@ -380,6 +385,14 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   /** Helper method for determining if lexical search is available for the database backend */
   protected boolean isLexicalAvailableForDB() {
     return !"true".equals(System.getProperty(TEST_PROP_LEXICAL_DISABLED));
+  }
+
+  /**
+   * Helper method for determining if the 'enable_hierarchy' vector index option is supported by the
+   * database backend (DSE 6.9 does not support it, HCD does).
+   */
+  protected boolean isVectorHierarchyAvailableForDB() {
+    return !"true".equals(System.getProperty(TEST_PROP_VECTOR_HIERARCHY_DISABLED));
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */

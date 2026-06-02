@@ -40,6 +40,8 @@
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
     <!-- Defaults are for DSE which does not support (full) lexical feature set so: -->
     <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
+    <!-- DSE 6.9 SAI does not support the 'enable_hierarchy' vector index option so: -->
+    <stargate.int-test.vector-hierarchy-disabled>true</stargate.int-test.vector-hierarchy-disabled>
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
     <!-- Cassandra driver -->
     <driver.version>4.17.0</driver.version>
@@ -477,6 +479,7 @@
                 <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
+                <testing.db.vector-hierarchy-disabled>${stargate.int-test.vector-hierarchy-disabled}</testing.db.vector-hierarchy-disabled>
                 <maven.home>${maven.home}</maven.home>
               </systemPropertyVariables>
               <includes>
@@ -607,6 +610,8 @@
         <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
         <!-- No lexical-sort on DSE: -->
         <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
+        <!-- No 'enable_hierarchy' vector index option on DSE 6.9: -->
+        <stargate.int-test.vector-hierarchy-disabled>true</stargate.int-test.vector-hierarchy-disabled>
       </properties>
     </profile>
     <profile>
@@ -626,6 +631,8 @@
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
         <!-- HCD does have lexical-sort: -->
         <stargate.int-test.lexical-disabled>false</stargate.int-test.lexical-disabled>
+        <!-- HCD does support the 'enable_hierarchy' vector index option: -->
+        <stargate.int-test.vector-hierarchy-disabled>false</stargate.int-test.vector-hierarchy-disabled>
       </properties>
     </profile>
   </profiles>

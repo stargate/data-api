@@ -93,7 +93,10 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void vectorCollectionWithIndexOptions() {
-      // Vector collection with the additional SAI vector index tuning options (issue #2487)
+      // Vector collection with the additional SAI vector index tuning options (issue #2487).
+      // NOTE: 'enableHierarchy' is intentionally NOT used here -- it is not supported by all
+      // backends (e.g. DSE 6.9); it is exercised separately in
+      // vectorCollectionWithHierarchyOption().
       final String collectionName = "col" + RandomStringUtils.insecure().nextNumeric(16);
       givenHeadersPostJsonThenOk(
                   """
@@ -106,7 +109,35 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               "metric" : "cosine",
                               "indexOptions" : {
                                 "maximumNodeConnections" : 32,
-                                "constructionBeamWidth" : 200,
+                                "constructionBeamWidth" : 200
+                              }
+                            }
+                          }
+                        }
+                      }
+                      """
+                  .formatted(collectionName))
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+      deleteCollection(collectionName);
+    }
+
+    @Test
+    public void vectorCollectionWithHierarchyOption() {
+      // 'enable_hierarchy' is only supported on newer backends (e.g. HCD), not DSE 6.9, so skip
+      // where unavailable rather than failing.
+      Assumptions.assumeTrue(isVectorHierarchyAvailableForDB());
+      final String collectionName = "col" + RandomStringUtils.insecure().nextNumeric(16);
+      givenHeadersPostJsonThenOk(
+                  """
+                      {
+                        "createCollection": {
+                          "name": "%s",
+                          "options" : {
+                            "vector" : {
+                              "dimension" : 5,
+                              "metric" : "cosine",
+                              "indexOptions" : {
                                 "enableHierarchy" : true
                               }
                             }
