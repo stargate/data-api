@@ -13,7 +13,7 @@ import java.util.*;
  *
  * @param sortExpressions Ordered list of sort expressions.
  */
-public record SortClause(@Valid List<SortExpression> sortExpressions) {
+public record SortClause(List<@Valid SortExpression> sortExpressions) {
   public SortClause {
     sortExpressions = Objects.requireNonNull(sortExpressions, "sortExpressions cannot be null");
   }

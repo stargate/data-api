@@ -21,7 +21,7 @@ public record FindOneAndReplaceCommand(
     @Valid @JsonProperty("filter") FilterDefinition filterDefinition,
     @Valid @JsonProperty("sort") SortDefinition sortDefinition,
     @JsonProperty("projection") JsonNode projectionDefinition,
-    @NotNull @Valid @JsonProperty("replacement") ObjectNode replacementDocument,
+    @NotNull @JsonProperty("replacement") ObjectNode replacementDocument,
     @Valid @Nullable Options options)
     implements ModifyCommand, Filterable, Projectable, Sortable {
 
