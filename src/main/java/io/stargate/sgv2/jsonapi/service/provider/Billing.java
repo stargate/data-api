@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,15 +24,13 @@ import org.slf4j.LoggerFactory;
  * requestContext.billing()}. {@link ApiFeatures} is captured at construction time so callers only
  * need to pass the {@link ModelUsage}.
  *
- * <p>Each call to {@link #bill(ModelUsage)} for an eligible request emits:
- *
- * <ul>
- *   <li>a {@code {provider}_{modelType}_tokens} event with {@link ModelUsage#totalTokens()}
- *   <li>a {@code {provider}_egress_bytes} event with {@link ModelUsage#requestBytes()} — bytes sent
- *       from the data plane to the provider
- *   <li>(NVIDIA only) a {@code nvidia_gpu_plane_egress_bytes} event with {@link
- *       ModelUsage#responseBytes()} — bytes coming back from the GPU plane
- * </ul>
+ * <p>For each eligible {@link ModelUsage}, up to three events are emitted, one per billable
+ * dimension ({@link BillingEventType.Dimension#TOTAL_TOKENS TOTAL_TOKENS}, {@link
+ * BillingEventType.Dimension#EGRESS_BYTES EGRESS_BYTES}, {@link
+ * BillingEventType.Dimension#INGRESS_BYTES INGRESS_BYTES}). The {@code internal_*} variant is used
+ * when the model provider is listed in {@link BillingConfig#internalModelProviders()}; otherwise
+ * the {@code external_*} variant is used. Events whose type is not in {@link
+ * BillingConfig#enabledEventTypes()} are dropped.
  *
  * <p>Eligibility requires all of: {@link ApiFeature#BILLING} is enabled, the {@code billing.events}
  * logger is enabled, and the {@link ModelUsage} is non-null. The region for each event is read from
@@ -48,6 +47,8 @@ public class Billing {
 
   private final String product;
   private final String resourceType;
+  private final Set<String> internalModelProviders;
+  private final Set<BillingEventType> enabledEventTypes;
   private final ApiFeatures apiFeatures;
 
   public Billing(BillingConfig config, ApiFeatures apiFeatures) {
@@ -55,6 +56,8 @@ public class Billing {
     this.apiFeatures = Objects.requireNonNull(apiFeatures, "apiFeatures must not be null");
     this.product = requireNonBlank(config.product(), "billing.product");
     this.resourceType = requireNonBlank(config.resourceType(), "billing.resource_type");
+    this.internalModelProviders = Set.copyOf(config.internalModelProviders());
+    this.enabledEventTypes = Set.copyOf(config.enabledEventTypes());
   }
 
   /**
@@ -83,58 +86,62 @@ public class Billing {
   }
 
   /**
-   * Builds the list of billing events for one {@link ModelUsage}: a {@code *_tokens} event with
-   * {@link ModelUsage#totalTokens()}, a {@code {provider}_egress_bytes} event with {@link
-   * ModelUsage#requestBytes()}, and for NVIDIA also a {@code nvidia_gpu_plane_egress_bytes} event
-   * with {@link ModelUsage#responseBytes()}.
-   *
-   * <p>E.g. for an NVIDIA embeddings call with 7 tokens, 512 request bytes and 1024 response bytes,
-   * this returns three events of the form:
-   *
-   * <pre>
-   * {"id":"...","timestamp":"...","product":"serverless",
-   *  "event_type":"nvidia_embeddings_tokens",
-   *  "properties":{"usage":7,"region":"us-west-2",
-   *                "resource_type":"serverless_database","resource_id":"&lt;tenant&gt;"}}
-   *
-   * {"id":"...","timestamp":"...","product":"serverless",
-   *  "event_type":"nvidia_egress_bytes",
-   *  "properties":{"usage":512,"region":"us-west-2",
-   *                "resource_type":"serverless_database","resource_id":"&lt;tenant&gt;"}}
-   *
-   * {"id":"...","timestamp":"...","product":"serverless",
-   *  "event_type":"nvidia_gpu_plane_egress_bytes",
-   *  "properties":{"usage":1024,"region":"us-west-2",
-   *                "resource_type":"serverless_database","resource_id":"&lt;tenant&gt;"}}
-   * </pre>
+   * Builds the list of billing events for one {@link ModelUsage}: one event per billable dimension
+   * (total tokens, egress bytes, ingress bytes), with the {@code internal_*} or {@code external_*}
+   * variant chosen based on {@link BillingConfig#internalModelProviders()}. Events whose type is
+   * not in {@link BillingConfig#enabledEventTypes()} are filtered out.
    */
   @VisibleForTesting
   List<BillingEvent> buildEvents(ModelUsage modelUsage) {
-    ModelProvider provider = modelUsage.modelProvider();
-    String providerApi = provider.apiName();
+    boolean internal = internalModelProviders.contains(modelUsage.modelProvider().apiName());
     String region = modelUsage.tenant().region();
     String resourceId = modelUsage.tenant().toString();
+    String providerName = modelUsage.modelProvider().apiName();
+    String modelName = modelUsage.modelName();
 
     var events = new ArrayList<BillingEvent>(3);
-    events.add(
-        newEvent(
-            providerApi + "_" + modelUsage.modelType().billingName() + "_tokens",
-            modelUsage.totalTokens(),
-            region,
-            resourceId));
-    events.add(
-        newEvent(providerApi + "_egress_bytes", modelUsage.requestBytes(), region, resourceId));
-    if (provider == ModelProvider.NVIDIA) {
-      events.add(
-          newEvent(
-              "nvidia_gpu_plane_egress_bytes", modelUsage.responseBytes(), region, resourceId));
-    }
+    addEventIfEnabled(
+        events,
+        BillingEventType.of(BillingEventType.Dimension.TOTAL_TOKENS, internal),
+        modelUsage.totalTokens(),
+        region,
+        resourceId,
+        providerName,
+        modelName);
+    addEventIfEnabled(
+        events,
+        BillingEventType.of(BillingEventType.Dimension.EGRESS_BYTES, internal),
+        modelUsage.requestBytes(),
+        region,
+        resourceId,
+        providerName,
+        modelName);
+    addEventIfEnabled(
+        events,
+        BillingEventType.of(BillingEventType.Dimension.INGRESS_BYTES, internal),
+        modelUsage.responseBytes(),
+        region,
+        resourceId,
+        providerName,
+        modelName);
     return events;
   }
 
-  private BillingEvent newEvent(String eventType, long usage, String region, String resourceId) {
-    var properties = new BillingEvent.BillingProperties(usage, region, resourceType, resourceId);
-    return new BillingEvent(UUID.randomUUID(), Instant.now(), product, eventType, properties);
+  private void addEventIfEnabled(
+      List<BillingEvent> events,
+      BillingEventType eventType,
+      long usage,
+      String region,
+      String resourceId,
+      String providerName,
+      String modelName) {
+    if (!enabledEventTypes.contains(eventType)) {
+      return;
+    }
+    var properties =
+        new BillingEvent.BillingProperties(
+            usage, region, resourceType, resourceId, providerName, modelName);
+    events.add(new BillingEvent(UUID.randomUUID(), Instant.now(), product, eventType, properties));
   }
 
   private static String requireNonBlank(String value, String name) {
