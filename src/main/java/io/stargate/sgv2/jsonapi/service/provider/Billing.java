@@ -69,7 +69,7 @@ public class Billing {
    * Emits billing events for the given aggregated model usage, if the request and configuration
    * allow it. No-op otherwise (feature disabled, logger disabled, null usage).
    */
-  public void bill(ModelUsage modelUsage) {
+  public void emitEvent(ModelUsage modelUsage) {
     if (!shouldEmit(modelUsage)) {
       return;
     }

@@ -236,12 +236,12 @@ class BillingTest {
   }
 
   @Test
-  void bill_isNoOpWhenGatesFail() {
+  void emitEvent_isNoOpWhenGatesFail() {
     // null usage is always a no-op
-    newBilling(featuresWithBilling(true)).bill(null);
+    newBilling(featuresWithBilling(true)).emitEvent(null);
     // BILLING disabled is always a no-op
     newBilling(featuresWithBilling(false))
-        .bill(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
+        .emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
   }
 
   /**

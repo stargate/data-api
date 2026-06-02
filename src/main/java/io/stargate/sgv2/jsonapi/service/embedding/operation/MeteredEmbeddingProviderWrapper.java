@@ -116,7 +116,7 @@ public class MeteredEmbeddingProviderWrapper {
                 result.addAll(vectorizedBatch.embeddings());
               }
               // Emit billing event with aggregated token usage across all batches
-              requestContext.billing().bill(aggregatedModelUsage);
+              requestContext.billing().emitEvent(aggregatedModelUsage);
               var embeddingResponse =
                   new EmbeddingProvider.BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
               if (LOGGER.isTraceEnabled()) {

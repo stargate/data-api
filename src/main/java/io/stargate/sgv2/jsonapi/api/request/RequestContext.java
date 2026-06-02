@@ -215,7 +215,7 @@ public class RequestContext implements LoggingMDCContext {
    * Per-request {@link Billing} that emits structured billing events when {@link
    * io.stargate.sgv2.jsonapi.config.feature.ApiFeature#BILLING} is enabled. {@link ApiFeatures} is
    * captured at construction so callers only need to pass the {@link
-   * io.stargate.sgv2.jsonapi.service.provider.ModelUsage} to {@link Billing#bill}.
+   * io.stargate.sgv2.jsonapi.service.provider.ModelUsage} to {@link Billing#emitEvent}.
    */
   public Billing billing() {
     // using a sync block here because the context can be accessed by multiple tasks concurrently

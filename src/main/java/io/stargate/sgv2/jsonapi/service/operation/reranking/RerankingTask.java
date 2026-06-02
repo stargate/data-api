@@ -313,7 +313,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
               () -> rerankingMetrics.recordCallLatency(sample)) // Stop timer regardless of outcome
           .map(
               rerankingResponse -> {
-                commandContext.requestContext().billing().bill(rerankingResponse.modelUsage());
+                commandContext.requestContext().billing().emitEvent(rerankingResponse.modelUsage());
                 return RerankingTaskResult.create(
                     commandContext.requestTracing(),
                     rerankingProvider,
