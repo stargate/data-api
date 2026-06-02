@@ -4,6 +4,8 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.*;
 import com.datastax.oss.driver.internal.core.type.DefaultVectorType;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -12,7 +14,7 @@ import java.util.function.Predicate;
  *
  * <p>See implementations for concrete usage.
  */
-public interface ColumnMetadataMatcher extends Predicate<ColumnMetadata> {
+public interface ColumnMetadataPredicate extends Predicate<ColumnMetadata> {
 
   /**
    * @return The name the column must have.
@@ -39,13 +41,21 @@ public interface ColumnMetadataMatcher extends Predicate<ColumnMetadata> {
     return Objects.equals(columnMetadata.getName(), name()) && typeMatches(columnMetadata);
   }
 
+
+  static Predicate<ColumnMetadata> anyOf(List<ColumnMetadataPredicate> predicates) {
+    return predicates.stream()
+            .map(p -> (Predicate<ColumnMetadata>) p)
+            .reduce(Predicate::or)
+            .orElse(t -> false);
+  }
+
   /**
    * Implementation that supports basic column types.
    *
    * @param name expected column name
    * @param type expected CQL type
    */
-  class BasicType implements ColumnMetadataMatcher {
+  class BasicType implements ColumnMetadataPredicate {
 
     private final CqlIdentifier name;
     private final DataType type;
@@ -103,7 +113,7 @@ public interface ColumnMetadataMatcher extends Predicate<ColumnMetadata> {
    * interface, to account for our {@link
    * io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType}
    */
-  class Vector implements ColumnMetadataMatcher {
+  class Vector implements ColumnMetadataPredicate {
 
     private final CqlIdentifier name;
     private final DataType elementType;

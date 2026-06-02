@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.schema.collections;
+package io.stargate.sgv2.jsonapi.service.schema.collections.spec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,14 +12,15 @@ import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadat
 import com.datastax.oss.driver.internal.core.type.DefaultTupleType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
+
 import java.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class CollectionTableMatcherTest {
+class SuperShreddingTablePredicateTest {
 
-  CollectionTableMatcher tableMatcher = new CollectionTableMatcher();
+  SuperShreddingTablePredicate tableMatcher = new SuperShreddingTablePredicate();
 
   @Nested
   class BuiltConditionPredicateTest {

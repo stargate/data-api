@@ -16,7 +16,7 @@ import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class ColumnMetadataMatcherTest {
+class ColumnMetadataPredicateTest {
 
   private static final CqlIdentifier KEYSPACE = CqlIdentifier.fromInternal("keyspace");
   private static final CqlIdentifier TABLE = CqlIdentifier.fromInternal("table");
@@ -42,7 +42,7 @@ class ColumnMetadataMatcherTest {
     public void happyPath() {
       var columnMetadata = columnMetadata(ProtocolConstants.DataType.VARCHAR);
       var matcher =
-          new ColumnMetadataMatcher.BasicType(
+          new ColumnMetadataPredicate.BasicType(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
 
       assertThat(matcher.test(columnMetadata)).isTrue();
@@ -52,7 +52,7 @@ class ColumnMetadataMatcherTest {
     public void wrongType() {
       var columnMetadata = columnMetadata(ProtocolConstants.DataType.INT);
       var matcher =
-          new ColumnMetadataMatcher.BasicType(
+          new ColumnMetadataPredicate.BasicType(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
@@ -67,7 +67,7 @@ class ColumnMetadataMatcherTest {
                   new PrimitiveType(ProtocolConstants.DataType.INT),
                   false));
       var matcher =
-          new ColumnMetadataMatcher.BasicType(
+          new ColumnMetadataPredicate.BasicType(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
@@ -77,7 +77,7 @@ class ColumnMetadataMatcherTest {
     public void wrongName() {
       var columnMetadata = columnMetadata(ProtocolConstants.DataType.VARCHAR);
       var matcher =
-          new ColumnMetadataMatcher.BasicType(
+          new ColumnMetadataPredicate.BasicType(
               WRONG, new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
@@ -96,7 +96,7 @@ class ColumnMetadataMatcherTest {
                       new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                       new PrimitiveType(ProtocolConstants.DataType.INT))));
       var matcher =
-          new ColumnMetadataMatcher.Tuple(
+          new ColumnMetadataPredicate.Tuple(
               COLUMN,
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
@@ -113,7 +113,7 @@ class ColumnMetadataMatcherTest {
                       new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                       new PrimitiveType(ProtocolConstants.DataType.INT))));
       var matcher =
-          new ColumnMetadataMatcher.Tuple(
+          new ColumnMetadataPredicate.Tuple(
               COLUMN,
               new PrimitiveType(ProtocolConstants.DataType.INT),
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
@@ -130,7 +130,7 @@ class ColumnMetadataMatcherTest {
                       new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                       new PrimitiveType(ProtocolConstants.DataType.INT))));
       var matcher =
-          new ColumnMetadataMatcher.Tuple(
+          new ColumnMetadataPredicate.Tuple(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.INT));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
@@ -140,7 +140,7 @@ class ColumnMetadataMatcherTest {
     public void notTuple() {
       var columnMetadata = columnMetadata(ProtocolConstants.DataType.VARCHAR);
       var matcher =
-          new ColumnMetadataMatcher.Tuple(
+          new ColumnMetadataPredicate.Tuple(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.INT));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
@@ -155,7 +155,7 @@ class ColumnMetadataMatcherTest {
                       new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                       new PrimitiveType(ProtocolConstants.DataType.INT))));
       var matcher =
-          new ColumnMetadataMatcher.Tuple(
+          new ColumnMetadataPredicate.Tuple(
               WRONG,
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
@@ -176,7 +176,7 @@ class ColumnMetadataMatcherTest {
                   new PrimitiveType(ProtocolConstants.DataType.INT),
                   false));
       var matcher =
-          new ColumnMetadataMatcher.Map(
+          new ColumnMetadataPredicate.Map(
               COLUMN,
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
@@ -193,7 +193,7 @@ class ColumnMetadataMatcherTest {
                   new PrimitiveType(ProtocolConstants.DataType.INT),
                   false));
       var matcher =
-          new ColumnMetadataMatcher.Map(
+          new ColumnMetadataPredicate.Map(
               COLUMN,
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.FLOAT));
@@ -210,7 +210,7 @@ class ColumnMetadataMatcherTest {
                   new PrimitiveType(ProtocolConstants.DataType.INT),
                   false));
       var matcher =
-          new ColumnMetadataMatcher.Map(
+          new ColumnMetadataPredicate.Map(
               COLUMN,
               new PrimitiveType(ProtocolConstants.DataType.INT),
               new PrimitiveType(ProtocolConstants.DataType.INT));
@@ -222,7 +222,7 @@ class ColumnMetadataMatcherTest {
     public void notMap() {
       var columnMetadata = columnMetadata(ProtocolConstants.DataType.VARCHAR);
       var matcher =
-          new ColumnMetadataMatcher.Map(
+          new ColumnMetadataPredicate.Map(
               COLUMN,
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
@@ -239,7 +239,7 @@ class ColumnMetadataMatcherTest {
                   new PrimitiveType(ProtocolConstants.DataType.INT),
                   false));
       var matcher =
-          new ColumnMetadataMatcher.Map(
+          new ColumnMetadataPredicate.Map(
               WRONG,
               new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
               new PrimitiveType(ProtocolConstants.DataType.INT));
@@ -257,7 +257,7 @@ class ColumnMetadataMatcherTest {
           columnMetadata(
               new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false));
       var matcher =
-          new ColumnMetadataMatcher.Set(
+          new ColumnMetadataPredicate.Set(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
 
       assertThat(matcher.test(columnMetadata)).isTrue();
@@ -269,7 +269,7 @@ class ColumnMetadataMatcherTest {
           columnMetadata(
               new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false));
       var matcher =
-          new ColumnMetadataMatcher.Set(COLUMN, new PrimitiveType(ProtocolConstants.DataType.INT));
+          new ColumnMetadataPredicate.Set(COLUMN, new PrimitiveType(ProtocolConstants.DataType.INT));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
     }
@@ -278,7 +278,7 @@ class ColumnMetadataMatcherTest {
     public void notSet() {
       var columnMetadata = columnMetadata(ProtocolConstants.DataType.VARCHAR);
       var matcher =
-          new ColumnMetadataMatcher.Set(COLUMN, new PrimitiveType(ProtocolConstants.DataType.INT));
+          new ColumnMetadataPredicate.Set(COLUMN, new PrimitiveType(ProtocolConstants.DataType.INT));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
     }
@@ -289,7 +289,7 @@ class ColumnMetadataMatcherTest {
           columnMetadata(
               new DefaultSetType(new PrimitiveType(ProtocolConstants.DataType.VARCHAR), false));
       var matcher =
-          new ColumnMetadataMatcher.Set(
+          new ColumnMetadataPredicate.Set(
               WRONG, new PrimitiveType(ProtocolConstants.DataType.VARCHAR));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
@@ -304,7 +304,7 @@ class ColumnMetadataMatcherTest {
           columnMetadata(
               new ExtendedVectorType(new PrimitiveType(ProtocolConstants.DataType.FLOAT), 1024));
       var matcher =
-          new ColumnMetadataMatcher.Vector(
+          new ColumnMetadataPredicate.Vector(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.FLOAT));
 
       assertThat(matcher.test(columnMetadata)).isTrue();
@@ -316,7 +316,7 @@ class ColumnMetadataMatcherTest {
           columnMetadata(
               new ExtendedVectorType(new PrimitiveType(ProtocolConstants.DataType.INT), 1024));
       var matcher =
-          new ColumnMetadataMatcher.Vector(
+          new ColumnMetadataPredicate.Vector(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.FLOAT));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
@@ -326,7 +326,7 @@ class ColumnMetadataMatcherTest {
     public void notVector() {
       var columnMetadata = columnMetadata(ProtocolConstants.DataType.VARCHAR);
       var matcher =
-          new ColumnMetadataMatcher.Vector(
+          new ColumnMetadataPredicate.Vector(
               COLUMN, new PrimitiveType(ProtocolConstants.DataType.FLOAT));
 
       assertThat(matcher.test(columnMetadata)).isFalse();
@@ -338,7 +338,7 @@ class ColumnMetadataMatcherTest {
           columnMetadata(
               new ExtendedVectorType(new PrimitiveType(ProtocolConstants.DataType.FLOAT), 1024));
       var matcher =
-          new ColumnMetadataMatcher.Vector(
+          new ColumnMetadataPredicate.Vector(
               WRONG, new PrimitiveType(ProtocolConstants.DataType.FLOAT));
 
       assertThat(matcher.test(columnMetadata)).isFalse();

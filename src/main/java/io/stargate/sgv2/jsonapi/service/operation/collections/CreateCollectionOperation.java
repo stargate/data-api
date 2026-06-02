@@ -41,7 +41,7 @@ import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingTablePredicate;
 import io.stargate.sgv2.jsonapi.service.schema.tables.CQLSAIIndex;
 import java.time.Duration;
 import java.util.*;
@@ -69,7 +69,7 @@ public record CreateCollectionOperation(
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
-  private static final CollectionTableMatcher COLLECTION_MATCHER = new CollectionTableMatcher();
+  private static final SuperShreddingTablePredicate COLLECTION_MATCHER = new SuperShreddingTablePredicate();
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

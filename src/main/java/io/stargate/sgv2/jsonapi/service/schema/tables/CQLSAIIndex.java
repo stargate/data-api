@@ -5,9 +5,14 @@ import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.getStringIfPresent;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexKind;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import com.datastax.oss.driver.internal.core.adminrequest.AdminRow;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
+
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -125,6 +130,7 @@ public abstract class CQLSAIIndex {
   public static IndexTarget indexTarget(IndexMetadata indexMetadata)
       throws UnknownCqlIndexFunctionException, UnsupportedCqlIndexException {
     Objects.requireNonNull(indexMetadata, "indexMetadata must not be null");
+    // TODO: XXX: move to InexTarget as from()
 
     // if the regex matches then the target is in the form "keys(foo)", "entries(bar)",
     // "values("foo")", "full("bar")" etc
@@ -161,5 +167,27 @@ public abstract class CQLSAIIndex {
   }
 
   /** For internal to this package use only */
-  public record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {}
+  public record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {
+
+    /**
+     * Add the Index Function we would use in a CREATE INDEX CQL statement.
+     * <p>
+     *  Used in tables, and by the {@link SuperShreddingMetadata.IndexDef}
+     * </p>
+     * @return
+     */
+    public  String toTargetString() {
+      return ApiIndexFunction.toTargetString(indexFunction, targetColumn);
+    }
+
+    public CreateIndex addTo(CreateIndexOnTable createIndexOnTable) {
+      return ApiIndexFunction.addTo(createIndexOnTable, indexFunction, targetColumn);
+    }
+
+    public Map<String, String> indexOptions() {
+      return Map.of(
+        Options.CLASS_NAME, SAI_CLASS_NAME,
+        Options.TARGET, toTargetString());
+    }
+  }
 }
