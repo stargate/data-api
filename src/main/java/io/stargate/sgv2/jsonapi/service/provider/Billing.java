@@ -33,9 +33,9 @@ import org.slf4j.LoggerFactory;
  * the {@code external_*} variant is used. Events whose type is not in {@link
  * BillingConfig#enabledEventTypes()} are dropped.
  *
- * <p>Eligibility requires all of: {@link ApiFeature#BILLING} is enabled, the {@code billing.events}
- * logger is enabled, and the {@link ModelUsage} is non-null. The region for each event is read from
- * {@link ModelUsage#tenant()} ({@code Tenant.region()}).
+ * <p>Eligibility requires all of: {@link ApiFeature#BILLING_EVENTS_LOGGING} is enabled, the {@code
+ * billing.events} logger is enabled, and the {@link ModelUsage} is non-null. The region for each
+ * event is read from {@link ModelUsage#tenant()} ({@code Tenant.region()}).
  */
 public class Billing {
 
@@ -85,7 +85,7 @@ public class Billing {
   /** Whether a billing event should be emitted for the given request. */
   @VisibleForTesting
   boolean shouldEmit(ModelUsage modelUsage) {
-    return apiFeatures.isFeatureEnabled(ApiFeature.BILLING)
+    return apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING)
         && BILLING_LOGGER.isInfoEnabled()
         && modelUsage != null;
   }

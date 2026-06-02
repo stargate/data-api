@@ -47,14 +47,15 @@ class BillingTest {
     return new Billing(config, apiFeatures);
   }
 
-  /** Default Billing with BILLING feature enabled — sufficient for buildEvents tests. */
+  /** Default Billing with BILLING_EVENTS_LOGGING enabled — sufficient for buildEvents tests. */
   private static Billing newBilling() {
     return newBilling(featuresWithBilling(true));
   }
 
   private static ApiFeatures featuresWithBilling(boolean enabled) {
     FeaturesConfig config = mock(FeaturesConfig.class);
-    when(config.flags()).thenReturn(Map.of(ApiFeature.BILLING, String.valueOf(enabled)));
+    when(config.flags())
+        .thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, String.valueOf(enabled)));
     return ApiFeatures.fromConfigAndRequest(config, null);
   }
 
@@ -239,24 +240,25 @@ class BillingTest {
   void emitEvent_isNoOpWhenGatesFail() {
     // null usage is always a no-op
     newBilling(featuresWithBilling(true)).emitEvent(null);
-    // BILLING disabled is always a no-op
+    // BILLING_EVENTS_LOGGING disabled is always a no-op
     newBilling(featuresWithBilling(false))
         .emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
   }
 
   /**
-   * If BILLING is enabled at startup config, a request header MUST NOT be able to turn it off. The
-   * config value is authoritative; headers are only consulted when config leaves the flag unset.
+   * If BILLING_EVENTS_LOGGING is enabled at startup config, a request header MUST NOT be able to
+   * turn it off. The config value is authoritative; headers are only consulted when config leaves
+   * the flag unset.
    */
   @Test
   void shouldEmit_configEnabledIsNotOverriddenByHeader() {
     // startup config: billing = true
     FeaturesConfig config = mock(FeaturesConfig.class);
-    when(config.flags()).thenReturn(Map.of(ApiFeature.BILLING, "true"));
+    when(config.flags()).thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, "true"));
 
     // request header tries to disable it
     MultiMap headers = MultiMap.caseInsensitiveMultiMap();
-    headers.add(ApiFeature.BILLING.httpHeaderName(), "false");
+    headers.add(ApiFeature.BILLING_EVENTS_LOGGING.httpHeaderName(), "false");
     var headerAccess = new RequestContext.HttpHeaderAccess(headers);
 
     ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
@@ -264,7 +266,7 @@ class BillingTest {
     Billing billing = newBilling(apiFeatures);
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
-    assertThat(apiFeatures.isFeatureEnabled(ApiFeature.BILLING))
+    assertThat(apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING))
         .as("config=true must win over header=false")
         .isTrue();
     assertThat(billing.shouldEmit(modelUsage)).isTrue();
@@ -281,7 +283,7 @@ class BillingTest {
     when(config.flags()).thenReturn(Map.of());
 
     MultiMap headers = MultiMap.caseInsensitiveMultiMap();
-    headers.add(ApiFeature.BILLING.httpHeaderName(), "true");
+    headers.add(ApiFeature.BILLING_EVENTS_LOGGING.httpHeaderName(), "true");
     var headerAccess = new RequestContext.HttpHeaderAccess(headers);
 
     ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
