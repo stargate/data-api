@@ -314,6 +314,10 @@ stargate:
               vector-dimension: 1024
               properties:
                 max-tokens: 512
+            - name: nvidia/nv-embedqa-e5-v5
+              vector-dimension: 1024
+              properties:
+                max-tokens: 512
         jinaAI:
           #see https://jina.ai/embeddings/#apiform
           display-name: Jina AI

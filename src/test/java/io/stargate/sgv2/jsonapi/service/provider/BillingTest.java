@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.vertx.core.MultiMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,9 +54,15 @@ class BillingTest {
   }
 
   private static ApiFeatures featuresWithBilling(boolean enabled) {
+    return features(enabled, false);
+  }
+
+  private static ApiFeatures features(boolean logging, boolean response) {
     FeaturesConfig config = mock(FeaturesConfig.class);
-    when(config.flags())
-        .thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, String.valueOf(enabled)));
+    Map<ApiFeature, String> flags = new HashMap<>();
+    flags.put(ApiFeature.BILLING_EVENTS_LOGGING, String.valueOf(logging));
+    flags.put(ApiFeature.BILLING_EVENTS_RESPONSE, String.valueOf(response));
+    when(config.flags()).thenReturn(flags);
     return ApiFeatures.fromConfigAndRequest(config, null);
   }
 
@@ -240,9 +247,75 @@ class BillingTest {
   void emitEvent_isNoOpWhenGatesFail() {
     // null usage is always a no-op
     newBilling(featuresWithBilling(true)).emitEvent(null);
-    // BILLING_EVENTS_LOGGING disabled is always a no-op
-    newBilling(featuresWithBilling(false))
-        .emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
+    // both LOGGING and RESPONSE disabled — emitEvent is a no-op
+    Billing billing = newBilling(features(false, false));
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
+    assertThat(billing.collectedEvents()).isEmpty();
+  }
+
+  @Test
+  void emitEvent_buffersEventsWhenResponseEnabled() {
+    // LOGGING off, RESPONSE on — events still build and land in the buffer.
+    Billing billing = newBilling(features(false, true));
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
+
+    assertThat(billing.collectedEvents())
+        .extracting(BillingEvent::eventType)
+        .containsExactly(
+            BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
+            BillingEventType.INTERNAL_MODEL_EGRESS_BYTES,
+            BillingEventType.INTERNAL_MODEL_INGRESS_BYTES);
+  }
+
+  @Test
+  void emitEvent_doesNotBufferWhenOnlyLoggingEnabled() {
+    // LOGGING on, RESPONSE off — buffer must stay empty (no memory leak from the buffer
+    // when the response feature is off).
+    Billing billing = newBilling(features(true, false));
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
+
+    assertThat(billing.collectedEvents()).isEmpty();
+  }
+
+  @Test
+  void emitEvent_buffersAcrossMultipleCalls() {
+    Billing billing = newBilling(features(false, true));
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
+    billing.emitEvent(usage(ModelProvider.OPENAI, ModelType.EMBEDDING, astraTenant(REGION)));
+
+    // 3 events per emitEvent call × 2 calls = 6 events total.
+    assertThat(billing.collectedEvents()).hasSize(6);
+  }
+
+  @Test
+  void collectedEvents_returnsImmutableSnapshot() {
+    Billing billing = newBilling(features(false, true));
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
+
+    List<BillingEvent> snapshot = billing.collectedEvents();
+    // Snapshot must not reflect later writes — it's a defensive copy.
+    int before = snapshot.size();
+    billing.emitEvent(usage(ModelProvider.OPENAI, ModelType.EMBEDDING, astraTenant(REGION)));
+    assertThat(snapshot).hasSize(before);
+    // And the snapshot itself must not be modifiable.
+    org.assertj.core.api.Assertions.assertThatThrownBy(snapshot::clear)
+        .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void shouldEmit_trueWhenOnlyResponseEnabled() {
+    Billing billing = newBilling(features(false, true));
+    ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
+
+    assertThat(billing.shouldEmit(modelUsage)).isTrue();
+  }
+
+  @Test
+  void shouldEmit_trueWhenBothFlagsEnabled() {
+    Billing billing = newBilling(features(true, true));
+    ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
+
+    assertThat(billing.shouldEmit(modelUsage)).isTrue();
   }
 
   /**

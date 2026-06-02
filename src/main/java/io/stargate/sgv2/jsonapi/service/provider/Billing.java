@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
@@ -33,9 +34,18 @@ import org.slf4j.LoggerFactory;
  * the {@code external_*} variant is used. Events whose type is not in {@link
  * BillingConfig#enabledEventTypes()} are dropped.
  *
- * <p>Eligibility requires all of: {@link ApiFeature#BILLING_EVENTS_LOGGING} is enabled, the {@code
- * billing.events} logger is enabled, and the {@link ModelUsage} is non-null. The region for each
- * event is read from {@link ModelUsage#tenant()} ({@code Tenant.region()}).
+ * <p>Each emitted event can be sent to two independent sinks:
+ *
+ * <ul>
+ *   <li>The {@code billing.events} logger (one JSON line per event) — gated by {@link
+ *       ApiFeature#BILLING_EVENTS_LOGGING}.
+ *   <li>An in-memory buffer (read later by a response filter and returned as the {@code
+ *       Billing-Events} HTTP response header) — gated by {@link
+ *       ApiFeature#BILLING_EVENTS_RESPONSE}.
+ * </ul>
+ *
+ * If neither flag is enabled (or {@link ModelUsage} is null), {@link #emitEvent(ModelUsage)} is a
+ * no-op. The two flags are independent — both can be on at once.
  */
 public class Billing {
 
@@ -52,6 +62,12 @@ public class Billing {
   private final Set<BillingEventType> enabledEventTypes;
   private final ApiFeatures apiFeatures;
 
+  // Buffered events collected for the BILLING_EVENTS_RESPONSE flag. Populated only when that
+  // feature is enabled. emitEvent can be invoked from concurrent tasks within one request
+  // (async embedding / reranking calls), so the list is synchronized.
+  private final List<BillingEvent> collectedEvents =
+      Collections.synchronizedList(new ArrayList<>());
+
   public Billing(BillingConfig config, ApiFeatures apiFeatures) {
     Objects.requireNonNull(config, "config must not be null");
     this.apiFeatures = Objects.requireNonNull(apiFeatures, "apiFeatures must not be null");
@@ -66,28 +82,60 @@ public class Billing {
   }
 
   /**
-   * Emits billing events for the given aggregated model usage, if the request and configuration
-   * allow it. No-op otherwise (feature disabled, logger disabled, null usage).
+   * Builds billing events for the given usage and dispatches them to whichever sinks are enabled:
+   * the {@code billing.events} logger (when {@link ApiFeature#BILLING_EVENTS_LOGGING} is on) and/or
+   * an in-memory buffer surfaced via {@link #collectedEvents()} (when {@link
+   * ApiFeature#BILLING_EVENTS_RESPONSE} is on). No-op if neither flag is on or {@code modelUsage}
+   * is null.
    */
   public void emitEvent(ModelUsage modelUsage) {
-    if (!shouldEmit(modelUsage)) {
+    if (modelUsage == null) {
       return;
     }
-    for (BillingEvent event : buildEvents(modelUsage)) {
-      try {
-        BILLING_LOGGER.info(OBJECT_WRITER.writeValueAsString(event));
-      } catch (JacksonException e) {
-        LOGGER.error("Failed to serialize billing event of type {}", event.eventType(), e);
+    boolean shouldLog =
+        apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING)
+            && BILLING_LOGGER.isInfoEnabled();
+    boolean shouldBuffer = apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_RESPONSE);
+    if (!shouldLog && !shouldBuffer) {
+      return;
+    }
+    List<BillingEvent> events = buildEvents(modelUsage);
+    if (shouldLog) {
+      for (BillingEvent event : events) {
+        try {
+          BILLING_LOGGER.info(OBJECT_WRITER.writeValueAsString(event));
+        } catch (JacksonException e) {
+          LOGGER.error("Failed to serialize billing event of type {}", event.eventType(), e);
+        }
       }
+    }
+    if (shouldBuffer) {
+      collectedEvents.addAll(events);
     }
   }
 
-  /** Whether a billing event should be emitted for the given request. */
+  /**
+   * Snapshot of billing events accumulated by {@link #emitEvent(ModelUsage)} for this request when
+   * {@link ApiFeature#BILLING_EVENTS_RESPONSE} is enabled. Returns an unmodifiable copy so callers
+   * can iterate safely while other tasks may still be writing.
+   */
+  public List<BillingEvent> collectedEvents() {
+    synchronized (collectedEvents) {
+      return List.copyOf(collectedEvents);
+    }
+  }
+
+  /** Whether a billing event would be emitted for the given request. */
   @VisibleForTesting
   boolean shouldEmit(ModelUsage modelUsage) {
-    return apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING)
-        && BILLING_LOGGER.isInfoEnabled()
-        && modelUsage != null;
+    if (modelUsage == null) {
+      return false;
+    }
+    boolean shouldLog =
+        apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING)
+            && BILLING_LOGGER.isInfoEnabled();
+    boolean shouldBuffer = apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_RESPONSE);
+    return shouldLog || shouldBuffer;
   }
 
   /**
