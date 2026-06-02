@@ -4,6 +4,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.stargate.sgv2.jsonapi.service.provider.BillingEventType;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /** Configuration for the billing event pipeline. */
@@ -28,11 +29,8 @@ public interface BillingConfig {
 
   /**
    * The set of {@link BillingEventType} values to emit. Events whose type is not in this set are
-   * dropped silently. Defaults to all six event types.
+   * dropped. When the property is not configured, all values of {@link BillingEventType} are
+   * enabled. Explicitly setting it to an empty value disables all billing events.
    */
-  @WithDefault(
-      "INTERNAL_MODEL_TOTAL_TOKENS,EXTERNAL_MODEL_TOTAL_TOKENS,"
-          + "INTERNAL_MODEL_EGRESS_BYTES,EXTERNAL_MODEL_EGRESS_BYTES,"
-          + "INTERNAL_MODEL_INGRESS_BYTES,EXTERNAL_MODEL_INGRESS_BYTES")
-  Set<BillingEventType> enabledEventTypes();
+  Optional<Set<BillingEventType>> enabledEventTypes();
 }

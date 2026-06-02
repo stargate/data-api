@@ -36,7 +36,8 @@ class BillingEventTest {
     assertThat(node.get("id").asText()).isEqualTo(id.toString());
     assertThat(node.get("timestamp").asText()).isEqualTo("2026-05-19T00:29:21.506481Z");
     assertThat(node.get("product").asText()).isEqualTo("serverless");
-    assertThat(node.get("event_type").asText()).isEqualTo(BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS.eventName());
+    assertThat(node.get("event_type").asText())
+        .isEqualTo(BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS.eventName());
     assertThat(node.get("properties").get("usage").asLong()).isEqualTo(123L);
     assertThat(node.get("properties").get("region").asText()).isEqualTo("us-west-2");
     assertThat(node.get("properties").get("resource_type").asText())

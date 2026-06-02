@@ -15,6 +15,7 @@ import io.vertx.core.MultiMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -30,13 +31,14 @@ class BillingTest {
   private static final int RESPONSE_BYTES = 12_345;
 
   private static Billing newBilling(ApiFeatures apiFeatures) {
-    return newBilling(apiFeatures, List.of("nvidia"), EnumSet.allOf(BillingEventType.class));
+    // Optional.empty() means "use all event types" — matches production default behavior.
+    return newBilling(apiFeatures, List.of("nvidia"), Optional.empty());
   }
 
   private static Billing newBilling(
       ApiFeatures apiFeatures,
       List<String> internalProviders,
-      Set<BillingEventType> enabledEventTypes) {
+      Optional<Set<BillingEventType>> enabledEventTypes) {
     BillingConfig config = mock(BillingConfig.class);
     when(config.product()).thenReturn(PRODUCT);
     when(config.resourceType()).thenReturn(RESOURCE_TYPE);
@@ -145,9 +147,10 @@ class BillingTest {
         newBilling(
             featuresWithBilling(true),
             List.of("nvidia"),
-            EnumSet.of(
-                BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
-                BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS));
+            Optional.of(
+                EnumSet.of(
+                    BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
+                    BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS)));
 
     ModelUsage internal = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
     ModelUsage external = usage(ModelProvider.OPENAI, ModelType.EMBEDDING, astraTenant(REGION));
@@ -163,10 +166,20 @@ class BillingTest {
   }
 
   @Test
+  void buildEvents_emptyEnabledEventTypes_emitsNothing() {
+    // Optional.of(empty set) explicitly disables all billing events — distinct from
+    // Optional.empty() which means "use the default = all enabled".
+    Billing billing =
+        newBilling(featuresWithBilling(true), List.of("nvidia"), Optional.of(Set.of()));
+    ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
+
+    assertThat(billing.buildEvents(modelUsage)).isEmpty();
+  }
+
+  @Test
   void buildEvents_emptyInternalProviders_allEventsAreExternal() {
     // With no providers listed as internal, even NVIDIA usage is classified external.
-    Billing billing =
-        newBilling(featuresWithBilling(true), List.of(), EnumSet.allOf(BillingEventType.class));
+    Billing billing = newBilling(featuresWithBilling(true), List.of(), Optional.empty());
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
     List<BillingEvent> events = billing.buildEvents(modelUsage);

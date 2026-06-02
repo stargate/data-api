@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -57,7 +58,11 @@ public class Billing {
     this.product = requireNonBlank(config.product(), "billing.product");
     this.resourceType = requireNonBlank(config.resourceType(), "billing.resource_type");
     this.internalModelProviders = Set.copyOf(config.internalModelProviders());
-    this.enabledEventTypes = Set.copyOf(config.enabledEventTypes());
+    this.enabledEventTypes =
+        config
+            .enabledEventTypes()
+            .map(Set::copyOf)
+            .orElseGet(() -> EnumSet.allOf(BillingEventType.class));
   }
 
   /**
