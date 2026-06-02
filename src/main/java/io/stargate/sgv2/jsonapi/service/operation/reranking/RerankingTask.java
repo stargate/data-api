@@ -8,11 +8,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
-import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -255,18 +253,20 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
       if (passages.isEmpty()) {
         // avoid making a call we don't need to
-        commandContext.requestTracing().maybeTrace(
-            () ->
-                new TraceMessage(
-                    "Reranking call skipped because 0 passages to rerank using %s with model %s"
-                        .formatted(
-                            classSimpleName(rerankingProvider.getClass()),
-                            rerankingProvider.modelName()),
-                    Recordable.copyOf(
-                        Map.of(
-                            "query", query,
-                            "limit", limit,
-                            "passages", passages))));
+        commandContext
+            .requestTracing()
+            .maybeTrace(
+                () ->
+                    new TraceMessage(
+                        "Reranking call skipped because 0 passages to rerank using %s with model %s"
+                            .formatted(
+                                classSimpleName(rerankingProvider.getClass()),
+                                rerankingProvider.modelName()),
+                        Recordable.copyOf(
+                            Map.of(
+                                "query", query,
+                                "limit", limit,
+                                "passages", passages))));
 
         return Uni.createFrom()
             .item(
@@ -274,24 +274,28 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                     commandContext.requestTracing(),
                     rerankingProvider,
                     new RerankingProvider.RerankingResponse(
-                        List.of(), rerankingProvider.createEmptyModelUsage(commandContext.requestContext().getRerankingCredentials())),
+                        List.of(),
+                        rerankingProvider.createEmptyModelUsage(
+                            commandContext.requestContext().getRerankingCredentials())),
                     unrankedDocs,
                     limit));
       }
 
-      commandContext.requestTracing().maybeTrace(
-          () ->
-              new TraceMessage(
-                  "Reranking %s passages using %s with model %s"
-                      .formatted(
-                          unrankedDocs.size(),
-                          classSimpleName(rerankingProvider.getClass()),
-                          rerankingProvider.modelName()),
-                  Recordable.copyOf(
-                      Map.of(
-                          "query", query,
-                          "limit", limit,
-                          "passages", passages))));
+      commandContext
+          .requestTracing()
+          .maybeTrace(
+              () ->
+                  new TraceMessage(
+                      "Reranking %s passages using %s with model %s"
+                          .formatted(
+                              unrankedDocs.size(),
+                              classSimpleName(rerankingProvider.getClass()),
+                              rerankingProvider.modelName()),
+                      Recordable.copyOf(
+                          Map.of(
+                              "query", query,
+                              "limit", limit,
+                              "passages", passages))));
 
       rerankingMetrics.recordPassageCount(passages.size());
 
@@ -299,7 +303,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       var sample = rerankingMetrics.startCallLatency();
 
       return rerankingProvider
-          .rerank(query.query(), passages, commandContext.requestContext().getRerankingCredentials())
+          .rerank(
+              query.query(), passages, commandContext.requestContext().getRerankingCredentials())
           // Use .eventually() to execute the provided Runnable when the Uni terminates,
           // either successfully (onItem) or with a failure (onFailure).
           // This is preferred over .onItemOrFailure() when the side-effect action is identical
@@ -310,7 +315,11 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
               rerankingResponse -> {
                 commandContext.requestContext().billing().bill(rerankingResponse.modelUsage());
                 return RerankingTaskResult.create(
-                    commandContext.requestTracing(), rerankingProvider, rerankingResponse, unrankedDocs, limit);
+                    commandContext.requestTracing(),
+                    rerankingProvider,
+                    rerankingResponse,
+                    unrankedDocs,
+                    limit);
               });
     }
   }
