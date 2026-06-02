@@ -314,8 +314,7 @@ public record CreateCollectionCommand(
         @Schema(description = "Registered reranking service model", type = SchemaType.STRING)
             @JsonProperty(ServiceDescConstants.MODEL_NAME)
             String modelName,
-        @Valid
-            @Nullable
+        @Nullable
             @Schema(
                 description = "Authentication config for chosen reranking service",
                 type = SchemaType.OBJECT)
