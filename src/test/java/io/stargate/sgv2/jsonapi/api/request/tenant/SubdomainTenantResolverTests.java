@@ -21,11 +21,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class SubdomainTenantResolverTests {
 
   // Astra tenant ids are 36-char UUIDs; production config caps tenant extraction at the UUID
-  // length. See
-  // https://github.com/riptano/serverless-platform-charts/blob/master/stargate-apis/chart/charts/jsonapi/templates/deployment.yaml#L120
+  // length.
   private static final int TENANT_UUID_LENGTH = 36;
-  private static final String TENANT_UUID = "11111111-2222-3333-4444-555555555555";
-  // https://github.com/riptano/serverless-platform-charts/blob/master/stargate-apis/chart/charts/jsonapi/templates/deployment.yaml#L122
+  private static final String TENANT_UUID = "60b5dccb-e91d-4a60-987b-7588cd8aa1e3";
+  // Standard UUID-shape regex: 8-4-4-4-12 hex characters (case-insensitive). Matches the pattern
+  // used by the production Helm chart to validate the tenant subdomain.
   private static final String SUBDOMAIN_REGEX =
       "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
 
@@ -105,6 +105,19 @@ public class SubdomainTenantResolverTests {
   }
 
   @Test
+  public void trailingDashWithEmptyRegionFallsBackToUnknown() {
+    // Subdomain is "{uuid}-" — separator is present but region segment is empty. The resolver
+    // requires at least one char after the separator before treating it as a region, so this
+    // falls back to UNKNOWN_REGION rather than producing an empty-string region.
+    var context = routingContextWithHost(TENANT_UUID + "-.apps.astra.datastax.com");
+
+    Tenant tenant = prodConfigResolver().resolve(context, null);
+
+    assertThat(tenant.toString()).isEqualTo(TENANT_UUID);
+    assertThat(tenant.region()).isEqualTo(Tenant.UNKNOWN_REGION);
+  }
+
+  @Test
   public void invalidTenantSubdomainRejectedByRegex() {
     // Subdomain doesn't match the UUID regex — resolver passes null to TenantFactory, which for
     // ASTRA surfaces as IllegalArgumentException ("tenantId must not be empty").
@@ -115,12 +128,41 @@ public class SubdomainTenantResolverTests {
   }
 
   @Test
+  public void invalidTenantSubdomainOnCassandraReturnsSingleTenant() {
+    // Same invalid subdomain as above, but with CASSANDRA configured: CASSANDRA is single-tenant
+    // and ignores tenantId entirely, so resolution does not throw — it returns the fixed
+    // single-tenant Cassandra instance.
+    TenantFactory.reset();
+    TenantFactory.initialize(DatabaseType.CASSANDRA);
+    var context = routingContextWithHost("not-a-uuid.apps.astra.datastax.com");
+
+    Tenant tenant = prodConfigResolver().resolve(context, null);
+
+    assertThat(tenant.databaseType()).isEqualTo(DatabaseType.CASSANDRA);
+    assertThat(tenant.region()).isEqualTo(Tenant.CASSANDRA_REGION_DEFAULT);
+  }
+
+  @Test
   public void hostWithoutSubdomainRejected() {
     // No '.' in host — no subdomain to parse → resolver passes null to TenantFactory.
     var context = routingContextWithHost("localhost");
 
     assertThatThrownBy(() -> prodConfigResolver().resolve(context, null))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void uppercaseCharactersInSubdomainSurviveToTenantId() {
+    // an uppercase UUID in the subdomain should still produce a tenant id with
+    // the same characters present (Tenant.create lower-cases as a deliberate normalization, so
+    // the comparison is against the lower-cased input — but no characters should be dropped).
+    String uppercaseTenant = "ABF3E8C2-4D2B-4F8E-9A1C-6D3B8E2F1A40";
+    var context = routingContextWithHost(uppercaseTenant + "-us-west-2.apps.astra.datastax.com");
+
+    Tenant tenant = prodConfigResolver().resolve(context, null);
+
+    assertThat(tenant.toString()).isEqualTo(uppercaseTenant.toLowerCase());
+    assertThat(tenant.region()).isEqualTo("us-west-2");
   }
 
   @Test
