@@ -236,7 +236,7 @@ jobs:
 
       - name: Add coverage to PR
         id: jacoco
-        uses: madrapps/jacoco-report@v1.7.2
+        uses: madrapps/jacoco-report@v1.8.0
         if: github.event_name == 'pull_request'
         with:
           paths: |
@@ -519,7 +519,7 @@ jobs:
 
       - name: Add integration test coverage to PR
         id: jacoco-it
-        uses: madrapps/jacoco-report@v1.7.2
+        uses: madrapps/jacoco-report@v1.8.0
         if: github.event_name == 'pull_request'
         with:
           paths: |
