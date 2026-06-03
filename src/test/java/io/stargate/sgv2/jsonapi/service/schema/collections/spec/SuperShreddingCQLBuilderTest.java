@@ -36,7 +36,7 @@ public class SuperShreddingCQLBuilderTest {
 
     private static  final String CREATE_TABLE_ALL_OPTIONAL = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
-                "key"                     tuple<tinyint, text> PRIMARY KEY,
+                "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
                 "tx_id"                   timeuuid,
                 "doc_json"                text,
                 "exist_keys"              set<text>,
@@ -55,7 +55,7 @@ public class SuperShreddingCQLBuilderTest {
 
     private static  final String CREATE_TABLE_NO_OPTIONAL = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
-                "key"                     tuple<tinyint, text> PRIMARY KEY,
+                "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
                 "tx_id"                   timeuuid,
                 "doc_json"                text,
                 "exist_keys"              set<text>,
@@ -72,7 +72,7 @@ public class SuperShreddingCQLBuilderTest {
 
     private static final String CREATE_TABLE_VECTOR_ONLY = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
-                "key"                     tuple<tinyint, text> PRIMARY KEY,
+                "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
                 "tx_id"                   timeuuid,
                 "doc_json"                text,
                 "exist_keys"              set<text>,
@@ -90,7 +90,7 @@ public class SuperShreddingCQLBuilderTest {
 
     private static  final String CREATE_TABLE_LEXICAL_ONLY = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
-                "key"                     tuple<tinyint, text> PRIMARY KEY,
+                "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
                 "tx_id"                   timeuuid,
                 "doc_json"                text,
                 "exist_keys"              set<text>,

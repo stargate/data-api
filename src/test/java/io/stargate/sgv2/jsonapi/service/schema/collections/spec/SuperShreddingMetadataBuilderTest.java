@@ -22,12 +22,14 @@ public class SuperShreddingMetadataBuilderTest {
     public void createTableAllOptional() {
 
         var metadataBuilder = SuperShreddingCQLBuilder.metadata()
+                .withIfNotExists(false)
                 .withKeyspace(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace())
                 .withCollection(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table())
                 .withVector(1024, "cosine", "OTHER")
                 .withLexical("standard");
 
         var cqlBuilder = SuperShreddingCQLBuilder.cql()
+                .withIfNotExists(false)
                 .withKeyspace(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace())
                 .withCollection(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table())
                 .withVector(1024, "cosine", "OTHER")

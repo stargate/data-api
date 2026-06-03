@@ -32,6 +32,7 @@ public class SuperShreddingMetadataBuilder extends SuperShreddingBuilder<Describ
         // Primary key first
         var primaryKey = ColumnDefs.toColumnMetadata(keyspace, collection, ColumnDefs.PARTITION_KEY)
                 .toList();
+
         // LinkedHashMap to maintain order
         Map<CqlIdentifier, ColumnMetadata> allColumns = new LinkedHashMap<>(ColumnDefs.ALL.size());
         primaryKey.forEach(col -> allColumns.put(col.getName(), col));

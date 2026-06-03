@@ -15,10 +15,13 @@ public interface SuperShreddingCQL {
     }
 
     interface CQL {
+        // NOTE: frozen<> included on tuple type because the auto gen for TableMetadata will
+        // result in TupleType adding frozen, because all tuples are implicitly frozen
+        // this has not real effect.
         String CREATE_TABLE_TEMPLATE =
                 """
                         CREATE TABLE ${IF_NOT_EXISTS:-} ${KEYSPACE}.${TABLE} (
-                            "key"                     tuple<tinyint, text> PRIMARY KEY,
+                            "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
                             "tx_id"                   timeuuid,
                             "doc_json"                text,
                             "exist_keys"              set<text>,
