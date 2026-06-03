@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
+import static net.javacrumbs.jsonunit.JsonAssert.assertJsonPartEquals;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.UUID;
@@ -24,28 +24,32 @@ class BillingEventTest {
 
   @Test
   void serializesIdAsStringAndTimestampAsIso8601() throws Exception {
-    UUID id = UUID.randomUUID();
-    Instant now = Instant.parse("2026-05-19T00:29:21.506481Z");
+    UUID id = UUID.fromString("c0ffee01-1234-5678-9abc-def012345678");
+    Instant timestamp = Instant.parse("2026-05-19T00:29:21.506481Z");
     BillingEvent event =
         new BillingEvent(
-            id, now, "serverless", BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS, props());
+            id, timestamp, "serverless", BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS, props());
 
-    String json = MAPPER.writeValueAsString(event);
-    JsonNode node = MAPPER.readTree(json);
+    String actualJson = MAPPER.writeValueAsString(event);
 
-    assertThat(node.get("id").asText()).isEqualTo(id.toString());
-    assertThat(node.get("timestamp").asText()).isEqualTo("2026-05-19T00:29:21.506481Z");
-    assertThat(node.get("product").asText()).isEqualTo("serverless");
-    assertThat(node.get("event_type").asText())
-        .isEqualTo(BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS.eventName());
-    assertThat(node.get("properties").get("usage").asLong()).isEqualTo(123L);
-    assertThat(node.get("properties").get("region").asText()).isEqualTo("us-west-2");
-    assertThat(node.get("properties").get("resource_type").asText())
-        .isEqualTo("serverless_database");
-    assertThat(node.get("properties").get("resource_id").asText()).isEqualTo("tenant-x");
-    assertThat(node.get("properties").get("provider").asText()).isEqualTo("nvidia");
-    assertThat(node.get("properties").get("model").asText())
-        .isEqualTo("nvidia/llama-3.2-nv-rerankqa-1b-v2");
+    String expectedJson =
+        """
+        {
+          "id": "c0ffee01-1234-5678-9abc-def012345678",
+          "timestamp": "2026-05-19T00:29:21.506481Z",
+          "product": "serverless",
+          "event_type": "internal_model_total_tokens",
+          "properties": {
+            "usage": 123,
+            "region": "us-west-2",
+            "resource_type": "serverless_database",
+            "resource_id": "tenant-x",
+            "provider": "nvidia",
+            "model": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+          }
+        }
+        """;
+    assertJsonEquals(expectedJson, actualJson);
   }
 
   @Test
@@ -58,9 +62,8 @@ class BillingEventTest {
               "serverless",
               type,
               props());
-      String json = MAPPER.writeValueAsString(event);
-      JsonNode node = MAPPER.readTree(json);
-      assertThat(node.get("event_type").asText()).isEqualTo(type.eventName());
+      String actualJson = MAPPER.writeValueAsString(event);
+      assertJsonPartEquals("\"" + type.eventName() + "\"", actualJson, "event_type");
     }
   }
 }

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -216,31 +217,33 @@ class BillingTest {
   }
 
   @Test
-  void shouldEmit_trueWhenFeatureEnabledAndUsageNonNull() {
+  void shouldEmit_trueWhenFeatureEnabled() {
     Billing billing = newBilling(featuresWithBilling(true));
-    ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
-    assertThat(billing.shouldEmit(modelUsage)).isTrue();
-  }
-
-  @Test
-  void shouldEmit_falseForNullUsage() {
-    assertThat(newBilling(featuresWithBilling(true)).shouldEmit(null)).isFalse();
+    assertThat(billing.shouldEmit()).isTrue();
   }
 
   @Test
   void shouldEmit_falseWhenFeatureDisabled() {
     Billing billing = newBilling(featuresWithBilling(false));
-    ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
-    assertThat(billing.shouldEmit(modelUsage)).isFalse();
+    assertThat(billing.shouldEmit()).isFalse();
   }
 
   @Test
-  void emitEvent_isNoOpWhenGatesFail() {
-    // null usage is always a no-op
-    newBilling(featuresWithBilling(true)).emitEvent(null);
-    // BILLING_EVENTS_LOGGING disabled is always a no-op
+  void emitEvent_nullUsageThrows() {
+    // Callers must guarantee usage data exists before invoking. A null modelUsage would silently
+    // mask a calling-side bug, so emitEvent rejects it loudly.
+    Billing billing = newBilling(featuresWithBilling(true));
+
+    assertThatThrownBy(() -> billing.emitEvent(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("modelUsage");
+  }
+
+  @Test
+  void emitEvent_featureDisabledIsNoOp() {
+    // BILLING_EVENTS_LOGGING disabled → emitEvent does nothing, even with valid usage.
     newBilling(featuresWithBilling(false))
         .emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
   }
@@ -264,12 +267,11 @@ class BillingTest {
     ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
 
     Billing billing = newBilling(apiFeatures);
-    ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
     assertThat(apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING))
         .as("config=true must win over header=false")
         .isTrue();
-    assertThat(billing.shouldEmit(modelUsage)).isTrue();
+    assertThat(billing.shouldEmit()).isTrue();
   }
 
   /**
@@ -289,8 +291,7 @@ class BillingTest {
     ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
 
     Billing billing = newBilling(apiFeatures);
-    ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
-    assertThat(billing.shouldEmit(modelUsage)).isTrue();
+    assertThat(billing.shouldEmit()).isTrue();
   }
 }
