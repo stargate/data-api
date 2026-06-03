@@ -14,14 +14,17 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
+import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
@@ -281,10 +284,14 @@ public class TestConstants {
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
 
+    // Build the no-op Billing before opening a new stubbing chain — Mockito treats nested
+    // when()/thenReturn() calls as unfinished stubbing.
+    var noOpBilling = noOpBilling();
     var requestContext = mock(RequestContext.class);
     when(requestContext.tenant()).thenReturn(TENANT);
     when(requestContext.getEmbeddingCredentials()).thenReturn(EMBEDDING_CREDENTIALS);
     when(requestContext.apiFeatures()).thenReturn(API_FEATURES);
+    when(requestContext.billing()).thenReturn(noOpBilling);
 
     var embeddingCredentials = mock(EmbeddingCredentials.class);
     when(embeddingCredentials.tenant()).thenReturn(TENANT);
@@ -314,6 +321,22 @@ public class TestConstants {
 
   public RequestContext requestContext() {
     return new RequestContext(TENANT, AUTH_TOKEN, USER_AGENT);
+  }
+
+  /**
+   * BILLING-off, fully-mocked-config Billing instance for tests that mock the {@link
+   * RequestContext} and need {@code requestContext.billing()} to return a usable no-op rather than
+   * null.
+   */
+  public static Billing noOpBilling() {
+    BillingConfig billingConfig = mock(BillingConfig.class);
+    when(billingConfig.product()).thenReturn("serverless");
+    when(billingConfig.resourceType()).thenReturn("serverless_database");
+    when(billingConfig.internalModelProviders()).thenReturn(List.of("nvidia"));
+    when(billingConfig.enabledEventTypes()).thenReturn(Optional.empty());
+    FeaturesConfig featuresConfig = mock(FeaturesConfig.class);
+    when(featuresConfig.flags()).thenReturn(Map.of());
+    return new Billing(billingConfig, ApiFeatures.fromConfigAndRequest(featuresConfig, null));
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(
