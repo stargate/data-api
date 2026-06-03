@@ -31,6 +31,31 @@ public interface BillingConfig {
    * The set of {@link BillingEventType} values to emit. Events whose type is not in this set are
    * dropped. When the property is not configured, all values of {@link BillingEventType} are
    * enabled. Explicitly setting it to an empty value disables all billing events.
+   *
+   * <p>Examples:
+   *
+   * <pre>
+   * # Not specified (Optional.empty() → all event types enabled):
+   * stargate:
+   *   jsonapi:
+   *     billing:
+   *       product: serverless
+   *
+   * # Specified but empty (Optional of empty set → no event types enabled):
+   * stargate:
+   *   jsonapi:
+   *     billing:
+   *       enabled-event-types: []
+   *
+   * # Specified and enabling three event types:
+   * stargate:
+   *   jsonapi:
+   *     billing:
+   *       enabled-event-types:
+   *         - INTERNAL_MODEL_TOTAL_TOKENS
+   *         - EXTERNAL_MODEL_TOTAL_TOKENS
+   *         - INTERNAL_MODEL_EGRESS_BYTES
+   * </pre>
    */
   Optional<Set<BillingEventType>> enabledEventTypes();
 }
