@@ -49,4 +49,37 @@ public class TenantFactoryTests {
     assertThat(tenant.databaseType()).isEqualTo(DatabaseType.ASTRA);
     assertThat(tenant.toString()).isEqualTo("abc");
   }
+
+  @Test
+  public void shouldCreateTenantWithRegion() {
+    TenantFactory.initialize(DatabaseType.ASTRA);
+    TenantFactory factory = TenantFactory.instance();
+
+    Tenant tenant = factory.create("abc", "us-west-2");
+
+    assertThat(tenant.region()).isEqualTo("us-west-2");
+  }
+
+  @Test
+  public void shouldIgnoreTenantIdAndRegionForCassandra() {
+    // CASSANDRA is single-tenant: the factory ignores both arguments and always returns the
+    // built-in Cassandra singleton with its fixed region.
+    TenantFactory.initialize(DatabaseType.CASSANDRA);
+    TenantFactory factory = TenantFactory.instance();
+
+    Tenant tenant = factory.create("ignored-tenant-id", "ignored-region");
+
+    assertThat(tenant.databaseType()).isEqualTo(DatabaseType.CASSANDRA);
+    assertThat(tenant.region()).isEqualTo(Tenant.CASSANDRA_REGION_DEFAULT);
+  }
+
+  @Test
+  public void shouldDefaultUnknownRegionWhenNotProvided() {
+    TenantFactory.initialize(DatabaseType.ASTRA);
+    TenantFactory factory = TenantFactory.instance();
+
+    Tenant tenant = factory.create("abc");
+
+    assertThat(tenant.region()).isEqualTo(Tenant.UNKNOWN_REGION);
+  }
 }

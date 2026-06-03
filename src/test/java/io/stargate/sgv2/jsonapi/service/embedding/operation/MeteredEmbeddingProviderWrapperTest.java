@@ -35,7 +35,13 @@ class MeteredEmbeddingProviderWrapperTest {
     when(metricsConfig.embeddingModelTagEnabled()).thenReturn(true);
     when(metricsConfig.vectorizeInputBytesMetrics()).thenReturn("vectorize.input.bytes");
 
-    requestContext = TEST_CONSTANTS.requestContext();
+    // The wrapper only reaches into requestContext for the tenant tag and the per-request Billing.
+    // Stub both — BILLING is left disabled so bill() short-circuits and the static logger fields
+    // are never used.
+    var noOpBilling = TestConstants.noOpBilling();
+    requestContext = mock(RequestContext.class);
+    when(requestContext.tenant()).thenReturn(TEST_CONSTANTS.TENANT);
+    when(requestContext.billing()).thenReturn(noOpBilling);
   }
 
   @Test
