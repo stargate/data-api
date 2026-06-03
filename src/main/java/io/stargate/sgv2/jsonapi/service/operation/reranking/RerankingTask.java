@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -313,7 +314,13 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
               () -> rerankingMetrics.recordCallLatency(sample)) // Stop timer regardless of outcome
           .map(
               rerankingResponse -> {
-                commandContext.requestContext().billing().emitEvent(rerankingResponse.modelUsage());
+                // aggregateRanks can return a null modelUsage when there are no passages to
+                // rerank (no batches → no per-batch usage to aggregate). Only emit when we have
+                // real usage data; Billing.emitEvent rejects null to surface bugs in other callers.
+                ModelUsage modelUsage = rerankingResponse.modelUsage();
+                if (modelUsage != null) {
+                  commandContext.requestContext().billing().emitEvent(modelUsage);
+                }
                 return RerankingTaskResult.create(
                     commandContext.requestTracing(),
                     rerankingProvider,
