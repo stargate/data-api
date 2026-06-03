@@ -31,12 +31,12 @@ class BillingTest {
   private static final int REQUEST_BYTES = 256;
   private static final int RESPONSE_BYTES = 12_345;
 
-  private static Billing newBilling(ApiFeatures apiFeatures) {
+  private static LoggingBilling newBilling(ApiFeatures apiFeatures) {
     // Optional.empty() means "use all event types" — matches production default behavior.
     return newBilling(apiFeatures, List.of("nvidia"), Optional.empty());
   }
 
-  private static Billing newBilling(
+  private static LoggingBilling newBilling(
       ApiFeatures apiFeatures,
       List<String> internalProviders,
       Optional<Set<BillingEventType>> enabledEventTypes) {
@@ -45,11 +45,11 @@ class BillingTest {
     when(config.resourceType()).thenReturn(RESOURCE_TYPE);
     when(config.internalModelProviders()).thenReturn(internalProviders);
     when(config.enabledEventTypes()).thenReturn(enabledEventTypes);
-    return new Billing(config, apiFeatures);
+    return new LoggingBilling(config, apiFeatures);
   }
 
   /** Default Billing with BILLING_EVENTS_LOGGING enabled — sufficient for buildEvents tests. */
-  private static Billing newBilling() {
+  private static LoggingBilling newBilling() {
     return newBilling(featuresWithBilling(true));
   }
 
@@ -80,7 +80,7 @@ class BillingTest {
 
   @Test
   void buildEvents_internalProvider_usesInternalEventTypes() {
-    Billing billing = newBilling();
+    LoggingBilling billing = newBilling();
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
     List<BillingEvent> events = billing.buildEvents(modelUsage);
@@ -107,7 +107,7 @@ class BillingTest {
 
   @Test
   void buildEvents_externalProvider_usesExternalEventTypes() {
-    Billing billing = newBilling();
+    LoggingBilling billing = newBilling();
     ModelUsage modelUsage = usage(ModelProvider.OPENAI, ModelType.EMBEDDING, astraTenant(REGION));
 
     List<BillingEvent> events = billing.buildEvents(modelUsage);
@@ -129,7 +129,7 @@ class BillingTest {
   void buildEvents_modelTypeDoesNotChangeEventType() {
     // Reranking and embedding produce the same event types — the dimension is in event_type, the
     // distinction lives in properties.model.
-    Billing billing = newBilling();
+    LoggingBilling billing = newBilling();
     ModelUsage rerank = usage(ModelProvider.NVIDIA, ModelType.RERANKING, astraTenant(REGION));
 
     List<BillingEvent> events = billing.buildEvents(rerank);
@@ -145,7 +145,7 @@ class BillingTest {
   @Test
   void buildEvents_filtersDisabledEventTypes() {
     // Only enable total_tokens variants — egress / ingress events should be dropped.
-    Billing billing =
+    LoggingBilling billing =
         newBilling(
             featuresWithBilling(true),
             List.of("nvidia"),
@@ -171,7 +171,7 @@ class BillingTest {
   void buildEvents_emptyEnabledEventTypes_emitsNothing() {
     // Optional.of(empty set) explicitly disables all billing events — distinct from
     // Optional.empty() which means "use the default = all enabled".
-    Billing billing =
+    LoggingBilling billing =
         newBilling(featuresWithBilling(true), List.of("nvidia"), Optional.of(Set.of()));
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
@@ -181,7 +181,7 @@ class BillingTest {
   @Test
   void buildEvents_emptyInternalProviders_allEventsAreExternal() {
     // With no providers listed as internal, even NVIDIA usage is classified external.
-    Billing billing = newBilling(featuresWithBilling(true), List.of(), Optional.empty());
+    LoggingBilling billing = newBilling(featuresWithBilling(true), List.of(), Optional.empty());
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
     List<BillingEvent> events = billing.buildEvents(modelUsage);
@@ -196,7 +196,7 @@ class BillingTest {
 
   @Test
   void buildEvents_cassandraTenant_usesCassandraDefaultRegion() {
-    Billing billing = newBilling();
+    LoggingBilling billing = newBilling();
     Tenant cassandraTenant = Tenant.create(DatabaseType.CASSANDRA, null);
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, cassandraTenant);
 
@@ -208,7 +208,7 @@ class BillingTest {
 
   @Test
   void buildEvents_astraTenantWithoutRegion_usesUnknownRegion() {
-    Billing billing = newBilling();
+    LoggingBilling billing = newBilling();
     ModelUsage modelUsage = usage(ModelProvider.OPENAI, ModelType.EMBEDDING, astraTenant(null));
 
     List<BillingEvent> events = billing.buildEvents(modelUsage);
@@ -218,14 +218,14 @@ class BillingTest {
 
   @Test
   void shouldEmit_trueWhenFeatureEnabled() {
-    Billing billing = newBilling(featuresWithBilling(true));
+    LoggingBilling billing = newBilling(featuresWithBilling(true));
 
     assertThat(billing.shouldEmit()).isTrue();
   }
 
   @Test
   void shouldEmit_falseWhenFeatureDisabled() {
-    Billing billing = newBilling(featuresWithBilling(false));
+    LoggingBilling billing = newBilling(featuresWithBilling(false));
 
     assertThat(billing.shouldEmit()).isFalse();
   }
@@ -234,7 +234,7 @@ class BillingTest {
   void emitEvent_nullUsageThrows() {
     // Callers must guarantee usage data exists before invoking. A null modelUsage would silently
     // mask a calling-side bug, so emitEvent rejects it loudly.
-    Billing billing = newBilling(featuresWithBilling(true));
+    LoggingBilling billing = newBilling(featuresWithBilling(true));
 
     assertThatThrownBy(() -> billing.emitEvent(null))
         .isInstanceOf(NullPointerException.class)
@@ -266,7 +266,7 @@ class BillingTest {
 
     ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
 
-    Billing billing = newBilling(apiFeatures);
+    LoggingBilling billing = newBilling(apiFeatures);
 
     assertThat(apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING))
         .as("config=true must win over header=false")
@@ -290,7 +290,7 @@ class BillingTest {
 
     ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
 
-    Billing billing = newBilling(apiFeatures);
+    LoggingBilling billing = newBilling(apiFeatures);
 
     assertThat(billing.shouldEmit()).isTrue();
   }
