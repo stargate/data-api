@@ -14,6 +14,8 @@ public class ExtendedVectorType extends DefaultVectorType {
 
   @Override
   public String asCql(boolean includeFrozen, boolean pretty) {
-    return "VECTOR<" + getElementType().asCql(includeFrozen, pretty) + "," + getDimensions() + ">";
+    // NOTE: this is very similar to the DefaultVectorType.asCql() method, the difference
+    // is passing along the includeFrozen and pretty parameters. Default sets them to true
+    return String.format("vector<%s, %d>", getElementType().asCql(includeFrozen, pretty), getDimensions());
   }
 }

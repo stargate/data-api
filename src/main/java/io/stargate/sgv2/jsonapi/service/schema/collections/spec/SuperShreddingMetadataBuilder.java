@@ -29,6 +29,7 @@ public class SuperShreddingMetadataBuilder extends SuperShreddingBuilder<Describ
     @Override
     public List<SuperShreddingComponent<Describable>> build() {
 
+        Map<SuperShreddingMetadata.ColumnDef, Map<String, Object>> perColumnOptions = new HashMap<>();
         // Primary key first
         var primaryKey = ColumnDefs.toColumnMetadata(keyspace, collection, ColumnDefs.PARTITION_KEY)
                 .toList();
@@ -43,12 +44,14 @@ public class SuperShreddingMetadataBuilder extends SuperShreddingBuilder<Describ
                 :
                 ColumnDefs.REQUIRED;
         if (withVector()) {
+            // other vector settings go into the index created for it.
+            perColumnOptions.put(ColumnDefs.QUERY_VECTOR_VALUE, Map.of("dimensions", vectorLength));
             columnDefs.add(ColumnDefs.QUERY_VECTOR_VALUE);
         }
         if (withLexical()) {
             columnDefs.add(ColumnDefs.QUERY_LEXICAL_VALUE);
         }
-        ColumnDefs.toColumnMetadata(keyspace, collection, columnDefs)
+        ColumnDefs.toColumnMetadata(keyspace, collection, columnDefs, perColumnOptions)
                 .forEach(col -> allColumns.put(col.getName(), col));
 
 

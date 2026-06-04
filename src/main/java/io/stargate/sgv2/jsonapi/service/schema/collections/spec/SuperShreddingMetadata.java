@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;import io
 import io.stargate.sgv2.jsonapi.util.ColumnMetadataPredicate;
 
 import java.util.*;
-import java.util.function.Predicate;import java.util.stream.Collectors;import java.util.stream.Stream;
+import java.util.function.BiFunction;import java.util.function.Predicate;import java.util.stream.Collectors;import java.util.stream.Stream;
 
 /**
  * Names of columns in Document-containing Tables
@@ -110,12 +110,29 @@ public interface SuperShreddingMetadata {
         List<CqlIdentifier> REQUIRED            = listDifference(ALL_REGULAR_COLUMNS, OPTIONAL);
     }
 
-    record ColumnDef(CqlIdentifier name, DataType type) {
+    @FunctionalInterface
+    interface ColumnMetadataFactory{
+        ColumnMetadata columnMetadata(ColumnDef columnDef, CqlIdentifier keyspace, CqlIdentifier collection, Map<String, Object> options);
+    }
+    record ColumnDef(CqlIdentifier name, DataType type, ColumnMetadataFactory metadataFactory) {
 
-        public ColumnMetadata columnMetadata (CqlIdentifier keyspace, CqlIdentifier collection){
-            return new DefaultColumnMetadata(
-                    keyspace, collection, name, type, false
-            );
+        ColumnDef(CqlIdentifier name, DataType type){
+            this(name, type, null);
+        }
+
+        public ColumnMetadata columnMetadata (CqlIdentifier keyspace, CqlIdentifier collection, Map<String, Object> perColumnOptions){
+            if (metadataFactory == null) {
+                if (perColumnOptions !=null && !perColumnOptions.isEmpty()){
+                    throw new IllegalArgumentException("Cannot specify perColumnOptions if the columnDef does not have a metadataFactory");
+                }
+
+                return new DefaultColumnMetadata(
+                        keyspace, collection, name, type, false
+                );
+            }
+            var factoryValue = metadataFactory.columnMetadata(this, keyspace, collection, perColumnOptions);
+            Objects.requireNonNull(factoryValue, "ColumnMetadataFactory returned null for columnDef.name:{}" + name);
+            return factoryValue;
         }
 
         public CreateTable addTo(CreateTable createTable) {
@@ -143,7 +160,23 @@ public interface SuperShreddingMetadata {
         ColumnDef QUERY_NULL_VALUES      = new ColumnDef(Identifiers.QUERY_NULL_VALUES,      DataTypes.setOf(DataTypes.TEXT));
         // Optional columns
         // NOTE: using our extended vector, length is dependent on the vector dimension of the collection
-        ColumnDef QUERY_VECTOR_VALUE     = new ColumnDef(Identifiers.QUERY_VECTOR_VALUE,     new ExtendedVectorType(DataTypes.FLOAT, 1));
+        ColumnDef QUERY_VECTOR_VALUE     = new ColumnDef(Identifiers.QUERY_VECTOR_VALUE,     new ExtendedVectorType(DataTypes.FLOAT, 1),
+                new ColumnMetadataFactory(){
+                @Override
+                public ColumnMetadata columnMetadata(ColumnDef columnDef, CqlIdentifier keyspace, CqlIdentifier collection, Map<String,Object> options) {
+
+                    Objects.requireNonNull(options, "options cannot be null");
+                    Integer dimension = (Integer)options.get("dimensions");
+                    if(dimension == null) {
+                        throw new IllegalArgumentException("`dimensions` is required option for vector column");
+                    }
+                    var elementType = ((ExtendedVectorType) ColumnDefs.QUERY_VECTOR_VALUE.type()).getElementType();
+                    var vectorWithDimension = new ExtendedVectorType(elementType, dimension);
+
+                    return new DefaultColumnMetadata(
+                            keyspace, collection, columnDef.name(), vectorWithDimension, false
+                    );
+    }});
         ColumnDef QUERY_LEXICAL_VALUE    = new ColumnDef(Identifiers.QUERY_LEXICAL_VALUE,    DataTypes.TEXT);
 
         List<ColumnDef> ALL = List.of(
@@ -157,9 +190,20 @@ public interface SuperShreddingMetadata {
         List<ColumnDef> OPTIONAL            = List.of(QUERY_VECTOR_VALUE, QUERY_LEXICAL_VALUE);
         List<ColumnDef> REQUIRED            = listDifference(ALL_REGULAR_COLUMNS, OPTIONAL);
 
-        static Stream<ColumnMetadata> toColumnMetadata(CqlIdentifier keyspace, CqlIdentifier table, List<ColumnDef> columns){
-            return columns.stream()
-                    .map(column -> column.columnMetadata(keyspace, table));
+        static Stream<ColumnMetadata> toColumnMetadata(CqlIdentifier keyspace,
+                                                       CqlIdentifier table,
+                                                       List<ColumnDef> columns){
+            return toColumnMetadata(keyspace, table, columns, Collections.emptyMap());
+        }
+
+        static Stream<ColumnMetadata> toColumnMetadata(CqlIdentifier keyspace,
+                                                       CqlIdentifier table,
+                                                       List<ColumnDef> columnDefs,
+                                                       Map<ColumnDef, Map<String, Object>> perColumnOptions){
+
+            Map<ColumnDef, Map<String, Object>> safeOptions = perColumnOptions != null ? perColumnOptions : Collections.emptyMap();
+            return columnDefs.stream()
+                    .map(columnDef -> columnDef.columnMetadata(keyspace, table, safeOptions.get(columnDef)));
         }
     }
 

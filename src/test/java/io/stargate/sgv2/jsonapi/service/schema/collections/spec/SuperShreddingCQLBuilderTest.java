@@ -36,7 +36,7 @@ public class SuperShreddingCQLBuilderTest {
 
     private static  final String CREATE_TABLE_ALL_OPTIONAL = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
-                "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
+                "key"                     frozen<tuple<tinyint, text>>,
                 "tx_id"                   timeuuid,
                 "doc_json"                text,
                 "exist_keys"              set<text>,
@@ -49,13 +49,14 @@ public class SuperShreddingCQLBuilderTest {
                 "query_null_values"       set<text>,
                 "query_vector_value"      vector<float, 1024>,
                 "query_lexical_value"     text,
+                PRIMARY KEY ("key")
             ) WITH
                 comment = '{"collection":{"name":"documents","schema_version":2}}';
             """;
 
     private static  final String CREATE_TABLE_NO_OPTIONAL = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
-                "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
+                "key"                     frozen<tuple<tinyint, text>>,
                 "tx_id"                   timeuuid,
                 "doc_json"                text,
                 "exist_keys"              set<text>,
@@ -66,13 +67,14 @@ public class SuperShreddingCQLBuilderTest {
                 "query_text_values"       map<text, text>,
                 "query_timestamp_values"  map<text, timestamp>,
                 "query_null_values"       set<text>,
+                PRIMARY KEY ("key")
             ) WITH
                 comment = '{"collection":{"name":"documents","schema_version":2}}';
             """;
 
     private static final String CREATE_TABLE_VECTOR_ONLY = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
-                "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
+                "key"                     frozen<tuple<tinyint, text>>,
                 "tx_id"                   timeuuid,
                 "doc_json"                text,
                 "exist_keys"              set<text>,
@@ -84,13 +86,14 @@ public class SuperShreddingCQLBuilderTest {
                 "query_timestamp_values"  map<text, timestamp>,
                 "query_null_values"       set<text>,
                 "query_vector_value"      vector<float, 1024>,
+                PRIMARY KEY ("key")
             ) WITH
                 comment = '{"collection":{"name":"documents","schema_version":2}}';
             """;
 
     private static  final String CREATE_TABLE_LEXICAL_ONLY = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
-                "key"                     frozen<tuple<tinyint, text>> PRIMARY KEY,
+                "key"                     frozen<tuple<tinyint, text>>,
                 "tx_id"                   timeuuid,
                 "doc_json"                text,
                 "exist_keys"              set<text>,
@@ -102,6 +105,7 @@ public class SuperShreddingCQLBuilderTest {
                 "query_timestamp_values"  map<text, timestamp>,
                 "query_null_values"       set<text>,
                 "query_lexical_value"     text,
+                PRIMARY KEY ("key")
             ) WITH
                 comment = '{"collection":{"name":"documents","schema_version":2}}';
             """;
@@ -109,42 +113,42 @@ public class SuperShreddingCQLBuilderTest {
     private static final Map<String, String> REQUIRED_INDEXES = Map.of(
             "documents_exist_keys", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_exist_keys
-                    ON keyspace.documents (values("exist_keys"))
+                    ON "keyspace"."documents" (values("exist_keys"))
                     USING 'StorageAttachedIndex';
                     """,
             "documents_array_size", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_array_size
-                    ON keyspace.documents (entries("array_size"))
+                    ON "keyspace"."documents" (entries("array_size"))
                     USING 'StorageAttachedIndex';
                     """,
             "documents_array_contains", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_array_contains
-                    ON keyspace.documents (values("array_contains"))
+                    ON "keyspace"."documents" (values("array_contains"))
                     USING 'StorageAttachedIndex';
                     """,
             "documents_query_bool_values", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_query_bool_values
-                    ON keyspace.documents (entries("query_bool_values"))
+                    ON "keyspace"."documents" (entries("query_bool_values"))
                     USING 'StorageAttachedIndex';
                     """,
             "documents_query_dbl_values", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_query_dbl_values
-                    ON keyspace.documents (entries("query_dbl_values"))
+                    ON "keyspace"."documents" (entries("query_dbl_values"))
                     USING 'StorageAttachedIndex';
                     """,
             "documents_query_text_values", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_query_text_values
-                    ON keyspace.documents (entries("query_text_values"))
+                    ON "keyspace"."documents" (entries("query_text_values"))
                     USING 'StorageAttachedIndex';
                     """,
             "documents_query_timestamp_values", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_query_timestamp_values
-                    ON keyspace.documents (entries("query_timestamp_values"))
+                    ON "keyspace"."documents" (entries("query_timestamp_values"))
                     USING 'StorageAttachedIndex';
                     """,
             "documents_query_null_values", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_query_null_values
-                    ON keyspace.documents (values("query_null_values"))
+                    ON "keyspace"."documents" (values("query_null_values"))
                     USING 'StorageAttachedIndex';
                     """
     );
@@ -152,13 +156,13 @@ public class SuperShreddingCQLBuilderTest {
     private static final Map<String, String> OPTIONAL_INDEXES = Map.of(
             "documents_query_vector_value", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_query_vector_value
-                    ON keyspace.documents ("query_vector_value")
+                    ON "keyspace"."documents" ("query_vector_value")
                     USING 'StorageAttachedIndex'
                     WITH OPTIONS = {'similarity_function': 'cosine', 'source_model': 'OTHER'};
                     """,
             "documents_query_lexical_value", """
                     CREATE CUSTOM INDEX IF NOT EXISTS documents_query_lexical_value
-                    ON keyspace.documents ("query_lexical_value")
+                    ON "keyspace"."documents" ("query_lexical_value")
                     USING 'StorageAttachedIndex'
                     WITH OPTIONS = {'index_analyzer': 'standard'};
                     """
