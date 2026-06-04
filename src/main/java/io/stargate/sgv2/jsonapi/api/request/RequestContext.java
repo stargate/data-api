@@ -12,12 +12,10 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
 import io.stargate.sgv2.jsonapi.service.provider.Billing;
-import io.stargate.sgv2.jsonapi.service.provider.DefaultBilling;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaRegistry;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
@@ -214,21 +212,16 @@ public class RequestContext implements LoggingMDCContext {
   }
 
   /**
-   * Per-request {@link Billing}. The choice of implementation is made here once based on whether
-   * {@link ApiFeature#BILLING_EVENTS_LOGGING} is enabled for this request: enabled → {@link
-   * DefaultBilling} that emits events on the {@code billing.events} logger; disabled → {@link
-   * Billing#NO_OP}. Callers don't need to know which one they got — just pass the {@link
-   * io.stargate.sgv2.jsonapi.service.provider.ModelUsage} to {@link Billing#emitEvent}.
+   * Per-request {@link Billing}, cached for the lifetime of the request. The choice of
+   * implementation (real vs no-op) is delegated to {@link Billing#create(BillingConfig,
+   * ApiFeatures)}.
    */
   public Billing billing() {
     // using a sync block here because the context can be accessed by multiple tasks concurrently
     if (billing == null) {
       synchronized (this) {
         if (billing == null) {
-          billing =
-              apiFeatures().isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING)
-                  ? new DefaultBilling(commandConfig.get(BillingConfig.class))
-                  : Billing.NO_OP;
+          billing = Billing.create(commandConfig.get(BillingConfig.class), apiFeatures());
         }
       }
     }
