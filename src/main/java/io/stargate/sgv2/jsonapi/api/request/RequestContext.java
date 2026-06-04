@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
@@ -213,9 +214,10 @@ public class RequestContext implements LoggingMDCContext {
   }
 
   /**
-   * Per-request {@link Billing} that emits structured billing events when {@link
-   * io.stargate.sgv2.jsonapi.config.feature.ApiFeature#BILLING_EVENTS_LOGGING} is enabled. {@link
-   * ApiFeatures} is captured at construction so callers only need to pass the {@link
+   * Per-request {@link Billing}. The choice of implementation is made here once based on whether
+   * {@link ApiFeature#BILLING_EVENTS_LOGGING} is enabled for this request: enabled → {@link
+   * DefaultBilling} that emits events on the {@code billing.events} logger; disabled → {@link
+   * Billing#NO_OP}. Callers don't need to know which one they got — just pass the {@link
    * io.stargate.sgv2.jsonapi.service.provider.ModelUsage} to {@link Billing#emitEvent}.
    */
   public Billing billing() {
@@ -223,7 +225,10 @@ public class RequestContext implements LoggingMDCContext {
     if (billing == null) {
       synchronized (this) {
         if (billing == null) {
-          billing = new DefaultBilling(commandConfig.get(BillingConfig.class), apiFeatures());
+          billing =
+              apiFeatures().isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING)
+                  ? new DefaultBilling(commandConfig.get(BillingConfig.class))
+                  : Billing.NO_OP;
         }
       }
     }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -21,21 +20,22 @@ import org.slf4j.LoggerFactory;
  * {@link Billing} implementation that emits structured JSON log lines on the {@code billing.events}
  * logger for downstream billing pipelines.
  *
- * <p>One instance is created per request and lives on the {@link
- * io.stargate.sgv2.jsonapi.api.request.RequestContext} — get it via {@code
- * requestContext.billing()}.
+ * <p>Construction is driven by {@link
+ * io.stargate.sgv2.jsonapi.api.request.RequestContext#billing()}: the request context decides
+ * between this implementation and {@link Billing#NO_OP} based on whether {@link
+ * ApiFeature#BILLING_EVENTS_LOGGING} is enabled for the request. This class therefore assumes
+ * billing is enabled and unconditionally emits — it does not re-check the feature flag.
  *
- * <p>For each eligible {@link ModelUsage}, up to three events are emitted, one per billable metric
- * ({@link BillingEventType.Metric#TOTAL_TOKENS TOTAL_TOKENS}, {@link
- * BillingEventType.Metric#EGRESS_BYTES EGRESS_BYTES}, {@link BillingEventType.Metric#INGRESS_BYTES
- * INGRESS_BYTES}). The {@code internal_*} variant is used when the model provider is listed in
- * {@link BillingConfig#internalModelProviders()}; otherwise the {@code external_*} variant is used.
- * Events whose type is not in {@link BillingConfig#enabledEventTypes()} are dropped.
+ * <p>For each {@link ModelUsage}, up to three events are emitted, one per billable metric ({@link
+ * BillingEventType.Metric#TOTAL_TOKENS TOTAL_TOKENS}, {@link BillingEventType.Metric#EGRESS_BYTES
+ * EGRESS_BYTES}, {@link BillingEventType.Metric#INGRESS_BYTES INGRESS_BYTES}). The {@code
+ * internal_*} variant is used when the model provider is listed in {@link
+ * BillingConfig#internalModelProviders()}; otherwise the {@code external_*} variant is used. Events
+ * whose type is not in {@link BillingConfig#enabledEventTypes()} are dropped.
  *
- * <p>Eligibility requires both {@link ApiFeature#BILLING_EVENTS_LOGGING} and the {@code
- * billing.events} logger to be enabled. {@link #emitEvent(ModelUsage)} requires a non-null {@link
- * ModelUsage} — callers must guarantee usage data exists before invoking. The region for each event
- * is read from {@link ModelUsage#tenant()} ({@code Tenant.region()}).
+ * <p>{@link #emitEvent(ModelUsage)} requires a non-null {@link ModelUsage} — callers must guarantee
+ * usage data exists before invoking. The region for each event is read from {@link
+ * ModelUsage#tenant()} ({@code Tenant.region()}).
  */
 public class DefaultBilling implements Billing {
 
@@ -48,11 +48,9 @@ public class DefaultBilling implements Billing {
   private final String resourceType;
   private final Set<String> internalModelProviders;
   private final Set<BillingEventType> enabledEventTypes;
-  private final ApiFeatures apiFeatures;
 
-  public DefaultBilling(BillingConfig config, ApiFeatures apiFeatures) {
+  public DefaultBilling(BillingConfig config) {
     Objects.requireNonNull(config, "config must not be null");
-    this.apiFeatures = Objects.requireNonNull(apiFeatures, "apiFeatures must not be null");
     this.product = requireNonBlank(config.product(), "billing.product");
     this.resourceType = requireNonBlank(config.resourceType(), "billing.resource_type");
     this.internalModelProviders = Set.copyOf(config.internalModelProviders());
@@ -64,8 +62,8 @@ public class DefaultBilling implements Billing {
   }
 
   /**
-   * Emits billing events for the given aggregated model usage, if the request and configuration
-   * allow it. No-op when the feature is disabled or the {@code billing.events} logger is off.
+   * Emits billing events for the given aggregated model usage. The {@code billing.events} logger
+   * level is checked first so we skip event construction when the logger is silenced at runtime.
    *
    * @param modelUsage usage data for the model call; must not be null. Callers are expected to
    *     ensure they have usage data before invoking.
@@ -73,7 +71,7 @@ public class DefaultBilling implements Billing {
   @Override
   public void emitEvent(ModelUsage modelUsage) {
     Objects.requireNonNull(modelUsage, "modelUsage must not be null");
-    if (!shouldEmit()) {
+    if (!BILLING_LOGGER.isInfoEnabled()) {
       return;
     }
     for (BillingEvent event : buildEvents(modelUsage)) {
@@ -83,13 +81,6 @@ public class DefaultBilling implements Billing {
         LOGGER.error("Failed to serialize billing event of type {}", event.eventType(), e);
       }
     }
-  }
-
-  /** Whether a billing event should be emitted for the current configuration. */
-  @VisibleForTesting
-  boolean shouldEmit() {
-    return apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING)
-        && BILLING_LOGGER.isInfoEnabled();
   }
 
   /**

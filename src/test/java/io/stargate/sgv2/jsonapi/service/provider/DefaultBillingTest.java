@@ -5,17 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.vertx.core.MultiMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -31,33 +25,19 @@ class DefaultBillingTest {
   private static final int REQUEST_BYTES = 256;
   private static final int RESPONSE_BYTES = 12_345;
 
-  private static DefaultBilling newBilling(ApiFeatures apiFeatures) {
-    // Optional.empty() means "use all event types" — matches production default behavior.
-    return newBilling(apiFeatures, List.of("nvidia"), Optional.empty());
+  /** Default config — used by buildEvents tests that don't care about filtering. */
+  private static DefaultBilling newBilling() {
+    return newBilling(List.of("nvidia"), Optional.empty());
   }
 
   private static DefaultBilling newBilling(
-      ApiFeatures apiFeatures,
-      List<String> internalProviders,
-      Optional<Set<BillingEventType>> enabledEventTypes) {
+      List<String> internalProviders, Optional<Set<BillingEventType>> enabledEventTypes) {
     BillingConfig config = mock(BillingConfig.class);
     when(config.product()).thenReturn(PRODUCT);
     when(config.resourceType()).thenReturn(RESOURCE_TYPE);
     when(config.internalModelProviders()).thenReturn(internalProviders);
     when(config.enabledEventTypes()).thenReturn(enabledEventTypes);
-    return new DefaultBilling(config, apiFeatures);
-  }
-
-  /** Default Billing with BILLING_EVENTS_LOGGING enabled — sufficient for buildEvents tests. */
-  private static DefaultBilling newBilling() {
-    return newBilling(featuresWithBilling(true));
-  }
-
-  private static ApiFeatures featuresWithBilling(boolean enabled) {
-    FeaturesConfig config = mock(FeaturesConfig.class);
-    when(config.flags())
-        .thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, String.valueOf(enabled)));
-    return ApiFeatures.fromConfigAndRequest(config, null);
+    return new DefaultBilling(config);
   }
 
   private ModelUsage usage(ModelProvider provider, ModelType modelType, Tenant tenant) {
@@ -127,7 +107,7 @@ class DefaultBillingTest {
 
   @Test
   void buildEvents_modelTypeDoesNotChangeEventType() {
-    // Reranking and embedding produce the same event types — the dimension is in event_type, the
+    // Reranking and embedding produce the same event types — the metric is in event_type, the
     // distinction lives in properties.model.
     DefaultBilling billing = newBilling();
     ModelUsage rerank = usage(ModelProvider.NVIDIA, ModelType.RERANKING, astraTenant(REGION));
@@ -147,7 +127,6 @@ class DefaultBillingTest {
     // Only enable total_tokens variants — egress / ingress events should be dropped.
     DefaultBilling billing =
         newBilling(
-            featuresWithBilling(true),
             List.of("nvidia"),
             Optional.of(
                 EnumSet.of(
@@ -171,8 +150,7 @@ class DefaultBillingTest {
   void buildEvents_emptyEnabledEventTypes_emitsNothing() {
     // Optional.of(empty set) explicitly disables all billing events — distinct from
     // Optional.empty() which means "use the default = all enabled".
-    DefaultBilling billing =
-        newBilling(featuresWithBilling(true), List.of("nvidia"), Optional.of(Set.of()));
+    DefaultBilling billing = newBilling(List.of("nvidia"), Optional.of(Set.of()));
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
     assertThat(billing.buildEvents(modelUsage)).isEmpty();
@@ -181,7 +159,7 @@ class DefaultBillingTest {
   @Test
   void buildEvents_emptyInternalProviders_allEventsAreExternal() {
     // With no providers listed as internal, even NVIDIA usage is classified external.
-    DefaultBilling billing = newBilling(featuresWithBilling(true), List.of(), Optional.empty());
+    DefaultBilling billing = newBilling(List.of(), Optional.empty());
     ModelUsage modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION));
 
     List<BillingEvent> events = billing.buildEvents(modelUsage);
@@ -217,81 +195,13 @@ class DefaultBillingTest {
   }
 
   @Test
-  void shouldEmit_trueWhenFeatureEnabled() {
-    DefaultBilling billing = newBilling(featuresWithBilling(true));
-
-    assertThat(billing.shouldEmit()).isTrue();
-  }
-
-  @Test
-  void shouldEmit_falseWhenFeatureDisabled() {
-    DefaultBilling billing = newBilling(featuresWithBilling(false));
-
-    assertThat(billing.shouldEmit()).isFalse();
-  }
-
-  @Test
   void emitEvent_nullUsageThrows() {
     // Callers must guarantee usage data exists before invoking. A null modelUsage would silently
     // mask a calling-side bug, so emitEvent rejects it loudly.
-    DefaultBilling billing = newBilling(featuresWithBilling(true));
+    DefaultBilling billing = newBilling();
 
     assertThatThrownBy(() -> billing.emitEvent(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("modelUsage");
-  }
-
-  @Test
-  void emitEvent_featureDisabledIsNoOp() {
-    // BILLING_EVENTS_LOGGING disabled → emitEvent does nothing, even with valid usage.
-    newBilling(featuresWithBilling(false))
-        .emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING, astraTenant(REGION)));
-  }
-
-  /**
-   * If BILLING_EVENTS_LOGGING is enabled at startup config, a request header MUST NOT be able to
-   * turn it off. The config value is authoritative; headers are only consulted when config leaves
-   * the flag unset.
-   */
-  @Test
-  void shouldEmit_configEnabledIsNotOverriddenByHeader() {
-    // startup config: billing = true
-    FeaturesConfig config = mock(FeaturesConfig.class);
-    when(config.flags()).thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, "true"));
-
-    // request header tries to disable it
-    MultiMap headers = MultiMap.caseInsensitiveMultiMap();
-    headers.add(ApiFeature.BILLING_EVENTS_LOGGING.httpHeaderName(), "false");
-    var headerAccess = new RequestContext.HttpHeaderAccess(headers);
-
-    ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
-
-    DefaultBilling billing = newBilling(apiFeatures);
-
-    assertThat(apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING))
-        .as("config=true must win over header=false")
-        .isTrue();
-    assertThat(billing.shouldEmit()).isTrue();
-  }
-
-  /**
-   * Conversely, if config doesn't set the flag (left blank / not present), a request header CAN
-   * enable it. This proves the header path is alive when config is silent — otherwise the test
-   * above would pass trivially.
-   */
-  @Test
-  void shouldEmit_headerEnablesWhenConfigUnset() {
-    FeaturesConfig config = mock(FeaturesConfig.class);
-    when(config.flags()).thenReturn(Map.of());
-
-    MultiMap headers = MultiMap.caseInsensitiveMultiMap();
-    headers.add(ApiFeature.BILLING_EVENTS_LOGGING.httpHeaderName(), "true");
-    var headerAccess = new RequestContext.HttpHeaderAccess(headers);
-
-    ApiFeatures apiFeatures = ApiFeatures.fromConfigAndRequest(config, headerAccess);
-
-    DefaultBilling billing = newBilling(apiFeatures);
-
-    assertThat(billing.shouldEmit()).isTrue();
   }
 }
