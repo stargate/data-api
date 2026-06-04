@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,7 +34,7 @@ class BillingTest {
   @Test
   void noOp_doesNothingForValidUsage() {
     // Should run without side effects or exceptions.
-    Billing.NO_OP.emitEvent(stubUsage());
+    assertThatCode(() -> Billing.NO_OP.emitEvent(stubUsage())).doesNotThrowAnyException();
   }
 
   @Test
