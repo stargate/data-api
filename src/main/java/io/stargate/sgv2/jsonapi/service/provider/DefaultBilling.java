@@ -23,8 +23,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>One instance is created per request and lives on the {@link
  * io.stargate.sgv2.jsonapi.api.request.RequestContext} — get it via {@code
- * requestContext.billing()}. {@link ApiFeatures} is captured at construction time so callers only
- * need to pass the {@link ModelUsage}.
+ * requestContext.billing()}.
  *
  * <p>For each eligible {@link ModelUsage}, up to three events are emitted, one per billable metric
  * ({@link BillingEventType.Metric#TOTAL_TOKENS TOTAL_TOKENS}, {@link
@@ -38,10 +37,10 @@ import org.slf4j.LoggerFactory;
  * ModelUsage} — callers must guarantee usage data exists before invoking. The region for each event
  * is read from {@link ModelUsage#tenant()} ({@code Tenant.region()}).
  */
-public class LoggingBilling implements Billing {
+public class DefaultBilling implements Billing {
 
   private static final Logger BILLING_LOGGER = LoggerFactory.getLogger("billing.events");
-  private static final Logger LOGGER = LoggerFactory.getLogger(LoggingBilling.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBilling.class);
 
   private static final ObjectWriter OBJECT_WRITER = new ObjectMapper().writer();
 
@@ -51,7 +50,7 @@ public class LoggingBilling implements Billing {
   private final Set<BillingEventType> enabledEventTypes;
   private final ApiFeatures apiFeatures;
 
-  public LoggingBilling(BillingConfig config, ApiFeatures apiFeatures) {
+  public DefaultBilling(BillingConfig config, ApiFeatures apiFeatures) {
     Objects.requireNonNull(config, "config must not be null");
     this.apiFeatures = Objects.requireNonNull(apiFeatures, "apiFeatures must not be null");
     this.product = requireNonBlank(config.product(), "billing.product");
@@ -69,8 +68,7 @@ public class LoggingBilling implements Billing {
    * allow it. No-op when the feature is disabled or the {@code billing.events} logger is off.
    *
    * @param modelUsage usage data for the model call; must not be null. Callers are expected to
-   *     ensure they have usage data before invoking — a null would silently mask a calling-side
-   *     bug, so we fail loudly instead.
+   *     ensure they have usage data before invoking.
    */
   @Override
   public void emitEvent(ModelUsage modelUsage) {

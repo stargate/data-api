@@ -3,22 +3,20 @@ package io.stargate.sgv2.jsonapi.service.provider;
 import java.util.Objects;
 
 /**
- * Per-request billing sink for model calls. The production implementation, {@link LoggingBilling},
+ * Per-request billing sink for model calls. The production implementation, {@link DefaultBilling},
  * emits structured JSON log lines on the {@code billing.events} logger for downstream pipelines.
  *
  * <p>Get an instance via {@code requestContext.billing()}. Pass each aggregated {@link ModelUsage}
  * to {@link #emitEvent(ModelUsage)}. {@code modelUsage} must be non-null — callers are responsible
- * for ensuring usage data exists before invoking. A null would silently hide a calling-side bug, so
- * implementations fail loudly.
+ * for ensuring usage data exists before invoking.
  *
- * <p>Use {@link #NO_OP} in tests (and any context where billing is not exercised) to skip the
- * config-mocking required to instantiate {@link LoggingBilling}.
+ * <p>Use {@link #NO_OP} in tests (and any context where billing is not exercised).
  */
 public interface Billing {
 
   /**
    * Emits billing events for the given aggregated model usage, subject to the implementation's own
-   * gating (e.g. {@link LoggingBilling} also checks the feature flag and logger).
+   * gating (e.g. {@link DefaultBilling} also checks the feature flag and logger).
    *
    * @param modelUsage usage data for the model call; must not be null.
    */
