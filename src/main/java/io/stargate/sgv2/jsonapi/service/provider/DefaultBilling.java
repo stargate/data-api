@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
+import static io.stargate.sgv2.jsonapi.util.StringUtil.requireNonBlank;
+
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -8,7 +10,6 @@ import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -55,10 +56,7 @@ public class DefaultBilling implements Billing {
     this.resourceType = requireNonBlank(config.resourceType(), "billing.resource_type");
     this.internalModelProviders = Set.copyOf(config.internalModelProviders());
     this.enabledEventTypes =
-        config
-            .enabledEventTypes()
-            .map(Set::copyOf)
-            .orElseGet(() -> EnumSet.allOf(BillingEventType.class));
+        config.enabledEventTypes().map(Set::copyOf).orElse(BillingEventType.ALL);
   }
 
   /**
@@ -74,7 +72,7 @@ public class DefaultBilling implements Billing {
     if (!BILLING_LOGGER.isInfoEnabled()) {
       return;
     }
-    for (BillingEvent event : buildEvents(modelUsage)) {
+    for (var event : buildEvents(modelUsage)) {
       try {
         BILLING_LOGGER.info(OBJECT_WRITER.writeValueAsString(event));
       } catch (JacksonException e) {
@@ -92,12 +90,12 @@ public class DefaultBilling implements Billing {
    */
   @VisibleForTesting
   List<BillingEvent> buildEvents(ModelUsage modelUsage) {
-    boolean internal = internalModelProviders.contains(modelUsage.modelProvider().apiName());
-    String region = modelUsage.tenant().region();
-    String resourceId = modelUsage.tenant().toString();
-    String providerName = modelUsage.modelProvider().apiName();
-    String modelName = modelUsage.modelName();
-    Instant timestamp = Instant.now();
+    var internal = internalModelProviders.contains(modelUsage.modelProvider().apiName());
+    var region = modelUsage.tenant().region();
+    var resourceId = modelUsage.tenant().toString();
+    var providerName = modelUsage.modelProvider().apiName();
+    var modelName = modelUsage.modelName();
+    var timestamp = Instant.now();
 
     var events = new ArrayList<BillingEvent>(3);
     addEventIfEnabled(
@@ -146,12 +144,5 @@ public class DefaultBilling implements Billing {
         new BillingEvent.BillingProperties(
             usage, region, resourceType, resourceId, providerName, modelName);
     events.add(new BillingEvent(UUID.randomUUID(), timestamp, product, eventType, properties));
-  }
-
-  private static String requireNonBlank(String value, String name) {
-    if (value == null || value.isBlank()) {
-      throw new IllegalArgumentException(name + " must not be null or blank");
-    }
-    return value;
   }
 }
