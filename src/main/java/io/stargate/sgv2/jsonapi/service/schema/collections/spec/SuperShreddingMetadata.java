@@ -308,10 +308,10 @@ public interface SuperShreddingMetadata {
         public IndexMetadata indexMetadata(CqlIdentifier keyspace, CqlIdentifier collection, Map<String, String> options) {
 
             // because this is IndexMetadata read from system_schema.indexes
-            // we need the options for the class_name and target AND any other cql "OPTIONS" like
+            // we need the options for the `class_name` and `target` AND any other cql "OPTIONS" like
             // vector index config, pass them in
             var indexTarget = new CQLSAIIndex.IndexTarget(columnDef.name, indexFunction);
-            Map<String, String> fullOptions = options == null ? new HashMap<>() : new HashMap<>(options);
+            Map<String, String> fullOptions = options == null ? new LinkedHashMap<>() : new LinkedHashMap<>(options);
             fullOptions.putAll(indexTarget.indexOptions());
 
             return new DefaultIndexMetadata(
@@ -326,7 +326,9 @@ public interface SuperShreddingMetadata {
         public static Optional<Map<String, String>> vectorIndexOptions(String similarityFunction, String sourceModel) {
 
             //  {'similarity_function': '${SIMILARITY_FUNCTION}', 'source_model': '${SOURCE_MODEL}'}
-            var options = new HashMap<String, String>();
+
+            // preserve order, similarity then source model, important for testing against CQL
+            Map<String, String> options = new LinkedHashMap<>();
             if (similarityFunction != null && !similarityFunction.isBlank()) {
                 options.put(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, similarityFunction);
             }
@@ -339,7 +341,8 @@ public interface SuperShreddingMetadata {
         public static Optional<Map<String, String>> lexicalIndexOptions(String indexAnalyzer){
 
             // {'index_analyzer': '${INDEX_ANALYZER}'}
-            var options = new HashMap<String, String>();
+            // preserver order, we only have one, but hey, we preserve order
+            Map<String, String> options = new LinkedHashMap<>();
             if (indexAnalyzer != null && !indexAnalyzer.isBlank()) {
                 options.put(TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER, indexAnalyzer);
             }

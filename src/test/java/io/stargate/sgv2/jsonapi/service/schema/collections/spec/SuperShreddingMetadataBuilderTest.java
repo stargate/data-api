@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedHashMap;
+import java.util.function.Function;
+
 import static io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingCQL.collapseWhitespace;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,54 +15,54 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Testing that when we build TableMetadata for super shredding table, it matches the expected CQL statement
  * from
  */
-public class SuperShreddingMetadataBuilderTest {
+public class SuperShreddingMetadataBuilderTest  extends SuperShreddingBuilderTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(SuperShreddingMetadataBuilderTest.class);
 
 
     private final TestConstants TEST_CONSTANTS = new TestConstants();
 
+    public SuperShreddingMetadataBuilderTest(){
+        super(false, false);
+        // ^^ ok to use dynamic schema names, but need to exclude ifNotexists because
+        // cql from TableMetadata etc does not add it.
+    }
+
+
     @Test
     public void createTableAllOptional() {
 
-        var metadataBuilder = SuperShreddingCQLBuilder.metadata()
-                .withIfNotExists(false)
-                .withKeyspace(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace())
-                .withCollection(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table())
-                .withVector(1024, "cosine", "OTHER")
-                .withLexical("standard");
+        var expectedCqlBuilder = configAllOptional(SuperShreddingCQLBuilder.cql());
+        var actualMetadataBuilder = configAllOptional(SuperShreddingMetadataBuilder.metadata());
 
-        var cqlBuilder = SuperShreddingCQLBuilder.cql()
-                .withIfNotExists(false)
-                .withKeyspace(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace())
-                .withCollection(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table())
-                .withVector(1024, "cosine", "OTHER")
-                .withLexical("standard");
-
-        var metadataComponents = metadataBuilder.build();
-        var cqlComponents = cqlBuilder.build();
-
-        for (var cqlComponent : cqlComponents) {
-
-            var metadataComponent = metadataComponents.stream()
-                    .filter(c -> c.identifier().equals(cqlComponent.identifier()))
-                    .findFirst()
-                    .orElse(null);
-
-            assertThat(metadataComponent)
-                    .as("Metadata component for '%s' should not be null", cqlComponent.identifier())
-                    .isNotNull();
-
-            var expectedCql = collapseWhitespace(cqlComponent.value());
-            var actualCql = collapseWhitespace(metadataComponent.value().describe(false ));
-
-            LOGGER.info("createTableAllOptional() - cqlComponent: {}, expectedCql: {}", cqlComponent.identifier(), expectedCql);
-            LOGGER.info("createTableAllOptional() - cqlComponent: {}, actualCql: {}", cqlComponent.identifier(), actualCql);
-
-            assertThat(actualCql)
-                    .as("Metadata CQL for '%s' should be as expected", cqlComponent.identifier())
-                    .isEqualTo(expectedCql);
-        }
-
+        assertComponents("createTableAllOptional()", upcastString(expectedCqlBuilder.build()), upcastDesc(actualMetadataBuilder.build()));
     }
 
+
+    @Test
+    public void createTableNoOptional(){
+
+        var expectedCqlBuilder = configNoOptional(SuperShreddingCQLBuilder.cql());
+        var actualMetadataBuilder = configNoOptional(SuperShreddingMetadataBuilder.metadata());
+
+        assertComponents("createTableNoOptional()", upcastString(expectedCqlBuilder.build()), upcastDesc(actualMetadataBuilder.build()));
+    }
+
+    @Test
+    public void createTableVectorOnly() {
+
+        var expectedCqlBuilder = configVectorOnly(SuperShreddingCQLBuilder.cql());
+        var actualMetadataBuilder = configVectorOnly(SuperShreddingMetadataBuilder.metadata());
+
+        assertComponents("createTableVectorOnly()", upcastString(expectedCqlBuilder.build()), upcastDesc(actualMetadataBuilder.build()));
+    }
+
+
+    @Test
+    public void createTableLexicalOnly() {
+
+        var expectedCqlBuilder = configLexicalOnly(SuperShreddingCQLBuilder.cql());
+        var actualMetadataBuilder = configLexicalOnly(SuperShreddingMetadataBuilder.metadata());
+
+        assertComponents("createTableLexicalOnly()", upcastString(expectedCqlBuilder.build()), upcastDesc(actualMetadataBuilder.build()));
+    }
 }

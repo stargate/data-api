@@ -48,7 +48,8 @@ public interface SuperShreddingCQL {
 
         String TABLE_COMMENT_CLAUSE_TEMPLATE =
                 """
-                        WITH comment = '${COMMENT}'""";
+                        WITH comment = '${COMMENT}'\
+                       """;
 
         String INDEX_EXIST_KEYS_TEMPLATE =
                 """
@@ -116,8 +117,8 @@ public interface SuperShreddingCQL {
 
         String VECTOR_WITH_OPTIONS_TEMPLATE =
                 """
-                         WITH OPTIONS = {'similarity_function': '${similarity_function}', 'source_model': '${source_model}'}
-                        """.trim();;
+                        WITH OPTIONS = { 'similarity_function' : '${similarity_function}', 'source_model' : '${source_model}'}
+                        """.trim();
 
         String INDEX_QUERY_LEXICAL_VALUE_TEMPLATE =
                 """
@@ -129,7 +130,7 @@ public interface SuperShreddingCQL {
 
         String LEXICAL_WITH_OPTIONS_TEMPLATE =
                 """
-                        WITH OPTIONS = {'index_analyzer': '${index_analyzer}'}
+                        WITH OPTIONS = { 'index_analyzer' : '${index_analyzer}'}
                         """.trim();
 
         List<String> ALL_INDEXES = List.of(

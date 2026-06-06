@@ -59,6 +59,11 @@ public class SuperShreddingMetadataBuilder extends SuperShreddingBuilder<Describ
         var indexMetadata = buildIndexMetadata()
                 .collect(Collectors.toMap(IndexMetadata::getName, Function.identity()));
 
+        Map<CqlIdentifier, Object> tableOptions = new LinkedHashMap<>();
+        if (comment != null && !comment.isBlank()) {
+            tableOptions.put(TABLE_OPTION_COMMENT_IDENTIFIER, comment);
+        }
+
         var tableMetadata = new DefaultTableMetadata(
                 keyspace,
                 collection,
@@ -68,7 +73,7 @@ public class SuperShreddingMetadataBuilder extends SuperShreddingBuilder<Describ
                 primaryKey,
                 Collections.emptyMap(), // no grouping keys
                 allColumns,
-                new HashMap<>(), // options on the table would include the comment, TODO: add when used in builder
+                tableOptions,
                 indexMetadata);
 
         List<SuperShreddingComponent<Describable>> components = new ArrayList<>(11);

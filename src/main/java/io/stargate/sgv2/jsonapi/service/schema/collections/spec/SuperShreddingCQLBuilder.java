@@ -14,15 +14,9 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToCQL
 public class SuperShreddingCQLBuilder extends SuperShreddingBuilder<String, SuperShreddingCQLBuilder> {
 
   private boolean collapseWhitespace = true;
-  private String comment;
 
   @Override
   protected SuperShreddingCQLBuilder self() {
-    return this;
-  }
-
-  public SuperShreddingCQLBuilder withComment(String comment) {
-    this.comment = comment;
     return this;
   }
 

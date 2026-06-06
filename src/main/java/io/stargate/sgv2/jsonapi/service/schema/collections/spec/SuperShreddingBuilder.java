@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections.spec;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.Describable;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata.IndexDef;
@@ -25,6 +26,8 @@ import java.util.*;
  */
 public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T, U>> {
 
+    protected static final CqlIdentifier TABLE_OPTION_COMMENT_IDENTIFIER = CqlIdentifier.fromInternal("comment");
+
     protected boolean ifNotExists = true;
     protected CqlIdentifier keyspace;
     protected CqlIdentifier collection;
@@ -32,6 +35,7 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
     protected String similarityFunction;
     protected String sourceModel;// 0 = no vector column
     protected String indexAnalyzer = null; // null = no lexical column
+    protected String comment;
 
     public static SuperShreddingCQLBuilder cql() {
         return new SuperShreddingCQLBuilder();
@@ -71,6 +75,11 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
         return self();
     }
 
+    public U withComment(String comment) {
+        this.comment = comment;
+        return self();
+    }
+
     public T buildTableOnly(){
         return build().stream()
                 .filter(c -> c.type() == SuperShreddingComponentType.TABLE)
@@ -85,8 +94,6 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
         TABLE,
         INDEX
     }
-
-    public record SuperShreddingComponent<T>(CqlIdentifier identifier, SuperShreddingComponentType type, T value){}
 
     protected boolean withVector() {
         return vectorLength > 0;
@@ -115,7 +122,9 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
                 :
                 IndexDefs.REQUIRED;
 
-        Map<SuperShreddingMetadata.IndexDef, Map<String, String>> indexOptions = new HashMap<>();
+        // NOTE: preserve order with LinkedHashMap in all placces even if not needed everywhere
+        // this is important when testing against generated CQL, so do in all places
+        Map<SuperShreddingMetadata.IndexDef, Map<String, String>> indexOptions = new LinkedHashMap<>();
         if (withVector()) {
             indexDefs.add(IndexDefs.QUERY_VECTOR_VALUE);
             IndexDef.vectorIndexOptions(similarityFunction, sourceModel)
@@ -130,4 +139,19 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
 
         return new IndexDefsAndOptions(indexDefs, indexOptions);
     }
+
+    public record SuperShreddingComponent<T>(CqlIdentifier identifier, SuperShreddingComponentType type, T value){
+
+        public String asCql(){
+            var cql =  switch (value){
+                case Describable d -> d.describe(false);
+                case String s -> s;
+                default -> throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
+            };
+            // there is a small bug in the river IndexMetadata where it does not append ";" for a
+            // CUSTOM INDEX, just check so they are all the same.
+            return cql.endsWith(";") ? cql : cql + ";";
+        }
+    }
+
 }
