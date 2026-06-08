@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
+import static java.util.logging.Logger.getLogger;
+import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -192,19 +194,28 @@ class DefaultBillingTest {
           @Override
           public void close() {}
         };
-    var julLogger = java.util.logging.Logger.getLogger("billing.events");
+
+    var julLogger = getLogger("billing.events");
     julLogger.addHandler(handler);
+
     try {
       var billing = newBilling();
       billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING));
 
       assertThat(records).hasSize(3);
-      assertThat(records)
-          .extracting(LogRecord::getMessage)
-          .allMatch(msg -> msg.contains("\"product\":\"" + PRODUCT + "\""))
-          .anyMatch(msg -> msg.contains("\"event_type\":\"internal_model_total_tokens\""))
-          .anyMatch(msg -> msg.contains("\"event_type\":\"internal_model_egress_bytes\""))
-          .anyMatch(msg -> msg.contains("\"event_type\":\"internal_model_ingress_bytes\""));
+      var providerName = ModelProvider.NVIDIA.apiName();
+      assertJsonEquals(
+          expectedEventJson(
+              BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS, TOTAL_TOKENS, providerName),
+          records.get(0).getMessage());
+      assertJsonEquals(
+          expectedEventJson(
+              BillingEventType.INTERNAL_MODEL_EGRESS_BYTES, REQUEST_BYTES, providerName),
+          records.get(1).getMessage());
+      assertJsonEquals(
+          expectedEventJson(
+              BillingEventType.INTERNAL_MODEL_INGRESS_BYTES, RESPONSE_BYTES, providerName),
+          records.get(2).getMessage());
     } finally {
       julLogger.removeHandler(handler);
     }
@@ -258,5 +269,39 @@ class DefaultBillingTest {
             providerName,
             MODEL_NAME);
     return new BillingEvent(PLACEHOLDER_ID, PLACEHOLDER_TIMESTAMP, PRODUCT, eventType, properties);
+  }
+
+  /**
+   * Expected serialized JSON for one billing event. {@code id} and {@code timestamp} are matched
+   * loosely as any string (UUID / Instant generated at emit time); every other field is pinned
+   * exactly so we catch regressions in serialization or property mapping.
+   */
+  private String expectedEventJson(BillingEventType eventType, long usage, String providerName) {
+    return
+        """
+        {
+          "id": "${json-unit.any-string}",
+          "timestamp": "${json-unit.any-string}",
+          "product": "%s",
+          "event_type": "%s",
+          "properties": {
+            "usage": %d,
+            "region": "%s",
+            "resource_type": "%s",
+            "resource_id": "%s",
+            "provider": "%s",
+            "model": "%s"
+          }
+        }
+        """
+        .formatted(
+            PRODUCT,
+            eventType.eventName(),
+            usage,
+            testConstants.TENANT.region(),
+            RESOURCE_TYPE,
+            testConstants.TENANT.toString(),
+            providerName,
+            MODEL_NAME);
   }
 }
