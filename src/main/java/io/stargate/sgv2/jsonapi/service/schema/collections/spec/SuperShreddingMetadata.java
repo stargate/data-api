@@ -114,6 +114,7 @@ public interface SuperShreddingMetadata {
     interface ColumnMetadataFactory{
         ColumnMetadata columnMetadata(ColumnDef columnDef, CqlIdentifier keyspace, CqlIdentifier collection, Map<String, Object> options);
     }
+
     record ColumnDef(CqlIdentifier name, DataType type, ColumnMetadataFactory metadataFactory) {
 
         ColumnDef(CqlIdentifier name, DataType type){
@@ -235,15 +236,8 @@ public interface SuperShreddingMetadata {
                 QUERY_TIMESTAMP_VALUES, QUERY_NULL_VALUES,
                 QUERY_VECTOR_VALUE, QUERY_LEXICAL_VALUE);
         List<ColumnMetadataPredicate> PARTITION_KEY       = List.of(KEY);
-        List<ColumnMetadataPredicate> ALL_REGULAR_COLUMNS = listDifference(ALL, PARTITION_KEY);
         List<ColumnMetadataPredicate> OPTIONAL            = List.of(QUERY_VECTOR_VALUE, QUERY_LEXICAL_VALUE);
-        List<ColumnMetadataPredicate> REQUIRED            = listDifference(ALL_REGULAR_COLUMNS, OPTIONAL);
-
-
-        Predicate<ColumnMetadata> PARTITION_KEY_PREDICATE = ColumnMetadataPredicate.anyOf(PARTITION_KEY);
-        Predicate<ColumnMetadata> ALL_REGULAR_COLUMNS_PREDICATE = ColumnMetadataPredicate.anyOf(ALL_REGULAR_COLUMNS);
-        Predicate<ColumnMetadata> OPTIONAL_COLUMNS_PREDICATE = ColumnMetadataPredicate.anyOf(OPTIONAL);
-        Predicate<ColumnMetadata> REQUIRED_COLUMNS_PREDICATE = ColumnMetadataPredicate.anyOf(REQUIRED);
+        List<ColumnMetadataPredicate> REQUIRED            = listDifference(ALL, OPTIONAL);
 
         static List<ColumnMetadataPredicate> allFailingPredicates(List<ColumnMetadataPredicate> predicates, Collection<ColumnMetadata> columns) {
             return predicates.stream()
@@ -320,7 +314,7 @@ public interface SuperShreddingMetadata {
                     indexName(collection),
                     IndexKind.CUSTOM,
                     indexTarget.toTargetString(),
-                    fullOptions);
+                    Collections.unmodifiableMap( fullOptions));
         }
 
         public static Optional<Map<String, String>> vectorIndexOptions(String similarityFunction, String sourceModel) {

@@ -3,37 +3,83 @@ package io.stargate.sgv2.jsonapi.service.schema.collections.spec;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.common.collect.Streams;
+import io.stargate.sgv2.jsonapi.exception.ErrorFormatters;
 import io.stargate.sgv2.jsonapi.util.ColumnMetadataPredicate;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata.Predicates.*;
 
-/** Simple class that can check if table is a matching jsonapi table. */
+/**
+ * Predciate to test if a {@link TableMetadata} is a valid Collection table, on that has the super shredding
+ * table schema.
+ * <p>
+ * This class is designed to build via {@link SuperShreddingBuilder#predicate()} and the builder it provides,
+ * so that there is shared logic between the builders that are used to create the super shredding table
+ * and the predicate used to test for it. See {@link SuperShreddingPredicateBuilder}.
+ * </p>
+ * <p>
+ * Uses the shared abstract definition of super shredding in {@link SuperShreddingMetadata}
+ * </p>
+ * <p>
+ *  <b>Note:</b> How we create the statements for, predicate to test for, and test data to use with
+ *  code that uses a super shredding table starts with the {@link SuperShreddingBuilder} class which
+ *  has some slightly complex tests around it.
+ * </p>
+ * <p>
+ * This class used to be called <code>CollectionTableMatcher</code>
+ * </p>
+ * <p>
+ * <b>NOTE:</b> As of June 2026, there is no check the indexes are valid, this will be future work (aaron)
+ * </p>
+ * */
 public class SuperShreddingTablePredicate implements Predicate<TableMetadata> {
   private static final Logger LOGGER = LoggerFactory.getLogger(SuperShreddingTablePredicate.class);
 
+  private final SuperShreddingDef superShreddingDef;
   private final List<ColumnMetadataPredicate> expectedOptionals;
+
+  // when non null, this is the list of predicates that defines the columns that are ONLY allowed to exist
   private final List<ColumnMetadataPredicate> strictMatch;
 
+  // A def that represents the rules used by the old `CollectionTableMatcher`
+  private static final SuperShreddingDef BACKWARDS_COMPAT = new SuperShreddingDef(
+          null, null, false, 0, null, null, false, null);
+
+  /**
+   * Visible for backwards compatibility.
+   * <p>
+   * Creates an instance that does not use strict mode, and does not check for optional columns.
+   * </p>
+   */
   public SuperShreddingTablePredicate(){
-    this(false, false, false);
+    this(false, BACKWARDS_COMPAT);
   }
 
-  public SuperShreddingTablePredicate(boolean strict, boolean expectVector, boolean expectLexical ){
+  /**
+   * Creates an instance that checks if the table matches the super shredding definition passed in.
+   *
+   * @param strict if true, the predicate will error if unexpected columns are found.
+   * @param superShreddingDef the super shredding definition to use for the predicate, build via builders.
+   */
+  SuperShreddingTablePredicate(boolean strict, SuperShreddingDef superShreddingDef ){
 
-    List<ColumnMetadataPredicate> local = new ArrayList<>();
-    if(expectVector){
-      local.add(SuperShreddingMetadata.Predicates.QUERY_VECTOR_VALUE);
+    this.superShreddingDef = Objects.requireNonNull(superShreddingDef, "superShreddingDef must not be null");
+
+    List<ColumnMetadataPredicate> optionals = new ArrayList<>();
+    if(superShreddingDef.hasVector()){
+      optionals.add(SuperShreddingMetadata.Predicates.QUERY_VECTOR_VALUE);
     }
-    if(expectLexical){
-      local.add(SuperShreddingMetadata.Predicates.QUERY_LEXICAL_VALUE);
+    if(superShreddingDef.hasLexical()){
+      optionals.add(SuperShreddingMetadata.Predicates.QUERY_LEXICAL_VALUE);
     }
-    this.expectedOptionals = Collections.unmodifiableList(local);
+    this.expectedOptionals = Collections.unmodifiableList(optionals);
 
     this.strictMatch = strict ?
             Stream.concat(SuperShreddingMetadata.Predicates.REQUIRED.stream(), expectedOptionals.stream()).toList()
@@ -42,26 +88,31 @@ public class SuperShreddingTablePredicate implements Predicate<TableMetadata> {
   }
 
   /**
-   * Tests if the given table is a valid jsonapi table.
+   * Tests if the given table is a valid super shredding.
    *
-   * @param tableMetadata the table
-   * @return Returns true only if all the columns in the table correspond to the data-api table
-   *     schema.
+   * @param tableMetadata the table to test
+   * @return true if the table is a valid super shredding, false otherwise.
    */
   @Override
   public boolean test(TableMetadata tableMetadata) {
 
+    // The trace messages are used in the testing to confirm we are failing the way the test expects
     if (null == tableMetadata) {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("test() - tableMetadata is null");
+      }
       return false;
     }
 
     List<ColumnMetadataPredicate> failingPredicates;
     List<ColumnMetadata> unexpectedColumns;
 
+    // STEP 1 - Partition Key, in strict or not, must be exactly as we expect
+
     failingPredicates = allFailingPredicates(SuperShreddingMetadata.Predicates.PARTITION_KEY, tableMetadata.getPartitionKey());
     if (!failingPredicates.isEmpty()) {
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("test() - partition key has missing column, failingPredicates: {}", failingPredicates);
+        LOGGER.trace(failedPredicates("partition key missing", failingPredicates));
       }
       return false;
     }
@@ -69,22 +120,26 @@ public class SuperShreddingTablePredicate implements Predicate<TableMetadata> {
     unexpectedColumns = allUnexpectedColumns(SuperShreddingMetadata.Predicates.PARTITION_KEY, tableMetadata.getPartitionKey());
     if (!unexpectedColumns.isEmpty()) {
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("test() - partition key unexpected column, unexpectedColumns: {}", unexpectedColumns);
+        LOGGER.trace(unexpectedColumns("unexpected columns in partition key", unexpectedColumns));
       }
       return false;
     }
 
+    // STEP 2 - Clustering Keys, in strict or not, must be exactly as we expect which is empty
+
     if (!tableMetadata.getClusteringColumns().isEmpty()) {
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("test() - clustering columns non empty, clusteringColumns: {}", tableMetadata.getClusteringColumns().keySet());
+        LOGGER.trace(unexpectedColumns("unexpected columns in clustering key", tableMetadata.getClusteringColumns().keySet()));
       }
       return false;
     }
+
+    // STEP 3 - Columns - Check for required and optional based on the Def (set in ctor)
 
     failingPredicates = allFailingPredicates(SuperShreddingMetadata.Predicates.REQUIRED,  tableMetadata.getColumns().values());
     if (!failingPredicates.isEmpty()) {
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("test() - required columns missing, failingPredicates: {}", failingPredicates);
+        LOGGER.trace(failedPredicates("required columns missing", failingPredicates));
       }
       return false;
     }
@@ -92,10 +147,12 @@ public class SuperShreddingTablePredicate implements Predicate<TableMetadata> {
     failingPredicates = allFailingPredicates(expectedOptionals,  tableMetadata.getColumns().values());
     if (!failingPredicates.isEmpty()) {
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("test() - expected optional columns missing, failingPredicates: {}", failingPredicates);
+        LOGGER.trace(failedPredicates("optional columns missing", failingPredicates));
       }
       return false;
     }
+
+    // STEP 4 - Strict Columns - If set, then we can only have the expected columns
 
     if (strictMatch != null){
       var allTableColumns = Streams.concat(
@@ -105,12 +162,37 @@ public class SuperShreddingTablePredicate implements Predicate<TableMetadata> {
       unexpectedColumns = allUnexpectedColumns(strictMatch,  allTableColumns);
       if (!unexpectedColumns.isEmpty()) {
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("test() - using strict mode, unexpected columns in all table columns, unexpectedColumns: {}", unexpectedColumns);
+          LOGGER.trace(unexpectedColumns("unexpected columns in strict mode", unexpectedColumns));
+
         }
         return false;
       }
     }
 
     return true;
+  }
+
+  private static String failedPredicates(String failure, Collection<ColumnMetadataPredicate> failingPredicates) {
+
+    // Rely on the toString in the ColumnMetadataPredicate
+    var names = failingPredicates.stream()
+            .sorted(ColumnMetadataPredicate.IDENTIFIER_COMPARATOR)
+            .map(Object::toString)
+            .collect(Collectors.joining(", "));
+    return failureMessages(failure, names);
+  }
+
+  private static String unexpectedColumns(String failure, Collection<ColumnMetadata> unexpected) {
+
+    var names = unexpected.stream()
+            .sorted(CqlIdentifierUtil.COLUMN_METADATA_COMPARATOR)
+            .map(ErrorFormatters::errFmt)
+            .collect(Collectors.joining(", "));
+    return failureMessages(failure, names);
+  }
+
+  private static String failureMessages(String failure, String names){
+    // e.g. "required columns missing, columns: exist_keys, key"
+    return "test() - " + failure + ", columns: " + names;
   }
 }

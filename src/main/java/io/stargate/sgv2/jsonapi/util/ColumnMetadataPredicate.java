@@ -4,10 +4,15 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.*;
 import com.datastax.oss.driver.internal.core.type.DefaultVectorType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
 
 /**
  * Interface for matching a {@link ColumnMetadata} against a specified column name and type.
@@ -15,6 +20,9 @@ import java.util.function.Predicate;
  * <p>See implementations for concrete usage.
  */
 public interface ColumnMetadataPredicate extends Predicate<ColumnMetadata> {
+
+  Comparator<ColumnMetadataPredicate> IDENTIFIER_COMPARATOR =
+          Comparator.comparing(ColumnMetadataPredicate::name, CQL_IDENTIFIER_COMPARATOR);
 
   /**
    * @return The name the column must have.
@@ -73,6 +81,11 @@ public interface ColumnMetadataPredicate extends Predicate<ColumnMetadata> {
     @Override
     public boolean typeMatches(ColumnMetadata columnMetadata) {
       return Objects.equals(type, columnMetadata.getType());
+    }
+
+    @Override
+    public String toString() {
+      return String.format("%s(%s)", errFmt(name), errFmt(type));
     }
   }
 
@@ -137,6 +150,11 @@ public interface ColumnMetadataPredicate extends Predicate<ColumnMetadata> {
       }
 
       return Objects.equals(vector.getElementType(), elementType);
+    }
+
+    @Override
+    public String toString() {
+      return String.format("%s(vector<%s>)", errFmt(name), errFmt(elementType));
     }
   }
 }

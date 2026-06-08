@@ -13,4 +13,8 @@ public class StringUtil {
   public static String normalizeOptionalString(Optional<String> string) {
     return normalizeOptionalString(string.orElse(""));
   }
+
+  public static boolean isNullOrBlank(String string){
+    return string == null || string.isBlank();
+  }
 }

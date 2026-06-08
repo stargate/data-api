@@ -123,7 +123,7 @@ public abstract class ErrorFormatters {
   }
 
   public static String errFmt(DataType dataType) {
-    return nullSafe(dataType, d -> d.asCql(true, true));
+    return nullSafe(dataType, d -> d.asCql(false, true));
   }
 
   public static Map<String, String> errVars(SchemaObject schemaObject) {

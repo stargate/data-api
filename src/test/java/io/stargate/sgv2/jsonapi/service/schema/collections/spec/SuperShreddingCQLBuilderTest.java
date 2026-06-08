@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class SuperShreddingCQLBuilderTest extends SuperShreddingBuilderTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SuperShreddingCQLBuilderTest.class);
 
     private static  final String CREATE_TABLE_ALL_OPTIONAL = """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
