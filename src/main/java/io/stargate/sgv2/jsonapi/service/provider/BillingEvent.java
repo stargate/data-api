@@ -27,7 +27,7 @@ import java.util.UUID;
  *     "usage": 7,
  *     "region": "us-west-2",
  *     "resource_type": "serverless_database",
- *     "resource_id": "ab12cd34-5678-90ef-ghij-klmnopqrstuv",
+ *     "resource_id": "60b5dccb-e91d-4a60-987b-7588cd8aa1e3",
  *     "provider": "nvidia",
  *     "model": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
  *   }
