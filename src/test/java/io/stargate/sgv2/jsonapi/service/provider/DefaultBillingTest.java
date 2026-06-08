@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +17,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class DefaultBillingTest {
 
@@ -26,6 +31,7 @@ class DefaultBillingTest {
   private static final int TOTAL_TOKENS = 500;
   private static final int REQUEST_BYTES = 256;
   private static final int RESPONSE_BYTES = 12_345;
+  private static final List<String> INTERNAL_PROVIDERS = List.of(ModelProvider.NVIDIA.apiName());
 
   // Placeholders for the random id / runtime timestamp on BillingEvent — the record's compact
   // constructor rejects null, but these fields are ignored in the comparison via
@@ -39,73 +45,49 @@ class DefaultBillingTest {
   // buildEvents
   // ============================================================
 
-  @Test
-  void buildEventsInternalProviderProducesAllInternalEvents() {
-    var billing = newBilling();
-    var modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING);
+  @ParameterizedTest(name = "{0} + {1}")
+  @MethodSource("providerAndModelTypeMatrix")
+  void buildEventsProducesExpectedEventsForEveryProviderAndModelType(
+      ModelProvider provider, ModelType modelType) {
+    // DefaultBilling does not read ModelType — events are identical across model types. Running
+    // every (provider, modelType) combination guards against future regressions if either
+    // dimension gains handling. INTERNAL_PROVIDERS decides whether the provider gets internal_*
+    // or external_* event types.
+    var billing = newBilling(INTERNAL_PROVIDERS, Optional.empty());
+    var modelUsage = usage(provider, modelType);
 
     var events = billing.buildEvents(modelUsage);
+
+    var isInternal = INTERNAL_PROVIDERS.contains(provider.apiName());
+    var totalTokensType =
+        isInternal
+            ? BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS
+            : BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS;
+    var egressType =
+        isInternal
+            ? BillingEventType.INTERNAL_MODEL_EGRESS_BYTES
+            : BillingEventType.EXTERNAL_MODEL_EGRESS_BYTES;
+    var ingressType =
+        isInternal
+            ? BillingEventType.INTERNAL_MODEL_INGRESS_BYTES
+            : BillingEventType.EXTERNAL_MODEL_INGRESS_BYTES;
 
     assertThat(events)
         .usingRecursiveComparison()
         .ignoringFields("id", "timestamp")
         .isEqualTo(
             List.of(
-                expectedEvent(
-                    BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
-                    TOTAL_TOKENS,
-                    ModelProvider.NVIDIA.apiName()),
-                expectedEvent(
-                    BillingEventType.INTERNAL_MODEL_EGRESS_BYTES,
-                    REQUEST_BYTES,
-                    ModelProvider.NVIDIA.apiName()),
-                expectedEvent(
-                    BillingEventType.INTERNAL_MODEL_INGRESS_BYTES,
-                    RESPONSE_BYTES,
-                    ModelProvider.NVIDIA.apiName())));
+                expectedEvent(totalTokensType, TOTAL_TOKENS, provider.apiName()),
+                expectedEvent(egressType, REQUEST_BYTES, provider.apiName()),
+                expectedEvent(ingressType, RESPONSE_BYTES, provider.apiName())));
   }
 
-  @Test
-  void buildEventsExternalProviderProducesAllExternalEvents() {
-    var billing = newBilling();
-    var modelUsage = usage(ModelProvider.OPENAI, ModelType.EMBEDDING);
-
-    var events = billing.buildEvents(modelUsage);
-
-    assertThat(events)
-        .usingRecursiveComparison()
-        .ignoringFields("id", "timestamp")
-        .isEqualTo(
-            List.of(
-                expectedEvent(
-                    BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS,
-                    TOTAL_TOKENS,
-                    ModelProvider.OPENAI.apiName()),
-                expectedEvent(
-                    BillingEventType.EXTERNAL_MODEL_EGRESS_BYTES,
-                    REQUEST_BYTES,
-                    ModelProvider.OPENAI.apiName()),
-                expectedEvent(
-                    BillingEventType.EXTERNAL_MODEL_INGRESS_BYTES,
-                    RESPONSE_BYTES,
-                    ModelProvider.OPENAI.apiName())));
-  }
-
-  @Test
-  void buildEventsModelTypeDoesNotChangeEventType() {
-    // Reranking and embedding produce the same event types — the metric is in event_type, the
-    // distinction lives in properties.model.
-    var billing = newBilling();
-    var rerank = usage(ModelProvider.NVIDIA, ModelType.RERANKING);
-
-    var events = billing.buildEvents(rerank);
-
-    assertThat(events)
-        .extracting(BillingEvent::eventType)
-        .containsExactly(
-            BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
-            BillingEventType.INTERNAL_MODEL_EGRESS_BYTES,
-            BillingEventType.INTERNAL_MODEL_INGRESS_BYTES);
+  private static Stream<Arguments> providerAndModelTypeMatrix() {
+    return Arrays.stream(ModelProvider.values())
+        .flatMap(
+            provider ->
+                Arrays.stream(ModelType.values())
+                    .map(modelType -> Arguments.of(provider, modelType)));
   }
 
   @Test
@@ -113,7 +95,7 @@ class DefaultBillingTest {
     // Only enable total_tokens variants — egress / ingress events should be dropped.
     var billing =
         newBilling(
-            List.of(ModelProvider.NVIDIA.apiName()),
+            INTERNAL_PROVIDERS,
             Optional.of(
                 EnumSet.of(
                     BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
@@ -136,7 +118,7 @@ class DefaultBillingTest {
   void buildEventsEmptyEnabledEventTypesEmitsNothing() {
     // Optional.of(empty set) explicitly disables all billing events — distinct from
     // Optional.empty() which means "use the default = all enabled".
-    var billing = newBilling(List.of(ModelProvider.NVIDIA.apiName()), Optional.of(Set.of()));
+    var billing = newBilling(INTERNAL_PROVIDERS, Optional.of(Set.of()));
     var modelUsage = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING);
 
     assertThat(billing.buildEvents(modelUsage)).isEmpty();
@@ -218,7 +200,7 @@ class DefaultBillingTest {
 
   /** Default config — used by buildEvents tests that don't care about filtering. */
   private static DefaultBilling newBilling() {
-    return newBilling(List.of("nvidia"), Optional.empty());
+    return newBilling(INTERNAL_PROVIDERS, Optional.empty());
   }
 
   private static DefaultBilling newBilling(
