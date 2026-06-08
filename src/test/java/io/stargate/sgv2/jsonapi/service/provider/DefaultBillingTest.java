@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class DefaultBillingTest {
@@ -90,9 +91,11 @@ class DefaultBillingTest {
                     .map(modelType -> Arguments.of(provider, modelType)));
   }
 
-  @Test
-  void buildEventsFiltersDisabledEventTypes() {
-    // Only enable total_tokens variants — egress / ingress events should be dropped.
+  @ParameterizedTest(name = "{0}")
+  @EnumSource(ModelProvider.class)
+  void buildEventsFiltersDisabledEventTypes(ModelProvider provider) {
+    // Only TOTAL_TOKENS variants are enabled — egress / ingress events should be dropped, even
+    // though the model usage carries values for all three metrics.
     var billing =
         newBilling(
             INTERNAL_PROVIDERS,
@@ -100,18 +103,20 @@ class DefaultBillingTest {
                 EnumSet.of(
                     BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
                     BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS)));
+    var modelUsage = usage(provider, ModelType.EMBEDDING);
 
-    var internal = usage(ModelProvider.NVIDIA, ModelType.EMBEDDING);
-    var external = usage(ModelProvider.OPENAI, ModelType.EMBEDDING);
+    var events = billing.buildEvents(modelUsage);
 
-    assertThat(billing.buildEvents(internal))
-        .singleElement()
-        .extracting(BillingEvent::eventType)
-        .isEqualTo(BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS);
-    assertThat(billing.buildEvents(external))
-        .singleElement()
-        .extracting(BillingEvent::eventType)
-        .isEqualTo(BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS);
+    var isInternal = INTERNAL_PROVIDERS.contains(provider.apiName());
+    var totalTokensType =
+        isInternal
+            ? BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS
+            : BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS;
+
+    assertThat(events)
+        .usingRecursiveComparison()
+        .ignoringFields("id", "timestamp")
+        .isEqualTo(List.of(expectedEvent(totalTokensType, TOTAL_TOKENS, provider.apiName())));
   }
 
   @Test
@@ -133,11 +138,22 @@ class DefaultBillingTest {
     var events = billing.buildEvents(modelUsage);
 
     assertThat(events)
-        .extracting(BillingEvent::eventType)
-        .containsExactly(
-            BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS,
-            BillingEventType.EXTERNAL_MODEL_EGRESS_BYTES,
-            BillingEventType.EXTERNAL_MODEL_INGRESS_BYTES);
+        .usingRecursiveComparison()
+        .ignoringFields("id", "timestamp")
+        .isEqualTo(
+            List.of(
+                expectedEvent(
+                    BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS,
+                    TOTAL_TOKENS,
+                    ModelProvider.NVIDIA.apiName()),
+                expectedEvent(
+                    BillingEventType.EXTERNAL_MODEL_EGRESS_BYTES,
+                    REQUEST_BYTES,
+                    ModelProvider.NVIDIA.apiName()),
+                expectedEvent(
+                    BillingEventType.EXTERNAL_MODEL_INGRESS_BYTES,
+                    RESPONSE_BYTES,
+                    ModelProvider.NVIDIA.apiName())));
   }
 
   // ============================================================
