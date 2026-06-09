@@ -51,7 +51,7 @@ public class DropTypeIntegrationTest extends TypeIntegrationTestBase {
         .hasSingleApiError(
             SchemaException.Code.CANNOT_DROP_TYPE_USED_BY_TABLE,
             SchemaException.class,
-            "The command attempted to drop the type: \"dropInUseType\"",
+            "The command attempted to drop the type: dropInUseType",
             tableName("dropInUseType"));
   }
 
@@ -64,7 +64,7 @@ public class DropTypeIntegrationTest extends TypeIntegrationTestBase {
         .hasSingleApiError(
             SchemaException.Code.CANNOT_DROP_UNKNOWN_TYPE,
             SchemaException.class,
-            "The command attempted to drop the unknown type: \"dropUnknownTypeIfExistsFalse\".");
+            "The command attempted to drop the unknown type: dropUnknownTypeIfExistsFalse.");
   }
 
   @Test

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class IndexingConfigIntegrationTest extends AbstractCollectionIntegrationTestBase {
+public class IndexingDescIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private static final String denyOneIndexingCollection = "deny_one_indexing_collection";
 
@@ -165,7 +165,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(2)
-  class IndexingConfig {
+  class IndexingDesc {
 
     @Test
     public void filterFieldInDenyOne() {

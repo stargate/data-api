@@ -6,10 +6,17 @@ import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
+import io.stargate.sgv2.jsonapi.config.BillingConfig;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaRegistry;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
@@ -42,6 +49,15 @@ public class RequestContext implements LoggingMDCContext {
 
   private final EmbeddingCredentials embeddingCredentials;
   private final RerankingCredentials rerankingCredentials;
+
+  // created on demand, otherwise we need to read from config too early when
+  // or we create things that are normally not needed for a request.
+  // See getters for this values
+  private volatile ApiFeatures apiFeatures;
+  private volatile SchemaRegistry schemaRegistry;
+  private volatile Billing billing;
+
+  private final CommandConfig commandConfig = ConfigPreLoader.getPreLoadOrEmpty();
 
   /** For testing purposes only. */
   @VisibleForTesting
@@ -166,6 +182,50 @@ public class RequestContext implements LoggingMDCContext {
   @Override
   public void removeFromMDC() {
     MDC.remove("tenantId");
+  }
+
+  public ApiFeatures apiFeatures() {
+    // using a sync block here because the context can be accessed by multiple tasks concurrently
+    if (apiFeatures == null) {
+      synchronized (this) {
+        if (apiFeatures == null) {
+          // Merging the config for features with the request headers to get the final feature set
+          apiFeatures =
+              ApiFeatures.fromConfigAndRequest(
+                  commandConfig.get(FeaturesConfig.class), getHttpHeaders());
+        }
+      }
+    }
+    return apiFeatures;
+  }
+
+  public SchemaRegistry schemaRegistry() {
+    // using a sync block here because the context can be accessed by multiple tasks concurrently
+    if (schemaRegistry == null) {
+      synchronized (this) {
+        if (schemaRegistry == null) {
+          schemaRegistry = new SchemaRegistry(apiFeatures());
+        }
+      }
+    }
+    return schemaRegistry;
+  }
+
+  /**
+   * Per-request {@link Billing}, cached for the lifetime of the request. The choice of
+   * implementation (real vs no-op) is delegated to {@link Billing#create(BillingConfig,
+   * ApiFeatures)}.
+   */
+  public Billing billing() {
+    // using a sync block here because the context can be accessed by multiple tasks concurrently
+    if (billing == null) {
+      synchronized (this) {
+        if (billing == null) {
+          billing = Billing.create(commandConfig.get(BillingConfig.class), apiFeatures());
+        }
+      }
+    }
+    return billing;
   }
 
   /**

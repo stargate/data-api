@@ -262,7 +262,7 @@ public record ReadAndUpdateCollectionOperation(
       QueryExecutor queryExecutor,
       WritableShreddedDocument writableShreddedDocument) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
-    final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
+    var lexicalEnabled = commandContext().schemaObject().lexicalDef().enabled();
 
     final SimpleStatement updateQuery =
         bindUpdateValues(

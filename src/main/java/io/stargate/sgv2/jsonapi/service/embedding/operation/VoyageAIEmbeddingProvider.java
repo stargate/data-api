@@ -85,6 +85,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
     // TODO: remove the requestTypeQuery and requestTypeIndex from config !

@@ -41,6 +41,27 @@ public class HybridLimitsDeserializerTest {
   }
 
   @Test
+  public void undefinedHybridLimitsDeserializesAsNull() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    var command =
+        mapper.readValue(
+            """
+            {
+              "findAndRerank": {
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """,
+            FindAndRerankCommand.class);
+
+    assertThat(command.options()).as("options").isNotNull();
+    assertThat(command.options().hybridLimits()).as("hybridLimits").isNull();
+  }
+
+  @Test
   public void testEqualsAndHash() {
     var value1 = new FindAndRerankCommand.HybridLimits(10, 10, CommandFeatures.EMPTY);
 
@@ -131,6 +152,8 @@ public class HybridLimitsDeserializerTest {
   }
 
   private static Stream<Arguments> invalidLimitsTestCases() {
+    // Range validation (negative / above-max) lives in FindAndRerankOperationBuilder now —
+    // this deserializer test only covers JSON-shape errors.
     return Stream.of(
         // ----
         Arguments.of(
@@ -138,28 +161,6 @@ public class HybridLimitsDeserializerTest {
             true
             """,
             "hybridLimits must be an integer or an object"),
-        // ----
-        // out of range
-        Arguments.of(
-            """
-            -1
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
-        Arguments.of(
-            """
-            { "$vector" : -1, "$lexical" : 99}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
-        Arguments.of(
-            """
-            { "$vector" : 99, "$lexical" : -1}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $lexical"),
-        Arguments.of(
-            """
-            { "$vector" : -1, "$lexical" : -1}
-            """,
-            "hybridLimits must be zero or greater, got -1 for $vector"),
         // ----
         // unexpected
         Arguments.of(

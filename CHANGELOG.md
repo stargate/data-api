@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.0.46](https://github.com/stargate/data-api/tree/v1.0.46) (2026-04-23)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.45...v1.0.46)
+
+**Merged pull requests:**
+
+- Implement \#2456: include model name tag in vectorize metrics [\#2457](https://github.com/stargate/data-api/pull/2457) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2423: bad error for reranking wrt disabled lexical [\#2455](https://github.com/stargate/data-api/pull/2455) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2442: NPE for "createIndex" with empty definition [\#2454](https://github.com/stargate/data-api/pull/2454) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2451](https://github.com/stargate/data-api/pull/2451) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.45](https://github.com/stargate/data-api/tree/v1.0.45) (2026-04-14)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.44...v1.0.45)

@@ -676,6 +676,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(4)
   class CreateRegularIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void invalidCreateIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                  {
+                    "name": "empty_def_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     @Test
     public void createIndexWithEmptyName() {
 
@@ -980,6 +997,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(5)
   class CreateVectorIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void invalidCreateVectorIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                  {
+                    "name": "empty_def_vector_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     @Test
     public void createIndexWithEmptyName() {
       assertTableCommand(keyspaceName, vectorTableName)
@@ -1146,6 +1180,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(6)
   class CreateTextIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void invalidCreateTextIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+                  {
+                    "name": "empty_def_text_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     // Definition of the text index must be JSON String or Object; fail if not
     @Test
     public void failForDefNotStringOrObject() {

@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
@@ -9,127 +11,78 @@ import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
+import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaHolder;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.tables.CQLSAIIndex;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
     CommandContext<KeyspaceSchemaObject> commandContext,
     DatabaseLimitsConfig dbLimitsConfig,
-    ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
-    String name,
-    boolean vectorSearch,
-    int vectorSize,
-    String vectorFunction,
-    String sourceModel,
-    String comment,
+    CqlIdentifier collectionName,
     int ddlDelayMillis,
     boolean tooManyIndexesRollbackEnabled,
-    // if true, deny all indexing option is set and no indexes will be created
-    boolean indexingDenyAll,
-    CollectionLexicalConfig lexicalConfig,
-    CollectionRerankDef rerankDef)
-    implements Operation {
-  private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
+    // nullable
+    CreateCollectionCommand.Options.DocIdDesc docIdDesc,
+    // nullable
+    CreateCollectionCommand.Options.IndexingDesc indexingDesc,
+    // nullable
+    CreateCollectionCommand.Options.VectorSearchDesc vectorDesc,
+    SchemaHolder<CollectionLexicalDef> lexicalDef,
+    SchemaHolder<CollectionRerankDef> rerankDef)
+    implements Operation<CollectionSchemaObject> {
 
-  // shared matcher instance used to tell Collections from Tables
+  private static final Logger LOGGER = LoggerFactory.getLogger(CreateCollectionOperation.class);
+
   private static final CollectionTableMatcher COLLECTION_MATCHER = new CollectionTableMatcher();
 
-  public static CreateCollectionOperation withVectorSearch(
-      CommandContext<KeyspaceSchemaObject> commandContext,
-      DatabaseLimitsConfig dbLimitsConfig,
-      ObjectMapper objectMapper,
-      CQLSessionCache cqlSessionCache,
-      String name,
-      int vectorSize,
-      String vectorFunction,
-      String sourceModel,
-      String comment,
-      int ddlDelayMillis,
-      boolean tooManyIndexesRollbackEnabled,
-      boolean indexingDenyAll,
-      CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankDef) {
-    return new CreateCollectionOperation(
-        commandContext,
-        dbLimitsConfig,
-        objectMapper,
-        cqlSessionCache,
-        name,
-        true,
-        vectorSize,
-        vectorFunction,
-        sourceModel,
-        comment,
-        ddlDelayMillis,
-        tooManyIndexesRollbackEnabled,
-        indexingDenyAll,
-        Objects.requireNonNull(lexicalConfig),
-        Objects.requireNonNull(rerankDef));
-  }
-
-  public static CreateCollectionOperation withoutVectorSearch(
-      CommandContext<KeyspaceSchemaObject> commandContext,
-      DatabaseLimitsConfig dbLimitsConfig,
-      ObjectMapper objectMapper,
-      CQLSessionCache cqlSessionCache,
-      String name,
-      String comment,
-      int ddlDelayMillis,
-      boolean tooManyIndexesRollbackEnabled,
-      boolean indexingDenyAll,
-      CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankDef) {
-    return new CreateCollectionOperation(
-        commandContext,
-        dbLimitsConfig,
-        objectMapper,
-        cqlSessionCache,
-        name,
-        false,
-        0,
-        null,
-        null,
-        comment,
-        ddlDelayMillis,
-        tooManyIndexesRollbackEnabled,
-        indexingDenyAll,
-        Objects.requireNonNull(lexicalConfig),
-        Objects.requireNonNull(rerankDef));
-  }
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext requestContext, QueryExecutor queryExecutor) {
 
-    logger.info(
-        "Executing CreateCollectionOperation for {}.{} with definition: {}",
+    var initialTableComment = generateTableComment();
+    LOGGER.info(
+        "execute()- createCollection for identifier= {}.{}, initialTableComment={}",
         commandContext.schemaObject().identifier().keyspace(),
-        name,
-        comment);
+        collectionName,
+        initialTableComment);
 
     return queryExecutor
         .getDriverMetadata(requestContext)
@@ -137,114 +90,172 @@ public record CreateCollectionOperation(
         .flatMap(
             allKeyspaces -> {
 
-              //  aaron - 23 may 2025, having this huge lambda is not great. This is a partial
-              // refactor to make
-              // this operation fully Async, without refactoring all the logic.
-              KeyspaceMetadata currKeyspace =
+              // Step 1 - does the keyspace exist ?
+              var targetKeyspace =
                   allKeyspaces.get(commandContext.schemaObject().identifier().keyspace());
-
-              if (currKeyspace == null) {
+              if (targetKeyspace == null) {
                 return Uni.createFrom()
                     .failure(
                         SchemaException.Code.UNKNOWN_KEYSPACE.get(
                             errVars(commandContext.schemaObject())));
               }
 
-              TableMetadata tableMetadata =
-                  findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
+              // Step 2 - is there an existing table and if not is there enough free indexes ?
+              var existingTableMetadata =
+                  findTableAndValidateLimits(allKeyspaces, targetKeyspace, collectionName);
 
-              // if table doesn't exist, continue to create collection
-              if (tableMetadata == null) {
+              // Step 3 - create the collection if no existing table
+              // use the runningValue() of lexicalDef this will either be the value from user or
+              // default
+              if (existingTableMetadata == null) {
                 return executeCollectionCreation(
-                    requestContext, queryExecutor, lexicalConfig(), false);
+                    requestContext,
+                    queryExecutor,
+                    initialTableComment,
+                    lexicalDef().runningValue(),
+                    false);
               }
 
-              // if table exists, compare existingCollectionSettings and newCollectionSettings
-              CollectionSchemaObject existingCollectionSettings =
+              // Step 4- Existing collection, check if the schema from the user is the same as the
+              // existing
+              // we need to merge in the current schema if the user did not specify anything
+              var existingCollectionSettings =
                   CollectionSchemaObject.getCollectionSettings(
-                      requestContext.tenant(), tableMetadata, objectMapper);
+                      requestContext, existingTableMetadata, OBJECT_MAPPER);
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(
+                    "execute() - existingCollectionSettings: {}", existingCollectionSettings);
+              }
 
-              // Use the fromNameOrDefault() so if not specified it will default
+              // Need to resolve the vector settings so we can use them to create a full
+              // representation
+              // of what the new collection will look like
+              var vectorModelName =
+                  getOrDefault(
+                      vectorDesc,
+                      CreateCollectionCommand.Options.VectorSearchDesc::sourceModel,
+                      null);
               var embeddingSourceModel =
-                  EmbeddingSourceModel.fromApiNameOrDefault(sourceModel)
+                  EmbeddingSourceModel.fromApiNameOrDefault(vectorModelName)
                       .orElseThrow(
-                          () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModel));
+                          () ->
+                              EmbeddingSourceModel.getUnknownSourceModelException(vectorModelName));
 
+              var similarityFunctionName =
+                  getOrDefault(
+                      vectorDesc, CreateCollectionCommand.Options.VectorSearchDesc::metric, null);
               var similarityFunction =
-                  SimilarityFunction.fromApiNameOrDefault(vectorFunction)
+                  SimilarityFunction.fromApiNameOrDefault(similarityFunctionName)
                       .orElseThrow(
-                          () -> SimilarityFunction.getUnknownFunctionException(vectorFunction));
+                          () ->
+                              SimilarityFunction.getUnknownFunctionException(
+                                  similarityFunctionName));
 
-              CollectionSchemaObject newCollectionSettings =
+              // OK, we know there is an existing collection, and it is different from the one we
+              // already have.
+              // So we will replace the lexical and rerank in the new one with the existing if the
+              // user did not specify new values.
+              // NOTE: FROM NOW ON WE NEED TO USE THE OVERRIDEN VALUE, (which may or may not be
+              // actually overidden)
+              var overrideLexicalDef =
+                  lexicalDef()
+                      .replaceIfMissing(existingCollectionSettings.lexicalDefSchemaValue())
+                      .value();
+              var overrideRerankDef =
+                  rerankDef()
+                      .replaceIfMissing(existingCollectionSettings.rerankDefSchemaValue())
+                      .value();
+
+              var overrideTableComment =
+                  generateTableComment(overrideLexicalDef, overrideRerankDef);
+
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("execute() - overrideTableComment: {}", overrideTableComment);
+              }
+
+              var newCollectionSettings =
                   CollectionSchemaObject.createCollectionSettings(
-                      requestContext.tenant(),
-                      tableMetadata,
-                      vectorSearch,
-                      vectorSize,
+                      requestContext,
+                      existingTableMetadata,
+                      vectorDesc != null,
+                      getOrDefault(
+                          vectorDesc,
+                          CreateCollectionCommand.Options.VectorSearchDesc::dimension,
+                          0),
                       similarityFunction,
                       embeddingSourceModel,
-                      comment,
-                      objectMapper);
-              // If Collection exists we have a choice:
-              // (1) trying to create with same options -> ok, proceed
-              // (2) trying to create with different options -> error out
-              // but before deciding (2), we need to consider one specific backwards-compatibility
-              // case: that of existing pre-lexical/pre-reranking collection, being re-created
-              // without definitions for lexical/pre-ranking. Although it would create a new
-              // Collection with both enabled, it should NOT fail if attempted on an existing
-              // Collection with pre-lexical/pre-reranking settings but silently succeed.
+                      overrideTableComment,
+                      OBJECT_MAPPER);
 
               boolean settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
-
-              if (!settingsAreEqual) {
-                final var oldLexical = existingCollectionSettings.lexicalConfig();
-                final var newLexical = lexicalConfig();
-                final var oldReranking = existingCollectionSettings.rerankingConfig();
-                final var newReranking = rerankDef();
-
-                // So: for backwards compatibility reasons we may need to override settings if
-                // (and only if) the collection was created before lexical and reranking.
-                // In addition, we need to check that new lexical settings are for defaults
-                // (difficult to check the same for reranking; for now assume that if lexical
-                // is default, reranking is also default).
-                if (oldLexical == CollectionLexicalConfig.configForPreLexical()
-                    && newLexical == CollectionLexicalConfig.configForDefault()
-                    && oldReranking == CollectionRerankDef.configForPreRerankingCollection()
-                    && newReranking == CollectionRerankDef.configForDefault()) {
-                  var originalNewSettings = newCollectionSettings;
-                  newCollectionSettings =
-                      newCollectionSettings.withLexicalAndRerankOverrides(
-                          oldLexical, existingCollectionSettings.rerankingConfig());
-                  // and now re-check if settings are the same
-                  settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
-                  logger.info(
-                      "CreateCollectionOperation for {}.{} with existing legacy lexical/reranking settings, new settings differ. Tried to unify, result: {}"
-                          + " Old settings: {}, New settings: {}",
-                      commandContext.schemaObject().identifier().keyspace(),
-                      name,
-                      settingsAreEqual,
-                      existingCollectionSettings,
-                      originalNewSettings);
-                } else {
-                  logger.info(
-                      "CreateCollectionOperation for {}.{} with different settings (but not old legacy lexical/reranking settings), cannot unify."
-                          + " Old settings: {}, New settings: {}",
-                      commandContext.schemaObject().identifier().keyspace(),
-                      name,
-                      existingCollectionSettings,
-                      newCollectionSettings);
-                }
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(
+                    "execute() - settingsAreEqual: {}, newCollectionSettings={}",
+                    settingsAreEqual,
+                    newCollectionSettings);
               }
 
               if (settingsAreEqual) {
                 return executeCollectionCreation(
-                    requestContext, queryExecutor, newCollectionSettings.lexicalConfig(), true);
+                    requestContext,
+                    queryExecutor,
+                    overrideTableComment,
+                    overrideLexicalDef.runningValue(),
+                    true);
               }
               return Uni.createFrom()
                   .failure(
                       SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.get(
-                          Map.of("collectionName", name)));
+                          Map.of("collectionName", cqlIdentifierToMessageString(collectionName))));
             });
+  }
+
+  @VisibleForTesting
+  String generateTableComment() {
+    return generateTableComment(lexicalDef(), rerankDef());
+  }
+
+  @VisibleForTesting
+  String generateTableComment(
+      SchemaHolder<CollectionLexicalDef> overrideLexicalDef,
+      SchemaHolder<CollectionRerankDef> overrideRerankDef) {
+
+    var optionsNode = OBJECT_MAPPER.createObjectNode();
+
+    if (indexingDesc != null) {
+      optionsNode.putPOJO(TableCommentConstants.COLLECTION_INDEXING_KEY, indexingDesc);
+    }
+    if (vectorDesc != null) {
+      optionsNode.putPOJO(TableCommentConstants.COLLECTION_VECTOR_KEY, vectorDesc);
+    }
+    // if default_id is not specified during createCollection, resolve type to empty string
+    if (docIdDesc != null) {
+      optionsNode.putPOJO(TableCommentConstants.DEFAULT_ID_KEY, docIdDesc);
+    } else {
+      optionsNode.putPOJO(
+          TableCommentConstants.DEFAULT_ID_KEY,
+          OBJECT_MAPPER.createObjectNode().putPOJO("type", ""));
+    }
+
+    // Take the running value, this will either be what the user gave us or the appropriate default
+    optionsNode.putPOJO(
+        TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, overrideLexicalDef.runningValue());
+    optionsNode.putPOJO(
+        TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, overrideRerankDef.runningValue());
+
+    var collectionNode = OBJECT_MAPPER.createObjectNode();
+    collectionNode.put(
+        TableCommentConstants.COLLECTION_NAME_KEY, cqlIdentifierToJsonKey(collectionName));
+    // Use ordinalValue() to get the integer representation of the enum into the JSON
+    collectionNode.put(
+        TableCommentConstants.SCHEMA_VERSION_KEY,
+        CollectionSchemaVersion.CURRENT_VERSION.ordinalValue());
+    collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
+
+    var tableCommentNode = OBJECT_MAPPER.createObjectNode();
+    tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
+
+    return tableCommentNode.toString();
   }
 
   /**
@@ -252,26 +263,20 @@ public record CreateCollectionOperation(
    *
    * @param requestContext DBRequestContext
    * @param queryExecutor QueryExecutor instance
-   * @param lexicalConfig Lexical configuration for the collection
+   * @param collectionLexicalDef Lexical configuration for the collection
    * @param collectionExisted boolean that says if collection existed before
    * @return Uni<Supplier<CommandResult>>
    */
   private Uni<Supplier<CommandResult>> executeCollectionCreation(
       RequestContext requestContext,
       QueryExecutor queryExecutor,
-      CollectionLexicalConfig lexicalConfig,
+      String tableComment,
+      CollectionLexicalDef collectionLexicalDef,
       boolean collectionExisted) {
 
     final Uni<AsyncResultSet> execCreateTable =
         queryExecutor.executeCreateSchemaChange(
-            requestContext,
-            getCreateTable(
-                commandContext.schemaObject().identifier().keyspace().asInternal(),
-                name,
-                vectorSearch,
-                vectorSize,
-                comment,
-                lexicalConfig));
+            requestContext, getCreateTable(tableComment, collectionLexicalDef));
 
     final Uni<Boolean> indexResult =
         execCreateTable
@@ -283,11 +288,7 @@ public record CreateCollectionOperation(
                 res -> {
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
-                        getIndexStatements(
-                            commandContext.schemaObject().identifier().keyspace().asInternal(),
-                            name,
-                            lexicalConfig,
-                            collectionExisted);
+                        getIndexStatements(collectionLexicalDef, collectionExisted);
                     Multi<AsyncResultSet> indexResultMulti;
                     /*
                     CI will override ddlDelayMillis to 0 using `-Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0`
@@ -397,36 +398,40 @@ public record CreateCollectionOperation(
   /** Create indexes for collections in ordered. This is to avoid schema change conflicts. */
   private Multi<AsyncResultSet> createIndexOrdered(
       QueryExecutor queryExecutor,
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       List<SimpleStatement> indexStatements) {
+
     return Multi.createFrom()
         .items(indexStatements.stream())
         .onItem()
         .transformToUni(
             indexStatement ->
-                queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, indexStatement))
+                queryExecutor.executeCreateSchemaChange(requestContext, indexStatement))
         .concatenate();
   }
 
   /** Create indexes for collections in parallel. Only used to speed up the CI actions. */
   private Multi<AsyncResultSet> createIndexParallel(
       QueryExecutor queryExecutor,
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       List<SimpleStatement> indexStatements) {
+
     return Multi.createFrom()
         .items(indexStatements.stream())
         .onItem()
         .transformToUni(
             indexStatement ->
-                queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, indexStatement))
+                queryExecutor.executeCreateSchemaChange(requestContext, indexStatement))
         .merge();
   }
 
   public Uni<Supplier<CommandResult>> cleanUpCollectionFailedWithTooManyIndex(
       RequestContext requestContext, QueryExecutor queryExecutor) {
 
+    // turning the name into asInternal() because  DeleteCollectionCollectionOperation stil uses
+    // string
     DeleteCollectionCollectionOperation deleteCollectionCollectionOperation =
-        new DeleteCollectionCollectionOperation(commandContext, name);
+        new DeleteCollectionCollectionOperation(commandContext, collectionName.asInternal());
 
     // amorton - 13 jan  2026 - keeping the existing logic here, where the error was returning in
     // two situations
@@ -470,19 +475,21 @@ public record CreateCollectionOperation(
   TableMetadata findTableAndValidateLimits(
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces,
       KeyspaceMetadata currKeyspace,
-      String tableName) {
+      CqlIdentifier tableName) {
+
     // First: do we already have a Table with the same name?
     for (TableMetadata table : currKeyspace.getTables().values()) {
-      if (table.getName().asInternal().equals(tableName)) {
+      if (table.getName().equals(tableName)) {
         // If that is not a valid Data API collection, error out the createCollectionCommand
         if (!COLLECTION_MATCHER.test(table)) {
           throw SchemaException.Code.EXISTING_TABLE_NOT_DATA_API_COLLECTION.get(
-              Map.of("tableName", tableName));
+              Map.of("tableName", cqlIdentifierToMessageString(tableName)));
         }
         // If that is a valid Data API table, we returned it
         return table;
       }
     }
+
     // Otherwise we need to check if we can create a new Collection based on limits;
     // limits are calculated across the whole Database, so all Keyspaces need to be checked.
     final List<TableMetadata> allTables =
@@ -496,12 +503,13 @@ public record CreateCollectionOperation(
       throw SchemaException.Code.TOO_MANY_COLLECTIONS.get(
           Map.of(
               "table",
-              tableName,
+              cqlIdentifierToMessageString(tableName),
               "collectionCount",
               String.valueOf(collectionCount),
               "collectionMaxCount",
               String.valueOf(MAX_COLLECTIONS)));
     }
+
     // And then see how many Indexes have been created, how many available
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
     if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())
@@ -518,143 +526,144 @@ public record CreateCollectionOperation(
     return null;
   }
 
-  public static SimpleStatement getCreateTable(
-      String keyspace,
-      String table,
-      boolean vectorSearch,
-      int vectorSize,
-      String comment,
-      CollectionLexicalConfig lexicalConfig) {
-    // The keyspace and table name are quoted to make it case-sensitive
-    final String lexicalField = lexicalConfig.enabled() ? "    query_lexical_value   text, " : "";
-    if (vectorSearch) {
-      String createTableWithVector =
-          "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
-              + "    key                 tuple<tinyint,text>,"
-              + "    tx_id               timeuuid, "
-              + "    doc_json            text,"
-              + "    exist_keys          set<text>,"
-              + "    array_size          map<text, int>,"
-              + "    array_contains      set<text>,"
-              + "    query_bool_values   map<text, tinyint>,"
-              + "    query_dbl_values    map<text, decimal>,"
-              + "    query_text_values   map<text, text>, "
-              + "    query_timestamp_values map<text, timestamp>, "
-              + "    query_null_values   set<text>,     "
-              + "    query_vector_value  VECTOR<FLOAT, "
-              + vectorSize
-              + ">, "
-              + lexicalField
-              + "    PRIMARY KEY (key))";
-      if (comment != null) {
-        createTableWithVector = createTableWithVector + " WITH comment = '" + comment + "'";
-      }
-      return SimpleStatement.newInstance(String.format(createTableWithVector, keyspace, table));
+  private SimpleStatement getCreateTable(String comment, CollectionLexicalDef overrideLexicalDef) {
+
+    var keyspace = commandContext.schemaObject().identifier().keyspace();
+
+    CreateTable create =
+        SchemaBuilder.createTable(keyspace, collectionName)
+            .ifNotExists()
+            .withPartitionKey("key", DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT))
+            .withColumn("tx_id", DataTypes.TIMEUUID)
+            .withColumn("doc_json", DataTypes.TEXT)
+            .withColumn("exist_keys", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("array_size", DataTypes.mapOf(DataTypes.TEXT, DataTypes.INT))
+            .withColumn("array_contains", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("query_bool_values", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TINYINT))
+            .withColumn("query_dbl_values", DataTypes.mapOf(DataTypes.TEXT, DataTypes.DECIMAL))
+            .withColumn("query_text_values", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
+            .withColumn(
+                "query_timestamp_values", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TIMESTAMP))
+            .withColumn("query_null_values", DataTypes.setOf(DataTypes.TEXT));
+
+    if (vectorDesc != null) {
+      create =
+          create.withColumn(
+              "query_vector_value",
+              new ExtendedVectorType(DataTypes.FLOAT, vectorDesc.dimension()));
     }
-    String createTable =
-        "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
-            + "    key                 tuple<tinyint,text>,"
-            + "    tx_id               timeuuid, "
-            + "    doc_json            text,"
-            + "    exist_keys          set<text>,"
-            + "    array_size          map<text, int>,"
-            + "    array_contains      set<text>,"
-            + "    query_bool_values   map<text, tinyint>,"
-            + "    query_dbl_values    map<text, decimal>,"
-            + "    query_text_values   map<text, text>, "
-            + "    query_timestamp_values map<text, timestamp>, "
-            + "    query_null_values   set<text>, "
-            + lexicalField
-            + "    PRIMARY KEY (key))";
-    if (comment != null) {
-      createTable = createTable + " WITH comment = '" + comment + "'";
+    if (overrideLexicalDef.enabled()) {
+      create = create.withColumn("query_lexical_value", DataTypes.TEXT);
     }
-    return SimpleStatement.newInstance(String.format(createTable, keyspace, table));
+
+    // adding the comment changes the return into something to deal with options
+    var statement = comment == null ? create.build() : create.withComment(comment).build();
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("getCreateTable() - created table statement: {}", statement.getQuery());
+    }
+    return statement;
   }
 
   /*
    * When a createCollection is done on a table that already exist the index are run with IF NOT EXISTS.
    * For a new table they are run without IF NOT EXISTS.
    */
-  public List<SimpleStatement> getIndexStatements(
-      String keyspace,
-      String table,
-      CollectionLexicalConfig lexicalConfig,
-      boolean collectionExisted) {
+  private List<SimpleStatement> getIndexStatements(
+      CollectionLexicalDef overrideLexicalDef, boolean collectionExisted) {
+
     List<SimpleStatement> statements = new ArrayList<>(10);
-    String appender =
-        collectionExisted ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
-    // All index names are quoted to make them case-sensitive.
-    if (!indexingDenyAll()) {
-      String existKeys =
-          appender
-              + " \"%s_exists_keys\" ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
 
-      statements.add(SimpleStatement.newInstance(String.format(existKeys, table, keyspace, table)));
+    var denyAllIndexes =
+        getOrDefault(indexingDesc, CreateCollectionCommand.Options.IndexingDesc::denyAll, false);
 
-      String arraySize =
-          appender
-              + " \"%s_array_size\" ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(arraySize, table, keyspace, table)));
-
-      String arrayContains =
-          appender
-              + " \"%s_array_contains\" ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
+    if (!denyAllIndexes) {
+      statements.add(saiColumn(collectionExisted, "exists_keys", "exist_keys"));
+      statements.add(saiEntries(collectionExisted, "array_size", "array_size"));
+      statements.add(saiColumn(collectionExisted, "array_contains", "array_contains"));
+      statements.add(saiEntries(collectionExisted, "query_bool_values", "query_bool_values"));
+      statements.add(saiEntries(collectionExisted, "query_dbl_values", "query_dbl_values"));
+      statements.add(saiEntries(collectionExisted, "query_text_values", "query_text_values"));
       statements.add(
-          SimpleStatement.newInstance(String.format(arrayContains, table, keyspace, table)));
-
-      String boolQuery =
-          appender
-              + " \"%s_query_bool_values\" ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(boolQuery, table, keyspace, table)));
-
-      String dblQuery =
-          appender
-              + " \"%s_query_dbl_values\" ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(dblQuery, table, keyspace, table)));
-
-      String textQuery =
-          appender
-              + " \"%s_query_text_values\" ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(textQuery, table, keyspace, table)));
-
-      String timestampQuery =
-          appender
-              + " \"%s_query_timestamp_values\" ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
-      statements.add(
-          SimpleStatement.newInstance(String.format(timestampQuery, table, keyspace, table)));
-
-      String nullQuery =
-          appender
-              + " \"%s_query_null_values\" ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'";
-      statements.add(SimpleStatement.newInstance(String.format(nullQuery, table, keyspace, table)));
+          saiEntries(collectionExisted, "query_timestamp_values", "query_timestamp_values"));
+      statements.add(saiColumn(collectionExisted, "query_null_values", "query_null_values"));
     }
 
-    if (vectorSearch) {
-      String vectorSearch =
-          appender
-              + " \"%s_query_vector_value\" ON \"%s\".\"%s\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
-              + vectorFunction()
-              + "', 'source_model': '"
-              + sourceModel()
-              + "'}";
+    // NOTE: This is a little sloppy, in normal request the CreateCollectionCommandResolver will
+    // make sure the vectorDesc is valid and has defaults set. So even though they are strings
+    // they have been validated as the thing we should use. See
+    // CreateCollectionCommandResolver.validateVectorOptions()
+    // it gets the proper CQL names from the Enums, replacing what the user sent in. (kind of
+    // confusing)
+    // TODO: create a VectorSearchDef that uses the SimilarityFunction and EmbeddingSourceModel
+    // enums
+    if (vectorDesc != null) {
+      // Sanity checking here, if we pass a null value the map go bang, try to stop bang, bang bad
+      Map<String, Object> vectorOptions = new HashMap<>();
+      if (vectorDesc.metric() != null && !vectorDesc.metric().isBlank()) {
+        vectorOptions.put("similarity_function", vectorDesc.metric());
+      }
+      if (vectorDesc.sourceModel() != null && !vectorDesc.sourceModel().isBlank()) {
+        vectorOptions.put("source_model", vectorDesc.sourceModel());
+      }
       statements.add(
-          SimpleStatement.newInstance(String.format(vectorSearch, table, keyspace, table)));
+          buildSaiIndex(
+              collectionExisted, "query_vector_value", "query_vector_value", false, vectorOptions));
     }
 
-    if (lexicalConfig.enabled()) {
-      var analyzerDef = lexicalConfig.analyzerDefinition();
-      // Note: needs to be either plain (unquoted) String (NOT quoted JSON String) OR JSON Object
-      final String analyzerString =
-          analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
-      final String lexicalCreateStmt =
-              """
-                    %s "%s_query_lexical_value" ON "%s"."%s" (query_lexical_value)
-                      USING 'StorageAttachedIndex' WITH OPTIONS = { 'index_analyzer': '%s' }
-                    """
-              .formatted(appender, table, keyspace, table, analyzerString);
-      statements.add(SimpleStatement.newInstance(lexicalCreateStmt));
+    if (overrideLexicalDef.enabled()) {
+      var analyzerDef = overrideLexicalDef.analyzerDefinition();
+      var analyzerString = analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
+      statements.add(
+          buildSaiIndex(
+              collectionExisted,
+              "query_lexical_value",
+              "query_lexical_value",
+              false,
+              Map.of("index_analyzer", analyzerString)));
+    }
+
+    if (LOGGER.isTraceEnabled()) {
+      var cqlStrings =
+          statements.stream().map(SimpleStatement::getQuery).collect(Collectors.joining("; "));
+      LOGGER.trace("getIndexStatements() - created index statements: {}", cqlStrings);
     }
     return statements;
+  }
+
+  private SimpleStatement saiColumn(boolean ifNotExists, String indexSuffix, String column) {
+    return buildSaiIndex(ifNotExists, indexSuffix, column, false, Map.of());
+  }
+
+  private SimpleStatement saiEntries(boolean ifNotExists, String indexSuffix, String column) {
+    return buildSaiIndex(ifNotExists, indexSuffix, column, true, Map.of());
+  }
+
+  private SimpleStatement buildSaiIndex(
+      boolean ifNotExists,
+      String indexSuffix,
+      String columnName, // aaron - next change will make this a CQLIdentifier
+      boolean isEntries,
+      Map<String, Object> options) {
+
+    var keyspace = commandContext.schemaObject().identifier().keyspace();
+    var index = CqlIdentifier.fromInternal(collectionName.asInternal() + "_" + indexSuffix);
+    var column = CqlIdentifier.fromInternal(columnName);
+
+    var start = SchemaBuilder.createIndex(index).custom(CQLSAIIndex.SAI_CLASS_NAME);
+    if (ifNotExists) {
+      start = start.ifNotExists();
+    }
+
+    var onTable = start.onTable(keyspace, collectionName);
+    var createIndex = isEntries ? onTable.andColumnEntries(column) : onTable.andColumn(column);
+
+    if (!options.isEmpty()) {
+      // in the CQL statement OPTIONS are the things after WITH, and for the `create index` there is
+      // an option called OPTIONS calling withSASIOptions deals with this.
+      createIndex = createIndex.withSASIOptions(options);
+    }
+
+    return new ExtendedCreateIndex((DefaultCreateIndex) createIndex).build();
   }
 }

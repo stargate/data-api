@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
@@ -38,6 +39,7 @@ public record FindAndRerankCommand(
     @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Windowable {
+
   public FindAndRerankCommand {
     sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
   }
@@ -70,7 +72,7 @@ public record FindAndRerankCommand(
       /** ---- */
       @Schema(
               description =
-                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be an number or an object with $vector and $lexical fields.",
+                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be a number or an object with $vector and $lexical fields. The accepted range is determined by server configuration.",
               examples =
                   """
                 {"hybridLimits" : 100}
@@ -103,7 +105,21 @@ public record FindAndRerankCommand(
       @Schema(
               description = "Return vector embedding used for ANN sorting.",
               type = SchemaType.BOOLEAN)
-          boolean includeSortVector) {}
+          boolean includeSortVector,
+      // Note: intentionally NOT annotated @Valid. Jakarta Bean Validation would reject any
+      // missing/null provider with its generic violation message; we want the explicit
+      // INVALID_RERANK_OVERRIDE error code produced by CollectionRerankDef.validateServiceDesc.
+      // Any non-null payload — including `"rerank": {}` and payloads whose fields are all
+      // explicit nulls — is treated as an override attempt and validated there.
+      @Nullable
+          @Schema(
+              description =
+                  "Optional override for the reranking service. Completely replaces the"
+                      + " collection-level reranking configuration when provided. Both 'provider' and"
+                      + " 'modelName' are required.",
+              implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)
+          @JsonProperty("rerank")
+          CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
   public record HybridLimits(
@@ -112,7 +128,12 @@ public record FindAndRerankCommand(
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
       CommandFeatures commandFeatures)
       implements Recordable {
-    public static final HybridLimits DEFAULT = new HybridLimits(50, 50, CommandFeatures.EMPTY);
+
+    public static final HybridLimits DEFAULT =
+        new HybridLimits(
+            RerankingConstants.HybridSearchLimits.DEFAULT,
+            RerankingConstants.HybridSearchLimits.DEFAULT,
+            CommandFeatures.EMPTY);
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
@@ -157,13 +178,12 @@ public record FindAndRerankCommand(
       };
     }
 
-    private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber)
-        throws JsonMappingException {
-
+    // Range validation against dynamic OperationsConfig bounds happens later in
+    // FindAndRerankOperationBuilder.build(); the deserializer only handles JSON shape.
+    private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber) {
+      var limit = limitsNumber.asInt();
       return new HybridLimits(
-          normaliseLimit(jsonParser, limitsNumber, VECTOR_EMBEDDING_FIELD),
-          normaliseLimit(jsonParser, limitsNumber, LEXICAL_CONTENT_FIELD),
-          CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER));
+          limit, limit, CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER));
     }
 
     private HybridLimits deserialize(JsonParser jsonParser, ObjectNode limitsObject)
@@ -172,24 +192,10 @@ public record FindAndRerankCommand(
       var limitMatch = MATCH_LIMIT_FIELDS.matchAndThrow(limitsObject, jsonParser, ERROR_CONTEXT);
 
       return new HybridLimits(
-          normaliseLimit(
-              jsonParser, limitMatch.matched().get(VECTOR_EMBEDDING_FIELD), VECTOR_EMBEDDING_FIELD),
-          normaliseLimit(
-              jsonParser, limitMatch.matched().get(LEXICAL_CONTENT_FIELD), LEXICAL_CONTENT_FIELD),
+          limitMatch.matched().get(VECTOR_EMBEDDING_FIELD).asInt(),
+          limitMatch.matched().get(LEXICAL_CONTENT_FIELD).asInt(),
           CommandFeatures.of(
               CommandFeature.HYBRID_LIMITS_VECTOR, CommandFeature.HYBRID_LIMITS_LEXICAL));
-    }
-
-    private int normaliseLimit(JsonParser jsonParser, NumericNode limitNode, String fieldName)
-        throws JsonMappingException {
-      int limit = limitNode.asInt();
-
-      if (limit < 0) {
-        throw new JsonMappingException(
-            jsonParser,
-            "hybridLimits must be zero or greater, got %s for %s".formatted(limit, fieldName));
-      }
-      return limit;
     }
   }
 }

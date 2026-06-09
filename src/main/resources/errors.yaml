@@ -263,13 +263,23 @@ request-errors:
 
   - scope:
     code: UNSUPPORTED_RERANKING_COMMAND
-    title: Reranking not enabled for collection
+    title: Reranking not enabled and no override provided
     body: |-
-      The `findAndRerank` is not enabled for the collection.
-      
-      The Command is only supported for collections that have `vector`, `lexical`, and `rerank` configured. They additionally require a vectorize configuration if `$vectorize` is used.
-      
-      Resend using a supported collection. 
+      The `findAndRerank` is not enabled for the collection, and a reranking service override was not provided with the command.
+
+      The Command is only supported for collections that have `vector`, `lexical`, and `rerank` configured, or when a reranking service override is provided via the `rerank` command option. They additionally require a vectorize configuration if `$vectorize` is used.
+
+      Resend using a supported collection or provide a `rerank` override in the command options.
+
+  - scope:
+    code: INVALID_RERANK_OVERRIDE
+    title: Invalid reranking service override
+    body: |-
+      The reranking service override in the `findAndRerank` command is invalid.
+
+      ${message}
+
+      Resend the command with a valid reranking service override, or omit the override to use the collection's default reranking configuration.
 
   # unscoped because this touches both the sort and the options
   - scope:
@@ -1180,6 +1190,21 @@ request-errors:
       Resend the command using only new field names.
 
   - scope: SCHEMA
+    code: CANNOT_ADD_PREVIOUSLY_DROPPED_COLUMN
+    title: Column cannot be re-added with a different type
+    body: |-
+      The command attempted to add a column that was previously dropped, and the database rejected it because the new type is incompatible with the type retained in dropped-column metadata.
+
+      The command attempted to add the column: ${columnName}.
+      The command used the column type: ${columnType}.
+      The database recorded the previously dropped column type as: ${previousType}.
+      The command used the table: ${keyspace}.${table}.
+
+      This can happen after dropping a user-defined type (UDT) column because the database may retain the dropped column as its expanded tuple type rather than the UDT name.
+
+      Resend the command using a different column name, or recreate the table before adding this column again.
+
+  - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
     title: Can not create index on map column with index function entries and specify analyze options
     body: |-
@@ -1368,7 +1393,7 @@ request-errors:
       Resend command with only '$vector' or '$vectorize'.
 
   - scope: SCHEMA
-    code: LEXICAL_NOT_AVAILABLE_FOR_DATABASE
+    code: LEXICAL_FEATURE_NOT_ENABLED
     title: Lexical search is not available on this database
     body: |-
       The command attempted to enable lexical search functionality but lexical search is not supported by this database.
@@ -2651,7 +2676,7 @@ server-errors:
   
 
   # ================================================================================================================
-  # Family: SERVER         Scope: EMBEDDING
+  # Family: SERVER         Scope: EMBEDDING_PROVIDER
   # ================================================================================================================
 
   - scope: EMBEDDING_PROVIDER
@@ -2766,10 +2791,10 @@ server-errors:
 
 
 # ================================================================================================================
-# Family: SERVER         Scope: RERANKING
+# Family: SERVER         Scope: RERANKING_PROVIDER
 # ================================================================================================================
 
-  - scope: RERANKING
+  - scope: RERANKING_PROVIDER
     code: RERANKING_PROVIDER_TIMEOUT
     title: Reranking Provider timed out
     body: |-

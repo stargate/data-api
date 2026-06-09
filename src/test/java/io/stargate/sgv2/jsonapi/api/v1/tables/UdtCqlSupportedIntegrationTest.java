@@ -643,7 +643,7 @@ public class UdtCqlSupportedIntegrationTest extends AbstractTableIntegrationTest
           true,
           UpdateException.Code.UNKNOWN_TABLE_COLUMNS,
           UpdateException.class,
-          "The update included the following unknown columns: \"scalar_address.city\".");
+          "The update included the following unknown columns: scalar_address.city.");
     }
 
     /** Support updating a full column for a scalar UDT column */
@@ -693,7 +693,7 @@ public class UdtCqlSupportedIntegrationTest extends AbstractTableIntegrationTest
           update,
           UpdateException.Code.UNKNOWN_TABLE_COLUMNS,
           UpdateException.class,
-          "The update included the following unknown columns: \"frozen_address.city\".");
+          "The update included the following unknown columns: frozen_address.city.");
     }
 
     /** Support updating a frozen UDT column fully */
@@ -1346,7 +1346,7 @@ public class UdtCqlSupportedIntegrationTest extends AbstractTableIntegrationTest
           update,
           UpdateException.Code.UNKNOWN_TABLE_COLUMNS,
           UpdateException.class,
-          "The update included the following unknown columns: \"scalar_address.city\".");
+          "The update included the following unknown columns: scalar_address.city.");
     }
 
     @Test
@@ -1368,7 +1368,7 @@ public class UdtCqlSupportedIntegrationTest extends AbstractTableIntegrationTest
           update,
           UpdateException.Code.UNKNOWN_TABLE_COLUMNS,
           UpdateException.class,
-          "The update included the following unknown columns: \"frozen_address.city\".");
+          "The update included the following unknown columns: frozen_address.city.");
     }
 
     @Test
