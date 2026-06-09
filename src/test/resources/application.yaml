@@ -16,6 +16,12 @@ quarkus:
       console:
         PLAIN_CONSOLE:
           format: "%m%n"
+        # Dedicated appender for the 'billing.events' category: writes only the
+        # raw JSON event payload with no log prefix, so downstream billing
+        # pipelines can parse each line as JSON.
+        BILLING_CONSOLE:
+          format: "%m%n"
+
     category:
       # production log level for this category is DEBUG, way too noisy for tests
       'io.stargate':
@@ -30,4 +36,12 @@ quarkus:
         level: INFO
         handlers:
           - PLAIN_CONSOLE
+        use-parent-handlers: false
+      # Route billing events to the dedicated BILLING_CONSOLE handler so the
+      # log line is the raw JSON event with no prefix, and do not also write
+      # to the default console handler.
+      'billing.events':
+        level: INFO
+        handlers:
+          - BILLING_CONSOLE
         use-parent-handlers: false

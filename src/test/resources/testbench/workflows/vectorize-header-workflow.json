@@ -60,7 +60,7 @@
       "meta": {
         "name": "jinaAI-vectorize",
         "tags": [
-          "disabled"
+
         ]
       },
       "fromEnvironment": {
@@ -164,7 +164,7 @@
     {
       "meta": {
         "name": "nvidia-vectorize",
-        "tags": [
+        "tags": ["disabled"
         ]
       },
       "fromEnvironment": {
