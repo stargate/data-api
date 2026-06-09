@@ -26,6 +26,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Nested;
@@ -438,6 +439,69 @@ public class CountCollectionOperationTest extends OperationTestBase {
               e -> {
                 DatabaseException je = (DatabaseException) e;
                 assertThat(je.code).isEqualTo(DatabaseException.Code.COUNT_READ_FAILED.name());
+              });
+    }
+
+    @Test
+    public void countAcrossMultiplePages() {
+
+      // keys are spread over more than one page, every page must be counted not just the first one
+      String collectionReadCql =
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+
+      AsyncResultSet lastPage =
+          new MockAsyncResultSet(COUNT_RESULT_COLUMNS, List.of(resultRow(4, "key5")), null);
+      CompletableFuture<AsyncResultSet> lastPageFuture = new CompletableFuture<>();
+      AsyncResultSet secondPage =
+          new MockAsyncResultSet(
+              COUNT_RESULT_COLUMNS,
+              Arrays.asList(resultRow(2, "key3"), resultRow(3, "key4")),
+              lastPageFuture);
+      CompletableFuture<AsyncResultSet> secondPageFuture = new CompletableFuture<>();
+      AsyncResultSet firstPage =
+          new MockAsyncResultSet(
+              COUNT_RESULT_COLUMNS,
+              Arrays.asList(resultRow(0, "key1"), resultRow(1, "key2")),
+              secondPageFuture);
+
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(firstPage);
+              });
+
+      DBLogicalExpression dbLogicalExpression =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      CountCollectionOperation countCollectionOperation =
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
+
+      UniAssertSubscriber<Supplier<CommandResult>> subscriber =
+          countCollectionOperation
+              .execute(requestContext, queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create());
+
+      // the later pages only resolve once the first page has been read
+      secondPageFuture.complete(secondPage);
+      lastPageFuture.complete(lastPage);
+
+      Supplier<CommandResult> execute = subscriber.awaitItem().getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(5L);
               });
     }
   }

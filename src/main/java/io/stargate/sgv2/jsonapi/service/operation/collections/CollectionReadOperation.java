@@ -388,22 +388,30 @@ public interface CollectionReadOperation extends CollectionOperation {
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
 
-    AtomicLong counter = new AtomicLong();
-
-    return queryExecutor
-        .executeCount(dataApiRequestInfo, simpleStatement)
-        .onItemOrFailure()
-        .transformToUni(
-            (rs, failure) -> {
-              if (failure != null) {
-                return Uni.createFrom()
-                    .failure(
-                        DatabaseException.Code.COUNT_READ_FAILED.get(
-                            Map.of("errorMessage", failure.toString())));
-              }
-              getCount(rs, null, counter);
-              return Uni.createFrom().item(new CountResponse(counter.get()));
-            });
+    return Multi.createBy()
+        .repeating()
+        .uni(
+            () -> new AtomicReference<AsyncResultSet>(null),
+            stateRef -> {
+              // First repetition runs the query, following repetitions fetch the next page
+              AsyncResultSet previousPage = stateRef.get();
+              Uni<AsyncResultSet> page =
+                  previousPage == null
+                      ? queryExecutor.executeCount(dataApiRequestInfo, simpleStatement)
+                      : Uni.createFrom().completionStage(previousPage.fetchNextPage());
+              return page.onItem().invoke(stateRef::set);
+            })
+        // Read keys while more pages exist, the last page is still emitted and counted
+        .whilst(resultSet -> resultSet.hasMorePages())
+        .collect()
+        .in(AtomicLong::new, (counter, resultSet) -> counter.addAndGet(resultSet.remaining()))
+        .onItem()
+        .transform(counter -> new CountResponse(counter.get()))
+        .onFailure()
+        .transform(
+            failure ->
+                DatabaseException.Code.COUNT_READ_FAILED.get(
+                    Map.of("errorMessage", failure.toString())));
   }
 
   /** Default implementation to run count query and parse the result set */
@@ -427,15 +435,6 @@ public interface CollectionReadOperation extends CollectionOperation {
               long count = row.getLong(0); // Count value will be the first column value
               return Uni.createFrom().item(new CountResponse(count));
             });
-  }
-
-  private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
-    // BUG - aaron 25 Nov 2025 - this code does not wait for the fetchNextPage to complete before
-    // returning, and it cannot handle a failure on fetchNextPage - will fix after this PR
-    counter.addAndGet(rs.remaining());
-    if (rs.hasMorePages()) {
-      rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
-    }
   }
 
   /** Run estimated count query and parse the result set */
