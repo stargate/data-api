@@ -447,6 +447,61 @@ public class CountCollectionOperationTest extends OperationTestBase {
     }
 
     @Test
+    public void errorFetchingLaterPage() {
+
+      // The initial key query succeeds but fetching the second page fails: the mid-pagination
+      // failure must surface as COUNT_READ_FAILED, the same as a failure of the initial query
+      // (the error() test above).
+      RuntimeException dbFailure = new RuntimeException("Test failure message.");
+      String collectionReadCql =
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+      var stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
+
+      var secondPageFuture = new CompletableFuture<AsyncResultSet>();
+      var firstPage =
+          new MockAsyncResultSet(
+              COUNT_RESULT_COLUMNS,
+              Arrays.asList(resultRow(0, "key1"), resultRow(1, "key2")),
+              secondPageFuture);
+
+      final var callCount = new AtomicInteger();
+      var queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(firstPage);
+              });
+
+      var dbLogicalExpression = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      var countCollectionOperation =
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
+
+      UniAssertSubscriber<Supplier<CommandResult>> subscriber =
+          countCollectionOperation
+              .execute(requestContext, queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create());
+
+      // Fail the second page only after the operation has started, so the first page was already
+      // consumed when the failure arrives
+      secondPageFuture.completeExceptionally(dbFailure);
+
+      var operationError = subscriber.awaitFailure().getFailure();
+
+      // the key query itself ran once and succeeded, only the page fetch failed
+      assertThat(callCount.get()).isEqualTo(1);
+      assertThat(operationError)
+          .isInstanceOf(DatabaseException.class)
+          .satisfies(
+              e -> {
+                DatabaseException je = (DatabaseException) e;
+                assertThat(je.code).isEqualTo(DatabaseException.Code.COUNT_READ_FAILED.name());
+              });
+    }
+
+    @Test
     public void countAcrossMultiplePages() {
 
       // Counting by key pages through the whole result set of the key query, so all 5 keys below
