@@ -449,29 +449,36 @@ public class CountCollectionOperationTest extends OperationTestBase {
     @Test
     public void countAcrossMultiplePages() {
 
-      // keys are spread over more than one page, every page must be counted not just the first one
+      // Counting by key pages through the whole result set of the key query, so all 5 keys below
+      // must be counted even though they are spread over 3 pages. LIMIT 11 is the operation's
+      // count limit (10) + 1, the extra key is how the operation detects there is more data than
+      // it is allowed to count.
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
               .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
+      var stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
 
-      AsyncResultSet lastPage =
+      // Pages are chained back to front: fetchNextPage() on a MockAsyncResultSet returns the
+      // future of the page after it, a null future marks the last page.
+      var lastPage =
           new MockAsyncResultSet(COUNT_RESULT_COLUMNS, List.of(resultRow(4, "key5")), null);
-      CompletableFuture<AsyncResultSet> lastPageFuture = new CompletableFuture<>();
-      AsyncResultSet secondPage =
+      var lastPageFuture = new CompletableFuture<AsyncResultSet>();
+      var secondPage =
           new MockAsyncResultSet(
               COUNT_RESULT_COLUMNS,
               Arrays.asList(resultRow(2, "key3"), resultRow(3, "key4")),
               lastPageFuture);
-      CompletableFuture<AsyncResultSet> secondPageFuture = new CompletableFuture<>();
-      AsyncResultSet firstPage =
+      var secondPageFuture = new CompletableFuture<AsyncResultSet>();
+      var firstPage =
           new MockAsyncResultSet(
               COUNT_RESULT_COLUMNS,
               Arrays.asList(resultRow(0, "key1"), resultRow(1, "key2")),
               secondPageFuture);
 
-      final AtomicInteger callCount = new AtomicInteger();
-      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      // executeCount() only returns the first page, the operation must get the later pages itself
+      // through AsyncResultSet.fetchNextPage()
+      final var callCount = new AtomicInteger();
+      var queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
@@ -479,9 +486,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(firstPage);
               });
 
-      DBLogicalExpression dbLogicalExpression =
-          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      CountCollectionOperation countCollectionOperation =
+      var dbLogicalExpression = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      var countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
 
       UniAssertSubscriber<Supplier<CommandResult>> subscriber =
@@ -490,17 +496,18 @@ public class CountCollectionOperationTest extends OperationTestBase {
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create());
 
-      // the later pages only resolve once the first page has been read
+      // Completing the futures releases pages 2 and 3 to the operation after it has started, so
+      // the count cannot have finished after only the first page
       secondPageFuture.complete(secondPage);
       lastPageFuture.complete(lastPage);
 
-      Supplier<CommandResult> execute = subscriber.awaitItem().getItem();
+      var execute = subscriber.awaitItem().getItem();
 
-      // assert query execution
+      // the key query runs once, later pages are fetched from the result set not executeCount()
       assertThat(callCount.get()).isEqualTo(1);
 
-      // then result
-      CommandResult result = execute.get();
+      // all 5 keys counted, from all 3 pages
+      var result = execute.get();
       assertThat(result)
           .satisfies(
               commandResult -> {

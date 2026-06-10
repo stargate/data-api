@@ -404,6 +404,10 @@ public interface CollectionReadOperation extends CollectionOperation {
         // Read keys while more pages exist, the last page is still emitted and counted
         .whilst(resultSet -> resultSet.hasMorePages())
         .collect()
+        // IMPORTANT: remaining() is the number of rows left in the driver's iterator for the
+        // current page, not the number of rows the page was fetched with - the driver has no way
+        // to get that. The result set must not be iterated before this point, otherwise every row
+        // already consumed is missing from the count.
         .in(AtomicLong::new, (counter, resultSet) -> counter.addAndGet(resultSet.remaining()))
         .onItem()
         .transform(counter -> new CountResponse(counter.get()))
