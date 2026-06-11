@@ -14,11 +14,9 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
-import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
@@ -324,19 +322,12 @@ public class TestConstants {
   }
 
   /**
-   * BILLING-off, fully-mocked-config Billing instance for tests that mock the {@link
-   * RequestContext} and need {@code requestContext.billing()} to return a usable no-op rather than
-   * null.
+   * Shared NO-OP {@link Billing} for tests that mock the {@link RequestContext} and need {@code
+   * requestContext.billing()} to return a usable no-op rather than null. Backed by {@link
+   * Billing#NO_OP} so tests don't have to mock {@link BillingConfig}.
    */
   public static Billing noOpBilling() {
-    BillingConfig billingConfig = mock(BillingConfig.class);
-    when(billingConfig.product()).thenReturn("serverless");
-    when(billingConfig.resourceType()).thenReturn("serverless_database");
-    when(billingConfig.internalModelProviders()).thenReturn(List.of("nvidia"));
-    when(billingConfig.enabledEventTypes()).thenReturn(Optional.empty());
-    FeaturesConfig featuresConfig = mock(FeaturesConfig.class);
-    when(featuresConfig.flags()).thenReturn(Map.of());
-    return new Billing(billingConfig, ApiFeatures.fromConfigAndRequest(featuresConfig, null));
+    return Billing.NO_OP;
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(

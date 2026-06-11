@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * The set of billing event types emitted by {@link Billing}.
@@ -33,6 +35,8 @@ public enum BillingEventType {
     EGRESS_BYTES,
     INGRESS_BYTES
   }
+
+  public static final Set<BillingEventType> ALL = Set.copyOf(EnumSet.allOf(BillingEventType.class));
 
   private final String eventName;
   private final boolean internal;

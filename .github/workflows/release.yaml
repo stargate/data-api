@@ -221,15 +221,6 @@ jobs:
         with:
           mask-password: 'true'
 
-      # downloads and prepares datastax assets
-      - name: Download branding assets
-        if: ${{ !inputs.skipPublish }}
-        run : |
-          curl https://www.ibm.com/favicon.ico -o ./src/main/resources/META-INF/branding/favicon.ico
-          curl https://cdn.sanity.io/files/bbnkhnhl/production/cf8b48832cfd43cdb24aec0e0d1c656e9234b620.zip -o icons.zip
-          unzip -j icons.zip 'Brand\ Icons/astra-square.png' -d ./src/main/resources/META-INF/branding/
-          mv ./src/main/resources/META-INF/branding/astra-square.png ./src/main/resources/META-INF/branding/logo.png
-
       # builds image, overwrite the build time props
       - name: Build and push (Amazon ECR)
         if: ${{ !inputs.skipPublish }}
