@@ -12,7 +12,6 @@ import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadat
 import com.datastax.oss.driver.internal.core.type.DefaultTupleType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
-
 import java.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Nested;

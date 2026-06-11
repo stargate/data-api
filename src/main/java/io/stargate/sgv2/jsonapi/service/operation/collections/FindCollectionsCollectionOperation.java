@@ -23,7 +23,8 @@ import java.util.function.Supplier;
 
 /**
  * Find collection operation. Uses {@link CQLSessionCache} to fetch all valid jsonapi tables for a
- * namespace. The schema check against the table is done in the {@link SuperShreddingTablePredicate}.
+ * namespace. The schema check against the table is done in the {@link
+ * SuperShreddingTablePredicate}.
  *
  * @param explain - returns collection options if `true`; returns only collection names if `false`
  * @param objectMapper {@link ObjectMapper}
@@ -42,7 +43,8 @@ public record FindCollectionsCollectionOperation(
   // shared table matcher instance
   // TODO: if this is static why does the record that have an instance variable passed by the ctor
   // below ?
-  private static final SuperShreddingTablePredicate TABLE_MATCHER = new SuperShreddingTablePredicate();
+  private static final SuperShreddingTablePredicate TABLE_MATCHER =
+      new SuperShreddingTablePredicate();
 
   public FindCollectionsCollectionOperation(
       boolean explain,

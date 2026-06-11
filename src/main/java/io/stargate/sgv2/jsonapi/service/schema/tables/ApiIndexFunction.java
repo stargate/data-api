@@ -1,16 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToCQL;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToCQL;
 
 /**
  * ApiIndexFunction is a function that is applied in indexes on CQL collection type.
@@ -44,15 +43,17 @@ public enum ApiIndexFunction {
     return cqlFunction;
   }
 
-  public  static String toTargetString(ApiIndexFunction indexFunction, CqlIdentifier targetColumn) {
+  public static String toTargetString(ApiIndexFunction indexFunction, CqlIdentifier targetColumn) {
     Objects.requireNonNull(targetColumn, "targetColumn cannot be null");
-    return indexFunction == null ?
-            cqlIdentifierToCQL(targetColumn)
-            :
-            indexFunction.cqlFunction() + "(" + cqlIdentifierToCQL(targetColumn) + ")";
+    return indexFunction == null
+        ? cqlIdentifierToCQL(targetColumn)
+        : indexFunction.cqlFunction() + "(" + cqlIdentifierToCQL(targetColumn) + ")";
   }
 
-  public static CreateIndex addTo(CreateIndexOnTable createIndexOnTable, ApiIndexFunction indexFunction, CqlIdentifier targetColumn) {
+  public static CreateIndex addTo(
+      CreateIndexOnTable createIndexOnTable,
+      ApiIndexFunction indexFunction,
+      CqlIdentifier targetColumn) {
     Objects.requireNonNull(createIndexOnTable, "createIndexOnTable cannot be null");
     Objects.requireNonNull(targetColumn, "targetColumn cannot be null");
 

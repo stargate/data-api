@@ -123,6 +123,7 @@ public abstract class ErrorFormatters {
   }
 
   public static String errFmt(DataType dataType) {
+    // pass false for includeFrozen to avoid using frozen<> when not needed.
     return nullSafe(dataType, d -> d.asCql(false, true));
   }
 

@@ -1,30 +1,23 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections.spec;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.*;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 /**
- * This is the base ground truth for what the CQL statements an actual instance of a
- * super shredding table should look like. This tests that we can build a CQL string
- * to match literal CQL, and then we build tests up from there.
- * <p>
- *  Try to keep as literal as possible, validation of how the super shredding table is built
- *  builds from this test.
- * </p>
- * <p>
- * See {@link SuperShreddingBuilder} for more details.
- * </p>
+ * This is the base ground truth for what the CQL statements an actual instance of a super shredding
+ * table should look like. This tests that we can build a CQL string to match literal CQL, and then
+ * we build tests up from there.
+ *
+ * <p>Try to keep as literal as possible, validation of how the super shredding table is built
+ * builds from this test.
+ *
+ * <p>See {@link SuperShreddingBuilder} for more details.
  */
 public class SuperShreddingCQLBuilderTest extends SuperShreddingBuilderTest {
 
-
-    private static  final String CREATE_TABLE_ALL_OPTIONAL = """
+  private static final String CREATE_TABLE_ALL_OPTIONAL =
+      """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
                 "key"                     frozen<tuple<tinyint, text>>,
                 "tx_id"                   timeuuid,
@@ -44,7 +37,8 @@ public class SuperShreddingCQLBuilderTest extends SuperShreddingBuilderTest {
                 comment = '{"collection":{"name":"documents","schema_version":2}}';
             """;
 
-    private static  final String CREATE_TABLE_NO_OPTIONAL = """
+  private static final String CREATE_TABLE_NO_OPTIONAL =
+      """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
                 "key"                     frozen<tuple<tinyint, text>>,
                 "tx_id"                   timeuuid,
@@ -62,7 +56,8 @@ public class SuperShreddingCQLBuilderTest extends SuperShreddingBuilderTest {
                 comment = '{"collection":{"name":"documents","schema_version":2}}';
             """;
 
-    private static final String CREATE_TABLE_VECTOR_ONLY = """
+  private static final String CREATE_TABLE_VECTOR_ONLY =
+      """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
                 "key"                     frozen<tuple<tinyint, text>>,
                 "tx_id"                   timeuuid,
@@ -81,7 +76,8 @@ public class SuperShreddingCQLBuilderTest extends SuperShreddingBuilderTest {
                 comment = '{"collection":{"name":"documents","schema_version":2}}';
             """;
 
-    private static  final String CREATE_TABLE_LEXICAL_ONLY = """
+  private static final String CREATE_TABLE_LEXICAL_ONLY =
+      """
             CREATE TABLE IF NOT EXISTS "keyspace"."documents" (
                 "key"                     frozen<tuple<tinyint, text>>,
                 "tx_id"                   timeuuid,
@@ -100,144 +96,167 @@ public class SuperShreddingCQLBuilderTest extends SuperShreddingBuilderTest {
                 comment = '{"collection":{"name":"documents","schema_version":2}}';
             """;
 
-    private static final Map<String, String> REQUIRED_INDEXES = Map.of(
-            "documents_exist_keys", """
+  private static final Map<String, String> REQUIRED_INDEXES =
+      Map.of(
+          "documents_exist_keys",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_exist_keys"
                     ON "keyspace"."documents" (values("exist_keys"))
                     USING 'StorageAttachedIndex';
                     """,
-            "documents_array_size", """
+          "documents_array_size",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_array_size"
                     ON "keyspace"."documents" (entries("array_size"))
                     USING 'StorageAttachedIndex';
                     """,
-            "documents_array_contains", """
+          "documents_array_contains",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_array_contains"
                     ON "keyspace"."documents" (values("array_contains"))
                     USING 'StorageAttachedIndex';
                     """,
-            "documents_query_bool_values", """
+          "documents_query_bool_values",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_query_bool_values"
                     ON "keyspace"."documents" (entries("query_bool_values"))
                     USING 'StorageAttachedIndex';
                     """,
-            "documents_query_dbl_values", """
+          "documents_query_dbl_values",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_query_dbl_values"
                     ON "keyspace"."documents" (entries("query_dbl_values"))
                     USING 'StorageAttachedIndex';
                     """,
-            "documents_query_text_values", """
+          "documents_query_text_values",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_query_text_values"
                     ON "keyspace"."documents" (entries("query_text_values"))
                     USING 'StorageAttachedIndex';
                     """,
-            "documents_query_timestamp_values", """
+          "documents_query_timestamp_values",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_query_timestamp_values"
                     ON "keyspace"."documents" (entries("query_timestamp_values"))
                     USING 'StorageAttachedIndex';
                     """,
-            "documents_query_null_values", """
+          "documents_query_null_values",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_query_null_values"
                     ON "keyspace"."documents" (values("query_null_values"))
                     USING 'StorageAttachedIndex';
-                    """
-    );
+                    """);
 
-    private static final Map<String, String> OPTIONAL_INDEXES = Map.of(
-            "documents_query_vector_value", """
+  private static final Map<String, String> OPTIONAL_INDEXES =
+      Map.of(
+          "documents_query_vector_value",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_query_vector_value"
                     ON "keyspace"."documents" ("query_vector_value")
                     USING 'StorageAttachedIndex'
                     WITH OPTIONS = { 'similarity_function' : 'cosine', 'source_model' : 'OTHER'};
                     """,
-            "documents_query_lexical_value", """
+          "documents_query_lexical_value",
+              """
                     CREATE CUSTOM INDEX IF NOT EXISTS "documents_query_lexical_value"
                     ON "keyspace"."documents" ("query_lexical_value")
                     USING 'StorageAttachedIndex'
                     WITH OPTIONS = { 'index_analyzer' : 'standard'};
-                    """
-    );
+                    """);
 
-    private static final Map<String, String> ALL_INDEXES ;
-    static {
-        var local = new LinkedHashMap<>(REQUIRED_INDEXES);
-        local.putAll(OPTIONAL_INDEXES);
-        ALL_INDEXES = Collections.unmodifiableMap(local);
+  private static final Map<String, String> ALL_INDEXES;
+
+  static {
+    var local = new LinkedHashMap<>(REQUIRED_INDEXES);
+    local.putAll(OPTIONAL_INDEXES);
+    ALL_INDEXES = Collections.unmodifiableMap(local);
+  }
+
+  public SuperShreddingCQLBuilderTest() {
+    super(true, true);
+    // ^^ need constant names that will match the strings in this class, want IF NOT EXIST
+
+  }
+
+  private List<SuperShreddingBuilder.SuperShreddingComponent<String>> asComponents(
+      String tableCql, Map<String, String> indexCql) {
+    var components =
+        new ArrayList<SuperShreddingBuilder.SuperShreddingComponent<String>>(1 + indexCql.size());
+
+    components.add(
+        new SuperShreddingBuilder.SuperShreddingComponent<>(
+            table(), SuperShreddingBuilder.SuperShreddingComponentType.TABLE, tableCql.trim()));
+
+    for (var indexEntry : indexCql.entrySet()) {
+      components.add(
+          new SuperShreddingBuilder.SuperShreddingComponent<>(
+              CqlIdentifier.fromInternal(indexEntry.getKey()),
+              SuperShreddingBuilder.SuperShreddingComponentType.INDEX,
+              indexEntry.getValue().trim()));
     }
 
-    public SuperShreddingCQLBuilderTest() {
-        super(true, true);
-        // ^^ need constant names that will match the strings in this class, want IF NOT EXIST
+    return components;
+  }
 
-    }
+  @Test
+  public void createTableAllOptional() {
 
-    private List<SuperShreddingBuilder.SuperShreddingComponent<String>> asComponents(String tableCql, Map<String, String> indexCql){
-        var components = new ArrayList<SuperShreddingBuilder.SuperShreddingComponent<String>>(1 + indexCql.size());
+    var expectedComponents = asComponents(CREATE_TABLE_ALL_OPTIONAL, ALL_INDEXES);
 
-        components.add(new SuperShreddingBuilder.SuperShreddingComponent<>(
-                table(),
-                SuperShreddingBuilder.SuperShreddingComponentType.TABLE,
-                tableCql.trim()
-        ));
+    var builder = configAllOptional(SuperShreddingCQLBuilder.cql());
+    var actualComponents = builder.build();
 
-        for (var indexEntry : indexCql.entrySet()) {
-            components.add(new SuperShreddingBuilder.SuperShreddingComponent<>(
-                    CqlIdentifier.fromInternal(
-                            indexEntry.getKey()),
-                            SuperShreddingBuilder.SuperShreddingComponentType.INDEX,
-                            indexEntry.getValue().trim()
-            ));
-        }
+    assertComponents(
+        "createTableAllOptional()",
+        upcastString(expectedComponents),
+        upcastString(actualComponents));
+  }
 
-        return components;
-    }
+  @Test
+  public void createTableNoOptional() {
 
-    @Test
-    public void createTableAllOptional() {
+    var expectedComponents = asComponents(CREATE_TABLE_NO_OPTIONAL, REQUIRED_INDEXES);
 
-        var expectedComponents = asComponents(CREATE_TABLE_ALL_OPTIONAL, ALL_INDEXES);
+    var builder = configNoOptional(SuperShreddingCQLBuilder.cql());
+    var actualComponents = builder.build();
 
-        var builder = configAllOptional(SuperShreddingCQLBuilder.cql());
-        var actualComponents = builder.build();
+    assertComponents(
+        "createTableNoOptional()",
+        upcastString(expectedComponents),
+        upcastString(actualComponents));
+  }
 
-        assertComponents("createTableAllOptional()", upcastString(expectedComponents), upcastString(actualComponents));
-    }
+  @Test
+  public void createTableVectorOnly() {
 
-    @Test
-    public void createTableNoOptional(){
+    var expectedIndexes = new LinkedHashMap<>(REQUIRED_INDEXES);
+    expectedIndexes.put(
+        "documents_query_vector_value", OPTIONAL_INDEXES.get("documents_query_vector_value"));
+    var expectedComponents = asComponents(CREATE_TABLE_VECTOR_ONLY, expectedIndexes);
 
-        var expectedComponents = asComponents(CREATE_TABLE_NO_OPTIONAL, REQUIRED_INDEXES);
+    var builder = configVectorOnly(SuperShreddingCQLBuilder.cql());
+    var actualComponents = builder.build();
 
-        var builder = configNoOptional(SuperShreddingCQLBuilder.cql());
-        var actualComponents = builder.build();
+    assertComponents(
+        "createTableVectorOnly()",
+        upcastString(expectedComponents),
+        upcastString(actualComponents));
+  }
 
-        assertComponents("createTableNoOptional()", upcastString(expectedComponents), upcastString(actualComponents));
-    }
+  @Test
+  public void createTableLexicalOnly() {
 
-    @Test
-    public void createTableVectorOnly() {
+    var expectedIndexes = new LinkedHashMap<>(REQUIRED_INDEXES);
+    expectedIndexes.put(
+        "documents_query_lexical_value", OPTIONAL_INDEXES.get("documents_query_lexical_value"));
+    var expectedComponents = asComponents(CREATE_TABLE_LEXICAL_ONLY, expectedIndexes);
 
-        var expectedIndexes = new LinkedHashMap<>(REQUIRED_INDEXES);
-        expectedIndexes.put("documents_query_vector_value", OPTIONAL_INDEXES.get("documents_query_vector_value"));
-        var expectedComponents = asComponents(CREATE_TABLE_VECTOR_ONLY, expectedIndexes);
+    var builder = configLexicalOnly(SuperShreddingCQLBuilder.cql());
+    var actualComponents = builder.build();
 
-        var builder = configVectorOnly(SuperShreddingCQLBuilder.cql());
-        var actualComponents = builder.build();
-
-        assertComponents("createTableVectorOnly()", upcastString(expectedComponents), upcastString(actualComponents));
-    }
-
-
-    @Test
-    public void createTableLexicalOnly() {
-
-        var expectedIndexes = new LinkedHashMap<>(REQUIRED_INDEXES);
-        expectedIndexes.put("documents_query_lexical_value", OPTIONAL_INDEXES.get("documents_query_lexical_value"));
-        var expectedComponents = asComponents(CREATE_TABLE_LEXICAL_ONLY, expectedIndexes);
-
-        var builder = configLexicalOnly(SuperShreddingCQLBuilder.cql());
-        var actualComponents = builder.build();
-
-        assertComponents("createTableLexicalOnly()", upcastString(expectedComponents), upcastString(actualComponents));
-    }
+    assertComponents(
+        "createTableLexicalOnly()",
+        upcastString(expectedComponents),
+        upcastString(actualComponents));
+  }
 }

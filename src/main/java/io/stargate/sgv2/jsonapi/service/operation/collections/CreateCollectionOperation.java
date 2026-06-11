@@ -69,7 +69,8 @@ public record CreateCollectionOperation(
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
-  private static final SuperShreddingTablePredicate COLLECTION_MATCHER = new SuperShreddingTablePredicate();
+  private static final SuperShreddingTablePredicate COLLECTION_MATCHER =
+      new SuperShreddingTablePredicate();
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

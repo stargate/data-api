@@ -23,7 +23,7 @@ public class StringUtil {
    * IllegalArgumentException} naming the offending {@code name}.
    */
   public static String requireNonBlank(String value, String name) {
-    if (isNullOrBlank(value)){
+    if (isNullOrBlank(value)) {
       throw new IllegalArgumentException(name + " must not be null or blank");
     }
     return value;

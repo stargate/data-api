@@ -11,7 +11,6 @@ import com.datastax.oss.driver.internal.core.adminrequest.AdminRow;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -171,12 +170,12 @@ public abstract class CQLSAIIndex {
 
     /**
      * Add the Index Function we would use in a CREATE INDEX CQL statement.
-     * <p>
-     *  Used in tables, and by the {@link SuperShreddingMetadata.IndexDef}
-     * </p>
+     *
+     * <p>Used in tables, and by the {@link SuperShreddingMetadata.IndexDef}
+     *
      * @return
      */
-    public  String toTargetString() {
+    public String toTargetString() {
       return ApiIndexFunction.toTargetString(indexFunction, targetColumn);
     }
 
@@ -185,9 +184,7 @@ public abstract class CQLSAIIndex {
     }
 
     public Map<String, String> indexOptions() {
-      return Map.of(
-        Options.CLASS_NAME, SAI_CLASS_NAME,
-        Options.TARGET, toTargetString());
+      return Map.of(Options.CLASS_NAME, SAI_CLASS_NAME, Options.TARGET, toTargetString());
     }
   }
 }
