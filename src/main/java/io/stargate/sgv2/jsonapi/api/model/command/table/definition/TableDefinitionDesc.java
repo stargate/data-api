@@ -14,8 +14,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * <p>Has the columns and the primary key definition, not the name of the table.
  */
 public record TableDefinitionDesc(
-    @Valid
-        @Schema(description = "API table columns definitions", type = SchemaType.OBJECT)
+    @Schema(description = "API table columns definitions", type = SchemaType.OBJECT)
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonProperty(TableDescConstants.TableDefinitionDesc.COLUMNS)
         ColumnsDescContainer columns,

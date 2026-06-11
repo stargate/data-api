@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
@@ -281,10 +282,14 @@ public class TestConstants {
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
 
+    // Build the no-op Billing before opening a new stubbing chain — Mockito treats nested
+    // when()/thenReturn() calls as unfinished stubbing.
+    var noOpBilling = noOpBilling();
     var requestContext = mock(RequestContext.class);
     when(requestContext.tenant()).thenReturn(TENANT);
     when(requestContext.getEmbeddingCredentials()).thenReturn(EMBEDDING_CREDENTIALS);
     when(requestContext.apiFeatures()).thenReturn(API_FEATURES);
+    when(requestContext.billing()).thenReturn(noOpBilling);
 
     var embeddingCredentials = mock(EmbeddingCredentials.class);
     when(embeddingCredentials.tenant()).thenReturn(TENANT);
@@ -314,6 +319,15 @@ public class TestConstants {
 
   public RequestContext requestContext() {
     return new RequestContext(TENANT, AUTH_TOKEN, USER_AGENT);
+  }
+
+  /**
+   * Shared NO-OP {@link Billing} for tests that mock the {@link RequestContext} and need {@code
+   * requestContext.billing()} to return a usable no-op rather than null. Backed by {@link
+   * Billing#NO_OP} so tests don't have to mock {@link BillingConfig}.
+   */
+  public static Billing noOpBilling() {
+    return Billing.NO_OP;
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(
