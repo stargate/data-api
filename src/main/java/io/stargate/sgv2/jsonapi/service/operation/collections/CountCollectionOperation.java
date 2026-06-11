@@ -73,7 +73,7 @@ public record CountCollectionOperation(
               .build();
     }
     SimpleStatement simpleStatement = query.queryToStatement();
-    simpleStatement.setPageSize(pageSize());
-    return simpleStatement;
+    // SimpleStatement is immutable, setPageSize returns a new statement
+    return simpleStatement.setPageSize(pageSize());
   }
 }
