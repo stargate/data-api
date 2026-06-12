@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
  * table should look like. This tests that we can build a CQL string to match literal CQL, and then
  * we build tests up from there.
  *
- * <p>Try to keep as literal as possible, validation of how the super shredding table is built
- * builds from this test.
+ * <p>Try to keep as literal as possible, validation of how the super shredding table is built from
+ * this test.
  *
  * <p>See {@link SuperShreddingBuilder} for more details.
  */

@@ -402,8 +402,8 @@
         <artifactId>fmt-maven-plugin</artifactId>
         <version>2.23</version>
         <configuration>
-          <!-- Skip the SuperShreddingSchema java file because it is nicely formatted for readability -->
-          <filesPathPattern>^((?!SuperShreddingSchema).)*\.java$</filesPathPattern>
+          <!-- Skip the SuperShreddingMetadata java file because it is nicely formatted for readability -->
+          <filesPathPattern>^((?!SuperShreddingMetadata).)*\.java$</filesPathPattern>
         </configuration>
         <executions>
           <execution>

@@ -14,6 +14,10 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.stream.Stream;
 
+/**
+ * Collection of utilities to make changes to {@link TableMetadata} and {@link
+ * com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata} as part of testing.
+ */
 public class TableMetadataTestUtil {
 
   private TableMetadataTestUtil() {}

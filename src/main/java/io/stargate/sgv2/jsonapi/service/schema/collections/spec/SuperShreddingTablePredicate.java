@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class SuperShreddingTablePredicate implements Predicate<TableMetadata> {
   private static final Logger LOGGER = LoggerFactory.getLogger(SuperShreddingTablePredicate.class);
 
-  private final SuperShreddingDef superShreddingDef;
+  private final SuperShreddingBinding superShreddingBinding;
   private final List<ColumnMetadataPredicate> expectedOptionals;
 
   // when non null, this is the list of predicates that defines the columns that are ONLY allowed to
@@ -46,8 +46,8 @@ public class SuperShreddingTablePredicate implements Predicate<TableMetadata> {
   private final List<ColumnMetadataPredicate> strictMatch;
 
   // A def that represents the rules used by the old `CollectionTableMatcher`
-  private static final SuperShreddingDef BACKWARDS_COMPAT =
-      new SuperShreddingDef(null, null, false, 0, null, null, false, null);
+  private static final SuperShreddingBinding BACKWARDS_COMPAT =
+      new SuperShreddingBinding(null, null, false, 0, null, null, false, null);
 
   /**
    * Visible for backwards compatibility.
@@ -62,19 +62,19 @@ public class SuperShreddingTablePredicate implements Predicate<TableMetadata> {
    * Creates an instance that checks if the table matches the super shredding definition passed in.
    *
    * @param strict if true, the predicate will error if unexpected columns are found.
-   * @param superShreddingDef the super shredding definition to use for the predicate, build via
+   * @param superShreddingBinding the super shredding definition to use for the predicate, build via
    *     builders.
    */
-  SuperShreddingTablePredicate(boolean strict, SuperShreddingDef superShreddingDef) {
+  SuperShreddingTablePredicate(boolean strict, SuperShreddingBinding superShreddingBinding) {
 
-    this.superShreddingDef =
-        Objects.requireNonNull(superShreddingDef, "superShreddingDef must not be null");
+    this.superShreddingBinding =
+        Objects.requireNonNull(superShreddingBinding, "superShreddingDef must not be null");
 
     List<ColumnMetadataPredicate> optionals = new ArrayList<>();
-    if (superShreddingDef.hasVector()) {
+    if (superShreddingBinding.hasVector()) {
       optionals.add(SuperShreddingMetadata.Predicates.QUERY_VECTOR_VALUE);
     }
-    if (superShreddingDef.hasLexical()) {
+    if (superShreddingBinding.hasLexical()) {
       optionals.add(SuperShreddingMetadata.Predicates.QUERY_LEXICAL_VALUE);
     }
     this.expectedOptionals = Collections.unmodifiableList(optionals);

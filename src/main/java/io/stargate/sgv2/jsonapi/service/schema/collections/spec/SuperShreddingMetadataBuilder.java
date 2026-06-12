@@ -12,8 +12,13 @@ import java.util.stream.Stream;
 
 /**
  * Builder that will create {@link com.datastax.oss.driver.api.core.metadata.schema.TableMetadata}
- * and {@link com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata} instances for the
+ * and {@link com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata} instances from the
  * {@link SuperShreddingMetadata}.
+ * <p>
+ *  We do not create TableMetadata or IndexMetadata directly in production code, we get that from the
+ *  driver. This class is for creating them for tests to fake info from the driver, and the output of this class is
+ *  ground truthed against CQL. See the {@link SuperShreddingBuilder} for more details on the testing.
+ * </p>
  */
 public class SuperShreddingMetadataBuilder
     extends SuperShreddingBuilder<Describable, SuperShreddingMetadataBuilder> {
@@ -26,38 +31,26 @@ public class SuperShreddingMetadataBuilder
   @Override
   public List<SuperShreddingComponent<Describable>> buildInternal() {
 
-    Map<SuperShreddingMetadata.ColumnDef, Map<String, Object>> perColumnOptions = new HashMap<>();
-    // Primary key first
-    var primaryKey =
-        ColumnDefs.toColumnMetadata(
-                superShreddingDef.keyspace(),
-                superShreddingDef.collection(),
-                ColumnDefs.PARTITION_KEY)
-            .toList();
+    // Primary key, this is the names of the columns not their def, they also need to be
+    // in allColumns to get created
+    var primaryKey = ColumnDefs.toColumnMetadata(ColumnDefs.PARTITION_KEY, binding())
+                    .toList();
+
+    // get the columns, including the primary keys
+    // required includes the primary keys
+    var columnDefs = binding().hasAnyOptional() ?
+            new ArrayList<>(ColumnDefs.REQUIRED)
+            : ColumnDefs.REQUIRED;
+    if (binding().isVectorDefined()) {
+      columnDefs.add(ColumnDefs.QUERY_VECTOR_VALUE);
+    }
+    if (binding().isLexicalDefined()) {
+      columnDefs.add(ColumnDefs.QUERY_LEXICAL_VALUE);
+    }
 
     // LinkedHashMap to maintain order
     Map<CqlIdentifier, ColumnMetadata> allColumns = new LinkedHashMap<>(ColumnDefs.ALL.size());
-    primaryKey.forEach(col -> allColumns.put(col.getName(), col));
-
-    // non primary key
-    var columnDefs =
-        superShreddingDef.hasAnyOptional()
-            ? new ArrayList<>(ColumnDefs.REQUIRED)
-            : ColumnDefs.REQUIRED;
-    if (superShreddingDef.isVectorDefined()) {
-      // other vector settings go into the index created for it.
-      perColumnOptions.put(
-          ColumnDefs.QUERY_VECTOR_VALUE, Map.of("dimensions", superShreddingDef.vectorLength()));
-      columnDefs.add(ColumnDefs.QUERY_VECTOR_VALUE);
-    }
-    if (superShreddingDef.isLexicalDefined()) {
-      columnDefs.add(ColumnDefs.QUERY_LEXICAL_VALUE);
-    }
-    ColumnDefs.toColumnMetadata(
-            superShreddingDef.keyspace(),
-            superShreddingDef.collection(),
-            columnDefs,
-            perColumnOptions)
+    ColumnDefs.toColumnMetadata(columnDefs, binding())
         .forEach(col -> allColumns.put(col.getName(), col));
 
     // map<CqlIdentifier, IndexMetadata> needed for the TableMetadata
@@ -73,12 +66,12 @@ public class SuperShreddingMetadataBuilder
     // updating table metadata
     var tableMetadata =
         new DefaultTableMetadata(
-            superShreddingDef.keyspace(),
-            superShreddingDef.collection(),
+            binding().keyspace(),
+            binding().collection(),
             UUID.randomUUID(),
             false,
             false,
-            Collections.unmodifiableList(primaryKey),
+            primaryKey,
             Collections.emptyMap(), // no grouping keys
             Collections.unmodifiableMap(allColumns),
             Collections.unmodifiableMap(tableOptions),
@@ -87,7 +80,7 @@ public class SuperShreddingMetadataBuilder
     List<SuperShreddingComponent<Describable>> components = new ArrayList<>(11);
     components.add(
         new SuperShreddingComponent<>(
-            superShreddingDef.collection(), SuperShreddingComponentType.TABLE, tableMetadata));
+            binding().collection(), SuperShreddingComponentType.TABLE, tableMetadata));
     indexMetadata
         .values()
         .forEach(
@@ -100,12 +93,7 @@ public class SuperShreddingMetadataBuilder
 
   private Stream<IndexMetadata> buildIndexMetadata() {
 
-    var defsAndOptions = indexDefsAndOptions(superShreddingDef);
-    return SuperShreddingMetadata.IndexDefs.toIndexMetadata(
-        superShreddingDef.keyspace(),
-        superShreddingDef.collection(),
-        defsAndOptions.indexDefs(),
-        defsAndOptions.indexOptions())
-        .stream();
+    return indexDefs(binding())
+            .map(indexDef -> indexDef.indexMetadata(binding()));
   }
 }

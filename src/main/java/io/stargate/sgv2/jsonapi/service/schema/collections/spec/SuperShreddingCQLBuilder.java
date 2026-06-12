@@ -39,7 +39,7 @@ public class SuperShreddingCQLBuilder
     List<SuperShreddingComponent<String>> components = new ArrayList<>();
     components.add(
         new SuperShreddingComponent<>(
-            superShreddingDef.collection(), SuperShreddingComponentType.TABLE, tableCQL()));
+            binding().collection(), SuperShreddingComponentType.TABLE, tableCQL()));
     indexCQL().forEach(components::add);
     return components;
   }
@@ -51,17 +51,17 @@ public class SuperShreddingCQLBuilder
     if (ifNotExists) {
       vars.put("IF_NOT_EXISTS", "IF NOT EXISTS");
     }
-    vars.put("KEYSPACE", cqlIdentifierToCQL(superShreddingDef.keyspace()));
-    vars.put("TABLE", cqlIdentifierToCQL(superShreddingDef.collection()));
+    vars.put("KEYSPACE", cqlIdentifierToCQL(binding().keyspace()));
+    vars.put("TABLE", cqlIdentifierToCQL(binding().collection()));
 
-    if (superShreddingDef.isVectorDefined()) {
+    if (binding().isVectorDefined()) {
       vars.put(
           "VECTOR_COLUMN",
-          new StringSubstitutor(Map.of("VECTOR_DIM", superShreddingDef.vectorLength()))
+          new StringSubstitutor(Map.of("VECTOR_DIM", binding().vectorLength()))
               .replace(CQL.TABLE_VECTOR_COLUMN_TEMPLATE));
     }
 
-    if (superShreddingDef.isLexicalDefined()) {
+    if (binding().isLexicalDefined()) {
       vars.put("LEXICAL_COLUMN", CQL.TABLE_LEXICAL_COLUMN_TEMPLATE);
     }
 
@@ -79,18 +79,18 @@ public class SuperShreddingCQLBuilder
   private Stream<SuperShreddingComponent<String>> indexCQL() {
 
     // get all the indexes this super shredding table should have
-    var defsAndOptions = indexDefsAndOptions(superShreddingDef);
+    var indexDefs = indexDefs(binding()).toList();
 
     // For each of the IndexDef, we need to get the CQL to build it
     var cqlAndDefs =
-        defsAndOptions.indexDefs().stream()
+        indexDefs.stream()
             .map(IndexCQLAndDefs.ALL_INDEXES_BY_INDEX_DEF::get)
             .filter(Objects::nonNull)
             .toList();
 
     // sanity check
-    if (cqlAndDefs.size() != defsAndOptions.indexDefs().size()) {
-      throw new IllegalStateException("cqlAndDefs.size() != defsAndOptions.indexDefs().size()");
+    if (cqlAndDefs.size() != indexDefs.size()) {
+      throw new IllegalStateException("cqlAndDefs.size() != indexDefs.size()");
     }
 
     // Start building up the sub vars we need for all the index cql templates.
@@ -101,13 +101,13 @@ public class SuperShreddingCQLBuilder
     // run the clause template, and add the clause to our index vars
     for (IndexCQLAndDef cqlAndDef : cqlAndDefs) {
       if (cqlAndDef.clauseTemplate() != null) {
-        // run the template for this clause, blindly get options from defsAndOptions because
-        // null and empty are OK, If we get a clause back, then put that into the index vars
+        // run the template for this clause, and put the result of the template into the
+        // index vars for all the create index statements.
         // e.g. look at LEXICAL_WITH_OPTIONS_TEMPLATE
 
         cqlAndDef
             .clauseTemplate()
-            .format(defsAndOptions.indexOptions().get(cqlAndDef.indexDef()))
+            .format(cqlAndDef.indexDef().indexOptions(binding()))
             .map(clause -> allIndexVars.put(cqlAndDef.clauseTemplate().toKeyName(), clause));
       }
     }
@@ -119,8 +119,8 @@ public class SuperShreddingCQLBuilder
     // using internal the keyspace and table names because the collection name is
     // used as part of the index name, so we dont want quotes on them
     // NOTE: INDEXES templates MUST put the quotes on
-    allIndexVars.put("KEYSPACE", superShreddingDef.keyspace().asInternal());
-    allIndexVars.put("TABLE", superShreddingDef.collection().asInternal());
+    allIndexVars.put("KEYSPACE", binding().keyspace().asInternal());
+    allIndexVars.put("TABLE", binding().collection().asInternal());
 
     var substitutor = new StringSubstitutor(allIndexVars);
     return cqlAndDefs.stream()
@@ -129,7 +129,7 @@ public class SuperShreddingCQLBuilder
               var cql = substitutor.replace(cqlAndDef.cql());
 
               return new SuperShreddingComponent<>(
-                  cqlAndDef.indexDef().indexName(superShreddingDef.collection()),
+                  cqlAndDef.indexDef().indexName(binding()),
                   SuperShreddingComponentType.INDEX,
                   collapseWhitespace ? collapseWhitespace(cql) : cql);
             });

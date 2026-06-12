@@ -6,14 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Testing that when we build TableMetadata for super shredding table, it matches the expected CQL
- * statement from
+ * Testing that when we build TableMetadata and IndexMetadata from
+ * {@link SuperShreddingMetadataBuilder} the CQL it represents matches that from
+ * {@link SuperShreddingCQLBuilder} , which was ground truthed to constant strings.
  */
 public class SuperShreddingMetadataBuilderTest extends SuperShreddingBuilderTest {
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(SuperShreddingMetadataBuilderTest.class);
-
-  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   public SuperShreddingMetadataBuilderTest() {
     super(false, false);

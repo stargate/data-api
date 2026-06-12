@@ -7,6 +7,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata.IndexDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata.IndexDefs;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * General pattern for defining the properties of a super-shredding "table" and then building
@@ -44,9 +45,9 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
   protected static final CqlIdentifier TABLE_OPTION_COMMENT_IDENTIFIER =
       CqlIdentifier.fromInternal("comment");
 
-  protected final SuperShreddingDef.Builder defBuilder = SuperShreddingDef.builder();
-  // created in build()
-  protected SuperShreddingDef superShreddingDef;
+  protected final SuperShreddingBinding.Builder bindingBuilder = SuperShreddingBinding.builder();
+  // created in build(), private to force use of binding() accessor to check null
+  private SuperShreddingBinding binding;
 
   protected boolean ifNotExists = true;
   protected String comment;
@@ -81,28 +82,33 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
    */
   protected abstract List<SuperShreddingComponent<T>> buildInternal();
 
+  protected SuperShreddingBinding binding() {
+    Objects.requireNonNull(binding, "binding must be set by build()");
+    return binding;
+  }
+
   public U withIfNotExists(boolean ifNotExists) {
     this.ifNotExists = ifNotExists;
     return self();
   }
 
   public U withKeyspace(CqlIdentifier keyspace) {
-    defBuilder.withKeyspace(keyspace);
+    bindingBuilder.withKeyspace(keyspace);
     return self();
   }
 
   public U withCollection(CqlIdentifier collection) {
-    defBuilder.withCollection(collection);
+    bindingBuilder.withCollection(collection);
     return self();
   }
 
   public U withVector(int vectorLength, String similarityFunction, String sourceModel) {
-    defBuilder.withVector(vectorLength, similarityFunction, sourceModel);
+    bindingBuilder.withVector(vectorLength, similarityFunction, sourceModel);
     return self();
   }
 
   public U withLexical(String indexAnalyzer) {
-    defBuilder.withLexical(indexAnalyzer);
+    bindingBuilder.withLexical(indexAnalyzer);
     return self();
   }
 
@@ -132,7 +138,7 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
    * @return List of {@link SuperShreddingComponent}s needed for the super shredding table.
    */
   public List<SuperShreddingComponent<T>> build() {
-    superShreddingDef = defBuilder.build();
+    binding = bindingBuilder.build();
     return buildInternal();
   }
 
@@ -172,54 +178,24 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
   }
 
   /**
-   * Holds all the index definitions and options for the super shredding table. See {@link
-   * #indexDefsAndOptions(SuperShreddingDef)}
-   *
-   * @param indexDefs All indexes the super shredding table will have.
-   * @param indexOptions All options for the indexes the super shredding table will have, keyed on
-   *     the indexDef. Not all indexes have options.
-   */
-  protected record IndexDefsAndOptions(
-      List<IndexDef> indexDefs, Map<IndexDef, Map<String, String>> indexOptions) {
-    protected IndexDefsAndOptions {
-      indexDefs =
-          indexDefs == null ? Collections.emptyList() : Collections.unmodifiableList(indexDefs);
-      indexOptions =
-          indexOptions == null ? Collections.emptyMap() : Collections.unmodifiableMap(indexOptions);
-    }
-  }
-
-  /**
    * Gets the index definitions and options for the super shredding table based on {@link
-   * SuperShreddingDef}
+   * SuperShreddingBinding}
    *
-   * <p>This pulls the options from the {@link SuperShreddingDef} and puts them into maps of the
+   * <p>This pulls the options from the {@link SuperShreddingBinding} and puts them into maps of the
    * values each index definition needs
    */
-  protected IndexDefsAndOptions indexDefsAndOptions(SuperShreddingDef superShreddingDef) {
+  protected Stream<IndexDef> indexDefs(SuperShreddingBinding binding) {
 
-    var indexDefs =
-        superShreddingDef.hasAnyOptional()
-            ? new ArrayList<>(IndexDefs.REQUIRED)
-            : IndexDefs.REQUIRED;
+    Stream.Builder<IndexDef> builder = Stream.builder();
 
-    // NOTE: preserve order with LinkedHashMap in all places even if not needed everywhere
-    // this is important when testing against generated CQL, so do in all places
-    Map<IndexDef, Map<String, String>> indexOptions = new LinkedHashMap<>();
-
-    if (superShreddingDef.isVectorDefined()) {
-      indexDefs.add(IndexDefs.QUERY_VECTOR_VALUE);
-      IndexDef.vectorIndexOptions(
-              superShreddingDef.similarityFunction(), superShreddingDef.sourceModel())
-          .map(opt -> indexOptions.put(IndexDefs.QUERY_VECTOR_VALUE, opt));
+    IndexDefs.REQUIRED.forEach(builder);
+    if (this.binding.isVectorDefined()) {
+      builder.add(IndexDefs.QUERY_VECTOR_VALUE);
     }
 
-    if (superShreddingDef.isLexicalDefined()) {
-      indexDefs.add(IndexDefs.QUERY_LEXICAL_VALUE);
-      IndexDef.lexicalIndexOptions(superShreddingDef.indexAnalyzer())
-          .map(opt -> indexOptions.put(IndexDefs.QUERY_LEXICAL_VALUE, opt));
+    if (this.binding.isLexicalDefined()) {
+      builder.add(IndexDefs.QUERY_LEXICAL_VALUE);
     }
-
-    return new IndexDefsAndOptions(indexDefs, indexOptions);
+    return builder.build();
   }
 }

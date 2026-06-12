@@ -17,6 +17,10 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+/**
+ * This is the initial test for the super shredding table predicate when that class was called
+ * <code>CollectionTableMatcher</code>, left in place to show we are passing the old tests.
+ */
 class SuperShreddingTablePredicateTest {
 
   SuperShreddingTablePredicate tableMatcher = new SuperShreddingTablePredicate();

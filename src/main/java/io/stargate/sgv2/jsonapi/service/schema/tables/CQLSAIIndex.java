@@ -165,7 +165,7 @@ public abstract class CQLSAIIndex {
     return new IndexTarget(CqlIdentifier.fromInternal(columnName), apiIndexFunction);
   }
 
-  /** For internal to this package use only */
+  /** Contains the column an index is built on, and the index function if there is one. */
   public record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {
 
     /**
@@ -183,6 +183,11 @@ public abstract class CQLSAIIndex {
       return ApiIndexFunction.addTo(createIndexOnTable, indexFunction, targetColumn);
     }
 
+    /**
+     * Build the options that would be used in IndexMetadata for this
+     *
+     * @return
+     */
     public Map<String, String> indexOptions() {
       return Map.of(Options.CLASS_NAME, SAI_CLASS_NAME, Options.TARGET, toTargetString());
     }

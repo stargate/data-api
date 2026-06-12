@@ -4,7 +4,14 @@ import static io.stargate.sgv2.jsonapi.util.StringUtil.isNullOrBlank;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 
-public record SuperShreddingDef(
+/**
+ * Reusable recipe of the configuration used to create a super-shredding table.
+ *
+ * <p>We often need a way to capture this information, such as when creating a collection or
+ * checking the collection works as we expect. Hase a builder so we can easily use it as part of the
+ * {@link SuperShreddingBuilder} hierarchy.
+ */
+public record SuperShreddingBinding(
     CqlIdentifier keyspace,
     CqlIdentifier collection,
     boolean hasVector,
@@ -82,8 +89,7 @@ public record SuperShreddingDef(
       this.vectorLength = vectorLength;
       this.similarityFunction = similarityFunction;
       this.sourceModel = sourceModel;
-      this.hasVector = true;
-      return this;
+      return withAnyVector();
     }
 
     public Builder withAnyLexical() {
@@ -94,11 +100,11 @@ public record SuperShreddingDef(
     public Builder withLexical(String indexAnalyzer) {
       this.indexAnalyzer = indexAnalyzer;
       this.hasLexical = true;
-      return this;
+      return withAnyLexical();
     }
 
-    public SuperShreddingDef build() {
-      return new SuperShreddingDef(
+    public SuperShreddingBinding build() {
+      return new SuperShreddingBinding(
           keyspace,
           collection,
           hasVector,

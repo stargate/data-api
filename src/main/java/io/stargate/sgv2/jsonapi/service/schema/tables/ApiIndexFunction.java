@@ -43,6 +43,18 @@ public enum ApiIndexFunction {
     return cqlFunction;
   }
 
+  public String toTargetString(CqlIdentifier targetColumn) {
+    return toTargetString(this, targetColumn);
+  }
+
+  /**
+   * Builds the <code>target</code> of the SAI index, which may or maynot have a function in the
+   * definition. See examples in {@link CQLSAIIndex}
+   *
+   * @param indexFunction nullable index function to use in the target string
+   * @param targetColumn required column to use in the target string
+   * @return the target string that is used in an index definition.
+   */
   public static String toTargetString(ApiIndexFunction indexFunction, CqlIdentifier targetColumn) {
     Objects.requireNonNull(targetColumn, "targetColumn cannot be null");
     return indexFunction == null

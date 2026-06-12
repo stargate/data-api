@@ -28,9 +28,9 @@ public class SuperShreddingPredicateBuilder
   @Override
   public List<SuperShreddingComponent<SuperShreddingTablePredicate>> buildInternal() {
 
-    var predicate = new SuperShreddingTablePredicate(strict, superShreddingDef);
+    var predicate = new SuperShreddingTablePredicate(strict, binding());
     return List.of(
         new SuperShreddingComponent<>(
-            superShreddingDef.collection(), SuperShreddingComponentType.TABLE, predicate));
+            binding().collection(), SuperShreddingComponentType.TABLE, predicate));
   }
 }
