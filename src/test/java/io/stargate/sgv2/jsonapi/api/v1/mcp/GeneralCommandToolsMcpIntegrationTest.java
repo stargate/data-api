@@ -71,6 +71,24 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
     }
   }
 
+  /**
+   * Status-only commands must return a non-empty {@code content}: per the MCP spec, clients (and
+   * the LLMs behind them) read tool results from {@code content}, while {@code _meta} is ignored by
+   * mainstream clients. An empty content list makes results invisible to standard MCP clients.
+   */
+  @Test
+  void findKeyspacesToolCallReturnsNonEmptyContent() {
+    callToolAndAssert(
+        CommandName.Names.FIND_KEYSPACES,
+        Map.of(),
+        response -> {
+          assertFalse(response.isError());
+          JsonObject envelope = contentEnvelope(response);
+          JsonArray keyspaces = envelope.getJsonObject("status").getJsonArray("keyspaces");
+          assertNotNull(keyspaces, "Keyspaces must be visible in content, not only in _meta");
+        });
+  }
+
   @Test
   void findEmbeddingProvidersToolCall() {
     callToolAndAssert(

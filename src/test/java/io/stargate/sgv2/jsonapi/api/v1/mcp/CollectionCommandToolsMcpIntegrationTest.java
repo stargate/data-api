@@ -358,4 +358,87 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
             "filter", Map.of("active", false)),
         assertStatusOnlyWithJson(status -> assertEquals(1, status.getInteger("deletedCount"))));
   }
+
+  /**
+   * The advertised inputSchema for `find` must describe `filter` as a plain Data API filter object.
+   * The internal Java shape (`filterClause`, `json`) must not leak: schema-compliant MCP clients
+   * send exactly what the schema advertises, and the server must accept it.
+   */
+  @Test
+  @Order(15)
+  void testAdvertisedFindFilterSchemaIsPlainObject() {
+    var findTool = findTool(CommandName.Names.FIND);
+
+    JsonObject filterSchema =
+        findTool.inputSchema().getJsonObject("properties").getJsonObject("filter");
+    assertNotNull(filterSchema, "find tool must advertise a filter argument");
+    assertEquals("object", filterSchema.getString("type"), "filter must be a plain object");
+
+    JsonObject filterProperties = filterSchema.getJsonObject("properties");
+    if (filterProperties != null) {
+      assertFalse(
+          filterProperties.containsKey("filterClause"),
+          "Internal field filterClause must not leak into the advertised filter schema");
+      assertFalse(
+          filterProperties.containsKey("json"),
+          "Internal field json must not leak into the advertised filter schema");
+    }
+  }
+
+  /**
+   * Calls `find` with the example filter taken verbatim from the advertised inputSchema and asserts
+   * the call succeeds: the advertised schema and the accepted wire format must agree.
+   */
+  @Test
+  @Order(16)
+  void testFindWithFilterExampleFromAdvertisedSchema() {
+    var findTool = findTool(CommandName.Names.FIND);
+    JsonObject filterSchema =
+        findTool.inputSchema().getJsonObject("properties").getJsonObject("filter");
+
+    JsonArray examples = filterSchema.getJsonArray("examples");
+    assertNotNull(examples, "filter schema should advertise an example");
+    assertFalse(examples.isEmpty(), "filter schema examples should not be empty");
+    JsonObject exampleFilter = examples.getJsonObject(0);
+
+    callToolAndAssert(
+        CommandName.Names.FIND,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            collectionName,
+            "filter",
+            exampleFilter.getMap()),
+        assertDataOnly(
+            data ->
+                assertNotNull(
+                    data.getJsonArray("documents"),
+                    "find with the advertised example filter must succeed")));
+  }
+
+  /**
+   * An invalid filter must surface as a proper MCP tool error (isError with the error message in
+   * content) so agents can read it and self-correct: not as an opaque JSON-RPC -32603 internal
+   * error, which would fail the tool call at the protocol level.
+   */
+  @Test
+  @Order(17)
+  void testFindWithInvalidFilterReturnsToolError() {
+    callToolAndAssert(
+        CommandName.Names.FIND,
+        Map.of(
+            "keyspace",
+            keyspaceName,
+            "collection",
+            collectionName,
+            "filter",
+            Map.of("age", Map.of("$invalidOperator", 40))),
+        assertErrorOnly(
+            errors -> {
+              String message = errors.getJsonObject(0).getString("message");
+              assertNotNull(message, "Tool error must carry a message for self-correction");
+              assertFalse(message.isBlank(), "Tool error message must not be blank");
+            }));
+  }
 }
