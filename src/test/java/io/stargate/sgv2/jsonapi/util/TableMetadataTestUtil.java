@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
@@ -12,6 +13,7 @@ import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadat
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -244,5 +246,56 @@ public class TableMetadataTestUtil {
         columns,
         tableMetadata.getOptions(),
         tableMetadata.getIndexes());
+  }
+
+  // ============================================================
+  // Index manipulation
+  // ============================================================
+
+  public record TableAndIndex(TableMetadata tableMetadata, CqlIdentifier indexName) {}
+
+  public static TableMetadata removeIndex(TableMetadata tableMetadata, CqlIdentifier indexName) {
+    var indexes = new LinkedHashMap<>(tableMetadata.getIndexes());
+    if (indexes.remove(indexName) == null) {
+      throw new IllegalStateException(
+          "Index not found. indexName:%s, tableMetadata:%s"
+              .formatted(indexName, tableMetadata.describe(true)));
+    }
+    return rebuildWithIndexes(tableMetadata, indexes);
+  }
+
+  public static Stream<TableAndIndex> removeAllIndexes(TableMetadata tableMetadata) {
+    return removeAllIndexes(tableMetadata, tableMetadata.getIndexes().keySet());
+  }
+
+  public static Stream<TableAndIndex> removeAllIndexes(
+      TableMetadata tableMetadata, Collection<CqlIdentifier> indexNames) {
+    return indexNames.stream()
+        .map(name -> new TableAndIndex(removeIndex(tableMetadata, name), name));
+  }
+
+  public static TableMetadata clearAllIndexes(TableMetadata tableMetadata) {
+    return rebuildWithIndexes(tableMetadata, Map.of());
+  }
+
+  public static TableMetadata addIndex(TableMetadata tableMetadata, IndexMetadata indexMetadata) {
+    var indexes = new LinkedHashMap<>(tableMetadata.getIndexes());
+    indexes.put(indexMetadata.getName(), indexMetadata);
+    return rebuildWithIndexes(tableMetadata, indexes);
+  }
+
+  private static TableMetadata rebuildWithIndexes(
+      TableMetadata tableMetadata, Map<CqlIdentifier, IndexMetadata> indexes) {
+    return new DefaultTableMetadata(
+        tableMetadata.getKeyspace(),
+        tableMetadata.getName(),
+        tableMetadata.getId().orElseThrow(),
+        tableMetadata.isCompactStorage(),
+        tableMetadata.isVirtual(),
+        tableMetadata.getPartitionKey(),
+        tableMetadata.getClusteringColumns(),
+        tableMetadata.getColumns(),
+        tableMetadata.getOptions(),
+        indexes);
   }
 }

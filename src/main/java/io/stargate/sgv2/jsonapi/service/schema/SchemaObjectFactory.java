@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
@@ -11,6 +12,9 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingBinding;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingIndexValidator;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingTablePredicate;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
@@ -127,14 +131,41 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
                                     scopedName,
                                     vars -> vars.put("allTables", errFmtJoin(allTables))));
                           });
+
+              // clun: after checking the table metadata, we can determine if it's a collection or a table an
+              return IS_COLLECTION_PREDICATE.test(tableMetadata)
+                  ? validateAndCreateCollection(requestContext, tableMetadata)
+                 : TableSchemaObject.from(requestContext.tenant(), tableMetadata, OBJECT_MAPPER);
+
+              /* PROPOSAL
               return IS_COLLECTION_PREDICATE.test(tableMetadata)
                   ? CollectionSchemaObject.getCollectionSettings(
                       requestContext, tableMetadata, OBJECT_MAPPER)
                   : TableSchemaObject.from(requestContext.tenant(), tableMetadata, OBJECT_MAPPER);
+               */
             });
   }
 
-  private Uni<KeyspaceMetadata> getKeyspaceMetadata(
+    private CollectionSchemaObject validateAndCreateCollection(
+            RequestContext requestContext, TableMetadata tableMetadata) {
+
+        // Validation of Indices before creating the CollectionSchemaObject.
+        var bindingBuilder = SuperShreddingBinding.builder();
+        var hasVector      = tableMetadata.getColumn(SuperShreddingMetadata.Names.QUERY_VECTOR_VALUE).isPresent();
+        var hasLexical     = tableMetadata.getColumn(SuperShreddingMetadata.Names.QUERY_LEXICAL_VALUE).isPresent();
+        if (hasVector)  bindingBuilder.withAnyVector();
+        if (hasLexical) bindingBuilder.withAnyLexical();
+        var validator = new SuperShreddingIndexValidator(bindingBuilder.build());
+
+        // Warning is logged inside validate() -- no need to act on the result here yet.
+        // todo clun - check the result of the validation and throw an exception if it fails
+        SuperShreddingIndexValidator.ValidationResult validResult = validator.validate(tableMetadata);
+
+        // Original code to create the CollectionSchemaObject after validation.
+        return CollectionSchemaObject.getCollectionSettings(requestContext, tableMetadata, OBJECT_MAPPER);
+    }
+
+    private Uni<KeyspaceMetadata> getKeyspaceMetadata(
       RequestContext requestContext,
       UnscopedSchemaObjectIdentifier unscopedName,
       boolean forceRefresh) {
