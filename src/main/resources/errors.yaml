@@ -1811,13 +1811,38 @@ request-errors:
     title: Vector metric is unknown
     body: |-
       The command attempted to create an vector index using a metric that is not known by the API.
-            
+
       The metric, also known as the similarity function, used to create the vector index is used to compare vectors to find the similar vectors.
-      
+
       The known metrics are: ${knownMetrics}.
       The command attempted to use the metric: ${unknownMetric}.
-      
+
       Resend the command using a known metric.
+
+  - scope: SCHEMA
+    code: UNKNOWN_VECTOR_INDEXING_PROFILE
+    title: Vector indexing profile is unknown
+    body: |-
+      The command attempted to create a vector index using an indexing profile that is not known by the API.
+
+      A profile is selected by setting `indexingOptions` to a String; the API expands it into a set of indexing options. To pass options directly instead, set `indexingOptions` to an Object of raw Cassandra indexing options.
+
+      The known profiles are: ${knownProfiles}.
+      The command attempted to use the profile: ${unknownProfile}.
+
+      Resend the command using a known profile, or use a raw indexing options Object.
+
+  - scope: SCHEMA
+    code: INVALID_VECTOR_INDEXING_OPTIONS
+    title: Vector indexingOptions are invalid
+    body: |-
+      The command attempted to create a vector index with invalid `indexingOptions`.
+
+      `indexingOptions` must be either a String naming a predefined profile, or an Object of raw Cassandra indexing options. The dedicated `metric` and `sourceModel` fields must not be repeated inside the raw options Object.
+
+      ${reason}
+
+      Resend the command with corrected `indexingOptions`.
 
   - scope: SCHEMA
     code: VECTOR_SEARCH_NOT_SUPPORTED

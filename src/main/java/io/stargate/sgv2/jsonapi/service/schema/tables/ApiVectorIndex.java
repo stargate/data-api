@@ -6,6 +6,9 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
@@ -17,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromCql;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromIndexDesc;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +58,9 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
     var definitionOptions =
         new VectorIndexDefinitionDesc.VectorIndexDescOptions(
-            similarityFunction.apiName(), sourceModel.apiName());
+            similarityFunction.apiName(),
+            sourceModel.apiName(),
+            renderIndexingOptions(indexOptions));
     var definition =
         new VectorIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
 
@@ -74,6 +80,103 @@ public class ApiVectorIndex extends ApiSupportedIndex {
         return definition;
       }
     };
+  }
+
+  /**
+   * Renders the additional tuning options from a CQL index options map (everything other than the
+   * structural {@code class_name} / {@code target} and the {@code source_model} / {@code
+   * similarity_function} options, which have dedicated fields) as an {@code indexingOptions} object
+   * for the public schema description.
+   *
+   * <p>Profiles are resolved to their concrete options at create time, so the description always
+   * shows the resolved raw options. Values are rendered as Strings because CQL index options are a
+   * {@code Map<String, String>}.
+   *
+   * @param indexOptions the CQL index options map
+   * @return the options object, or null when there are none (so the field is omitted)
+   */
+  static JsonNode renderIndexingOptions(Map<String, String> indexOptions) {
+    ObjectNode node = null;
+    for (var entry : indexOptions.entrySet()) {
+      var optionName = entry.getKey();
+      // Skip the structural SAI options (added by the driver / CQL builder) and the options that
+      // have dedicated API fields (source_model / similarity_function).
+      if (CQLSAIIndex.Options.CLASS_NAME.equals(optionName)
+          || CQLSAIIndex.Options.TARGET.equals(optionName)
+          || VectorConstants.CQLAnnIndex.RESERVED_OPTIONS.contains(optionName)) {
+        continue;
+      }
+      if (node == null) {
+        node = JsonNodeFactory.instance.objectNode();
+      }
+      node.put(optionName, entry.getValue());
+    }
+    return node;
+  }
+
+  /**
+   * Applies the optional {@code indexingOptions} from the user request into the CQL index options
+   * map. The value is either a String naming a {@link VectorIndexProfiles profile} (expanded into a
+   * set of options) or an Object of raw Cassandra indexing options passed through as-is. The {@code
+   * source_model} / {@code similarity_function} options have dedicated fields and must not be set
+   * this way.
+   *
+   * @param indexOptions the CQL options map being built, mutated in place
+   * @param indexingOptions the raw node from the request, may be null
+   */
+  static void applyIndexingOptions(Map<String, String> indexOptions, JsonNode indexingOptions) {
+
+    if (indexingOptions == null || indexingOptions.isNull()) {
+      // nothing provided, leave the options as they are
+      return;
+    }
+
+    if (indexingOptions.isTextual()) {
+      // String -> named profile
+      var profileName = indexingOptions.textValue();
+      var profileOptions =
+          VectorIndexProfiles.forName(profileName)
+              .orElseThrow(
+                  () ->
+                      SchemaException.Code.UNKNOWN_VECTOR_INDEXING_PROFILE.get(
+                          Map.of(
+                              "knownProfiles",
+                              errFmtJoin(VectorIndexProfiles.knownNames()),
+                              "unknownProfile",
+                              profileName)));
+      indexOptions.putAll(profileOptions);
+      return;
+    }
+
+    if (indexingOptions.isObject()) {
+      // Object -> raw indexing options, passed through as-is using Cassandra's snake_case names.
+      indexingOptions
+          .fields()
+          .forEachRemaining(
+              entry -> {
+                var optionName = entry.getKey();
+                if (VectorConstants.CQLAnnIndex.RESERVED_OPTIONS.contains(optionName)) {
+                  throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+                      Map.of(
+                          "reason",
+                          "The option '%s' must be set using its dedicated field, not indexingOptions."
+                              .formatted(optionName)));
+                }
+                // CQL index options are strings: keep a textual value raw, otherwise serialise the
+                // JSON value (e.g. number 32 -> "32", boolean true -> "true").
+                var value = entry.getValue();
+                indexOptions.put(
+                    optionName, value.isTextual() ? value.textValue() : value.toString());
+              });
+      return;
+    }
+
+    // neither String nor Object -> not supported
+    throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+        Map.of(
+            "reason",
+            "indexingOptions must be a String (profile name) or an Object (raw options), but was: "
+                + JsonUtil.nodeTypeAsString(indexingOptions)));
   }
 
   /**
@@ -244,6 +347,12 @@ public class ApiVectorIndex extends ApiSupportedIndex {
             userMetric,
             metricToUse);
       }
+
+      // Apply the optional additional indexing options (a profile name or raw options); the source
+      // model and metric above have dedicated fields and must not be set this way.
+      var userIndexingOptions =
+          (indexDesc.options() == null) ? null : indexDesc.options().indexingOptions();
+      applyIndexingOptions(indexOptions, userIndexingOptions);
 
       return new ApiVectorIndex(
           indexIdentifier, targetIdentifier, indexOptions, metricToUse, sourceModelToUse);

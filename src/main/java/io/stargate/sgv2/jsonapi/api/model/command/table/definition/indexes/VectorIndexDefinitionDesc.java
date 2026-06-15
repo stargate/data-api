@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorIndexDescDefaults;
@@ -34,7 +35,8 @@ public record VectorIndexDefinitionDesc(
   /** Options for the vector index */
   @JsonPropertyOrder({
     VectorConstants.VectorColumn.METRIC,
-    VectorConstants.VectorColumn.SOURCE_MODEL
+    VectorConstants.VectorColumn.SOURCE_MODEL,
+    VectorConstants.VectorColumn.INDEXING_OPTIONS
   })
   public record VectorIndexDescOptions(
       @Nullable
@@ -59,5 +61,19 @@ public record VectorIndexDefinitionDesc(
                       + EmbeddingSourceModel.ApiConstants.ALL)
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @JsonProperty(VectorConstants.VectorColumn.SOURCE_MODEL)
-          String sourceModel) {}
+          String sourceModel,
+      //
+      @Nullable
+          @Schema(
+              description =
+                  """
+Optional additional vector (SAI) indexing configuration: either a String naming a predefined profile \
+(e.g. "small-high-recall") that the API expands into a set of options, or an Object of raw Cassandra \
+indexing options passed through as-is (e.g. {"enable_hierarchy": true, "maximum_node_connections": 32}). \
+The dedicated "metric" and "sourceModel" fields must not be repeated here.\
+""",
+              type = SchemaType.OBJECT)
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @JsonProperty(VectorConstants.VectorColumn.INDEXING_OPTIONS)
+          JsonNode indexingOptions) {}
 }

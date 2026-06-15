@@ -1137,6 +1137,72 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
+    public void unknownIndexingProfile() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                {
+                  "name": "vector_type_7_idx",
+                  "definition": {
+                    "column": "vector_type_7",
+                    "options": {
+                      "indexingOptions": "no-such-profile"
+                    }
+                  }
+                }
+                """)
+          .hasSingleApiError(
+              SchemaException.Code.UNKNOWN_VECTOR_INDEXING_PROFILE,
+              SchemaException.class,
+              "The command attempted to use the profile: no-such-profile.");
+    }
+
+    @Test
+    public void rawIndexingOptionsWithReservedOption() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                {
+                  "name": "vector_type_7_idx",
+                  "definition": {
+                    "column": "vector_type_7",
+                    "options": {
+                      "indexingOptions": {
+                        "similarity_function": "COSINE"
+                      }
+                    }
+                  }
+                }
+                """)
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
+              SchemaException.class,
+              "The option 'similarity_function' must be set using its dedicated field");
+    }
+
+    @Test
+    public void indexingOptionsNotStringOrObject() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                {
+                  "name": "vector_type_7_idx",
+                  "definition": {
+                    "column": "vector_type_7",
+                    "options": {
+                      "indexingOptions": [1, 2, 3]
+                    }
+                  }
+                }
+                """)
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
+              SchemaException.class,
+              "indexingOptions must be a String (profile name) or an Object (raw options)",
+              "but was: Array");
+    }
+
+    @Test
     public void createVectorIndexWithUnsupportedIndexType() {
       assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
