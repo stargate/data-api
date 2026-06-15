@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.util.profiles.DisableVectorizeProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 

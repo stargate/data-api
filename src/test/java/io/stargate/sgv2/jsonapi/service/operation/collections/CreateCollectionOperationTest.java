@@ -33,7 +33,6 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -183,7 +182,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            mock(CQLSessionCache.class),
             TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             false,
@@ -231,7 +229,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            mock(CQLSessionCache.class),
             TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             false,
@@ -290,7 +287,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            mock(CQLSessionCache.class),
             TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             false,
@@ -347,7 +343,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            mock(CQLSessionCache.class),
             TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             false,
@@ -416,7 +411,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         new CreateCollectionOperation(
             KEYSPACE_CONTEXT,
             databaseLimitsConfig,
-            mock(CQLSessionCache.class),
             TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
             10,
             true,

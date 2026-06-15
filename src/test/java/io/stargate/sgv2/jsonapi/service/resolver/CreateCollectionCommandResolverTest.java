@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.stargate.sgv2.jsonapi.util.exception.SchemaExceptionAssert.assertThatSchemaException;
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
@@ -15,415 +17,352 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.util.profiles.EnabledVectorizeProfile;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @QuarkusTest
 @TestProfile(EnabledVectorizeProfile.class)
 class CreateCollectionCommandResolverTest {
 
-  @Inject ObjectMapper objectMapper;
-  @Inject CreateCollectionCommandResolver resolver;
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(CreateCollectionCommandResolverTest.class);
 
+  @Inject private CreateCollectionCommandResolver RESOLVER;
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
-  CommandContext<KeyspaceSchemaObject> commandContext;
+  // want a single instance for all calls, keyspaceContext() creates a new each call
+  private final CommandContext<KeyspaceSchemaObject> COMMAND_CONTEXT =
+      TEST_CONSTANTS.keyspaceContext();
 
-  @BeforeEach
-  public void beforeEach() {
-    commandContext = TEST_CONSTANTS.keyspaceContext();
+  private Throwable resolveCommandThrows(String testName, String rawJson) {
+    return catchThrowable(
+        () -> resolveCommand(testName, rawJson, TEST_CONSTANTS.COLLECTION_IDENTIFIER.table()));
   }
 
-  @Nested
-  class CreateCollectionSuccess {
+  private CreateCollectionOperation resolveCommand(String testName, String rawJson) {
+    return resolveCommand(testName, rawJson, TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
+  }
 
-    @Test
-    public void happyPath() throws Exception {
-      var json =
-          TEST_CONSTANTS.subsRawNames(
-              """
-              {
-                "createCollection": {
-                  "name" : "${collection}"
-                }
-              }
-              """);
+  private CreateCollectionOperation resolveCommand(
+      String testName, String rawJson, CqlIdentifier collectionName) {
 
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var operation = resolver.resolveCommand(commandContext, command);
+    var json = TEST_CONSTANTS.subsRawNames(rawJson);
+    LOGGER.info("resolveCommand() - testName: {}, json: {}", testName, json);
 
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              CreateCollectionOperation.class,
-              op -> {
-                assertThat(op.collectionName())
-                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.vectorDesc()).isNull();
-              });
+    CreateCollectionCommand command;
+    try {
+      command = TEST_CONSTANTS.OBJECT_MAPPER.readValue(json, CreateCollectionCommand.class);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
     }
 
-    @Test
-    public void happyPathVectorSearch() throws Exception {
+    var operation = RESOLVER.resolveCommand(COMMAND_CONTEXT, command);
+
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            CreateCollectionOperation.class,
+            op -> {
+              assertThat(op.collectionName())
+                  .as("%s - collectionName() matches command", testName)
+                  .isEqualTo(collectionName);
+              assertThat(op.commandContext())
+                  .as("%s - commandContext() is same object", testName)
+                  .isSameAs(COMMAND_CONTEXT);
+            });
+    return (CreateCollectionOperation) operation;
+  }
+
+  @Test
+  public void successWithDefaults() {
+    var operation =
+        resolveCommand(
+            "successWithDefaults()",
+            """
+                        {
+                            "createCollection": {
+                                "name": "${collection}"
+                            }
+                        }
+                        """);
+
+    assertThat(operation.docIdDesc()).isNull();
+    assertThat(operation.indexingDesc()).isNull();
+    assertThat(operation.vectorDesc()).isNull();
+    assertThat(operation.indexingDesc()).isNull();
+    assertThat(operation.lexicalDef())
+        .isEqualTo(
+            COMMAND_CONTEXT.requestContext().schemaRegistry().lexicalDef().currentVersion(null));
+    assertThat(operation.rerankDef())
+        .isEqualTo(
+            COMMAND_CONTEXT.requestContext().schemaRegistry().rerankDef().currentVersion(null));
+  }
+
+  @Test
+  public void successWithSupportedNames() {
+
+    String[] supportedNames = {"a", "A", "0", "_", "a0", "0a_A", "_0a"};
+    for (String name : supportedNames) {
       var json =
-          TEST_CONSTANTS.subsRawNames(
               """
-          {
-            "createCollection": {
-              "name" : "${collection}",
-              "options": {
-                "vector": {
-                  "dimension": 4,
-                  "metric": "cosine"
-                }
-              }
-            }
-          }
-          """);
-
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var operation = resolver.resolveCommand(commandContext, command);
-
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              CreateCollectionOperation.class,
-              op -> {
-                assertThat(op.collectionName())
-                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.vectorDesc()).isNotNull();
-                assertThat(op.vectorDesc().dimension()).isEqualTo(4);
-                assertThat(op.vectorDesc().metric()).isEqualTo("cosine");
-              });
+                    {
+                        "createCollection": {
+                            "name": "%s"
+                        }
+                    }
+                    """
+              .formatted(name);
+      resolveCommand("successWithSupportedNames()", json, cqlIdentifierFromUserInput(name));
     }
+  }
 
-    @Test
-    public void happyPathVectorizeSearch() throws Exception {
-      var json =
-          TEST_CONSTANTS.subsRawNames(
-              """
-            {
-                "createCollection": {
-                    "name": "${collection}",
-                    "options": {
-                        "vector": {
-                            "metric": "cosine",
-                            "dimension": 768,
-                            "service": {
-                                "provider": "azureOpenAI",
-                                "modelName": "text-embedding-3-small",
-                                "parameters": {
-                                    "resourceName": "test",
-                                    "deploymentId": "test"
+  @Test
+  public void successWithVector() {
+    var operation =
+        resolveCommand(
+            "successWithVector()",
+            """
+                        {
+                            "createCollection": {
+                                "name": "${collection}",
+                                "options": {
+                                    "vector": {
+                                        "dimension": 4,
+                                        "metric": "cosine",
+                                        "sourceModel": "openai-v3-large"
+                                    }
                                 }
                             }
                         }
-                    }
-                }
-            }
-          """);
-      // NOTE: source model of null turns into DEFAULT
-      var expectedVectorDesc =
-          new CreateCollectionCommand.Options.VectorSearchDesc(
-              768,
-              "cosine",
-              EmbeddingSourceModel.DEFAULT.cqlName(),
-              new VectorizeConfig(
-                  "azureOpenAI",
-                  "text-embedding-3-small",
-                  null,
-                  Map.of("resourceName", "test", "deploymentId", "test")));
+                        """);
 
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var operation = resolver.resolveCommand(commandContext, command);
+    var expectedVectorDesc =
+        new CreateCollectionCommand.Options.VectorSearchDesc(
+            4, "cosine", EmbeddingSourceModel.OPENAI_V3_LARGE.apiName(), null);
 
-      // NOTE: this used to check the table comment string that was created, that has moved to the
-      // CreateCollectionOperationTest
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              CreateCollectionOperation.class,
-              op -> {
-                assertThat(op.collectionName())
-                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.vectorDesc()).isEqualTo(expectedVectorDesc);
-              });
-    }
-
-    @Test
-    public void happyPathIndexing() throws Exception {
-
-      var json =
-          TEST_CONSTANTS.subsRawNames(
-              """
-          {
-            "createCollection": {
-              "name" : "${collection}",
-              "options": {
-                "indexing": {
-                  "deny" : ["comment"]
-                }
-              }
-            }
-          }
-          """);
-      var expectedIndexing =
-          new CreateCollectionCommand.Options.IndexingDesc(null, List.of("comment"));
-
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var operation = resolver.resolveCommand(commandContext, command);
-
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              CreateCollectionOperation.class,
-              op -> {
-                assertThat(op.collectionName())
-                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.indexingDesc()).isEqualTo(expectedIndexing);
-              });
-    }
-
-    @Test
-    public void happyPathVectorSearchDefaultFunction() throws Exception {
-
-      var json =
-          TEST_CONSTANTS.subsRawNames(
-              """
-          {
-            "createCollection": {
-              "name" : "${collection}",
-              "options": {
-                "vector": {
-                  "dimension": 4
-                }
-              }
-            }
-          }
-          """);
-
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var operation = resolver.resolveCommand(commandContext, command);
-
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              CreateCollectionOperation.class,
-              op -> {
-                assertThat(op.collectionName())
-                    .isEqualTo(TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.vectorDesc()).isNotNull();
-                assertThat(op.vectorDesc().dimension()).isEqualTo(4);
-                assertThat(op.vectorDesc().metric()).isEqualTo("COSINE");
-              });
-    }
-
-    @Test
-    public void createCollectionWithSupportedName() throws Exception {
-
-      String[] supportedName = {"a", "A", "0", "_", "a0", "0a_A", "_0a"};
-      for (String name : supportedName) {
-        String json =
-                """
-              {
-                "createCollection": {
-                  "name" : "%s"
-                }
-              }
-              """
-                .formatted(name);
-
-        var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-        var operation = resolver.resolveCommand(commandContext, command);
-
-        assertThat(operation)
-            .isInstanceOfSatisfying(
-                CreateCollectionOperation.class,
-                op -> {
-                  assertThat(op.collectionName()).isEqualTo(cqlIdentifierFromUserInput(name));
-                  assertThat(op.commandContext()).isEqualTo(commandContext);
-                  assertThat(op.vectorDesc()).isNull();
-                });
-      }
-    }
+    assertThat(operation.vectorDesc()).isEqualTo(expectedVectorDesc);
   }
 
-  @Nested
-  class CreateCollectionFailure {
+  @Test
+  public void successWithVectorDefaultMetric() {
 
-    @Test
-    public void indexingOptionsError() throws Exception {
-
-      var json =
-          TEST_CONSTANTS.subsRawNames(
-              """
-                  {
-                    "createCollection": {
-                      "name" : "${collection}",
-                      "options": {
-                        "vector": {
-                          "dimension": 4,
-                          "metric": "cosine"
-                        },
-                        "indexing": {
-                          "deny" : ["comment"],
-                          "allow" : ["data"]
+    var operation =
+        resolveCommand(
+            "successWithVectorDefaultMetric()",
+            """
+                        {
+                            "createCollection": {
+                                "name": "${collection}",
+                                "options": {
+                                    "vector": {
+                                        "dimension": 4
+                                    }
+                                }
+                            }
                         }
-                      }
-                    }
-                  }
-                  """);
+                        """);
 
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+    // aaron 15 june 26 - not sure why but we need the name of the source model must be the CQL name
+    // cql cares about capitals, we dont when processing this normally
+    var expectedVectorDesc =
+        new CreateCollectionCommand.Options.VectorSearchDesc(
+            4,
+            SimilarityFunction.COSINE.cqlIndexingFunction(),
+            EmbeddingSourceModel.OTHER.cqlName(),
+            null);
 
-      assertThat(throwable)
-          .isInstanceOf(SchemaException.class)
-          .satisfies(
-              e -> {
-                SchemaException exception = (SchemaException) e;
-                assertThat(exception.getMessage())
-                    .containsSequence(
-                        "'createCollection' indexing definition invalid: 'allow' and 'deny' cannot be used together");
-                assertThat(exception.code)
-                    .isEqualTo(SchemaException.Code.INVALID_INDEXING_DEFINITION.name());
-              });
-    }
-
-    @Test
-    public void createCollectionWithNull() throws Exception {
-
-      var json =
-          """
-          {
-            "createCollection": {
-            }
-          }
-          """;
-
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
-
-      verifySchemaException(
-          throwable,
-          SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a Collection with a name that is not supported.",
-          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported Collection name: '(null)'.");
-    }
-
-    @Test
-    public void createCollectionWithEmptyName() throws Exception {
-
-      var json =
-          """
-          {
-            "createCollection": {
-              "name" : ""
-            }
-          }
-          """;
-
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
-
-      verifySchemaException(
-          throwable,
-          SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a Collection with a name that is not supported.",
-          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported Collection name: ''.");
-    }
-
-    @Test
-    public void createCollectionWithBlankName() throws Exception {
-
-      var json =
-          """
-          {
-            "createCollection": {
-              "name": " "
-            }
-          }
-          """;
-
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
-
-      verifySchemaException(
-          throwable,
-          SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a Collection with a name that is not supported.",
-          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported Collection name: ' '.");
-    }
-
-    @Test
-    public void createCollectionWithNameTooLong() throws Exception {
-
-      var name = RandomStringUtils.insecure().nextAlphabetic(49);
-      var json =
-              """
-          {
-            "createCollection": {
-              "name": "%s"
-            }
-          }
-          """
-              .formatted(name);
-
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
-
-      verifySchemaException(
-          throwable,
-          SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a Collection with a name that is not supported.",
-          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported Collection name: '%s'.".formatted(name));
-    }
-
-    @Test
-    public void createCollectionWithSpecialCharacter() throws Exception {
-
-      var json =
-          """
-          {
-            "createCollection": {
-              "name": "!@-"
-            }
-          }
-          """;
-
-      var command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      var throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
-
-      verifySchemaException(
-          throwable,
-          SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a Collection with a name that is not supported.",
-          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported Collection name: '!@-'.");
-    }
+    assertThat(operation.vectorDesc()).isEqualTo(expectedVectorDesc);
   }
 
-  private void verifySchemaException(
-      Throwable throwable, SchemaException.Code expectedErrorCode, String... messageSnippet) {
+  @Test
+  public void successWithVectorize() {
+    var operation =
+        resolveCommand(
+            "successWithVector()",
+            """
+                        {
+                            "createCollection": {
+                                "name": "${collection}",
+                                "options": {
+                                    "vector": {
+                                        "metric": "cosine",
+                                        "dimension": 768,
+                                        "service": {
+                                            "provider": "azureOpenAI",
+                                            "modelName": "text-embedding-3-small",
+                                            "parameters": {
+                                                "resourceName": "testResourceName",
+                                                "deploymentId": "testResourceName"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        """);
 
-    assertThat(throwable)
-        .isInstanceOf(SchemaException.class)
-        .satisfies(
-            e -> {
-              SchemaException exception = (SchemaException) e;
-              assertThat(exception.code).isEqualTo(expectedErrorCode.name());
-              for (String snippet : messageSnippet) {
-                assertThat(exception.getMessage()).contains(snippet);
-              }
-            });
+    // NOTE: source model of null turns into DEFAULT
+    // aaron 15 june 26 - not sure why but we need the name of the source model must be the CQL name
+    // cql cares about capitals, we dont when processing this normally
+    var expectedVectorDesc =
+        new CreateCollectionCommand.Options.VectorSearchDesc(
+            768,
+            "cosine",
+            EmbeddingSourceModel.DEFAULT.cqlName(),
+            new VectorizeConfig(
+                "azureOpenAI",
+                "text-embedding-3-small",
+                null,
+                Map.of("resourceName", "testResourceName", "deploymentId", "testResourceName")));
+
+    assertThat(operation.vectorDesc()).isEqualTo(expectedVectorDesc);
+  }
+
+  @Test
+  public void successWithDenyIndexing() {
+    var operation =
+        resolveCommand(
+            "successWithDenyIndexing()",
+            """
+                        {
+                            "createCollection": {
+                                "name": "${collection}",
+                                "options": {
+                                    "indexing": {
+                                        "deny": [
+                                            "comment"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                        """);
+
+    var expectedIndexing =
+        new CreateCollectionCommand.Options.IndexingDesc(null, List.of("comment"));
+
+    assertThat(operation.indexingDesc()).isEqualTo(expectedIndexing);
+  }
+
+  @Test
+  public void failWithUndefinedName() {
+
+    var throwable =
+        resolveCommandThrows(
+            "failWithUndefinedName()",
+            """
+                        {
+                            "createCollection": {}
+                        }
+                        """);
+
+    assertThatSchemaException(throwable)
+        .as("failWithUndefinedName()")
+        .hasCode(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME)
+        .hasMessageSnippets(
+            "The command attempted to create a Collection with a name that is not supported.",
+            "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+            "The command used the unsupported Collection name: '(null)'.");
+  }
+
+  @Test
+  public void failWithEmptyName() {
+
+    var throwable =
+        resolveCommandThrows(
+            "failWithUndefinedName()",
+            """
+                        {
+                            "createCollection": {
+                                "name": ""
+                            }
+                        }
+                        """);
+
+    assertThatSchemaException(throwable)
+        .as("failWithEmptyName()")
+        .hasCode(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME)
+        .hasMessageSnippets(
+            "The command attempted to create a Collection with a name that is not supported.",
+            "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+            "The command used the unsupported Collection name: ''.");
+  }
+
+  @Test
+  public void failWithBlankName() {
+
+    // Blank is a white space
+    var throwable =
+        resolveCommandThrows(
+            "failWithBlankName()",
+            """
+                        {
+                            "createCollection": {
+                                "name": "  "
+                            }
+                        }
+                        """);
+
+    assertThatSchemaException(throwable)
+        .as("failWithBlankName()")
+        .hasCode(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME)
+        .hasMessageSnippets(
+            "The command attempted to create a Collection with a name that is not supported.",
+            "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+            "The command used the unsupported Collection name: '  '.");
+  }
+
+  @Test
+  public void failWithNameTooLong() {
+
+    var longName = RandomStringUtils.insecure().nextAlphabetic(49);
+    var throwable =
+        resolveCommandThrows(
+            "failWithNameTooLong()",
+                """
+                        {
+                            "createCollection": {
+                                "name": "%s"
+                            }
+                        }
+                        """
+                .formatted(longName));
+
+    assertThatSchemaException(throwable)
+        .as("failWithNameTooLong()")
+        .hasCode(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME)
+        .hasMessageSnippets(
+            "The command attempted to create a Collection with a name that is not supported.",
+            "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+            "The command used the unsupported Collection name: '%s'.".formatted(longName));
+  }
+
+  @Test
+  public void failWithNameSpecialCharacter() {
+
+    var throwable =
+        resolveCommandThrows(
+            "failWithNameSpecialCharacter()",
+            """
+                        {
+                            "createCollection": {
+                                "name": "!@-"
+                            }
+                        }
+                        """);
+
+    assertThatSchemaException(throwable)
+        .as("failWithNameSpecialCharacter()")
+        .hasCode(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME)
+        .hasMessageSnippets(
+            "The command attempted to create a Collection with a name that is not supported.",
+            "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+            "The command used the unsupported Collection name: '!@-'.");
   }
 }

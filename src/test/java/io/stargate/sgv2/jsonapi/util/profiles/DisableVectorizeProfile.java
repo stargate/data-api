@@ -1,10 +1,10 @@
-package io.stargate.sgv2.jsonapi.service.resolver;
+package io.stargate.sgv2.jsonapi.util.profiles;
 
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import java.util.Map;
 
-public class EnabledVectorizeProfile implements QuarkusTestProfile {
+public class DisableVectorizeProfile implements QuarkusTestProfile {
   @Override
   public boolean disableGlobalTestResources() {
     return true;
@@ -13,7 +13,7 @@ public class EnabledVectorizeProfile implements QuarkusTestProfile {
   @Override
   public Map<String, String> getConfigOverrides() {
     return ImmutableMap.<String, String>builder()
-        .put("stargate.jsonapi.operations.vectorize-enabled", "true")
+        .put("stargate.jsonapi.operations.vectorize-enabled", "false")
         .build();
   }
 }
