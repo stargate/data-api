@@ -220,7 +220,7 @@ public interface SuperShreddingMetadata {
     List<ColumnDef> PARTITION_KEY = List.of(KEY);
     List<ColumnDef> OPTIONAL = List.of(QUERY_VECTOR_VALUE, QUERY_LEXICAL_VALUE);
     List<ColumnDef> REQUIRED = listDifference(ALL, OPTIONAL);
-    List<ColumnDef> REQUIRED_NON_PK = listDifference(REQUIRED, OPTIONAL);
+    List<ColumnDef> REQUIRED_NON_PK = listDifference(REQUIRED, PARTITION_KEY);
 
     static ColumnMetadata vectorColumnMetadataFactory(ColumnDef columnDef, SuperShreddingBinding binding){
 
