@@ -41,7 +41,15 @@ public class TenantFactory {
   }
 
   public Tenant create(String tenantId) {
-    return Tenant.create(databaseType, tenantId);
+    return create(tenantId, null);
+  }
+
+  /**
+   * Create a Tenant with an explicit deployment region (typically parsed from the request URL). For
+   * single-tenant database types, the region argument is ignored and the type's default is used.
+   */
+  public Tenant create(String tenantId, String region) {
+    return Tenant.create(databaseType, tenantId, region);
   }
 
   /** FOR TEST ONLY: Resets the singleton instance to allow re-initialization. */

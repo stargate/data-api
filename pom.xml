@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.47-SNAPSHOT</version>
+  <version>1.0.49-SNAPSHOT</version>
   <properties>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -86,7 +86,7 @@
       <dependency>
         <groupId>io.quarkiverse.mcp</groupId>
         <artifactId>quarkus-mcp-server-bom</artifactId>
-        <version>1.10.1</version>
+        <version>1.13.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

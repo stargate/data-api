@@ -115,6 +115,14 @@ quarkus:
     console:
       format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
 
+    handler:
+      console:
+        # Dedicated appender for the 'billing.events' category: writes only the
+        # raw JSON event payload with no log prefix, so downstream billing
+        # pipelines can parse each line as JSON.
+        BILLING_CONSOLE:
+          format: "%m%n"
+
     level: WARN
 
     category:
@@ -127,6 +135,14 @@ quarkus:
         level: INFO
       'io.stargate':
         level: DEBUG
+      # Route billing events to the dedicated BILLING_CONSOLE handler so the
+      # log line is the raw JSON event with no prefix, and do not also write
+      # to the default console handler.
+      'billing.events':
+        level: INFO
+        handlers:
+          - BILLING_CONSOLE
+        use-parent-handlers: false
       # noisy for ITs (which run with prod, not test, settings)
       'io.stargate.sgv2.jsonapi.service.operation':
         level: INFO
@@ -200,6 +216,11 @@ quarkus:
     server:
       http:
         root-path: /v1/mcp
+        streamable:
+          # It performs an automatic initialization when the first message from the client is not initialize.
+          # A new MCP session is created for each request.
+          # https://docs.quarkiverse.io/quarkus-mcp-server/1.13.x/reference-configuration.html#quarkus-mcp-server-http_quarkus-mcp-server-http-streamable-auto-init
+          auto-init: true
       traffic-logging:
         enabled: true
         text-limit: 1000

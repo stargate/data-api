@@ -1,5 +1,45 @@
 # Changelog
 
+## [v1.0.48](https://github.com/stargate/data-api/tree/v1.0.48) (2026-06-11)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.47...v1.0.48)
+
+**Merged pull requests:**
+
+- Create a new MCP session for each request [\#2501](https://github.com/stargate/data-api/pull/2501) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- fix: remove global driver request page-size [\#2498](https://github.com/stargate/data-api/pull/2498) ([erichare](https://github.com/erichare))
+- fix: countDocuments counts at most one page of keys [\#2497](https://github.com/stargate/data-api/pull/2497) ([erichare](https://github.com/erichare))
+- fix \#2494 - Remove failing branding from release workflow  [\#2495](https://github.com/stargate/data-api/pull/2495) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2493](https://github.com/stargate/data-api/pull/2493) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.47](https://github.com/stargate/data-api/tree/v1.0.47) (2026-06-08)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.46...v1.0.47)
+
+**Merged pull requests:**
+
+- Implement no op Billing [\#2492](https://github.com/stargate/data-api/pull/2492) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Bump madrapps/jacoco-report from 1.7.2 to 1.8.0 in the github-actions group [\#2491](https://github.com/stargate/data-api/pull/2491) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Fix \#2485: changes to remove Q deprecation warnings [\#2488](https://github.com/stargate/data-api/pull/2488) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix a minor OpenAPI definition bug [\#2486](https://github.com/stargate/data-api/pull/2486) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Use Schema Builder in CreateCollectionOperation [\#2484](https://github.com/stargate/data-api/pull/2484) ([amorton](https://github.com/amorton))
+- Fix \#2482: add error code load test [\#2483](https://github.com/stargate/data-api/pull/2483) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2134: mismatching scope [\#2481](https://github.com/stargate/data-api/pull/2481) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add passing test for \#1840 to show issue has been fixed [\#2480](https://github.com/stargate/data-api/pull/2480) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Versioned Schema for lexical & rerank features [\#2479](https://github.com/stargate/data-api/pull/2479) ([amorton](https://github.com/amorton))
+- Minor fix related to \#2028 \(but not fixing it\) -- VoyageAI provider not checking for EOL [\#2478](https://github.com/stargate/data-api/pull/2478) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1457: store name of the CollectionIdType values in the Enum [\#2477](https://github.com/stargate/data-api/pull/2477) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2325: avoid error on "\_id" with "$exists" operator for Collections [\#2476](https://github.com/stargate/data-api/pull/2476) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Revert "security: validate keyspace and datacenter names to prevent CQL injection \(GHSA-p64p-96pw-mxwv\)" [\#2474](https://github.com/stargate/data-api/pull/2474) ([amorton](https://github.com/amorton))
+- Add billing event logging for embedding and reranking token usage [\#2473](https://github.com/stargate/data-api/pull/2473) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- security: validate keyspace and datacenter names to prevent CQL injection \(GHSA-p64p-96pw-mxwv\) [\#2472](https://github.com/stargate/data-api/pull/2472) ([erichare](https://github.com/erichare))
+- Update from DSE 6.9.20 to 6.9.21 [\#2467](https://github.com/stargate/data-api/pull/2467) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#2396: improve UDT re-add column error [\#2465](https://github.com/stargate/data-api/pull/2465) ([erichare](https://github.com/erichare))
+- Fix \#2446: improve table $push $position error [\#2464](https://github.com/stargate/data-api/pull/2464) ([erichare](https://github.com/erichare))
+- feat: Increase page sizes \(default 50, max 500\) [\#2461](https://github.com/stargate/data-api/pull/2461) ([erichare](https://github.com/erichare))
+- Fix \#2459 allow overrides for "findAndRerank" command [\#2460](https://github.com/stargate/data-api/pull/2460) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2458](https://github.com/stargate/data-api/pull/2458) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.46](https://github.com/stargate/data-api/tree/v1.0.46) (2026-04-23)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.45...v1.0.46)

@@ -51,24 +51,7 @@ public interface Operation<SchemaT extends SchemaObject> {
     // with that in mind, we can check/force this is a collection code path
 
     Function<SimpleStatement, DriverExceptionHandler> exceptionHandlerFactory =
-        switch (commandContext.schemaObject().type()) {
-          case COLLECTION ->
-              statement ->
-                  new CollectionDriverExceptionHandler(
-                      commandContext.asCollectionContext().schemaObject(), statement);
-          case KEYSPACE ->
-              statement ->
-                  new KeyspaceDriverExceptionHandler(
-                      commandContext.asKeyspaceContext().schemaObject(), statement);
-          case DATABASE ->
-              statement ->
-                  new DatabaseDriverExceptionHandler(
-                      commandContext.asDatabaseContext().schemaObject(), statement);
-          default ->
-              throw new UnsupportedOperationException(
-                  "Unexpected schema type for legacy DB operation: "
-                      + commandContext.schemaObject().type());
-        };
+        exceptionHandlerFactory(commandContext);
 
     return execute(
         commandContext.requestContext(),
@@ -77,5 +60,27 @@ public interface Operation<SchemaT extends SchemaObject> {
             commandContext.config().get(OperationsConfig.class),
             exceptionHandlerFactory,
             commandContext.requestTracing()));
+  }
+
+  static Function<SimpleStatement, DriverExceptionHandler> exceptionHandlerFactory(
+      CommandContext<?> commandContext) {
+    return switch (commandContext.schemaObject().type()) {
+      case COLLECTION ->
+          statement ->
+              new CollectionDriverExceptionHandler(
+                  commandContext.asCollectionContext().schemaObject(), statement);
+      case KEYSPACE ->
+          statement ->
+              new KeyspaceDriverExceptionHandler(
+                  commandContext.asKeyspaceContext().schemaObject(), statement);
+      case DATABASE ->
+          statement ->
+              new DatabaseDriverExceptionHandler(
+                  commandContext.asDatabaseContext().schemaObject(), statement);
+      default ->
+          throw new UnsupportedOperationException(
+              "Unexpected schema type for legacy DB operation: "
+                  + commandContext.schemaObject().type());
+    };
   }
 }

@@ -105,7 +105,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       UUID tx_id = UUID.randomUUID();
       String collectionReadCql =
           "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       final ColumnDefinitions keyAndTxtIdColumns =
           buildColumnDefs(TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"));
@@ -125,7 +125,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       String collectionDeleteCql =
           "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement deleteStmt =
           SimpleStatement.newInstance(collectionDeleteCql, boundKeyForStatement("doc1"), tx_id);
       List<Row> deleteRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
@@ -202,7 +202,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(
-              INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME),
+              INSERT_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME),
               CQLBindValues.getDocumentIdValue(shredDocument.id()),
               shredDocument.nextTxID(),
               shredDocument.docJson(),
@@ -255,7 +255,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
     public void readAndUpdate() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       UUID tx_id = UUID.randomUUID();
       String doc1 =
@@ -294,7 +294,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       final String updateCql =
           ReadAndUpdateCollectionOperation.buildUpdateQuery(
-              KEYSPACE_NAME, COLLECTION_NAME, false, false);
+              TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, false, false);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument =
           documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id);

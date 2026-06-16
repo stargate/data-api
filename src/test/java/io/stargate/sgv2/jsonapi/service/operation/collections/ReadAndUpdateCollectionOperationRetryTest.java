@@ -88,7 +88,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
   private SimpleStatement nonVectorUpdateStatement(WritableShreddedDocument shredDocument) {
     final String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
-            KEYSPACE_NAME, COLLECTION_NAME, false, false);
+            TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, false, false);
     return ReadAndUpdateCollectionOperation.bindUpdateValues(
         updateCql, shredDocument, false, false);
   }
@@ -100,7 +100,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read1
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -128,7 +128,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     //     read2
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
@@ -241,7 +241,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read1
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -270,7 +270,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read2
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
@@ -391,7 +391,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read1
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -420,7 +420,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read2
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
@@ -539,7 +539,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     QueryExecutor queryExecutor = mock(QueryExecutor.class);
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -598,7 +598,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
@@ -725,7 +725,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     QueryExecutor queryExecutor = mock(QueryExecutor.class);
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -783,7 +783,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             });
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
             collectionReadCql,

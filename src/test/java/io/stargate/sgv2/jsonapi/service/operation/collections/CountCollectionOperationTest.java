@@ -26,6 +26,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Nested;
@@ -54,8 +55,9 @@ public class CountCollectionOperationTest extends OperationTestBase {
     public void countWithNoFilter() {
 
       String collectionReadCql =
-          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\""
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
 
       List<Row> rows =
           Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(5L))));
@@ -101,9 +103,10 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user1").hash();
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, filterValue).setPageSize(100);
 
       List<Row> rows =
           Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(2))));
@@ -150,9 +153,10 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, filterValue).setPageSize(100);
 
       List<Row> rows =
           Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(0L))));
@@ -200,8 +204,9 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // failures are propagated down
       RuntimeException dbFailure = new RuntimeException("Test failure message.");
       String collectionReadCql =
-          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\""
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
 
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
@@ -246,8 +251,9 @@ public class CountCollectionOperationTest extends OperationTestBase {
     public void countWithNoFilter() {
 
       String collectionReadCql =
-          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
 
       List<Row> rows =
           Arrays.asList(
@@ -297,9 +303,10 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 11"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user2").hash();
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, filterValue).setPageSize(100);
 
       List<Row> rows = Arrays.asList(resultRow(0, "key1"), resultRow(1, "key2"));
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
@@ -345,9 +352,10 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 11"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
+      SimpleStatement stmt =
+          SimpleStatement.newInstance(collectionReadCql, filterValue).setPageSize(100);
 
       List<Row> rows = Arrays.asList();
       AsyncResultSet mockResults = new MockAsyncResultSet(COUNT_RESULT_COLUMNS, rows, null);
@@ -395,8 +403,9 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // Failure from reading from the DB
       RuntimeException dbFailure = new RuntimeException("Test failure message.");
       String collectionReadCql =
-          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
-      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
 
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
@@ -434,6 +443,131 @@ public class CountCollectionOperationTest extends OperationTestBase {
               e -> {
                 DatabaseException je = (DatabaseException) e;
                 assertThat(je.code).isEqualTo(DatabaseException.Code.COUNT_READ_FAILED.name());
+              });
+    }
+
+    @Test
+    public void errorFetchingLaterPage() {
+
+      // The initial key query succeeds but fetching the second page fails: the mid-pagination
+      // failure must surface as COUNT_READ_FAILED, the same as a failure of the initial query
+      // (the error() test above).
+      RuntimeException dbFailure = new RuntimeException("Test failure message.");
+      String collectionReadCql =
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+      var stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
+
+      var secondPageFuture = new CompletableFuture<AsyncResultSet>();
+      var firstPage =
+          new MockAsyncResultSet(
+              COUNT_RESULT_COLUMNS,
+              Arrays.asList(resultRow(0, "key1"), resultRow(1, "key2")),
+              secondPageFuture);
+
+      final var callCount = new AtomicInteger();
+      var queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(firstPage);
+              });
+
+      var dbLogicalExpression = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      var countCollectionOperation =
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
+
+      UniAssertSubscriber<Supplier<CommandResult>> subscriber =
+          countCollectionOperation
+              .execute(requestContext, queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create());
+
+      // Fail the second page only after the operation has started, so the first page was already
+      // consumed when the failure arrives
+      secondPageFuture.completeExceptionally(dbFailure);
+
+      var operationError = subscriber.awaitFailure().getFailure();
+
+      // the key query itself ran once and succeeded, only the page fetch failed
+      assertThat(callCount.get()).isEqualTo(1);
+      assertThat(operationError)
+          .isInstanceOf(DatabaseException.class)
+          .satisfies(
+              e -> {
+                DatabaseException je = (DatabaseException) e;
+                assertThat(je.code).isEqualTo(DatabaseException.Code.COUNT_READ_FAILED.name());
+              });
+    }
+
+    @Test
+    public void countAcrossMultiplePages() {
+
+      // Counting by key pages through the whole result set of the key query, so all 5 keys below
+      // must be counted even though they are spread over 3 pages. LIMIT 11 is the operation's
+      // count limit (10) + 1, the extra key is how the operation detects there is more data than
+      // it is allowed to count.
+      String collectionReadCql =
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+      var stmt = SimpleStatement.newInstance(collectionReadCql).setPageSize(100);
+
+      // Pages are chained back to front: fetchNextPage() on a MockAsyncResultSet returns the
+      // future of the page after it, a null future marks the last page.
+      var lastPage =
+          new MockAsyncResultSet(COUNT_RESULT_COLUMNS, List.of(resultRow(4, "key5")), null);
+      var lastPageFuture = new CompletableFuture<AsyncResultSet>();
+      var secondPage =
+          new MockAsyncResultSet(
+              COUNT_RESULT_COLUMNS,
+              Arrays.asList(resultRow(2, "key3"), resultRow(3, "key4")),
+              lastPageFuture);
+      var secondPageFuture = new CompletableFuture<AsyncResultSet>();
+      var firstPage =
+          new MockAsyncResultSet(
+              COUNT_RESULT_COLUMNS,
+              Arrays.asList(resultRow(0, "key1"), resultRow(1, "key2")),
+              secondPageFuture);
+
+      // executeCount() only returns the first page, the operation must get the later pages itself
+      // through AsyncResultSet.fetchNextPage()
+      final var callCount = new AtomicInteger();
+      var queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeCount(eq(requestContext), eq(stmt)))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(firstPage);
+              });
+
+      var dbLogicalExpression = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      var countCollectionOperation =
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
+
+      UniAssertSubscriber<Supplier<CommandResult>> subscriber =
+          countCollectionOperation
+              .execute(requestContext, queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create());
+
+      // Completing the futures releases pages 2 and 3 to the operation after it has started, so
+      // the count cannot have finished after only the first page
+      secondPageFuture.complete(secondPage);
+      lastPageFuture.complete(lastPage);
+
+      var execute = subscriber.awaitItem().getItem();
+
+      // the key query runs once, later pages are fetched from the result set not executeCount()
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // all 5 keys counted, from all 3 pages
+      var result = execute.get();
+      assertThat(result)
+          .satisfies(
+              commandResult -> {
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isNotNull();
+                assertThat(result.status().get(CommandStatus.COUNTED_DOCUMENT)).isEqualTo(5L);
               });
     }
   }

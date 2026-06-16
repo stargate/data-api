@@ -1393,7 +1393,7 @@ request-errors:
       Resend command with only '$vector' or '$vectorize'.
 
   - scope: SCHEMA
-    code: LEXICAL_NOT_AVAILABLE_FOR_DATABASE
+    code: LEXICAL_FEATURE_NOT_ENABLED
     title: Lexical search is not available on this database
     body: |-
       The command attempted to enable lexical search functionality but lexical search is not supported by this database.
@@ -2687,7 +2687,7 @@ server-errors:
   
 
   # ================================================================================================================
-  # Family: SERVER         Scope: EMBEDDING
+  # Family: SERVER         Scope: EMBEDDING_PROVIDER
   # ================================================================================================================
 
   - scope: EMBEDDING_PROVIDER
@@ -2802,10 +2802,10 @@ server-errors:
 
 
 # ================================================================================================================
-# Family: SERVER         Scope: RERANKING
+# Family: SERVER         Scope: RERANKING_PROVIDER
 # ================================================================================================================
 
-  - scope: RERANKING
+  - scope: RERANKING_PROVIDER
     code: RERANKING_PROVIDER_TIMEOUT
     title: Reranking Provider timed out
     body: |-
