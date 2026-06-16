@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.util.exception;
+package io.stargate.sgv2.jsonapi.util.asserts;
 
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 
@@ -9,12 +9,12 @@ public class SchemaExceptionAssert
     super(actual, SchemaExceptionAssert.class);
   }
 
-  public static SchemaExceptionAssert assertThatSchemaException(SchemaException schemaException) {
+    protected static SchemaExceptionAssert assertThatSchemaException(SchemaException schemaException) {
     return assertThatAPIException(
         SchemaExceptionAssert::new, SchemaException.class, schemaException);
   }
 
-  public static SchemaExceptionAssert assertThatSchemaException(Throwable throwable) {
+  protected static SchemaExceptionAssert assertThatSchemaException(Throwable throwable) {
     return assertThatAPIException(SchemaExceptionAssert::new, SchemaException.class, throwable);
   }
 }

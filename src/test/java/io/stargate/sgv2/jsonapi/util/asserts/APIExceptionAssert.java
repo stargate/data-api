@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.util.exception;
+package io.stargate.sgv2.jsonapi.util.asserts;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -19,7 +19,9 @@ public abstract class APIExceptionAssert<
       SELF assertThatAPIException(
           Function<ERROR, SELF> assertCtor, Class<ERROR> errorClass, Throwable throwable) {
 
-    assertThat(throwable).isInstanceOf(errorClass);
+    assertThat(throwable)
+            .as("Throwable is instance of " + errorClass.getSimpleName() + "")
+            .isInstanceOf(errorClass);
     return assertCtor.apply(errorClass.cast(throwable));
   }
 

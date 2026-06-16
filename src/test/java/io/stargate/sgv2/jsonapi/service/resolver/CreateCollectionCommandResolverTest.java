@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
-import static io.stargate.sgv2.jsonapi.util.exception.SchemaExceptionAssert.assertThatSchemaException;
+import static io.stargate.sgv2.jsonapi.util.asserts.DataAPIAsserts.assertThatSchemaException;
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
