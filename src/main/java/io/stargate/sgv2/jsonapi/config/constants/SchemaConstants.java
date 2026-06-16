@@ -11,6 +11,8 @@ public interface SchemaConstants {
     String SCHEMA_TYPE = "com.datastax.data-api.schema-type";
     String SCHEMA_VERSION = "com.datastax.data-api.schema-def-version";
     String VECTORIZE_CONFIG = "com.datastax.data-api.vectorize-config";
+    // Per vector-index record of the profile it was created with (name + expanded options).
+    String VECTOR_INDEX_PROFILES = "com.datastax.data-api.vector-index-profiles";
   }
 
   interface MetadataFieldsValues {

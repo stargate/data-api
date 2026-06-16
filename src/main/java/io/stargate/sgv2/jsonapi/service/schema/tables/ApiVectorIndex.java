@@ -6,9 +6,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
@@ -21,7 +18,7 @@ import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromCql;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromIndexDesc;
-import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import java.math.BigDecimal;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +58,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
         new VectorIndexDefinitionDesc.VectorIndexDescOptions(
             similarityFunction.apiName(),
             sourceModel.apiName(),
-            renderIndexingOptions(indexOptions));
+            describeIndexingOptions(indexOptions));
     var definition =
         new VectorIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
 
@@ -84,59 +81,55 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Renders the additional tuning options from a CQL index options map (everything other than the
-   * structural {@code class_name} / {@code target} and the {@code source_model} / {@code
-   * similarity_function} options, which have dedicated fields) as a {@code vectorIndexing} object
-   * for the public schema description.
-   *
-   * <p>Profiles are resolved to their concrete options at create time, so the description always
-   * shows the resolved raw options. Values are rendered as Strings because CQL index options are a
-   * {@code Map<String, String>}.
+   * Builds the {@code vectorIndexing} description from the CQL index options map: the supported
+   * tuning options (see {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}) under {@code options}.
+   * Structural, dedicated-field, and any other (e.g. CQL-only) keys are omitted so the description
+   * stays symmetric with what the API accepts. The profile name is not reconstructed here (it lives
+   * in the table extensions), so only {@code options} is set.
    *
    * @param indexOptions the CQL index options map
-   * @return the options object, or null when there are none (so the field is omitted)
+   * @return the {@code vectorIndexing} description, or null when there are no supported tuning
+   *     options
    */
   @VisibleForTesting
-  static JsonNode renderIndexingOptions(Map<String, String> indexOptions) {
-    ObjectNode node = null;
+  static VectorIndexDefinitionDesc.VectorIndexingDesc describeIndexingOptions(
+      Map<String, String> indexOptions) {
+    Map<String, Object> options = null;
     for (var entry : indexOptions.entrySet()) {
-      var optionName = entry.getKey();
-      // Skip the structural SAI options (added by the driver / CQL builder) and the options that
-      // have dedicated API fields (source_model / similarity_function).
-      if (CQLSAIIndex.Options.CLASS_NAME.equals(optionName)
-          || CQLSAIIndex.Options.TARGET.equals(optionName)
-          || VectorConstants.CQLAnnIndex.RESERVED_OPTIONS.contains(optionName)) {
+      // Only surface options the API also accepts, so a description round-trips into a request.
+      if (!VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS.contains(entry.getKey())) {
         continue;
       }
-      if (node == null) {
-        node = JsonNodeFactory.instance.objectNode();
+      if (options == null) {
+        options = new LinkedHashMap<>();
       }
-      node.put(optionName, entry.getValue());
+      options.put(entry.getKey(), entry.getValue());
     }
-    return node;
+    return options == null ? null : new VectorIndexDefinitionDesc.VectorIndexingDesc(null, options);
   }
 
   /**
-   * Applies the optional {@code vectorIndexing} from the user request into the CQL index options
-   * map. The value is either a String naming a {@link VectorIndexProfiles profile} (expanded into a
-   * set of options) or an Object of raw Cassandra indexing options passed through as-is. The {@code
-   * source_model} / {@code similarity_function} options have dedicated fields and must not be set
-   * this way.
+   * Applies the request's {@code vectorIndexing} into the CQL index options map. An optional {@code
+   * profile} is expanded via {@link VectorIndexProfiles}; an optional {@code options} object adds
+   * Cassandra SAI tuning options (validated against {@link
+   * VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}) on top, overriding the profile. {@code
+   * source_model} / {@code similarity_function} have dedicated fields and are rejected here.
    *
    * @param indexOptions the CQL options map being built, mutated in place
-   * @param vectorIndexing the raw node from the request, may be null
+   * @param vectorIndexing the structured request value, may be null
    */
   @VisibleForTesting
-  static void applyIndexingOptions(Map<String, String> indexOptions, JsonNode vectorIndexing) {
+  static void applyIndexingOptions(
+      Map<String, String> indexOptions,
+      VectorIndexDefinitionDesc.VectorIndexingDesc vectorIndexing) {
 
-    if (vectorIndexing == null || vectorIndexing.isNull()) {
-      // nothing provided, leave the options as they are
+    if (vectorIndexing == null) {
       return;
     }
 
-    if (vectorIndexing.isTextual()) {
-      // String -> named profile
-      var profileName = vectorIndexing.textValue();
+    // A profile expands to a base set of options.
+    var profileName = vectorIndexing.profile();
+    if (profileName != null) {
       var profileOptions =
           VectorIndexProfiles.forName(profileName)
               .orElseThrow(
@@ -148,48 +141,52 @@ public class ApiVectorIndex extends ApiSupportedIndex {
                               "unknownProfile",
                               profileName)));
       indexOptions.putAll(profileOptions);
-      return;
     }
 
-    if (vectorIndexing.isObject()) {
-      // Object -> raw indexing options, passed through as-is using Cassandra's snake_case names.
-      vectorIndexing
-          .fields()
-          .forEachRemaining(
-              entry -> {
-                var optionName = entry.getKey();
-                if (VectorConstants.CQLAnnIndex.RESERVED_OPTIONS.contains(optionName)) {
-                  throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
-                      Map.of(
-                          "reason",
-                          "The option '%s' must be set using its dedicated field, not vectorIndexing."
-                              .formatted(optionName)));
-                }
-                // class_name / target are structural SAI options set automatically by the API;
-                // reject them here, mirroring how renderIndexingOptions filters them out.
-                if (CQLSAIIndex.Options.CLASS_NAME.equals(optionName)
-                    || CQLSAIIndex.Options.TARGET.equals(optionName)) {
-                  throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
-                      Map.of(
-                          "reason",
-                          "The option '%s' is set automatically and must not be provided in vectorIndexing."
-                              .formatted(optionName)));
-                }
-                // CQL index options are strings: keep a textual value raw, otherwise serialise the
-                // JSON value (e.g. number 32 -> "32", boolean true -> "true").
-                var value = entry.getValue();
-                indexOptions.put(
-                    optionName, value.isTextual() ? value.textValue() : value.toString());
-              });
-      return;
+    // Explicit options are validated against the allow-list and override the profile.
+    var options = vectorIndexing.options();
+    if (options != null) {
+      for (var entry : options.entrySet()) {
+        var optionName = entry.getKey();
+        if (VectorConstants.CQLAnnIndex.RESERVED_OPTIONS.contains(optionName)) {
+          var dedicatedField =
+              VectorConstants.CQLAnnIndex.SOURCE_MODEL.equals(optionName)
+                  ? VectorConstants.VectorColumn.SOURCE_MODEL
+                  : VectorConstants.VectorColumn.METRIC;
+          throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+              Map.of(
+                  "reason",
+                  "The option '%s' must be set using its dedicated field '%s', not vectorIndexing.options."
+                      .formatted(optionName, dedicatedField)));
+        }
+        if (!VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS.contains(optionName)) {
+          throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+              Map.of(
+                  "reason",
+                  "Unsupported vector indexing option '%s'. Supported options: %s."
+                      .formatted(
+                          optionName, errFmtJoin(VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS))));
+        }
+        indexOptions.put(optionName, optionValueToString(optionName, entry.getValue()));
+      }
     }
+  }
 
-    // neither String nor Object -> not supported
-    throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
-        Map.of(
-            "reason",
-            "vectorIndexing must be a String (profile name) or an Object (raw options), but was: "
-                + JsonUtil.nodeTypeAsString(vectorIndexing)));
+  /** CQL index options are strings; accept scalar JSON values and reject objects, arrays, null. */
+  private static String optionValueToString(String optionName, Object value) {
+    if (value == null || value instanceof Map || value instanceof Iterable) {
+      throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+          Map.of(
+              "reason",
+              "The option '%s' must be a scalar value (string, number, or boolean)."
+                  .formatted(optionName)));
+    }
+    // JSON numbers deserialize to BigDecimal; use plain (non-scientific) notation for the CQL
+    // value.
+    if (value instanceof BigDecimal number) {
+      return number.toPlainString();
+    }
+    return String.valueOf(value);
   }
 
   /**
@@ -361,8 +358,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
             metricToUse);
       }
 
-      // Apply the optional additional indexing options (a profile name or raw options); the source
-      // model and metric above have dedicated fields and must not be set this way.
+      // Apply vectorIndexing (optional profile and/or explicit options; options override the
+      // profile); metric / sourceModel above have dedicated fields.
       var userVectorIndexing =
           (indexDesc.options() == null) ? null : indexDesc.options().vectorIndexing();
       applyIndexingOptions(indexOptions, userVectorIndexing);

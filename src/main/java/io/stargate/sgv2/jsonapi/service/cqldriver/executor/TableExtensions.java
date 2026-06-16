@@ -63,13 +63,25 @@ public abstract class TableExtensions {
     return (Map<String, ByteBuffer>) tableMetadata.getOptions().get(TABLE_OPTIONS_EXTENSION_KEY);
   }
 
-  /**
-   * Create custom properties for table metadata, This needs to add schema and table always since
-   * the command may be altering CQL created tables
-   */
+  /** As {@link #createCustomProperties(Map, Map, ObjectMapper)} with no vector index profiles. */
   public static Map<String, String> createCustomProperties(
       Map<CqlIdentifier, VectorizeDefinition> vectorDefs, ObjectMapper objectMapper) {
+    return createCustomProperties(vectorDefs, Map.of(), objectMapper);
+  }
+
+  /**
+   * Builds the table extensions payload: schema type/version (always written, since the command may
+   * be altering a CQL-created table) plus the vectorize config and vector index profiles.
+   *
+   * <p>Extensions are fully replaced on every write, so callers must pass the complete set of defs
+   * and profiles they want to keep; anything omitted is dropped.
+   */
+  public static Map<String, String> createCustomProperties(
+      Map<CqlIdentifier, VectorizeDefinition> vectorDefs,
+      Map<String, VectorIndexProfileDefinition> indexProfiles,
+      ObjectMapper objectMapper) {
     Objects.requireNonNull(vectorDefs, "vectorDefs must not be null");
+    Objects.requireNonNull(indexProfiles, "indexProfiles must not be null");
     Objects.requireNonNull(objectMapper, "objectMapper must not be null");
 
     Map<String, String> customProperties = new HashMap<>();
@@ -81,9 +93,7 @@ public abstract class TableExtensions {
         SchemaConstants.MetadataFieldsNames.SCHEMA_VERSION,
         SchemaConstants.MetadataFieldsValues.SCHEMA_VERSION_VERSION);
 
-    // because the extensions are always fully replaced, we do not need to write the key if there
-    // are none
-    // the full map will be replaced, replacing any existing extensions
+    // Only write a key when it has content (the map is fully replaced anyway).
     if (!vectorDefs.isEmpty()) {
       // convert to strings for serialisation
       Map<String, VectorizeDefinition> stringKeysDefs =
@@ -92,15 +102,24 @@ public abstract class TableExtensions {
                   Collectors.toMap(
                       entry -> cqlIdentifierToJsonKey(entry.getKey()), Map.Entry::getValue));
 
-      try {
-        customProperties.put(
-            SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG,
-            objectMapper.writeValueAsString(stringKeysDefs));
-      } catch (JsonProcessingException e) {
-        // this should never happen
-        throw new RuntimeException(e);
-      }
+      customProperties.put(
+          SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG,
+          writeJson(stringKeysDefs, objectMapper));
+    }
+    if (!indexProfiles.isEmpty()) {
+      customProperties.put(
+          SchemaConstants.MetadataFieldsNames.VECTOR_INDEX_PROFILES,
+          writeJson(indexProfiles, objectMapper));
     }
     return customProperties;
+  }
+
+  private static String writeJson(Object value, ObjectMapper objectMapper) {
+    try {
+      return objectMapper.writeValueAsString(value);
+    } catch (JsonProcessingException e) {
+      // this should never happen
+      throw new RuntimeException(e);
+    }
   }
 }

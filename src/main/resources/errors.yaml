@@ -1825,12 +1825,12 @@ request-errors:
     body: |-
       The command attempted to create a vector index using an indexing profile that is not known by the API.
 
-      A profile is selected by setting `vectorIndexing` to a String; the API expands it into a set of indexing options. To pass options directly instead, set `vectorIndexing` to an Object of raw Cassandra indexing options.
+      A profile is selected with `vectorIndexing.profile`; the API expands it into a set of indexing options. To set options directly instead, use `vectorIndexing.options`.
 
       The known profiles are: ${knownProfiles}.
       The command attempted to use the profile: ${unknownProfile}.
 
-      Resend the command using a known profile, or use a raw indexing options Object.
+      Resend the command using a known profile, or set `vectorIndexing.options` directly.
 
   - scope: SCHEMA
     code: INVALID_VECTOR_INDEXING_OPTIONS
@@ -1838,7 +1838,7 @@ request-errors:
     body: |-
       The command attempted to create a vector index with invalid `vectorIndexing`.
 
-      `vectorIndexing` must be either a String naming a predefined profile, or an Object of raw Cassandra indexing options. The dedicated `metric` and `sourceModel` fields must not be repeated inside the raw options Object.
+      `vectorIndexing` is an object with an optional `profile` (a predefined name) and an optional `options` object of Cassandra SAI tuning options. Only the supported tuning options may be set, and the dedicated `metric` / `sourceModel` fields must be used instead of setting them in `options`.
 
       ${reason}
 

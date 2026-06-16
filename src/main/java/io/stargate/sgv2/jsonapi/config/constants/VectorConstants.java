@@ -11,24 +11,45 @@ public interface VectorConstants {
     String VECTOR_INDEXING = "vectorIndexing";
   }
 
+  /** Field names inside the {@code vectorIndexing} object. */
+  interface VectorIndexing {
+    String PROFILE = "profile";
+    String OPTIONS = "options";
+  }
+
   interface Vectorize extends ServiceDescConstants {}
 
   /**
-   * Names of the options used in the CQL {@code CREATE CUSTOM INDEX ... WITH OPTIONS = {...}}
-   * clause for a vector (SAI ANN) index. {@link #SOURCE_MODEL} and {@link #SIMILARITY_FUNCTION}
-   * have dedicated API fields ({@code sourceModel} / {@code metric}); the remaining tuning options
-   * are exposed via the {@code vectorIndexing} field (see {@link VectorColumn#VECTOR_INDEXING}).
+   * CQL {@code WITH OPTIONS} keys for a vector (SAI) index. {@link #SOURCE_MODEL} and {@link
+   * #SIMILARITY_FUNCTION} have dedicated API fields ({@code sourceModel} / {@code metric}); the
+   * rest are tuning options set via {@code vectorIndexing.options}.
    */
   interface CQLAnnIndex {
     String SOURCE_MODEL = "source_model";
     String SIMILARITY_FUNCTION = "similarity_function";
     String MAXIMUM_NODE_CONNECTIONS = "maximum_node_connections";
     String CONSTRUCTION_BEAM_WIDTH = "construction_beam_width";
+    String NEIGHBORHOOD_OVERFLOW = "neighborhood_overflow";
+    String ALPHA = "alpha";
+    String ENABLE_HIERARCHY = "enable_hierarchy";
 
     /**
-     * Options that have dedicated API fields ({@code sourceModel} / {@code metric}) and so must not
-     * be set again through the raw {@code vectorIndexing} object.
+     * Options with dedicated API fields ({@code metric} / {@code sourceModel}); rejected inside
+     * {@code vectorIndexing.options}.
      */
     Set<String> RESERVED_OPTIONS = Set.of(SOURCE_MODEL, SIMILARITY_FUNCTION);
+
+    /**
+     * The SAI tuning options a user may set through {@code vectorIndexing.options}. Excludes the
+     * dedicated-field options and the structural ones. {@code optimize_for} exists in OSS Cassandra
+     * but is de-emphasised in DSE 6.9 / HCD, so it is intentionally left out for now.
+     */
+    Set<String> ALLOWED_OPTIONS =
+        Set.of(
+            MAXIMUM_NODE_CONNECTIONS,
+            CONSTRUCTION_BEAM_WIDTH,
+            NEIGHBORHOOD_OVERFLOW,
+            ALPHA,
+            ENABLE_HIERARCHY);
   }
 }

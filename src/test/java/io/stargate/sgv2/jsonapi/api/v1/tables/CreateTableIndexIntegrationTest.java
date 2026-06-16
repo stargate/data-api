@@ -1146,7 +1146,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "vectorIndexing": "no-such-profile"
+                      "vectorIndexing": { "profile": "no-such-profile" }
                     }
                   }
                 }
@@ -1158,7 +1158,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void rawIndexingOptionsWithReservedOption() {
+    public void reservedOptionRejected() {
       assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
@@ -1168,7 +1168,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                     "column": "vector_type_7",
                     "options": {
                       "vectorIndexing": {
-                        "similarity_function": "COSINE"
+                        "options": { "similarity_function": "COSINE" }
                       }
                     }
                   }
@@ -1181,7 +1181,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void rawIndexingOptionsWithStructuralOption() {
+    public void unsupportedOptionRejected() {
       assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
@@ -1191,7 +1191,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                     "column": "vector_type_7",
                     "options": {
                       "vectorIndexing": {
-                        "class_name": "StorageAttachedIndex"
+                        "options": { "class_name": "StorageAttachedIndex" }
                       }
                     }
                   }
@@ -1200,11 +1200,11 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
               SchemaException.class,
-              "The option 'class_name' is set automatically and must not be provided in vectorIndexing");
+              "Unsupported vector indexing option 'class_name'");
     }
 
     @Test
-    public void indexingOptionsNotStringOrObject() {
+    public void nonScalarOptionValueRejected() {
       assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
@@ -1213,7 +1213,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "vectorIndexing": [1, 2, 3]
+                      "vectorIndexing": {
+                        "options": { "alpha": [1, 2, 3] }
+                      }
                     }
                   }
                 }
@@ -1221,8 +1223,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
               SchemaException.class,
-              "vectorIndexing must be a String (profile name) or an Object (raw options)",
-              "but was: Array");
+              "The option 'alpha' must be a scalar value");
     }
 
     @Test

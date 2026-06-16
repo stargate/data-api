@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorIndexDescDefaults;
@@ -12,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -66,12 +66,43 @@ public record VectorIndexDefinitionDesc(
       @Nullable
           @Schema(
               description =
-                  "Optional additional vector (SAI) indexing configuration: either a String naming a "
-                      + "predefined profile (e.g. \"small-high-recall\") that the API expands into a set of "
-                      + "options, or an Object of raw Cassandra indexing options passed through as-is "
-                      + "(e.g. {\"enable_hierarchy\": true, \"maximum_node_connections\": 32}). The dedicated "
-                      + "\"metric\" and \"sourceModel\" fields must not be repeated here.")
+                  "Optional vector (SAI) indexing configuration: an object with an optional "
+                      + "\"profile\" (a predefined name the API expands into options, e.g. "
+                      + "\"small-high-recall\") and an optional \"options\" object of Cassandra SAI "
+                      + "tuning options (e.g. {\"maximum_node_connections\": 32, \"alpha\": 1.2}). "
+                      + "Explicit options override the profile. Set \"metric\" / \"sourceModel\" via "
+                      + "their dedicated fields, not here.",
+              type = SchemaType.OBJECT)
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @JsonProperty(VectorConstants.VectorColumn.VECTOR_INDEXING)
-          JsonNode vectorIndexing) {}
+          VectorIndexingDesc vectorIndexing) {}
+
+  /**
+   * The {@code vectorIndexing} value: an optional profile name plus optional SAI tuning options.
+   */
+  @JsonPropertyOrder({
+    VectorConstants.VectorIndexing.PROFILE,
+    VectorConstants.VectorIndexing.OPTIONS
+  })
+  public record VectorIndexingDesc(
+      @Nullable
+          @Schema(
+              description =
+                  "Optional predefined indexing profile name; the API expands it into SAI options.",
+              type = SchemaType.STRING)
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @JsonProperty(VectorConstants.VectorIndexing.PROFILE)
+          String profile,
+      //
+      @Nullable
+          @Schema(
+              description =
+                  "Optional Cassandra SAI tuning options (snake_case), restricted to: "
+                      + "maximum_node_connections, construction_beam_width, neighborhood_overflow, "
+                      + "alpha, enable_hierarchy. Values may be string, number, or boolean on input "
+                      + "and are returned as strings in index descriptions.",
+              type = SchemaType.OBJECT)
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @JsonProperty(VectorConstants.VectorIndexing.OPTIONS)
+          Map<String, Object> options) {}
 }

@@ -6,17 +6,14 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Registry of named vector-index "profiles": each maps a user-facing profile name to a set of
- * Cassandra SAI indexing options (the {@code WITH OPTIONS = {...}} entries). Selecting a profile is
- * an alternative to passing raw options through the {@code vectorIndexing} field on the
- * createVectorIndex command.
+ * Named vector-index profiles: each maps a profile name to a set of Cassandra SAI indexing options.
+ * Selecting a profile is an alternative to passing raw options through {@code vectorIndexing}.
  *
- * <p>Profiles only set the tuning options; they never set {@code source_model} or {@code
- * similarity_function}, which have dedicated API fields ({@code sourceModel} / {@code metric}).
- * Values are stored as Strings because CQL index options are a {@code Map<String, String>}.
+ * <p>Profiles never set {@code source_model} or {@code similarity_function}; those have the
+ * dedicated {@code sourceModel} / {@code metric} fields. Values are Strings because CQL index
+ * options are a {@code Map<String, String>}.
  *
- * <p>NOTE: the concrete mappings below are an initial in-code starter set; the values are expected
- * to be tuned and eventually externalised to configuration.
+ * <p>This is an initial in-code set; the values are expected to be tuned and moved to config.
  */
 public final class VectorIndexProfiles {
 
@@ -35,8 +32,7 @@ public final class VectorIndexProfiles {
   /**
    * Looks up a profile by name, case-insensitively.
    *
-   * @param name the profile name from the user request, may be null or blank
-   * @return the CQL options for the profile, or empty if the name is null, blank, or not known
+   * @return the profile's CQL options, or empty if {@code name} is null, blank, or unknown
    */
   public static Optional<Map<String, String>> forName(String name) {
     if (name == null || name.isBlank()) {
@@ -45,7 +41,7 @@ public final class VectorIndexProfiles {
     return Optional.ofNullable(PROFILES.get(name.toLowerCase()));
   }
 
-  /** Names of all known profiles, for use in error messages. */
+  /** Names of all known profiles, for error messages. */
   public static Set<String> knownNames() {
     return PROFILES.keySet();
   }
