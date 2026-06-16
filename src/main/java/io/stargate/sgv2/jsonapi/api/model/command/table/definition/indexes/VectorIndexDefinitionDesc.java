@@ -36,7 +36,7 @@ public record VectorIndexDefinitionDesc(
   @JsonPropertyOrder({
     VectorConstants.VectorColumn.METRIC,
     VectorConstants.VectorColumn.SOURCE_MODEL,
-    VectorConstants.VectorColumn.INDEXING_OPTIONS
+    VectorConstants.VectorColumn.VECTOR_INDEXING
   })
   public record VectorIndexDescOptions(
       @Nullable
@@ -72,6 +72,6 @@ public record VectorIndexDefinitionDesc(
                       + "(e.g. {\"enable_hierarchy\": true, \"maximum_node_connections\": 32}). The dedicated "
                       + "\"metric\" and \"sourceModel\" fields must not be repeated here.")
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          @JsonProperty(VectorConstants.VectorColumn.INDEXING_OPTIONS)
-          JsonNode indexingOptions) {}
+          @JsonProperty(VectorConstants.VectorColumn.VECTOR_INDEXING)
+          JsonNode vectorIndexing) {}
 }

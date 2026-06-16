@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the {@code indexingOptions} handling on {@link ApiVectorIndex}: how the public
+ * Unit tests for the {@code vectorIndexing} handling on {@link ApiVectorIndex}: how the public
  * value (profile name or raw options) is turned into the CQL index options map, and how it is
  * rendered back for the schema description. These are deterministic and do not need a database (the
  * end-to-end behaviour also depends on the backend allowing custom SAI parameters).

@@ -86,7 +86,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   /**
    * Renders the additional tuning options from a CQL index options map (everything other than the
    * structural {@code class_name} / {@code target} and the {@code source_model} / {@code
-   * similarity_function} options, which have dedicated fields) as an {@code indexingOptions} object
+   * similarity_function} options, which have dedicated fields) as a {@code vectorIndexing} object
    * for the public schema description.
    *
    * <p>Profiles are resolved to their concrete options at create time, so the description always
@@ -117,26 +117,26 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Applies the optional {@code indexingOptions} from the user request into the CQL index options
+   * Applies the optional {@code vectorIndexing} from the user request into the CQL index options
    * map. The value is either a String naming a {@link VectorIndexProfiles profile} (expanded into a
    * set of options) or an Object of raw Cassandra indexing options passed through as-is. The {@code
    * source_model} / {@code similarity_function} options have dedicated fields and must not be set
    * this way.
    *
    * @param indexOptions the CQL options map being built, mutated in place
-   * @param indexingOptions the raw node from the request, may be null
+   * @param vectorIndexing the raw node from the request, may be null
    */
   @VisibleForTesting
-  static void applyIndexingOptions(Map<String, String> indexOptions, JsonNode indexingOptions) {
+  static void applyIndexingOptions(Map<String, String> indexOptions, JsonNode vectorIndexing) {
 
-    if (indexingOptions == null || indexingOptions.isNull()) {
+    if (vectorIndexing == null || vectorIndexing.isNull()) {
       // nothing provided, leave the options as they are
       return;
     }
 
-    if (indexingOptions.isTextual()) {
+    if (vectorIndexing.isTextual()) {
       // String -> named profile
-      var profileName = indexingOptions.textValue();
+      var profileName = vectorIndexing.textValue();
       var profileOptions =
           VectorIndexProfiles.forName(profileName)
               .orElseThrow(
@@ -151,9 +151,9 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       return;
     }
 
-    if (indexingOptions.isObject()) {
+    if (vectorIndexing.isObject()) {
       // Object -> raw indexing options, passed through as-is using Cassandra's snake_case names.
-      indexingOptions
+      vectorIndexing
           .fields()
           .forEachRemaining(
               entry -> {
@@ -162,7 +162,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
                   throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
                       Map.of(
                           "reason",
-                          "The option '%s' must be set using its dedicated field, not indexingOptions."
+                          "The option '%s' must be set using its dedicated field, not vectorIndexing."
                               .formatted(optionName)));
                 }
                 // class_name / target are structural SAI options set automatically by the API;
@@ -172,7 +172,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
                   throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
                       Map.of(
                           "reason",
-                          "The option '%s' is set automatically and must not be provided in indexingOptions."
+                          "The option '%s' is set automatically and must not be provided in vectorIndexing."
                               .formatted(optionName)));
                 }
                 // CQL index options are strings: keep a textual value raw, otherwise serialise the
@@ -188,8 +188,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
     throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
         Map.of(
             "reason",
-            "indexingOptions must be a String (profile name) or an Object (raw options), but was: "
-                + JsonUtil.nodeTypeAsString(indexingOptions)));
+            "vectorIndexing must be a String (profile name) or an Object (raw options), but was: "
+                + JsonUtil.nodeTypeAsString(vectorIndexing)));
   }
 
   /**
@@ -363,9 +363,9 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       // Apply the optional additional indexing options (a profile name or raw options); the source
       // model and metric above have dedicated fields and must not be set this way.
-      var userIndexingOptions =
-          (indexDesc.options() == null) ? null : indexDesc.options().indexingOptions();
-      applyIndexingOptions(indexOptions, userIndexingOptions);
+      var userVectorIndexing =
+          (indexDesc.options() == null) ? null : indexDesc.options().vectorIndexing();
+      applyIndexingOptions(indexOptions, userVectorIndexing);
 
       return new ApiVectorIndex(
           indexIdentifier, targetIdentifier, indexOptions, metricToUse, sourceModelToUse);

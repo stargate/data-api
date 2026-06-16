@@ -1146,7 +1146,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "indexingOptions": "no-such-profile"
+                      "vectorIndexing": "no-such-profile"
                     }
                   }
                 }
@@ -1167,7 +1167,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "indexingOptions": {
+                      "vectorIndexing": {
                         "similarity_function": "COSINE"
                       }
                     }
@@ -1190,7 +1190,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "indexingOptions": {
+                      "vectorIndexing": {
                         "class_name": "StorageAttachedIndex"
                       }
                     }
@@ -1200,7 +1200,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
               SchemaException.class,
-              "The option 'class_name' is set automatically and must not be provided in indexingOptions");
+              "The option 'class_name' is set automatically and must not be provided in vectorIndexing");
     }
 
     @Test
@@ -1213,7 +1213,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "indexingOptions": [1, 2, 3]
+                      "vectorIndexing": [1, 2, 3]
                     }
                   }
                 }
@@ -1221,7 +1221,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
               SchemaException.class,
-              "indexingOptions must be a String (profile name) or an Object (raw options)",
+              "vectorIndexing must be a String (profile name) or an Object (raw options)",
               "but was: Array");
     }
 

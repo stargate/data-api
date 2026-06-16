@@ -8,7 +8,7 @@ public interface VectorConstants {
     String METRIC = "metric";
     String SOURCE_MODEL = "sourceModel";
     String SERVICE = ServiceDescConstants.SERVICE;
-    String INDEXING_OPTIONS = "indexingOptions";
+    String VECTOR_INDEXING = "vectorIndexing";
   }
 
   interface Vectorize extends ServiceDescConstants {}
@@ -17,7 +17,7 @@ public interface VectorConstants {
    * Names of the options used in the CQL {@code CREATE CUSTOM INDEX ... WITH OPTIONS = {...}}
    * clause for a vector (SAI ANN) index. {@link #SOURCE_MODEL} and {@link #SIMILARITY_FUNCTION}
    * have dedicated API fields ({@code sourceModel} / {@code metric}); the remaining tuning options
-   * are exposed via the {@code indexingOptions} field (see {@link VectorColumn#INDEXING_OPTIONS}).
+   * are exposed via the {@code vectorIndexing} field (see {@link VectorColumn#VECTOR_INDEXING}).
    */
   interface CQLAnnIndex {
     String SOURCE_MODEL = "source_model";
@@ -27,7 +27,7 @@ public interface VectorConstants {
 
     /**
      * Options that have dedicated API fields ({@code sourceModel} / {@code metric}) and so must not
-     * be set again through the raw {@code indexingOptions} object.
+     * be set again through the raw {@code vectorIndexing} object.
      */
     Set<String> RESERVED_OPTIONS = Set.of(SOURCE_MODEL, SIMILARITY_FUNCTION);
   }

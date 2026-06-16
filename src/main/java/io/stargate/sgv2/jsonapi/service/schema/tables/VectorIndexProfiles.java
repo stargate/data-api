@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * Registry of named vector-index "profiles": each maps a user-facing profile name to a set of
  * Cassandra SAI indexing options (the {@code WITH OPTIONS = {...}} entries). Selecting a profile is
- * an alternative to passing raw options through the {@code indexingOptions} field on the
+ * an alternative to passing raw options through the {@code vectorIndexing} field on the
  * createVectorIndex command.
  *
  * <p>Profiles only set the tuning options; they never set {@code source_model} or {@code
