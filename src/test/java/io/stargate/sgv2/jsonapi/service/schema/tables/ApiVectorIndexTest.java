@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +35,6 @@ class ApiVectorIndexTest {
   class ApplyIndexingOptions {
 
     @Test
-    @DisplayName("null / JSON null leaves the options untouched")
     void nullValueIsNoOp() {
       var options = new HashMap<String, String>();
 
@@ -47,7 +45,6 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName("empty object leaves the options untouched")
     void emptyObjectIsNoOp() {
       var options = new HashMap<String, String>();
 
@@ -57,7 +54,6 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName("a profile name expands to its CQL options")
     void profileExpands() {
       var options = new HashMap<String, String>();
 
@@ -69,7 +65,6 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName("an unknown profile name throws UNKNOWN_VECTOR_INDEXING_PROFILE")
     void unknownProfileThrows() {
       var options = new HashMap<String, String>();
 
@@ -85,7 +80,6 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName("raw options are passed through, non-text values serialised to Strings")
     void rawOptionsPassThrough() {
       var options = new HashMap<String, String>();
 
@@ -107,7 +101,6 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName("raw options merge with options already present")
     void rawOptionsMergeWithExisting() {
       var options = new HashMap<String, String>();
       options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OTHER");
@@ -120,7 +113,6 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName("a reserved option inside raw options throws INVALID_VECTOR_INDEXING_OPTIONS")
     void reservedOptionThrows() {
       var options = new HashMap<String, String>();
 
@@ -136,11 +128,31 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName("a value that is neither String nor Object throws INVALID_VECTOR_INDEXING_OPTIONS")
     void wrongTypeThrows() {
       var options = new HashMap<String, String>();
 
       assertThatThrownBy(() -> ApiVectorIndex.applyIndexingOptions(options, json("[1, 2, 3]")))
+          .isInstanceOf(SchemaException.class)
+          .satisfies(
+              t ->
+                  assertThat(((SchemaException) t).code)
+                      .isEqualTo(SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.name()));
+    }
+
+    @Test
+    void structuralOptionThrows() {
+      var options = new HashMap<String, String>();
+
+      assertThatThrownBy(
+              () -> ApiVectorIndex.applyIndexingOptions(options, json("{\"class_name\": \"x\"}")))
+          .isInstanceOf(SchemaException.class)
+          .satisfies(
+              t ->
+                  assertThat(((SchemaException) t).code)
+                      .isEqualTo(SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.name()));
+
+      assertThatThrownBy(
+              () -> ApiVectorIndex.applyIndexingOptions(options, json("{\"target\": \"y\"}")))
           .isInstanceOf(SchemaException.class)
           .satisfies(
               t ->
@@ -153,7 +165,6 @@ class ApiVectorIndexTest {
   class RenderIndexingOptions {
 
     @Test
-    @DisplayName("returns null when only structural and dedicated-field options are present")
     void nullWhenNoTuningOptions() {
       var options = new HashMap<String, String>();
       options.put(CQLSAIIndex.Options.CLASS_NAME, CQLSAIIndex.SAI_CLASS_NAME);
@@ -165,8 +176,6 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName(
-        "returns only the tuning options, excluding structural and dedicated-field options")
     void rendersOnlyTuningOptions() {
       var options = new HashMap<String, String>();
       options.put(CQLSAIIndex.Options.CLASS_NAME, CQLSAIIndex.SAI_CLASS_NAME);
@@ -183,7 +192,6 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    @DisplayName("empty map renders null")
     void emptyMapRendersNull() {
       assertThat(ApiVectorIndex.renderIndexingOptions(Map.of())).isNull();
     }

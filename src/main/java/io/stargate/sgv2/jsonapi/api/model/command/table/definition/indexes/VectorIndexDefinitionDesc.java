@@ -66,13 +66,11 @@ public record VectorIndexDefinitionDesc(
       @Nullable
           @Schema(
               description =
-                  """
-Optional additional vector (SAI) indexing configuration: either a String naming a predefined profile \
-(e.g. "small-high-recall") that the API expands into a set of options, or an Object of raw Cassandra \
-indexing options passed through as-is (e.g. {"enable_hierarchy": true, "maximum_node_connections": 32}). \
-The dedicated "metric" and "sourceModel" fields must not be repeated here.\
-""",
-              type = SchemaType.OBJECT)
+                  "Optional additional vector (SAI) indexing configuration: either a String naming a "
+                      + "predefined profile (e.g. \"small-high-recall\") that the API expands into a set of "
+                      + "options, or an Object of raw Cassandra indexing options passed through as-is "
+                      + "(e.g. {\"enable_hierarchy\": true, \"maximum_node_connections\": 32}). The dedicated "
+                      + "\"metric\" and \"sourceModel\" fields must not be repeated here.")
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @JsonProperty(VectorConstants.VectorColumn.INDEXING_OPTIONS)
           JsonNode indexingOptions) {}

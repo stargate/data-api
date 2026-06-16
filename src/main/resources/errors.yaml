@@ -1811,12 +1811,12 @@ request-errors:
     title: Vector metric is unknown
     body: |-
       The command attempted to create an vector index using a metric that is not known by the API.
-
+            
       The metric, also known as the similarity function, used to create the vector index is used to compare vectors to find the similar vectors.
-
+      
       The known metrics are: ${knownMetrics}.
       The command attempted to use the metric: ${unknownMetric}.
-
+      
       Resend the command using a known metric.
 
   - scope: SCHEMA

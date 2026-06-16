@@ -1138,7 +1138,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void unknownIndexingProfile() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, vectorTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                 {
@@ -1159,7 +1159,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void rawIndexingOptionsWithReservedOption() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, vectorTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                 {
@@ -1181,8 +1181,31 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
+    public void rawIndexingOptionsWithStructuralOption() {
+      assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                {
+                  "name": "vector_type_7_idx",
+                  "definition": {
+                    "column": "vector_type_7",
+                    "options": {
+                      "indexingOptions": {
+                        "class_name": "StorageAttachedIndex"
+                      }
+                    }
+                  }
+                }
+                """)
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
+              SchemaException.class,
+              "The option 'class_name' is set automatically and must not be provided in indexingOptions");
+    }
+
+    @Test
     public void indexingOptionsNotStringOrObject() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, vectorTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                 {

@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
@@ -95,6 +96,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
    * @param indexOptions the CQL index options map
    * @return the options object, or null when there are none (so the field is omitted)
    */
+  @VisibleForTesting
   static JsonNode renderIndexingOptions(Map<String, String> indexOptions) {
     ObjectNode node = null;
     for (var entry : indexOptions.entrySet()) {
@@ -124,6 +126,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
    * @param indexOptions the CQL options map being built, mutated in place
    * @param indexingOptions the raw node from the request, may be null
    */
+  @VisibleForTesting
   static void applyIndexingOptions(Map<String, String> indexOptions, JsonNode indexingOptions) {
 
     if (indexingOptions == null || indexingOptions.isNull()) {
@@ -160,6 +163,16 @@ public class ApiVectorIndex extends ApiSupportedIndex {
                       Map.of(
                           "reason",
                           "The option '%s' must be set using its dedicated field, not indexingOptions."
+                              .formatted(optionName)));
+                }
+                // class_name / target are structural SAI options set automatically by the API;
+                // reject them here, mirroring how renderIndexingOptions filters them out.
+                if (CQLSAIIndex.Options.CLASS_NAME.equals(optionName)
+                    || CQLSAIIndex.Options.TARGET.equals(optionName)) {
+                  throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+                      Map.of(
+                          "reason",
+                          "The option '%s' is set automatically and must not be provided in indexingOptions."
                               .formatted(optionName)));
                 }
                 // CQL index options are strings: keep a textual value raw, otherwise serialise the

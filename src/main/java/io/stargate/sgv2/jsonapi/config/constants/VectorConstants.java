@@ -24,9 +24,6 @@ public interface VectorConstants {
     String SIMILARITY_FUNCTION = "similarity_function";
     String MAXIMUM_NODE_CONNECTIONS = "maximum_node_connections";
     String CONSTRUCTION_BEAM_WIDTH = "construction_beam_width";
-    String NEIGHBORHOOD_OVERFLOW = "neighborhood_overflow";
-    String ALPHA = "alpha";
-    String ENABLE_HIERARCHY = "enable_hierarchy";
 
     /**
      * Options that have dedicated API fields ({@code sourceModel} / {@code metric}) and so must not
