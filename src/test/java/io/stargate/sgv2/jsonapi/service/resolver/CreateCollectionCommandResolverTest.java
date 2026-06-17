@@ -5,11 +5,14 @@ import static io.stargate.sgv2.jsonapi.util.asserts.DataAPIAsserts.assertThatSch
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.List;
+
+import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -19,10 +22,11 @@ import org.slf4j.LoggerFactory;
  * Tests how the {@link CreateCollectionCommandResolver} handles inputs and the operation it
  * creates.
  *
- * <p><b>NOTE:</b> subclassed atleast by {@link CreateCollectionResolverVectorizeDisabledTest} to
+ * <p><b>NOTE:</b> subclassed atleast by {@link CreateCollectionCommandResolverVectorizeDisabledTest} to
  * change the vectorize enabled setting
  */
 @QuarkusTest
+@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class CreateCollectionCommandResolverTest extends CreateCollectionCommandResolverTestBase {
 
   protected static final Logger LOGGER =

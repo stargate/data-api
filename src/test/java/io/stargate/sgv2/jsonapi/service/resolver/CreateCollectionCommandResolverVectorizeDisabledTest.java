@@ -5,12 +5,13 @@ import static io.stargate.sgv2.jsonapi.util.asserts.DataAPIAsserts.assertThatSch
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.util.profiles.DisableVectorizeProfile;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(DisableVectorizeProfile.class)
-public class CreateCollectionResolverVectorizeDisabledTest
+public class CreateCollectionCommandResolverVectorizeDisabledTest
     extends CreateCollectionCommandResolverTestBase {
 
   @Test

@@ -10,11 +10,7 @@ import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import jakarta.inject.Inject;
 
 /**
- * Tests how the {@link CreateCollectionCommandResolver} handles inputs and the operation it
- * creates.
- *
- * <p><b>NOTE:</b> subclassed atleast by {@link CreateCollectionResolverVectorizeDisabledTest} to
- * change the vectorize enabled setting
+ * re-usable base class for tests for {@link CreateCollectionCommandResolver}.
  */
 class CreateCollectionCommandResolverTestBase
     extends CommandResolverTestBase<
