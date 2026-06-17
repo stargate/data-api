@@ -184,7 +184,7 @@ public abstract class SuperShreddingBuilder<T, U extends SuperShreddingBuilder<T
    * <p>This pulls the options from the {@link SuperShreddingBinding} and puts them into maps of the
    * values each index definition needs
    */
-  protected Stream<IndexDef> indexDefs(SuperShreddingBinding binding) {
+  protected Stream<IndexDef> indexDefs() {
 
     Stream.Builder<IndexDef> builder = Stream.builder();
 

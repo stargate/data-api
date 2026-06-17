@@ -93,7 +93,7 @@ public class SuperShreddingMetadataBuilder
 
   private Stream<IndexMetadata> buildIndexMetadata() {
 
-    return indexDefs(binding())
+    return indexDefs()
             .map(indexDef -> indexDef.indexMetadata(binding()));
   }
 }

@@ -79,7 +79,7 @@ public class SuperShreddingCQLBuilder
   private Stream<SuperShreddingComponent<String>> indexCQL() {
 
     // get all the indexes this super shredding table should have
-    var indexDefs = indexDefs(binding()).toList();
+    var indexDefs = indexDefs().toList();
 
     // For each of the IndexDef, we need to get the CQL to build it
     var cqlAndDefs =
