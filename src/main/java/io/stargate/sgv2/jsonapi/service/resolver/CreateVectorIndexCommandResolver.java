@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
@@ -26,7 +25,6 @@ import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.tables.VectorIndexProfiles;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -104,12 +102,12 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     var createIndexTask = taskBuilder.build(apiIndex);
 
-    // If a named profile was used, record the name + the options it expanded to in the table
+    // If a named profile was used, record the name + the options it resolved to in the table
     // extensions so the friendly name survives. Written as a second DDL after the index so a failed
-    // create leaves no orphan record. (With ifNotExists on an existing index the create is a no-op
-    // but we still write the latest requested profile.)
+    // create leaves no orphan record. Returns null (no extension write) when there is nothing to
+    // persist or the index already exists (the CREATE IF NOT EXISTS would be a no-op).
     var extensionTask =
-        buildProfileExtensionTask(schemaObject, apiIndex.indexName(), command, schemaRetryPolicy);
+        buildProfileExtensionTask(schemaObject, apiIndex, command, schemaRetryPolicy);
     if (extensionTask == null) {
       return new TaskOperation<>(
           new TaskGroup<>(createIndexTask),
@@ -129,29 +127,38 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
   /**
    * Builds the ALTER TABLE task that records this index's profile in the table extensions, or null
-   * when nothing needs to change (no profile used and no stale entry for the index name to clear).
-   * Existing vectorize config and other profiles are read back and rewritten so they are not lost.
+   * when nothing needs to change. Returns null when the index already exists (a {@code CREATE ...
+   * IF NOT EXISTS} would be a no-op, so its stored profile must not be rewritten), or when no
+   * profile is used and there is no stale entry to clear. The snapshot stores the options actually
+   * applied to the index (profile expansion plus any explicit overrides); existing vectorize config
+   * and other profiles are read back and rewritten so they are not lost.
    */
   private AlterTableDBTask buildProfileExtensionTask(
       TableSchemaObject schemaObject,
-      CqlIdentifier indexIdentifier,
+      ApiVectorIndex apiIndex,
       CreateVectorIndexCommand command,
       SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy) {
+
+    // The create is "IF NOT EXISTS": if the index already exists the create is a no-op, so leave
+    // its stored profile untouched (it must keep matching the live index options).
+    if (schemaObject.tableMetadata().getIndexes().containsKey(apiIndex.indexName())) {
+      return null;
+    }
 
     var options = command.definition().options();
     var vectorIndexing = (options == null) ? null : options.vectorIndexing();
     // Only a named profile is recorded; bare options carry no name to store.
     var profileName = (vectorIndexing == null) ? null : vectorIndexing.profile();
 
-    var indexKey = cqlIdentifierToJsonKey(indexIdentifier);
+    var indexKey = cqlIdentifierToJsonKey(apiIndex.indexName());
     var profiles = VectorIndexProfileDefinition.from(schemaObject.tableMetadata(), objectMapper);
 
-    VectorIndexProfileDefinition def = null;
-    if (profileName != null) {
-      // forName was already validated by the index factory above, so it is present here.
-      var profileOptions = VectorIndexProfiles.forName(profileName).orElseThrow();
-      def = new VectorIndexProfileDefinition(profileName, profileOptions);
-    }
+    // Snapshot the options actually applied to the index (profile expansion plus explicit
+    // overrides), so the stored metadata matches the live index rather than the base profile.
+    var def =
+        (profileName == null)
+            ? null
+            : new VectorIndexProfileDefinition(profileName, apiIndex.appliedTuningOptions());
 
     if (!VectorIndexProfileDefinition.putOrRemove(profiles, indexKey, def)) {
       return null;

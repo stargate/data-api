@@ -303,6 +303,36 @@ class ApiVectorIndexTest {
     }
   }
 
+  /** The persisted profile snapshot reflects the options actually applied, not the base profile. */
+  @Nested
+  class TuningOptionsSnapshot {
+
+    @Test
+    void keepsAllowlistedAppliedOptionsExcludingReservedAndStructural() {
+      var indexOptions = new HashMap<String, String>();
+      indexOptions.put(CQLSAIIndex.Options.CLASS_NAME, CQLSAIIndex.SAI_CLASS_NAME);
+      indexOptions.put(CQLSAIIndex.Options.TARGET, "my_vector");
+      indexOptions.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OPENAI_V3_SMALL");
+      indexOptions.put(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, "COSINE");
+      // small-high-recall's base is 32, but an explicit override applied 99 — snapshot must keep 99
+      indexOptions.put(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "99");
+      indexOptions.put(VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH, "200");
+
+      assertThat(ApiVectorIndex.tuningOptions(indexOptions))
+          .containsOnly(
+              entry(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "99"),
+              entry(VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH, "200"));
+    }
+
+    @Test
+    void emptyWhenNoTuningOptions() {
+      var indexOptions = new HashMap<String, String>();
+      indexOptions.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OTHER");
+
+      assertThat(ApiVectorIndex.tuningOptions(indexOptions)).isEmpty();
+    }
+  }
+
   /** Applying options then describing them round-trips the tuning options. */
   @Nested
   class RoundTrip {

@@ -94,18 +94,31 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   @VisibleForTesting
   static VectorIndexDefinitionDesc.VectorIndexingDesc describeIndexingOptions(
       Map<String, String> indexOptions) {
-    Map<String, Object> options = null;
+    var tuning = tuningOptions(indexOptions);
+    return tuning.isEmpty()
+        ? null
+        : new VectorIndexDefinitionDesc.VectorIndexingDesc(null, new LinkedHashMap<>(tuning));
+  }
+
+  /**
+   * The supported SAI tuning options actually applied to this index (profile expansion plus any
+   * explicit overrides). Used to snapshot the resolved options next to a stored profile name, so
+   * the snapshot matches the live index rather than the base profile.
+   */
+  public Map<String, String> appliedTuningOptions() {
+    return tuningOptions(indexOptions);
+  }
+
+  /** Keeps only the {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS} from a CQL options map. */
+  @VisibleForTesting
+  static Map<String, String> tuningOptions(Map<String, String> indexOptions) {
+    Map<String, String> tuning = new LinkedHashMap<>();
     for (var entry : indexOptions.entrySet()) {
-      // Only surface options the API also accepts, so a description round-trips into a request.
-      if (!VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS.contains(entry.getKey())) {
-        continue;
+      if (VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS.contains(entry.getKey())) {
+        tuning.put(entry.getKey(), entry.getValue());
       }
-      if (options == null) {
-        options = new LinkedHashMap<>();
-      }
-      options.put(entry.getKey(), entry.getValue());
     }
-    return options == null ? null : new VectorIndexDefinitionDesc.VectorIndexingDesc(null, options);
+    return tuning;
   }
 
   /**
