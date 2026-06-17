@@ -216,6 +216,11 @@ quarkus:
     server:
       http:
         root-path: /v1/mcp
+        streamable:
+          # It performs an automatic initialization when the first message from the client is not initialize.
+          # A new MCP session is created for each request.
+          # https://docs.quarkiverse.io/quarkus-mcp-server/1.13.x/reference-configuration.html#quarkus-mcp-server-http_quarkus-mcp-server-http-streamable-auto-init
+          auto-init: true
       traffic-logging:
         enabled: true
         text-limit: 1000
