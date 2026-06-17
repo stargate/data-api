@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# require Docker Compose v2
-if [[ ! $(docker compose version --short) =~ ^2. ]]; then
-  echo "Docker compose v2 required. Please upgrade Docker Desktop to the latest version."
+# require Docker Compose v2 or newer (rejects v1 and a missing compose plugin)
+COMPOSE_VERSION="$(docker compose version --short 2>/dev/null || true)"
+COMPOSE_VERSION="${COMPOSE_VERSION#v}"
+if [[ ! "${COMPOSE_VERSION%%.*}" =~ ^[0-9]+$ ]] || (( ${COMPOSE_VERSION%%.*} < 2 )); then
+  echo "Docker Compose v2 or newer required (found: ${COMPOSE_VERSION:-none})."
   exit 1
 fi
 
