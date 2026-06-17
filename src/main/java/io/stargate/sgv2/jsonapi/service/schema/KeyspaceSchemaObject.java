@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A Keyspace in the API.
@@ -37,6 +38,18 @@ public class KeyspaceSchemaObject extends SchemaObject {
     // here
     this.keyspaceMetadata =
         Objects.requireNonNull(keyspaceMetadata, "keyspaceMetadata must not be null");
+  }
+
+  /**
+   * The Cassandra metadata for this keyspace, when known.
+   *
+   * <p>Empty when the object was built via the {@link
+   * #KeyspaceSchemaObject(SchemaObjectIdentifier)} test constructor, which carries no metadata.
+   * Present for objects built from live schema, where it lets callers reach the keyspace's tables
+   * and their indexes (e.g. to find the table that owns a named index).
+   */
+  public Optional<KeyspaceMetadata> keyspaceMetadata() {
+    return Optional.ofNullable(keyspaceMetadata);
   }
 
   @Override
