@@ -27,6 +27,10 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Tests how the {@link CreateCollectionCommandResolver} handles inputs and the operation it
+ * creates.
+ */
 @QuarkusTest
 @TestProfile(EnabledVectorizeProfile.class)
 class CreateCollectionCommandResolverTest {
@@ -34,23 +38,32 @@ class CreateCollectionCommandResolverTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CreateCollectionCommandResolverTest.class);
 
-  @Inject private CreateCollectionCommandResolver RESOLVER;
+  @Inject CreateCollectionCommandResolver RESOLVER;
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // want a single instance for all calls, keyspaceContext() creates a new each call
   private final CommandContext<KeyspaceSchemaObject> COMMAND_CONTEXT =
       TEST_CONSTANTS.keyspaceContext();
 
-  private Throwable resolveCommandThrows(String testName, String rawJson) {
+  private Throwable assertCommandThrows(String testName, String rawJson) {
     return catchThrowable(
-        () -> resolveCommand(testName, rawJson, TEST_CONSTANTS.COLLECTION_IDENTIFIER.table()));
+        () -> assertCommand(testName, rawJson, TEST_CONSTANTS.COLLECTION_IDENTIFIER.table()));
   }
 
-  private CreateCollectionOperation resolveCommand(String testName, String rawJson) {
-    return resolveCommand(testName, rawJson, TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
+  private CreateCollectionOperation assertCommand(String testName, String rawJson) {
+    return assertCommand(testName, rawJson, TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
   }
 
-  private CreateCollectionOperation resolveCommand(
+  /**
+   * Run the command through the resolver and do some basic tests on the operation that comes out.
+   *
+   * @param testName name for logging etc
+   * @param rawJson the raw command JSON to parse into a command, {@link
+   *     TestConstants#rawNamesSubstitutor()} is used to replace names
+   * @param collectionName name of the collection that is in the command, so we can check that.
+   * @return The operation the resolver created.
+   */
+  private CreateCollectionOperation assertCommand(
       String testName, String rawJson, CqlIdentifier collectionName) {
 
     var json = TEST_CONSTANTS.subsRawNames(rawJson);
@@ -82,7 +95,7 @@ class CreateCollectionCommandResolverTest {
   @Test
   public void successWithDefaults() {
     var operation =
-        resolveCommand(
+        assertCommand(
             "successWithDefaults()",
             """
                         {
@@ -118,14 +131,14 @@ class CreateCollectionCommandResolverTest {
                     }
                     """
               .formatted(name);
-      resolveCommand("successWithSupportedNames()", json, cqlIdentifierFromUserInput(name));
+      assertCommand("successWithSupportedNames()", json, cqlIdentifierFromUserInput(name));
     }
   }
 
   @Test
   public void successWithVector() {
     var operation =
-        resolveCommand(
+        assertCommand(
             "successWithVector()",
             """
                         {
@@ -153,7 +166,7 @@ class CreateCollectionCommandResolverTest {
   public void successWithVectorDefaultMetric() {
 
     var operation =
-        resolveCommand(
+        assertCommand(
             "successWithVectorDefaultMetric()",
             """
                         {
@@ -183,7 +196,7 @@ class CreateCollectionCommandResolverTest {
   @Test
   public void successWithVectorize() {
     var operation =
-        resolveCommand(
+        assertCommand(
             "successWithVector()",
             """
                         {
@@ -227,7 +240,7 @@ class CreateCollectionCommandResolverTest {
   @Test
   public void successWithDenyIndexing() {
     var operation =
-        resolveCommand(
+        assertCommand(
             "successWithDenyIndexing()",
             """
                         {
@@ -254,7 +267,7 @@ class CreateCollectionCommandResolverTest {
   public void failWithUndefinedName() {
 
     var throwable =
-        resolveCommandThrows(
+        assertCommandThrows(
             "failWithUndefinedName()",
             """
                         {
@@ -275,7 +288,7 @@ class CreateCollectionCommandResolverTest {
   public void failWithEmptyName() {
 
     var throwable =
-        resolveCommandThrows(
+        assertCommandThrows(
             "failWithUndefinedName()",
             """
                         {
@@ -299,7 +312,7 @@ class CreateCollectionCommandResolverTest {
 
     // Blank is a white space
     var throwable =
-        resolveCommandThrows(
+        assertCommandThrows(
             "failWithBlankName()",
             """
                         {
@@ -323,7 +336,7 @@ class CreateCollectionCommandResolverTest {
 
     var longName = RandomStringUtils.insecure().nextAlphabetic(49);
     var throwable =
-        resolveCommandThrows(
+        assertCommandThrows(
             "failWithNameTooLong()",
                 """
                         {
@@ -347,7 +360,7 @@ class CreateCollectionCommandResolverTest {
   public void failWithNameSpecialCharacter() {
 
     var throwable =
-        resolveCommandThrows(
+        assertCommandThrows(
             "failWithNameSpecialCharacter()",
             """
                         {

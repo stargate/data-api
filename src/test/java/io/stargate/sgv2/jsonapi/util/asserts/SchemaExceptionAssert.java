@@ -9,7 +9,8 @@ public class SchemaExceptionAssert
     super(actual, SchemaExceptionAssert.class);
   }
 
-    protected static SchemaExceptionAssert assertThatSchemaException(SchemaException schemaException) {
+  protected static SchemaExceptionAssert assertThatSchemaException(
+      SchemaException schemaException) {
     return assertThatAPIException(
         SchemaExceptionAssert::new, SchemaException.class, schemaException);
   }

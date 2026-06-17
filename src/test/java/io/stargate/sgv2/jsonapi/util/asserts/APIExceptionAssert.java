@@ -20,8 +20,8 @@ public abstract class APIExceptionAssert<
           Function<ERROR, SELF> assertCtor, Class<ERROR> errorClass, Throwable throwable) {
 
     assertThat(throwable)
-            .as("Throwable is instance of " + errorClass.getSimpleName() + "")
-            .isInstanceOf(errorClass);
+        .as("Throwable is instance of " + errorClass.getSimpleName() + "")
+        .isInstanceOf(errorClass);
     return assertCtor.apply(errorClass.cast(throwable));
   }
 

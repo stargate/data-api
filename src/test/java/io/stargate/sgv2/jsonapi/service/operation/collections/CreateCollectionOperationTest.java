@@ -47,7 +47,6 @@ import jakarta.inject.Inject;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,21 +96,27 @@ public class CreateCollectionOperationTest extends OperationTestBase {
   // Assume it is delineated by single quotes
   private static final Pattern TABLE_COMMENT_PATTERN = Pattern.compile("comment='(.*?)'");
 
-
-  private SchemaChangeMemento assertOperation(String testName,
-                                              CreateCollectionOperation operation,
-                                              int expectedCreateTable,
-                                              int expectedCreateIndex){
-    return assertOperation(testName, operation, expectedCreateTable, expectedCreateIndex, true, false);
+  private SchemaChangeMemento assertOperation(
+      String testName,
+      CreateCollectionOperation operation,
+      int expectedCreateTable,
+      int expectedCreateIndex) {
+    return assertOperation(
+        testName, operation, expectedCreateTable, expectedCreateIndex, true, false);
   }
 
-  private SchemaChangeMemento assertOperation(String testName,
-                                                   CreateCollectionOperation operation,
-                                                   int expectedCreateTable,
-                                                   int expectedCreateIndex,
-                                                  boolean mockKeyspaceMetadata,
-                                                  boolean awaitFailure) {
-    LOGGER.info("assertOperation() - testName={}, expectedCreateTable={}, expectedCreateIndex={}", testName, expectedCreateTable, expectedCreateIndex);
+  private SchemaChangeMemento assertOperation(
+      String testName,
+      CreateCollectionOperation operation,
+      int expectedCreateTable,
+      int expectedCreateIndex,
+      boolean mockKeyspaceMetadata,
+      boolean awaitFailure) {
+    LOGGER.info(
+        "assertOperation() - testName={}, expectedCreateTable={}, expectedCreateIndex={}",
+        testName,
+        expectedCreateTable,
+        expectedCreateIndex);
 
     // track calls to change the schema and mock the keyspace exists for the new collection
     var mockQueryExecutor = mock(QueryExecutor.class);
@@ -120,49 +125,53 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
     // IMPORTANT - we still need to confirm the DB calls even in an error condition
     // so catch, check db activity, then rethrow
-    var subscriber = awaitFailure ?
-            operation
-                    .execute(requestContext, mockQueryExecutor)
-                    .subscribe()
-                    .withSubscriber(UniAssertSubscriber.create())
-                    .awaitFailure()
-            :
-            operation
+    var subscriber =
+        awaitFailure
+            ? operation
                 .execute(requestContext, mockQueryExecutor)
-                  .subscribe()
+                .subscribe()
                 .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem();
+                .awaitFailure()
+            : operation
+                .execute(requestContext, mockQueryExecutor)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitItem();
 
-    LOGGER.info("assertOperation() - testName={}, schemaChangeMemento={}", testName, schemaChangeMemento);
+    LOGGER.info(
+        "assertOperation() - testName={}, schemaChangeMemento={}", testName, schemaChangeMemento);
 
     // Validate the change schema calls
     assertThat(schemaChangeMemento.counter.get())
-            .as("%s - total schema calls is expected")
-            .isEqualTo(expectedCreateTable + expectedCreateIndex);
+        .as("%s - total schema calls is expected")
+        .isEqualTo(expectedCreateTable + expectedCreateIndex);
 
-    int actualCreateTables = schemaChangeMemento.queries.stream()
+    int actualCreateTables =
+        schemaChangeMemento.queries.stream()
             .filter(query -> query.startsWith("CREATE TABLE"))
             .toList()
             .size();
     assertThat(actualCreateTables)
-            .as("%s - expected create table calls", testName)
-            .isEqualTo(expectedCreateTable);
+        .as("%s - expected create table calls", testName)
+        .isEqualTo(expectedCreateTable);
 
-    //create table is always first
-    if ( expectedCreateTable > 0) {
+    // create table is always first
+    if (expectedCreateTable > 0) {
       var collectionComment = schemaChangeMemento.tableComments.getFirst();
       assertThat(collectionComment)
-              .as("%s - collection comment is not blank", testName)
-              .isNotBlank().as("Collection comment is not blank");
+          .as("%s - collection comment is not blank", testName)
+          .isNotBlank()
+          .as("Collection comment is not blank");
     }
 
-    int actualCreateIndexes = schemaChangeMemento.queries.stream()
+    int actualCreateIndexes =
+        schemaChangeMemento.queries.stream()
             .filter(query -> query.startsWith("CREATE CUSTOM INDEX"))
             .toList()
             .size();
     assertThat(actualCreateIndexes)
-            .as("%s - expected create index calls", testName)
-            .isEqualTo(expectedCreateIndex);
+        .as("%s - expected create index calls", testName)
+        .isEqualTo(expectedCreateIndex);
 
     // if the call failed, then we re-throw
     if (awaitFailure) {
@@ -170,8 +179,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       LOGGER.info("assertOperation() - testName={}, throwable={}", testName, throwable.toString());
 
       assertThat(throwable)
-              .as("%s - expected failure is APIException", testName)
-              .isInstanceOf(APIException.class);
+          .as("%s - expected failure is APIException", testName)
+          .isInstanceOf(APIException.class);
       throw (APIException) throwable;
     }
 
@@ -179,13 +188,12 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     var commandResult = subscriber.getItem().get();
     LOGGER.info("assertOperation() - testName={}, commandResult={}", testName, commandResult);
     assertThatCommandResult(commandResult)
-            .as(testName)
-            .isDDLSuccess()
-            .hasOnlyStatus(CommandStatus.OK, 1);
+        .as(testName)
+        .isDDLSuccess()
+        .hasOnlyStatus(CommandStatus.OK, 1);
 
     return schemaChangeMemento;
   }
-
 
   @Test
   public void successWithLexicalNoVector() {
@@ -204,9 +212,10 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
     // 1 create Table + 8 super shredder indexes + lexical index
-    var schemaChangeMemento = assertOperation("successWithLexicalNoVector", operation, 1,9);
+    var schemaChangeMemento = assertOperation("successWithLexicalNoVector", operation, 1, 9);
 
-    var commentNode = collectionNodeFromTableComment("successWithLexicalNoVector", schemaChangeMemento);
+    var commentNode =
+        collectionNodeFromTableComment("successWithLexicalNoVector", schemaChangeMemento);
     var optionsNode = commentNode.get(TableCommentConstants.OPTIONS_KEY);
     assertThat(optionsNode.get(TableCommentConstants.COLLECTION_VECTOR_KEY))
         .as("Collection comment must not have a vector key")
@@ -235,15 +244,14 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
     // 1 create Table + 8 super shredder indexes + 1 vector index + 1 lexical
-    var schemaChangeMemento = assertOperation("successWithLexicalWithVector", operation, 1,10);
+    var schemaChangeMemento = assertOperation("successWithLexicalWithVector", operation, 1, 10);
 
-    var commentNode = collectionNodeFromTableComment("successWithLexicalWithVector", schemaChangeMemento);
+    var commentNode =
+        collectionNodeFromTableComment("successWithLexicalWithVector", schemaChangeMemento);
     var optionsNode = commentNode.get(TableCommentConstants.OPTIONS_KEY);
 
     var vectorNode = optionsNode.get(TableCommentConstants.COLLECTION_VECTOR_KEY);
-    assertThat(vectorNode)
-            .as("Collection comment must have a vector key")
-            .isNotNull();
+    assertThat(vectorNode).as("Collection comment must have a vector key").isNotNull();
 
     // see CollectionSettingsV1Reader
     var vectorColumnDefinition = VectorColumnDefinition.fromJson(vectorNode, objectMapper);
@@ -280,9 +288,10 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
     // 1 create Table + 1 lexical index
-    // NOTE: because of deny all we do not need any super shredding, but we do need the lexcial still
+    // NOTE: because of deny all we do not need any super shredding, but we do need the lexcial
+    // still
     // for the $lexcial field
-    var schemaChangeMemento = assertOperation("successIndexingDenyAllWithLexical", operation, 1,1);
+    var schemaChangeMemento = assertOperation("successIndexingDenyAllWithLexical", operation, 1, 1);
 
     // see CollectionSettingsV1Reader
     var commentNode =
@@ -325,41 +334,46 @@ public class CreateCollectionOperationTest extends OperationTestBase {
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
     // 1 create Table + 1 vector index + 1 lexical
-    // NOTE: because of deny all we do not need any super shredding, but we do need the lexcial still
+    // NOTE: because of deny all we do not need any super shredding, but we do need the lexcial
+    // still
     // for the $lexcial field
-    var schemaChangeMemento = assertOperation("successIndexingDenyAllWithLexicalWithVector", operation, 1,2);
+    var schemaChangeMemento =
+        assertOperation("successIndexingDenyAllWithLexicalWithVector", operation, 1, 2);
 
     // NOTE: no need to test the table comment again, that is covered above
   }
 
   @Test
-  public void failMissingKeyspace(){
+  public void failMissingKeyspace() {
 
     var operation =
-            new CreateCollectionOperation(
-                    KEYSPACE_CONTEXT,
-                    databaseLimitsConfig,
-                    TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
-                    10,
-                    false,
-                    null,
-                    null,
-                    null,
-                    CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
-                    CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
+        new CreateCollectionOperation(
+            KEYSPACE_CONTEXT,
+            databaseLimitsConfig,
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER.table(),
+            10,
+            false,
+            null,
+            null,
+            null,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
 
-    // this should throw, not return commandresult
-    var exception = catchThrowable(() -> assertOperation("failMissingKeyspace", operation, 0,0, false, true));
+    // this should throw, not return Command
+    var exception =
+        catchThrowable(() -> assertOperation("failMissingKeyspace", operation, 0, 0, false, true));
 
     assertThatSchemaException(exception)
-            .as("failMissingKeyspace()")
-            .hasCode(SchemaException.Code.UNKNOWN_KEYSPACE)
-            .hasMessageSnippets("The keyspace used by the command: %s.".formatted(KEYSPACE_CONTEXT.schemaObject().identifier().keyspace()));
+        .as("failMissingKeyspace()")
+        .hasCode(SchemaException.Code.UNKNOWN_KEYSPACE)
+        .hasMessageSnippets(
+            "The keyspace used by the command: %s."
+                .formatted(KEYSPACE_CONTEXT.schemaObject().identifier().keyspace()));
   }
 
   /**
-   * Test: create table works, but there is an index with the same name, the operation should then try
-   * to drop the table.
+   * Test: create table works, but there is an index with the same name, the operation should then
+   * try to drop the table.
    */
   @Test
   public void failExistingIndexDropTable() {
@@ -431,36 +445,32 @@ public class CreateCollectionOperationTest extends OperationTestBase {
   }
 
   private void addMockKeyspaceMetadata(QueryExecutor queryExecutor) {
-      addMockKeyspaceMetadata(queryExecutor, true);
+    addMockKeyspaceMetadata(queryExecutor, true);
   }
 
-    /**
-     * Attaches mock KeyspaceMetadata to the queryExecutor so create tests can find the keyspace
-     */
+  /** Attaches mock KeyspaceMetadata to the queryExecutor so create tests can find the keyspace */
   private void addMockKeyspaceMetadata(QueryExecutor queryExecutor, boolean addKeyspaceMetadata) {
 
     var allKeyspaces = new HashMap<CqlIdentifier, KeyspaceMetadata>();
     if (addKeyspaceMetadata) {
       var keyspaceMetadata =
-              new DefaultKeyspaceMetadata(
-                      TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
-                      false,
-                      false,
-                      new HashMap<>(),
-                      new HashMap<>(),
-                      new HashMap<>(),
-                      new HashMap<>(),
-                      new HashMap<>(),
-                      new HashMap<>());
+          new DefaultKeyspaceMetadata(
+              TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
+              false,
+              false,
+              new HashMap<>(),
+              new HashMap<>(),
+              new HashMap<>(),
+              new HashMap<>(),
+              new HashMap<>(),
+              new HashMap<>());
       allKeyspaces.put(keyspaceMetadata.getName(), keyspaceMetadata);
     }
 
     var driverMetadata = mock(Metadata.class);
-    when(driverMetadata.getKeyspaces())
-            .thenReturn(allKeyspaces);
+    when(driverMetadata.getKeyspaces()).thenReturn(allKeyspaces);
 
-    when(queryExecutor.getDriverMetadata(any()))
-            .thenReturn(Uni.createFrom().item(driverMetadata));
+    when(queryExecutor.getDriverMetadata(any())).thenReturn(Uni.createFrom().item(driverMetadata));
   }
 
   private AsyncResultSet mockSchemaSuccessResultSet() {
@@ -470,7 +480,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     return new MockAsyncResultSet(schemaColumns, resultRows, null);
   }
 
-  private record SchemaChangeMemento(AtomicInteger counter, List<String> queries,  List<String> tableComments) {
+  private record SchemaChangeMemento(
+      AtomicInteger counter, List<String> queries, List<String> tableComments) {
     SchemaChangeMemento {
       counter = counter == null ? new AtomicInteger() : counter;
       queries = queries == null ? new ArrayList<>() : queries;
@@ -479,18 +490,18 @@ public class CreateCollectionOperationTest extends OperationTestBase {
   }
 
   private SchemaChangeMemento addSchemaChangeMomento(QueryExecutor queryExecutor) {
-    var memento = new SchemaChangeMemento(null, null,null);
+    var memento = new SchemaChangeMemento(null, null, null);
 
     when(queryExecutor.executeCreateSchemaChange(eq(requestContext), any()))
-            .then(
-                    invocation -> {
-                      memento.counter.incrementAndGet();
-                      SimpleStatement statement = invocation.getArgument(1);
-                      memento.queries.add(statement.getQuery());
-                      var matcher = TABLE_COMMENT_PATTERN.matcher(statement.getQuery());
-                      memento.tableComments.add(matcher.find() ? matcher.group(1) : null);
-                      return Uni.createFrom().item(mockSchemaSuccessResultSet());
-                    });
+        .then(
+            invocation -> {
+              memento.counter.incrementAndGet();
+              SimpleStatement statement = invocation.getArgument(1);
+              memento.queries.add(statement.getQuery());
+              var matcher = TABLE_COMMENT_PATTERN.matcher(statement.getQuery());
+              memento.tableComments.add(matcher.find() ? matcher.group(1) : null);
+              return Uni.createFrom().item(mockSchemaSuccessResultSet());
+            });
     return memento;
   }
 
@@ -509,8 +520,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       return root.get(TableCommentConstants.TOP_LEVEL_KEY);
     } catch (JacksonException e) {
       throw new RuntimeException(
-              "Invalid JSON in Table comment for Collection, problem: " + e.getMessage());
+          "Invalid JSON in Table comment for Collection, problem: " + e.getMessage());
     }
   }
-
 }

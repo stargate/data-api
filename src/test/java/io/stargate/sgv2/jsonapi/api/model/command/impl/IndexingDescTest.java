@@ -18,18 +18,8 @@ public class IndexingDescTest {
 
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
-  public CreateCollectionCommand.Options.IndexingDesc deserialize(String testName, String json) {
-    LOGGER.info("deserialize() - testName: {}, json: {}", testName, json);
-
-    try {
-      return TEST_CONSTANTS.OBJECT_MAPPER.readValue(
-          json, CreateCollectionCommand.Options.IndexingDesc.class);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public void assertSchemaException(
+  /** Assert that validating the JSON for the IndexingDesc will result in a SchemaException */
+  private void assertSchemaException(
       String testName, String json, ErrorCode<?> errorCode, String... message) {
 
     var indexingDesc = deserialize(testName, json);
@@ -46,14 +36,14 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "deny": [
-                            "comment"
-                        ],
-                        "allow": [
-                            "data"
-                        ]
-                    }""";
+        {
+            "deny": [
+                "comment"
+            ],
+            "allow": [
+                "data"
+            ]
+        }""";
 
     assertSchemaException(
         "failAllowAndDeny()",
@@ -67,7 +57,7 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {}""";
+        {}""";
 
     assertSchemaException(
         "failNeitherAllowNorDeny()",
@@ -81,12 +71,12 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "allow": [
-                            "name",
-                            "name"
-                        ]
-                    }""";
+        {
+            "allow": [
+                "name",
+                "name"
+            ]
+        }""";
 
     assertSchemaException(
         "failAllowDuplicates()",
@@ -100,12 +90,12 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "deny": [
-                            "name",
-                            "name"
-                        ]
-                    }""";
+         {
+             "deny": [
+                 "name",
+                 "name"
+             ]
+         }""";
 
     assertSchemaException(
         "failDenyDuplicates()",
@@ -119,11 +109,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "allow": [
-                            ""
-                        ]
-                    }""";
+        {
+            "allow": [
+                ""
+            ]
+        }""";
 
     assertSchemaException(
         "failAllowEmptyPath()",
@@ -137,11 +127,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "deny": [
-                            ""
-                        ]
-                    }""";
+        {
+            "deny": [
+                ""
+            ]
+        }""";
 
     assertSchemaException(
         "failDenyEmptyPath()",
@@ -155,11 +145,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "allow": [
-                            "$score"
-                        ]
-                    }""";
+        {
+            "allow": [
+                "$score"
+            ]
+        }""";
 
     assertSchemaException(
         "failAllowDollarPrefix()",
@@ -173,11 +163,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "deny": [
-                            "$score"
-                        ]
-                    }""";
+        {
+            "deny": [
+                "$score"
+            ]
+        }""";
 
     assertSchemaException(
         "failDenyDollarPrefix()",
@@ -191,11 +181,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "allow": [
-                            "bad&path"
-                        ]
-                    }""";
+        {
+            "allow": [
+                "bad&path"
+            ]
+        }""";
 
     assertSchemaException(
         "failAllowInvalidPath()",
@@ -209,11 +199,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "deny": [
-                            "bad&path"
-                        ]
-                    }""";
+        {
+            "deny": [
+                "bad&path"
+            ]
+        }""";
 
     assertSchemaException(
         "failDenyInvalidPath()",
@@ -227,11 +217,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "allow": [
-                            "*"
-                        ]
-                    }""";
+        {
+            "allow": [
+                "*"
+            ]
+        }""";
 
     var indexingDesc = deserialize("successAllowStar()", json);
     indexingDesc.validate();
@@ -244,11 +234,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "deny": [
-                            "*"
-                        ]
-                    }""";
+        {
+            "deny": [
+                "*"
+            ]
+        }""";
 
     var indexingDesc = deserialize("successDenyStar()", json);
     indexingDesc.validate();
@@ -262,11 +252,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "allow": [
-                            "$vector"
-                        ]
-                    }""";
+        {
+            "allow": [
+                "$vector"
+            ]
+        }""";
 
     var indexingDesc = deserialize("successAllowVector()", json);
     indexingDesc.validate();
@@ -279,11 +269,11 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "deny": [
-                            "$vector"
-                        ]
-                    }""";
+        {
+            "deny": [
+                "$vector"
+            ]
+        }""";
 
     var indexingDesc = deserialize("successDenyVector()", json);
     indexingDesc.validate();
@@ -296,13 +286,13 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "allow": [
-                            "name",
-                            "address.city",
-                            "tags"
-                        ]
-                    }""";
+        {
+            "allow": [
+                "name",
+                "address.city",
+                "tags"
+            ]
+        }""";
 
     var indexingDesc = deserialize("successAllowValidPaths()", json);
     indexingDesc.validate();
@@ -315,17 +305,28 @@ public class IndexingDescTest {
 
     var json =
         """
-                    {
-                        "deny": [
-                            "name",
-                            "address.city",
-                            "tags"
-                        ]
-                    }""";
+        {
+            "deny": [
+                "name",
+                "address.city",
+                "tags"
+            ]
+        }""";
 
     var indexingDesc = deserialize("successDenyValidPaths()", json);
     indexingDesc.validate();
     assertThat(indexingDesc.deny()).containsExactly("name", "address.city", "tags");
     assertThat(indexingDesc.allow()).isNull();
+  }
+
+  private CreateCollectionCommand.Options.IndexingDesc deserialize(String testName, String json) {
+    LOGGER.info("deserialize() - testName: {}, json: {}", testName, json);
+
+    try {
+      return TEST_CONSTANTS.OBJECT_MAPPER.readValue(
+          json, CreateCollectionCommand.Options.IndexingDesc.class);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
