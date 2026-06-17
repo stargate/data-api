@@ -434,6 +434,26 @@ public class DataApiResponseValidator {
     return toReturn;
   }
 
+  /**
+   * Asserts the {@code apiSupport} flags reported for a column in a {@code listTables} (with
+   * explain) response, e.g. {@code status.tables[name].definition.columns[column].apiSupport}.
+   */
+  public DataApiResponseValidator hasTableColumnApiSupport(
+      String tableName,
+      String columnName,
+      boolean createTable,
+      boolean insert,
+      boolean read,
+      boolean filter) {
+    var apiSupportPath =
+        "status.tables.find { it.name == '%s' }.definition.columns.%s.apiSupport"
+            .formatted(tableName, columnName);
+    return body(apiSupportPath + ".createTable", is(createTable))
+        .body(apiSupportPath + ".insert", is(insert))
+        .body(apiSupportPath + ".read", is(read))
+        .body(apiSupportPath + ".filter", is(filter));
+  }
+
   public DataApiResponseValidator hasNextPageState() {
     return body("data.nextPageState", is(notNullValue()));
   }
