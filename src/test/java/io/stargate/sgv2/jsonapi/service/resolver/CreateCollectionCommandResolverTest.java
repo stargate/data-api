@@ -2,26 +2,14 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 import static io.stargate.sgv2.jsonapi.util.asserts.DataAPIAsserts.assertThatSchemaException;
-import static org.assertj.core.api.Assertions.*;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.TestConstants;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.util.profiles.EnabledVectorizeProfile;
-import jakarta.inject.Inject;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -30,72 +18,20 @@ import org.slf4j.LoggerFactory;
 /**
  * Tests how the {@link CreateCollectionCommandResolver} handles inputs and the operation it
  * creates.
+ *
+ * <p><b>NOTE:</b> subclassed atleast by {@link CreateCollectionResolverVectorizeDisabledTest} to
+ * change the vectorize enabled setting
  */
 @QuarkusTest
-@TestProfile(EnabledVectorizeProfile.class)
-class CreateCollectionCommandResolverTest {
+class CreateCollectionCommandResolverTest extends CreateCollectionCommandResolverTestBase {
 
-  private static final Logger LOGGER =
+  protected static final Logger LOGGER =
       LoggerFactory.getLogger(CreateCollectionCommandResolverTest.class);
-
-  @Inject CreateCollectionCommandResolver RESOLVER;
-  private final TestConstants TEST_CONSTANTS = new TestConstants();
-
-  // want a single instance for all calls, keyspaceContext() creates a new each call
-  private final CommandContext<KeyspaceSchemaObject> COMMAND_CONTEXT =
-      TEST_CONSTANTS.keyspaceContext();
-
-  private Throwable assertCommandThrows(String testName, String rawJson) {
-    return catchThrowable(
-        () -> assertCommand(testName, rawJson, TEST_CONSTANTS.COLLECTION_IDENTIFIER.table()));
-  }
-
-  private CreateCollectionOperation assertCommand(String testName, String rawJson) {
-    return assertCommand(testName, rawJson, TEST_CONSTANTS.COLLECTION_IDENTIFIER.table());
-  }
-
-  /**
-   * Run the command through the resolver and do some basic tests on the operation that comes out.
-   *
-   * @param testName name for logging etc
-   * @param rawJson the raw command JSON to parse into a command, {@link
-   *     TestConstants#rawNamesSubstitutor()} is used to replace names
-   * @param collectionName name of the collection that is in the command, so we can check that.
-   * @return The operation the resolver created.
-   */
-  private CreateCollectionOperation assertCommand(
-      String testName, String rawJson, CqlIdentifier collectionName) {
-
-    var json = TEST_CONSTANTS.subsRawNames(rawJson);
-    LOGGER.info("resolveCommand() - testName: {}, json: {}", testName, json);
-
-    CreateCollectionCommand command;
-    try {
-      command = TEST_CONSTANTS.OBJECT_MAPPER.readValue(json, CreateCollectionCommand.class);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-
-    var operation = RESOLVER.resolveCommand(COMMAND_CONTEXT, command);
-
-    assertThat(operation)
-        .isInstanceOfSatisfying(
-            CreateCollectionOperation.class,
-            op -> {
-              assertThat(op.collectionName())
-                  .as("%s - collectionName() matches command", testName)
-                  .isEqualTo(collectionName);
-              assertThat(op.commandContext())
-                  .as("%s - commandContext() is same object", testName)
-                  .isSameAs(COMMAND_CONTEXT);
-            });
-    return (CreateCollectionOperation) operation;
-  }
 
   @Test
   public void successWithDefaults() {
     var operation =
-        assertCommand(
+        assertResolver(
             "successWithDefaults()",
             """
                         {
@@ -131,14 +67,14 @@ class CreateCollectionCommandResolverTest {
                     }
                     """
               .formatted(name);
-      assertCommand("successWithSupportedNames()", json, cqlIdentifierFromUserInput(name));
+      assertResolver("successWithSupportedNames()", json, cqlIdentifierFromUserInput(name));
     }
   }
 
   @Test
   public void successWithVector() {
     var operation =
-        assertCommand(
+        assertResolver(
             "successWithVector()",
             """
                         {
@@ -166,7 +102,7 @@ class CreateCollectionCommandResolverTest {
   public void successWithVectorDefaultMetric() {
 
     var operation =
-        assertCommand(
+        assertResolver(
             "successWithVectorDefaultMetric()",
             """
                         {
@@ -194,53 +130,9 @@ class CreateCollectionCommandResolverTest {
   }
 
   @Test
-  public void successWithVectorize() {
-    var operation =
-        assertCommand(
-            "successWithVector()",
-            """
-                        {
-                            "createCollection": {
-                                "name": "${collection}",
-                                "options": {
-                                    "vector": {
-                                        "metric": "cosine",
-                                        "dimension": 768,
-                                        "service": {
-                                            "provider": "azureOpenAI",
-                                            "modelName": "text-embedding-3-small",
-                                            "parameters": {
-                                                "resourceName": "testResourceName",
-                                                "deploymentId": "testResourceName"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        """);
-
-    // NOTE: source model of null turns into DEFAULT
-    // aaron 15 june 26 - not sure why but we need the name of the source model must be the CQL name
-    // cql cares about capitals, we dont when processing this normally
-    var expectedVectorDesc =
-        new CreateCollectionCommand.Options.VectorSearchDesc(
-            768,
-            "cosine",
-            EmbeddingSourceModel.DEFAULT.cqlName(),
-            new VectorizeConfig(
-                "azureOpenAI",
-                "text-embedding-3-small",
-                null,
-                Map.of("resourceName", "testResourceName", "deploymentId", "testResourceName")));
-
-    assertThat(operation.vectorDesc()).isEqualTo(expectedVectorDesc);
-  }
-
-  @Test
   public void successWithDenyIndexing() {
     var operation =
-        assertCommand(
+        assertResolver(
             "successWithDenyIndexing()",
             """
                         {
@@ -267,7 +159,7 @@ class CreateCollectionCommandResolverTest {
   public void failWithUndefinedName() {
 
     var throwable =
-        assertCommandThrows(
+        assertResolverThrows(
             "failWithUndefinedName()",
             """
                         {
@@ -288,8 +180,8 @@ class CreateCollectionCommandResolverTest {
   public void failWithEmptyName() {
 
     var throwable =
-        assertCommandThrows(
-            "failWithUndefinedName()",
+        assertResolverThrows(
+            "failWithEmptyName()",
             """
                         {
                             "createCollection": {
@@ -312,7 +204,7 @@ class CreateCollectionCommandResolverTest {
 
     // Blank is a white space
     var throwable =
-        assertCommandThrows(
+        assertResolverThrows(
             "failWithBlankName()",
             """
                         {
@@ -336,7 +228,7 @@ class CreateCollectionCommandResolverTest {
 
     var longName = RandomStringUtils.insecure().nextAlphabetic(49);
     var throwable =
-        assertCommandThrows(
+        assertResolverThrows(
             "failWithNameTooLong()",
                 """
                         {
@@ -360,7 +252,7 @@ class CreateCollectionCommandResolverTest {
   public void failWithNameSpecialCharacter() {
 
     var throwable =
-        assertCommandThrows(
+        assertResolverThrows(
             "failWithNameSpecialCharacter()",
             """
                         {

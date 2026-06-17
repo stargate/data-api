@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Creates a new collection in the target keyspace using the SuperShredding table model */
 public class CreateCollectionOperation implements Operation<KeyspaceSchemaObject> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateCollectionOperation.class);
@@ -97,36 +98,64 @@ public class CreateCollectionOperation implements Operation<KeyspaceSchemaObject
     this.rerankDef = rerankDef;
   }
 
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
   @VisibleForTesting
   public CqlIdentifier collectionName() {
     return collectionName;
   }
 
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
   @VisibleForTesting
   public CommandContext<KeyspaceSchemaObject> commandContext() {
     return commandContext;
   }
 
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
   @VisibleForTesting
   public CreateCollectionCommand.Options.DocIdDesc docIdDesc() {
     return docIdDesc;
   }
 
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
   @VisibleForTesting
   public CreateCollectionCommand.Options.IndexingDesc indexingDesc() {
     return indexingDesc;
   }
 
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
   @VisibleForTesting
   public CreateCollectionCommand.Options.VectorSearchDesc vectorDesc() {
     return vectorDesc;
   }
 
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
   @VisibleForTesting
   public SchemaHolder<CollectionLexicalDef> lexicalDef() {
     return lexicalDef;
   }
 
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
   @VisibleForTesting
   public SchemaHolder<CollectionRerankDef> rerankDef() {
     return rerankDef;

@@ -373,7 +373,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
   /**
    * Test: create table works, but there is an index with the same name, the operation should then
-   * try to drop the table.
+   * try to drop the table. More complicated than others.
    */
   @Test
   public void failExistingIndexDropTable() {
