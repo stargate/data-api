@@ -28,9 +28,12 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
   protected final CqlIdentifier name;
   protected final DataType type;
 
-  protected ColumnMetadataPredicate(CqlIdentifier name, DataType type) {
-    // no null checks in the ctor, so a subclass can fully override if they want to.
-    // null checks when we try to use them.
+  protected ColumnMetadataPredicate(CqlIdentifier name, DataType type, boolean checkNulls) {
+    // subclasses may want to pass null for some values, e.g. the Vector predciate
+    if (checkNulls) {
+      Objects.requireNonNull(name, "name must not be null");
+      Objects.requireNonNull(type, "type must not be null");
+    }
     this.name = name;
     this.type = type;
   }
@@ -39,7 +42,6 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
    * @return The name the column must have.
    */
   public CqlIdentifier name() {
-    Objects.requireNonNull(name, "name must not be null");
     return name;
   }
 
@@ -50,7 +52,6 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
    *     including nested types of CQL collections like a list or map.
    */
   protected boolean typeMatches(ColumnMetadata columnMetadata) {
-    Objects.requireNonNull(type, "type must not be null");
     return Objects.equals(type, columnMetadata.getType());
   }
 
@@ -71,8 +72,7 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
   /** Returns the name and type we match against, e.g. <code>tx_id(uuid)</code> */
   @Override
   public String toString() {
-    Objects.requireNonNull(name, "name must not be null");
-    Objects.requireNonNull(type, "type must not be null");
+    // No null check, errFmt will handle Nulls and print "null" for any null value.
     return String.format("%s(%s)", errFmt(name), errFmt(type));
   }
 
@@ -80,9 +80,7 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
   public static class Basic extends ColumnMetadataPredicate {
 
     public Basic(CqlIdentifier name, DataType type) {
-      super(name, type);
-      Objects.requireNonNull(name, "name must not be null");
-      Objects.requireNonNull(type, "type must not be null");
+      super(name, type, true);
     }
   }
 
@@ -95,9 +93,7 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
 
     public Map(CqlIdentifier name, DataType keyType, DataType valueType, boolean frozen) {
       super(name, DataTypes.mapOf(keyType, valueType, frozen));
-      Objects.requireNonNull(name, "name must not be null");
-      Objects.requireNonNull(keyType, "keyType must not be null");
-      Objects.requireNonNull(valueType, "valueType must not be null");
+      // mapOf will do null checks
     }
   }
 
@@ -106,8 +102,8 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
 
     public Tuple(CqlIdentifier name, DataType... elements) {
       super(name, DataTypes.tupleOf(elements));
-      Objects.requireNonNull(name, "name must not be null");
-      Objects.requireNonNull(elements, "elements must not be null");
+
+      // tupleOf checks the elements array is not null, does not check the elements in it.
       for (int i = 0; i < elements.length; i++) {
         Objects.requireNonNull(elements[i], "elements[" + i + "] must not be null");
       }
@@ -119,8 +115,7 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
 
     public Set(CqlIdentifier name, DataType elementType) {
       super(name, DataTypes.setOf(elementType));
-      Objects.requireNonNull(name, "name must not be null");
-      Objects.requireNonNull(elementType, "elementType must not be null");
+      // setOf does the null check
     }
   }
 
@@ -142,12 +137,12 @@ public class ColumnMetadataPredicate implements Predicate<ColumnMetadata> {
 
     /** Create a predicate to match a vector with a float element type. */
     public Vector(CqlIdentifier name) {
-      // lets be honest, they are all floats.
+      // let's be honest, they are all floats.
       this(name, DataTypes.FLOAT);
     }
 
     public Vector(CqlIdentifier name, DataType elementType) {
-      super(name, null);
+      super(name, null, false);
       Objects.requireNonNull(name, "name must not be null");
       this.elementType = Objects.requireNonNull(elementType, "elementType must not be null");
     }
