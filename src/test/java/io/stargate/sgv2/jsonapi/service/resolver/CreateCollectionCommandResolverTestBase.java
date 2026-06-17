@@ -9,9 +9,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOp
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import jakarta.inject.Inject;
 
-/**
- * re-usable base class for tests for {@link CreateCollectionCommandResolver}.
- */
+/** re-usable base class for tests for {@link CreateCollectionCommandResolver}. */
 class CreateCollectionCommandResolverTestBase
     extends CommandResolverTestBase<
         KeyspaceSchemaObject,

@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
  * Tests how the {@link CreateCollectionCommandResolver} handles inputs and the operation it
  * creates.
  *
- * <p><b>NOTE:</b> subclassed atleast by {@link CreateCollectionCommandResolverVectorizeDisabledTest} to
- * change the vectorize enabled setting
+ * <p><b>NOTE:</b> subclassed atleast by {@link
+ * CreateCollectionCommandResolverVectorizeDisabledTest} to change the vectorize enabled setting
  */
 @QuarkusTest
 @TestProfile(EnabledVectorizeProfile.class)
