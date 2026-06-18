@@ -42,7 +42,7 @@
     <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
     <!-- Cassandra driver -->
-    <driver.version>4.19.0</driver.version>
+    <driver.version>4.19.3</driver.version>
     <!-- Compiler -->
     <compiler-plugin.version>3.14.0</compiler-plugin.version>
     <maven.compiler.source>21</maven.compiler.source>
