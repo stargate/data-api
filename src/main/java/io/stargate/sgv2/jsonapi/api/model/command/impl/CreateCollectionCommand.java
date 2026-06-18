@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.validation.Valid;
@@ -23,59 +23,56 @@ public record CreateCollectionCommand(
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
-        @Schema(
-            description = "Configuration options for the collection",
-            type = SchemaType.OBJECT,
-            implementation = Options.class)
+        @Schema(description = "Configuration options for the collection", type = SchemaType.OBJECT)
         Options options)
     implements CollectionOnlyCommand {
+
+  /** --- */
   public record Options(
       @Nullable
           @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          @Schema(
-              description = "Id configuration for the collection",
-              type = SchemaType.OBJECT,
-              implementation = VectorSearchConfig.class)
+          @Schema(description = "Id configuration for the collection", type = SchemaType.OBJECT)
           @JsonProperty("defaultId")
-          IdConfig idConfig,
+          CreateCollectionCommand.Options.DocIdDesc idConfig,
+      // -----
       @Valid
           @Nullable
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
               description = "Vector search configuration for the collection",
-              type = SchemaType.OBJECT,
-              implementation = VectorSearchConfig.class)
-          VectorSearchConfig vector,
+              type = SchemaType.OBJECT)
+          CreateCollectionCommand.Options.VectorSearchDesc vector,
+      // -----
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
           @Schema(
               description =
                   "Optional indexing configuration to provide allow/deny list of fields for indexing",
-              type = SchemaType.OBJECT,
-              implementation = IndexingConfig.class)
-          IndexingConfig indexing,
+              type = SchemaType.OBJECT)
+          CreateCollectionCommand.Options.IndexingDesc indexing,
+      // -----
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
           @Schema(
               description =
                   "Optional configuration defining if and how to support use of '$lexical' field",
-              type = SchemaType.OBJECT,
-              implementation = LexicalConfigDefinition.class)
-          LexicalConfigDefinition lexical,
+              type = SchemaType.OBJECT)
+          CreateCollectionCommand.Options.LexicalDesc lexical,
+      // -----
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
           @Schema(
               description =
                   "Optional configuration defining if and how to support use of 'rerank' field",
-              type = SchemaType.OBJECT,
-              implementation = RerankDesc.class)
+              type = SchemaType.OBJECT)
           RerankDesc rerank) {
 
-    public record IdConfig(
+    /** --- */
+    public record DocIdDesc(
         @Nullable
             @Pattern(
                 regexp = "(objectId|uuid|uuidv6|uuidv7)",
@@ -83,21 +80,19 @@ public record CreateCollectionCommand(
             @Schema(
                 description = "Id type for collection, default to 'uuid'",
                 defaultValue = "uuid",
-                type = SchemaType.STRING,
-                implementation = String.class)
+                type = SchemaType.STRING)
             @JsonProperty("type")
             String idType) {}
 
-    public record VectorSearchConfig(
+    /** --- */
+    public record VectorSearchDesc(
         @Nullable
             @Positive(message = "dimension should be greater than `0`")
-            @Schema(
-                description = "Dimension of the vector field",
-                type = SchemaType.INTEGER,
-                implementation = Integer.class)
+            @Schema(description = "Dimension of the vector field", type = SchemaType.INTEGER)
             @JsonProperty("dimension")
             @JsonAlias("size") // old name
             Integer dimension,
+        // -----
         @Nullable
             @Pattern(
                 regexp = "(dot_product|cosine|euclidean)",
@@ -106,11 +101,11 @@ public record CreateCollectionCommand(
                 description =
                     "Similarity function algorithm that needs to be used for vector search",
                 defaultValue = "cosine",
-                type = SchemaType.STRING,
-                implementation = String.class)
+                type = SchemaType.STRING)
             @JsonProperty("metric")
             @JsonAlias("function") // old name
             String metric,
+        // -----
         @Nullable
             @Pattern(
                 regexp =
@@ -121,61 +116,53 @@ public record CreateCollectionCommand(
                 description =
                     "The 'sourceModel' option configures the index with the fastest settings for a given source of embeddings vectors",
                 defaultValue = "other",
-                type = SchemaType.STRING,
-                implementation = String.class)
+                type = SchemaType.STRING)
             @JsonProperty("sourceModel")
             String sourceModel,
+        // -----
         @Valid
             @Nullable
             @JsonInclude(JsonInclude.Include.NON_NULL)
             @Schema(
                 description = "Optional vectorize configuration to provide embedding service",
-                type = SchemaType.OBJECT,
-                implementation = VectorizeConfig.class)
+                type = SchemaType.OBJECT)
             @JsonProperty("service")
-            VectorizeConfig vectorizeConfig) {
+            VectorizeConfig vectorizeConfig) {}
 
-      public VectorSearchConfig(
-          Integer dimension, String metric, String sourceModel, VectorizeConfig vectorizeConfig) {
-        this.dimension = dimension;
-        this.metric = metric;
-        this.sourceModel = sourceModel;
-        this.vectorizeConfig = vectorizeConfig;
-      }
-    }
-
-    public record IndexingConfig(
+    /** --- */
+    public record IndexingDesc(
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
                 description = "List of allowed indexing fields",
                 type = SchemaType.ARRAY,
-                implementation = String.class)
+                implementation = String.class) // leaving implementaiton= because of the List
             @Nullable
             List<String> allow,
+        // -----
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
             @Schema(
                 description = "List of denied indexing fields",
                 type = SchemaType.ARRAY,
-                implementation = String.class)
+                implementation = String.class) // leaving implementaiton= because of the List
             @Nullable
             List<String> deny) {
 
       public void validate() {
         if (allow() != null && deny() != null) {
-          throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-              "`allow` and `deny` cannot be used together");
+          throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+              Map.of("errorMessage", "'allow' and 'deny' cannot be used together"));
         }
 
         if (allow() == null && deny() == null) {
-          throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-              "`allow` or `deny` should be provided");
+          throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+              Map.of("errorMessage", "'allow' or 'deny' should be provided"));
         }
 
         if (allow() != null) {
           Set<String> dedupe = new HashSet<>(allow());
           if (dedupe.size() != allow().size()) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`allow` cannot contain duplicates");
+            throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                Map.of("errorMessage", "'allow' cannot contain duplicates"));
           }
           validateIndexingPath(allow());
         }
@@ -183,8 +170,8 @@ public record CreateCollectionCommand(
         if (deny() != null) {
           Set<String> dedupe = new HashSet<>(deny());
           if (dedupe.size() != deny().size()) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`deny` cannot contain duplicates");
+            throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                Map.of("errorMessage", "'deny' cannot contain duplicates"));
           }
           validateIndexingPath(deny());
         }
@@ -213,14 +200,14 @@ public record CreateCollectionCommand(
         for (String path : paths) {
           if (!NamingRules.FIELD.apply(path)) {
             if (path.isEmpty()) {
-              throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                  "path must be represented as a non-empty string");
+              throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                  Map.of("errorMessage", "path must be represented as a non-empty string"));
             }
             if (path.startsWith("$")) {
               // $vector is allowed, otherwise throw error
               if (!DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
-                throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                    "path must not start with '$'");
+                throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                    Map.of("errorMessage", "path ('%s') must not start with '$'".formatted(path)));
               }
             }
           }
@@ -228,19 +215,22 @@ public record CreateCollectionCommand(
           try {
             DocumentPath.verifyEncodedPath(path);
           } catch (IllegalArgumentException e) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "indexing path ('%s') is not a valid path. " + e.getMessage(), path);
+            throw SchemaException.Code.INVALID_INDEXING_DEFINITION.get(
+                Map.of(
+                    "errorMessage",
+                    "indexing path ('%s') is not a valid path: %s"
+                        .formatted(path, e.getMessage())));
           }
         }
       }
     }
 
-    public record LexicalConfigDefinition(
+    /** --- */
+    public record LexicalDesc(
         @Schema(
                 description = "Whether to enable the use of '$lexical' field (default: 'true')",
                 defaultValue = "true",
                 type = SchemaType.BOOLEAN,
-                implementation = Boolean.class,
                 required = true)
             Boolean enabled,
         @Schema(
@@ -252,40 +242,33 @@ public record CreateCollectionCommand(
             @JsonProperty("analyzer")
             JsonNode analyzerDef) {}
 
+    /** --- */
     public record RerankDesc(
         @Schema(
                 description = "Whether to enable the use of reranking model (default: 'true')",
                 defaultValue = "true",
                 type = SchemaType.BOOLEAN,
-                implementation = Boolean.class,
                 required = true)
             Boolean enabled,
         @Schema(
                 description =
                     "Reranking model configuration. Default is llama-3.2-nv-rerankqa-1b-v2 model from Nvidia.",
                 defaultValue =
-                    "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}",
-                implementation = RerankServiceDesc.class)
+                    "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}")
             @JsonInclude(JsonInclude.Include.NON_NULL)
             @JsonProperty("service")
             RerankServiceDesc rerankServiceDesc) {}
 
+    /** --- */
     public record RerankServiceDesc(
         @NotNull
-            @Schema(
-                description = "Registered reranking service provider",
-                type = SchemaType.STRING,
-                implementation = String.class)
+            @Schema(description = "Registered reranking service provider", type = SchemaType.STRING)
             @JsonProperty(ServiceDescConstants.PROVIDER)
             String provider,
-        @Schema(
-                description = "Registered reranking service model",
-                type = SchemaType.STRING,
-                implementation = String.class)
+        @Schema(description = "Registered reranking service model", type = SchemaType.STRING)
             @JsonProperty(ServiceDescConstants.MODEL_NAME)
             String modelName,
-        @Valid
-            @Nullable
+        @Nullable
             @Schema(
                 description = "Authentication config for chosen reranking service",
                 type = SchemaType.OBJECT)

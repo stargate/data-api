@@ -15,11 +15,11 @@ import java.util.Map;
  * io.stargate.sgv2.jsonapi.api.model.command.CommandContext#apiFeatures()}
  */
 public class ApiFeatures {
-  private final Map<ApiFeature, Boolean> fromConfig;
+  private final Map<ApiFeature, String> fromConfig;
   private final RequestContext.HttpHeaderAccess httpHeaders;
 
   private ApiFeatures(
-      Map<ApiFeature, Boolean> fromConfig, RequestContext.HttpHeaderAccess httpHeaders) {
+      Map<ApiFeature, String> fromConfig, RequestContext.HttpHeaderAccess httpHeaders) {
     this.fromConfig = fromConfig;
     this.httpHeaders = httpHeaders;
   }
@@ -30,7 +30,7 @@ public class ApiFeatures {
 
   public static ApiFeatures fromConfigAndRequest(
       FeaturesConfig config, RequestContext.HttpHeaderAccess httpHeaders) {
-    Map<ApiFeature, Boolean> fromConfig = config.flags();
+    Map<ApiFeature, String> fromConfig = config.flags();
     if (fromConfig == null) {
       fromConfig = Collections.emptyMap();
     }
@@ -39,7 +39,7 @@ public class ApiFeatures {
 
   public boolean isFeatureEnabled(ApiFeature flag) {
     // First check if there is definition from configuration
-    Boolean b = fromConfig.get(flag);
+    Boolean b = booleanFromString(fromConfig.get(flag));
     if (b == null) {
       // and only if not, allow per-request specification
       if (httpHeaders != null) {
@@ -50,5 +50,22 @@ public class ApiFeatures {
       return b.booleanValue();
     }
     return flag.enabledByDefault();
+  }
+
+  private Boolean booleanFromString(String str) {
+    // We will allow "*" as an alias in case config file cannot contain blank String value
+    if (str == null || str.isBlank() || "*".equals(str)) {
+      return null; // undefined
+    }
+    if ("true".equals(str)) {
+      return Boolean.TRUE;
+    }
+    if ("false".equals(str)) {
+      return Boolean.FALSE;
+    }
+    throw new IllegalArgumentException(
+        "Invalid `Boolean` value: '"
+            + str
+            + "'. Expected 'true', 'false' or blank String (undefined).");
   }
 }

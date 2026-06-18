@@ -11,10 +11,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperatorModifier;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAppendToAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import java.util.List;
 
@@ -116,11 +116,18 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
                     map.put("reason", "combine $push and $each for adding multiple elements");
                   }));
 
-      case ObjectNode objectNode ->
+      case ObjectNode objectNode -> {
+        // when $push to set/list follows with an objectNode
+        if (objectNode.has("$each")) {
+          // 1. could be pushing multiple elements using $each
           // $push + $each for adding multiple elements, we should have the obj with $each here
           // {"$push" : {"textList" : {"$each": ["textValue1", "textValue2"]}
-          getValidEachRHS(tableSchemaObject, objectNode, true);
-
+          yield getValidEachRHS(tableSchemaObject, objectNode, true);
+        } else {
+          // 2, could be pushing single UDT element
+          yield JsonNodeFactory.instance.arrayNode(1).add(opRHS);
+        }
+      }
       default ->
           // $push with single element, .e.g
           // {"$push" : {"textList" : "textValue",
@@ -223,7 +230,19 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
     }
 
     // only allowed to have $each in the json object.
-    if (objectNode.size() != 1 || !(eachOpRHS instanceof ArrayNode arrayNode)) {
+    if (objectNode.size() != 1) {
+      throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "reason",
+                    "extraneous '%s' field encountered"
+                        .formatted(firstFieldOtherThanEach(objectNode)));
+              }));
+    }
+
+    if (!(eachOpRHS instanceof ArrayNode arrayNode)) {
       throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
           errVars(
               tableSchemaObject,
@@ -232,6 +251,15 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
               }));
     }
     return arrayNode;
+  }
+
+  private String firstFieldOtherThanEach(ObjectNode objectNode) {
+    for (var field : objectNode.properties()) {
+      if (!UpdateOperatorModifier.EACH.apiName().equals(field.getKey())) {
+        return field.getKey();
+      }
+    }
+    throw new IllegalStateException("Expected a field other than $each");
   }
 
   /**
@@ -336,7 +364,7 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
   private ArrayNode mapEntryToTuple(TableSchemaObject table, ObjectNode mapEntry) {
     checkMapEntryFormat(table, mapEntry);
     // format check makes sure we only have 1
-    var keyValue = mapEntry.fields().next();
+    var keyValue = mapEntry.properties().iterator().next();
     return JsonNodeFactory.instance.arrayNode(2).add(keyValue.getKey()).add(keyValue.getValue());
   }
 }

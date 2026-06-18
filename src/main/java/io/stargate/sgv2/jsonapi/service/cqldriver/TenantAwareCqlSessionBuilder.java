@@ -6,8 +6,9 @@ import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.session.ProgrammaticArguments;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import com.datastax.oss.protocol.internal.util.collection.NullAllowingImmutableMap;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * This is an extension of the {@link CqlSessionBuilder} that allows to pass a tenant ID to the
@@ -24,14 +25,11 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
    */
   public static final String TENANT_ID_PROPERTY_KEY = "TENANT_ID";
 
-  /** Tenant ID that will be passed to the CQLSession via TenantAwareDriverContext */
-  private String tenantId;
+  /** Tenant that will be passed to the CQLSession via TenantAwareDriverContext */
+  private Tenant tenant;
 
-  public TenantAwareCqlSessionBuilder withTenantId(String tenantId) {
-    if (tenantId == null || tenantId.isEmpty()) {
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Tenant ID cannot be null or empty");
-    }
-    this.tenantId = tenantId;
+  public TenantAwareCqlSessionBuilder withTenant(Tenant tenant) {
+    this.tenant = Objects.requireNonNull(tenant, "tenant must not be null");
     return this;
   }
 
@@ -45,7 +43,7 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
   @Override
   protected DriverContext buildContext(
       DriverConfigLoader configLoader, ProgrammaticArguments programmaticArguments) {
-    return new TenantAwareDriverContext(tenantId, configLoader, programmaticArguments);
+    return new TenantAwareDriverContext(tenant.toString(), configLoader, programmaticArguments);
   }
 
   /**

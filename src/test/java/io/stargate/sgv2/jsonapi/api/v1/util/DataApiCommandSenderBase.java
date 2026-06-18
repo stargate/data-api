@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getAuthToken;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraPassword;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraUsername;
 
@@ -58,6 +57,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
     return _this();
   }
 
+  @SuppressWarnings("unchecked")
   protected T _this() {
     return (T) this;
   }
@@ -110,25 +110,17 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
     }
 
     private static Map<String, String> collectDefaultHeaders() {
-      final boolean useCoordinator = Boolean.getBoolean("testing.containers.use-coordinator");
-      if (useCoordinator) {
-        return Map.of(
-            HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-            getAuthToken(),
-            HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-            CustomITEmbeddingProvider.TEST_API_KEY);
-      } else {
-        String credential =
-            "Cassandra:"
-                + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
-                + ":"
-                + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
-        return Map.of(
-            HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-            credential,
-            HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-            CustomITEmbeddingProvider.TEST_API_KEY);
-      }
+
+      String credential =
+          "Cassandra:"
+              + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
+              + ":"
+              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
+      return Map.of(
+          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+          credential,
+          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+          CustomITEmbeddingProvider.TEST_API_KEY);
     }
   }
 }

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -388,11 +389,11 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
       givenHeadersPostJsonThenOk("{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body(
               "errors[0].message",
               containsString(
-                  "$lte operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value"));
+                  "'$lte' operator must have `Date` or `Number` or `String` or `Boolean` value"));
     }
   }
 }

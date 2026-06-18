@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -29,7 +28,7 @@ class InsertOneCommandResolverTest {
   @Inject DocumentShredder documentShredder;
   @InjectMock protected RequestContext dataApiRequestInfo;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
 
@@ -38,13 +37,10 @@ class InsertOneCommandResolverTest {
     commandContext = testConstants.collectionContext();
   }
 
-  @Nested
-  class ResolveCommand {
-
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPath() throws Exception {
+    String json =
+        """
           {
             "insertOne": {
               "document" : {
@@ -54,23 +50,23 @@ class InsertOneCommandResolverTest {
           }
           """;
 
-      InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              InsertCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isFalse();
-                assertThat(op.insertions()).hasSize(1);
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            InsertCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.ordered()).isFalse();
+              assertThat(op.insertions()).hasSize(1);
+            });
+  }
 
-    @Test
-    public void happyPathWithVector() throws Exception {
-      String json =
-          """
+  @Test
+  public void happyPathWithVector() throws Exception {
+    String json =
+        """
         {
           "insertOne": {
             "document" : {
@@ -81,17 +77,16 @@ class InsertOneCommandResolverTest {
         }
         """;
 
-      InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              InsertCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.ordered()).isFalse();
-                assertThat(op.insertions()).hasSize(1);
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            InsertCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.ordered()).isFalse();
+              assertThat(op.insertions()).hasSize(1);
+            });
   }
 }

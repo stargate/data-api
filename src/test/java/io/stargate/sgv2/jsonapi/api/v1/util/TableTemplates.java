@@ -67,6 +67,10 @@ public class TableTemplates extends TemplateRunner {
     };
   }
 
+  public DataApiResponseValidator findOne(String field, String value, List<String> columns) {
+    return findOne(Map.of(field, value), columns, null, null);
+  }
+
   public DataApiResponseValidator findOne(Map<String, Object> filter, List<String> columns) {
     return findOne(filter, columns, null, null);
   }
@@ -144,6 +148,18 @@ public class TableTemplates extends TemplateRunner {
     return asJSON(clause);
   }
 
+  public DataApiResponseValidator updateMany(String filter, String update) {
+    var json =
+            """
+                 {
+                  "filter": %s ,
+                  "update": %s
+                 }
+              """
+            .formatted(filter, update);
+    return sender.postUpdateMany(json);
+  }
+
   public DataApiResponseValidator deleteMany(String filter) {
     var json =
             """
@@ -187,21 +203,23 @@ public class TableTemplates extends TemplateRunner {
   }
 
   public DataApiResponseValidator insertManyMap(List<Map<String, Object>> documents) {
-    return insertMany(documents.stream().map(TemplateRunner::asJSON).collect(Collectors.toList()));
+    return insertMany(
+        documents.stream().map(TemplateRunner::asJSON).collect(Collectors.toList()), false);
   }
 
   public DataApiResponseValidator insertMany(String... documents) {
-    return insertMany(List.of(documents));
+    return insertMany(List.of(documents), false);
   }
 
-  public DataApiResponseValidator insertMany(List<String> documents) {
+  public DataApiResponseValidator insertMany(List<String> documents, boolean ordered) {
     var json =
             """
          {
-          "documents": [%s]
+          "documents": [%s],
+          "options": { "ordered": %s }
          }
         """
-            .formatted(String.join(",", documents));
+            .formatted(String.join(",", documents), ordered);
     return sender.postInsertMany(json);
   }
 

@@ -85,6 +85,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
     // TODO: remove the requestTypeQuery and requestTypeIndex from config !
@@ -98,7 +99,6 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
         new VoyageEmbeddingRequest(
             inputType, texts.toArray(new String[texts.size()]), modelName(), autoTruncate);
 
-    // TODO: V2 error
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
 
@@ -126,7 +126,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       0,
                       voyageResponse.usage.total_tokens,

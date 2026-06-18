@@ -1,205 +1,359 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-@TestClassOrder(ClassOrderer.OrderAnnotation.class)
+@WithTestResource(value = DseTestResource.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CreateCollectionBackwardCompatibilityIntegrationTest
     extends AbstractKeyspaceIntegrationTestBase {
 
-  @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class CreateCollectionWithLexicalRerankBackwardCompatibility {
-    private static final String PRE_LEXICAL_RERANK_COLLECTION_NAME =
-        "pre_lexical_rerank_collection";
+  @BeforeAll
+  void requireLexicalSupport() {
+    // Skip the whole test class if BM25/lexical is not supported by the backend, since both
+    // scenarios below depend on the API defaulting to lexical/rerank enabled.
+    Assumptions.assumeTrue(
+        isLexicalAvailableForDB(), "Backend does not support BM25/lexical features");
+  }
 
-    @Test
-    @Order(1)
-    public final void createPreLexicalRerankCollection() {
-      // NOTE(2025/04/17): Using raw CQL here to precisely simulate the schema state before
-      // lexical/rerank options were introduced in collection comments. It would be better to use
-      // non-test code to generate this, but it's embedded in the CreateCollectionOperation. Need to
-      // change in the future
-      String collectionWithoutLexicalRerank =
-          """
-                    CREATE TABLE IF NOT EXISTS "%s"."%s" (
-                        key frozen<tuple<tinyint, text>> PRIMARY KEY,
-                        array_contains set<text>,
-                        array_size map<text, int>,
-                        doc_json text,
-                        exist_keys set<text>,
-                        query_bool_values map<text, tinyint>,
-                        query_dbl_values map<text, decimal>,
-                        query_null_values set<text>,
-                        query_text_values map<text, text>,
-                        query_timestamp_values map<text, timestamp>,
-                        query_vector_value vector<float, 123>,
-                        tx_id timeuuid
-                    ) WITH comment = '{"collection":{"name":"%s","schema_version":1,"options":{"defaultId":{"type":""}}}}';
-                    """;
-      executeCqlStatement(
-          SimpleStatement.newInstance(
-              collectionWithoutLexicalRerank.formatted(
-                  keyspaceName,
-                  PRE_LEXICAL_RERANK_COLLECTION_NAME,
-                  PRE_LEXICAL_RERANK_COLLECTION_NAME)));
+  /**
+   * Verifies that re-issuing {@code createCollection} for a collection that was created BEFORE the
+   * lexical/rerank feature existed (its CQL comment carries no {@code lexical} or {@code rerank}
+   * fields at all) does NOT fail with {@code COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS} once the
+   * deployment has switched to lexical/rerank-enabled-by-default.
+   *
+   * <p>Background: the codebase has gone through three states:
+   *
+   * <ol>
+   *   <li>No lexical/rerank feature at all — older collections persist with no such fields.
+   *   <li>Feature exists in code but disabled by config — collections persist with explicit {@code
+   *       "enabled": false}.
+   *   <li>Feature enabled by default — new collections persist with the feature on.
+   * </ol>
+   *
+   * This test covers the (1) → (3) transition. Without backward-compat handling in {@link
+   * io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation}, recreating a
+   * state (1) collection while the deployment is in state (3) would be rejected as "settings
+   * differ", even though the user is asking for the same collection. The existing options must also
+   * remain unchanged after the no-op recreate.
+   */
+  @Test
+  public final void preLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled() {
+    final String collectionName = "pre_lexical_rerank_collection";
+    final String commentOptionsJson = "{}";
+    final String expectedOptions =
+        """
+        {
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
 
-      // create indexes for the collection
-      String[] createIndexCqls = {
-        String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (values(array_contains)) USING 'StorageAttachedIndex';",
-            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
-        String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex';",
-            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
-        String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (values(exist_keys)) USING 'StorageAttachedIndex';",
-            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
-        String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex';",
-            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
-        String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex';",
-            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
-        String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (values(query_null_values)) USING 'StorageAttachedIndex';",
-            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
-        String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex';",
-            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
-        String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex';",
-            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME)
-      };
-      for (String indexCql : createIndexCqls) {
-        assertThat(executeCqlStatement(SimpleStatement.newInstance(indexCql))).isTrue();
-      }
+    // 1. simulate a legacy collection created before lexical/rerank existed (empty options)
+    createCollectionViaCql(collectionName, commentOptionsJson);
 
-      // verify the collection using FindCollection
-      givenHeadersPostJsonThenOkNoErrors(
-              """
-                              {
-                                "findCollections": {
-                                    "options" : {
-                                        "explain": true
-                                    }
-                                 }
-                              }
-                              """)
-          .body("$", responseIsDDLSuccess())
-          .body("status.collections", hasSize(1))
-          .body(
-              "status.collections[0]",
-              jsonEquals(
-                      """
-                          {
-                              "name": "%s",
-                              "options": {
-                                  "lexical": {
-                                      "enabled": false
-                                  },
-                                  "rerank": {
-                                      "enabled": false
-                                  }
-                              }
-                          }
-                      """
-                      .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME)));
+    // 2. sanity-check that findCollections renders the backward-compat defaults (disabled)
+    assertSingleCollection(collectionName, expectedOptions);
+
+    // 3. recreate the same collection via the API — must succeed, not fail with
+    //    COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS
+    createCollectionViaApi(
+            """
+        {
+            "createCollection": {
+                "name": "%s"
+            }
+        }
+        """
+            .formatted(collectionName));
+
+    // 4. existing settings must be preserved (no silent overwrite to enabled)
+    assertSingleCollection(collectionName, expectedOptions);
+
+    // cleanup
+    deleteCollection(collectionName);
+  }
+
+  /**
+   * Verifies that re-issuing {@code createCollection} for a collection that was created when the
+   * lexical/rerank feature existed in code but was config-disabled at the time (its CQL comment
+   * carries explicit {@code "lexical":{"enabled":false}} and {@code "rerank":{"enabled":false}})
+   * does NOT fail with {@code COLLECTION_EXISTS_WITH_DIFFERENT_SETTINGS} once the deployment has
+   * switched to lexical/rerank-enabled-by-default.
+   *
+   * <p>This is the (2) → (3) transition (see {@link
+   * #preLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled()} for the full state list). It
+   * is distinct from (1) → (3) because the persisted comment here has the fields written out
+   * explicitly with {@code enabled:false}, not omitted entirely; the backward-compat check must
+   * therefore compare the persisted disabled config against the new enabled defaults using value
+   * equality (not reference equality) to recognize them as backward-compatible.
+   *
+   * <p>The test collection also carries a non-trivial {@code indexing.allow} list to surface any
+   * unrelated mismatch between the persisted comment and the recreate request payload — an
+   * empty-options collection would be too weak a probe.
+   */
+  @Test
+  public final void disabledLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled() {
+    final String collectionName = "lexical_rerank_feature_disabled_collection";
+    final String commentOptionsJson =
+        """
+        {
+            "indexing": {"allow": ["documentId","projectId","userId"]},
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
+    final String expectedOptions =
+        """
+        {
+            "indexing": {"allow": ["documentId","projectId","userId"]},
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
+
+    // 1. simulate a collection created when lexical/rerank existed in code but was config-disabled
+    createCollectionViaCql(collectionName, commentOptionsJson);
+
+    // 2. sanity-check that findCollections returns the persisted (disabled) options
+    assertSingleCollection(collectionName, expectedOptions);
+
+    // 3. recreate via API — request includes indexing.allow to match the existing non-lexical
+    //    settings; lexical/rerank are intentionally omitted so the API's enabled-by-default kicks
+    //    in. Backward-compat must accept this against the persisted disabled values.
+    createCollectionViaApi(
+            """
+        {
+            "createCollection": {
+                "name": "%s",
+                "options": {
+                    "indexing": {"allow": ["documentId","projectId","userId"]}
+                }
+            }
+        }
+        """
+            .formatted(collectionName));
+
+    // 4. existing settings must be preserved (still disabled lexical/rerank)
+    assertSingleCollection(collectionName, expectedOptions);
+
+    // cleanup
+    deleteCollection(collectionName);
+  }
+
+  /**
+   * Verifies that re-issuing {@code createCollection} for a collection persisted with explicit
+   * {@code "lexical":{"enabled":false}} / {@code "rerank":{"enabled":false}} options, while
+   * **explicitly** asking for {@code lexical/rerank} to be enabled, IS rejected with {@code
+   * EXISTING_COLLECTION_DIFFERENT_SETTINGS}.
+   *
+   * <p>This is the negative counterpart to {@link
+   * #disabledLexicalRerankCollection_canBeRecreatedAfterFeatureEnabled()}. The success case relies
+   * on the user NOT specifying lexical/rerank in the recreate payload — backward-compat then treats
+   * the conflict between persisted-disabled and default-enabled as a no-op. Once the user
+   * explicitly requests enabling, they are asking for a real settings change and backward-compat
+   * must NOT swallow the conflict; the request has to fail.
+   *
+   * <p>Setup uses raw CQL to model the on-disk shape from a deployment that had the feature
+   * config-disabled when the collection was created.
+   */
+  @Test
+  public final void
+      disabledLexicalRerankCollection_cannotBeRecreatedWithExplicitEnable_viaCqlSetup() {
+    final String collectionName = "explicit_enable_disabled_collection_cql";
+    final String commentOptionsJson =
+        """
+        {
+            "indexing": {"allow": ["documentId","projectId","userId"]},
+            "lexical": {"enabled": false},
+            "rerank": {"enabled": false}
+        }
+        """;
+
+    // 1. simulate a collection persisted with lexical/rerank explicitly disabled
+    createCollectionViaCql(collectionName, commentOptionsJson);
+
+    // 2. recreate via API with EXPLICIT lexical/rerank enabled — must be rejected as
+    //    a real settings change, not silently accepted by backward-compat
+    assertCreateCollectionFailsWithDifferentSettings(
+            """
+        {
+            "createCollection": {
+                "name": "%s",
+                "options": {
+                    "indexing": {"allow": ["documentId","projectId","userId"]},
+                    "lexical": {"enabled": true},
+                    "rerank": {"enabled": true}
+                }
+            }
+        }
+        """
+            .formatted(collectionName),
+        collectionName);
+
+    // cleanup
+    deleteCollection(collectionName);
+  }
+
+  /**
+   * Verifies that the same explicit-enable rejection holds when the disabled collection was
+   * originally created through the public API (not via raw CQL).
+   *
+   * <p>Same backward-compat invariant as {@link
+   * #disabledLexicalRerankCollection_cannotBeRecreatedWithExplicitEnable_viaCqlSetup()}, but with a
+   * setup path that does not depend on the legacy CQL-comment workaround — it covers the case where
+   * the user originally created the collection through {@code createCollection} with {@code
+   * lexical/rerank} explicitly disabled, and later tries to flip them on with another {@code
+   * createCollection} call.
+   */
+  @Test
+  public final void
+      disabledLexicalRerankCollection_cannotBeRecreatedWithExplicitEnable_viaApiSetup() {
+    final String collectionName = "explicit_enable_disabled_collection_api";
+
+    // 1. create the collection via API with lexical/rerank explicitly disabled
+    createCollectionViaApi(
+            """
+        {
+            "createCollection": {
+                "name": "%s",
+                "options": {
+                    "lexical": {"enabled": false},
+                    "rerank": {"enabled": false}
+                }
+            }
+        }
+        """
+            .formatted(collectionName));
+
+    // 2. recreate via API with EXPLICIT lexical/rerank enabled — must be rejected
+    assertCreateCollectionFailsWithDifferentSettings(
+            """
+        {
+            "createCollection": {
+                "name": "%s",
+                "options": {
+                    "lexical": {"enabled": true},
+                    "rerank": {"enabled": true}
+                }
+            }
+        }
+        """
+            .formatted(collectionName),
+        collectionName);
+
+    // cleanup
+    deleteCollection(collectionName);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Test helpers
+  // ---------------------------------------------------------------------------
+
+  // NOTE(2025/04/17): Using raw CQL here to precisely simulate the schema state before
+  // lexical/rerank options were introduced in collection comments. It would be better to use
+  // non-test code to generate this, but it's embedded in the CreateCollectionOperation. Need to
+  // change in the future.
+  private void createCollectionViaCql(String collectionName, String collectionOptionsJson) {
+    String createTable =
+        """
+        CREATE TABLE IF NOT EXISTS "%s"."%s" (
+            key frozen<tuple<tinyint, text>> PRIMARY KEY,
+            array_contains set<text>,
+            array_size map<text, int>,
+            doc_json text,
+            exist_keys set<text>,
+            query_bool_values map<text, tinyint>,
+            query_dbl_values map<text, decimal>,
+            query_null_values set<text>,
+            query_text_values map<text, text>,
+            query_timestamp_values map<text, timestamp>,
+            query_vector_value vector<float, 123>,
+            tx_id timeuuid
+        ) WITH comment = '{"collection":{"name":"%s","schema_version":1,"options":%s}}';
+        """;
+    executeCqlStatement(
+        SimpleStatement.newInstance(
+            createTable.formatted(
+                keyspaceName, collectionName, collectionName, collectionOptionsJson)));
+
+    String[][] indexSpecs = {
+      {"array_contains", "values(array_contains)"},
+      {"array_size", "entries(array_size)"},
+      {"exists_keys", "values(exist_keys)"},
+      {"query_bool_values", "entries(query_bool_values)"},
+      {"query_dbl_values", "entries(query_dbl_values)"},
+      {"query_null_values", "values(query_null_values)"},
+      {"query_text_values", "entries(query_text_values)"},
+      {"query_timestamp_values", "entries(query_timestamp_values)"},
+    };
+    for (String[] spec : indexSpecs) {
+      String indexCql =
+          String.format(
+              "CREATE CUSTOM INDEX IF NOT EXISTS %s_%s ON \"%s\".\"%s\" (%s) USING 'StorageAttachedIndex';",
+              collectionName, spec[0], keyspaceName, collectionName, spec[1]);
+      assertThat(executeCqlStatement(SimpleStatement.newInstance(indexCql))).isTrue();
     }
+  }
 
-    @Test
-    @Order(2)
-    public final void createCollectionWithoutLexicalRerankUsingAPI() {
-      // Can only test if we have BM25 support by backend, otherwise skip the test
-      Assumptions.assumeTrue(isLexicalAvailableForDB());
+  private void assertSingleCollection(String collectionName, String expectedOptionsJson) {
+    givenHeadersPostJsonThenOkNoErrors(
+            """
+            {
+              "findCollections": {
+                  "options" : {
+                      "explain": true
+                  }
+               }
+            }
+            """)
+        .body("$", responseIsDDLSuccess())
+        .body("status.collections", hasSize(1))
+        .body(
+            "status.collections[0]",
+            jsonEquals(
+                    """
+                    {
+                        "name": "%s",
+                        "options": %s
+                    }
+                    """
+                    .formatted(collectionName, expectedOptionsJson)));
+  }
 
-      // verify the preexisting collection（generated by the above CQL) using FindCollection
-      givenHeadersPostJsonThenOkNoErrors(
-              """
-                              {
-                                "findCollections": {
-                                    "options" : {
-                                        "explain": true
-                                    }
-                                 }
-                              }
-                              """)
-          .body("$", responseIsDDLSuccess())
-          .body("status.collections", hasSize(1))
-          .body(
-              "status.collections[0]",
-              jsonEquals(
-                      """
-                                  {
-                                      "name": "%s",
-                                      "options": {
-                                          "lexical": {
-                                              "enabled": false
-                                          },
-                                          "rerank": {
-                                              "enabled": false
-                                          }
-                                      }
-                                  }
-                              """
-                      .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME)));
+  private void createCollectionViaApi(String createCollectionPayload) {
+    givenHeadersPostJsonThenOkNoErrors(createCollectionPayload)
+        .body("$", responseIsStatusOnly())
+        .body("status.ok", is(1));
+  }
 
-      // create the same collection using API - should not have
-      // EXISTING_COLLECTION_DIFFERENT_SETTINGS error
-      givenHeadersPostJsonThenOkNoErrors(
-                  """
-                      {
-                          "createCollection": {
-                              "name": "%s"
-                          }
-                      }
-              """
-                  .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME))
-          .body("$", responseIsStatusOnly())
-          .body("status.ok", is(1));
-
-      // verify the collection using FindCollection again
-      givenHeadersPostJsonThenOkNoErrors(
-              """
-                              {
-                                "findCollections": {
-                                    "options" : {
-                                        "explain": true
-                                    }
-                                 }
-                              }
-                              """)
-          .body("$", responseIsDDLSuccess())
-          .body("status.collections", hasSize(1))
-          .body(
-              "status.collections[0]",
-              jsonEquals(
-                      """
-                                  {
-                                      "name": "%s",
-                                      "options": {
-                                          "lexical": {
-                                              "enabled": false
-                                          },
-                                          "rerank": {
-                                              "enabled": false
-                                          }
-                                      }
-                                  }
-                              """
-                      .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME)));
-    }
+  private void assertCreateCollectionFailsWithDifferentSettings(
+      String createCollectionPayload, String collectionName) {
+    givenHeadersPostJsonThenOk(createCollectionPayload)
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(SchemaException.Code.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
+        .body(
+            "errors[0].message",
+            containsString(
+                "Collection '"
+                    + collectionName
+                    + "' already exists but with settings different from ones passed with"
+                    + " 'createCollection' command"));
   }
 }

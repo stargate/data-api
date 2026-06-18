@@ -8,7 +8,8 @@ import jakarta.enterprise.event.Observes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
@@ -36,20 +37,36 @@ public class ConfigPreLoader {
   private static final String JANDEX_LOCATION = "META-INF/jandex.idx";
   private static final String CONFIG_PACKAGE = "io.stargate.sgv2.jsonapi.config";
 
-  // Going to rely on the StartupEvent to triggering once and anything else.
-  // so not marked volatile etc.
+  private static final ReadWriteLock RW_LOCK = new ReentrantReadWriteLock();
+
+  // Called from the quarkus StartupEvent handler, but there may be other functions
+  // like RequestContext that call getPreLoadOrEmpty in a unit test so onStart is not run.
+  // NOTE: not using volatile because releasing the writeLock() is a write barrier that forces
+  // the memory to flush.
   private static CommandConfig commonConfig;
 
   public static CommandConfig getPreLoadOrEmpty() {
-    return commonConfig != null ? commonConfig : new CommandConfig();
+    RW_LOCK.readLock().lock();
+    try {
+      return commonConfig != null ? commonConfig : new CommandConfig();
+    } finally {
+      RW_LOCK.readLock().unlock();
+    }
   }
 
   void onStart(@Observes StartupEvent event) {
 
     LOGGER.debug("onStart event - started pre loading all config interfaces");
 
-    commonConfig = new CommandConfig();
-    commonConfig.preLoadConfigs(getConfigInterfaces());
+    CommandConfig local = new CommandConfig();
+    local.preLoadConfigs(getConfigInterfaces());
+
+    RW_LOCK.writeLock().lock();
+    try {
+      commonConfig = local;
+    } finally {
+      RW_LOCK.writeLock().unlock();
+    }
 
     LOGGER.debug("onStart event - finished pre loading all config interfaces");
   }
@@ -92,6 +109,6 @@ public class ConfigPreLoader {
                 throw new RuntimeException("Failed to load class: " + ci.name(), e);
               }
             })
-        .collect(Collectors.toList());
+        .collect(java.util.stream.Collectors.toList());
   }
 }

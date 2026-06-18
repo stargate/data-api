@@ -6,11 +6,12 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class PaginationIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
@@ -18,14 +19,15 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(1)
   class NormalFunction {
-    private static final int defaultPageSize = 20;
-    private static final int documentAmount = 50;
+    private static final int pageSize = OperationsConfig.DEFAULT_PAGE_SIZE;
+    private static final int lastPageSize = 20;
+    private static final int totalDocuments = (2 * pageSize) + lastPageSize;
     private static final int documentLimit = 5;
 
     @Test
     @Order(1)
     public void setUp() {
-      for (int i = 0; i < documentAmount; i++) {
+      for (int i = 0; i < totalDocuments; i++) {
         insert(
                 """
                               {
@@ -56,7 +58,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
                             }
                             """)
               .body("$", responseIsFindSuccess())
-              .body("data.documents", hasSize(defaultPageSize))
+              .body("data.documents", hasSize(pageSize))
               .extract()
               .path("data.nextPageState");
 
@@ -73,7 +75,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
                     """
                       .formatted(nextPageState))
               .body("$", responseIsFindSuccess())
-              .body("data.documents", hasSize(defaultPageSize))
+              .body("data.documents", hasSize(pageSize))
               .extract()
               .path("data.nextPageState");
 
@@ -91,7 +93,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
                 """
                   .formatted(nextPageState))
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(documentAmount - 2 * defaultPageSize))
+          .body("data.documents", hasSize(lastPageSize))
           .body("data.nextPageState", nullValue());
     }
 

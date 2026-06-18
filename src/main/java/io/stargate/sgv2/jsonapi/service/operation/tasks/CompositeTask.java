@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -155,18 +155,19 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   }
 
   @Override
-  protected RuntimeException maybeHandleException(
-      CompositeTaskResultSupplier<InnerTaskT, SchemaT> resultSupplier,
-      RuntimeException runtimeException) {
+  protected Throwable maybeHandleException(
+      CompositeTaskResultSupplier<InnerTaskT, SchemaT> resultSupplier, Throwable throwable) {
     // return the same error, so it will be associated with the task
-    return runtimeException;
+    return throwable;
   }
 
   @Override
-  protected void onSuccess(CompositeTaskInnerPage<InnerTaskT, SchemaT> result) {
+  protected void onSuccess(
+      CompositeTask.CompositeTaskResultSupplier<InnerTaskT, SchemaT> resultSupplier,
+      CompositeTaskInnerPage<InnerTaskT, SchemaT> result) {
     // TODO: Aaron, - not sure we need to do this ?
     innerPage = result;
-    super.onSuccess(result);
+    super.onSuccess(resultSupplier, result);
   }
 
   @Override

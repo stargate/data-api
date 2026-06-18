@@ -28,7 +28,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   }
 
   protected AbstractCollectionIntegrationTestBase(String collectionNamePrefix) {
-    collectionName = collectionNamePrefix + RandomStringUtils.randomAlphanumeric(16);
+    collectionName = collectionNamePrefix + RandomStringUtils.insecure().nextAlphanumeric(16);
   }
 
   @BeforeAll
@@ -124,30 +124,6 @@ public abstract class AbstractCollectionIntegrationTestBase
         // Sanity check: let's look for non-empty inserted id
         .body("$", responseIsWriteSuccess())
         .body("status.insertedIds[0]", not(emptyString()))
-        .statusCode(200);
-  }
-
-  /** Utility to insert many docs to the test collection. */
-  protected void insertManyDocs(String docsJson, int docsAmount) {
-    String doc =
-            """
-                {
-                  "insertMany": {
-                    "documents": %s
-                  }
-                }
-                """
-            .formatted(docsJson);
-
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(doc)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-        .then()
-        .body("$", responseIsWriteSuccess())
-        .body("status.insertedIds", hasSize(docsAmount))
         .statusCode(200);
   }
 

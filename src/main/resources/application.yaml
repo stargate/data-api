@@ -28,7 +28,6 @@ stargate:
   feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig
     flags:  # Ok to leave out features that have no default value (enabled or disabled)
       lexical:
-      tables:
 
   # custom grpc settings
   grpc:
@@ -62,6 +61,13 @@ quarkus:
   # banner for the startup
   banner:
     path: banner/banner.txt
+
+  # cache settings for "credentials" (sync-service)
+  cache:
+    caffeine:
+      "credentials":
+        maximum-size: 1000
+        expire-after-access: 5m
 
   # properties for the gRPC clients
   grpc:
@@ -109,6 +115,14 @@ quarkus:
     console:
       format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
 
+    handler:
+      console:
+        # Dedicated appender for the 'billing.events' category: writes only the
+        # raw JSON event payload with no log prefix, so downstream billing
+        # pipelines can parse each line as JSON.
+        BILLING_CONSOLE:
+          format: "%m%n"
+
     level: WARN
 
     category:
@@ -121,6 +135,17 @@ quarkus:
         level: INFO
       'io.stargate':
         level: DEBUG
+      # Route billing events to the dedicated BILLING_CONSOLE handler so the
+      # log line is the raw JSON event with no prefix, and do not also write
+      # to the default console handler.
+      'billing.events':
+        level: INFO
+        handlers:
+          - BILLING_CONSOLE
+        use-parent-handlers: false
+      # noisy for ITs (which run with prod, not test, settings)
+      'io.stargate.sgv2.jsonapi.service.operation':
+        level: INFO
 
     min-level: trace
 
@@ -147,6 +172,13 @@ quarkus:
     # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
     # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
     additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
+
+  # Sync-service configuration
+  rest-client:
+    credentials:
+      url: http://localhost:8084/v1
+      connect-timeout: 2000
+      read-timeout: 5000
 
   # adapt path of the open api definitions
   smallrye-openapi:
@@ -179,6 +211,19 @@ quarkus:
         }
       }
 
+  # MCP (Model Context Protocol) server configuration
+  mcp:
+    server:
+      http:
+        root-path: /v1/mcp
+        streamable:
+          # It performs an automatic initialization when the first message from the client is not initialize.
+          # A new MCP session is created for each request.
+          # https://docs.quarkiverse.io/quarkus-mcp-server/1.13.x/reference-configuration.html#quarkus-mcp-server-http_quarkus-mcp-server-http-streamable-auto-init
+          auto-init: true
+      traffic-logging:
+        enabled: true
+        text-limit: 1000
 
 "%dev":
    quarkus:

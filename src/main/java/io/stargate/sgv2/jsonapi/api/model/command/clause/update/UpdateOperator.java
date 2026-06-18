@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -105,8 +105,8 @@ public enum UpdateOperator {
   }
 
   public UpdateOperation resolveOperation(ObjectNode arguments) {
-    throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION.toApiException(
-        "Unsupported update operator '%s'", apiName);
+    throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION.get(
+        Map.of("errorMessage", "Unsupported update operator '%s'".formatted(apiName)));
   }
 
   private static Map<String, UpdateOperator> operatorMap = new HashMap<>();

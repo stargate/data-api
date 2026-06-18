@@ -16,8 +16,8 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.ArrayList;
@@ -83,8 +83,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
     return TEST_CONSTANTS.collectionContext(
         "testCommand",
         new CollectionSchemaObject(
-            TEST_CONSTANTS.SCHEMA_OBJECT_NAME,
-            null,
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
                 List.of(
@@ -95,8 +94,8 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
                         EmbeddingSourceModel.OTHER,
                         new VectorizeDefinition("custom", "custom", null, null)))),
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection()),
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null)),
         null,
         TEST_EMBEDDING_PROVIDER);
   }
@@ -122,7 +121,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
 
     var modelUsage =
         createModelUsage(
-            embeddingCredentials.tenantId(),
+            embeddingCredentials.tenant(),
             ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
             0,
             0,

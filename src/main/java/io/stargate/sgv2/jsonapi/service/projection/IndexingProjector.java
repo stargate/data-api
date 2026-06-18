@@ -133,8 +133,7 @@ public class IndexingProjector {
   // Mostly for deserialization tests
   @Override
   public boolean equals(Object o) {
-    if (o instanceof IndexingProjector) {
-      IndexingProjector other = (IndexingProjector) o;
+    if (o instanceof IndexingProjector other) {
       return (this.inclusion == other.inclusion)
           && (this.indexingDenyAll == other.indexingDenyAll)
           && Objects.equals(this.rootLayer, other.rootLayer);

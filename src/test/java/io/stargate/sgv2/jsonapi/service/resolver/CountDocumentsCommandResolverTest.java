@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -31,7 +30,7 @@ class CountDocumentsCommandResolverTest {
 
   @Inject OperationsConfig operationsConfig;
   @InjectMock protected RequestContext dataApiRequestInfo;
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
 
@@ -40,37 +39,34 @@ class CountDocumentsCommandResolverTest {
     commandContext = testConstants.collectionContext();
   }
 
-  @Nested
-  class ResolveCommand {
-
-    @Test
-    public void noFilter() throws Exception {
-      String json =
-          """
+  @Test
+  public void noFilter() throws Exception {
+    String json =
+        """
             {
               "countDocuments": {
               }
             }
             """;
 
-      CountDocumentsCommand command = objectMapper.readValue(json, CountDocumentsCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    CountDocumentsCommand command = objectMapper.readValue(json, CountDocumentsCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              CountCollectionOperation.class,
-              op -> {
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.dbLogicalExpression().filters()).isEmpty();
-                assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
-                assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
-              });
-    }
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            CountCollectionOperation.class,
+            op -> {
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.dbLogicalExpression().filters()).isEmpty();
+              assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
+              assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
+            });
+  }
 
-    @Test
-    public void withFilter() throws Exception {
-      String json =
-          """
+  @Test
+  public void withFilter() throws Exception {
+    String json =
+        """
             {
               "countDocuments": {
                 "filter": {
@@ -80,21 +76,20 @@ class CountDocumentsCommandResolverTest {
             }
             """;
 
-      CountDocumentsCommand command = objectMapper.readValue(json, CountDocumentsCommand.class);
-      Operation result = resolver.resolveCommand(commandContext, command);
+    CountDocumentsCommand command = objectMapper.readValue(json, CountDocumentsCommand.class);
+    Operation result = resolver.resolveCommand(commandContext, command);
 
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              CountCollectionOperation.class,
-              op -> {
-                TextCollectionFilter expected =
-                    new TextCollectionFilter("name", Operator.EQ, "Aaron");
+    assertThat(result)
+        .isInstanceOfSatisfying(
+            CountCollectionOperation.class,
+            op -> {
+              TextCollectionFilter expected =
+                  new TextCollectionFilter("name", Operator.EQ, "Aaron");
 
-                assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(expected);
-                assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
-                assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
-              });
-    }
+              assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(expected);
+              assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
+              assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
+            });
   }
 }

@@ -8,16 +8,22 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
+import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaRegistry;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -29,13 +35,16 @@ import java.util.Objects;
  * context for a specific request call {@link BuilderSupplier#getBuilder(SchemaObject)} to get a
  * {@link BuilderSupplier.Builder} to configure the context for the request.
  *
- * <p>
+ * <p><b>NOTE:</b> When {@link BuilderSupplier.Builder#build()} is called it will call {@link
+ * #addToMDC()} so that the context is added to the logging MDC for the duration of the request. The
+ * context must be closed via {@link #close()} to remove it from the MDC, this should be done at the
+ * last possible time in the resource handler so all log messages have the context.
  *
  * @param <SchemaT> The schema object type that this context is for. There are times we need to lock
  *     this down to the specific type, if so use the "as" methods such as {@link
  *     CommandContext#asCollectionContext()}
  */
-public class CommandContext<SchemaT extends SchemaObject> {
+public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCContext {
 
   // Common for all instances
   private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
@@ -47,22 +56,22 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   // Request specific
   private final SchemaT schemaObject;
+  // Tracing is created lazily in the getter — volatile required for double-checked locking
+  private volatile RequestTracing requestTracing;
+  private final RequestContext requestContext;
   private final EmbeddingProvider
       embeddingProvider; // to be removed later, this is a single provider
   private final String commandName; // TODO: remove the command name, but it is used in 14 places
-  private final RequestContext requestContext;
-  private RequestTracing requestTracing;
+
+  // per request list of objects that want to update the logging MDC context,
+  // add to this list in the ctor. See {@link #addToMDC()} and {@link #removeFromMDC()}
+  private final List<LoggingMDCContext> loggingMDCContexts = new ArrayList<>();
 
   // see accessors
   private FindAndRerankCommand.HybridLimits hybridLimits;
 
   // used to track the features used in the command
   private final CommandFeatures commandFeatures;
-
-  // created on demand or set via builder, otherwise we need to read from config too early when
-  // running tests, See the {@link Builder#withApiFeatures}
-  // access via {@link CommandContext#apiFeatures()}
-  private ApiFeatures apiFeatures;
 
   private CommandContext(
       SchemaT schemaObject,
@@ -72,36 +81,26 @@ public class CommandContext<SchemaT extends SchemaObject> {
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
       CommandConfig commandConfig,
-      ApiFeatures apiFeatures,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory,
       MeterRegistry meterRegistry) {
 
-    this.schemaObject = schemaObject;
-    this.embeddingProvider = embeddingProvider;
-    this.commandName = commandName;
-    this.requestContext = requestContext;
-
-    this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
+    // Common for all instances
     this.cqlSessionCache = cqlSessionCache;
     this.commandConfig = commandConfig;
     this.embeddingProviderFactory = embeddingProviderFactory;
+    this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
+    this.meterRegistry = meterRegistry;
     this.rerankingProviderFactory = rerankingProviderFactory;
 
-    this.apiFeatures = apiFeatures;
-    this.meterRegistry = meterRegistry;
+    // Request specific
+    this.embeddingProvider = embeddingProvider; // to be removed later, this is a single provider
+    this.requestContext = requestContext;
+    this.schemaObject = schemaObject;
+    this.commandName = commandName; // TODO: remove the command name, but it is used in 14 places
 
-    var anyTracing =
-        apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
-            || apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
-
-    this.requestTracing =
-        anyTracing
-            ? new DefaultRequestTracing(
-                requestContext.getRequestId(),
-                requestContext.getTenantId().orElse(""),
-                apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
-            : RequestTracing.NO_OP;
+    this.loggingMDCContexts.add(this.requestContext);
+    this.loggingMDCContexts.add(this.schemaObject.identifier());
 
     this.commandFeatures = CommandFeatures.create();
   }
@@ -143,31 +142,44 @@ public class CommandContext<SchemaT extends SchemaObject> {
     return commandName;
   }
 
+  // Lazy init: apiFeatures config is accessed too early in unit tests if done at construction time
   public RequestTracing requestTracing() {
+    if (requestTracing == null) {
+      synchronized (this) {
+        if (requestTracing == null) {
+          requestTracing = buildRequestTracing();
+        }
+      }
+    }
     return requestTracing;
+  }
+
+  private RequestTracing buildRequestTracing() {
+    boolean anyTracing =
+        requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
+            || requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
+    return anyTracing
+        ? new DefaultRequestTracing(
+            requestContext.requestId(),
+            requestContext.tenant(),
+            requestContext.apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
+        : RequestTracing.NO_OP;
   }
 
   public RequestContext requestContext() {
     return requestContext;
   }
 
-  public ApiFeatures apiFeatures() {
-    // using a sync block here because the context can be accessed by multiple tasks concurrently
-    if (apiFeatures == null) {
-      synchronized (this) {
-        if (apiFeatures == null) {
-          // Merging the config for features with the request headers to get the final feature set
-          apiFeatures =
-              ApiFeatures.fromConfigAndRequest(
-                  commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
-        }
-      }
-    }
-    return apiFeatures;
-  }
-
   public CommandFeatures commandFeatures() {
     return commandFeatures;
+  }
+
+  public ApiFeatures apiFeatures() {
+    return requestContext.apiFeatures();
+  }
+
+  public SchemaRegistry versionedSchema() {
+    return requestContext.schemaRegistry();
   }
 
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {
@@ -191,39 +203,57 @@ public class CommandContext<SchemaT extends SchemaObject> {
   }
 
   public boolean isCollectionContext() {
-    return schemaObject().type() == CollectionSchemaObject.TYPE;
+    return schemaObject().type() == SchemaObjectType.COLLECTION;
   }
 
   @SuppressWarnings("unchecked")
   public CommandContext<CollectionSchemaObject> asCollectionContext() {
-    checkSchemaObjectType(CollectionSchemaObject.TYPE);
+    checkSchemaObjectType(SchemaObjectType.COLLECTION);
     return (CommandContext<CollectionSchemaObject>) this;
   }
 
   @SuppressWarnings("unchecked")
   public CommandContext<TableSchemaObject> asTableContext() {
-    checkSchemaObjectType(TableSchemaObject.TYPE);
+    checkSchemaObjectType(SchemaObjectType.TABLE);
     return (CommandContext<TableSchemaObject>) this;
   }
 
   @SuppressWarnings("unchecked")
   public CommandContext<KeyspaceSchemaObject> asKeyspaceContext() {
-    checkSchemaObjectType(KeyspaceSchemaObject.TYPE);
+    checkSchemaObjectType(SchemaObjectType.KEYSPACE);
     return (CommandContext<KeyspaceSchemaObject>) this;
   }
 
   @SuppressWarnings("unchecked")
   public CommandContext<DatabaseSchemaObject> asDatabaseContext() {
-    checkSchemaObjectType(DatabaseSchemaObject.TYPE);
+    checkSchemaObjectType(SchemaObjectType.DATABASE);
     return (CommandContext<DatabaseSchemaObject>) this;
   }
 
-  private void checkSchemaObjectType(SchemaObject.SchemaObjectType expectedType) {
+  private void checkSchemaObjectType(SchemaObjectType expectedType) {
     Preconditions.checkArgument(
         schemaObject().type() == expectedType,
         "SchemaObject type actual was %s expected was %s ",
         schemaObject().type(),
         expectedType);
+  }
+
+  @Override
+  public void addToMDC() {
+    loggingMDCContexts.forEach(LoggingMDCContext::addToMDC);
+  }
+
+  @Override
+  public void removeFromMDC() {
+    loggingMDCContexts.forEach(LoggingMDCContext::removeFromMDC);
+  }
+
+  /**
+   * NOTE: Not using AutoCloseable because it created a lot of linting warnings, we only want to
+   * close this in the request resource handler.
+   */
+  public void close() throws Exception {
+    removeFromMDC();
   }
 
   /**
@@ -341,18 +371,20 @@ public class CommandContext<SchemaT extends SchemaObject> {
         Objects.requireNonNull(commandName, "commandName must not be null");
         Objects.requireNonNull(requestContext, "requestContext must not be null");
 
-        return new CommandContext<>(
-            schemaObject,
-            embeddingProvider,
-            commandName,
-            requestContext,
-            jsonProcessingMetricsReporter,
-            cqlSessionCache,
-            commandConfig,
-            apiFeatures,
-            embeddingProviderFactory,
-            rerankingProviderFactory,
-            meterRegistry);
+        var context =
+            new CommandContext<>(
+                schemaObject,
+                embeddingProvider,
+                commandName,
+                requestContext,
+                jsonProcessingMetricsReporter,
+                cqlSessionCache,
+                commandConfig,
+                embeddingProviderFactory,
+                rerankingProviderFactory,
+                meterRegistry);
+        context.addToMDC();
+        return context;
       }
     }
   }

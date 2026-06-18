@@ -50,11 +50,10 @@ public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
     @Override
     public boolean typeMatches(ColumnMetadata columnSpec) {
       DataType type = columnSpec.getType();
-      if (!(type instanceof MapType)) {
+      if (!(type instanceof MapType map)) {
         return false;
       }
 
-      MapType map = (MapType) type;
       return Objects.equals(map.getKeyType(), keyType)
           && Objects.equals(map.getValueType(), valueType);
     }

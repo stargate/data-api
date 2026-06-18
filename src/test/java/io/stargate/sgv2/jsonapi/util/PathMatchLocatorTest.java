@@ -8,8 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.io.IOException;
@@ -146,11 +145,9 @@ public class PathMatchLocatorTest {
           catchException(() -> PathMatchLocator.forPath("a..x").findIfExists(objectFromJson("{}")));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessageContaining(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": update path ('a..x') is not a valid path.");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name())
+          .hasMessageContaining("update path ('a..x') is not valid: ");
     }
   }
 
@@ -254,11 +251,10 @@ public class PathMatchLocatorTest {
               () -> PathMatchLocator.forPath("a.x").findOrCreate(objectFromJson("{\"a\": 3}")));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": cannot create field ('x') in path 'a.x'; only OBJECT nodes have properties (got NUMBER)");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name())
+          .hasMessageContaining(
+              "cannot create field ('x') in path 'a.x'; only Object nodes have properties (got Number)");
 
       e =
           catchException(
@@ -267,11 +263,10 @@ public class PathMatchLocatorTest {
                       .findOrCreate(objectFromJson("{\"a\": {\"b\": null}}")));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": cannot create field ('c') in path 'a.b.c.d'; only OBJECT nodes have properties (got NULL)");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name())
+          .hasMessageContaining(
+              "cannot create field ('c') in path 'a.b.c.d'; only Object nodes have properties (got Null)");
     }
 
     @Test
@@ -283,11 +278,10 @@ public class PathMatchLocatorTest {
                       .findOrCreate(objectFromJson("{\"array\": [1] }")));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": cannot create field ('prop') in path 'array.prop'; only OBJECT nodes have properties (got ARRAY)");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name())
+          .hasMessageContaining(
+              "cannot create field ('prop') in path 'array.prop'; only Object nodes have properties (got Array)");
 
       e =
           catchException(
@@ -296,11 +290,10 @@ public class PathMatchLocatorTest {
                       .findOrCreate(objectFromJson("{\"ob\":{\"array\":[{\"a2\":[true]}]}} }")));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": cannot create field ('x') in path 'ob.array.0.a2.x'; only OBJECT nodes have properties (got ARRAY)");
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH.name())
+          .hasMessageContaining(
+              "cannot create field ('x') in path 'ob.array.0.a2.x'; only Object nodes have properties (got Array)");
     }
   }
 

@@ -8,9 +8,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListFilterComponent;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
 
@@ -53,7 +53,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
   }
 
   @Override
-  protected String validateFilterClausePath(String path) {
+  protected String validateFilterClausePath(String path, FilterOperator operator) {
     return path;
   }
 
@@ -134,10 +134,8 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
     }
 
     List<ComparisonExpression> comparisonExpressions = new ArrayList<>();
-    var fieldsIter = pathValue.fields();
     // iterate through the filter fields.
-    while (fieldsIter.hasNext()) {
-      Map.Entry<String, JsonNode> jsonNodeEntry = fieldsIter.next();
+    for (Map.Entry<String, JsonNode> jsonNodeEntry : pathValue.properties()) {
       // nodeEntryKey can be mapComponent $keys/$values OR operator like $in/$nin/$all
       // so jsonNodeEntry like {$keys": {"$nin" : ["key1", "key2"]}}
       // or jsonNodeEntry like {"$in": [["key1", "value1"], ["key2", "value2"]]}
@@ -199,7 +197,8 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
     // $keys": {"$nin": ["key1", "key2"], "$in": ["key3", "key4"]} can result with multiple
     // comparisonExpressions
     filterValue
-        .fields()
+        .properties()
+        .iterator()
         .forEachRemaining(
             entry -> {
               // build a new JsonNode to represent single operationNode.
@@ -272,10 +271,8 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
       String columnName, JsonNode pathValue, ApiTypeName setOrList) {
 
     final List<ComparisonExpression> result = new ArrayList<>();
-    final Iterator<Map.Entry<String, JsonNode>> fields = pathValue.fields();
     // iterate through the filter fields.
-    while (fields.hasNext()) {
-      Map.Entry<String, JsonNode> expressionField = fields.next();
+    for (Map.Entry<String, JsonNode> expressionField : pathValue.properties()) {
 
       var operator = expressionField.getKey();
       var operatorValue = expressionField.getValue();
@@ -313,7 +310,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
   private FilterOperation<?> singleFilterOperationForMapSetListColumn(
       JsonNode operationNode, MapSetListFilterComponent mapSetListComponent, String columnName) {
 
-    Map.Entry<String, JsonNode> singleEntry = operationNode.fields().next();
+    Map.Entry<String, JsonNode> singleEntry = operationNode.properties().iterator().next();
     // resolve the operator
     String operatorName = singleEntry.getKey();
     if (!SUPPORTED_MAP_SET_LIST_OPERATORS.contains(operatorName)) {

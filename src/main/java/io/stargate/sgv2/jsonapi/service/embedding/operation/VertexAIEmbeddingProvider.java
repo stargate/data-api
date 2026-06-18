@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
@@ -58,17 +57,13 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   protected String errorMessageJsonPtr() {
-    // overriding the call that needs this.
-    return null;
+    // overriding the call that needs this (but still return safe value)
+    return "";
   }
 
   @Override
   protected String responseErrorMessage(Response jakartaResponse) {
-    // aaron 9 june 2025 - this is what it did originally, just get the whole response body
-
-    // Get the whole response body
-    JsonNode rootNode = jakartaResponse.readEntity(JsonNode.class);
-    return rootNode.toString();
+    return jakartaResponse.readEntity(String.class);
   }
 
   @Override
@@ -85,7 +80,6 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
         new VertexEmbeddingRequest(
             texts.stream().map(VertexEmbeddingRequest.Content::new).toList());
 
-    // TODO: V2 error
     // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get();
 
@@ -117,7 +111,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
               // https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#response_body
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       total_tokens,
                       total_tokens,

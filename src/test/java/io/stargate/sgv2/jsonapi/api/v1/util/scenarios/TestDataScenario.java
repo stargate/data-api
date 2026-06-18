@@ -95,7 +95,7 @@ public abstract class TestDataScenario {
       List<ApiClusteringDef> clusteringDefs,
       ApiColumnDefContainer columns) {
 
-    LOGGER.warn("Creating table {}.{} with columns {}", keyspaceName, tableName, columns);
+    LOGGER.debug("Creating table {}.{} with columns {}", keyspaceName, tableName, columns);
     assertNamespaceCommand(keyspaceName)
         .templated()
         .createTable(tableName, columns, ApiColumnDefContainer.of(primaryKey), clusteringDefs)

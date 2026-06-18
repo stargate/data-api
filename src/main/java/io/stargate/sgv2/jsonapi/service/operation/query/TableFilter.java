@@ -6,7 +6,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.List;
 
 /**
@@ -33,6 +33,10 @@ public abstract class TableFilter extends DBFilterBase implements FilterBehaviou
     super(path, IndexUsage.NO_OP);
     this.column = cqlIdentifierFromUserInput(path);
     this.filterBehaviour = filterBehaviour == null ? UNSUPPORTED_BEHAVIOUR : filterBehaviour;
+  }
+
+  public CqlIdentifier getColumn() {
+    return column;
   }
 
   /**

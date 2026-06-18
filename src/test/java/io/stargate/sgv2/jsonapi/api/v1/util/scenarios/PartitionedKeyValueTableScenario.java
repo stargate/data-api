@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.util.scenarios;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ import java.util.Map;
  * Creates a table for testing pagination with:
  *
  * <ul>
- *   <li>In total 3 partitions with 50 rows each
+ *   <li>In total 3 partitions with enough rows each to span multiple default pages
  *   <li>Partition key of the single field column {@link TestDataScenario#ID_COL}
  *   <li>Cluster key of the single field column {@link #CLUSTER_COL_1}
  *   <li>One value column {@link #VALUE_COL}
@@ -24,6 +25,7 @@ public class PartitionedKeyValueTableScenario extends TestDataScenario {
       new ApiColumnDef(CqlIdentifier.fromCql("cluster_col_1"), ApiDataTypeDefs.INT);
   public static final ApiColumnDef VALUE_COL =
       new ApiColumnDef(CqlIdentifier.fromCql("value_col"), ApiDataTypeDefs.TEXT);
+  public static final int ROWS_PER_PARTITION = OperationsConfig.DEFAULT_PAGE_SIZE + 20;
   protected static ArrayList<Map<String, Object>> data = new ArrayList<>();
 
   public PartitionedKeyValueTableScenario(String keyspaceName, String tableName) {
@@ -52,9 +54,9 @@ public class PartitionedKeyValueTableScenario extends TestDataScenario {
 
   @Override
   protected void insertRows() {
-    // Insert 50 rows in each of the 3 partitions
+    // Insert enough rows in each of the 3 partitions to span multiple default pages.
     for (int partition = 0; partition < 3; partition++) {
-      for (int i = 0; i < 50; i++) {
+      for (int i = 0; i < ROWS_PER_PARTITION; i++) {
         var row = new HashMap<String, Object>();
         row.put(fieldName(ID_COL), "partition-" + partition);
         row.put(fieldName(CLUSTER_COL_1), i);

@@ -61,7 +61,7 @@ public class EJSONWrapper {
   public static EJSONWrapper maybeFrom(ObjectNode objectNode) {
     // EJSON-wrapper: single entry with key starting with "$TYPE"?
     if (objectNode.size() == 1) {
-      Map.Entry<String, JsonNode> entry = objectNode.fields().next();
+      Map.Entry<String, JsonNode> entry = objectNode.properties().iterator().next();
       return maybeFrom(entry.getKey(), entry.getValue());
     }
     return null;

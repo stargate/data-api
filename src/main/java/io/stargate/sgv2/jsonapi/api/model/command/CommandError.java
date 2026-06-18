@@ -2,52 +2,56 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micrometer.core.instrument.Tag;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
+import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
+import java.util.function.Predicate;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
- * Intended to replace the {@link CommandResult.Error} with something that has all the fields in an
- * error.
+ * Public API model for an error or warning returned from the API.
  *
- * <p>This super class is the legacy V1 structure, and the subclass {@link CommandErrorV2} is the
- * new V2 structure. Once we have fully removed the {@link CommandResult.Error} we can remove this
- * class and just have the V2 structure.
+ * <p>This represents the "v2" / version 2 error structure, it was originally in the code called v2
+ * but is now just the command error.
  *
- * <p>This object is intended to be used in the CommandResult, and is serialised into the JSON
- * response.
+ * <p>Use {@link CommandErrorFactory} to get an instance because it knows how to adapt from any
+ * throwable using the {@link CommandError.Builder}.
  *
- * <p>aaron - 9 -oct-2024 - This is initially only used with the Warnings in the CommandResult,
- * further work needed to use it in all places. Warnings are in the status, and not described on the
- * swagger for the CommandResult. This is why all the decorators from the original class are not
- * here yet, but they have things to ignore flagged just incase
+ * <p>See {@link io.stargate.sgv2.jsonapi.exception.APIException} for discussion of the fields.
  */
-public class CommandError {
+public record CommandError(
+    @JsonProperty(ErrorConstants.Fields.ID) UUID id,
+    @JsonProperty(ErrorConstants.Fields.FAMILY) String family,
+    @JsonProperty(ErrorConstants.Fields.SCOPE) String scope,
+    @JsonProperty(ErrorConstants.Fields.CODE) String errorCode,
+    @JsonProperty(ErrorConstants.Fields.TITLE) String title,
+    @JsonProperty(ErrorConstants.Fields.MESSAGE) String message,
+    @JsonIgnore @Schema(hidden = true) Response.Status httpStatus,
+    @JsonIgnore @Schema(hidden = true) List<Tag> metricTags,
 
-  private final String errorCode;
-  private final String message;
-  private final Response.Status httpStatus;
-  private final String errorClass;
-  private final Map<String, Object> metricsTags;
+    // Optional, nullable, list of the documents related to this error
+    @JsonProperty(ErrorConstants.Fields.DOCUMENT_IDS) @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        List<DocRowIdentifer> documentIds) {
 
-  public CommandError(
-      String errorCode,
-      String message,
-      Response.Status httpStatus,
-      String errorClass,
-      Map<String, Object> metricsTags) {
+  public CommandError {
 
-    this.errorCode = requireNoNullOrBlank(errorCode, "errorCode cannot be null or blank");
-    this.message = requireNoNullOrBlank(message, "message cannot be null or blank");
-    this.httpStatus = Objects.requireNonNull(httpStatus, "httpStatus cannot be null");
-
-    this.metricsTags = metricsTags == null ? Collections.emptyMap() : Map.copyOf(metricsTags);
-    // errorClass is not required, it is only passed when we are in debug mode
+    Objects.requireNonNull(id, "id cannot be null");
+    requireNoNullOrBlank(family, "family cannot be null or blank");
+    scope = scope == null ? "" : scope;
+    requireNoNullOrBlank(errorCode, "errorCode cannot be null or blank");
+    requireNoNullOrBlank(title, "title cannot be null or blank");
+    requireNoNullOrBlank(message, "message cannot be null or blank");
+    Objects.requireNonNull(httpStatus, "httpStatus cannot be null");
+    // exceptionClass is not required, it is only passed when we are in debug mode
     // normalise to null if blank
-    this.errorClass = errorClass == null || errorClass.isBlank() ? null : errorClass;
+    metricTags = metricTags == null ? Collections.emptyList() : List.copyOf(metricTags);
+    documentIds = documentIds == null ? Collections.emptyList() : List.copyOf(documentIds);
   }
 
-  protected static String requireNoNullOrBlank(String value, String message) {
+  private static String requireNoNullOrBlank(String value, String message) {
     if (Objects.isNull(value) || value.isBlank()) {
       throw new IllegalArgumentException(message);
     }
@@ -55,30 +59,86 @@ public class CommandError {
   }
 
   /**
-   * @return
+   * Gets a Predicate that will match this Error with other errors based on all fields except the
+   * ID, used when aggregating errors with the same information in them.
    */
-  public String getErrorCode() {
-    return errorCode;
+  public Predicate<CommandError> nonIdentityMatcher() {
+    return other ->
+        (family() == null || family().equals(other.family()))
+            && (scope() == null || scope().equals(other.scope()))
+            && (errorCode() == null || errorCode().equals(other.errorCode()))
+            && (title() == null || title().equals(other.title()))
+            && (message() == null || message().equals(other.message()));
   }
 
-  public String getMessage() {
-    return message;
+  public static Builder builder() {
+    return new Builder();
   }
 
-  @JsonIgnore
-  public Response.Status httpStatus() {
-    return httpStatus;
-  }
+  public static class Builder {
+    private UUID id;
+    private String family;
+    private String scope;
+    private String errorCode;
+    private String title;
+    private String message;
+    private Response.Status httpStatus;
+    private List<Tag> metricsTags;
+    private List<DocRowIdentifer> documentIds;
 
-  @JsonIgnore
-  @Schema(hidden = true)
-  public Map<String, Object> metricsTags() {
-    return metricsTags;
-  }
+    private Builder() {}
 
-  @Schema(hidden = true)
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  public String exceptionClass() {
-    return errorClass;
+    public Builder errorCode(String errorCode) {
+      this.errorCode = errorCode;
+      return this;
+    }
+
+    public Builder message(String message) {
+      this.message = message;
+      return this;
+    }
+
+    public Builder httpStatus(Response.Status httpStatus) {
+      this.httpStatus = httpStatus;
+      return this;
+    }
+
+    public Builder metricsTags(List<Tag> metricsTags) {
+      this.metricsTags = metricsTags;
+      return this;
+    }
+
+    public Builder family(String family) {
+      this.family = family;
+      return this;
+    }
+
+    public Builder scope(String scope) {
+      this.scope = scope;
+      return this;
+    }
+
+    public Builder title(String title) {
+      this.title = title;
+      return this;
+    }
+
+    public Builder id(UUID id) {
+      this.id = id;
+      return this;
+    }
+
+    public Builder documentIds(List<? extends DocRowIdentifer> documentIds) {
+      this.documentIds =
+          documentIds == null
+              ? Collections.emptyList()
+              : documentIds.stream().map(d -> (DocRowIdentifer) d).toList();
+      return this;
+    }
+
+    public CommandError build() {
+      return new CommandError(
+          id, family, scope, errorCode, title, message, httpStatus, metricsTags, documentIds);
+    }
   }
 }

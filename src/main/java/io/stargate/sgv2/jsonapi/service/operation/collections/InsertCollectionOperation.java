@@ -1,14 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -38,57 +40,23 @@ public record InsertCollectionOperation(
     this(commandContext, insertions, false, false, false);
   }
 
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext,
-  //      List<WritableShreddedDocument> documents,
-  //      boolean ordered,
-  //      boolean offlineMode,
-  //      boolean returnDocumentResponses) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        CollectionInsertAttempt.from(documents),
-  //        ordered,
-  //        offlineMode,
-  //        returnDocumentResponses);
-  //  }
-  //
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext,
-  //      List<WritableShreddedDocument> documents,
-  //      boolean ordered,
-  //      boolean returnDocumentResponses) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        CollectionInsertAttempt.from(documents),
-  //        ordered,
-  //        false,
-  //        returnDocumentResponses);
-  //  }
-  //
-  //  public static InsertCollectionOperation create(
-  //      CommandContext commandContext, WritableShreddedDocument document) {
-  //    return new InsertCollectionOperation(
-  //        commandContext,
-  //        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
-  //        false,
-  //        false,
-  //        false);
-  //  }
-
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
-    if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
-      throw ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-          commandContext().schemaObject().name().table());
+    if (!vectorEnabled && insertions.stream().anyMatch(CollectionInsertAttempt::hasVectorValues)) {
+      throw SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.get(
+          errVars(commandContext().schemaObject()));
     }
     // create json doc write metrics
     if (commandContext.jsonProcessingMetricsReporter() != null) {
       commandContext
           .jsonProcessingMetricsReporter()
-          .reportJsonWrittenDocsMetrics(commandContext().commandName(), insertions.size());
+          .reportJsonWrittenDocsMetrics(
+              commandContext().requestContext().tenant(),
+              commandContext().commandName(),
+              insertions.size());
     }
     if (ordered) {
       return insertOrdered(dataApiRequestInfo, queryExecutor, vectorEnabled, insertions);
@@ -130,7 +98,7 @@ public record InsertCollectionOperation(
         // if no failures reduce to the op page
         .collect()
         .in(
-            () -> new InsertOperationPage(insertions, returnDocumentResponses()),
+            () -> new InsertOperationPage<>(insertions, returnDocumentResponses()),
             (insertPage, insertAttempt) -> {
               insertPage.registerCompletedAttempt(insertAttempt);
               insertAttempt
@@ -144,12 +112,7 @@ public record InsertCollectionOperation(
         // in case upstream propagated FailFastInsertException
         // return collected result
         .onFailure(FailFastInsertException.class)
-        .recoverWithItem(
-            e -> {
-              // safe to cast, asserted class in onFailure
-              FailFastInsertException failFastInsertException = (FailFastInsertException) e;
-              return failFastInsertException.result;
-            })
+        .recoverWithItem(e -> e.result)
 
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
@@ -183,10 +146,8 @@ public record InsertCollectionOperation(
         // then reduce here
         .collect()
         .in(
-            () -> new InsertOperationPage(insertions, returnDocumentResponses()),
-            (agg, in) -> {
-              agg.registerCompletedAttempt(in);
-            })
+            () -> new InsertOperationPage<>(insertions, returnDocumentResponses()),
+            InsertOperationPage::registerCompletedAttempt)
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
   }
@@ -212,7 +173,7 @@ public record InsertCollectionOperation(
             doc,
             vectorEnabled,
             offlineMode,
-            commandContext().schemaObject().lexicalConfig().enabled());
+            commandContext().schemaObject().lexicalDef().enabled());
     return queryExecutor
         .executeWrite(dataApiRequestInfo, boundStatement)
 
@@ -228,22 +189,24 @@ public record InsertCollectionOperation(
                   return Uni.createFrom().item(doc.id());
                 }
                 return Uni.createFrom()
-                    .failure(ErrorCodeV1.DOCUMENT_ALREADY_EXISTS.toApiException());
+                    .failure(
+                        DocumentException.Code.DOCUMENT_ALREADY_EXISTS.get(
+                            Map.of("id", doc.id().toString())));
               }
             });
   }
 
   // utility for building the insert query
   public String buildInsertQuery(boolean vectorEnabled) {
-    final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
+    var lexicalEnabled = commandContext().schemaObject().lexicalDef().enabled();
     StringBuilder insertQuery = new StringBuilder(200);
-    final SchemaObjectName tableName = commandContext.schemaObject().name();
+    var tableIdentifier = commandContext.schemaObject().identifier();
 
     insertQuery
         .append("INSERT INTO \"")
-        .append(tableName.keyspace())
+        .append(tableIdentifier.keyspace())
         .append("\".\"")
-        .append(tableName.table())
+        .append(tableIdentifier.table())
         .append("\"")
         .append(
             " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,")

@@ -12,12 +12,12 @@ import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAction;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.*;
 
 /**
@@ -72,7 +72,6 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
         return maybeVectorize(vectorType, rawValue);
       }
     }
-
     // not deferring, so we need to push the value through the codecs to get what to send to CQL
     return decodeToCQL(rawValue.value().value());
   }

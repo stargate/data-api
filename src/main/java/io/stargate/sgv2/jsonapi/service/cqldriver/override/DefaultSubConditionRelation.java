@@ -6,11 +6,10 @@ import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.CqlSnippet;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
-import edu.umd.cs.findbugs.annotations.CheckReturnValue;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.NonNull;
 
 /**
  * This class is to add AND/OR ability to driver where clauses, and it is a temporary override
@@ -157,7 +156,6 @@ public class DefaultSubConditionRelation
 
   /** Adds alternative clause. Next relation is logically joined with OR. */
   @NonNull
-  @CheckReturnValue
   public OngoingWhereClause<DefaultSubConditionRelation> or() {
     return where(LogicalRelation.OR);
   }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Description of the API support for a data type to be used in the public API with users via the
@@ -16,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 @JsonPropertyOrder({"createTable", "insert", "read", "filter", "cqlDefinition"})
 public record ApiSupportDesc(
     boolean createTable, boolean insert, boolean read, boolean filter, String cqlDefinition) {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiSupportDesc.class);
 
   @JsonIgnore
   public boolean isAnyUnsupported() {

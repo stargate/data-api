@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
@@ -55,7 +56,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                             .databaseConfig()
                             .ddlRetryDelayMillis())));
 
-    var tableName = validateSchemaName(command.name(), NamingRules.TABLE);
+    // TODO: AARON: Validation should happen in the factory for the tableDef, not here.
+    var tableName = NamingRules.TABLE.checkRule(command.name());
 
     taskBuilder.ifNotExists(
         ApiOptionUtils.getOrDefault(
@@ -81,7 +83,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
               "unsupportedTypes",
                   errFmtJoin(
                       unsupportedColumnsCreateTable.stream()
-                          .map(e -> e.type().columnDesc().getApiName())
+                          .map(e -> e.type().apiName())
                           .sorted(String::compareTo)
                           .toList())));
     }

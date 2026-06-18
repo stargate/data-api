@@ -861,33 +861,6 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void missingJSONCodecException() {
-
-    var error =
-        assertThrowsExactly(
-            MissingJSONCodecException.class,
-            () ->
-                JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
-                    TEST_DATA.mockTableMetadata(TEST_DATA.UNSUPPORTED_CQL_DATA_TYPE),
-                    TEST_DATA.COLUMN_NAME,
-                    TEST_DATA.RANDOM_STRING),
-            String.format(
-                "Get codec for unsupported CQL type %s", TEST_DATA.UNSUPPORTED_CQL_DATA_TYPE));
-
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.javaType).isEqualTo(TEST_DATA.RANDOM_STRING.getClass());
-              assertThat(e.value).isEqualTo(TEST_DATA.RANDOM_STRING);
-
-              assertThat(e.getMessage())
-                  .contains(TEST_DATA.UNSUPPORTED_CQL_DATA_TYPE.toString())
-                  .contains(TEST_DATA.RANDOM_STRING.getClass().getName())
-                  .contains(TEST_DATA.RANDOM_STRING);
-            });
-  }
-
-  @Test
   public void unknownColumnException() {
 
     var error =

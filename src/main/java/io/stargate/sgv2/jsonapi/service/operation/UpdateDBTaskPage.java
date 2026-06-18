@@ -4,10 +4,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 
 /**
  * A page of results from a update command, use {@link #builder()} to get a builder to pass to
@@ -54,8 +54,7 @@ public class UpdateDBTaskPage<SchemaT extends TableSchemaObject>
       // when we refactor collections to use the OperationAttempt this will need to support
       // returning a document
       // e.g. for findOneAndDelete, for now it is always status only
-      return new UpdateDBTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing));
+      return new UpdateDBTaskPage<>(tasks, CommandResult.statusOnlyBuilder(requestTracing));
     }
   }
 }

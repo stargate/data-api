@@ -20,7 +20,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindWithLexicalSortTableIntegrationTest extends AbstractTableIntegrationTestBase {
   private static final String TABLE_NAME = "lexicalSortTableTest";
@@ -30,7 +30,7 @@ public class FindWithLexicalSortTableIntegrationTest extends AbstractTableIntegr
   @Order(1)
   class Setup {
     @Test
-    void createCollectionWithLexicalIndex() {
+    void createTableWithLexicalIndex() {
       // Create a table with a lexical index on the "tags" column
       assertNamespaceCommand(keyspaceName)
           .templated()
@@ -152,7 +152,7 @@ public class FindWithLexicalSortTableIntegrationTest extends AbstractTableIntegr
               SortException.Code.CANNOT_SORT_UNKNOWN_COLUMNS,
               SortException.class,
               "command attempted to sort using columns that are not in the table schema",
-              "\"lexicalSortTableTest\" defines the columns");
+              "lexicalSortTableTest defines the columns");
     }
 
     @Test

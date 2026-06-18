@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.function.Supplier;
 
 /**
@@ -68,8 +68,7 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
 
       // If not failure, we get the result from the lastTaskAccumulator so this command builder is
       // ignored
-      return new CompositeTaskOuterPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing));
+      return new CompositeTaskOuterPage<>(tasks, CommandResult.statusOnlyBuilder(requestTracing));
     }
   }
 }

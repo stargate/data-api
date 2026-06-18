@@ -6,13 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 
 @ConfigMapping(prefix = "stargate.jsonapi.metric")
 public interface JsonApiMetricsConfig {
-  @NotBlank
-  @WithDefault("error.class")
-  String errorClass();
-
-  @NotBlank
-  @WithDefault("error.code")
-  String errorCode();
 
   @NotBlank
   @WithDefault("command")
@@ -77,6 +70,14 @@ public interface JsonApiMetricsConfig {
   @NotBlank
   @WithDefault("embedding.provider")
   String embeddingProvider();
+
+  @NotBlank
+  @WithDefault("embedding.model")
+  String embeddingModelTag();
+
+  /** Whether to include the embedding model name as a metric tag. Defaults to true. */
+  @WithDefault("true")
+  boolean embeddingModelTagEnabled();
 
   @NotBlank
   @WithDefault("index.usage.count")

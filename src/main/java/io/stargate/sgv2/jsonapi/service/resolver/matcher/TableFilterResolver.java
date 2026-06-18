@@ -7,10 +7,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.BinaryTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
@@ -33,6 +34,8 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
   private static final Object DYNAMIC_EJSON_GROUP = new Object();
   private static final Object DYNAMIC_GROUP_IN = new Object();
   private static final Object DYNAMIC_MAP_SET_LIST_GROUP = new Object();
+  private static final Object DYNAMIC_MATCH_GROUP = new Object();
+  private static final Object DYNAMIC_SUB_DOC_GROUP = new Object();
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -114,7 +117,23 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ArrayComparisonOperator.ALL,
                 // NOTANY is not public exposed in API, only be negated by ALL.
                 ArrayComparisonOperator.NOTANY),
-            JsonType.ARRAY);
+            JsonType.ARRAY)
+        .capture(DYNAMIC_MATCH_GROUP) // For $match operator
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING)
+        // 04-Mar-2026, tatu: [data-api#2275] Capture SUB_DOC (JSON Object) so they don't cause a
+        // generic server error; findDynamic handler will throw a descriptive FilterException
+        // instead.
+        .capture(DYNAMIC_SUB_DOC_GROUP)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.SUB_DOC);
     return matchRules;
   }
 
@@ -141,7 +160,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
                                       (ValueComparisonOperator) expression.operator()),
-                                  (String) expression.value()));
+                                  expression.value()));
                         });
                   });
 
@@ -255,6 +274,39 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   expression.path(),
                                   (List<Object>) expression.value(),
                                   expression.filterComponent()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_MATCH_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<String> dynamicMatchGroup = (CaptureGroup<String>) captureGroup;
+                    dynamicMatchGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new TextTableFilter(
+                                  expression.path(),
+                                  NativeTypeTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  expression.value()));
+                        });
+                  });
+
+          // 04-Mar-2026, tatu: [data-api#2275] Reject JSON Object (SUB_DOC) values: tables
+          // do not support them as filter operands
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_SUB_DOC_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> subDocGroup = (CaptureGroup<Object>) captureGroup;
+                    subDocGroup.consumeAllCaptures(
+                        expression -> {
+                          throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
+                              "message",
+                              "JSON Object values are not supported as table column filter values, filter column '"
+                                  + expression.path()
+                                  + "'");
                         });
                   });
         };

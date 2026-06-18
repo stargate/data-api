@@ -1,20 +1,19 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -64,7 +63,7 @@ public class CommandProcessor {
                     "Starting to process '%s' command for schema object %s"
                         .formatted(
                             command.commandName().getApiName(),
-                            PrettyPrintable.print(commandContext.schemaObject().name())),
+                            PrettyPrintable.print(commandContext.schemaObject().identifier())),
                     commandContext.schemaObject()));
 
     return Uni.createFrom()
@@ -127,8 +126,8 @@ public class CommandProcessor {
 
   /**
    * Handles failures that occur during the command processing pipeline. It attempts to convert
-   * known exceptions (APIException, JsonApiException) into a {@link CommandResult} supplier, and
-   * logs other unexpected exceptions.
+   * known exceptions (APIException) into a {@link CommandResult} supplier, and logs other
+   * unexpected exceptions.
    *
    * @param commandContext The command context.
    * @param originalCommand The initial command that was being processed.
@@ -137,23 +136,16 @@ public class CommandProcessor {
    */
   private <SchemaT extends SchemaObject> Supplier<CommandResult> handleProcessingFailure(
       CommandContext<SchemaT> commandContext, Command originalCommand, Throwable throwable) {
-    var errorObjectV2 = commandContext.config().get(OperationsConfig.class).extendError();
+
+    var resultBuilder = CommandResult.statusOnlyBuilder(commandContext.requestTracing());
 
     return switch (throwable) {
       case APIException apiException -> {
-        // new error object V2
-        var errorBuilder = new APIExceptionCommandErrorBuilder(errorObjectV2);
-        yield () ->
-            CommandResult.statusOnlyBuilder(errorObjectV2, commandContext.requestTracing())
-                .addCommandResultError(errorBuilder.buildLegacyCommandResultError(apiException))
-                .build();
+        // Check if session should be evicted before building the error response
+        maybeEvictSession(commandContext, apiException);
+
+        yield () -> resultBuilder.addThrowable(apiException).build();
       }
-      case JsonApiException jsonApiException ->
-          // old error objects, old comment below
-          // Note: JsonApiException means that JSON API itself handled the situation
-          // (created, or wrapped the exception) -- should not be logged (have already
-          // been logged if necessary)
-          jsonApiException;
       default -> {
         // Old error handling below, to be replaced eventually (aaron aug 28 2024)
         // But other exception types are unexpected, so log for now
@@ -161,9 +153,40 @@ public class CommandProcessor {
             "Command '{}' failed with exception",
             originalCommand.getClass().getSimpleName(),
             throwable);
-        yield new ThrowableCommandResultSupplier(throwable);
+
+        maybeEvictSession(commandContext, throwable);
+        yield () -> resultBuilder.addThrowable(throwable).build();
       }
     };
+  }
+
+  /**
+   * Evicts the CQL session when the {@link APIException} indicates the current session is
+   * unreliable (for example, when all cluster nodes have restarted).
+   *
+   * @param commandContext The command context.
+   * @param apiException The API exception that may contain exception flags.
+   * @param <SchemaT> The schema object type.
+   */
+  private <SchemaT extends SchemaObject> void maybeEvictSession(
+      CommandContext<SchemaT> commandContext, APIException apiException) {
+
+    // exceptionFlags is guaranteed to be non-null by ErrorInstance and APIException constructors
+    if (apiException.exceptionFlags.contains(ExceptionFlags.UNRELIABLE_DB_SESSION)) {
+      commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
+    }
+  }
+
+  /**
+   * Evicts the CQL session when the throwable is {@link AllNodesFailedException}, which indicates
+   * the current session is unreliable (for example, when all cluster nodes have restarted).
+   */
+  private <SchemaT extends SchemaObject> void maybeEvictSession(
+      CommandContext<SchemaT> commandContext, Throwable throwable) {
+
+    if (throwable instanceof AllNodesFailedException) {
+      commandContext.cqlSessionCache().evictSession(commandContext.requestContext());
+    }
   }
 
   /**
@@ -176,12 +199,12 @@ public class CommandProcessor {
    */
   private CommandResult postProcessCommandResult(
       Command originalCommand, CommandResult commandResult) {
+
     if (originalCommand instanceof DeprecatedCommand deprecatedCommand) {
-      // (aaron) for the warnings we always want V2 errors ?
-      var errorV2 =
-          new APIExceptionCommandErrorBuilder(true)
-              .buildCommandErrorV2(deprecatedCommand.getDeprecationWarning());
-      commandResult.addWarning(errorV2);
+      // we already have the result, not a result builder, so need to create the warning error here
+      // not on hot path, can create the factory each time
+      commandResult.addWarning(
+          CommandErrorFactory.create(deprecatedCommand.getDeprecationWarning()));
     }
     return commandResult;
   }

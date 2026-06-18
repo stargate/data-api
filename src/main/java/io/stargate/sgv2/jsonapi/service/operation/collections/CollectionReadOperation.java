@@ -12,8 +12,8 @@ import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -21,19 +21,11 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * ReadOperation interface which all find command operations will use. It also provides the
@@ -74,7 +66,6 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
    * @param jsonProcessingMetricsReporter - reporter to use for reporting JSON read/write metrics
-   * @return
    */
   default Uni<FindResponse> findDocument(
       RequestContext dataApiRequestInfo,
@@ -87,6 +78,7 @@ public interface CollectionReadOperation extends CollectionOperation {
       DocumentProjector projection,
       int limit,
       boolean vectorSearch,
+      Tenant tenant,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     return Multi.createFrom()
@@ -110,7 +102,7 @@ public interface CollectionReadOperation extends CollectionOperation {
               Iterator<Row> rowIterator = rSet.currentPage().iterator();
               while (--remaining >= 0 && rowIterator.hasNext()) {
                 Row row = rowIterator.next();
-                ReadDocument document = null;
+                ReadDocument document;
                 try {
                   // TODO: Use the field name, not the ordinal for the field this is too brittle
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
@@ -118,7 +110,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                     // create metrics
                     // TODO Use the column names!
                     jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                        commandName, row.getString(2).length());
+                        tenant, commandName, row.getString(2).length());
 
                     if (projection.doIncludeSimilarityScore()) {
                       float score = row.getFloat(3); // similarity_score
@@ -183,7 +175,7 @@ public interface CollectionReadOperation extends CollectionOperation {
   byte true_byte = (byte) 1;
 
   /**
-   * This method reads upto system fixed limit
+   * This method reads up to system fixed limit
    *
    * @param queryExecutor
    * @param queries Multiple queries only in case of `in` condition on `_id` field
@@ -199,7 +191,6 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @param vectorSearch - whether the query uses vector search
    * @param commandName - The command that calls ReadOperation
    * @param jsonProcessingMetricsReporter - reporter to use for reporting JSON read/write metrics
-   * @return
    */
   default Uni<FindResponse> findOrderDocument(
       RequestContext dataApiRequestInfo,
@@ -214,6 +205,7 @@ public interface CollectionReadOperation extends CollectionOperation {
       int errorLimit,
       DocumentProjector projection,
       boolean vectorSearch,
+      Tenant tenant,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
@@ -257,13 +249,13 @@ public interface CollectionReadOperation extends CollectionOperation {
               Iterator<Row> rowIterator = resultSet.currentPage().iterator();
               int remaining = resultSet.remaining();
               int count = documentCounter.addAndGet(remaining);
-              if (count == errorLimit) {
-                throw ErrorCodeV1.DATASET_TOO_BIG.toApiException(
-                    "maximum sortable count = %d", errorLimit);
+              if (count >= errorLimit) {
+                throw SortException.Code.OVERLOADED_SORT_ROW_LIMIT.get(
+                    Map.of("maxLimit", String.valueOf(errorLimit), "unit", "document"));
               }
               List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {
-                ReadDocument document = null;
+                ReadDocument document;
                 Row row = rowIterator.next();
                 List<JsonNode> sortValues = new ArrayList<>(numberOfOrderByColumn);
                 for (int sortColumnCount = 0;
@@ -289,8 +281,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                   columnCounter++;
                   ByteBuffer boolValue = row.getBytesUnsafe(columnCounter);
                   if (boolValue != null) {
-                    sortValues.add(
-                        nodeFactory.booleanNode(Byte.compare(true_byte, boolValue.get(0)) == 0));
+                    sortValues.add(nodeFactory.booleanNode(true_byte == boolValue.get(0)));
                     continue;
                   }
                   // null value
@@ -321,7 +312,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                         sortValues);
                 documents.add(document);
                 jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                    commandName, row.getString(2).length());
+                    tenant, commandName, row.getString(2).length());
               }
               return Uni.createFrom().item(documents);
             })
@@ -337,8 +328,10 @@ public interface CollectionReadOperation extends CollectionOperation {
               // begin value to read from the sorted list
               int begin = skip;
 
-              // If the begin index is >= sorted list size, return empty response
-              if (begin >= sortedData.size()) return new FindResponse(List.of(), null);
+              // If the beginning index is >= sorted list size, return empty response
+              if (begin >= sortedData.size()) {
+                return new FindResponse(List.of(), null);
+              }
               // Last index to which we need to read
               int end = Math.min(skip + limit, sortedData.size());
               // Create a sublist of the required rage
@@ -368,7 +361,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                             return ReadDocument.from(
                                 readDoc.id().orElse(null), readDoc.txnId().orElse(null), data);
                           })
-                      .collect(Collectors.toList());
+                      .toList();
               return new FindResponse(responseDocuments, null);
             });
   }
@@ -389,99 +382,86 @@ public interface CollectionReadOperation extends CollectionOperation {
   /**
    * Default implementation to run count query and parse the result set, this approach counts by key
    * field
-   *
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
    */
   default Uni<CountResponse> countDocumentsByKey(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    AtomicLong counter = new AtomicLong();
-    final CompletionStage<AsyncResultSet> async =
-        queryExecutor
-            .executeCount(dataApiRequestInfo, simpleStatement)
-            .whenComplete(
-                (rs, error) -> {
-                  getCount(rs, error, counter);
-                });
 
-    return Uni.createFrom()
-        .completionStage(async)
+    return Multi.createBy()
+        .repeating()
+        .uni(
+            () -> new AtomicReference<AsyncResultSet>(null),
+            stateRef -> {
+              // First repetition runs the query, following repetitions fetch the next page
+              AsyncResultSet previousPage = stateRef.get();
+              Uni<AsyncResultSet> page =
+                  previousPage == null
+                      ? queryExecutor.executeCount(dataApiRequestInfo, simpleStatement)
+                      : Uni.createFrom().completionStage(previousPage.fetchNextPage());
+              return page.onItem().invoke(stateRef::set);
+            })
+        // Read keys while more pages exist, the last page is still emitted and counted
+        .whilst(resultSet -> resultSet.hasMorePages())
+        .collect()
+        // IMPORTANT: remaining() is the number of rows left in the driver's iterator for the
+        // current page, not the number of rows the page was fetched with - the driver has no way
+        // to get that. The result set must not be iterated before this point, otherwise every row
+        // already consumed is missing from the count.
+        .in(AtomicLong::new, (counter, resultSet) -> counter.addAndGet(resultSet.remaining()))
         .onItem()
+        .transform(counter -> new CountResponse(counter.get()))
+        .onFailure()
         .transform(
-            rs -> {
-              return new CountResponse(counter.get());
-            });
+            failure ->
+                DatabaseException.Code.COUNT_READ_FAILED.get(
+                    Map.of("errorMessage", failure.toString())));
   }
 
-  /**
-   * Default implementation to run count query and parse the result set
-   *
-   * @param dataApiRequestInfo
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
-   */
+  /** Default implementation to run count query and parse the result set */
   default Uni<CountResponse> countDocuments(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    return Uni.createFrom()
-        .completionStage(queryExecutor.executeCount(dataApiRequestInfo, simpleStatement))
-        .onItem()
-        .transform(
-            rSet -> {
+
+    return queryExecutor
+        .executeCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
+        .transformToUni(
+            (rSet, failure) -> {
+              if (failure != null) {
+                return Uni.createFrom()
+                    .failure(
+                        DatabaseException.Code.COUNT_READ_FAILED.get(
+                            Map.of("errorMessage", failure.toString())));
+              }
               Row row = rSet.one(); // For count there will be only one row
               long count = row.getLong(0); // Count value will be the first column value
-              return new CountResponse(count);
+              return Uni.createFrom().item(new CountResponse(count));
             });
   }
 
-  private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
-    if (error != null) {
-      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException();
-    } else {
-      counter.addAndGet(rs.remaining());
-      if (rs.hasMorePages()) {
-        rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
-      }
-    }
-  }
-
-  /**
-   * Run estimated count query and parse the result set
-   *
-   * @param queryExecutor
-   * @param simpleStatement
-   * @return
-   */
+  /** Run estimated count query and parse the result set */
   default Uni<CountResponse> estimateDocumentCount(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
-    AtomicLong counter = new AtomicLong();
-    final CompletionStage<AsyncResultSet> async =
-        queryExecutor
-            .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
-            .whenComplete(
-                (rs, error) -> {
-                  getEstimatedCount(rs, error, counter);
-                });
 
-    return Uni.createFrom()
-        .completionStage(async)
-        .onItem()
+    AtomicLong counter = new AtomicLong();
+
+    return queryExecutor
+        .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
+        .onItemOrFailure()
         .transform(
-            rs -> {
+            (rs, failure) -> {
+              getEstimatedCount(rs, failure, counter);
               return new CountResponse(counter.get());
             });
   }
 
   private void getEstimatedCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
     if (error != null) {
-      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException("root cause: %s", error.getMessage());
+      throw DatabaseException.Code.COUNT_READ_FAILED.get(Map.of("errorMessage", error.toString()));
     } else {
 
       // calculate the total range size and total partitions count for each range
@@ -501,7 +481,7 @@ public interface CollectionReadOperation extends CollectionOperation {
 
       // estimate the total row count by dividing the total partition count by the ratio
       // of the sum of all token ranges to the entire token range, avoiding division by zero
-      // relies on the assumption that the supershredding schema uses one row per partition
+      // relies on the assumption that the super-shredding schema uses one row per partition
       if (totalRangeSize > 0) {
         counter.addAndGet((long) (totalPartitionsCount / (totalRangeSize / TOTAL_TOKEN_RANGE)));
       }
@@ -527,7 +507,8 @@ public interface CollectionReadOperation extends CollectionOperation {
   /**
    * Helper method to handle details of exactly how much information to include in error message.
    */
-  static JsonApiException parsingExceptionToApiException(JacksonException e) {
-    return ErrorCodeV1.DOCUMENT_UNPARSEABLE.toApiException("%s", e.getOriginalMessage());
+  static APIException parsingExceptionToApiException(JacksonException e) {
+    return DatabaseException.Code.DOCUMENT_FROM_DB_UNPARSEABLE.get(
+        Map.of("errorMessage", e.getOriginalMessage()));
   }
 }

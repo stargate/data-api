@@ -9,19 +9,20 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Map;
 
 /** Resolves the {@link FindOneCommand } */
 @ApplicationScoped
@@ -103,8 +104,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // Tables(CqlPagingState)
     if (sortClause != null) {
       if (!sortClause.isEmpty() && pageState != null && !pageState.isEmpty()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "pageState is not supported with non-empty sort clause");
+        throw SortException.Code.SORT_CLAUSE_INVALID.get(
+            Map.of("problem", "'pageState' is not supported with non-empty sort clause"));
       }
       sortClause.validate(commandContext.schemaObject());
     }

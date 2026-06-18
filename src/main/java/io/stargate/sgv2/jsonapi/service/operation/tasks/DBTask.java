@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +88,17 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       this.commandContext = commandContext;
       this.task = task;
       this.statement = statement;
-      this.supplier = Objects.requireNonNull(supplier, "supplier must not be null");
+      this.supplier = supplier;
+    }
+
+    protected BaseTask.UniSupplier<AsyncResultSet> getSupplier() {
+      // to support subclasses building supplier on demand
+      Objects.requireNonNull(supplier, "supplier must not be null");
+      return supplier;
+    }
+
+    public CommandContext<?> commandContext() {
+      return commandContext;
     }
 
     @Override
@@ -96,7 +106,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
 
       DBTraceMessages.executingStatement(commandContext.requestTracing(), statement, task);
 
-      return supplier
+      return getSupplier()
           .get()
           .onItem()
           .call(
@@ -114,8 +124,8 @@ public abstract class DBTask<SchemaT extends SchemaObject>
 
   /** {@inheritDoc} */
   @Override
-  protected RuntimeException maybeHandleException(
-      AsyncResultSetSupplier resultSupplier, RuntimeException runtimeException) {
+  protected Throwable maybeHandleException(
+      AsyncResultSetSupplier resultSupplier, Throwable throwable) {
 
     // resultSupplier may be null if we did not get to execute a statement
     var handler =
@@ -124,7 +134,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
                 schemaObject, resultSupplier == null ? null : resultSupplier.statement),
             "DBTask.maybeHandleException() - exceptionHandlerFactory returned null");
 
-    return handler.maybeHandle(runtimeException);
+    return handler.maybeHandle(throwable);
   }
 
   // =================================================================================================
@@ -176,11 +186,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     // , improve later
     return new CommandQueryExecutor(
         commandContext.cqlSessionCache(),
-        new CommandQueryExecutor.DBRequestContext(
-            commandContext.requestContext().getTenantId(),
-            commandContext.requestContext().getCassandraToken(),
-            commandContext.requestContext().getUserAgent(),
-            commandContext.requestTracing().enabled()),
+        commandContext.requestContext(),
         CommandQueryExecutor.QueryTarget.TABLE);
   }
 

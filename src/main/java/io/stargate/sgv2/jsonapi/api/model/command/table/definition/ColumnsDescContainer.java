@@ -3,11 +3,14 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescription;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import jakarta.validation.Valid;
 import java.util.LinkedHashMap;
 
 /** Ordered map of columns in a table definition. */
-public class ColumnsDescContainer extends LinkedHashMap<String, ColumnDesc> {
+public class ColumnsDescContainer extends LinkedHashMap<String, @Valid ColumnDesc>
+    implements SchemaDescription {
 
   public ColumnsDescContainer() {
     super();

@@ -47,7 +47,7 @@ public record FindEmbeddingProvidersOperation(
     @Override
     public CommandResult get() {
 
-      return CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
+      return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
           .addStatus(CommandStatus.EXISTING_EMBEDDING_PROVIDERS, embeddingProviders)
           .build();
     }
@@ -148,9 +148,7 @@ public record FindEmbeddingProvidersOperation(
 
       // reconstruct each parameter for lowercase parameter type
       List<ParameterConfigResponse> parametersResponse =
-          sourceModelConfig.parameters().stream()
-              .map(ParameterConfigResponse::toResponse)
-              .collect(Collectors.toList());
+          sourceModelConfig.parameters().stream().map(ParameterConfigResponse::toResponse).toList();
 
       return new ModelConfigResponse(
           sourceModelConfig.name(),

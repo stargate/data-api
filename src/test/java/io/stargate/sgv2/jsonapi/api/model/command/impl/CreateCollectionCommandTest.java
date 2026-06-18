@@ -10,7 +10,6 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -21,13 +20,10 @@ class CreateCollectionCommandTest {
 
   @Inject Validator validator;
 
-  @Nested
-  class Validation {
-
-    @Test
-    public void nameCorrectPattern() throws Exception {
-      String json =
-          """
+  @Test
+  public void nameCorrectPattern() throws Exception {
+    String json =
+        """
           {
             "createCollection": {
               "name": "is_possible_10"
@@ -35,10 +31,9 @@ class CreateCollectionCommandTest {
           }
           """;
 
-      CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Set<ConstraintViolation<CreateCollectionCommand>> result = validator.validate(command);
+    CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
+    Set<ConstraintViolation<CreateCollectionCommand>> result = validator.validate(command);
 
-      assertThat(result).isEmpty();
-    }
+    assertThat(result).isEmpty();
   }
 }

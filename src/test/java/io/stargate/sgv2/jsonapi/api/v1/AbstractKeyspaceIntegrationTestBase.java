@@ -48,7 +48,13 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
   // keyspace automatically created in this test
-  protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
+  protected static final String keyspaceName =
+      "ks" + RandomStringUtils.insecure().nextAlphanumeric(16);
+
+  /**
+   * Access is protected via {@link #createDriverSession()} method and closed in {@link #cleanUp()}.
+   */
+  private CqlSession cqlSession;
 
   @BeforeAll
   public static void enableLog() {
@@ -57,7 +63,36 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   @BeforeAll
   public void createKeyspace() {
+    waitForRestEndpoint(GeneralResource.BASE_PATH, 60); // Wait max 60 seconds
     createKeyspace(keyspaceName);
+  }
+
+  @AfterAll
+  public void cleanUp() {
+    if (cqlSession != null) {
+      cqlSession.close();
+    }
+  }
+
+  /** Tentative to let the system start before creating the keyspace. */
+  private void waitForRestEndpoint(String baseUrl, int timeoutSeconds) {
+    long startTime = System.currentTimeMillis();
+    while ((System.currentTimeMillis() - startTime) < timeoutSeconds * 1000) {
+      try {
+        int statusCode =
+            RestAssured.given().port(getTestPort()).when().get(baseUrl).getStatusCode();
+        if (statusCode >= 200 && statusCode < 500) {
+          return; // ready
+        }
+      } catch (Exception e) {
+        // Ignore and retry
+      }
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException ignored) {
+      }
+    }
+    throw new RuntimeException("REST endpoint not available at " + baseUrl + " after timeout");
   }
 
   protected void createKeyspace(String nsToCreate) {
@@ -161,49 +196,30 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   protected Map<String, ?> getHeaders() {
-    if (useCoordinator()) {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          getAuthToken(),
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      String credential =
-          "Cassandra:"
-              + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
-              + ":"
-              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          credential,
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    }
+    String credential =
+        "Cassandra:"
+            + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
+            + ":"
+            + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
+    return Map.of(
+        HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+        credential,
+        HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+        CustomITEmbeddingProvider.TEST_API_KEY);
   }
 
   protected Map<String, ?> getInvalidHeaders() {
-    if (useCoordinator()) {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          "invalid",
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      String credential =
-          "Cassandra:"
-              + Base64.getEncoder().encodeToString("invalid".getBytes())
-              + ":"
-              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          credential,
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    }
-  }
 
-  protected boolean useCoordinator() {
-    return Boolean.getBoolean("testing.containers.use-coordinator");
+    String credential =
+        "Cassandra:"
+            + Base64.getEncoder().encodeToString("invalid".getBytes())
+            + ":"
+            + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
+    return Map.of(
+        HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+        credential,
+        HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+        CustomITEmbeddingProvider.TEST_API_KEY);
   }
 
   public static void checkMetrics(String commandName) {
@@ -312,40 +328,58 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     }
   }
 
+  protected boolean executeCqlStatement(String... statements) {
+    var cqlStatements = new SimpleStatement[statements.length];
+    for (int i = 0; i < statements.length; i++) {
+      cqlStatements[i] = SimpleStatement.newInstance(statements[i]);
+    }
+    return executeCqlStatement(cqlStatements);
+  }
+
   protected boolean executeCqlStatement(SimpleStatement... statements) {
     var cqlSession = createDriverSession();
     for (SimpleStatement statement : statements) {
       if (!cqlSession.execute(statement).wasApplied()) {
-        cqlSession.close();
         return false;
       }
     }
-    cqlSession.close();
     return true;
   }
 
-  private CqlSession createDriverSession() {
-    int port =
-        useCoordinator()
-            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
-            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-    String dc;
-    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
-      dc = "dc1";
-    } else {
-      dc = "datacenter1";
+  /**
+   * Synchronized to avoid creating multiple sessions, performance is not a concern. Session is
+   * closed in {@link #cleanUp()} method.
+   */
+  private synchronized CqlSession createDriverSession() {
+    if (cqlSession == null) {
+      int port = getCassandraCqlPort();
+      String dc;
+      if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
+        dc = "dc1";
+      } else {
+        dc = "datacenter1";
+      }
+      var builder =
+          new CqlSessionBuilder()
+              .withLocalDatacenter(dc)
+              .addContactPoint(new InetSocketAddress("localhost", port))
+              .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
+      cqlSession = builder.build();
     }
-    var builder =
-        new CqlSessionBuilder()
-            .withLocalDatacenter(dc)
-            .addContactPoint(new InetSocketAddress("localhost", port))
-            .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
-    return builder.build();
+    return cqlSession;
+  }
+
+  /**
+   * Gets the Cassandra CQL port. Subclasses can override this if their tests need isolated
+   * container and port.
+   */
+  protected int getCassandraCqlPort() {
+    return Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
   }
 
   /** Helper method for determining if lexical search is available for the database backend */
   protected boolean isLexicalAvailableForDB() {
-    return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
+    return !"true".equals(System.getProperty(TEST_PROP_LEXICAL_DISABLED));
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */

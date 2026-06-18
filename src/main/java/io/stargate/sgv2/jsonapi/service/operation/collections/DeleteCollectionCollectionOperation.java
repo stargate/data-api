@@ -5,9 +5,9 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ public record DeleteCollectionCollectionOperation(
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info("Executing DeleteCollectionCollectionOperation for {}", name);
-    String cql = DROP_TABLE_CQL.formatted(context.schemaObject().name().keyspace(), name);
+    String cql = DROP_TABLE_CQL.formatted(context.schemaObject().identifier().keyspace(), name);
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
     return queryExecutor

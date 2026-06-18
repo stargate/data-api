@@ -4,9 +4,9 @@ import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.Objects;
 
 /**

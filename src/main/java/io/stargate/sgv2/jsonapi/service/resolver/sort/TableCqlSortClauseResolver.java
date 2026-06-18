@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
@@ -30,6 +29,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
@@ -367,6 +367,15 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
               }));
     }
 
+    // already validated the column is a vector type
+    // the optional get won't fail
+    var vectorColumnDefinition =
+        commandContext
+            .schemaObject()
+            .vectorConfig()
+            .getColumnDefinition(vectorSortIdentifier)
+            .get();
+
     // see if Table has vector index on the target sort vector column
     var optionalVectorIndex = apiTableDef.indexes().firstIndexFor(vectorSortIdentifier);
     if (optionalVectorIndex.isEmpty()) {
@@ -404,6 +413,24 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       if (vectorSortExpression.hasVectorize()) {
         jsonNode = JsonNodeFactory.instance.textNode(vectorSortExpression.getVectorize());
       } else if (vectorSortExpression.hasVector()) {
+
+        // check if provided vector dimension matches column definition
+        if (vectorSortExpression.getVector().length != vectorColumnDefinition.vectorSize()) {
+          throw SortException.Code.CANNOT_VECTOR_SORT_ON_MISMATCHED_VECTOR_DIMENSIONS.get(
+              errVars(
+                  commandContext.schemaObject(),
+                  map -> {
+                    map.put(
+                        "vectorColumns",
+                        errFmtApiColumnDef(apiTableDef.allColumns().filterVectorColumnsToList()));
+                    map.put("targetVectorColumn", errFmt(vectorSortIdentifier));
+                    map.put("actualDimension", String.valueOf(vectorColumnDefinition.vectorSize()));
+                    map.put(
+                        "providedDimension",
+                        String.valueOf(vectorSortExpression.getVector().length));
+                  }));
+        }
+
         var arrayNode = JsonNodeFactory.instance.arrayNode();
         for (float f : vectorSortExpression.getVector()) {
           arrayNode.add(f);

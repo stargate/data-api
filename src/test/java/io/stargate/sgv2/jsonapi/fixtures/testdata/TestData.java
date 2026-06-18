@@ -41,6 +41,10 @@ public class TestData {
             });
   }
 
+  public TenantTestData tenant() {
+    return getOrCache(TenantTestData.class);
+  }
+
   public SchemaObjectTestData schemaObject() {
     return getOrCache(SchemaObjectTestData.class);
   }

@@ -3,13 +3,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.UpdateClauseDeserializer;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -22,7 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     type = SchemaType.OBJECT,
     implementation = Object.class,
-    example =
+    examples =
         """
         {
           "$set" : {"location": "New York"},
@@ -54,9 +50,11 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
               for (ActionWithLocator action : actions) {
                 UpdateOperator prevType = actionMap.put(action.locator(), type);
                 if (prevType != null) {
-                  throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-                      "update operators '%s' and '%s' must not refer to same path: '%s'",
-                      prevType.apiName(), type.apiName(), action.locator());
+                  throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+                      Map.of(
+                          "errorMessage",
+                          "update operators '%s' and '%s' must not refer to same path: '%s'"
+                              .formatted(prevType.apiName(), type.apiName(), action.locator())));
                 }
               }
             });
@@ -76,9 +74,12 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
         PathMatchLocator currLoc = curr.getKey();
         // So, if parent/child, parent always first so this check is enough
         if (currLoc.isSubPathOf(prevLoc)) {
-          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
-              "Update operator path conflict due to overlap: '%s' (%s) vs '%s' (%s)",
-              prevLoc, prev.getValue().apiName(), currLoc, curr.getValue().apiName());
+          throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PARAM.get(
+              Map.of(
+                  "errorMessage",
+                  "Update operator path conflict due to overlap: '%s' (%s) vs '%s' (%s)"
+                      .formatted(
+                          prevLoc, prev.getValue().apiName(), currLoc, curr.getValue().apiName())));
         }
       }
     }

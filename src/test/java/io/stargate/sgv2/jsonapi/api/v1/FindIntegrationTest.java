@@ -7,11 +7,15 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
@@ -130,9 +134,11 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].message", is("The provided keyspace does not exist: something_else"))
-          .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The command tried to use a Keyspace that does not exist in the Database"))
+          .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_KEYSPACE.name()));
     }
 
     @Test
@@ -150,10 +156,11 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                 }
                 """)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_INVALID.name()))
           .body(
               "errors[0].message",
-              is("Invalid sort clause: pageState is not supported with non-empty sort clause"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"));
+              containsString(
+                  "Sort clause used by command not valid.\nProblem: 'pageState' is not supported with non-empty sort clause"));
     }
 
     @Test
@@ -534,6 +541,36 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
+    }
+
+    @Test
+    public void withExistOperatorOnIdField() {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : {"$exists" : true}}
+            }
+          }
+          """;
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(6));
+    }
+
+    @Test
+    public void withExistFalseOperatorOnIdField() {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {"_id" : {"$exists" : false}}
+            }
+          }
+          """;
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -995,8 +1032,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].message", containsString("filter clause path ('$gt')"));
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
+          .body(
+              "errors[0].message",
+              containsString("filter expression path ('$gt') cannot start with '$'"));
     }
 
     @Test
@@ -1007,8 +1046,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].message", endsWith("Invalid use of $eq operator"));
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
+          .body("errors[0].message", containsString("invalid use of '$eq' operator"));
     }
 
     @Test
@@ -1017,12 +1056,14 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
       String json = createJsonStringWithNFilterFields(65);
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
+          .body(
+              "errors[0].errorCode", is(FilterException.Code.FILTER_FIELDS_LIMIT_VIOLATION.name()))
           .body(
               "errors[0].message",
-              endsWith(
-                  " filter has 65 fields, exceeds maximum allowed "
-                      + OperationsConfig.DEFAULT_MAX_FILTER_SIZE));
+              containsString(
+                  "Filter has 65 fields, exceeds maximum allowed ("
+                      + OperationsConfig.DEFAULT_MAX_FILTER_SIZE
+                      + ")"));
     }
 
     private static String createJsonStringWithNFilterFields(int numberOfFields) {
@@ -1754,9 +1795,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported projection parameter: projection path ('price&') is not a valid path."))
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "Unsupported projection parameter: projection path ('price&') is not a valid path"))
+          .body(
+              "errors[0].errorCode",
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()));
     }
 
     @Test
@@ -1775,9 +1817,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported projection parameter: projection path ('price&abc') is not a valid path."))
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "Unsupported projection parameter: projection path ('price&abc') is not a valid path"))
+          .body(
+              "errors[0].errorCode",
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()));
     }
 
     @Test
@@ -1796,9 +1839,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported projection parameter: projection path ('foo..bar') is not a valid path."))
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "Unsupported projection parameter: projection path ('foo..bar') is not a valid path"))
+          .body(
+              "errors[0].errorCode",
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM.name()));
     }
   }
 

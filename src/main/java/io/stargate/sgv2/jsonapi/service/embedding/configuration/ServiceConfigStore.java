@@ -37,8 +37,8 @@ public interface ServiceConfigStore {
     }
 
     /**
-     * See {@link DseTestResource} for where the implementationClass is set, and {@link
-     * PropertyBasedServiceConfigStore} for where it is read
+     * See {@code io.stargate.sgv2.jsonapi.testresource.DseTestResource} for where the
+     * implementationClass is set, and {@link PropertyBasedServiceConfigStore} for where it is read
      */
     public static ServiceConfig forCustomProvider(Class<?> implementationClass) {
       Objects.requireNonNull(implementationClass, "implementationClass must not be null");
@@ -51,8 +51,7 @@ public interface ServiceConfigStore {
     public String getBaseUrl(String modelName) {
 
       // aaron 16 june 2025 - leaving below for how this used to work, I think before I did some
-      // refactoring
-      // this method was not called all the time. No it is, so if there is no model
+      // refactoring this method was not called all the time. Now it is, so if there is no model
       // override just return the baseUrl.
 
       //      if (modelUrlOverrides != null && modelUrlOverrides.get(modelName) == null) {

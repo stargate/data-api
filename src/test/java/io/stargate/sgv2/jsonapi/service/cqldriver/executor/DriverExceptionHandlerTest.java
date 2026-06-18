@@ -9,15 +9,16 @@ import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link DriverExceptionHandler} interface only */
 public class DriverExceptionHandlerTest {
 
   @Test
-  public void callWithNonDriverReturnsSame() {
+  public void callWithNonDriverReturnsUnexpectedError() {
 
-    var originalEx = new RuntimeException("original");
+    var originalEx = new RuntimeException("original 123");
 
     // Not using mocks because want all the defaults in the interface to kick in
     var handler = new DriverExceptionHandler() {};
@@ -25,7 +26,13 @@ public class DriverExceptionHandlerTest {
 
     assertThat(actualEx)
         .as("When not a DriverException, should return the same exception")
-        .isSameAs(originalEx);
+        .hasMessageContaining("RuntimeException")
+        .hasMessageContaining("original 123")
+        .asInstanceOf(InstanceOfAssertFactories.type(ServerException.class))
+        .satisfies(
+            se -> {
+              assertThat(se.code).isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+            });
   }
 
   @Test

@@ -3,14 +3,13 @@ package io.stargate.sgv2.jsonapi.api.model.command.builders;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -48,7 +47,11 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       return FilterClause.empty();
     }
     if (!filterNode.isObject()) {
-      throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
+      throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
+          Map.of(
+              "message",
+              "filter definition must be JSON Object, command had "
+                  + JsonUtil.nodeTypeAsString(filterNode)));
     }
 
     // implicit and
@@ -60,9 +63,12 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     // Could push down but for now seems like reasonable place to check
     final int totalExprCount = implicitAnd.getTotalComparisonExpressionCount();
     if (totalExprCount > operationsConfig.maxFilterObjectProperties()) {
-      throw ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION.toApiException(
-          "filter has %d fields, exceeds maximum allowed %s",
-          totalExprCount, operationsConfig.maxFilterObjectProperties());
+      throw FilterException.Code.FILTER_FIELDS_LIMIT_VIOLATION.get(
+          Map.of(
+              "fieldCount",
+              String.valueOf(totalExprCount),
+              "maxFieldCount",
+              String.valueOf(operationsConfig.maxFilterObjectProperties())));
     }
 
     return validateAndBuild(implicitAnd);
@@ -109,9 +115,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       return;
     }
     if (node.isObject()) {
-      Iterator<Map.Entry<String, JsonNode>> fieldsIterator = node.fields();
-      while (fieldsIterator.hasNext()) {
-        Map.Entry<String, JsonNode> entry = fieldsIterator.next();
+      for (Map.Entry<String, JsonNode> entry : node.properties()) {
         populateExpression(logicalExpression, entry);
       }
     } else if (node.isArray()) {
@@ -119,16 +123,22 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       for (JsonNode next : arrayNode) {
         if (!next.isObject()) {
           // nodes in $and/$or array must be objects
-          throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
-              "Unsupported NodeType %s in $%s",
-              next.getNodeType(), logicalExpression.getLogicalRelation());
+          throw FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE.get(
+              Map.of(
+                  "message",
+                  "Unsupported NodeType '%s' for '$%s' filter"
+                      .formatted(
+                          JsonUtil.nodeTypeAsString(next),
+                          logicalExpression.getLogicalRelation())));
         }
         populateExpression(logicalExpression, next);
       }
     } else {
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "Cannot filter on '%s' field using operator $eq: only $exists is supported",
-          DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+      throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+          Map.of(
+              "message",
+              "cannot filter on '%s' field using operator '$eq': only '$exists' is supported"
+                  .formatted(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)));
     }
   }
 
@@ -150,12 +160,18 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             case "$or" -> LogicalExpression.or();
             case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                     DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
-                throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                    "Cannot filter on '%s' field using operator $eq: only $exists is supported",
-                    entry.getKey());
+                // TODO: (21-Jul-2025) Should be refactored to CollectionFilterClauseBuilder as it
+                // only applies to Collections
+                throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                    Map.of(
+                        "message",
+                        "cannot filter on '%s' field using operator '$eq': only '$exists' is supported"
+                            .formatted(entry.getKey())));
             default ->
-                throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                    "Cannot filter on '%s' by array type", entry.getKey());
+                throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                    Map.of(
+                        "message",
+                        "cannot filter on '%s' by array type".formatted(entry.getKey())));
           };
       ArrayNode arrayNode = (ArrayNode) entry.getValue();
       for (JsonNode next : arrayNode) {
@@ -163,19 +179,19 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else { // neither Array nor Object, simple implicit "$eq" comparison
+      // TODO: (21-Jul-2025) Should be refactored to CollectionFilterClauseBuilder as it
+      // only applies to Collections
       switch (entry.getKey()) {
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                 DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "Cannot filter on '%s' field using operator $eq: only $exists is supported",
-                entry.getKey());
-        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD ->
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "Cannot filter on '%s' field using operator $eq: only $match is supported",
-                entry.getKey());
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of(
+                    "message",
+                    "cannot filter on '%s' field using operator '$eq': only '$exists' is supported"
+                        .formatted(entry.getKey())));
       }
       // the key should match pattern
-      String key = validateFilterClausePath(entry.getKey());
+      String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
       logicalExpression.addComparisonExpressions(
           List.of(ComparisonExpression.eq(key, jsonNodeValue(key, entry.getValue()))));
     }
@@ -194,9 +210,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   protected List<ComparisonExpression> buildFromPathEntryCommon(Map.Entry<String, JsonNode> entry) {
 
     final List<ComparisonExpression> comparisonExpressionList = new ArrayList<>();
-    final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
-    while (fields.hasNext()) {
-      Map.Entry<String, JsonNode> updateField = fields.next();
+    for (Map.Entry<String, JsonNode> updateField : entry.getValue().properties()) {
       final String updateKey = updateField.getKey();
       FilterOperator operator = FilterOperators.findComparisonOperator(updateKey);
 
@@ -205,9 +219,10 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       if (operator == null) {
         JsonExtensionType etype = JsonUtil.findJsonExtensionType(updateKey);
         if ((etype == null) && updateKey.startsWith("$")) {
-          throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
+          throw FilterException.Code.FILTER_UNSUPPORTED_OPERATOR.get(
+              Map.of("message", "filter operator '%s'".formatted(updateKey)));
         }
-        String key = validateFilterClausePath(entry.getKey());
+        String key = validateFilterClausePath(entry.getKey(), ValueComparisonOperator.EQ);
         // JSON Extension type needs to be explicitly handled:
         Object value;
         if (etype != null) {
@@ -224,18 +239,14 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         return comparisonExpressionList;
       }
 
-      String entryKey = validateFilterClausePath(entry.getKey());
-
-      // First things first: $lexical field can only be used with $match operator
-      if (entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)
-          && (operator != ValueComparisonOperator.MATCH)) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "Cannot filter on '%s' field using operator %s: only $match is supported",
-            entry.getKey(), operator.getOperator());
-      }
-
+      String entryKey = validateFilterClausePath(entry.getKey(), operator);
       JsonNode value = updateField.getValue();
-      Object valueObject = jsonNodeValue(entryKey, value);
+      // $exists checks field presence; its operand is always a plain Boolean and must not be
+      // wrapped as a DocumentId even when filtering on `_id`.
+      Object valueObject =
+          (operator == ElementComparisonOperator.EXISTS)
+              ? jsonNodeValue(value)
+              : jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT
@@ -258,22 +269,20 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
                     || value.isTextual()
                     || value.isBoolean()
                     || value.isNumber())))) {
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "%s operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value",
-              operator.getOperator());
+          throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+              Map.of(
+                  "message",
+                  "'%s' operator must have `Date` or `Number` or `String` or `Boolean` value"
+                      .formatted(operator.getOperator())));
         }
       } else if (operator == ValueComparisonOperator.MATCH) {
-        // $match operator can only be used with String value and for Collections
-        // only on $lexical field
-        if (!entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "%s operator can only be used with the '%s' field, not '%s'",
-              operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, entryKey);
-        }
+        // $match operator can only be used with String value
         if (!(valueObject instanceof String)) {
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "%s operator must have `String` value, was `%s`",
-              operator.getOperator(), JsonUtil.nodeTypeAsString(value));
+          throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+              Map.of(
+                  "message",
+                  "'%s' operator must have `String` value, was `%s`"
+                      .formatted(operator.getOperator(), JsonUtil.nodeTypeAsString(value))));
         }
       }
 
@@ -285,16 +294,17 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   }
 
   /**
-   * Method to parse each filter clause and return node value.
+   * Method to parse each filter clause and return operand value for operator. Considers special
+   * case of field being Document Id ("_id") to produce {@code DocumentId} otherwise just "natural"
+   * Java value for JSON type (like {@code String} or {@code Boolean}.
    *
-   * @param path - If the path refers to Document Id (see {@link #isDocId}, then the value is
-   *     resolved as DocumentId
+   * @param path - Path for filter clause
    * @param node - JsonNode which has the operand value of a filter clause
-   * @return
+   * @return Value for filter operator to compare
    */
   protected Object jsonNodeValue(String path, JsonNode node) {
-    // If the path is _id, then the value is resolved as DocumentId and Array type handled for `$in`
-    // operator in filter
+    // If the path is _id, then the value is resolved as DocumentId and Array type
+    // handled for `$in` operator in filter
     if (isDocId(path)) {
       if (node.getNodeType() == JsonNodeType.ARRAY) {
         ArrayNode arrayNode = (ArrayNode) node;
@@ -341,8 +351,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
               if (value.isIntegralNumber() && value.canConvertToLong()) {
                 return new Date(value.longValue());
               }
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "$date value has to be sent as epoch time");
+              throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                  Map.of("message", "$date value has to be sent as epoch time"));
             } else if (etype != null) {
               // This will convert to Java value if valid value; we'll just convert back to String
               // since all non-Date JSON extension values are indexed as Constants
@@ -351,23 +361,22 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             } else {
               // handle an invalid filter use case:
               // { "address": { "street": { "$xx": xxx } } }
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "Invalid use of %s operator", node.fieldNames().next());
+              throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                  Map.of(
+                      "message",
+                      "invalid use of '%s' operator".formatted(node.fieldNames().next())));
             }
           } else {
-            ObjectNode objectNode = (ObjectNode) node;
-            Map<String, Object> values = new LinkedHashMap<>(objectNode.size());
-            final Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
-            while (fields.hasNext()) {
-              final Map.Entry<String, JsonNode> nextField = fields.next();
+            Map<String, Object> values = new LinkedHashMap<>(node.size());
+            for (Map.Entry<String, JsonNode> nextField : node.properties()) {
               values.put(nextField.getKey(), jsonNodeValue(nextField.getValue()));
             }
             return values;
           }
         }
       default:
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "Unsupported NodeType %s", node.getNodeType());
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of("message", "Unsupported NodeType %s".formatted(node.getNodeType())));
     }
   }
 
@@ -376,7 +385,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   private void validateExpression(
       OperationsConfig operationsConfig, LogicalExpression logicalExpression) {
     if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
-      throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
+      throw FilterException.Code.FILTER_MULTIPLE_ID_FILTER.get();
     }
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
       validateExpression(operationsConfig, subLogicalExpression);
@@ -400,9 +409,11 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       FilterOperation<?> filterOperation,
       LogicalExpression.LogicalOperator fromLogicalRelation) {
     if (isDocId(path) && fromLogicalRelation.equals(LogicalExpression.LogicalOperator.OR)) {
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "Cannot filter on '%s' field within '%s', ID field can not be used with $or operator",
-          path, LogicalExpression.LogicalOperator.OR.getOperator());
+      throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+          Map.of(
+              "message",
+              "cannot filter on '%s' field within '%s', ID field can not be used with '$or' operator"
+                  .formatted(path, LogicalExpression.LogicalOperator.OR.getOperator())));
     }
 
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {
@@ -410,25 +421,29 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         case IN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.maxInOperatorValueSize()) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "$in operator must have at most %d values",
-                  operationsConfig.maxInOperatorValueSize());
+              throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                  Map.of(
+                      "message",
+                      "'$in' operator must have at most %d values"
+                          .formatted(operationsConfig.maxInOperatorValueSize())));
             }
           } else {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "$in operator must have `ARRAY`");
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of("message", "'$in' operator must have `Array`"));
           }
         }
         case NIN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.maxInOperatorValueSize()) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "$nin operator must have at most %d values",
-                  operationsConfig.maxInOperatorValueSize());
+              throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                  Map.of(
+                      "message",
+                      "'$nin' operator must have at most %d values"
+                          .formatted(operationsConfig.maxInOperatorValueSize())));
             }
           } else {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "$nin operator must have `ARRAY`");
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of("message", "'$nin' operator must have `Array`"));
           }
         }
       }
@@ -438,8 +453,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       switch (elementComparisonOperator) {
         case EXISTS:
           if (!(filterOperation.operand().value() instanceof Boolean)) {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "$exists operator must have `BOOLEAN`");
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of("message", "'$exists' operator must have `Boolean`"));
           }
           break;
       }
@@ -450,28 +465,31 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         case ALL:
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.isEmpty()) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "$all operator must have at least one value");
+              throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                  Map.of("message", "'$all' operator must have at least one value"));
             }
           } else {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "$all operator must have `ARRAY` value");
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of("message", "'$all' operator must have `Array` value"));
           }
           break;
         case SIZE:
           if (filterOperation.operand().value() instanceof BigDecimal i) {
             if (i.intValue() < 0) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "$size operator must have integer value >= 0");
+              throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                  Map.of(
+                      "message",
+                      "'$size' operator must have integer value >= 0 (had %d)"
+                          .formatted(i.intValue())));
             }
             // Check if the value is an integer by comparing its scale.
             if (i.stripTrailingZeros().scale() > 0) {
-              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "$size operator must have an integer value");
+              throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                  Map.of("message", "'$size' operator must have an integer value"));
             }
           } else {
-            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                "$size operator must have integer");
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of("message", "'$size' operator must have integer"));
           }
           break;
       }
@@ -588,7 +606,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    * path.
    *
    * @param path Path to be validated
+   * @param operator FilterOperator that is used for this path
    * @return Path after validation - currently not changed
    */
-  protected abstract String validateFilterClausePath(String path);
+  protected abstract String validateFilterClausePath(String path, FilterOperator operator);
 }

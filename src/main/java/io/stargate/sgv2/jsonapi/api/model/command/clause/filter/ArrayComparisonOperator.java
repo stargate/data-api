@@ -23,13 +23,10 @@ public enum ArrayComparisonOperator implements FilterOperator {
 
   @Override
   public FilterOperator invert() {
-    switch (this) {
-      case ALL:
-        return NOTANY;
-      case NOTANY:
-        return ALL;
-      default:
-        return this;
-    }
+    return switch (this) {
+      case ALL -> NOTANY;
+      case NOTANY -> ALL;
+      default -> this;
+    };
   }
 }

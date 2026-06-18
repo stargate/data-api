@@ -22,7 +22,7 @@ import java.util.*;
  *       vector col
  *   <li>One row with a vector all set to 1.0 , that has id row-1, so you can check to get a vector
  *       that is expected
- *   <li>The well known vector row availanle in {@link #KNOWN_VECTOR_ROW_JSON}
+ *   <li>The well-known vector row available in {@link #KNOWN_VECTOR_ROW_JSON}
  * </ul>
  */
 public class VectorDimension5TableScenario extends TestDataScenario {
@@ -30,9 +30,9 @@ public class VectorDimension5TableScenario extends TestDataScenario {
   public static final ApiColumnDef CONTENT_COL =
       new ApiColumnDef(CqlIdentifier.fromCql("content"), ApiDataTypeDefs.TEXT);
   public static final ApiColumnDef INDEXED_VECTOR_COL =
-      new ApiColumnDef(CqlIdentifier.fromCql("indexed_vector"), ApiVectorType.from(5));
+      new ApiColumnDef(CqlIdentifier.fromCql("indexed_vector"), new ApiVectorType(5, null));
   public static final ApiColumnDef UNINDEXED_VECTOR_COL =
-      new ApiColumnDef(CqlIdentifier.fromCql("unindexed_vector"), ApiVectorType.from(5));
+      new ApiColumnDef(CqlIdentifier.fromCql("unindexed_vector"), new ApiVectorType(5, null));
 
   public static final ArrayNode KNOWN_VECTOR = JsonNodeFactory.instance.arrayNode(5);
   public static final float[] KNOWN_VECTOR_ARRAY = new float[5];

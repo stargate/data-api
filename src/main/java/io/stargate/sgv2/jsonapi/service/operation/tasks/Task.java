@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Optional;
 import java.util.UUID;

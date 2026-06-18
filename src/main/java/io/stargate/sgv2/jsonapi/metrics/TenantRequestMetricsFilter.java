@@ -52,15 +52,6 @@ public class TenantRequestMetricsFilter {
   /** The request info bean. */
   private final RequestContext requestContext;
 
-  /** The tag for error being true, created only once. */
-  private final Tag errorTrue;
-
-  /** The tag for error being false, created only once. */
-  private final Tag errorFalse;
-
-  /** The tag for tenant being unknown, created only once. */
-  Tag tenantUnknown;
-
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsFilter(
@@ -68,9 +59,6 @@ public class TenantRequestMetricsFilter {
     this.meterRegistry = meterRegistry;
     this.requestContext = requestContext;
     this.config = metricsConfig.tenantRequestCounter();
-    errorTrue = Tag.of(config.errorTag(), "true");
-    errorFalse = Tag.of(config.errorTag(), "false");
-    tenantUnknown = Tag.of(config.tenantTag(), UNKNOWN_VALUE);
   }
 
   /**
@@ -87,15 +75,11 @@ public class TenantRequestMetricsFilter {
     if (config.enabled()) {
 
       // resolve tenant
-      Tag tenantTag =
-          this.requestContext
-              .getTenantId()
-              .map(id -> Tag.of(config.tenantTag(), id))
-              .orElse(tenantUnknown);
+      Tag tenantTag = Tag.of(config.tenantTag(), this.requestContext.tenant().toString());
 
       // resolve error
       boolean error = responseContext.getStatus() >= 500;
-      Tag errorTag = error ? errorTrue : errorFalse;
+      Tag errorTag = error ? ExceptionMetrics.TAG_ERROR_TRUE : ExceptionMetrics.TAG_ERROR_FALSE;
 
       // check if we need user agent as well
       Tags tags = Tags.of(tenantTag, errorTag);

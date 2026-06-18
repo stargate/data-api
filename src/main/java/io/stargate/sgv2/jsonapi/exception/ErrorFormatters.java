@@ -4,18 +4,19 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMes
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants.TemplateVars;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.UnscopedSchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -57,12 +58,20 @@ public abstract class ErrorFormatters {
     return errFmtJoin(identifiers, ErrorFormatters::errFmt);
   }
 
+  public static String errFmtApiDataType(Collection<? extends ApiDataType> apiDataTypes) {
+    return errFmtJoin(apiDataTypes, ErrorFormatters::errFmt);
+  }
+
   public static String errFmtApiColumnDef(ApiColumnDefContainer apiColumnDefs) {
     return errFmtApiColumnDef(apiColumnDefs.values());
   }
 
   public static String errFmtApiColumnDef(Collection<ApiColumnDef> apiColumnDefs) {
     return errFmtJoin(apiColumnDefs, ErrorFormatters::errFmt);
+  }
+
+  public static String errFmtApiTypeName(Collection<ApiTypeName> apiTypeNames) {
+    return errFmtJoin(apiTypeNames, ApiTypeName::apiName);
   }
 
   public static String errFmtColumnDesc(Collection<ColumnDesc> columnDescs) {
@@ -73,28 +82,35 @@ public abstract class ErrorFormatters {
     return errFmtJoin(cqlNamedValues, ErrorFormatters::errFmt);
   }
 
+  private static <T> String nullSafe(T target, Function<T, String> toString) {
+    return target == null ? "null" : toString.apply(target);
+  }
+
   public static String errFmt(ColumnMetadata column) {
-    return String.format("%s(%s)", errFmt(column.getName()), errFmt(column.getType()));
+    return nullSafe(column, c -> String.format("%s(%s)", errFmt(c.getName()), errFmt(c.getType())));
   }
 
   public static String errFmt(CqlIdentifier identifier) {
-    return cqlIdentifierToMessageString(identifier);
+    return nullSafe(identifier, CqlIdentifierUtil::cqlIdentifierToMessageString);
   }
 
   public static String errFmt(ApiColumnDef apiColumnDef) {
-    return String.format("%s(%s)", errFmt(apiColumnDef.name()), errFmt(apiColumnDef.type()));
+    return nullSafe(apiColumnDef, a -> String.format("%s(%s)", errFmt(a.name()), errFmt(a.type())));
   }
 
   public static String errFmt(CqlNamedValue cqlNamedValue) {
     // If there is a bind error we did not have the ApiColumnDef
-    return cqlNamedValue.state().equals(CqlNamedValue.NamedValueState.BIND_ERROR)
-        ? errFmt(cqlNamedValue.name())
-        : errFmt(cqlNamedValue.apiColumnDef());
+    return nullSafe(
+        cqlNamedValue,
+        c ->
+            c.state().equals(CqlNamedValue.NamedValueState.BIND_ERROR)
+                ? errFmt(c.name())
+                : errFmt(c.apiColumnDef()));
   }
 
   public static String errFmt(ColumnDesc columnDesc) {
     // NOTE: call apiName on the ColumnDesc so unsupported types can return a string
-    return columnDesc.getApiName();
+    return nullSafe(columnDesc, ColumnDesc::getApiName);
   }
 
   /**
@@ -103,11 +119,11 @@ public abstract class ErrorFormatters {
    */
   public static String errFmt(ApiDataType apiDataType) {
     // the safe way to get the  name when the type may be unsupported
-    return apiDataType.apiName();
+    return nullSafe(apiDataType, ApiDataType::apiName);
   }
 
   public static String errFmt(DataType dataType) {
-    return dataType.asCql(true, true);
+    return nullSafe(dataType, d -> d.asCql(true, true));
   }
 
   public static Map<String, String> errVars(SchemaObject schemaObject) {
@@ -130,6 +146,26 @@ public abstract class ErrorFormatters {
 
   public static Map<String, String> errVars(SchemaObject schemaObject, Throwable exception) {
     return errVars(schemaObject, exception, null);
+  }
+
+  public static Map<String, String> errVars(UnscopedSchemaObjectIdentifier name) {
+    return errVars(name, null);
+  }
+
+  public static Map<String, String> errVars(
+      UnscopedSchemaObjectIdentifier name, Consumer<Map<String, String>> consumer) {
+
+    Map<String, String> map = new HashMap<>();
+
+    map.put(TemplateVars.KEYSPACE, cqlIdentifierToMessageString(name.keyspace()));
+    map.put(
+        TemplateVars.TABLE,
+        name.objectName() == null ? "" : cqlIdentifierToMessageString(name.objectName()));
+
+    if (consumer != null) {
+      consumer.accept(map);
+    }
+    return map;
   }
 
   /**
@@ -155,7 +191,7 @@ public abstract class ErrorFormatters {
    * @param schemaObject The schema object to get the basic variables from, variables are added for
    *     <code>schemaType</code>, <code>keyspace</code>, and <code>table</code>. May be null.
    * @param exception The exception to get the basic variables from, variables are added for <code>
-   *     errorClass</code> and <code>errorMessage</code>. May be null.
+   *     exceptionClass</code> and <code>errorMessage</code>. May be null.
    * @param consumer The consumer to add more variables to the map. May be null.
    * @return Map with the basic schema object variables and any additional variables added by the
    *     consumer.
@@ -166,13 +202,29 @@ public abstract class ErrorFormatters {
     Map<String, String> map = new HashMap<>();
     if (schemaObject != null) {
       map.put(TemplateVars.SCHEMA_TYPE, schemaObject.type().name());
-      map.put(TemplateVars.KEYSPACE, schemaObject.name().keyspace());
-      map.put(TemplateVars.TABLE, schemaObject.name().table());
+      map.put(
+          TemplateVars.KEYSPACE,
+          cqlIdentifierToMessageString(schemaObject.identifier().keyspace()));
+      map.put(TemplateVars.TABLE, cqlIdentifierToMessageString(schemaObject.identifier().table()));
     }
     if (exception != null) {
       map.put(TemplateVars.ERROR_CLASS, exception.getClass().getSimpleName());
       map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage());
     }
+    if (consumer != null) {
+      consumer.accept(map);
+    }
+
+    return map;
+  }
+
+  public static Map<String, String> errVars(
+      TableMetadata table, Consumer<Map<String, String>> consumer) {
+
+    Map<String, String> map = new HashMap<>();
+    map.put(
+        TemplateVars.KEYSPACE, CqlIdentifierUtil.cqlIdentifierToMessageString(table.getKeyspace()));
+    map.put(TemplateVars.TABLE, CqlIdentifierUtil.cqlIdentifierToMessageString(table.getName()));
     if (consumer != null) {
       consumer.accept(map);
     }

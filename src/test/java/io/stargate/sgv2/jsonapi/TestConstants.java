@@ -1,90 +1,220 @@
 package io.stargate.sgv2.jsonapi;
 
-import static org.mockito.ArgumentMatchers.any;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToCQL;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.provider.Billing;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
-import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.*;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.text.StringSubstitutor;
 
 /**
  * Re-usable values for tests.
+ *
+ * <p>Quick Guide:
+ *
+ * <ul>
+ *   <li>Use the *_NAME when needed, but prefer the *_IDENTIFIER and the *_SCHEMA_OBJECT we create
+ *       here
+ *   <li>Use the context functions to make command or request context as needed.
+ * </ul>
  *
  * <p>This must be an instance so that quarkus can set up the environment, we need this because of
  * the use of their config library
  */
 public class TestConstants {
 
+  public final String APP_NAME;
+  public final DatabaseType DATABASE_TYPE;
+  public final TenantFactory SINGLETON_TENANT_FACTORY;
+
+  // ============================================================
   // Names
-  public final String TEST_COMMAND_NAME = "testCommand";
+  // ============================================================
+
+  /**
+   * A unique identifier for the test run, append to names to ensure uniqueness and stable ID for
+   * the test class instance.
+   */
+  public final String CORRELATION_ID;
+
+  public final String COMMAND_NAME;
   public final String KEYSPACE_NAME;
   public final String COLLECTION_NAME;
-  public final SchemaObjectName SCHEMA_OBJECT_NAME;
+  public final String TABLE_NAME;
 
-  // Schema objects for testing
+  /** Raw SLA user agent, Use {@link #SLA_USER_AGENT} */
+  public final String SLA_USER_AGENT_NAME = "Datastax-SLA-Checker";
+
+  // ============================================================
+  // Identifiers and Request Context
+  // ============================================================
+
+  /** An astra database type TENANT used for test */
+  public final Tenant TENANT;
+
+  /** A database identifier for the test */
+  public final SchemaObjectIdentifier DATABASE_IDENTIFIER;
+
+  /** A keyspace identifier for the test */
+  public final SchemaObjectIdentifier KEYSPACE_IDENTIFIER;
+
+  /** A collection identifier for the test */
+  public final SchemaObjectIdentifier COLLECTION_IDENTIFIER;
+
+  /** A table identifier for the test */
+  public final SchemaObjectIdentifier TABLE_IDENTIFIER;
+
+  /** A cassandra database type TENANT used for test */
+  public final Tenant CASSANDRA_TENANT;
+
+  public final String AUTH_TOKEN;
+
+  /** A non SLA user agent for the test run */
+  public final UserAgent USER_AGENT;
+
+  /** the DS SLA USer Agent */
+  public final UserAgent SLA_USER_AGENT;
+
+  /** Embedding credentials */
+  public final EmbeddingCredentials EMBEDDING_CREDENTIALS;
+
+  /**
+   * Collection Schema to use if all information missing: Vector not configured, no Lexical enabled
+   */
+  public final CollectionSchemaObject MISSING_COLLECTION;
+
+  public final ApiFeatures API_FEATURES = ApiFeatures.empty();
+
+  // ============================================================
+  // Schema Objects
+  // ============================================================
+
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
+  public final CollectionSchemaObject VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
+  public final TableSchemaObject TABLE_SCHEMA_OBJECT;
   public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
   public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
 
   public TestConstants() {
+    // ============================================================
+    // Names
+    // NOTE: follow the `\w` regex to ensure that the names are valid for
+    // collection names and cql identifiers
+    // ============================================================
+    CORRELATION_ID = "test_id_" + RandomStringUtils.insecure().nextAlphanumeric(16);
 
-    KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-    COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-    SCHEMA_OBJECT_NAME = new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
+    COMMAND_NAME = "command_" + CORRELATION_ID;
+    KEYSPACE_NAME = "keyspace_" + CORRELATION_ID;
+    var keyspaceCqlIdentifier = cqlIdentifierFromUserInput(KEYSPACE_NAME);
+    COLLECTION_NAME = "collection_" + CORRELATION_ID;
+    var collectionCqlIdentifier = cqlIdentifierFromUserInput(COLLECTION_NAME);
+    TABLE_NAME = "table_" + CORRELATION_ID;
+    var tableCqlIdentifier = cqlIdentifierFromUserInput(TABLE_NAME);
 
-    // Schema objects for testing
+    APP_NAME = "Stargate DATA API -" + CORRELATION_ID;
+
+    // ============================================================
+    // Request Context
+    // ============================================================
+
+    DATABASE_TYPE = DatabaseType.ASTRA;
+    var tenantId = "tenant-" + CORRELATION_ID;
+    TenantFactory.reset();
+    TenantFactory.initialize(DATABASE_TYPE);
+    TENANT = TenantFactory.instance().create(tenantId);
+
+    SINGLETON_TENANT_FACTORY = TenantFactory.instance();
+
+    // will be defaulted to SINGLE-TENANT, so passing null as tenantId
+    CASSANDRA_TENANT = Tenant.create(DatabaseType.CASSANDRA, null);
+
+    AUTH_TOKEN = "auth-token-" + CORRELATION_ID;
+
+    var userAgentString = "user-agent/" + CORRELATION_ID;
+    USER_AGENT = new UserAgent(userAgentString);
+
+    var slaUserAgentString = SLA_USER_AGENT_NAME + "/" + CORRELATION_ID;
+    SLA_USER_AGENT = new UserAgent(slaUserAgentString);
+
+    EMBEDDING_CREDENTIALS =
+        new EmbeddingCredentials(
+            TENANT,
+            Optional.of("test-api-key"),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+
+    // ============================================================
+    // Schema Objects
+    // ============================================================
+
+    DATABASE_IDENTIFIER = SchemaObjectIdentifier.forDatabase(TENANT);
+    KEYSPACE_IDENTIFIER = SchemaObjectIdentifier.forKeyspace(TENANT, keyspaceCqlIdentifier);
+    COLLECTION_IDENTIFIER =
+        SchemaObjectIdentifier.forCollection(
+            TENANT, keyspaceCqlIdentifier, collectionCqlIdentifier);
+    TABLE_IDENTIFIER =
+        SchemaObjectIdentifier.forTable(TENANT, keyspaceCqlIdentifier, tableCqlIdentifier);
+
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDefault(),
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
             // Use default reranking config - hardcode the value to avoid reading config
-            new CollectionRerankDef(
-                true,
-                new CollectionRerankDef.RerankServiceDef(
-                    "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef(
+                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
 
     // Schema object for testing with legacy (pre-lexical-config) defaults
     COLLECTION_SCHEMA_OBJECT_LEGACY =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection());
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
                 List.of(
@@ -95,16 +225,55 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollection());
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
 
-    KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
-    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();
+    VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        -1,
+                        SimilarityFunction.COSINE,
+                        EmbeddingSourceModel.OTHER,
+                        null))),
+            null,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef(
+                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
+
+    TABLE_SCHEMA_OBJECT = new TableSchemaObject(TABLE_IDENTIFIER);
+
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
+    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject(TENANT);
+
+    MISSING_COLLECTION =
+        new CollectionSchemaObject(
+            COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
+            null,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null));
   }
 
-  // CommandContext for working on the schema objects above
+  // =============================================================
+  // Functions for working with RequestContext and  CommandContext
+  // =============================================================
+
   public CommandContext<CollectionSchemaObject> collectionContext() {
-    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
+    return collectionContext(COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
+  }
+
+  public CommandContext<CollectionSchemaObject> collectionContext(
+      CommandName commandName, CollectionSchemaObject schema) {
+    return collectionContext(commandName.getApiName(), schema, null, null);
   }
 
   public CommandContext<CollectionSchemaObject> collectionContext(
@@ -113,18 +282,20 @@ public class TestConstants {
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
 
+    // Build the no-op Billing before opening a new stubbing chain — Mockito treats nested
+    // when()/thenReturn() calls as unfinished stubbing.
+    var noOpBilling = noOpBilling();
+    var requestContext = mock(RequestContext.class);
+    when(requestContext.tenant()).thenReturn(TENANT);
+    when(requestContext.getEmbeddingCredentials()).thenReturn(EMBEDDING_CREDENTIALS);
+    when(requestContext.apiFeatures()).thenReturn(API_FEATURES);
+    when(requestContext.billing()).thenReturn(noOpBilling);
+
     var embeddingCredentials = mock(EmbeddingCredentials.class);
-    when(embeddingCredentials.tenantId()).thenReturn("test-tenant");
+    when(embeddingCredentials.tenant()).thenReturn(TENANT);
     when(embeddingCredentials.apiKey()).thenReturn(Optional.of("test-apiKey"));
     when(embeddingCredentials.accessId()).thenReturn(Optional.of("test-accessId"));
     when(embeddingCredentials.secretId()).thenReturn(Optional.of("test-secretId"));
-
-    var embeddingCredentialsSupplier = mock(EmbeddingCredentialsSupplier.class);
-    when(embeddingCredentialsSupplier.create(any(), any())).thenReturn(embeddingCredentials);
-
-    var requestContext = mock(RequestContext.class);
-    when(requestContext.getEmbeddingCredentialsSupplier()).thenReturn(embeddingCredentialsSupplier);
-    when(requestContext.getTenantId()).thenReturn(Optional.of("test-tenant"));
 
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(
@@ -143,15 +314,20 @@ public class TestConstants {
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext() {
     return keyspaceContext(
-        TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
+        COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
   }
 
   public RequestContext requestContext() {
-    return new RequestContext(
-        Optional.of("test-tenant"),
-        Optional.empty(),
-        new RerankingCredentials("test-tenant", Optional.empty()),
-        "test-user-agent");
+    return new RequestContext(TENANT, AUTH_TOKEN, USER_AGENT);
+  }
+
+  /**
+   * Shared NO-OP {@link Billing} for tests that mock the {@link RequestContext} and need {@code
+   * requestContext.billing()} to return a usable no-op rather than null. Backed by {@link
+   * Billing#NO_OP} so tests don't have to mock {@link BillingConfig}.
+   */
+  public static Billing noOpBilling() {
+    return Billing.NO_OP;
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(
@@ -182,8 +358,58 @@ public class TestConstants {
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
-        .withCommandName(TEST_COMMAND_NAME)
+        .withCommandName(COMMAND_NAME)
         .withRequestContext(requestContext())
         .build();
+  }
+
+  // ====================================================
+  // Functions for doing formatting with the names
+  // ====================================================
+
+  private StringSubstitutor createSubstitutor(Map<String, String> allValues) {
+
+    // set so IllegalArgumentException thrown if template var missing a value
+    // Disable substitution in values so user-provided strings containing "${...}" are not
+    // interpreted as template variables (see data-api#2401)
+    return new StringSubstitutor(allValues)
+        .setEnableUndefinedVariableException(true)
+        .setDisableSubstitutionInValues(true);
+  }
+
+  /** See {@link #cqlNamesSubstitutor()} for more details */
+  public String subsCqlNames(String template) {
+    return cqlNamesSubstitutor().replace(template);
+  }
+
+  /**
+   * Use this when you are formatting into CQL strings because it will use the same process to
+   * create the CQL identifiers as our code dose, in terms of how double quotes are used
+   */
+  public StringSubstitutor cqlNamesSubstitutor() {
+    var allValues =
+        Map.of(
+            "keyspace", cqlIdentifierToCQL(KEYSPACE_IDENTIFIER.keyspace()),
+            "collection", cqlIdentifierToCQL(COLLECTION_IDENTIFIER.table()),
+            "table", cqlIdentifierToCQL(TABLE_IDENTIFIER.table()));
+    return createSubstitutor(allValues);
+  }
+
+  /** See {@link #rawNamesSubstitutor()} for more details */
+  public String subsRawNames(String template) {
+    return rawNamesSubstitutor().replace(template);
+  }
+
+  /**
+   * Use this when you want the raw names for things like JSON commands, thi uses the string names
+   * before they are put into CQLIdentifiers.
+   */
+  public StringSubstitutor rawNamesSubstitutor() {
+    var allValues =
+        Map.of(
+            "keyspace", KEYSPACE_NAME,
+            "collection", COLLECTION_NAME,
+            "table", TABLE_NAME);
+    return createSubstitutor(allValues);
   }
 }

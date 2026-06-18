@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -44,7 +44,9 @@ public class PropertyBasedServiceConfigStore implements ServiceConfigStore {
 
     var providerConfig = providersConfig.providers().get(modelProvider.apiName());
     if (providerConfig == null || !providerConfig.enabled()) {
-      throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(modelProvider.apiName());
+      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNAVAILABLE.get(
+          "errorMessage",
+          "The service provider '%s' is not supported.".formatted(modelProvider.apiName()));
     }
 
     Objects.requireNonNull(

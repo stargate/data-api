@@ -6,7 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.ws.rs.core.Response;
@@ -18,7 +18,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "tableForCreateIndexTest";
@@ -676,6 +676,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(4)
   class CreateRegularIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void invalidCreateIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                  {
+                    "name": "empty_def_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     @Test
     public void createIndexWithEmptyName() {
 
@@ -845,8 +862,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     public void invalidJSONStructure() {
       assertTableCommand(keyspaceName, testTableName)
           // Invalid JSON structure: "name" should be String, not Object;
-          // reported as HTTP 400
-          .expectHttpStatus(Response.Status.BAD_REQUEST)
+          // amorton - 20 jan 2026 - this used to be http 400,but that was inconsistent, now 200
+          .expectHttpStatus(Response.Status.OK)
           .postCreateIndex(
               """
                         {
@@ -861,8 +878,32 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                         }
                         """)
           .hasSingleApiError(
-              ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
-              "Request invalid, mismatching JSON structure: underlying problem");
+              RequestException.Code.REQUEST_STRUCTURE_MISMATCH,
+              RequestException.class,
+              "Request is valid JSON but has a structural mismatch",
+              "Cannot deserialize value of type `java.lang.String` from Object value");
+    }
+
+    @MethodSource("invalidIndexFunction")
+    @ParameterizedTest
+    public void invalidIndexFunctionForScalar(Object indexFunction) {
+      // Try to create an index on a scalar column with an index function
+      // Should just use the column name as a string
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                      {
+                        "name": "text_field_3_invalid_idx",
+                        "definition": {
+                          "column": {"text_field_3" : %s}
+                        }
+                      }
+                      """
+                  .formatted(indexFunction))
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN,
+              SchemaException.class,
+              "Command has an invalid format for index creation column.");
     }
 
     private static Stream<Arguments> invalidIndexFunction() {
@@ -928,11 +969,51 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.class,
               "Index function `entries` can not apply to map column when analyze options are specified.");
     }
+
+    @Test
+    public void emptyOptionsForEntriesIndexOnMap() {
+      // Test for issue #1911: empty options object should be treated same as omitting options
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                  {
+                                    "name": "idx_map_type_entries_empty_options",
+                                    "definition": {
+                                      "column": "map_type",
+                                      "options": {}
+                                    }
+                                  }
+                                  """)
+          .wasSuccessful();
+
+      verifyCreatedIndex("idx_map_type_entries_empty_options");
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("idx_map_type_entries_empty_options", false)
+          .wasSuccessful();
+    }
   }
 
   @Nested
   @Order(5)
   class CreateVectorIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void invalidCreateVectorIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                  {
+                    "name": "empty_def_vector_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     @Test
     public void createIndexWithEmptyName() {
       assertTableCommand(keyspaceName, vectorTableName)
@@ -1099,6 +1180,23 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(6)
   class CreateTextIndexFailure {
+    // Reproduction for https://github.com/stargate/data-api/issues/2442
+    @Test
+    public void invalidCreateTextIndexWithEmptyDefinition() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+                  {
+                    "name": "empty_def_text_idx",
+                    "definition": {}
+                  }
+                  """)
+          .hasSingleApiError(
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+              RequestException.class,
+              "must not be null");
+    }
+
     // Definition of the text index must be JSON String or Object; fail if not
     @Test
     public void failForDefNotStringOrObject() {

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.reranking.operation;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
@@ -14,8 +15,10 @@ import java.util.Optional;
 /** Mock a test reranking provider that returns ranks based on query and passages */
 public class TestRerankingProvider extends RerankingProvider {
 
+  private static final TestConstants testConstants = new TestConstants();
+
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials("test-tenant", Optional.of("mocked reranking api key"));
+      new RerankingCredentials(testConstants.TENANT, "mocked reranking api key");
 
   private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
           .RequestPropertiesImpl

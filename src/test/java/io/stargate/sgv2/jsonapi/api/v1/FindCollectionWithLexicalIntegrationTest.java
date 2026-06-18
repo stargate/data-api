@@ -11,6 +11,9 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -31,15 +34,15 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * </ul>
  */
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindCollectionWithLexicalIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
   static final String COLLECTION_WITH_LEXICAL =
-      "coll_lexical_sort_" + RandomStringUtils.randomNumeric(16);
+      "coll_lexical_sort_" + RandomStringUtils.insecure().nextNumeric(16);
 
   static final String COLLECTION_WITHOUT_LEXICAL =
-      "coll_no_lexical_sort_" + RandomStringUtils.randomNumeric(16);
+      "coll_no_lexical_sort_" + RandomStringUtils.insecure().nextNumeric(16);
 
   static final String DOC1_JSON = lexicalDoc(1, "monkey banana", "value1", "top");
   static final String DOC2_JSON = lexicalDoc(2, "monkey", "value2", "top");
@@ -236,10 +239,12 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.name()))
           .body(
               "errors[0].message",
-              containsString("only be used on Collections for which Lexical feature is enabled"));
+              containsString("only be used on collections for which Lexical feature is enabled"));
     }
 
     @Test
@@ -255,10 +260,12 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.name()))
           .body(
               "errors[0].message",
-              containsString("only be used on Collections for which Lexical feature is enabled"));
+              containsString("only be used on collections for which Lexical feature is enabled"));
     }
 
     @Test
@@ -274,10 +281,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_INVALID.name()))
           .body(
               "errors[0].message",
-              containsString("if sorting by '$lexical' value must be String, not Number"));
+              containsString(
+                  "Problem: when sorting by field '$lexical', value must be String, not Number"));
     }
 
     @Test
@@ -293,11 +301,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: $match operator must have `String` value, was `Array`"));
+                  "Unsupported filter clause: '$match' operator must have `String` value, was `Array`"));
     }
 
     @Test
@@ -316,10 +324,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_INVALID.name()))
           .body(
               "errors[0].message",
-              containsString("if sorting by '$lexical' no other sort expressions allowed"));
+              containsString(
+                  "Problem: when sorting by field '$lexical' no other sort expressions allowed"));
     }
 
     // No way to do "$not" with "$match" (not supported by DBs)
@@ -336,11 +345,11 @@ public class FindCollectionWithLexicalIntegrationTest
                       }
                       """)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: cannot use $not to invert $match operator"));
+                  "Unsupported filter clause: cannot use '$not' to invert '$match' operator."));
     }
 
     // Can only use $match with $lexical, not $eq, $ne, etc.
@@ -356,11 +365,11 @@ public class FindCollectionWithLexicalIntegrationTest
                 "{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
             .body("$", responseIsError())
             .body("errors", hasSize(1))
-            .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+            .body("errors[0].errorCode", is(FilterException.Code.FILTER_INVALID_EXPRESSION.name()))
             .body(
                 "errors[0].message",
                 containsString(
-                    "Cannot filter on '$lexical' field using operator $eq: only $match is supported"));
+                    "Unsupported filter clause: cannot filter on '$lexical' field using operator '$eq': only '$match' is supported"));
       }
     }
   }

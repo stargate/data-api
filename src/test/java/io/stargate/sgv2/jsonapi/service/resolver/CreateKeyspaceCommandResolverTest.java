@@ -10,9 +10,9 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.CreateKeyspaceOperation;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -27,7 +27,7 @@ class CreateKeyspaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateNamespaceCommandResolver resolver;
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants testConstants = new TestConstants();
 
   CommandContext<DatabaseSchemaObject> commandContext;
 
@@ -283,7 +283,7 @@ class CreateKeyspaceCommandResolverTest {
 
     @Test
     public void createKeyspaceWithNameTooLong() throws Exception {
-      String name = RandomStringUtils.randomAlphabetic(49);
+      String name = RandomStringUtils.insecure().nextAlphabetic(49);
       String json =
               """
             {

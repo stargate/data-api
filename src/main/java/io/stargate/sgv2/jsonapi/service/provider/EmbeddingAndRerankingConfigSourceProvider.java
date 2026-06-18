@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.provider;
 
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.source.yaml.YamlConfigSource;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -63,8 +63,7 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
       configSources.add(getRerankingConfigSources(forClassLoader));
       return configSources;
     } catch (IOException e) {
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-          e, "Failed to load configuration: %s", e.getMessage());
+      throw ServerException.internalServerError("Failed to load configuration: " + e.getMessage());
     }
   }
 
@@ -142,8 +141,8 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
     File file = new File(envPath);
     if (!file.exists()) {
       LOGGER.error("Config file does not exist at the path: {}", file.getCanonicalPath());
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-          "Config file does not exist at the path: %s", file.getCanonicalPath());
+      throw ServerException.internalServerError(
+          "Config file does not exist at the path: " + file.getCanonicalPath());
     }
     return new YamlConfigSource(file.toURI().toURL());
   }
@@ -160,7 +159,7 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
     URL resourceURL = classLoader.getResource(resource);
     if (resourceURL == null) {
       LOGGER.error("Resource not found: {}", resource);
-      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Resource not found in: %s", resource);
+      throw ServerException.internalServerError("Resource not found in: " + resource);
     }
     return new YamlConfigSource(resourceURL);
   }

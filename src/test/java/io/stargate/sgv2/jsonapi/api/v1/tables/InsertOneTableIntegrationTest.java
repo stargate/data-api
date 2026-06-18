@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.containsString;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistryTestData;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_TEXT_COLUMNS = "insertOneTextColumnsTable";
@@ -279,7 +279,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"asciiText\"(ascii) - Cause: String contains non-ASCII character at index #12");
+              "asciiText(ascii) - Cause: String contains non-ASCII character at index #12");
     }
   }
 
@@ -466,7 +466,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"floatValue\"(float) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+              "floatValue(float) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
       // Then double
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
@@ -474,7 +474,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"doubleValue\"(double) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+              "doubleValue(double) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
 
       // And finally BigDecimal: different error message because no String values accepted
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
@@ -483,7 +483,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"decimalValue\"(decimal) - Cause: no codec matching value type");
+              "decimalValue(decimal) - Cause: no codec matching value type");
     }
 
     private String fpDoc(String id, String floatValue, String doubleValue, String bigDecValue) {
@@ -526,7 +526,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"binaryValue\"(blob) - Cause: Unsupported JSON value in EJSON $binary wrapper: String not valid Base64-encoded content, problem: Illegal character '-' (code 0x2d) in base64 content");
+              "binaryValue(blob) - Cause: Unsupported JSON value in EJSON $binary wrapper: String not valid Base64-encoded content, problem: Illegal character '-' (code 0x2d) in base64 content");
     }
 
     @Test
@@ -670,7 +670,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"dateValue\"(date) - Cause: Invalid String value for type `DATE`; problem: Text 'xxx' could not be parsed at index 0");
+              "dateValue(date) - Cause: Invalid String value for type `DATE`; problem: Text 'xxx' could not be parsed at index 0");
     }
 
     @Test
@@ -681,7 +681,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"durationValue\"(duration) - Cause: Invalid String value for type `DURATION`; problem: Unable to convert 'xxx' to a duration");
+              "durationValue(duration) - Cause: Invalid String value for type `DURATION`; problem: Unable to convert 'xxx' to a duration");
     }
 
     @Test
@@ -692,7 +692,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"timeValue\"(time) - Cause: Invalid String value for type `TIME`; problem: Text 'xxx' could not be parsed at index 0");
+              "timeValue(time) - Cause: Invalid String value for type `TIME`; problem: Text 'xxx' could not be parsed at index 0");
     }
 
     @Test
@@ -703,7 +703,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"timestampValue\"(timestamp) - Cause: Invalid String value for type `TIMESTAMP`; problem: Text 'xxx' could not be parsed at index 0");
+              "timestampValue(timestamp) - Cause: Invalid String value for type `TIMESTAMP`; problem: Text 'xxx' could not be parsed at index 0");
     }
 
     private String datetimeDoc(
@@ -760,7 +760,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"uuidValue\"(uuid) - Cause: Invalid String value for type `UUID`; problem: Invalid UUID string: xxx");
+              "uuidValue(uuid) - Cause: Invalid String value for type `UUID`; problem: Invalid UUID string: xxx");
     }
 
     // Test for non-String input
@@ -772,7 +772,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"uuidValue\"(uuid) - Cause: no codec matching value type");
+              "uuidValue(uuid) - Cause: no codec matching value type");
     }
 
     private String uuidDoc(String id, String uuidValueStr) {
@@ -813,7 +813,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"inetValue\"(inet) - Cause: Invalid String value for type `INET`; problem: Invalid IP address value 'xxx'");
+              "inetValue(inet) - Cause: Invalid String value for type `INET`; problem: Invalid IP address value 'xxx'");
     }
 
     // Test for non-String input
@@ -825,7 +825,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"inetValue\"(inet) - Cause: no codec matching value type");
+              "inetValue(inet) - Cause: no codec matching value type");
     }
 
     private String inetDoc(String id, String inetValueStr) {
@@ -946,7 +946,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"stringList\"(list) - Cause: no codec matching value type");
+              "stringList(list) - Cause: no codec matching value type");
     }
 
     @Test
@@ -963,7 +963,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"intList\"(list) - Cause: no codec matching (list/set) declared element type `INT`, actual value type `java.lang.String`");
+              "intList(list) - Cause: no codec matching (list/set) declared element type `INT`, actual value type `java.lang.String`");
     }
 
     @Test
@@ -1100,7 +1100,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"intSet\"(set) - Cause: no codec matching value type");
+              "intSet(set) - Cause: no codec matching value type");
     }
 
     @Test
@@ -1117,7 +1117,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"doubleSet\"(set) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+              "doubleSet(set) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
     }
 
     @Test
@@ -1341,7 +1341,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"intMap\"(map) - Cause: no codec matching value type");
+              "intMap(map) - Cause: no codec matching value type");
     }
 
     @Test
@@ -1438,7 +1438,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"intMap\"(map) - Cause: no codec matching value type");
+              "intMap(map) - Cause: no codec matching value type");
     }
 
     @Test
@@ -1455,7 +1455,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"intMap\"(map) - Cause: no codec matching map declared value type `INT`, actual type `java.lang.String`");
+              "intMap(map) - Cause: no codec matching map declared value type `INT`, actual type `java.lang.String`");
     }
 
     @Test
@@ -1472,7 +1472,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"intMap\"(map) - Cause: no codec matching map declared key type `INT`, actual type `java.lang.String`");
+              "intMap(map) - Cause: no codec matching map declared key type `INT`, actual type `java.lang.String`");
     }
 
     @Test
@@ -1734,8 +1734,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb");
+              EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR,
+              EmbeddingProviderException.class,
+              "Provider 'openai' returned a HTTP client error with HTTP 401; error message: \"Incorrect API key provided: test_emb");
     }
 
     @Order(2)
@@ -1782,8 +1783,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                     }
                                     """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb");
+              EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR,
+              EmbeddingProviderException.class,
+              "Provider 'openai' returned a HTTP client error with HTTP 401; error message: \"Incorrect API key provided: test_emb");
     }
 
     @Order(3)
@@ -1829,12 +1831,13 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR,
+              EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR,
+              EmbeddingProviderException.class,
               anyOf(
                   containsString(
-                      "Provider: openai; HTTP Status: 401; Error Message: \"Incorrect API key provided: test_emb"),
+                      "Provider 'openai' returned a HTTP client error with HTTP 401; error message:"),
                   containsString(
-                      "Provider: jinaAI; HTTP Status: 401; Error Message: \"Unauthorized\"")));
+                      "Provider 'jinaAI' returned a HTTP client error with HTTP 401; error message:")));
     }
   }
 }

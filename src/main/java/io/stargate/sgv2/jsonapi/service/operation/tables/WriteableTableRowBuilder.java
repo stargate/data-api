@@ -8,16 +8,14 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.*;
 import java.util.function.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Builds a {@link WriteableTableRow} from a {@link JsonNamedValueContainer}.
@@ -26,9 +24,6 @@ import org.slf4j.LoggerFactory;
  * enforces the rules that {@link WriteableTableRow} has to be valid.
  */
 public class WriteableTableRowBuilder {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(WriteableTableRowBuilder.class);
-
   private static final CqlNamedValue.ErrorStrategy<DocumentException> ERROR_STRATEGY =
       new CqlNamedValue.ErrorStrategy<>() {
 

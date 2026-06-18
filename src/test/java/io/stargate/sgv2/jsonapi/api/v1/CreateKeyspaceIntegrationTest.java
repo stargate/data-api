@@ -6,7 +6,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
-import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
@@ -94,7 +94,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
     }
 
     @Test
-    public final void withReplicationFactor() {
+    public final void withSimpleStrategy() {
       givenHeadersAndJson(
                   """
           {
@@ -119,21 +119,45 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
     }
 
     @Test
+    public final void withNetworkTopologyStrategy() {
+      givenHeadersAndJson(
+                  """
+          {
+            "createKeyspace": {
+              "name": "%s",
+              "options": {
+                "replication": {
+                  "class": "NetworkTopologyStrategy",
+                  "dc1" : 3
+                }
+              }
+            }
+          }
+          """
+                  .formatted(DB_NAME))
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+    }
+
+    @Test
     public void invalidCommand() {
       givenHeadersAndJson(
               """
-                      {
-                        "createKeyspace": {
-                        }
-                      }
-                      """)
+              {
+                "createKeyspace": {
+                }
+              }
+              """)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(
@@ -165,15 +189,13 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body("status.warnings", hasSize(1))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: createNamespace."))
@@ -203,15 +225,13 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body("status.warnings", hasSize(1))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: createNamespace."))
@@ -221,7 +241,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
     }
 
     @Test
-    public final void withReplicationFactor() {
+    public final void withSimpleStrategy() {
       givenHeadersAndJson(
                   """
           {
@@ -246,22 +266,60 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body("status.warnings", hasSize(1))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
           .body(
               "status.warnings[0]",
-              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
           .body(
               "status.warnings[0]",
-              hasEntry(
-                  ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()))
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
           .body(
               "status.warnings[0].message",
               containsString("The deprecated command is: createNamespace."))
           .body(
               "status.warnings[0].message",
               containsString("The new command to use is: createKeyspace."));
-      ;
+    }
+
+    @Test
+    public final void withNetworkTopologyStrategy() {
+      givenHeadersAndJson(
+                  """
+          {
+            "createNamespace": {
+              "name": "%s",
+              "options": {
+                "replication": {
+                  "class": "NetworkTopologyStrategy",
+                  "dc1" : 3
+                }
+              }
+            }
+          }
+          """
+                  .formatted(DB_NAME))
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1))
+          .body("status.warnings", hasSize(1))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorConstants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorConstants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorConstants.Fields.CODE, WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: createNamespace."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: createKeyspace."));
     }
 
     @Test
@@ -279,7 +337,6 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .statusCode(200)
           .body("$", responseIsErrorWithStatus())
           .body("errors[0].errorCode", is(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name()))
-          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               containsString(

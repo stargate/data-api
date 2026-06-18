@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Utility methods for working with options on the API.
@@ -30,5 +31,14 @@ public abstract class ApiOptionUtils {
     }
     R value = getter.apply(source);
     return value == null ? defaultValue : value;
+  }
+
+  public static <T, R> R getOrGetDefault(
+      T source, Function<T, R> getter, Supplier<R> defaultSupplier) {
+    if (source == null) {
+      return defaultSupplier.get();
+    }
+    R value = getter.apply(source);
+    return value == null ? defaultSupplier.get() : value;
   }
 }

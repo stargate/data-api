@@ -21,7 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     type = SchemaType.OBJECT,
     implementation = Map.class,
-    example =
+    examples =
         """
               {"$sort" : {"$hybrid" : "Same query for vectorize and bm25 sorting"}}}
               {"$sort" : {"$hybrid" : {"$vectorize" : "vectorize sort query" , "$lexical": "lexical sort" }}}

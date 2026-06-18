@@ -74,11 +74,11 @@ public interface CqlCredentials {
     @Override
     public String toString() {
       // Don't log the full token, just the first 4 chars
+      final String tokenDesc = (token.length() <= 4) ? token : (token.substring(0, 4) + "...");
       return new StringBuilder("TokenCredentials{")
           .append("token='")
-          .append(token.substring(0, 4))
-          .append("...'")
-          .append(", isAnonymous=")
+          .append(tokenDesc)
+          .append("', isAnonymous=")
           .append(isAnonymous())
           .append('}')
           .toString();
@@ -120,20 +120,21 @@ public interface CqlCredentials {
     }
 
     static UsernamePasswordCredentials fromToken(String encodedCredentials) {
-      String[] parts = encodedCredentials.split(":");
-      if (parts.length != 3) {
-        throw new UnauthorizedException(
-            "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
+      if (encodedCredentials.startsWith(USERNAME_PASSWORD_TOKEN_PREFIX)) {
+        String[] parts = encodedCredentials.split(":");
+        if (parts.length == 3) {
+          try {
+            String userName = new String(Base64.getDecoder().decode(parts[1]));
+            String password = new String(Base64.getDecoder().decode(parts[2]));
+            return new UsernamePasswordCredentials(userName, password);
+          } catch (IllegalArgumentException e) {
+            ; // fall down to failure case
+          }
+        }
       }
-
-      try {
-        String userName = new String(Base64.getDecoder().decode(parts[1]));
-        String password = new String(Base64.getDecoder().decode(parts[2]));
-        return new UsernamePasswordCredentials(userName, password);
-      } catch (IllegalArgumentException e) {
-        throw new UnauthorizedException(
-            "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
-      }
+      throw new UnauthorizedException(
+          "Invalid credentials format, expected `%sBase64(username):Base64(password)`"
+              .formatted(USERNAME_PASSWORD_TOKEN_PREFIX));
     }
   }
 }

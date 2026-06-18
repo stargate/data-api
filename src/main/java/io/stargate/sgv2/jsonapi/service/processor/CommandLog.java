@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import java.util.List;
 
 /**
@@ -10,10 +11,10 @@ import java.util.List;
  */
 public record CommandLog(
     String commandName,
-    String tenant,
+    Tenant tenant,
     String namespaceName,
     String collectionName, // leave as collectionName for logging analysis
     String schemaType,
     String documentsReceived,
     String documentsReturned,
-    List<CommandResult.Error> errorList) {}
+    List<CommandError> errorList) {}

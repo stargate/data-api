@@ -1,27 +1,30 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.*;
-import static org.hamcrest.Matchers.*;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertGeneralCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 
 /**
  * Basic testing to see what happens when feature is disabled (other tests will have feature
  * enabled)
  */
 @QuarkusIntegrationTest
-@WithTestResource(
-    value = RerankFeatureDisabledIntegrationTest.TestResource.class,
+@QuarkusTestResource(
+    value = RerankFeatureDisabledIntegrationTest.TestResource.class
     // NOTE, restrictToAnnotatedClass has to be true, since most IT use the default DseTestResource,
     // if this set to false, it will impact other integration tests classes.
     // And if it applies to a class with inner test class, set to true will not work, since test
     // resource will not be applied to inner class.
+    ,
     restrictToAnnotatedClass = true)
 public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   // Need to be able to enable/disable the RERANKING feature
@@ -30,9 +33,10 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
 
     @Override
     public String getFeatureFlagReranking() {
-      // return empty to leave feature "undefined" (disabled unless per-request header override)
+      // return BLANK String to leave feature "undefined" (disabled unless per-request header
+      // override)
       // ("false" would be "disabled" for all tests, regardless of headers)
-      return "";
+      return " ";
     }
   }
 
@@ -44,7 +48,8 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
   public void failFindRerankingProviders() {
     assertGeneralCommand()
         .postFindRerankingProviders()
-        .hasSingleApiError(ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED);
+        .hasSingleApiError(
+            SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED, SchemaException.class);
   }
 
   // But with header override, should succeed
@@ -57,18 +62,68 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
         .wasSuccessful();
   }
 
-  // By default, collection creation should fail
+  // [data-api#2423]: explicit "enabled: false" should succeed even when feature is disabled
   @Order(3)
+  @Test
+  public void okCreateWithRerankExplicitlyDisabled() {
+    final String collName = "coll_rerank_explicit_off";
+    assertNamespaceCommand(keyspaceName)
+        .postCreateCollection(
+                """
+                    {
+                      "name": "%s",
+                      "options": {
+                        "rerank": {
+                          "enabled": false
+                        }
+                      }
+                    }
+                    """
+                .formatted(collName))
+        .wasSuccessful();
+  }
+
+  // [data-api#2423]: both lexical and rerank explicitly disabled (original reporter scenario)
+  @Order(4)
+  @Test
+  public void okCreateWithLexicalAndRerankExplicitlyDisabled() {
+    final String collName = "coll_lex_rerank_off";
+    assertNamespaceCommand(keyspaceName)
+        .postCreateCollection(
+                """
+                    {
+                      "name": "%s",
+                      "options": {
+                        "vector": {
+                          "dimension": 14,
+                          "metric": "cosine"
+                        },
+                        "lexical": {
+                          "enabled": false
+                        },
+                        "rerank": {
+                          "enabled": false
+                        }
+                      }
+                    }
+                    """
+                .formatted(collName))
+        .wasSuccessful();
+  }
+
+  // By default, collection creation with rerank enabled should fail
+  @Order(5)
   @Test
   public void failCreateWithoutFeatureEnabled() {
 
     assertNamespaceCommand(keyspaceName)
         .postCreateCollection(simpleCollectionDef(COLLECTION_TO_CREATE))
-        .hasSingleApiError(ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED);
+        .hasSingleApiError(
+            SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED, SchemaException.class);
   }
 
   // But with header override, should succeed
-  @Order(4)
+  @Order(6)
   @Test
   public void okCreateWithFeatureEnabledViaHeader() {
     assertNamespaceCommand(keyspaceName)
@@ -78,7 +133,7 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
   }
 
   // But even with collection, findAndRerank() should fail without Feature enabled
-  @Order(5)
+  @Order(7)
   @Test
   public void failFindWithoutFeature() {
     // Temporarily create the command string, refactor when we have templates for FindAndRerank
@@ -105,7 +160,8 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
               """;
     assertTableCommand(keyspaceName, COLLECTION_TO_CREATE)
         .postCommand(CommandName.FIND_AND_RERANK, command)
-        .hasSingleApiError(ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED);
+        .hasSingleApiError(
+            SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED, SchemaException.class);
   }
 
   private static String simpleCollectionDef(String collectionName) {

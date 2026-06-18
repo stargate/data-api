@@ -4,7 +4,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import java.util.List;
-import java.util.stream.Collectors;
 
 // TIDY : rename or refactor to remove a "Util" class, this probably has a better home
 public class SortClauseUtil {
@@ -24,7 +23,7 @@ public class SortClauseUtil {
             sortExpression ->
                 new FindCollectionOperation.OrderBy(
                     sortExpression.getPath(), sortExpression.isAscending()))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   public static float[] resolveVsearch(SortClause sortClause) {

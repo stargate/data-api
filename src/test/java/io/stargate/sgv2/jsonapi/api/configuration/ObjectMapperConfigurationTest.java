@@ -36,10 +36,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -60,7 +60,7 @@ class ObjectMapperConfigurationTest {
   private final TestConstants testConstants = new TestConstants();
 
   @Nested
-  class UnmatchedOperationCommandHandlerTest {
+  class UnmatchedOperationCommandHandler {
     @Test
     public void notExistedCommandMatchKeyspaceCommand() throws Exception {
       String json =
@@ -72,9 +72,9 @@ class ObjectMapperConfigurationTest {
                     """;
       Exception e = catchException(() -> objectMapper.readValue(json, KeyspaceCommand.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"notExistedCommand\" not one of \"KeyspaceCommand\"s");
+              "Command 'notExistedCommand' is not a Keyspace Command recognized by Data API.");
     }
 
     @Test
@@ -88,9 +88,9 @@ class ObjectMapperConfigurationTest {
                             """;
       Exception e = catchException(() -> objectMapper.readValue(json, KeyspaceCommand.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"find\" not one of \"KeyspaceCommand\"s");
+              "Command 'find' is not a Keyspace Command recognized by Data API.");
     }
 
     @Test
@@ -104,9 +104,9 @@ class ObjectMapperConfigurationTest {
                             """;
       Exception e = catchException(() -> objectMapper.readValue(json, GeneralCommand.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"insertOne\" not one of \"GeneralCommand\"s");
+              "Command 'insertOne' is not a General Command recognized by Data API.");
     }
 
     @Test
@@ -120,9 +120,9 @@ class ObjectMapperConfigurationTest {
                                   """;
       Exception e = catchException(() -> objectMapper.readValue(json, CollectionCommand.class));
       assertThat(e)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"createKeyspace\" not one of \"CollectionCommand\"s");
+              "Command 'createKeyspace' is not a Collection Command recognized by Data API.");
 
       String deprecatedCommandJson =
           """
@@ -135,9 +135,9 @@ class ObjectMapperConfigurationTest {
           catchException(
               () -> objectMapper.readValue(deprecatedCommandJson, CollectionCommand.class));
       assertThat(e1)
-          .isInstanceOf(JsonApiException.class)
+          .isInstanceOf(RequestException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"createNamespace\" not one of \"CollectionCommand\"s");
+              "Command 'createNamespace' is not a Collection Command recognized by Data API");
     }
   }
 
@@ -319,8 +319,7 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
-          .hasMessageStartingWith(
-              ErrorCodeV1.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `InsertOneCommand`");
+          .hasMessageStartingWith("Command 'insertOne' does not accept options");
     }
 
     @Test
@@ -407,8 +406,7 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, Command.class));
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
-          .hasMessageStartingWith(
-              ErrorCodeV1.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `DeleteOneCommand`");
+          .hasMessageStartingWith("Command 'deleteOne' does not accept options");
     }
   }
 
@@ -1102,17 +1100,21 @@ class ObjectMapperConfigurationTest {
                               .containsEntry(
                                   "new_col_2",
                                   new MapColumnDesc(
-                                      PrimitiveColumnDesc.TEXT, PrimitiveColumnDesc.TEXT));
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
+                                      PrimitiveColumnDesc.TEXT,
+                                      PrimitiveColumnDesc.TEXT));
                           assertThat(columns)
                               .containsEntry(
                                   "content",
                                   new VectorColumnDesc(
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
                                       1024,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                           assertThat(columns)
                               .containsEntry(
                                   "vector_1",
                                   new VectorColumnDesc(
+                                      SchemaDescSource.USER_SCHEMA_USAGE,
                                       null,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });

@@ -2,15 +2,11 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
@@ -20,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
@@ -260,6 +256,54 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body("data.documents[0]", jsonEquals(expected));
     }
 
+    /** document does not exist, we upsert a new one, it has a numeric ID See GH issue #2378 */
+    @Test
+    public void withUpsertNewIdNumeric() {
+
+      insertDoc(
+          """
+          {
+            "_id": 1,
+            "hello": "world"
+          }""");
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+              "findOneAndReplace": {
+                "filter": {
+                  "_id": 3
+                },
+                "replacement": {
+                  "_id": 3,
+                  "hallo": "welt"
+                },
+                "options": {
+                  "upsert": true,
+                  "returnDocument": "after"
+                }
+              }
+            }
+          """)
+          .body("$", responseIsFindAndSuccess())
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          .body("status.upsertedId", is(3))
+          .body("data.document._id", is(3));
+
+      // assert state after update
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+              "find": {
+                "filter" : {"hallo": "welt"}
+              }
+            }
+            """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]._id", is(3));
+    }
+
     @Test
     public void withUpsertNewId() {
       final String newId = "new-id-1234";
@@ -356,11 +400,13 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                 }
                 """)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("DOCUMENT_REPLACE_DIFFERENT_DOCID"))
+          .body(
+              "errors[0].errorCode",
+              is(DocumentException.Code.DOCUMENT_REPLACE_DIFFERENT_DOCID.name()))
           .body(
               "errors[0].message",
               startsWith(
-                  "The replace document and document resolved using filter have different _id"));
+                  "The replace document and document resolved using filter have different '_id's: StringId('doc4') (replace document) vs. StringId('doc3') (document that filter matches)."));
     }
 
     @Test
@@ -613,10 +659,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
       givenHeadersPostJsonThenOk(json)
           .body("errors", hasSize(1))
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
+          .body("errors[0].errorCode", is(DocumentException.Code.SHRED_DOC_LIMIT_VIOLATION.name()))
           .body(
               "errors[0].message",
-              startsWith("Document size limitation violated: Number value length"));
+              containsString("Document size limitation violated: Number value length"));
     }
   }
 

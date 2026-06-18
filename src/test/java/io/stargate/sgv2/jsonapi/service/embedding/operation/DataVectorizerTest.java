@@ -6,16 +6,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -23,14 +27,13 @@ import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,19 +41,36 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class DataVectorizerTest {
-
-  @Inject ObjectMapper objectMapper;
   private final TestEmbeddingProvider testEmbeddingProvider =
       TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER;
-  private final EmbeddingProvider testService = testEmbeddingProvider;
-  private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());
+  private static final TestConstants testConstants = new TestConstants();
 
+  @Inject ObjectMapper objectMapper;
+  @Inject JsonApiMetricsConfig metricsConfig;
+
+  // We need actual working MeterRegistry (or sophisticated mock :) ):
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+  private CommandContext<CollectionSchemaObject> commandContext;
   private CollectionSchemaObject collectionSettings = null;
 
   @BeforeEach
   public void beforeEach() {
-    collectionSettings = testEmbeddingProvider.commandContextWithVectorize().schemaObject();
+    commandContext = testEmbeddingProvider.commandContextWithVectorize();
+    collectionSettings = commandContext.schemaObject();
+  }
+
+  private MeteredEmbeddingProviderWrapper meteredEmbeddingProvider() {
+    return meteredEmbeddingProvider(testEmbeddingProvider);
+  }
+
+  private MeteredEmbeddingProviderWrapper meteredEmbeddingProvider(EmbeddingProvider p) {
+    return new MeteredEmbeddingProviderWrapper(
+        meterRegistry,
+        metricsConfig,
+        commandContext.requestContext(),
+        p,
+        commandContext.commandName());
   }
 
   @Nested
@@ -64,7 +84,10 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              testConstants.EMBEDDING_CREDENTIALS,
+              collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -91,7 +114,10 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              testConstants.EMBEDDING_CREDENTIALS,
+              collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -121,7 +147,10 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              testConstants.EMBEDDING_CREDENTIALS,
+              collectionSettings);
       try {
         Throwable failure =
             dataVectorizer
@@ -131,11 +160,11 @@ public class DataVectorizerTest {
                 .awaitFailure()
                 .getFailure();
         assertThat(failure)
-            .isInstanceOf(JsonApiException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE)
+            .isInstanceOf(DocumentException.class)
             .hasFieldOrPropertyWithValue(
-                "message",
-                "$vectorize value needs to be text value: issue in document at position 1");
+                "code", DocumentException.Code.INVALID_VECTORIZE_VALUE_TYPE.name())
+            .hasMessageContaining(
+                "Invalid $vectorize value: needs to be String, not Number (issue in document at position 1)");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -150,7 +179,10 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              testConstants.EMBEDDING_CREDENTIALS,
+              collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -173,7 +205,10 @@ public class DataVectorizerTest {
       documents.add(document);
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              testConstants.EMBEDDING_CREDENTIALS,
+              collectionSettings);
       try {
         Throwable failure =
             dataVectorizer
@@ -184,10 +219,11 @@ public class DataVectorizerTest {
                 .getFailure();
         assertThat(failure)
             .isNotNull()
-            .isInstanceOf(JsonApiException.class)
+            .isInstanceOf(SchemaException.class)
+            .hasFieldOrPropertyWithValue(
+                "code", SchemaException.Code.INVALID_USAGE_OF_VECTORIZE.name())
             .withFailMessage(
-                "$vectorize` and `$vector` can't be used together, issue in document at position 1")
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE);
+                "'$vector' and '$vectorize' cannot be used together: issue in document at position 1");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -195,8 +231,14 @@ public class DataVectorizerTest {
 
     @Test
     public void testWithUnmatchedVectorsNumber() {
-      TestEmbeddingProvider testProvider =
+      TestEmbeddingProvider brokenProvider =
           new TestEmbeddingProvider() {
+            @Override
+            public int maxBatchSize() {
+              // Must be large enough to avoid per-batch extra vectors
+              return 100;
+            }
+
             @Override
             public Uni<BatchedEmbeddingResponse> vectorize(
                 int batchId,
@@ -210,7 +252,7 @@ public class DataVectorizerTest {
 
               var modelUsage =
                   createModelUsage(
-                      embeddingCredentials.tenantId(),
+                      embeddingCredentials.tenant(),
                       ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       0,
                       0,
@@ -227,11 +269,10 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testProvider,
+              meteredEmbeddingProvider(brokenProvider),
               objectMapper.getNodeFactory(),
-              embeddingCredentials,
+              testConstants.EMBEDDING_CREDENTIALS,
               collectionSettings);
-
       Throwable failure =
           dataVectorizer
               .vectorize(documents)
@@ -240,12 +281,10 @@ public class DataVectorizerTest {
               .awaitFailure()
               .getFailure();
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.name())
+          .hasMessageContaining(
+              "Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
     }
 
     @Test
@@ -253,9 +292,7 @@ public class DataVectorizerTest {
       // new collection settings with different expected vector size
       CollectionSchemaObject collectionSettings =
           new CollectionSchemaObject(
-              "namespace",
-              "collections",
-              null,
+              testConstants.COLLECTION_IDENTIFIER,
               IdConfig.defaultIdConfig(),
               VectorConfig.fromColumnDefinitions(
                   List.of(
@@ -266,15 +303,18 @@ public class DataVectorizerTest {
                           EmbeddingSourceModel.OTHER,
                           new VectorizeDefinition("custom", "custom", null, null)))),
               null,
-              CollectionLexicalConfig.configForDisabled(),
-              CollectionRerankDef.configForPreRerankingCollection());
+              CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+              CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
         documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              testConstants.EMBEDDING_CREDENTIALS,
+              collectionSettings);
 
       Throwable failure =
           dataVectorizer
@@ -284,12 +324,10 @@ public class DataVectorizerTest {
               .awaitFailure()
               .getFailure();
       assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");
+              "code", EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.name())
+          .hasMessageContaining(
+              "Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");
     }
   }
 
@@ -303,7 +341,10 @@ public class DataVectorizerTest {
       SortClause sortClause = new SortClause(sortExpressions);
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              testConstants.EMBEDDING_CREDENTIALS,
+              collectionSettings);
       try {
         dataVectorizer.vectorize(sortClause).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -326,7 +367,10 @@ public class DataVectorizerTest {
       arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
+              meteredEmbeddingProvider(),
+              objectMapper.getNodeFactory(),
+              testConstants.EMBEDDING_CREDENTIALS,
+              collectionSettings);
       try {
         final float[] testData =
             dataVectorizer.vectorize("test data").subscribe().asCompletionStage().get();

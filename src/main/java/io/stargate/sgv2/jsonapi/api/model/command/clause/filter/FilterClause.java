@@ -7,7 +7,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     type = SchemaType.OBJECT,
     implementation = Object.class,
-    example =
+    examples =
         """
              {"name": "Aaron", "country": "US"}
               """)

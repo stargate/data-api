@@ -10,12 +10,12 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.FilterBehaviour;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 
@@ -65,7 +65,9 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
     LT(BuiltConditionPredicate.LT, new FilterBehaviour.Behaviour(false, true)),
     GT(BuiltConditionPredicate.GT, new FilterBehaviour.Behaviour(false, true)),
     LTE(BuiltConditionPredicate.LTE, new FilterBehaviour.Behaviour(false, true)),
-    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true));
+    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true)),
+    // ":" operator (text search)
+    TEXT_SEARCH(BuiltConditionPredicate.TEXT_SEARCH, new FilterBehaviour.Behaviour(false, false));
 
     public final BuiltConditionPredicate predicate;
     public final FilterBehaviour filterBehaviour;
@@ -83,6 +85,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
         case GTE -> GTE;
         case LT -> LT;
         case LTE -> LTE;
+        case MATCH -> TEXT_SEARCH;
         default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
       };
     }

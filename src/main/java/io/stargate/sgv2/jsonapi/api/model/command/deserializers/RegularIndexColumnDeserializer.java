@@ -47,7 +47,7 @@ public class RegularIndexColumnDeserializer
       // E.G. {"column": "mapColumn"}, default to entries for map
       return new RegularIndexDefinitionDesc.RegularIndexColumn(columnNode.textValue(), null);
     } else if (columnNode.isObject() && columnNode.size() == 1) {
-      Map.Entry<String, JsonNode> entry = columnNode.fields().next();
+      Map.Entry<String, JsonNode> entry = columnNode.properties().iterator().next();
       if (entry.getValue().isTextual()) {
         // E.G. {"column": {"mapColumn" : "$keys"}}
         // E.G. {"column": {"mapColumn" : "$values"}}

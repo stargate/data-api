@@ -20,13 +20,7 @@ public class ErrorTemplateTest extends ConfiguredErrorTest {
     return TEST_DATA.TEST_ERROR_CONFIG_FILE;
   }
 
-  /**
-   * Stnadard way to create an exception from template, that expects the name and value params
-   *
-   * @param errorCode
-   * @return
-   * @param <T>
-   */
+  /** Standard way to create an exception from template, that expects the name and value params */
   private <T extends APIException> T createException(ErrorCode<T> errorCode) {
 
     T error =
@@ -217,6 +211,29 @@ public class ErrorTemplateTest extends ConfiguredErrorTest {
                   TestRequestException.Code.HTTP_OVERRIDE.name(),
                   "An error that overrides the HTTP response",
                   500);
+            });
+  }
+
+  // [data-api#2401]: variable values containing "${...}" must not be treated as
+  // template variables (both correctness problem and possibly safety risk)
+  @Test
+  public void templateVarValueWithDollarCurlyBrace() {
+
+    var error =
+        assertDoesNotThrow(
+            () ->
+                TestScopeException.Code.SCOPED_REQUEST_ERROR.get(
+                    Map.of(
+                        "name", "${car}",
+                        "value", "udt_member_${LANGUAGE}")),
+            "Values containing ${...} should not cause UnresolvedErrorTemplateVariable");
+
+    assertThat(error)
+        .isNotNull()
+        .satisfies(
+            e -> {
+              assertThat(e.body).contains("${car}");
+              assertThat(e.body).contains("udt_member_${LANGUAGE}");
             });
   }
 }

@@ -3,10 +3,10 @@ package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Objects;
@@ -74,20 +74,17 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
             embeddingProvider.vectorize(
                 1, // always use 1, microbatching happens in the provider.
                 vectorizeTexts,
-                commandContext
-                    .requestContext()
-                    .getEmbeddingCredentialsSupplier()
-                    .create(commandContext.requestContext(), embeddingProvider.providerConfig()),
+                commandContext.requestContext().getEmbeddingCredentials(),
                 requestType),
         embeddingActions,
         vectorizeTexts);
   }
 
   @Override
-  protected RuntimeException maybeHandleException(
-      EmbeddingResultSupplier resultSupplier, RuntimeException runtimeException) {
+  protected Throwable maybeHandleException(
+      EmbeddingResultSupplier resultSupplier, Throwable throwable) {
     // return the same exception to say it was not handled
-    return runtimeException;
+    return throwable;
   }
 
   @Override
@@ -146,9 +143,8 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
                       Recordable.copyOf(vectorizeTexts)));
 
       // The EmbeddingProviders use EmbeddingProviderErrorMapper and turn errors from the providers
-      // into Error V1 JsonApiException structure, this will be attached to the task if we let it
-      // bubble
-      // out of here.
+      // into APIException structure, this will be attached to the task if we let it
+      // bubble out of here.
       return supplier
           .get()
           .onItem()

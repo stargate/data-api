@@ -71,7 +71,10 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       CommandContext<CollectionSchemaObject> context, List<JsonNode> documents) {
     var builder =
         new CollectionInsertAttemptBuilder(
-            context.schemaObject(), documentShredder, context.commandName());
+            context.schemaObject(),
+            documentShredder,
+            context.requestContext().tenant(),
+            context.commandName());
     return documents.stream().map(builder::build).toList();
   }
 
@@ -102,7 +105,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       UUID tx_id = UUID.randomUUID();
       String collectionReadCql =
           "SELECT key, tx_id FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       final ColumnDefinitions keyAndTxtIdColumns =
           buildColumnDefs(TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"));
@@ -113,7 +116,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       AsyncResultSet selectResults = new MockAsyncResultSet(keyAndTxtIdColumns, selectRows, null);
       final AtomicInteger callCountSelect = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(selectStmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(selectStmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCountSelect.incrementAndGet();
@@ -122,13 +125,13 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       String collectionDeleteCql =
           "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement deleteStmt =
           SimpleStatement.newInstance(collectionDeleteCql, boundKeyForStatement("doc1"), tx_id);
       List<Row> deleteRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
       AsyncResultSet deleteResults = new MockAsyncResultSet(COLUMNS_APPLIED, deleteRows, null);
       final AtomicInteger callCountDelete = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(deleteStmt)))
           .then(
               invocation -> {
                 SimpleStatement stmt = invocation.getArgument(1);
@@ -153,7 +156,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           DeleteCollectionOperation.delete(COMMAND_CONTEXT, findCollectionOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -182,16 +185,16 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
     public void insert() throws Exception {
       String document =
           """
-              {
-                "_id": "doc1",
-                "text": "user1",
-                "number" : 10,
-                "boolean": true,
-                "nullval" : null,
-                "array" : ["a", "b"],
-                "sub_doc" : {"col": "val"}
-              }
-              """;
+          {
+            "_id": "doc1",
+            "text": "user1",
+            "number" : 10,
+            "boolean": true,
+            "nullval" : null,
+            "array" : ["a", "b"],
+            "sub_doc" : {"col": "val"}
+          }
+          """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
       var insertAttempt = createInsertAttempt(COMMAND_CONTEXT, jsonNode);
@@ -199,7 +202,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(
-              INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME),
+              INSERT_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME),
               CQLBindValues.getDocumentIdValue(shredDocument.id()),
               shredDocument.nextTxID(),
               shredDocument.docJson(),
@@ -216,7 +219,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(stmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(stmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -227,7 +230,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           new InsertCollectionOperation(COMMAND_CONTEXT, List.of(insertAttempt));
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -252,16 +255,16 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
     public void readAndUpdate() throws Exception {
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       UUID tx_id = UUID.randomUUID();
       String doc1 =
           """
-                      {
-                        "_id": "doc1",
-                        "username": "user1"
-                      }
-                      """;
+          {
+            "_id": "doc1",
+            "username": "user1"
+          }
+          """;
 
       final ColumnDefinitions keyTxIdDocColumns =
           buildColumnDefs(
@@ -273,7 +276,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       AsyncResultSet selectResults = new MockAsyncResultSet(keyTxIdDocColumns, selectRows, null);
       final AtomicInteger callCountSelect = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(selectStmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(requestContext), eq(selectStmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCountSelect.incrementAndGet();
@@ -282,16 +285,16 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       String doc1Updated =
           """
-                          {
-                            "_id": "doc1",
-                            "username": "user1",
-                            "name" : "test"
-                          }
-                          """;
+          {
+            "_id": "doc1",
+            "username": "user1",
+            "name" : "test"
+          }
+          """;
 
       final String updateCql =
           ReadAndUpdateCollectionOperation.buildUpdateQuery(
-              KEYSPACE_NAME, COLLECTION_NAME, false, false);
+              TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, false, false);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument =
           documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id);
@@ -301,7 +304,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       List<Row> resultRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
       AsyncResultSet updateResults = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);
       final AtomicInteger callCountUpdate = new AtomicInteger();
-      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(updateStmt)))
+      when(queryExecutor.executeWrite(eq(requestContext), eq(updateStmt)))
           .then(
               invocation -> {
                 callCountUpdate.incrementAndGet();
@@ -343,7 +346,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(dataApiRequestInfo, queryExecutor)
+              .execute(requestContext, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

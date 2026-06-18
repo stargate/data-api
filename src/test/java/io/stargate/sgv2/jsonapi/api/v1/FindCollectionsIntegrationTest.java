@@ -12,6 +12,7 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Assumptions;
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
@@ -209,7 +210,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Order(5)
     public void emptyNamespace() {
       // create namespace first
-      String namespace = "nam" + RandomStringUtils.randomNumeric(16);
+      String namespace = "nam" + RandomStringUtils.insecure().nextNumeric(16);
       givenHeadersAndJson(
                   """
           {
@@ -274,10 +275,11 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
+          .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_KEYSPACE.name()))
           .body(
               "errors[0].message",
-              containsString("Unknown keyspace 'should_not_be_there', you must create it first"));
+              containsString(
+                  "The command tried to use a Keyspace that does not exist in the Database"));
     }
 
     @Test

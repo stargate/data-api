@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -16,7 +17,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 /**
  * To run this test DseTestResource is updated to have maxCountLimit to `5` and getCountPageSize to
@@ -92,6 +93,23 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
               { "countDocuments": { } }
               """)
           .body("status.moreData", is(true));
+    }
+
+    @Test
+    public void countSpanningPages() {
+      // 4 docs have a username and the count page size is 2 (see DseTestResource), so the count
+      // has to read more than one page of keys. 4 is below maxCountLimit (5) so the count is
+      // exact and moreData is not set - the capped count spanning pages is noFilter() above.
+      verifyCountCommand(
+              4,
+              """
+              {
+                "countDocuments": {
+                  "filter" : {"username" : {"$exists" : true}}
+                }
+              }
+              """)
+          .body("status.moreData", is(nullValue()));
     }
 
     @Test

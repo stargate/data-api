@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -17,7 +18,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested
@@ -218,9 +219,11 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   { "find": { "sort" : {"" : 1} } }
                   """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].message", endsWith("path must be represented as a non-empty string"));
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_PATH_INVALID.name()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Path '' used in sort clause not valid: path must be represented as a non-empty string"));
     }
 
     @Test
@@ -230,9 +233,11 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   { "find": { "sort" : {"$gt" : 1} } }
                   """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].message", containsString("path ('$gt') cannot start with '$'"));
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_PATH_INVALID.name()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Path '$gt' used in sort clause not valid: path cannot start with '$' (except for pseudo-fields"));
     }
 
     @Test
@@ -242,12 +247,11 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                   { "find": { "sort" : {"a&b" : 1} } }
                   """)
           .body("$", responseIsError())
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
+          .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_PATH_INVALID.name()))
           .body(
               "errors[0].message",
-              containsString(
-                  "Invalid sort clause path: sort clause path ('a&b') is not a valid path."));
+              startsWith(
+                  "Path 'a&b' used in sort clause not valid: The ampersand character '&' at position 1 must be followed by"));
     }
   }
 }

@@ -28,6 +28,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(CommandName.UPDATE_ONE, jsonClause);
   }
 
+  public DataApiResponseValidator postUpdateMany(String jsonClause) {
+    return postCommand(CommandName.UPDATE_MANY, jsonClause);
+  }
+
   public DataApiResponseValidator postDeleteMany(String jsonClause) {
     return postCommand(CommandName.DELETE_MANY, jsonClause);
   }

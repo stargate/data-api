@@ -23,7 +23,8 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
       throw new IllegalArgumentException("Failed to parse JSON: " + doc, e);
     }
     oldNode
-        .fields()
+        .properties()
+        .iterator()
         .forEachRemaining(
             entry -> {
               JsonNode value = entry.getValue();

@@ -12,18 +12,17 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
-import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableDBTask;
-import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableDBTaskBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -31,9 +30,13 @@ import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class AlterTableCommandResolver implements CommandResolver<AlterTableCommand> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(AlterTableCommandResolver.class);
+
   @Inject ObjectMapper objectMapper;
   @Inject VectorizeConfigValidator validateVectorize;
 
@@ -55,7 +58,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     AlterTableDBTaskBuilder taskBuilder =
         AlterTableDBTask.builder(commandContext.schemaObject())
             .withRetryPolicy(schemaRetryPolicy)
-            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+            .withExceptionHandlerFactory(
+                DefaultDriverExceptionHandler.Factory.withIdentifier(
+                    AlterTableExceptionHandler::new, commandContext.schemaObject().tableName()));
 
     // use sequential processing for the attempts, because we sometimes need to do multiple
     // statements
@@ -104,7 +109,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     List<AlterTableDBTask> attempts = new ArrayList<>();
     var addedColumns =
         ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
-            addColumnsOperation.columns(), validateVectorize);
+            TypeBindingPoint.TABLE_COLUMN, addColumnsOperation.columns(), validateVectorize);
 
     // alter table can not add columns with unsupported API data type
     var unsupportedColumns = addedColumns.filterBySupportToList(x -> !x.createTable());
@@ -122,7 +127,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               "unsupportedTypes",
               errFmtJoin(
                   unsupportedColumns.stream()
-                      .map(e -> e.type().columnDesc().getApiName())
+                      .map(e -> e.type().apiName())
                       .sorted(String::compareTo)
                       .toList())));
     }
@@ -132,7 +137,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         addedColumns.values().stream()
             .filter(apiTableDef.allColumns()::contains)
             .sorted(ApiColumnDef.NAME_COMPARATOR)
-            .collect(Collectors.toList());
+            .toList();
 
     if (!duplicateColumns.isEmpty()) {
       throw SchemaException.Code.CANNOT_ADD_EXISTING_COLUMNS.get(
@@ -415,7 +420,6 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     }
 
     // Should only be dropping config from existing vector columns
-
     boolean updateVectorize = false;
     for (var identifier : droppedColumns) {
       if (existingVectorizeDefs.remove(identifier) != null) {

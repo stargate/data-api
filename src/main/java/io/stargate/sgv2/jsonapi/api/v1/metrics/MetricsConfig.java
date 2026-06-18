@@ -47,13 +47,6 @@ public interface MetricsConfig {
     String tenantTag();
 
     /**
-     * @return The tag key for error flag, defaults to <code>error</code>.
-     */
-    @NotBlank
-    @WithDefault("error")
-    String errorTag();
-
-    /**
      * @return The tag key for user-agent flag, defaults to <code>user_agent</code>.
      */
     @NotBlank

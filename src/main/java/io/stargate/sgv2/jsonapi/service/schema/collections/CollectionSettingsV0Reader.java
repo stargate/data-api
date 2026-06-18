@@ -2,10 +2,12 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.List;
@@ -21,10 +23,10 @@ import java.util.List;
  * <p>Note, all collection created in this schema version 0, should have UUID as idType
  */
 public class CollectionSettingsV0Reader {
+
   public CollectionSchemaObject readCollectionSettings(
+      RequestContext requestContext,
       JsonNode commentConfigNode,
-      String keyspaceName,
-      String collectionName,
       TableMetadata tableMetadata,
       boolean vectorEnabled,
       int vectorSize,
@@ -42,21 +44,26 @@ public class CollectionSettingsV0Reader {
                         sourceModel,
                         null)))
             : VectorConfig.NOT_ENABLED_CONFIG;
-    CollectionIndexingConfig indexingConfig = null;
-    JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
-    if (!indexing.isMissingNode()) {
-      indexingConfig = CollectionIndexingConfig.fromJson(indexing);
-    }
+
+    var indexingNode = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
+    CollectionIndexingConfig indexingConfig =
+        indexingNode.isMissingNode() ? null : CollectionIndexingConfig.fromJson(indexingNode);
+
     return new CollectionSchemaObject(
-        keyspaceName,
-        collectionName,
+        requestContext.tenant(),
         tableMetadata,
         IdConfig.defaultIdConfig(),
         vectorConfig,
         indexingConfig,
-        // Legacy config, must assume legacy lexical config (disabled)
-        CollectionLexicalConfig.configForPreLexical(),
-        // Legacy config, must assume legacy reranking config (disabled)
-        CollectionRerankDef.configForPreRerankingCollection());
+        // Legacy config, there is nothing, versioned value decides based on the version
+        requestContext
+            .schemaRegistry()
+            .lexicalDef()
+            .namedVersion(CollectionSchemaVersion.V_0, null),
+        // Legacy config, there is nothing, versioned value decides based on the version
+        requestContext
+            .schemaRegistry()
+            .rerankDef()
+            .namedVersion(CollectionSchemaVersion.V_0, null));
   }
 }

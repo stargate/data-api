@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,11 +104,11 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
   /** {@inheritDoc} */
   @Override
-  public void onSuccess(AsyncResultSet result) {
+  public void onSuccess(AsyncResultSetSupplier resultSetSupplier, AsyncResultSet result) {
     readResult = new ReadResult(rowSorter, result);
 
     // call to make sure status is set
-    super.onSuccess(result);
+    super.onSuccess(resultSetSupplier, result);
   }
 
   /** {@inheritDoc} */

@@ -20,7 +20,7 @@ import org.junit.jupiter.api.*;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
@@ -200,9 +200,10 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
           .templated()
           .updateOne(filterOnRow, updateSet)
           .hasSingleApiError(
-              DatabaseException.Code.INVALID_DATABASE_QUERY,
-              DatabaseException.class,
-              "Cannot set the value of counter column counter");
+              UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR,
+              UpdateException.class,
+              "The command used the update operator: $set.",
+              "The operation was not supported by the columns: counter(counter).");
     }
 
     // TODO filter on counter, INVALID_FILTER_COLUMN_VALUES

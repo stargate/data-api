@@ -7,6 +7,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.stream.Stream;
@@ -16,7 +17,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
@@ -441,6 +442,63 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     var expectedUpdatedRowWithNull = DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(null, null);
     checkUpdatedData(
         FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRowWithNull));
+  }
+
+  /**
+   * Test for <a href="https://github.com/stargate/data-api/issues/2275">#2275</a>: filtering a
+   * primitive text column (part of primary key) with an object value should produce a clear
+   * FilterException about the value type mismatch, not a misleading "Server internal error: Filter
+   * type not supported, unable to resolve to a filtering strategy".
+   */
+  @Test
+  public void filterPrimitiveColumnWithObjectValue() {
+    // Filter uses an object value for a text primary key column -- simulates the
+    // incorrect serialization described in the issue
+    var filterJSON =
+        """
+                    {
+                      "partition-key-1": {
+                        "buffer": {
+                          "0": 105,
+                          "1": 49,
+                          "2": 174
+                        }
+                      },
+                      "partition-key-2": "partition-key-2-value-default",
+                      "clustering-key-1": "clustering-key-1-value-default",
+                      "clustering-key-2": "clustering-key-2-value-default",
+                      "clustering-key-3": "clustering-key-3-value-default"
+                    }
+                """;
+    var updateClauseJSON = SET_UPDATE_CLAUSE_TEMPLATE.formatted("updated_value", "updated_value");
+
+    // Should produce a FilterException (not ServerException.INTERNAL_SERVER_ERROR)
+    // with a message indicating that the object value is not valid for the text column
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(filterJSON, updateClauseJSON)
+        .hasSingleApiError(FilterException.Code.FILTER_UNSUPPORTED_DATA_TYPE, FilterException.class)
+        .hasNoWarnings();
+  }
+
+  // ==================================================================================================================
+  // UpdateMany not (yet?) supported
+  // ==================================================================================================================
+
+  @Test
+  public void updateManyNotSupported() {
+    String updateClauseJSON = "{ \"$set\": { \"not_indexed_column\": \"def\"}}";
+
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateMany(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(
+            RequestException.Code.UNSUPPORTED_TABLE_COMMAND,
+            RequestException.class,
+            "The command is not supported by tables in the API",
+            "While many commands operate on both tables and collections",
+            "The commands supported by tables are: ")
+        .hasNoWarnings();
   }
 
   @Nested

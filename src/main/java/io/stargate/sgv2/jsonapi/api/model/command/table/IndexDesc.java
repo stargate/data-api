@@ -21,7 +21,8 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
   TableDescConstants.IndexDesc.DEFINITION,
   TableDescConstants.IndexDesc.INDEX_TYPE
 })
-public interface IndexDesc<DefinitionT extends IndexDefinitionDesc<?, ?>> {
+public interface IndexDesc<DefinitionT extends IndexDefinitionDesc<?, ?>>
+    extends SchemaDescription {
 
   @JsonProperty(TableDescConstants.IndexDesc.NAME)
   String name();

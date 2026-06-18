@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMes
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescribable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Map;
 
@@ -12,7 +13,7 @@ import java.util.Map;
  *
  * <p>Is an interface so the unsupported indexes can be represented as easily.
  */
-public interface ApiIndexDef extends Recordable {
+public interface ApiIndexDef extends SchemaDescribable<IndexDesc<?>>, Recordable {
 
   /** The name of the index in the database. */
   CqlIdentifier indexName();
@@ -33,9 +34,6 @@ public interface ApiIndexDef extends Recordable {
    * <p>This is nullable for indexes on primitive and vector types.
    */
   ApiIndexFunction indexFunction();
-
-  /** How to describe this index in the public HTTP API. */
-  IndexDesc<?> indexDesc();
 
   /**
    * Raw CQL indexing options from {@link

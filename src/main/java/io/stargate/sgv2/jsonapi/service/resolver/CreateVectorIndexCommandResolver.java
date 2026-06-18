@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexDBTaskBuilder;
@@ -19,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.Map;
@@ -36,7 +36,8 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, CreateVectorIndexCommand command) {
 
-    final var indexName = validateSchemaName(command.name(), NamingRules.INDEX);
+    // TODO: AARON: Validation should happen in the factory for the index
+    var indexName = NamingRules.INDEX.checkRule(command.name());
 
     var indexType =
         command.indexType() == null

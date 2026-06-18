@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -192,8 +192,10 @@ public enum EmbeddingSourceModel {
    * the caller should decide when to throw. Moved to be a public method here so it can be used by
    * the caller.
    */
-  public static JsonApiException getUnknownSourceModelException(String apiName) {
-    return ErrorCodeV1.VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME.toApiException(
-        "Received: '%s'; Accepted: %s", apiName, String.join(", ", allApiNames()));
+  public static APIException getUnknownSourceModelException(String apiName) {
+    return SchemaException.Code.VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME.get(
+        Map.of(
+            "errorMessage",
+            "Received: '%s'; Accepted: %s".formatted(apiName, String.join(", ", allApiNames()))));
   }
 }

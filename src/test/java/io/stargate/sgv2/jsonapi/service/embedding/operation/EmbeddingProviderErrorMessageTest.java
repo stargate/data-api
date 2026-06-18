@@ -5,9 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
@@ -15,11 +16,12 @@ import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.jupiter.api.Nested;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,9 +35,7 @@ public class EmbeddingProviderErrorMessageTest {
 
   private static final int DEFAULT_DIMENSIONS = 0;
 
-  private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(
-          "test-tenant", Optional.of("test"), Optional.empty(), Optional.empty());
+  private static final TestConstants testConstants = new TestConstants();
 
   private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
@@ -82,8 +82,9 @@ public class EmbeddingProviderErrorMessageTest {
               REQUEST_PROPERTIES.maxBatchSize()),
           Map.of());
 
-  private NvidiaEmbeddingProvider createProvider() {
-    return new NvidiaEmbeddingProvider(
+  private io.stargate.sgv2.jsonapi.service.embedding.operation.NvidiaEmbeddingProvider
+      createProvider() {
+    return new io.stargate.sgv2.jsonapi.service.embedding.operation.NvidiaEmbeddingProvider(
         PROVIDER_CONFIG, MODEL_CONFIG, SERVICE_CONFIG, DEFAULT_DIMENSIONS, null);
   }
 
@@ -91,141 +92,125 @@ public class EmbeddingProviderErrorMessageTest {
 
     return createProvider()
         .vectorize(
-            1, List.of(text), embeddingCredentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+            1,
+            List.of(text),
+            testConstants.EMBEDDING_CREDENTIALS,
+            EmbeddingProvider.EmbeddingRequestType.INDEX)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitFailure()
         .getFailure();
   }
 
-  @Nested
-  class NvidiaEmbeddingProviderTest {
-    @Test
-    public void test429() throws Exception {
+  private void assertApiException(
+      Throwable exception, ErrorCode<?> errorCode, String bodyContains) {
 
-      var exception = vectorizeWithError("429");
+    assertThat(exception)
+        .asInstanceOf(InstanceOfAssertFactories.type(APIException.class))
+        .satisfies(e -> assertThat(e.code).as("ApiException.code").isEqualTo(errorCode.name()))
+        .satisfies(e -> assertThat(e.body).as("ApiException.body").contains(bodyContains));
+  }
 
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider rate limited the request: Provider: nvidia; HTTP Status: 429; Error Message: {\"object\":\"list\"}");
-    }
+  @Test
+  public void test429() throws Exception {
 
-    @Test
-    public void test4xx() throws Exception {
+    var exception =
+        vectorizeWithError(String.valueOf(Response.Status.TOO_MANY_REQUESTS.getStatusCode()));
+    assertApiException(
+        exception,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_RATE_LIMITED,
+        "Provider 'nvidia' rate limited the request with HTTP 429; error message: {\"object\":\"list\"}");
+  }
 
-      var exception = vectorizeWithError("400");
+  @Test
+  public void test4xx() throws Exception {
 
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned a HTTP client error: Provider: nvidia; HTTP Status: 400; Error Message: {\"object\":\"list\"}");
-    }
+    var exception = vectorizeWithError(String.valueOf(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertApiException(
+        exception,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR,
+        "Provider 'nvidia' returned a HTTP client error with HTTP 400; error message: {\"object\":\"list\"}");
+  }
 
-    @Test
-    public void test5xx() throws Exception {
+  @Test
+  public void test5xx() throws Exception {
 
-      var exception = vectorizeWithError("503");
+    var exception =
+        vectorizeWithError(String.valueOf(Response.Status.SERVICE_UNAVAILABLE.getStatusCode()));
+    assertApiException(
+        exception,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_SERVER_ERROR,
+        "Provider 'nvidia' returned a HTTP server error with HTTP 503; error message: {\"object\":\"list\"}");
+  }
 
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned a HTTP server error: Provider: nvidia; HTTP Status: 503; Error Message: {\"object\":\"list\"}");
-    }
+  @Test
+  public void testRetryError() throws Exception {
 
-    @Test
-    public void testRetryError() throws Exception {
+    var exception =
+        vectorizeWithError(String.valueOf(Response.Status.REQUEST_TIMEOUT.getStatusCode()));
+    assertApiException(
+        exception,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT,
+        "The HTTP status code was: 408.");
+  }
 
-      var exception = vectorizeWithError("408");
+  @Test
+  public void testCorrectHeaderAndBody() {
 
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider timed out: Provider: nvidia; HTTP Status: 408; Error Message: {\"object\":\"list\"}");
-    }
+    final EmbeddingProvider.BatchedEmbeddingResponse result =
+        createProvider()
+            .vectorize(
+                1,
+                List.of(MediaType.APPLICATION_JSON),
+                testConstants.EMBEDDING_CREDENTIALS,
+                EmbeddingProvider.EmbeddingRequestType.INDEX)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitItem(Duration.ofDays(1))
+            .getItem();
 
-    @Test
-    public void testCorrectHeaderAndBody() {
+    assertThat(result).isNotNull();
+    assertThat(result.batchId()).isEqualTo(1);
+    assertThat(result.embeddings()).isNotNull();
+  }
 
-      final EmbeddingProvider.BatchedEmbeddingResponse result =
-          createProvider()
-              .vectorize(
-                  1,
-                  List.of(MediaType.APPLICATION_JSON),
-                  embeddingCredentials,
-                  EmbeddingProvider.EmbeddingRequestType.INDEX)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem(Duration.ofDays(1))
-              .getItem();
+  @Test
+  public void testIncorrectContentTypeXML() {
 
-      assertThat(result).isNotNull();
-      assertThat(result.batchId()).isEqualTo(1);
-      assertThat(result.embeddings()).isNotNull();
-    }
+    var exception = vectorizeWithError("application/xml");
+    assertApiException(
+        exception,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE,
+        "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'; HTTP Status: 200; The response body is: '<object>list</object>'.");
+  }
 
-    @Test
-    public void testIncorrectContentTypeXML() {
+  @Test
+  public void testIncorrectContentTypePlainText() {
 
-      var exception = vectorizeWithError("application/xml");
+    var exception = vectorizeWithError("text/plain;charset=UTF-8");
+    assertApiException(
+        exception,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE,
+        "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'text/plain;charset=UTF-8'; HTTP Status: 200; The response body is: 'vectors as plain text'.");
+  }
 
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'; HTTP Status: 200; The response body is: '<object>list</object>'.");
-    }
+  @Test
+  public void testNoJsonResponse() {
 
-    @Test
-    public void testIncorrectContentTypePlainText() {
+    var exception = vectorizeWithError("no json body");
+    assertApiException(
+        exception,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE,
+        "No response body from the embedding provider");
+  }
 
-      var exception = vectorizeWithError("text/plain;charset=UTF-8");
+  @Test
+  public void testEmptyJsonResponse() {
 
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'text/plain;charset=UTF-8'; HTTP Status: 200; The response body is: 'vectors as plain text'.");
-    }
-
-    @Test
-    public void testNoJsonResponse() {
-
-      var exception = vectorizeWithError("no json body");
-
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: No response body from the embedding provider");
-    }
-
-    @Test
-    public void testEmptyJsonResponse() {
-
-      var exception = vectorizeWithError("empty json body");
-
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned an unexpected response: Provider: nvidia; HTTP Status: 200; Error Message: ModelProvider returned empty data for model testModel");
-    }
+    var exception = vectorizeWithError("empty json body");
+    assertApiException(
+        exception,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE,
+        "Provider: nvidia; HTTP Status: 200; Error Message: The embedding provider returned empty data for model testModel");
   }
 }

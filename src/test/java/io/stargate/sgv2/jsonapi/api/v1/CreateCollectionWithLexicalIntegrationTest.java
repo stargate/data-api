@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Assumptions;
@@ -16,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   @Nested
@@ -26,7 +27,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleEnabledMinimal() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_minimal" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_minimal" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": true}");
 
       givenHeadersPostJsonThenOkNoErrors(json)
@@ -39,7 +41,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleEnabledStandard() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_simple" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_simple" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -61,7 +64,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleEnabledEmptyObject() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_emptyob" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_emptyob" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -82,7 +86,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleEnabledCustom() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_cust_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_cust_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -107,7 +112,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalAdvancedCustom() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_advanced_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_advanced_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -136,7 +142,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void createLexicalSimpleDisabled() {
       // Fine regardless of whether Lexical available for DB or not
 
-      final String collectionName = "coll_lexical_disabled" + RandomStringUtils.randomNumeric(16);
+      final String collectionName =
+          "coll_lexical_disabled" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": false}");
 
       givenHeadersPostJsonThenOkNoErrors(json)
@@ -150,7 +157,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
       // Fine regardless of whether Lexical available for DB or not
 
       final String collectionName =
-          "coll_lexical_disabled_empty" + RandomStringUtils.randomNumeric(16);
+          "coll_lexical_disabled_empty" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(collectionName, "{\"enabled\": false, \"analyzer\": {}}");
 
@@ -164,9 +171,29 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
   @Nested
   @Order(2)
   class CreateLexicalFail {
+
+    void failCreateLexicalFeatureDisabled() {
+      Assumptions.assumeTrue(!isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                            {
+                              "enabled": true,
+                              "analyzer": "standard"
+                            }
+                      """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
+    }
+
     @Test
     void failCreateLexicalWithDisabledAndAnalyzerString() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -179,7 +206,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -188,7 +217,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalWithDisabledAndArrayInAnalyzer() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -201,7 +230,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -210,7 +241,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalWithDisabledAndNumberInAnalyzer() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -223,7 +254,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -232,7 +265,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalWithDisabledAndAnalyzerObject() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -249,7 +282,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -258,21 +293,23 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void failCreateLexicalMissingEnabled() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json = createRequestWithLexical(collectionName, "{ }");
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'enabled' is required property for 'lexical'"));
+                  "'createCollection' command option(s) invalid: 'enabled' is required property for 'lexical'"));
     }
 
     @Test
     void failCreateLexicalUnknownAnalyzer() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -283,10 +320,19 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                 }
                           """);
 
+      // This one is a little tricky: other code that creates a INVALID_CREATE_COLLECTION_OPTIONS
+      // happens because the API validates, in this case it is because the call went through to the
+      // DB
+      // that returned an error, and we turned that into the INVALID_CREATE_COLLECTION_OPTIONS
+      // See {@link KeyspaceDriverExceptionHandler}
+      // So for this, if Lexical is enabled we expect INVALID_CREATE_COLLECTION_OPTIONS otherwise
+      // we expect LEXICAL_FEATURE_NOT_ENABLED when it is not enabled.
       if (isLexicalAvailableForDB()) {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
-            .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+            .body(
+                "errors[0].errorCode",
+                is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
             // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
             // analyzers
             .body("errors[0].message", containsString("Invalid analyzer config"))
@@ -294,13 +340,14 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
       } else {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
-            .body("errors[0].errorCode", is("LEXICAL_NOT_AVAILABLE_FOR_DATABASE"));
+            .body(
+                "errors[0].errorCode", is(SchemaException.Code.LEXICAL_FEATURE_NOT_ENABLED.name()));
       }
     }
 
     @Test
     void failCreateLexicalWrongJsonType() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -311,21 +358,19 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                     }
                               """);
 
-      if (isLexicalAvailableForDB()) {
-        givenHeadersPostJsonThenOk(json)
-            .body("$", responseIsError())
-            .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-            // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
-            // analyzers
-            .body(
-                "errors[0].message",
-                containsString(
-                    "'analyzer' property of 'lexical' must be either JSON Object or String, is: Array"));
-      } else {
-        givenHeadersPostJsonThenOk(json)
-            .body("$", responseIsError())
-            .body("errors[0].errorCode", is("LEXICAL_NOT_AVAILABLE_FOR_DATABASE"));
-      }
+      /// Does not matter if lexical is enabled or not, the value is validated before the enabled
+      // feature is checked
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
+          // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
+          // analyzers
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'analyzer' property of 'lexical' must be either JSON Object or String, is: Array"));
     }
 
     // [data-api#2011]
@@ -333,7 +378,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void failCreateLexicalMisspelledTokenizer() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -355,7 +400,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -367,7 +414,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void failCreateLexicalNonObjectForTokenizer() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -382,7 +429,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
@@ -394,7 +443,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     void failCreateLexicalNonArrayForFilters() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_" + RandomStringUtils.insecure().nextNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -409,7 +458,9 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].errorCode",
+              is(SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.name()))
           .body(
               "errors[0].message",
               containsString(
