@@ -1,0 +1,126 @@
+package io.stargate.sgv2.jsonapi.testbench.testrun;
+
+import io.stargate.sgv2.jsonapi.testbench.targets.Backend;
+import io.stargate.sgv2.jsonapi.testbench.testspec.TestSuiteSpec;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import org.apache.commons.text.StringSubstitutor;
+import org.apache.commons.text.lookup.StringLookupFactory;
+import org.junit.jupiter.api.DynamicContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class TestRunEnv {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestRunEnv.class);
+
+  // Wellknown environment variables use this because we know they are schema identifiers
+  public static final String ENV_KEYSPACE_NAME = "KEYSPACE_NAME";
+  // Also for tables
+  public static final String ENV_COLLECTION_NAME = "COLLECTION_NAME";
+
+  private static final Set<String> SCHEMA_IDENTIFIER =
+      Set.of(ENV_KEYSPACE_NAME, ENV_COLLECTION_NAME);
+
+  private final Map<String, String> vars = new HashMap<>();
+
+  public TestRunEnv() {
+    this(new HashMap<>());
+  }
+
+  public TestRunEnv(Map<String, String> vars) {
+    this.vars.putAll(vars);
+  }
+
+  public DynamicContainer testNode(
+      TestNodeFactory testNodeFactory, TestUri.Builder uriBuilder, TestSuiteSpec testSuite) {
+
+    var d = description();
+    uriBuilder.addSegment(TestUri.Segment.ENV, d);
+    var desc = "TestEnv: %s ".formatted(d);
+
+    var testExecutionCondition = new TestExecutionCondition.Default(desc);
+    var envNodes =
+        testSuite.testNodesForEnvironment(
+            testNodeFactory, uriBuilder.clone(), this, testExecutionCondition);
+
+    return testNodeFactory.testPlanContainer(
+        desc,
+        uriBuilder.build().uri(),
+        testNodeFactory.addLifecycle(uriBuilder.clone(), testSuite, this, envNodes));
+  }
+
+  private String description() {
+    return vars.entrySet().stream()
+        .filter(
+            entry -> {
+              var name = entry.getKey().toUpperCase();
+              if (SCHEMA_IDENTIFIER.contains(name)) {
+                return false; // schema names not usually interesting
+              }
+              if (name.contains("KEY") || name.contains("API") || name.contains("TOKEN")) {
+                return false; // assume security
+              }
+              return true;
+            })
+        .sorted(Map.Entry.comparingByKey())
+        .toList()
+        .toString();
+  }
+
+  private TestRunEnv(TestRunEnv other) {
+    this.vars.putAll(other.vars);
+  }
+
+  public TestRunEnv clone() {
+    return new TestRunEnv(this);
+  }
+
+  public TestRunEnv put(TestRunEnv other) {
+    this.vars.putAll(other.vars);
+    return this;
+  }
+
+  public void put(String key, String value) {
+    this.vars.put(key, value);
+  }
+
+  public String requiredValue(String name) {
+    if (vars.containsKey(name)) {
+      return get(name);
+    }
+    throw new RuntimeException(
+        String.format(
+            "Required env var not found name:%s, defined: %s",
+            name, String.join(", ", vars.keySet())));
+  }
+
+  public StringSubstitutor substitutor() {
+
+    return new StringSubstitutor(StringLookupFactory.INSTANCE.functionStringLookup(this::get))
+        .setEnableUndefinedVariableException(true);
+  }
+
+  public String get(String name) {
+    return get(name, "");
+  }
+
+  public String get(String name, String defaultValue) {
+
+    var value = vars.get(name);
+    if (value == null) {
+      value = defaultValue;
+    }
+
+    var substituted = substitutor().replace(value);
+    return SCHEMA_IDENTIFIER.contains(name)
+        ? Backend.toSafeSchemaIdentifier(substituted)
+        : substituted;
+  }
+
+  @Override
+  public String toString() {
+    return vars.toString();
+  }
+}
