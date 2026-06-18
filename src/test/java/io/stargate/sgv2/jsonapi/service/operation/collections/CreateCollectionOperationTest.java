@@ -4,9 +4,7 @@ import static io.stargate.sgv2.jsonapi.util.asserts.DataAPIAsserts.assertThatCom
 import static io.stargate.sgv2.jsonapi.util.asserts.DataAPIAsserts.assertThatSchemaException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +26,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -44,7 +43,10 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -52,7 +54,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * NOTE: Example table comment string:
+ * Tests for how the {@link CreateCollectionOperation} makes calls to the DB.
+ *
+ * <p>NOTE: Example table comment string:
  *
  * <pre>
  *  {
@@ -105,6 +109,21 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         testName, operation, expectedCreateTable, expectedCreateIndex, true, false);
   }
 
+  /**
+   * Calls {@link CreateCollectionOperation#execute(RequestContext, QueryExecutor)} and makes
+   * assertions on how it works calling the DB. Main re-usable set of assertions.
+   *
+   * @param testName name of the test, used for logging
+   * @param operation Operation to test.
+   * @param expectedCreateTable How many CQL statements should be sent to the DB with CREATE TABLE
+   * @param expectedCreateIndex How many CQL statements should be sent t the DB with CREATE CUSTOM
+   *     INDEX
+   * @param mockKeyspaceMetadata If true, fake metadata for the keyspace is added to the mock. If
+   *     false, we will add mock data but it is empty.
+   * @param awaitFailure if true, we expect an throwable out of the operation and wait for that.
+   * @return {@link SchemaChangeMemento} which describes all the DB schema change calls the
+   *     operation made
+   */
   private SchemaChangeMemento assertOperation(
       String testName,
       CreateCollectionOperation operation,
@@ -112,6 +131,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       int expectedCreateIndex,
       boolean mockKeyspaceMetadata,
       boolean awaitFailure) {
+
     LOGGER.info(
         "assertOperation() - testName={}, expectedCreateTable={}, expectedCreateIndex={}",
         testName,
@@ -480,6 +500,14 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     return new MockAsyncResultSet(schemaColumns, resultRows, null);
   }
 
+  /**
+   * Holds the calls the operation made against the DB
+   *
+   * @param counter Total number of calls that were intercepted.
+   * @param queries The CQL from the statements, in order the calls were intercepted.
+   * @param tableComments If the CQL had a command field (for create table) the extracted comment,
+   *     see TABLE_COMMENT_PATTERN
+   */
   private record SchemaChangeMemento(
       AtomicInteger counter, List<String> queries, List<String> tableComments) {
     SchemaChangeMemento {

@@ -13,6 +13,13 @@ import io.stargate.sgv2.jsonapi.util.profiles.DisableVectorizeProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Integration tests for
+ *
+ * <pre>findEmbeddingProviders</pre>
+ *
+ * when vectorize is disabled.
+ */
 @QuarkusTest
 @TestProfile(DisableVectorizeProfile.class)
 public class FindEmbeddingProvidersResolverVectorizeDisabledTest

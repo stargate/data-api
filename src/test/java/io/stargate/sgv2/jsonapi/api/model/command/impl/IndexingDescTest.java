@@ -7,20 +7,40 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Unit tests for the {@link CreateCollectionCommand.Options.IndexingDesc} */
+/**
+ * Unit tests for the {@link CreateCollectionCommand.Options.IndexingDesc}
+ *
+ * <p>We are testing that when created from JSON and validated, exceptions are thrown and functions
+ * derived from the record state work. Not really testing that deserialisationw works.
+ */
 public class IndexingDescTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexingDescTest.class);
 
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
+  private CreateCollectionCommand.Options.IndexingDesc assertValidate(
+      String testName, String json, CreateCollectionCommand.Options.IndexingDesc expected) {
+
+    LOGGER.info("assertValidate() - testName: {}, json:{}", testName, json);
+
+    var actualIndexingDesc = deserialize(testName, json);
+    actualIndexingDesc.validate();
+
+    assertThat(actualIndexingDesc).as(testName).isEqualTo(expected);
+    return actualIndexingDesc;
+  }
+
   /** Assert that validating the JSON for the IndexingDesc will result in a SchemaException */
-  private void assertSchemaException(
+  private void assertValidateFails(
       String testName, String json, ErrorCode<?> errorCode, String... message) {
+
+    LOGGER.info("assertValidateFails() - testName: {}, json:{}", testName, json);
 
     var indexingDesc = deserialize(testName, json);
     var throwable = catchThrowable(indexingDesc::validate);
@@ -45,7 +65,7 @@ public class IndexingDescTest {
             ]
         }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failAllowAndDeny()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -59,7 +79,7 @@ public class IndexingDescTest {
         """
         {}""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failNeitherAllowNorDeny()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -78,7 +98,7 @@ public class IndexingDescTest {
             ]
         }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failAllowDuplicates()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -97,7 +117,7 @@ public class IndexingDescTest {
              ]
          }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failDenyDuplicates()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -115,7 +135,7 @@ public class IndexingDescTest {
             ]
         }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failAllowEmptyPath()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -133,7 +153,7 @@ public class IndexingDescTest {
             ]
         }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failDenyEmptyPath()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -151,7 +171,7 @@ public class IndexingDescTest {
             ]
         }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failAllowDollarPrefix()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -169,7 +189,7 @@ public class IndexingDescTest {
             ]
         }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failDenyDollarPrefix()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -187,7 +207,7 @@ public class IndexingDescTest {
             ]
         }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failAllowInvalidPath()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -205,7 +225,7 @@ public class IndexingDescTest {
             ]
         }""";
 
-    assertSchemaException(
+    assertValidateFails(
         "failDenyInvalidPath()",
         json,
         SchemaException.Code.INVALID_INDEXING_DEFINITION,
@@ -223,10 +243,8 @@ public class IndexingDescTest {
             ]
         }""";
 
-    var indexingDesc = deserialize("successAllowStar()", json);
-    indexingDesc.validate();
-    assertThat(indexingDesc.allow()).containsExactly("*");
-    assertThat(indexingDesc.deny()).isNull();
+    var expected = new CreateCollectionCommand.Options.IndexingDesc(List.of("*"), null);
+    assertValidate("successAllowStar()", json, expected);
   }
 
   @Test
@@ -240,11 +258,9 @@ public class IndexingDescTest {
             ]
         }""";
 
-    var indexingDesc = deserialize("successDenyStar()", json);
-    indexingDesc.validate();
-    assertThat(indexingDesc.deny()).containsExactly("*");
-    assertThat(indexingDesc.denyAll()).as("delayAll true when deny '*'").isTrue();
-    assertThat(indexingDesc.allow()).isNull();
+    var expected = new CreateCollectionCommand.Options.IndexingDesc(null, List.of("*"));
+    var actual = assertValidate("successDenyStar()", json, expected);
+    assertThat(actual.denyAll()).as("delayAll true when deny '*'").isTrue();
   }
 
   @Test
@@ -258,10 +274,8 @@ public class IndexingDescTest {
             ]
         }""";
 
-    var indexingDesc = deserialize("successAllowVector()", json);
-    indexingDesc.validate();
-    assertThat(indexingDesc.allow()).containsExactly("$vector");
-    assertThat(indexingDesc.deny()).isNull();
+    var expected = new CreateCollectionCommand.Options.IndexingDesc(List.of("$vector"), null);
+    assertValidate("successAllowVector()", json, expected);
   }
 
   @Test
@@ -275,10 +289,8 @@ public class IndexingDescTest {
             ]
         }""";
 
-    var indexingDesc = deserialize("successDenyVector()", json);
-    indexingDesc.validate();
-    assertThat(indexingDesc.deny()).containsExactly("$vector");
-    assertThat(indexingDesc.allow()).isNull();
+    var expected = new CreateCollectionCommand.Options.IndexingDesc(null, List.of("$vector"));
+    assertValidate("successDenyVector()", json, expected);
   }
 
   @Test
@@ -294,10 +306,10 @@ public class IndexingDescTest {
             ]
         }""";
 
-    var indexingDesc = deserialize("successAllowValidPaths()", json);
-    indexingDesc.validate();
-    assertThat(indexingDesc.allow()).containsExactly("name", "address.city", "tags");
-    assertThat(indexingDesc.deny()).isNull();
+    var expected =
+        new CreateCollectionCommand.Options.IndexingDesc(
+            List.of("name", "address.city", "tags"), null);
+    assertValidate("successAllowValidPaths()", json, expected);
   }
 
   @Test
@@ -313,10 +325,10 @@ public class IndexingDescTest {
             ]
         }""";
 
-    var indexingDesc = deserialize("successDenyValidPaths()", json);
-    indexingDesc.validate();
-    assertThat(indexingDesc.deny()).containsExactly("name", "address.city", "tags");
-    assertThat(indexingDesc.allow()).isNull();
+    var expected =
+        new CreateCollectionCommand.Options.IndexingDesc(
+            null, List.of("name", "address.city", "tags"));
+    assertValidate("successDenyValidPaths()", json, expected);
   }
 
   private CreateCollectionCommand.Options.IndexingDesc deserialize(String testName, String json) {

@@ -10,8 +10,6 @@ import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.util.profiles.EnabledVectorizeProfile;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests how the {@link CreateCollectionCommandResolver} handles inputs and the operation it
@@ -24,9 +22,6 @@ import org.slf4j.LoggerFactory;
 @TestProfile(EnabledVectorizeProfile.class)
 class CreateCollectionCommandResolverVectorizeEnabledTest
     extends CreateCollectionCommandResolverTestBase {
-
-  protected static final Logger LOGGER =
-      LoggerFactory.getLogger(CreateCollectionCommandResolverVectorizeEnabledTest.class);
 
   @Test
   public void successWithVectorize() {

@@ -12,7 +12,8 @@ import org.assertj.core.api.AbstractAssert;
  * Assertions for matching the {@link CommandResult}
  *
  * <p>NOTE: there is some logic duplication with {@link ResponseAssertions} which is used for
- * integration tests, it would be good to have some underlying logic but not a big problem
+ * integration tests which tie in with RestEasy. It would be good to have some underlying logic but
+ * that can be future refactoring
  */
 public class CommandResultAssert extends AbstractAssert<CommandResultAssert, CommandResult> {
 

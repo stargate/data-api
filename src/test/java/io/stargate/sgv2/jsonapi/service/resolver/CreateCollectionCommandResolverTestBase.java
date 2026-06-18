@@ -9,8 +9,16 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOp
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import jakarta.inject.Inject;
 
-/** re-usable base class for tests for {@link CreateCollectionCommandResolver}. */
-class CreateCollectionCommandResolverTestBase
+/**
+ * Re-usable base class for tests for {@link CreateCollectionCommandResolver}.
+ *
+ * <p>Use {@link #assertResolver(String, String, CqlIdentifier)} in this class because it has more
+ * checks about creating a collection
+ *
+ * <p>Needed because we have tests that run with different profiles, such as with vectorize enabled
+ * or disabled, and this puts re-usable code in one place.
+ */
+abstract class CreateCollectionCommandResolverTestBase
     extends CommandResolverTestBase<
         KeyspaceSchemaObject,
         CreateCollectionCommand,
@@ -18,6 +26,7 @@ class CreateCollectionCommandResolverTestBase
         CreateCollectionOperation> {
 
   @Inject CreateCollectionCommandResolver RESOLVER;
+
   protected final CommandContext<KeyspaceSchemaObject> COMMAND_CONTEXT =
       TEST_CONSTANTS.keyspaceContext();
 
