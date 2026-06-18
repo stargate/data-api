@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.override;
 
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-import net.jcip.annotations.Immutable;
 import org.jspecify.annotations.NonNull;
 
 /**
