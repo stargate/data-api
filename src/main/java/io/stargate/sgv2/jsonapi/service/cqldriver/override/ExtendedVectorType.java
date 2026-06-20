@@ -4,8 +4,9 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.internal.core.type.DefaultVectorType;
 
 /**
- * Extended vector type to support vector size This is needed because java drivers
- * DataTypes.vectorOf() method has a bug
+ * Extended vector type to support vector size.
+ *
+ * <p>Basically a clone of {@link DefaultVectorType} but changes the {@link #asCql} override.
  */
 public class ExtendedVectorType extends DefaultVectorType {
   public ExtendedVectorType(DataType subtype, int vectorSize) {
@@ -14,6 +15,10 @@ public class ExtendedVectorType extends DefaultVectorType {
 
   @Override
   public String asCql(boolean includeFrozen, boolean pretty) {
-    return "VECTOR<" + getElementType().asCql(includeFrozen, pretty) + "," + getDimensions() + ">";
+    // NOTE: this is very similar to the DefaultVectorType.asCql() method, the difference
+    // is passing along the includeFrozen and pretty parameters. Default sets them to true
+    // which means frozen is included in places we dont want it.
+    return String.format(
+        "vector<%s, %d>", getElementType().asCql(includeFrozen, pretty), getDimensions());
   }
 }
