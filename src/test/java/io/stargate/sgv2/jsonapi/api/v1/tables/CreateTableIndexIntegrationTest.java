@@ -52,11 +52,18 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   }
 
   /**
-   * Creates a vector index whose {@code vectorIndexing} sets SAI tuning options. Those options need
-   * a cluster with {@code SAI_HNSW_ALLOW_CUSTOM_PARAMETERS}; where the backend rejects them the
-   * create returns an error and there is nothing to round-trip, so the test is skipped (assumption)
-   * rather than failed. When it does apply, the create must succeed.
+   * Database error a cluster returns for custom SAI HNSW params when the feature is not enabled.
    */
+  private static final String SAI_CUSTOM_PARAMS_DISABLED = "SAI_HNSW_ALLOW_CUSTOM_PARAMETERS";
+
+  /**
+   * Creates a vector index whose {@code vectorIndexing} sets SAI tuning options. Those options need
+   * a cluster with {@code SAI_HNSW_ALLOW_CUSTOM_PARAMETERS}; only that specific backend rejection
+   * is tolerated (skipped via assumption), because there is nothing to round-trip there. Any other
+   * error — request shape, profile expansion, option rendering, or an unrelated server failure — is
+   * a real regression and fails the test rather than hiding it as a skip.
+   */
+  @SuppressWarnings("unchecked")
   private void createTunedVectorIndexOrSkip(
       String indexName, String column, String vectorIndexingJson) {
     var validator =
@@ -73,12 +80,16 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 """
                     .formatted(indexName, column, vectorIndexingJson));
 
-    List<?> errors = validator.response().extract().path("errors");
-    Assumptions.assumeTrue(
-        errors == null || errors.isEmpty(),
-        () ->
-            "backend rejected vectorIndexing tuning options (needs SAI_HNSW_ALLOW_CUSTOM_PARAMETERS): "
-                + errors);
+    List<Map<String, Object>> errors = validator.response().extract().path("errors");
+    boolean customParamsDisabled =
+        errors != null
+            && errors.size() == 1
+            && String.valueOf(errors.get(0).get("message")).contains(SAI_CUSTOM_PARAMS_DISABLED);
+    Assumptions.assumeFalse(
+        customParamsDisabled,
+        () -> "skipping round-trip: cluster has not enabled " + SAI_CUSTOM_PARAMS_DISABLED);
+
+    // Not the tolerated rejection: any other (or no) error must be asserted, not skipped.
     validator.wasSuccessful();
   }
 
@@ -658,16 +669,19 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     @SuppressWarnings("unchecked")
     public void createVectorIndexWithRawOptionsRoundTrip() {
+      // Both keys are HNSW params the backend recognizes (gated by
+      // SAI_HNSW_ALLOW_CUSTOM_PARAMETERS),
+      // and the pair matches no profile, so read-back echoes the raw options rather than a name.
       createTunedVectorIndexOrSkip(
           "vector_type_9_idx",
           "vector_type_9",
-          "{ \"maximum_node_connections\": 24, \"alpha\": 1.5 }");
+          "{ \"maximum_node_connections\": 24, \"construction_beam_width\": 150 }");
 
       verifyCreatedVectorIndex("vector_type_9_idx");
       // Options that match no profile are echoed back verbatim, as the strings CQL stores.
       assertThat((Map<String, Object>) readBackVectorIndexing("vector_type_9_idx"))
           .containsEntry("maximum_node_connections", "24")
-          .containsEntry("alpha", "1.5");
+          .containsEntry("construction_beam_width", "150");
     }
   }
 
