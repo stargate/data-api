@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -10,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
@@ -47,6 +49,50 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         .listIndexes(false)
         .wasSuccessful()
         .hasIndex(indexName);
+  }
+
+  /**
+   * Creates a vector index whose {@code vectorIndexing} sets SAI tuning options. Those options need
+   * a cluster with {@code SAI_HNSW_ALLOW_CUSTOM_PARAMETERS}; where the backend rejects them the
+   * create returns an error and there is nothing to round-trip, so the test is skipped (assumption)
+   * rather than failed. When it does apply, the create must succeed.
+   */
+  private void createTunedVectorIndexOrSkip(
+      String indexName, String column, String vectorIndexingJson) {
+    var validator =
+        assertTableCommand(keyspaceName, vectorTableName)
+            .postCreateVectorIndex(
+                    """
+                {
+                  "name": "%s",
+                  "definition": {
+                    "column": "%s",
+                    "options": { "vectorIndexing": %s }
+                  }
+                }
+                """
+                    .formatted(indexName, column, vectorIndexingJson));
+
+    List<?> errors = validator.response().extract().path("errors");
+    Assumptions.assumeTrue(
+        errors == null || errors.isEmpty(),
+        () ->
+            "backend rejected vectorIndexing tuning options (needs SAI_HNSW_ALLOW_CUSTOM_PARAMETERS): "
+                + errors);
+    validator.wasSuccessful();
+  }
+
+  /** The {@code vectorIndexing} echoed back by listIndexes for the given index (string or map). */
+  private Object readBackVectorIndexing(String indexName) {
+    return assertTableCommand(keyspaceName, vectorTableName)
+        .templated()
+        .listIndexes(true)
+        .wasSuccessful()
+        .response()
+        .extract()
+        .path(
+            "status.indexes.find { it.name == '%s' }.definition.options.vectorIndexing"
+                .formatted(indexName));
   }
 
   @BeforeAll
@@ -96,7 +142,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_5", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_6", Map.of("type", "vector", "dimension", 1024)),
-                Map.entry("vector_type_7", Map.of("type", "vector", "dimension", 1024))),
+                Map.entry("vector_type_7", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_8", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_9", Map.of("type", "vector", "dimension", 1024))),
             "id")
         .wasSuccessful();
 
@@ -595,6 +643,31 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .wasSuccessful();
 
       verifyCreatedVectorIndex("vector_type_6_idx");
+    }
+
+    @Test
+    public void createVectorIndexWithProfileRoundTrip() {
+      createTunedVectorIndexOrSkip("vector_type_8_idx", "vector_type_8", "\"small-high-recall\"");
+
+      verifyCreatedVectorIndex("vector_type_8_idx");
+      // The profile name is not persisted; read-back detects it from the applied options and
+      // echoes the name back.
+      assertThat(readBackVectorIndexing("vector_type_8_idx")).isEqualTo("small-high-recall");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void createVectorIndexWithRawOptionsRoundTrip() {
+      createTunedVectorIndexOrSkip(
+          "vector_type_9_idx",
+          "vector_type_9",
+          "{ \"maximum_node_connections\": 24, \"alpha\": 1.5 }");
+
+      verifyCreatedVectorIndex("vector_type_9_idx");
+      // Options that match no profile are echoed back verbatim, as the strings CQL stores.
+      assertThat((Map<String, Object>) readBackVectorIndexing("vector_type_9_idx"))
+          .containsEntry("maximum_node_connections", "24")
+          .containsEntry("alpha", "1.5");
     }
   }
 
@@ -1217,7 +1290,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
               SchemaException.class,
-              "The option 'alpha' must be a scalar value");
+              "The option 'alpha' must be a number.");
     }
 
     @Test

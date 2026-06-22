@@ -44,5 +44,8 @@ public interface VectorConstants {
             NEIGHBORHOOD_OVERFLOW,
             ALPHA,
             ENABLE_HIERARCHY);
+
+    /** Allowed options whose value must be a boolean; the rest are numeric. */
+    Set<String> BOOLEAN_OPTIONS = Set.of(ENABLE_HIERARCHY);
   }
 }

@@ -75,7 +75,8 @@ public record VectorIndexDefinitionDesc(
                       + "maximum_node_connections, construction_beam_width, neighborhood_overflow, "
                       + "alpha, enable_hierarchy, e.g. {\"maximum_node_connections\": 32, "
                       + "\"alpha\": 1.2}. A profile and explicit options are mutually exclusive. "
-                      + "Set \"metric\" / \"sourceModel\" via their dedicated fields, not here.")
+                      + "Set \"metric\" / \"sourceModel\" via their dedicated fields, not here.",
+              oneOf = {String.class, Map.class})
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @JsonProperty(VectorConstants.VectorColumn.VECTOR_INDEXING)
           VectorIndexingDesc vectorIndexing) {}

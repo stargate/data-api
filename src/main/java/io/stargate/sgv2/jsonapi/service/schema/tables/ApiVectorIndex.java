@@ -183,21 +183,51 @@ public class ApiVectorIndex extends ApiSupportedIndex {
     }
   }
 
-  /** CQL index options are strings; accept scalar JSON values and reject objects, arrays, null. */
+  /**
+   * Validates and renders an option value to the CQL string form. CQL index options are a {@code
+   * Map<String, String>} that the driver emits unescaped into {@code WITH OPTIONS = {...}}, so a
+   * raw string would let a quote break out of the literal; every allowed option is numeric or
+   * boolean, so the value is coerced to that type and anything else is rejected.
+   */
   private static String optionValueToString(String optionName, Object value) {
-    if (value == null || value instanceof Map || value instanceof Iterable) {
-      throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
-          Map.of(
-              "reason",
-              "The option '%s' must be a scalar value (string, number, or boolean)."
-                  .formatted(optionName)));
+    if (VectorConstants.CQLAnnIndex.BOOLEAN_OPTIONS.contains(optionName)) {
+      return booleanOptionValue(optionName, value);
     }
+    return numericOptionValue(optionName, value);
+  }
+
+  private static String booleanOptionValue(String optionName, Object value) {
+    if (value instanceof Boolean bool) {
+      return bool.toString();
+    }
+    if (value instanceof String text
+        && ("true".equalsIgnoreCase(text) || "false".equalsIgnoreCase(text))) {
+      return text.toLowerCase();
+    }
+    throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+        Map.of("reason", "The option '%s' must be true or false.".formatted(optionName)));
+  }
+
+  private static String numericOptionValue(String optionName, Object value) {
     // JSON numbers deserialize to BigDecimal; use plain (non-scientific) notation for the CQL
     // value.
     if (value instanceof BigDecimal number) {
       return number.toPlainString();
     }
-    return String.valueOf(value);
+    if (value instanceof Number number) {
+      return number.toString();
+    }
+    // A numeric value sent as a JSON string is accepted only if it parses as a number, which also
+    // rejects any quote/garbage that could break out of the CQL options literal.
+    if (value instanceof String text) {
+      try {
+        return new BigDecimal(text.trim()).toPlainString();
+      } catch (NumberFormatException e) {
+        // fall through to the rejection below
+      }
+    }
+    throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+        Map.of("reason", "The option '%s' must be a number.".formatted(optionName)));
   }
 
   /**

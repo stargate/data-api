@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc.VectorIndexingDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,7 +23,7 @@ import java.util.Map;
  *       "vectorIndexing": { "maximum_node_connections": 32 }</code>
  * </ul>
  *
- * <p>Anything else (number, boolean, array, null token) is a request error. Per <a
+ * <p>Anything else (number, boolean, array) is a request error. Per <a
  * href="https://github.com/stargate/data-api/issues/2508">#2508</a> the field is overloaded by JSON
  * type rather than separate {@code profile} / {@code options} sub-keys, so profile and raw options
  * are mutually exclusive in one request.
@@ -58,7 +59,7 @@ public class VectorIndexingDescDeserializer extends StdDeserializer<VectorIndexi
             "reason",
             "`vectorIndexing` must be either a profile name (string) or an object of indexing "
                 + "options, but was: "
-                + node.getNodeType().name().toLowerCase()
+                + JsonUtil.nodeTypeAsString(node)
                 + "."));
   }
 }

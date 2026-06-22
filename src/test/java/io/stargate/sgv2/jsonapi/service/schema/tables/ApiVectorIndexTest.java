@@ -244,12 +244,39 @@ class ApiVectorIndexTest {
 
     @Test
     void nonScalarOptionValueThrows() {
-      // "alpha" is an allowed key, so this reaches the scalar-value check
+      // "alpha" is an allowed key, so this reaches the value-type check
       assertSchemaError(
           options(Map.of("alpha", List.of(1, 2))),
           SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
       assertSchemaError(
           options(Map.of("alpha", Map.of("x", 1))),
+          SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
+    }
+
+    @Test
+    void numericOptionRejectsNonNumericString() {
+      // Driver renders option values unescaped into WITH OPTIONS = {...}; a quote-bearing value
+      // would break out of the literal, so a numeric option must parse as a number.
+      assertSchemaError(
+          options(Map.of("alpha", "1.2'} AND injected={'x':'y")),
+          SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
+    }
+
+    @Test
+    void booleanOptionAcceptsBooleanOrString() {
+      var fromBoolean = new HashMap<String, String>();
+      ApiVectorIndex.applyIndexingOptions(fromBoolean, options(Map.of("enable_hierarchy", true)));
+      assertThat(fromBoolean).containsEntry("enable_hierarchy", "true");
+
+      var fromString = new HashMap<String, String>();
+      ApiVectorIndex.applyIndexingOptions(fromString, options(Map.of("enable_hierarchy", "TRUE")));
+      assertThat(fromString).containsEntry("enable_hierarchy", "true");
+    }
+
+    @Test
+    void booleanOptionRejectsNonBoolean() {
+      assertSchemaError(
+          options(Map.of("enable_hierarchy", "yes")),
           SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
     }
 

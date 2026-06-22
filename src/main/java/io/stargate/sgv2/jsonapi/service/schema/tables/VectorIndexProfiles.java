@@ -13,7 +13,8 @@ import java.util.Set;
  * dedicated {@code sourceModel} / {@code metric} fields. Values are Strings because CQL index
  * options are a {@code Map<String, String>}.
  *
- * <p>Initial in-code set; values to be tuned and moved to config.
+ * <p>Initial in-code set; values to be tuned and moved to config (<a
+ * href="https://github.com/stargate/data-api/issues/2508">#2508</a>).
  */
 public final class VectorIndexProfiles {
 
@@ -50,7 +51,8 @@ public final class VectorIndexProfiles {
    * Reverse lookup: the profile whose expanded options exactly match {@code options}, used on
    * read-back to label an index that was created from a known profile. Exact match only, so an
    * index whose options differ from, or are a superset of, a profile reports its raw options
-   * instead. The stored options are not persisted, so this is a best-effort reconstruction.
+   * instead. The stored options are not persisted, so this is a best-effort reconstruction (<a
+   * href="https://github.com/stargate/data-api/issues/2508">#2508</a>).
    *
    * @return the matching profile name, or empty if {@code options} is null/empty or matches none
    */
