@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -16,22 +15,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 /**
- * EMPIRICAL PROBE (issue #2487): Does the backing DB (DSE 6.9 / HCD) accept an UNKNOWN option KEY in
- * a vector SAI index's {@code CREATE CUSTOM INDEX ... WITH OPTIONS}?
+ * EMPIRICAL PROBE (issue #2487): Does the backing DB (DSE 6.9 / HCD) accept an UNKNOWN option KEY
+ * in a vector SAI index's {@code CREATE CUSTOM INDEX ... WITH OPTIONS}?
  *
  * <p>This BYPASSES data-api's own {@code ApiVectorIndex.applyIndexingOptions} allow-list by issuing
  * RAW CQL directly against the running test container via the admin {@link CqlSession} provided by
- * {@link AbstractKeyspaceIntegrationTestBase} (driver session, {@code cassandra/cassandra}). It does
- * NOT go through the data-api HTTP command layer.
+ * {@link AbstractKeyspaceIntegrationTestBase} (driver session, {@code cassandra/cassandra}). It
+ * does NOT go through the data-api HTTP command layer.
  *
  * <p>Hypothesis: a key SAI has never heard of (here {@code profile}) should be rejected by SAI's
- * option validation regardless of {@code SAI_HNSW_ALLOW_CUSTOM_PARAMETERS} (that flag only gates the
- * KNOWN custom HNSW tuning params like {@code maximum_node_connections}). The control index, using
- * only {@code similarity_function:cosine}, must succeed to prove the table/column/CQL is otherwise
- * valid.
+ * option validation regardless of {@code SAI_HNSW_ALLOW_CUSTOM_PARAMETERS} (that flag only gates
+ * the KNOWN custom HNSW tuning params like {@code maximum_node_connections}). The control index,
+ * using only {@code similarity_function:cosine}, must succeed to prove the table/column/CQL is
+ * otherwise valid.
  *
- * <p>The test is written to ALWAYS PASS while RECORDING the observed behavior to stdout, so the probe
- * never fails CI ambiguously; flip {@code EXPECT_UNKNOWN_KEY_REJECTED} to turn it into a hard
+ * <p>The test is written to ALWAYS PASS while RECORDING the observed behavior to stdout, so the
+ * probe never fails CI ambiguously; flip {@code EXPECT_UNKNOWN_KEY_REJECTED} to turn it into a hard
  * assertion once the empirical answer is known.
  */
 @QuarkusIntegrationTest
@@ -46,7 +45,9 @@ class VectorIndexUnknownOptionProbeIntegrationTest extends AbstractKeyspaceInteg
   private static final String VECTOR_COL = "embedding";
   private static final int DIMENSION = 4;
 
-  /** Reflective accessor to the private CqlSession in the base class, for direct error inspection. */
+  /**
+   * Reflective accessor to the private CqlSession in the base class, for direct error inspection.
+   */
   private CqlSession session() {
     try {
       Method m = AbstractKeyspaceIntegrationTestBase.class.getDeclaredMethod("createDriverSession");
@@ -111,8 +112,8 @@ class VectorIndexUnknownOptionProbeIntegrationTest extends AbstractKeyspaceInteg
 
     boolean rejected = thrown != null;
     System.out.println("=================================================================");
-    System.out.println("[VECTOR-INDEX-UNKNOWN-OPTION PROBE] unknown key 'profile' rejected="
-        + rejected);
+    System.out.println(
+        "[VECTOR-INDEX-UNKNOWN-OPTION PROBE] unknown key 'profile' rejected=" + rejected);
     if (rejected) {
       System.out.println("[PROBE] rejection class : " + thrown.getClass().getName());
       System.out.println("[PROBE] rejection message: " + thrown.getMessage());
@@ -122,9 +123,7 @@ class VectorIndexUnknownOptionProbeIntegrationTest extends AbstractKeyspaceInteg
     System.out.println("=================================================================");
 
     if (EXPECT_UNKNOWN_KEY_REJECTED) {
-      assertThat(rejected)
-          .as("DB should reject unknown SAI option key 'profile'")
-          .isTrue();
+      assertThat(rejected).as("DB should reject unknown SAI option key 'profile'").isTrue();
     }
   }
 }
