@@ -278,6 +278,28 @@ class ApiVectorIndexTest {
 
     @Test
     void describesTuningOptionsUnderOptions() {
+      // options that do not match any profile are echoed verbatim under options
+      var options = new HashMap<String, String>();
+      options.put(CQLSAIIndex.Options.CLASS_NAME, CQLSAIIndex.SAI_CLASS_NAME);
+      options.put(CQLSAIIndex.Options.TARGET, "my_vector");
+      options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OPENAI_V3_SMALL");
+      options.put(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, "COSINE");
+      options.put(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "32");
+      options.put(VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH, "123");
+
+      var described = ApiVectorIndex.describeIndexingOptions(options);
+
+      assertThat(described).isNotNull();
+      assertThat(described.profile()).isNull();
+      assertThat(described.options())
+          .containsOnly(
+              entry(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "32"),
+              entry(VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH, "123"));
+    }
+
+    @Test
+    void detectsKnownProfileFromOptions() {
+      // options that exactly match small-high-recall's expansion are echoed as the profile name
       var options = new HashMap<String, String>();
       options.put(CQLSAIIndex.Options.CLASS_NAME, CQLSAIIndex.SAI_CLASS_NAME);
       options.put(CQLSAIIndex.Options.TARGET, "my_vector");
@@ -289,11 +311,8 @@ class ApiVectorIndexTest {
       var described = ApiVectorIndex.describeIndexingOptions(options);
 
       assertThat(described).isNotNull();
-      assertThat(described.profile()).isNull();
-      assertThat(described.options())
-          .containsOnly(
-              entry(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "32"),
-              entry(VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH, "200"));
+      assertThat(described.profile()).isEqualTo("small-high-recall");
+      assertThat(described.options()).isNull();
     }
 
     @Test
@@ -301,7 +320,8 @@ class ApiVectorIndexTest {
       var options = new HashMap<String, String>();
       options.put(CQLSAIIndex.Options.CLASS_NAME, CQLSAIIndex.SAI_CLASS_NAME);
       options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OTHER");
-      options.put(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "16");
+      // a non-profile value, so the allow-listed key is echoed as raw options
+      options.put(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "20");
       // a real SAI option the API does not manage (e.g. set directly via CQL), not surfaced
       options.put("optimize_for", "recall");
 
@@ -318,18 +338,18 @@ class ApiVectorIndexTest {
     }
   }
 
-  /** The persisted profile snapshot reflects the options actually applied, not the base profile. */
+  /** tuningOptions keeps only the allow-listed tuning options, dropping reserved and structural. */
   @Nested
-  class TuningOptionsSnapshot {
+  class TuningOptionsFilter {
 
     @Test
-    void keepsAllowlistedAppliedOptionsExcludingReservedAndStructural() {
+    void keepsAllowlistedOptionsExcludingReservedAndStructural() {
       var indexOptions = new HashMap<String, String>();
       indexOptions.put(CQLSAIIndex.Options.CLASS_NAME, CQLSAIIndex.SAI_CLASS_NAME);
       indexOptions.put(CQLSAIIndex.Options.TARGET, "my_vector");
       indexOptions.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OPENAI_V3_SMALL");
       indexOptions.put(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, "COSINE");
-      // small-high-recall's base is 32, but an override applied 99, so the snapshot keeps 99
+      // values are kept as-is; the filter only drops keys, it does not interpret them
       indexOptions.put(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "99");
       indexOptions.put(VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH, "200");
 

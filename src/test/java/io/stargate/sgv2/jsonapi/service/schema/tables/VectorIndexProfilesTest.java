@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
+import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +54,41 @@ class VectorIndexProfilesTest {
         assertThat(options.keySet())
             .doesNotContainAnyElementsOf(VectorConstants.CQLAnnIndex.RESERVED_OPTIONS);
       }
+    }
+  }
+
+  @Nested
+  class Detect {
+    @Test
+    void exactMatchReturnsProfile() {
+      var smallHighRecall = VectorIndexProfiles.forName("small-high-recall").orElseThrow();
+      assertThat(VectorIndexProfiles.detect(smallHighRecall)).contains("small-high-recall");
+    }
+
+    @Test
+    void noMatchWhenOptionsDiffer() {
+      assertThat(
+              VectorIndexProfiles.detect(
+                  Map.of(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "20")))
+          .isEmpty();
+    }
+
+    @Test
+    void noMatchWhenSupersetOfAProfile() {
+      // a superset of small-high-recall is not an exact match
+      assertThat(
+              VectorIndexProfiles.detect(
+                  Map.of(
+                      VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "32",
+                      VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH, "200",
+                      VectorConstants.CQLAnnIndex.ALPHA, "1.2")))
+          .isEmpty();
+    }
+
+    @Test
+    void emptyOrNull() {
+      assertThat(VectorIndexProfiles.detect(Map.of())).isEmpty();
+      assertThat(VectorIndexProfiles.detect(null)).isEmpty();
     }
   }
 }

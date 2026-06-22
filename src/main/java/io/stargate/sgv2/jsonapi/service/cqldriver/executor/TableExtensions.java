@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.ByteUtils;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -65,25 +63,13 @@ public abstract class TableExtensions {
     return (Map<String, ByteBuffer>) tableMetadata.getOptions().get(TABLE_OPTIONS_EXTENSION_KEY);
   }
 
-  /** As {@link #createCustomProperties(Map, Map, ObjectMapper)} with no vector index profiles. */
-  public static Map<String, String> createCustomProperties(
-      Map<CqlIdentifier, VectorizeDefinition> vectorDefs, ObjectMapper objectMapper) {
-    return createCustomProperties(vectorDefs, Map.of(), objectMapper);
-  }
-
   /**
-   * Builds the table extensions payload: schema type/version (always written, since the command may
-   * be altering a CQL-created table) plus the vectorize config and vector index profiles.
-   *
-   * <p>Extensions are fully replaced on every write, so callers must pass every def and profile
-   * they want to keep; anything omitted is dropped.
+   * Create custom properties for table metadata, This needs to add schema and table always since
+   * the command may be altering CQL created tables
    */
   public static Map<String, String> createCustomProperties(
-      Map<CqlIdentifier, VectorizeDefinition> vectorDefs,
-      Map<String, VectorIndexProfileDefinition> indexProfiles,
-      ObjectMapper objectMapper) {
+      Map<CqlIdentifier, VectorizeDefinition> vectorDefs, ObjectMapper objectMapper) {
     Objects.requireNonNull(vectorDefs, "vectorDefs must not be null");
-    Objects.requireNonNull(indexProfiles, "indexProfiles must not be null");
     Objects.requireNonNull(objectMapper, "objectMapper must not be null");
 
     Map<String, String> customProperties = new HashMap<>();
@@ -95,7 +81,9 @@ public abstract class TableExtensions {
         SchemaConstants.MetadataFieldsNames.SCHEMA_VERSION,
         SchemaConstants.MetadataFieldsValues.SCHEMA_VERSION_VERSION);
 
-    // Only write a key when it has content (the map is fully replaced anyway).
+    // because the extensions are always fully replaced, we do not need to write the key if there
+    // are none
+    // the full map will be replaced, replacing any existing extensions
     if (!vectorDefs.isEmpty()) {
       // convert to strings for serialisation
       Map<String, VectorizeDefinition> stringKeysDefs =
@@ -104,79 +92,15 @@ public abstract class TableExtensions {
                   Collectors.toMap(
                       entry -> cqlIdentifierToJsonKey(entry.getKey()), Map.Entry::getValue));
 
-      customProperties.put(
-          SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG,
-          writeJson(stringKeysDefs, objectMapper));
-    }
-    if (!indexProfiles.isEmpty()) {
-      customProperties.put(
-          SchemaConstants.MetadataFieldsNames.VECTOR_INDEX_PROFILES,
-          writeJson(indexProfiles, objectMapper));
+      try {
+        customProperties.put(
+            SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG,
+            objectMapper.writeValueAsString(stringKeysDefs));
+      } catch (JsonProcessingException e) {
+        // this should never happen
+        throw new RuntimeException(e);
+      }
     }
     return customProperties;
-  }
-
-  /**
-   * Computes the extensions payload that drops {@code indexName}'s vector-index profile from the
-   * table that owns it, keeping the {@link
-   * SchemaConstants.MetadataFieldsNames#VECTOR_INDEX_PROFILES} extension in sync so a profile does
-   * not outlive its index.
-   *
-   * <p>The owning table is the one in {@code keyspaceMetadata} whose indexes contain {@code
-   * indexName}. Returns empty (so the caller can skip the DDL) when no table owns the index or the
-   * owning table has no stored profile for it.
-   *
-   * <p>On rewrite the existing vectorize config and the other indexes' profiles are read back and
-   * included so the full-replace write does not lose them, as on the create side (see {@link
-   * #createCustomProperties(Map, Map, ObjectMapper)}).
-   */
-  public static Optional<IndexProfileRemoval> removeIndexProfile(
-      KeyspaceMetadata keyspaceMetadata, CqlIdentifier indexName, ObjectMapper objectMapper) {
-    Objects.requireNonNull(keyspaceMetadata, "keyspaceMetadata must not be null");
-    Objects.requireNonNull(indexName, "indexName must not be null");
-    Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-
-    var owningTable =
-        keyspaceMetadata.getTables().values().stream()
-            .filter(table -> table.getIndexes().containsKey(indexName))
-            .findFirst();
-    if (owningTable.isEmpty()) {
-      return Optional.empty();
-    }
-
-    var tableMetadata = owningTable.get();
-    var profiles = VectorIndexProfileDefinition.from(tableMetadata, objectMapper);
-    // null def => remove; false return => no entry existed, so there is nothing to rewrite.
-    if (!VectorIndexProfileDefinition.putOrRemove(
-        profiles, cqlIdentifierToJsonKey(indexName), null)) {
-      return Optional.empty();
-    }
-
-    // Read the vectorize config back so the full-replace write preserves it. Stored keys are the
-    // columns' internal form, so rebuild the CqlIdentifier keys createCustomProperties expects.
-    var vectorDefs =
-        VectorizeDefinition.from(tableMetadata, objectMapper).entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    entry -> CqlIdentifier.fromInternal(entry.getKey()), Map.Entry::getValue));
-
-    var customProperties = createCustomProperties(vectorDefs, profiles, objectMapper);
-    return Optional.of(new IndexProfileRemoval(tableMetadata.getName(), customProperties));
-  }
-
-  /**
-   * Result of {@link #removeIndexProfile}: the table to alter and the extensions payload to write
-   * (dropped index's profile removed, everything else preserved).
-   */
-  public record IndexProfileRemoval(
-      CqlIdentifier tableName, Map<String, String> customProperties) {}
-
-  private static String writeJson(Object value, ObjectMapper objectMapper) {
-    try {
-      return objectMapper.writeValueAsString(value);
-    } catch (JsonProcessingException e) {
-      // this should never happen
-      throw new RuntimeException(e);
-    }
   }
 }

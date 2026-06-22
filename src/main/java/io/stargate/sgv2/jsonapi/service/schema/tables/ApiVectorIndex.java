@@ -82,10 +82,11 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
   /**
    * Builds the {@code vectorIndexing} description from the CQL index options map, keeping only the
-   * supported tuning options (see {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}) under {@code
-   * options}. Structural, dedicated-field, and CQL-only keys are dropped to stay symmetric with
-   * what the API accepts. The profile name lives in the table extensions, not here, so only {@code
-   * options} is set.
+   * supported tuning options (see {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}). When those
+   * options exactly match a known profile the profile name is echoed; otherwise the raw options
+   * are. Structural, dedicated-field, and CQL-only keys are dropped to stay symmetric with what the
+   * API accepts. The profile is not stored, so it is detected from the options (see {@link
+   * VectorIndexProfiles#detect(Map)}).
    *
    * @return the {@code vectorIndexing} description, or null when there are no supported tuning
    *     options
@@ -94,18 +95,15 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   static VectorIndexDefinitionDesc.VectorIndexingDesc describeIndexingOptions(
       Map<String, String> indexOptions) {
     var tuning = tuningOptions(indexOptions);
-    return tuning.isEmpty()
-        ? null
-        : VectorIndexDefinitionDesc.VectorIndexingDesc.ofOptions(new LinkedHashMap<>(tuning));
-  }
-
-  /**
-   * The supported SAI tuning options applied to this index (profile expansion plus explicit
-   * overrides). Snapshotted next to a stored profile name to capture the live index rather than the
-   * base profile.
-   */
-  public Map<String, String> appliedTuningOptions() {
-    return tuningOptions(indexOptions);
+    if (tuning.isEmpty()) {
+      return null;
+    }
+    return VectorIndexProfiles.detect(tuning)
+        .map(VectorIndexDefinitionDesc.VectorIndexingDesc::ofProfile)
+        .orElseGet(
+            () ->
+                VectorIndexDefinitionDesc.VectorIndexingDesc.ofOptions(
+                    new LinkedHashMap<>(tuning)));
   }
 
   /** Keeps only the {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS} from a CQL options map. */

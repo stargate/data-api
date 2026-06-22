@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorIndexProfileDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
@@ -85,15 +84,6 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
 
     return new TaskOperation<>(
         taskGroup, SchemaDBTaskPage.accumulator(AlterTableDBTask.class, commandContext));
-  }
-
-  /**
-   * Existing vector-index profiles for the table. Altering columns/vectorize replaces the
-   * extensions wholesale, so these must be carried through to avoid wiping them.
-   */
-  private Map<String, VectorIndexProfileDefinition> existingIndexProfiles(
-      TableSchemaObject tableSchemaObject) {
-    return VectorIndexProfileDefinition.from(tableSchemaObject.tableMetadata(), objectMapper);
   }
 
   private List<AlterTableDBTask> handleAddColumns(
@@ -170,8 +160,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
 
       // New custom property to be updated
       var customProperties =
-          TableExtensions.createCustomProperties(
-              existingVectorizeDef, existingIndexProfiles(tableSchemaObject), objectMapper);
+          TableExtensions.createCustomProperties(existingVectorizeDef, objectMapper);
       // First execute the extension update for add columns
       // so if we fail to add this we do not end up with a column that has missing vectorize
       // definition
@@ -284,8 +273,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     if (updateVectorize) {
       attempts.add(
           taskBuilder.buildUpdateExtensions(
-              TableExtensions.createCustomProperties(
-                  existingVectorizeDefs, existingIndexProfiles(tableSchemaObject), objectMapper)));
+              TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
     }
     return attempts;
   }
@@ -369,8 +357,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
 
     return List.of(
         taskBuilder.buildUpdateExtensions(
-            TableExtensions.createCustomProperties(
-                existingVectorizeDefs, existingIndexProfiles(tableSchemaObject), objectMapper)));
+            TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
   }
 
   private List<AlterTableDBTask> handleDropVectorize(
@@ -447,8 +434,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
 
     return List.of(
         taskBuilder.buildUpdateExtensions(
-            TableExtensions.createCustomProperties(
-                existingVectorizeDefs, existingIndexProfiles(tableSchemaObject), objectMapper)));
+            TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
   }
 
   @Override

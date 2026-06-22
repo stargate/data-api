@@ -45,4 +45,22 @@ public final class VectorIndexProfiles {
   public static Set<String> knownNames() {
     return PROFILES.keySet();
   }
+
+  /**
+   * Reverse lookup: the profile whose expanded options exactly match {@code options}, used on
+   * read-back to label an index that was created from a known profile. Exact match only, so an
+   * index whose options differ from, or are a superset of, a profile reports its raw options
+   * instead. The stored options are not persisted, so this is a best-effort reconstruction.
+   *
+   * @return the matching profile name, or empty if {@code options} is null/empty or matches none
+   */
+  public static Optional<String> detect(Map<String, String> options) {
+    if (options == null || options.isEmpty()) {
+      return Optional.empty();
+    }
+    return PROFILES.entrySet().stream()
+        .filter(entry -> entry.getValue().equals(options))
+        .map(Map.Entry::getKey)
+        .findFirst();
+  }
 }
