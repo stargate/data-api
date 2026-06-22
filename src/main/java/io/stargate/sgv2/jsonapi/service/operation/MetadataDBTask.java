@@ -16,7 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.Task;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingTablePredicate;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
 
   // Re-use the matcher for a collection, anything not a collection is a table
   protected static final Predicate<TableMetadata> TABLE_MATCHER =
-      new CollectionTableMatcher().negate();
+      new SuperShreddingTablePredicate().negate();
 
   // this will be set on executeStatement
   // TODO: BETTER CONTROL ON WHEN THIS IS SET AND NOT SET

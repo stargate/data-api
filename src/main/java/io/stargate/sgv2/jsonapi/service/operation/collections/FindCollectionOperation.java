@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
@@ -24,6 +23,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
 import java.util.function.Supplier;
@@ -524,8 +524,7 @@ public record FindCollectionOperation(
             if (bm25Expr != null) {
               qb =
                   qb.bm25Sort(
-                      DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME,
-                      bm25Expr.getLexicalQuery());
+                      SuperShreddingMetadata.Names.QUERY_LEXICAL_VALUE, bm25Expr.getLexicalQuery());
             }
             query = qb.build();
           } else {
@@ -547,14 +546,14 @@ public record FindCollectionOperation(
           .select()
           .column(CollectionReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
           .similarityFunction(
-              DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+              SuperShreddingMetadata.Names.QUERY_VECTOR_VALUE,
               commandContext().schemaObject().similarityFunction())
           .from(
               commandContext.schemaObject().identifier().keyspace(),
               commandContext.schemaObject().identifier().table())
           .where(expression)
           .limit(limit)
-          .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
+          .vsearch(SuperShreddingMetadata.Names.QUERY_VECTOR_VALUE, vector())
           .build();
     } else {
       return new QueryBuilder()
@@ -565,7 +564,7 @@ public record FindCollectionOperation(
               commandContext.schemaObject().identifier().table())
           .where(expression)
           .limit(limit)
-          .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
+          .vsearch(SuperShreddingMetadata.Names.QUERY_VECTOR_VALUE, vector())
           .build();
     }
   }
