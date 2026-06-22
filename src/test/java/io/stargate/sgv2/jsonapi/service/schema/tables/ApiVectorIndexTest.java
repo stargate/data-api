@@ -21,11 +21,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Unit tests for the overloaded {@code vectorIndexing} (a profile name string <em>or</em> a raw SAI
- * options object) handling on {@link ApiVectorIndex}: that a request body deserializes to the
- * expected value, how it is validated and turned into the CQL index options map, and how it is
- * described back. Deterministic; needs no database (end-to-end also depends on the backend allowing
- * custom SAI parameters).
+ * Unit tests for the overloaded {@code vectorIndexing} on {@link ApiVectorIndex}, where the value
+ * is either a profile name string or a raw SAI options object.
+ *
+ * <p>Covers deserialization of a request body, validation, the resulting CQL index options map, and
+ * the describe-back. Needs no database (end-to-end also depends on the backend allowing custom SAI
+ * parameters).
  */
 class ApiVectorIndexTest {
 
@@ -39,7 +40,7 @@ class ApiVectorIndexTest {
     return VectorIndexingDesc.ofOptions(options);
   }
 
-  /** Source of every option that has a dedicated field and so is rejected inside options. */
+  /** Options with a dedicated field, so rejected inside options. */
   static Stream<String> reservedOptions() {
     return VectorConstants.CQLAnnIndex.RESERVED_OPTIONS.stream();
   }
@@ -90,8 +91,8 @@ class ApiVectorIndexTest {
     @ParameterizedTest
     @ValueSource(strings = {"123", "true", "[\"small-high-recall\"]"})
     void nonStringNonObjectRejected(String value) {
-      // Jackson may surface the deserializer's SchemaException directly or wrap it; assert that a
-      // SchemaException with the expected code is somewhere in the chain.
+      // Jackson may surface the deserializer's SchemaException directly or wrapped, so assert one
+      // with the expected code is somewhere in the cause chain.
       assertThatThrownBy(
               () ->
                   MAPPER.readValue(
@@ -301,7 +302,7 @@ class ApiVectorIndexTest {
       options.put(CQLSAIIndex.Options.CLASS_NAME, CQLSAIIndex.SAI_CLASS_NAME);
       options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OTHER");
       options.put(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "16");
-      // a real SAI option the API does not manage (e.g. set directly via CQL); not surfaced
+      // a real SAI option the API does not manage (e.g. set directly via CQL), not surfaced
       options.put("optimize_for", "recall");
 
       var described = ApiVectorIndex.describeIndexingOptions(options);
@@ -328,7 +329,7 @@ class ApiVectorIndexTest {
       indexOptions.put(CQLSAIIndex.Options.TARGET, "my_vector");
       indexOptions.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OPENAI_V3_SMALL");
       indexOptions.put(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, "COSINE");
-      // small-high-recall's base is 32, but an explicit override applied 99 — snapshot must keep 99
+      // small-high-recall's base is 32, but an override applied 99, so the snapshot keeps 99
       indexOptions.put(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "99");
       indexOptions.put(VectorConstants.CQLAnnIndex.CONSTRUCTION_BEAM_WIDTH, "200");
 

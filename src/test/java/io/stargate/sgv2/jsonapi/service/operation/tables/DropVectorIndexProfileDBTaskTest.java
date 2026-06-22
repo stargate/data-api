@@ -43,7 +43,7 @@ class DropVectorIndexProfileDBTaskTest {
 
     var query = task.buildStatement().getQuery();
 
-    // ALTER TABLE on the owning table in the schema object's keyspace, updating the extensions map.
+    // ALTER TABLE on the owning table, in the schema object keyspace, updating extensions
     assertThat(query)
         .contains("ALTER TABLE")
         .contains("my_ks")

@@ -88,8 +88,8 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
   }
 
   /**
-   * Existing vector-index profiles for the table. Altering columns/vectorize fully replaces the
-   * extensions, so these must be carried through or they would be wiped.
+   * Existing vector-index profiles for the table. Altering columns/vectorize replaces the
+   * extensions wholesale, so these must be carried through to avoid wiping them.
    */
   private Map<String, VectorIndexProfileDefinition> existingIndexProfiles(
       TableSchemaObject tableSchemaObject) {

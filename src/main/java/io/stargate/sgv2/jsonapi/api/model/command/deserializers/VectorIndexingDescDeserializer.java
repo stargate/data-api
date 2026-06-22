@@ -13,19 +13,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Deserializes the overloaded {@code vectorIndexing} value, which is either:
+ * Deserializes the overloaded {@code vectorIndexing} value, either:
  *
  * <ul>
- *   <li>a JSON string &rarr; a named profile the API expands into SAI options, e.g. <code>
+ *   <li>a JSON string: a named profile expanded into SAI options, e.g. <code>
  *       "vectorIndexing": "small-high-recall"</code>
- *   <li>a JSON object &rarr; raw Cassandra SAI tuning options set directly, e.g. <code>
+ *   <li>a JSON object: raw Cassandra SAI tuning options, e.g. <code>
  *       "vectorIndexing": { "maximum_node_connections": 32 }</code>
  * </ul>
  *
- * Anything else (number, boolean, array, null token) is a request error. This mirrors the design in
- * <a href="https://github.com/stargate/data-api/issues/2508">#2508</a>: the field is overloaded by
- * JSON type rather than carrying separate {@code profile} / {@code options} sub-keys, so a profile
- * and raw options are mutually exclusive in a single request.
+ * <p>Anything else (number, boolean, array, null token) is a request error. Per <a
+ * href="https://github.com/stargate/data-api/issues/2508">#2508</a> the field is overloaded by JSON
+ * type rather than separate {@code profile} / {@code options} sub-keys, so profile and raw options
+ * are mutually exclusive in one request.
  */
 public class VectorIndexingDescDeserializer extends StdDeserializer<VectorIndexingDesc> {
 
@@ -42,12 +42,12 @@ public class VectorIndexingDescDeserializer extends StdDeserializer<VectorIndexi
     JsonNode node = deserializationContext.readTree(jsonParser);
 
     if (node.isTextual()) {
-      // "vectorIndexing": "small-high-recall" -> a named profile (validated at apply time).
+      // named profile, validated at apply time
       return VectorIndexingDesc.ofProfile(node.textValue());
     }
     if (node.isObject()) {
-      // "vectorIndexing": { "maximum_node_connections": 32 } -> raw SAI options. convertValue
-      // honours the mapper config (e.g. float handling) just as a Map<String, Object> field would.
+      // raw SAI options. convertValue applies the mapper config (e.g. float handling), as a
+      // Map<String, Object> field would
       Map<String, Object> options =
           ((ObjectMapper) jsonParser.getCodec()).convertValue(node, OPTIONS_TYPE);
       return VectorIndexingDesc.ofOptions(options);

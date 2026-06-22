@@ -102,10 +102,9 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     var createIndexTask = taskBuilder.build(apiIndex);
 
-    // If a named profile was used, record the name + the options it resolved to in the table
-    // extensions so the friendly name survives. Written as a second DDL after the index so a failed
-    // create leaves no orphan record. Returns null (no extension write) when there is nothing to
-    // persist or the index already exists (the CREATE IF NOT EXISTS would be a no-op).
+    // Records a named profile (name plus the options it expanded to) in the table extensions, run
+    // as a second DDL after the index so a failed create leaves no orphan record. Null when there
+    // is nothing to persist or the index already exists.
     var extensionTask =
         buildProfileExtensionTask(schemaObject, apiIndex, command, schemaRetryPolicy);
     if (extensionTask == null) {
@@ -126,12 +125,12 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   }
 
   /**
-   * Builds the ALTER TABLE task that records this index's profile in the table extensions, or null
-   * when nothing needs to change. Returns null when the index already exists (a {@code CREATE ...
-   * IF NOT EXISTS} would be a no-op, so its stored profile must not be rewritten), or when no
-   * profile is used and there is no stale entry to clear. The snapshot stores the options the
-   * profile expanded to; existing vectorize config and other profiles are read back and rewritten
-   * so they are not lost.
+   * Builds the ALTER TABLE task that records this index's profile in the table extensions.
+   *
+   * <p>Returns null when the index already exists (a {@code CREATE ... IF NOT EXISTS} is a no-op,
+   * so its stored profile must keep matching the live index), or when no profile is used and there
+   * is no stale entry to clear. The stored options are what the profile expanded to; existing
+   * vectorize config and other profiles are read back and rewritten so they are not lost.
    */
   private AlterTableDBTask buildProfileExtensionTask(
       TableSchemaObject schemaObject,
@@ -139,8 +138,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
       CreateVectorIndexCommand command,
       SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy) {
 
-    // The create is "IF NOT EXISTS": if the index already exists the create is a no-op, so leave
-    // its stored profile untouched (it must keep matching the live index options).
+    // Index already exists: the IF NOT EXISTS create is a no-op, so leave its stored profile alone.
     if (schemaObject.tableMetadata().getIndexes().containsKey(apiIndex.indexName())) {
       return null;
     }

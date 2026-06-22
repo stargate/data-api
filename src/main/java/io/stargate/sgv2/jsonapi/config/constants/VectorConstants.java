@@ -15,7 +15,7 @@ public interface VectorConstants {
 
   /**
    * CQL {@code WITH OPTIONS} keys for a vector (SAI) index. {@link #SOURCE_MODEL} and {@link
-   * #SIMILARITY_FUNCTION} have dedicated API fields ({@code sourceModel} / {@code metric}); the
+   * #SIMILARITY_FUNCTION} map to dedicated API fields ({@code sourceModel} / {@code metric}); the
    * rest are tuning options set via {@code vectorIndexing.options}.
    */
   interface CQLAnnIndex {
@@ -34,9 +34,8 @@ public interface VectorConstants {
     Set<String> RESERVED_OPTIONS = Set.of(SOURCE_MODEL, SIMILARITY_FUNCTION);
 
     /**
-     * The SAI tuning options a user may set through {@code vectorIndexing.options}. Excludes the
-     * dedicated-field options and the structural ones. {@code optimize_for} exists in OSS Cassandra
-     * but is de-emphasised in DSE 6.9 / HCD, so it is intentionally left out for now.
+     * SAI tuning options settable through {@code vectorIndexing.options}. {@code optimize_for}
+     * exists in OSS Cassandra but is de-emphasized in DSE 6.9 / HCD, so it is left out for now.
      */
     Set<String> ALLOWED_OPTIONS =
         Set.of(

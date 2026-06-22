@@ -81,13 +81,12 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Builds the {@code vectorIndexing} description from the CQL index options map: the supported
-   * tuning options (see {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}) under {@code options}.
-   * Structural, dedicated-field, and any other (e.g. CQL-only) keys are omitted so the description
-   * stays symmetric with what the API accepts. The profile name is not reconstructed here (it lives
-   * in the table extensions), so only {@code options} is set.
+   * Builds the {@code vectorIndexing} description from the CQL index options map, keeping only the
+   * supported tuning options (see {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}) under {@code
+   * options}. Structural, dedicated-field, and CQL-only keys are dropped to stay symmetric with
+   * what the API accepts. The profile name lives in the table extensions, not here, so only {@code
+   * options} is set.
    *
-   * @param indexOptions the CQL index options map
    * @return the {@code vectorIndexing} description, or null when there are no supported tuning
    *     options
    */
@@ -101,9 +100,9 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   /**
-   * The supported SAI tuning options actually applied to this index (profile expansion plus any
-   * explicit overrides). Used to snapshot the resolved options next to a stored profile name, so
-   * the snapshot matches the live index rather than the base profile.
+   * The supported SAI tuning options applied to this index (profile expansion plus explicit
+   * overrides). Snapshotted next to a stored profile name to capture the live index rather than the
+   * base profile.
    */
   public Map<String, String> appliedTuningOptions() {
     return tuningOptions(indexOptions);
@@ -123,10 +122,9 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
   /**
    * Applies the request's {@code vectorIndexing} into the CQL index options map. {@code
-   * vectorIndexing} is overloaded: either a {@code profile} name expanded via {@link
-   * VectorIndexProfiles}, or an {@code options} object of Cassandra SAI tuning options (validated
-   * against {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}) set directly — the two are
-   * mutually exclusive (see {@link
+   * vectorIndexing} is either a {@code profile} name expanded via {@link VectorIndexProfiles}, or
+   * an {@code options} object of Cassandra SAI tuning options validated against {@link
+   * VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}. The two are mutually exclusive (see {@link
    * io.stargate.sgv2.jsonapi.api.model.command.deserializers.VectorIndexingDescDeserializer}).
    * {@code source_model} / {@code similarity_function} have dedicated fields and are rejected here.
    *
@@ -373,8 +371,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
             metricToUse);
       }
 
-      // Apply vectorIndexing (either a profile name or raw options, mutually exclusive); metric /
-      // sourceModel above have dedicated fields.
+      // vectorIndexing is a profile name or raw options (mutually exclusive); metric / sourceModel
+      // above use dedicated fields.
       var userVectorIndexing =
           (indexDesc.options() == null) ? null : indexDesc.options().vectorIndexing();
       applyIndexingOptions(indexOptions, userVectorIndexing);

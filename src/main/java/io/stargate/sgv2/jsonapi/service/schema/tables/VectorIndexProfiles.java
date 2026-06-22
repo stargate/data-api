@@ -6,14 +6,14 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Named vector-index profiles: each maps a profile name to a set of Cassandra SAI indexing options.
- * Selecting a profile is an alternative to passing raw options through {@code vectorIndexing}.
+ * Named vector-index profiles, each mapping a profile name to Cassandra SAI indexing options. An
+ * alternative to passing raw options through {@code vectorIndexing}.
  *
  * <p>Profiles never set {@code source_model} or {@code similarity_function}; those have the
  * dedicated {@code sourceModel} / {@code metric} fields. Values are Strings because CQL index
  * options are a {@code Map<String, String>}.
  *
- * <p>This is an initial in-code set; the values are expected to be tuned and moved to config.
+ * <p>Initial in-code set; values to be tuned and moved to config.
  */
 public final class VectorIndexProfiles {
 
@@ -30,7 +30,7 @@ public final class VectorIndexProfiles {
           Map.of(VectorConstants.CQLAnnIndex.MAXIMUM_NODE_CONNECTIONS, "16"));
 
   /**
-   * Looks up a profile by name, case-insensitively.
+   * Case-insensitive profile lookup.
    *
    * @return the profile's CQL options, or empty if {@code name} is null, blank, or unknown
    */

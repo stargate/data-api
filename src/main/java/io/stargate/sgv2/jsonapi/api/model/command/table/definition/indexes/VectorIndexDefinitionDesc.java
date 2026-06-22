@@ -81,10 +81,9 @@ public record VectorIndexDefinitionDesc(
           VectorIndexingDesc vectorIndexing) {}
 
   /**
-   * The overloaded {@code vectorIndexing} value: exactly one of a named {@code profile} (a JSON
-   * string) or raw SAI tuning {@code options} (a JSON object) is set. Deserialized by {@link
-   * VectorIndexingDescDeserializer} (discriminated by JSON type) and serialized back to the bare
-   * string or object via {@link #jsonValue()}.
+   * Overloaded {@code vectorIndexing} value: exactly one of a named {@code profile} (JSON string)
+   * or raw SAI tuning {@code options} (JSON object) is set. {@link VectorIndexingDescDeserializer}
+   * discriminates by JSON type; {@link #jsonValue()} serializes back to the bare string or object.
    */
   @JsonDeserialize(using = VectorIndexingDescDeserializer.class)
   public record VectorIndexingDesc(
@@ -100,7 +99,7 @@ public record VectorIndexDefinitionDesc(
       return new VectorIndexingDesc(null, options);
     }
 
-    /** Serializes back to the overloaded shape: the bare profile string or the bare options map. */
+    /** Serializes to the bare profile string or the bare options map. */
     @JsonValue
     Object jsonValue() {
       return profile != null ? profile : options;

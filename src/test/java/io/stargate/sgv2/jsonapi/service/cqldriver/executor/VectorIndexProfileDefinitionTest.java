@@ -36,7 +36,7 @@ class VectorIndexProfileDefinitionTest {
 
     @Test
     void malformedJsonIsEmpty() {
-      // advisory metadata: a bad blob must not fail the read
+      // advisory metadata: bad JSON must not fail the read
       assertThat(VectorIndexProfileDefinition.fromJson("not json", MAPPER)).isEmpty();
     }
 

@@ -68,9 +68,8 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
                     command.options(), DropIndexCommand.Options::ifExists, IF_EXISTS_DEFAULT))
             .build();
 
-    // Also drop the index's vector-index profile (if any) from the owning table's extensions, so
-    // the profile record does not outlive the index. Null when the keyspace metadata is unknown or
-    // the owning table has no stored profile for this index, in which case only the drop runs.
+    // Drop the index's vector-index profile from the owning table's extensions so it does not
+    // outlive the index. Null when there is no profile to remove, leaving only the drop.
     var profileCleanupTask = buildProfileCleanupTask(schemaObject, indexName, schemaRetryPolicy);
 
     if (profileCleanupTask == null) {
@@ -92,9 +91,8 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
   }
 
   /**
-   * Builds the cleanup task that removes the dropped index's profile from its owning table's
-   * extensions, or null when there is nothing to clean up (keyspace metadata unknown, no owning
-   * table, or no stored profile for this index).
+   * Task that removes the dropped index's profile from its owning table's extensions. Null when
+   * there is nothing to clean up: keyspace metadata unknown, no owning table, or no stored profile.
    */
   private DropVectorIndexProfileDBTask buildProfileCleanupTask(
       KeyspaceSchemaObject schemaObject,

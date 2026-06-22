@@ -41,11 +41,10 @@ public class KeyspaceSchemaObject extends SchemaObject {
   }
 
   /**
-   * The Cassandra metadata for this keyspace, when known.
+   * The Cassandra metadata for this keyspace.
    *
-   * <p>Empty when the object was built via the {@link
-   * #KeyspaceSchemaObject(SchemaObjectIdentifier)} test constructor, which carries no metadata.
-   * Present for objects built from live schema, where it lets callers reach the keyspace's tables
+   * <p>Empty for objects built via the {@link #KeyspaceSchemaObject(SchemaObjectIdentifier)} test
+   * constructor; present for objects built from live schema. Gives access to the keyspace's tables
    * and their indexes (e.g. to find the table that owns a named index).
    */
   public Optional<KeyspaceMetadata> keyspaceMetadata() {

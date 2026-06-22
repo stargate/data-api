@@ -48,7 +48,7 @@ class TableExtensionsTest {
     var props = TableExtensions.createCustomProperties(Map.of(), profiles, MAPPER);
 
     assertThat(props).containsKey(SchemaConstants.MetadataFieldsNames.VECTOR_INDEX_PROFILES);
-    // the written value round-trips back to the same profiles
+    // written value round-trips to the same profiles
     assertThat(
             VectorIndexProfileDefinition.fromJson(
                 props.get(SchemaConstants.MetadataFieldsNames.VECTOR_INDEX_PROFILES), MAPPER))
@@ -57,7 +57,7 @@ class TableExtensionsTest {
 
   @Test
   void preservesVectorizeAndProfilesTogether() {
-    // both keys written in one payload, so an extension rewrite carrying both does not lose either
+    // both keys written in one payload, so a rewrite carrying both loses neither
     var vectorDefs =
         Map.of(
             CqlIdentifier.fromInternal("v"),
@@ -140,7 +140,7 @@ class TableExtensionsTest {
       assertThat(customProperties)
           .containsKey(SchemaConstants.MetadataFieldsNames.SCHEMA_TYPE)
           .containsKey(SchemaConstants.MetadataFieldsNames.SCHEMA_VERSION)
-          // vectorize config is read back and preserved
+          // vectorize config read back and preserved
           .containsKey(SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG);
 
       // the dropped index's profile is gone, the other index's profile is kept

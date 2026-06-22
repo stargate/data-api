@@ -75,8 +75,8 @@ public abstract class TableExtensions {
    * Builds the table extensions payload: schema type/version (always written, since the command may
    * be altering a CQL-created table) plus the vectorize config and vector index profiles.
    *
-   * <p>Extensions are fully replaced on every write, so callers must pass the complete set of defs
-   * and profiles they want to keep; anything omitted is dropped.
+   * <p>Extensions are fully replaced on every write, so callers must pass every def and profile
+   * they want to keep; anything omitted is dropped.
    */
   public static Map<String, String> createCustomProperties(
       Map<CqlIdentifier, VectorizeDefinition> vectorDefs,
@@ -118,17 +118,17 @@ public abstract class TableExtensions {
 
   /**
    * Computes the extensions payload that drops {@code indexName}'s vector-index profile from the
-   * table that owns it. Used to keep the {@link
-   * SchemaConstants.MetadataFieldsNames#VECTOR_INDEX_PROFILES} extension in sync when an index is
-   * dropped, so a profile record does not outlive its index.
+   * table that owns it, keeping the {@link
+   * SchemaConstants.MetadataFieldsNames#VECTOR_INDEX_PROFILES} extension in sync so a profile does
+   * not outlive its index.
    *
-   * <p>The owning table is found by scanning {@code keyspaceMetadata} for the table whose indexes
-   * contain {@code indexName}. Returns empty when there is nothing to do — no table owns the index,
-   * or the owning table has no stored profile for it — so the caller can skip the extra DDL.
+   * <p>The owning table is the one in {@code keyspaceMetadata} whose indexes contain {@code
+   * indexName}. Returns empty (so the caller can skip the DDL) when no table owns the index or the
+   * owning table has no stored profile for it.
    *
-   * <p>When a rewrite is needed, the existing vectorize config and the other indexes' profiles are
-   * read back and included so the clobbering extension write does not lose them (the same approach
-   * as the create side, see {@link #createCustomProperties(Map, Map, ObjectMapper)}).
+   * <p>On rewrite the existing vectorize config and the other indexes' profiles are read back and
+   * included so the full-replace write does not lose them, as on the create side (see {@link
+   * #createCustomProperties(Map, Map, ObjectMapper)}).
    */
   public static Optional<IndexProfileRemoval> removeIndexProfile(
       KeyspaceMetadata keyspaceMetadata, CqlIdentifier indexName, ObjectMapper objectMapper) {
@@ -152,9 +152,8 @@ public abstract class TableExtensions {
       return Optional.empty();
     }
 
-    // Read the vectorize config back so the full-replace extension write preserves it. The stored
-    // keys are the column identifiers' internal form, so reconstruct the CqlIdentifier keys that
-    // createCustomProperties expects.
+    // Read the vectorize config back so the full-replace write preserves it. Stored keys are the
+    // columns' internal form, so rebuild the CqlIdentifier keys createCustomProperties expects.
     var vectorDefs =
         VectorizeDefinition.from(tableMetadata, objectMapper).entrySet().stream()
             .collect(
@@ -166,8 +165,8 @@ public abstract class TableExtensions {
   }
 
   /**
-   * The result of {@link #removeIndexProfile}: the table to alter and the complete extensions
-   * payload to write (with the dropped index's profile removed and everything else preserved).
+   * Result of {@link #removeIndexProfile}: the table to alter and the extensions payload to write
+   * (dropped index's profile removed, everything else preserved).
    */
   public record IndexProfileRemoval(
       CqlIdentifier tableName, Map<String, String> customProperties) {}

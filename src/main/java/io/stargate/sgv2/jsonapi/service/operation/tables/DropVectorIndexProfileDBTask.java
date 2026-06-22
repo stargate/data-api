@@ -12,14 +12,14 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Removes a dropped index's entry from its owning table's vector-index-profiles extension, so a
- * profile record does not outlive the index it described.
+ * Removes a dropped index's entry from its owning table's vector-index-profiles extension, so the
+ * profile record does not outlive the index.
  *
- * <p>This runs as a keyspace-scoped sibling to {@link DropIndexDBTask} so the two can share one
- * {@link io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup}; a {@link
- * io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject}-typed {@link AlterTableDBTask}
- * (used by the create side) could not, because a TaskGroup has a single schema-object type. The
- * owning table and the rewritten extensions payload are resolved at command-resolve time via {@link
+ * <p>Keyspace-scoped so it can share a {@link
+ * io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup} with {@link DropIndexDBTask}; a
+ * {@link io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject}-typed {@link
+ * AlterTableDBTask} (the create side) cannot, since a TaskGroup has a single schema-object type.
+ * Owning table and rewritten extensions payload are resolved at command-resolve time via {@link
  * TableExtensions#removeIndexProfile}; this task only issues the {@code ALTER TABLE ... WITH
  * extensions = {...}}.
  */
@@ -50,8 +50,8 @@ public class DropVectorIndexProfileDBTask extends SchemaDBTask<KeyspaceSchemaObj
   @Override
   protected SimpleStatement buildStatement() {
 
-    // The owning table lives in this keyspace; take the keyspace from the schema object identifier,
-    // mirroring DropIndexDBTask which builds its statement the same way.
+    // owning table lives in this keyspace; keyspace from the schema object identifier, as
+    // DropIndexDBTask does
     var extensions = TableExtensions.toExtensions(customProperties);
     return alterTable(schemaObject.identifier().keyspace(), tableName)
         .withOption(TableExtensions.TABLE_OPTIONS_EXTENSION_KEY.asInternal(), extensions)

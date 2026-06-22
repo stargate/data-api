@@ -13,9 +13,8 @@ import org.slf4j.LoggerFactory;
 /**
  * The profile a vector index was created with: the profile name plus the SAI options it expanded
  * to. Stored per index name in the table extensions (key {@link
- * SchemaConstants.MetadataFieldsNames#VECTOR_INDEX_PROFILES}) so the friendly name is not lost once
- * the options are expanded at create time. The options snapshot keeps the record meaningful even if
- * the profile definition changes later.
+ * SchemaConstants.MetadataFieldsNames#VECTOR_INDEX_PROFILES}) to keep the profile name. The options
+ * snapshot stays valid even if the profile definition changes later.
  */
 public record VectorIndexProfileDefinition(String profile, Map<String, String> options) {
 
@@ -30,9 +29,9 @@ public record VectorIndexProfileDefinition(String profile, Map<String, String> o
   }
 
   /**
-   * Parses the {@code index name -> profile} JSON written into the extensions. Returns a mutable
-   * map so callers can merge changes before writing it back. Profiles are advisory metadata, so a
-   * bad blob is logged and skipped rather than failing the read.
+   * Parses the {@code index name -> profile} JSON from the extensions. Returns a mutable map so
+   * callers can merge changes before writing it back. Profiles are advisory metadata, so a bad blob
+   * is logged and skipped, not failed.
    */
   static Map<String, VectorIndexProfileDefinition> fromJson(
       String json, ObjectMapper objectMapper) {
@@ -56,8 +55,8 @@ public record VectorIndexProfileDefinition(String profile, Map<String, String> o
 
   /**
    * Records the profile for {@code indexKey} in {@code profiles}, or removes any stale entry when
-   * {@code def} is null (no profile was used). Returns true if the map changed, so the caller can
-   * skip an unnecessary extension write.
+   * {@code def} is null (no profile was used). Returns true if the map changed, letting the caller
+   * skip an unneeded extension write.
    */
   public static boolean putOrRemove(
       Map<String, VectorIndexProfileDefinition> profiles,
