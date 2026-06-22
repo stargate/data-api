@@ -129,9 +129,9 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
    * Builds the ALTER TABLE task that records this index's profile in the table extensions, or null
    * when nothing needs to change. Returns null when the index already exists (a {@code CREATE ...
    * IF NOT EXISTS} would be a no-op, so its stored profile must not be rewritten), or when no
-   * profile is used and there is no stale entry to clear. The snapshot stores the options actually
-   * applied to the index (profile expansion plus any explicit overrides); existing vectorize config
-   * and other profiles are read back and rewritten so they are not lost.
+   * profile is used and there is no stale entry to clear. The snapshot stores the options the
+   * profile expanded to; existing vectorize config and other profiles are read back and rewritten
+   * so they are not lost.
    */
   private AlterTableDBTask buildProfileExtensionTask(
       TableSchemaObject schemaObject,
@@ -153,8 +153,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     var indexKey = cqlIdentifierToJsonKey(apiIndex.indexName());
     var profiles = VectorIndexProfileDefinition.from(schemaObject.tableMetadata(), objectMapper);
 
-    // Snapshot the options actually applied to the index (profile expansion plus explicit
-    // overrides), so the stored metadata matches the live index rather than the base profile.
+    // Snapshot the options the profile expanded to, so the stored metadata matches the live index.
     var def =
         (profileName == null)
             ? null

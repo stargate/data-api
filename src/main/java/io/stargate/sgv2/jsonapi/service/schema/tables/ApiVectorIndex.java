@@ -97,7 +97,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
     var tuning = tuningOptions(indexOptions);
     return tuning.isEmpty()
         ? null
-        : new VectorIndexDefinitionDesc.VectorIndexingDesc(null, new LinkedHashMap<>(tuning));
+        : VectorIndexDefinitionDesc.VectorIndexingDesc.ofOptions(new LinkedHashMap<>(tuning));
   }
 
   /**
@@ -122,11 +122,13 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Applies the request's {@code vectorIndexing} into the CQL index options map. An optional {@code
-   * profile} is expanded via {@link VectorIndexProfiles}; an optional {@code options} object adds
-   * Cassandra SAI tuning options (validated against {@link
-   * VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}) on top, overriding the profile. {@code
-   * source_model} / {@code similarity_function} have dedicated fields and are rejected here.
+   * Applies the request's {@code vectorIndexing} into the CQL index options map. {@code
+   * vectorIndexing} is overloaded: either a {@code profile} name expanded via {@link
+   * VectorIndexProfiles}, or an {@code options} object of Cassandra SAI tuning options (validated
+   * against {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}) set directly — the two are
+   * mutually exclusive (see {@link
+   * io.stargate.sgv2.jsonapi.api.model.command.deserializers.VectorIndexingDescDeserializer}).
+   * {@code source_model} / {@code similarity_function} have dedicated fields and are rejected here.
    *
    * @param indexOptions the CQL options map being built, mutated in place
    * @param vectorIndexing the structured request value, may be null
@@ -140,7 +142,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       return;
     }
 
-    // A profile expands to a base set of options.
+    // A profile expands to a set of options.
     var profileName = vectorIndexing.profile();
     if (profileName != null) {
       var profileOptions =
@@ -156,7 +158,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       indexOptions.putAll(profileOptions);
     }
 
-    // Explicit options are validated against the allow-list and override the profile.
+    // Raw options (mutually exclusive with a profile) are validated against the allow-list.
     var options = vectorIndexing.options();
     if (options != null) {
       for (var entry : options.entrySet()) {
@@ -169,7 +171,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
           throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
               Map.of(
                   "reason",
-                  "The option '%s' must be set using its dedicated field '%s', not vectorIndexing.options."
+                  "The option '%s' must be set using its dedicated field '%s', not as a vectorIndexing option."
                       .formatted(optionName, dedicatedField)));
         }
         if (!VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS.contains(optionName)) {
@@ -371,8 +373,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
             metricToUse);
       }
 
-      // Apply vectorIndexing (optional profile and/or explicit options; options override the
-      // profile); metric / sourceModel above have dedicated fields.
+      // Apply vectorIndexing (either a profile name or raw options, mutually exclusive); metric /
+      // sourceModel above have dedicated fields.
       var userVectorIndexing =
           (indexDesc.options() == null) ? null : indexDesc.options().vectorIndexing();
       applyIndexingOptions(indexOptions, userVectorIndexing);

@@ -1146,7 +1146,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "vectorIndexing": { "profile": "no-such-profile" }
+                      "vectorIndexing": "no-such-profile"
                     }
                   }
                 }
@@ -1167,9 +1167,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "vectorIndexing": {
-                        "options": { "similarity_function": "COSINE" }
-                      }
+                      "vectorIndexing": { "similarity_function": "COSINE" }
                     }
                   }
                 }
@@ -1190,9 +1188,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "vectorIndexing": {
-                        "options": { "class_name": "StorageAttachedIndex" }
-                      }
+                      "vectorIndexing": { "class_name": "StorageAttachedIndex" }
                     }
                   }
                 }
@@ -1213,9 +1209,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_7",
                     "options": {
-                      "vectorIndexing": {
-                        "options": { "alpha": [1, 2, 3] }
-                      }
+                      "vectorIndexing": { "alpha": [1, 2, 3] }
                     }
                   }
                 }

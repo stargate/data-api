@@ -21,17 +21,22 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Unit tests for the structured {@code vectorIndexing} ({@code {profile, options}}) handling on
- * {@link ApiVectorIndex}: that a request body deserializes to the expected object, how it is
- * validated and turned into the CQL index options map, and how it is described back. Deterministic;
- * needs no database (end-to-end also depends on the backend allowing custom SAI parameters).
+ * Unit tests for the overloaded {@code vectorIndexing} (a profile name string <em>or</em> a raw SAI
+ * options object) handling on {@link ApiVectorIndex}: that a request body deserializes to the
+ * expected value, how it is validated and turned into the CQL index options map, and how it is
+ * described back. Deterministic; needs no database (end-to-end also depends on the backend allowing
+ * custom SAI parameters).
  */
 class ApiVectorIndexTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private static VectorIndexingDesc vi(String profile, Map<String, Object> options) {
-    return new VectorIndexingDesc(profile, options);
+  private static VectorIndexingDesc profile(String profile) {
+    return VectorIndexingDesc.ofProfile(profile);
+  }
+
+  private static VectorIndexingDesc options(Map<String, Object> options) {
+    return VectorIndexingDesc.ofOptions(options);
   }
 
   /** Source of every option that has a dedicated field and so is rejected inside options. */
@@ -39,40 +44,40 @@ class ApiVectorIndexTest {
     return VectorConstants.CQLAnnIndex.RESERVED_OPTIONS.stream();
   }
 
-  /** The request body deserializes into the expected {@code vectorIndexing} object. */
+  /**
+   * The overloaded {@code vectorIndexing} deserializes by JSON type: a string is a profile, an
+   * object is raw options, and anything else is rejected.
+   */
   @Nested
   class RequestShape {
 
     @Test
-    void deserializesProfileAndOptions() throws Exception {
+    void stringDeserializesToProfile() throws Exception {
+      var opts =
+          MAPPER.readValue(
+              "{\"vectorIndexing\": \"small-high-recall\"}", VectorIndexDescOptions.class);
+
+      assertThat(opts.vectorIndexing()).isNotNull();
+      assertThat(opts.vectorIndexing().profile()).isEqualTo("small-high-recall");
+      assertThat(opts.vectorIndexing().options()).isNull();
+    }
+
+    @Test
+    void objectDeserializesToRawOptions() throws Exception {
       var opts =
           MAPPER.readValue(
               """
               {
-                "vectorIndexing": {
-                  "profile": "small-high-recall",
-                  "options": { "maximum_node_connections": 32, "enable_hierarchy": true }
-                }
+                "vectorIndexing": { "maximum_node_connections": 32, "enable_hierarchy": true }
               }
               """,
               VectorIndexDescOptions.class);
 
       assertThat(opts.vectorIndexing()).isNotNull();
-      assertThat(opts.vectorIndexing().profile()).isEqualTo("small-high-recall");
+      assertThat(opts.vectorIndexing().profile()).isNull();
       assertThat(opts.vectorIndexing().options())
           .containsEntry("maximum_node_connections", 32)
           .containsEntry("enable_hierarchy", true);
-    }
-
-    @Test
-    void deserializesProfileOnly() throws Exception {
-      var opts =
-          MAPPER.readValue(
-              "{\"vectorIndexing\": {\"profile\": \"big-low-latency\"}}",
-              VectorIndexDescOptions.class);
-
-      assertThat(opts.vectorIndexing().profile()).isEqualTo("big-low-latency");
-      assertThat(opts.vectorIndexing().options()).isNull();
     }
 
     @Test
@@ -81,9 +86,36 @@ class ApiVectorIndexTest {
 
       assertThat(opts.vectorIndexing()).isNull();
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"123", "true", "[\"small-high-recall\"]"})
+    void nonStringNonObjectRejected(String value) {
+      // Jackson may surface the deserializer's SchemaException directly or wrap it; assert that a
+      // SchemaException with the expected code is somewhere in the chain.
+      assertThatThrownBy(
+              () ->
+                  MAPPER.readValue(
+                      "{\"vectorIndexing\": " + value + "}", VectorIndexDescOptions.class))
+          .satisfies(
+              t -> {
+                var schemaException = findSchemaException(t);
+                assertThat(schemaException).as("a SchemaException in the cause chain").isNotNull();
+                assertThat(schemaException.code)
+                    .isEqualTo(SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.name());
+              });
+    }
+
+    private SchemaException findSchemaException(Throwable t) {
+      for (Throwable cause = t; cause != null; cause = cause.getCause()) {
+        if (cause instanceof SchemaException schemaException) {
+          return schemaException;
+        }
+      }
+      return null;
+    }
   }
 
-  /** A {@code vectorIndexing} object resolves to the expected CQL index options map. */
+  /** A {@code vectorIndexing} value resolves to the expected CQL index options map. */
   @Nested
   class ApplyIndexingOptions {
 
@@ -97,11 +129,10 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    void emptyDescIsNoOp() {
+    void emptyOptionsIsNoOp() {
       var options = new HashMap<String, String>();
 
-      ApiVectorIndex.applyIndexingOptions(options, vi(null, null));
-      ApiVectorIndex.applyIndexingOptions(options, vi(null, Map.of()));
+      ApiVectorIndex.applyIndexingOptions(options, options(Map.of()));
 
       assertThat(options).isEmpty();
     }
@@ -110,7 +141,7 @@ class ApiVectorIndexTest {
     void profileExpands() {
       var options = new HashMap<String, String>();
 
-      ApiVectorIndex.applyIndexingOptions(options, vi("small-high-recall", null));
+      ApiVectorIndex.applyIndexingOptions(options, profile("small-high-recall"));
 
       assertThat(options)
           .containsAllEntriesOf(VectorIndexProfiles.forName("small-high-recall").orElseThrow());
@@ -122,8 +153,7 @@ class ApiVectorIndexTest {
 
       ApiVectorIndex.applyIndexingOptions(
           options,
-          vi(
-              null,
+          options(
               Map.of("maximum_node_connections", 32, "enable_hierarchy", true, "alpha", "1.2")));
 
       assertThat(options)
@@ -133,25 +163,11 @@ class ApiVectorIndexTest {
     }
 
     @Test
-    void optionsOverrideProfile() {
-      var options = new HashMap<String, String>();
-
-      // small-high-recall sets maximum_node_connections=32, construction_beam_width=200
-      ApiVectorIndex.applyIndexingOptions(
-          options, vi("small-high-recall", Map.of("maximum_node_connections", 99)));
-
-      assertThat(options)
-          .containsEntry("maximum_node_connections", "99") // explicit option wins
-          .containsEntry("construction_beam_width", "200"); // inherited from the profile
-    }
-
-    @Test
     void mergesWithExistingOptions() {
       var options = new HashMap<String, String>();
       options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OTHER");
 
-      ApiVectorIndex.applyIndexingOptions(
-          options, vi(null, Map.of("maximum_node_connections", 16)));
+      ApiVectorIndex.applyIndexingOptions(options, options(Map.of("maximum_node_connections", 16)));
 
       assertThat(options)
           .containsEntry(VectorConstants.CQLAnnIndex.SOURCE_MODEL, "OTHER")
@@ -164,8 +180,7 @@ class ApiVectorIndexTest {
 
       ApiVectorIndex.applyIndexingOptions(
           options,
-          vi(
-              null,
+          options(
               Map.of(
                   "maximum_node_connections",
                   16,
@@ -185,12 +200,12 @@ class ApiVectorIndexTest {
     @Test
     void unknownProfileThrows() {
       assertSchemaError(
-          vi("no-such-profile", null), SchemaException.Code.UNKNOWN_VECTOR_INDEXING_PROFILE);
+          profile("no-such-profile"), SchemaException.Code.UNKNOWN_VECTOR_INDEXING_PROFILE);
     }
 
     @Test
     void blankProfileThrows() {
-      assertSchemaError(vi("", null), SchemaException.Code.UNKNOWN_VECTOR_INDEXING_PROFILE);
+      assertSchemaError(profile(""), SchemaException.Code.UNKNOWN_VECTOR_INDEXING_PROFILE);
     }
 
     @ParameterizedTest
@@ -198,7 +213,7 @@ class ApiVectorIndexTest {
         "io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndexTest#reservedOptions")
     void reservedOptionThrows(String reservedOption) {
       assertSchemaError(
-          vi(null, Map.of(reservedOption, "x")),
+          options(Map.of(reservedOption, "x")),
           SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
     }
 
@@ -206,7 +221,7 @@ class ApiVectorIndexTest {
     @ValueSource(strings = {"class_name", "target", "optimize_for", "bogus_option"})
     void unsupportedOptionThrows(String optionName) {
       assertSchemaError(
-          vi(null, Map.of(optionName, "x")), SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
+          options(Map.of(optionName, "x")), SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
     }
 
     @Test
@@ -216,8 +231,7 @@ class ApiVectorIndexTest {
       // JSON numbers arrive as BigDecimal; the CQL value must not use scientific notation.
       ApiVectorIndex.applyIndexingOptions(
           options,
-          vi(
-              null,
+          options(
               Map.of(
                   "construction_beam_width", new BigDecimal("1E+2"),
                   "alpha", new BigDecimal("1.5"))));
@@ -231,10 +245,10 @@ class ApiVectorIndexTest {
     void nonScalarOptionValueThrows() {
       // "alpha" is an allowed key, so this reaches the scalar-value check
       assertSchemaError(
-          vi(null, Map.of("alpha", List.of(1, 2))),
+          options(Map.of("alpha", List.of(1, 2))),
           SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
       assertSchemaError(
-          vi(null, Map.of("alpha", Map.of("x", 1))),
+          options(Map.of("alpha", Map.of("x", 1))),
           SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS);
     }
 
@@ -342,7 +356,7 @@ class ApiVectorIndexTest {
       var options = new HashMap<String, String>();
 
       ApiVectorIndex.applyIndexingOptions(
-          options, vi(null, Map.of("maximum_node_connections", 32, "alpha", 1.2)));
+          options, options(Map.of("maximum_node_connections", 32, "alpha", 1.2)));
       var described = ApiVectorIndex.describeIndexingOptions(options);
 
       assertThat(described).isNotNull();

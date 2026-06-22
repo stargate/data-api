@@ -3,6 +3,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.stargate.sgv2.jsonapi.api.model.command.deserializers.VectorIndexingDescDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorIndexDescDefaults;
@@ -66,43 +69,41 @@ public record VectorIndexDefinitionDesc(
       @Nullable
           @Schema(
               description =
-                  "Optional vector (SAI) indexing configuration: an object with an optional "
-                      + "\"profile\" (a predefined name the API expands into options, e.g. "
-                      + "\"small-high-recall\") and an optional \"options\" object of Cassandra SAI "
-                      + "tuning options (e.g. {\"maximum_node_connections\": 32, \"alpha\": 1.2}). "
-                      + "Explicit options override the profile. Set \"metric\" / \"sourceModel\" via "
-                      + "their dedicated fields, not here.",
-              type = SchemaType.OBJECT)
+                  "Optional vector (SAI) indexing configuration. Either a profile name (string) "
+                      + "the API expands into SAI options, e.g. \"small-high-recall\"; or an object "
+                      + "of Cassandra SAI tuning options (snake_case), restricted to: "
+                      + "maximum_node_connections, construction_beam_width, neighborhood_overflow, "
+                      + "alpha, enable_hierarchy, e.g. {\"maximum_node_connections\": 32, "
+                      + "\"alpha\": 1.2}. A profile and explicit options are mutually exclusive. "
+                      + "Set \"metric\" / \"sourceModel\" via their dedicated fields, not here.")
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @JsonProperty(VectorConstants.VectorColumn.VECTOR_INDEXING)
           VectorIndexingDesc vectorIndexing) {}
 
   /**
-   * The {@code vectorIndexing} value: an optional profile name plus optional SAI tuning options.
+   * The overloaded {@code vectorIndexing} value: exactly one of a named {@code profile} (a JSON
+   * string) or raw SAI tuning {@code options} (a JSON object) is set. Deserialized by {@link
+   * VectorIndexingDescDeserializer} (discriminated by JSON type) and serialized back to the bare
+   * string or object via {@link #jsonValue()}.
    */
-  @JsonPropertyOrder({
-    VectorConstants.VectorIndexing.PROFILE,
-    VectorConstants.VectorIndexing.OPTIONS
-  })
+  @JsonDeserialize(using = VectorIndexingDescDeserializer.class)
   public record VectorIndexingDesc(
-      @Nullable
-          @Schema(
-              description =
-                  "Optional predefined indexing profile name; the API expands it into SAI options.",
-              type = SchemaType.STRING)
-          @JsonInclude(JsonInclude.Include.NON_NULL)
-          @JsonProperty(VectorConstants.VectorIndexing.PROFILE)
-          String profile,
-      //
-      @Nullable
-          @Schema(
-              description =
-                  "Optional Cassandra SAI tuning options (snake_case), restricted to: "
-                      + "maximum_node_connections, construction_beam_width, neighborhood_overflow, "
-                      + "alpha, enable_hierarchy. Values may be string, number, or boolean on input "
-                      + "and are returned as strings in index descriptions.",
-              type = SchemaType.OBJECT)
-          @JsonInclude(JsonInclude.Include.NON_NULL)
-          @JsonProperty(VectorConstants.VectorIndexing.OPTIONS)
-          Map<String, Object> options) {}
+      @Nullable String profile, @Nullable Map<String, Object> options) {
+
+    /** A {@code vectorIndexing} that selects a named profile. */
+    public static VectorIndexingDesc ofProfile(String profile) {
+      return new VectorIndexingDesc(profile, null);
+    }
+
+    /** A {@code vectorIndexing} that sets raw SAI options directly. */
+    public static VectorIndexingDesc ofOptions(Map<String, Object> options) {
+      return new VectorIndexingDesc(null, options);
+    }
+
+    /** Serializes back to the overloaded shape: the bare profile string or the bare options map. */
+    @JsonValue
+    Object jsonValue() {
+      return profile != null ? profile : options;
+    }
+  }
 }

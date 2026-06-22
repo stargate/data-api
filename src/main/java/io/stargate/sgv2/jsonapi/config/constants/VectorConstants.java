@@ -11,12 +11,6 @@ public interface VectorConstants {
     String VECTOR_INDEXING = "vectorIndexing";
   }
 
-  /** Field names inside the {@code vectorIndexing} object. */
-  interface VectorIndexing {
-    String PROFILE = "profile";
-    String OPTIONS = "options";
-  }
-
   interface Vectorize extends ServiceDescConstants {}
 
   /**
