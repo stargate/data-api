@@ -136,7 +136,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     final Optional<ColumnMetadata> vectorColumn =
         table.getColumn(SuperShreddingMetadata.Names.QUERY_VECTOR_VALUE);
     boolean vectorEnabled = vectorColumn.isPresent();
-    final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
+    final String comment = CollectionTableComment.rawComment(table);
 
     // if vector column exists
     if (vectorEnabled) {

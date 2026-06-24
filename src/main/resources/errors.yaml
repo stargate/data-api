@@ -1369,11 +1369,19 @@ request-errors:
       Resend the command using only columns that use the `vector` type.
 
   - scope: SCHEMA
+    code: INVALID_ALTER_COLLECTION_OPTIONS
+    title: Invalid options for alterCollection
+    body: |-
+      'alterCollection' command option(s) invalid: ${message}
+
+      Resend 'alterCollection' with valid options.
+
+  - scope: SCHEMA
     code: INVALID_CREATE_COLLECTION_OPTIONS
     title: Invalid options for createCollection
     body: |-
       'createCollection' command option(s) invalid: ${message}
-      
+
       Resend 'createCollection' with valid options.
 
   - scope: SCHEMA
@@ -2025,13 +2033,13 @@ request-errors:
 
   - scope: SCHEMA
     code: TOO_MANY_INDEXES_FOR_COLLECTION
-    title: Cannot create collection due to number of existing indexes
+    title: Cannot create indexes for collection due to number of existing indexes
     body: |-
-      The command attempted to create an collection, however the number of indexes in the database has reached the maximum allowed.
-      
-      Failed to create Collection: ${keyspace}.${table}.
-      The number of indexes needed for each collection is: ${indexesPerCollection}.
-      
+      The command attempted to create one or more indexes for a collection, however the number of indexes in the database has reached the maximum allowed.
+
+      Failed for Collection: ${keyspace}.${table}.
+      The number of indexes the command needs is: ${indexesPerCollection}.
+
       Reduce the number of indexes in the database and resend the command.
 
   - scope: SCHEMA
