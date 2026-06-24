@@ -204,6 +204,10 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.BIGINT, -456L, -456L),
         Arguments.of(DataTypes.BIGINT, BigInteger.valueOf(123), 123L),
         Arguments.of(DataTypes.BIGINT, BigDecimal.valueOf(999.0), 999L),
+        // counters are filterable (#2462): they bind the same 3 Java types as BIGINT
+        Arguments.of(DataTypes.COUNTER, -456L, -456L),
+        Arguments.of(DataTypes.COUNTER, BigInteger.valueOf(123), 123L),
+        Arguments.of(DataTypes.COUNTER, BigDecimal.valueOf(999.0), 999L),
         Arguments.of(DataTypes.INT, -42000L, -42000),
         Arguments.of(DataTypes.INT, BigInteger.valueOf(19000), 19000),
         Arguments.of(DataTypes.INT, BigDecimal.valueOf(23456.0), 23456),
