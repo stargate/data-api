@@ -25,6 +25,35 @@ import java.util.List;
  */
 public class CollectionCommandTools {
 
+  /**
+   * Tool argument descriptions for the clause arguments shared by many commands. These describe the
+   * plain user-facing Data API JSON shape: the MCP input schema advertises these clause types as
+   * plain objects (see {@link McpClauseSchemaCustomizer}), so the descriptions carry the syntax
+   * guidance the client (LLM) needs.
+   */
+  private static final String FILTER_ARG_DESCRIPTION =
+      "Filter as a plain Data API filter object, e.g. {\"age\": {\"$gt\": 40}}: maps document"
+          + " paths to exact values or operator expressions ($eq, $ne, $gt, $gte, $lt, $lte, $in,"
+          + " $nin, $exists, $and, $or, $not).";
+
+  private static final String SORT_ARG_DESCRIPTION =
+      "Sort as a plain Data API sort object, e.g. {\"age\": -1, \"name\": 1}: maps document paths"
+          + " to 1 (ascending) or -1 (descending); use {\"$vector\": [...]} or {\"$vectorize\":"
+          + " \"text\"} for vector search.";
+
+  private static final String UPDATE_ARG_DESCRIPTION =
+      "Update as a plain Data API update object keyed by update operators, e.g. {\"$set\":"
+          + " {\"location\": \"New York\"}, \"$unset\": {\"old_field\": 1}}.";
+
+  private static final String PROJECTION_ARG_DESCRIPTION =
+      "Projection as a plain object selecting the fields to include or exclude, e.g. {\"name\": 1,"
+          + " \"_id\": 0}.";
+
+  private static final String HYBRID_SORT_ARG_DESCRIPTION =
+      "Hybrid sort as a plain object, e.g. {\"$hybrid\": \"query text\"} to use the same query for"
+          + " vector and lexical search, or {\"$hybrid\": {\"$vectorize\": \"...\", \"$lexical\":"
+          + " \"...\"}}.";
+
   @Inject McpResource mcpResource;
 
   @Tool(description = "Command that alters the column definition in a table.")
@@ -41,7 +70,7 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> countDocuments(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter) {
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter) {
 
     var command = new CountDocumentsCommand(filter);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -118,10 +147,7 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> deleteMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(
-              description = "Filter clause based on which documents are identified",
-              required = false)
-          FilterDefinition filter) {
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter) {
 
     var command = new DeleteManyCommand(filter);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -131,9 +157,8 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> deleteOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "Filter clause based on which documents are identified")
-          FilterDefinition filter,
-      @ToolArg(description = "Sort clause", required = false) SortDefinition sort) {
+      @ToolArg(description = FILTER_ARG_DESCRIPTION) FilterDefinition filter,
+      @ToolArg(description = SORT_ARG_DESCRIPTION, required = false) SortDefinition sort) {
 
     var command = new DeleteOneCommand(filter, sort);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -154,9 +179,9 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> findAndRerank(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) FindAndRerankSort sort,
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter,
+      @ToolArg(description = PROJECTION_ARG_DESCRIPTION, required = false) JsonNode projection,
+      @ToolArg(description = HYBRID_SORT_ARG_DESCRIPTION, required = false) FindAndRerankSort sort,
       @ToolArg(description = "options", required = false) FindAndRerankCommand.Options options) {
 
     var command = new FindAndRerankCommand(filter, projection, sort, options);
@@ -167,9 +192,9 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> find(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter,
+      @ToolArg(description = PROJECTION_ARG_DESCRIPTION, required = false) JsonNode projection,
+      @ToolArg(description = SORT_ARG_DESCRIPTION, required = false) SortDefinition sort,
       @ToolArg(description = "options", required = false) FindCommand.Options options) {
 
     var command = new FindCommand(filter, projection, sort, options);
@@ -182,9 +207,9 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> findOneAndDelete(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "projection", required = false) JsonNode projection) {
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter,
+      @ToolArg(description = SORT_ARG_DESCRIPTION, required = false) SortDefinition sort,
+      @ToolArg(description = PROJECTION_ARG_DESCRIPTION, required = false) JsonNode projection) {
 
     var command = new FindOneAndDeleteCommand(filter, sort, projection);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -196,9 +221,9 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> findOneAndReplace(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter,
+      @ToolArg(description = SORT_ARG_DESCRIPTION, required = false) SortDefinition sort,
+      @ToolArg(description = PROJECTION_ARG_DESCRIPTION, required = false) JsonNode projection,
       @ToolArg(description = "replacement") ObjectNode replacement,
       @ToolArg(description = "options", required = false)
           FindOneAndReplaceCommand.Options options) {
@@ -213,10 +238,10 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> findOneAndUpdate(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "update") UpdateClause update,
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter,
+      @ToolArg(description = PROJECTION_ARG_DESCRIPTION, required = false) JsonNode projection,
+      @ToolArg(description = SORT_ARG_DESCRIPTION, required = false) SortDefinition sort,
+      @ToolArg(description = UPDATE_ARG_DESCRIPTION) UpdateClause update,
       @ToolArg(description = "options", required = false) FindOneAndUpdateCommand.Options options) {
 
     var command = new FindOneAndUpdateCommand(filter, projection, sort, update, options);
@@ -227,9 +252,9 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> findOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter,
+      @ToolArg(description = PROJECTION_ARG_DESCRIPTION, required = false) JsonNode projection,
+      @ToolArg(description = SORT_ARG_DESCRIPTION, required = false) SortDefinition sort,
       @ToolArg(description = "options", required = false) FindOneCommand.Options options) {
 
     var command = new FindOneCommand(filter, projection, sort, options);
@@ -275,8 +300,8 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> updateMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "update") UpdateClause update,
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter,
+      @ToolArg(description = UPDATE_ARG_DESCRIPTION) UpdateClause update,
       @ToolArg(description = "options", required = false) UpdateManyCommand.Options options) {
 
     var command = new UpdateManyCommand(filter, update, options);
@@ -289,9 +314,9 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> updateOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "update") UpdateClause update,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
+      @ToolArg(description = FILTER_ARG_DESCRIPTION, required = false) FilterDefinition filter,
+      @ToolArg(description = UPDATE_ARG_DESCRIPTION) UpdateClause update,
+      @ToolArg(description = SORT_ARG_DESCRIPTION, required = false) SortDefinition sort,
       @ToolArg(description = "options", required = false) UpdateOneCommand.Options options) {
 
     var command = new UpdateOneCommand(filter, update, sort, options);

@@ -89,6 +89,23 @@ public class KeyspaceCommandToolsMcpIntegrationTest extends McpIntegrationTestBa
     }
   }
 
+  /**
+   * Failures while building the keyspace command context (here: keyspace does not exist) must
+   * surface as a proper MCP tool error (isError with the error message in content) so agents can
+   * read it and self-correct: not as an opaque JSON-RPC -32603 internal error.
+   */
+  @Test
+  void testFindCollectionsOnMissingKeyspaceReturnsToolError() {
+    callToolAndAssert(
+        CommandName.Names.FIND_COLLECTIONS,
+        Map.of("keyspace", "no_such_keyspace"),
+        assertErrorOnly(
+            errors -> {
+              String message = errors.getJsonObject(0).getString("message");
+              assertNotNull(message, "Tool error must carry a message for self-correction");
+            }));
+  }
+
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class CreateFindAndDropTableToolCall {

@@ -93,46 +93,62 @@ public class McpResource {
   /**
    * Build a CommandContext for database-level (general) commands. similar to {@link
    * io.stargate.sgv2.jsonapi.api.v1.GeneralResource}
+   *
+   * <p>Deferred so synchronous failures (e.g. request context resolution) surface as a failed Uni
+   * that {@link #processCommand} can recover into an error ToolResponse, instead of escaping to the
+   * MCP framework as an opaque JSON-RPC internal error.
    */
   public Uni<CommandContext<?>> buildDatabaseContext(GeneralCommand command) {
 
-    var requestContext = createRequestContext();
-    var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
+    return Uni.createFrom()
+        .deferred(
+            () -> {
+              var requestContext = createRequestContext();
+              var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
 
-    return schemaObjectCacheSupplier
-        .get()
-        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
-        .map(
-            databaseSchemaObject ->
-                contextBuilderSupplier
-                    .getBuilder(databaseSchemaObject)
-                    .withCommandName(command.getClass().getSimpleName())
-                    .withRequestContext(requestContext)
-                    .build());
+              return schemaObjectCacheSupplier
+                  .get()
+                  .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
+                  .map(
+                      databaseSchemaObject ->
+                          contextBuilderSupplier
+                              .getBuilder(databaseSchemaObject)
+                              .withCommandName(command.getClass().getSimpleName())
+                              .withRequestContext(requestContext)
+                              .build());
+            });
   }
 
   /**
    * Build a CommandContext for keyspace-level (keyspace) commands. similar to {@link
    * io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource}
+   *
+   * <p>Deferred so synchronous failures (e.g. invalid keyspace identifiers) surface as a failed Uni
+   * that {@link #processCommand} can recover into an error ToolResponse, instead of escaping to the
+   * MCP framework as an opaque JSON-RPC internal error.
    */
   public Uni<CommandContext<?>> buildKeyspaceContext(String keyspace, KeyspaceCommand command) {
 
-    var requestContext = createRequestContext();
-    var keyspaceIdentifier =
-        SchemaObjectIdentifier.forKeyspace(
-            requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
+    return Uni.createFrom()
+        .deferred(
+            () -> {
+              var requestContext = createRequestContext();
+              var keyspaceIdentifier =
+                  SchemaObjectIdentifier.forKeyspace(
+                      requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
 
-    // Force refresh on all keyspace commands because they are all DDL commands
-    return schemaObjectCacheSupplier
-        .get()
-        .getKeyspace(requestContext, keyspaceIdentifier, requestContext.userAgent(), true)
-        .map(
-            keyspaceSchemaObject ->
-                contextBuilderSupplier
-                    .getBuilder(keyspaceSchemaObject)
-                    .withCommandName(command.getClass().getSimpleName())
-                    .withRequestContext(createRequestContext())
-                    .build());
+              // Force refresh on all keyspace commands because they are all DDL commands
+              return schemaObjectCacheSupplier
+                  .get()
+                  .getKeyspace(requestContext, keyspaceIdentifier, requestContext.userAgent(), true)
+                  .map(
+                      keyspaceSchemaObject ->
+                          contextBuilderSupplier
+                              .getBuilder(keyspaceSchemaObject)
+                              .withCommandName(command.getClass().getSimpleName())
+                              .withRequestContext(requestContext)
+                              .build());
+            });
   }
 
   /**
@@ -141,6 +157,22 @@ public class McpResource {
    * before delegating execution to processCommand.
    */
   public Uni<ToolResponse> processCollectionCommand(
+      String keyspace, String collection, CollectionCommand command) {
+
+    return Uni.createFrom()
+        .deferred(() -> processCollectionCommandInternal(keyspace, collection, command))
+        .onFailure()
+        .recoverWithItem(this::errorToolResponse);
+  }
+
+  /**
+   * See {@link #processCollectionCommand(String, String, CollectionCommand)}.
+   *
+   * <p>Must only be called via the deferred + recovery wrapper in {@link
+   * #processCollectionCommand}: this method may throw synchronously (e.g. identifier parsing,
+   * embedding provider creation) and has no failure recovery of its own.
+   */
+  private Uni<ToolResponse> processCollectionCommandInternal(
       String keyspace, String collection, CollectionCommand command) {
 
     var requestContext = createRequestContext();
@@ -161,11 +193,7 @@ public class McpResource {
             (schemaObject, throwable) -> {
               if (throwable != null) {
                 // If schema resolution or authorization fails, return an error ToolResponse
-                CommandResult errorResult =
-                    CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-                        .addThrowable(throwable)
-                        .build();
-                return Uni.createFrom().item(errorResult.toToolResponse());
+                return Uni.createFrom().item(errorToolResponse(throwable));
               } else {
                 VectorColumnDefinition vectorColDef = null;
                 if (schemaObject.type() == SchemaObjectType.COLLECTION) {
@@ -234,7 +262,25 @@ public class McpResource {
               }
               return meteredCommandProcessor.processCommand(context, command);
             })
-        .map(CommandResult::toToolResponse);
+        .map(commandResult -> commandResult.toToolResponse(objectMapper))
+        // Failures not already recovered into an error CommandResult (e.g. context building
+        // failures) must become error ToolResponses: anything escaping here surfaces to MCP
+        // clients as an opaque JSON-RPC -32603 "Internal error" that agents cannot act on.
+        .onFailure()
+        .recoverWithItem(this::errorToolResponse);
+  }
+
+  /**
+   * Convert a {@link Throwable} into an error {@link ToolResponse} (with {@code isError} and the
+   * error message in the content) so MCP clients receive an actionable tool error instead of an
+   * opaque JSON-RPC internal error.
+   */
+  private ToolResponse errorToolResponse(Throwable throwable) {
+    LOGGER.warn("MCP tool call failed outside of command processing", throwable);
+    return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+        .addThrowable(throwable)
+        .build()
+        .toToolResponse(objectMapper);
   }
 
   /**

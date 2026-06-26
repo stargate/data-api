@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.quarkiverse.mcp.server.MetaKey;
+import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkiverse.mcp.server.test.McpAssured.McpStreamableTestClient;
@@ -17,6 +18,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
@@ -141,25 +143,35 @@ public abstract class McpIntegrationTestBase {
   }
 
   /**
-   * Assert that the response is a successful status-only (ok:1) response with no error, no
-   * structured content, and no text content.
+   * Assert the response carries a non-empty content list whose first item is a {@link TextContent}
+   * holding the JSON-serialized command result envelope {@code {data, status, errors}}, and return
+   * the parsed envelope. Per the MCP spec, {@code content} is what clients read, so every tool
+   * response must carry the result there.
+   */
+  protected JsonObject contentEnvelope(ToolResponse response) {
+    assertThat(response.content())
+        .as("content must not be empty: MCP clients read tool results from content")
+        .isNotEmpty();
+    var first = response.content().get(0);
+    var text = assertInstanceOf(TextContent.class, first);
+    return new JsonObject(text.text());
+  }
+
+  /**
+   * Assert that the response is a successful status-only (ok:1) response with no error and no
+   * structured content, and the envelope in content carries the status.
    */
   protected Consumer<ToolResponse> assertStatusOnlyOk() {
-    return response -> {
-      assertFalse(response.isError());
-      assertNotNull(response._meta());
-      assertNull(response.structuredContent());
-      assertThat(response.content()).isEmpty();
-
-      var status = (JsonObject) response._meta().get(MetaKey.of("status"));
-      assertNotNull(status, "Status should not be null");
-      assertEquals(1, status.getInteger("ok"), "Status should contain ok:1");
-    };
+    return assertStatusOnlyWithJson(
+        status -> assertEquals(1, status.getInteger("ok"), "Status should contain ok:1"));
   }
 
   /**
    * Assert status only response structure is valid, then apply additional assertions on the status
-   * JsonObject extracted from _meta.
+   * JsonObject extracted from both _meta and the content envelope.
+   *
+   * <p>The assertions are applied twice (to the structuredContent/_meta view and to the content
+   * envelope), so they must be side-effect free.
    *
    * @param statusAssertions additional assertions to run on the status JsonObject
    */
@@ -168,23 +180,29 @@ public abstract class McpIntegrationTestBase {
       assertFalse(response.isError());
       assertNotNull(response._meta());
       assertNull(response.structuredContent());
-      assertThat(response.content()).isEmpty();
 
       var status = (JsonObject) response._meta().get(MetaKey.of("status"));
       assertNotNull(status, "Status should not be null");
       statusAssertions.accept(status);
+
+      var envelopeStatus = contentEnvelope(response).getJsonObject("status");
+      assertNotNull(envelopeStatus, "Status should be visible in the content envelope");
+      statusAssertions.accept(envelopeStatus);
     };
   }
 
   /**
-   * Assert error response structure is valid (no meta_ and content), then apply additional
-   * assertions on the error JsonArray extracted from structuredContent.
+   * Assert error response structure is valid (error visible in content and structuredContent, no
+   * meta_), then apply additional assertions on the error JsonArray extracted from
+   * structuredContent and from the content envelope.
+   *
+   * <p>The assertions are applied twice (to the structuredContent/_meta view and to the content
+   * envelope), so they must be side-effect free.
    *
    * @param errorsAssertions additional assertions to run on the error JsonArray
    */
   protected Consumer<ToolResponse> assertErrorOnly(Consumer<JsonArray> errorsAssertions) {
     return response -> {
-      assertThat(response.content()).isEmpty();
       assertThat(response._meta()).isEmpty();
       assertTrue(response.isError());
       assertThat(response.structuredContent()).isNotNull();
@@ -194,30 +212,46 @@ public abstract class McpIntegrationTestBase {
       var errorsArray = errors.getJsonArray("errors");
       assertThat(errorsArray).isNotEmpty();
       errorsAssertions.accept(errorsArray);
+
+      var envelopeErrors = contentEnvelope(response).getJsonArray("errors");
+      assertThat(envelopeErrors)
+          .as("Errors should be visible in the content envelope")
+          .isNotEmpty();
+      errorsAssertions.accept(envelopeErrors);
     };
   }
 
   /**
-   * Assert data only response is valid (no meta_, content and error), then apply additional
-   * assertions on the structuredContent holds the data.
+   * Assert data only response is valid (no meta_ and error), then apply additional assertions on
+   * the structuredContent holds the data and the content envelope carries it as well.
+   *
+   * <p>The assertions are applied twice (to the structuredContent/_meta view and to the content
+   * envelope), so they must be side-effect free.
    *
    * @param dataAssertions additional assertions to run on the data JsonObject
    */
   protected Consumer<ToolResponse> assertDataOnly(Consumer<JsonObject> dataAssertions) {
     return response -> {
       assertFalse(response.isError());
-      assertThat(response.content()).isEmpty();
       assertThat(response._meta()).isEmpty();
       assertNotNull(response.structuredContent());
 
       var data = (JsonObject) response.structuredContent();
       dataAssertions.accept(data);
+
+      var envelopeData = contentEnvelope(response).getJsonObject("data");
+      assertNotNull(envelopeData, "Data should be visible in the content envelope");
+      dataAssertions.accept(envelopeData);
     };
   }
 
   /**
-   * Assert data and status response is valid (no content and error), then apply additional
-   * assertions on the structuredContent holds the data and meta_ contains the status.
+   * Assert data and status response is valid (no error), then apply additional assertions on the
+   * structuredContent holds the data and meta_ contains the status; both must also be visible in
+   * the content envelope.
+   *
+   * <p>The assertions are applied twice (to the structuredContent/_meta view and to the content
+   * envelope), so they must be side-effect free.
    *
    * @param dataAssertions additional assertions to run on the data JsonObject
    * @param statusAssertions additional assertions to run on the status JsonObject
@@ -226,7 +260,6 @@ public abstract class McpIntegrationTestBase {
       Consumer<JsonObject> dataAssertions, Consumer<JsonObject> statusAssertions) {
     return response -> {
       assertFalse(response.isError());
-      assertThat(response.content()).isEmpty();
       assertNotNull(response._meta());
       assertNotNull(response.structuredContent());
 
@@ -234,6 +267,14 @@ public abstract class McpIntegrationTestBase {
       dataAssertions.accept(data);
       var status = (JsonObject) response._meta().get(MetaKey.of("status"));
       statusAssertions.accept(status);
+
+      var envelope = contentEnvelope(response);
+      var envelopeData = envelope.getJsonObject("data");
+      assertNotNull(envelopeData, "Data should be visible in the content envelope");
+      dataAssertions.accept(envelopeData);
+      var envelopeStatus = envelope.getJsonObject("status");
+      assertNotNull(envelopeStatus, "Status should be visible in the content envelope");
+      statusAssertions.accept(envelopeStatus);
     };
   }
 
@@ -247,5 +288,36 @@ public abstract class McpIntegrationTestBase {
   protected void callToolAndAssert(
       String toolName, Map<String, Object> args, Consumer<ToolResponse> assertFn) {
     mcpClient.when().toolsCall(toolName, args, assertFn).thenAssertResults();
+  }
+
+  /**
+   * Look up a tool by name via tools/list, following pagination cursors if needed.
+   *
+   * @param toolName the MCP tool name to look up
+   * @return the {@link McpAssured.ToolInfo} for the tool, never null
+   */
+  protected McpAssured.ToolInfo findTool(String toolName) {
+    AtomicReference<McpAssured.ToolInfo> found = new AtomicReference<>();
+    AtomicReference<String> cursor = new AtomicReference<>();
+    do {
+      var message = mcpClient.when().toolsList();
+      if (cursor.get() != null) {
+        message = message.withCursor(cursor.get());
+      }
+      message
+          .withAssert(
+              page -> {
+                cursor.set(page.nextCursor());
+                page.tools().stream()
+                    .filter(tool -> tool.name().equals(toolName))
+                    .findFirst()
+                    .ifPresent(found::set);
+              })
+          .send()
+          .thenAssertResults();
+    } while (found.get() == null && cursor.get() != null);
+
+    assertNotNull(found.get(), "Tool not found in tools/list: " + toolName);
+    return found.get();
   }
 }

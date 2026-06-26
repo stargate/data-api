@@ -1,7 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.mcp.server.MetaKey;
+import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import jakarta.ws.rs.core.Response;
@@ -104,15 +107,21 @@ public record CommandResult(
    * <p>Mapping rules:
    *
    * <ul>
+   *   <li>The full command result envelope {@code {data, status, errors}} → a {@link TextContent}
+   *       part in {@link ToolResponse#content()}. Per the MCP spec, {@code content} is what clients
+   *       (and the LLMs behind them) read, so the complete envelope must be visible there:
+   *       status-only results would otherwise appear as empty responses to standard MCP clients.
    *   <li>{@link #errors()} → {@link ToolResponse#isError()} and error content in {@link
    *       ToolResponse#structuredContent()}
    *   <li>{@link #data()} → {@link ToolResponse#structuredContent()} (when no errors)
    *   <li>{@link #status()} → {@link ToolResponse#_meta()} with key {@code "status"}
    * </ul>
    *
+   * @param objectMapper The mapper used to serialize this command result envelope into the text
+   *     content part.
    * @return A new {@link ToolResponse} representing this command result.
    */
-  public ToolResponse toToolResponse() {
+  public ToolResponse toToolResponse(ObjectMapper objectMapper) {
 
     boolean hasErrors = errors != null && !errors.isEmpty();
 
@@ -120,10 +129,27 @@ public record CommandResult(
     Map<MetaKey, Object> meta =
         (status != null && !status.isEmpty()) ? Map.of(MetaKey.of("status"), status) : Map.of();
 
+    String envelopeJson;
+    try {
+      envelopeJson = objectMapper.writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      // Fallback must still be a parseable JSON envelope: content is the primary path MCP
+      // clients read. ObjectNode handles escaping of the exception message.
+      var fallback = objectMapper.createObjectNode();
+      fallback
+          .putArray("errors")
+          .addObject()
+          .put("message", "Failed to serialize command result to JSON: " + e.getMessage());
+      envelopeJson = fallback.toString();
+    }
+
     // Map "errors" or "data" to structuredContent
     // Also, structuredContent is expected to be a Record (a plain JSON object {})
     return new ToolResponse(
-        hasErrors, List.of(), hasErrors ? Map.of("errors", errors) : data, meta);
+        hasErrors,
+        List.of(new TextContent(envelopeJson)),
+        hasErrors ? Map.of("errors", errors) : data,
+        meta);
   }
 
   /**
