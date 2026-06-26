@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.keyspaces.CreateKeyspaceOperat
 import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -57,9 +58,9 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
+                assertThat(op.strategy()).isNull();
+                assertThat(op.strategyOptions()).isNull();
               });
     }
 
@@ -86,9 +87,8 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
+                assertThat(op.strategy()).isEqualTo("SimpleStrategy");
               });
     }
 
@@ -116,9 +116,9 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap())
-                    .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 2}");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
+                assertThat(op.strategy()).isEqualTo("SimpleStrategy");
+                assertThat(op.strategyOptions()).containsEntry("replication_factor", 2);
               });
     }
 
@@ -147,11 +147,11 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap())
-                    .isIn(
-                        "{'class': 'NetworkTopologyStrategy', 'Boston': 2, 'Berlin': 3}",
-                        "{'class': 'NetworkTopologyStrategy', 'Berlin': 3, 'Boston': 2}");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
+                assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
+                assertThat(op.strategyOptions())
+                    .containsEntry("Boston", 2)
+                    .containsEntry("Berlin", 3);
               });
     }
 
@@ -179,8 +179,8 @@ class CreateKeyspaceCommandResolverTest {
           .isInstanceOfSatisfying(
               CreateKeyspaceOperation.class,
               op -> {
-                assertThat(op.name()).isEqualTo("red_star_belgrade");
-                assertThat(op.replicationMap()).isEqualTo("{'class': 'NetworkTopologyStrategy'}");
+                assertThat(op.name().asInternal()).isEqualTo("red_star_belgrade");
+                assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
               });
     }
 
@@ -205,9 +205,8 @@ class CreateKeyspaceCommandResolverTest {
             .isInstanceOfSatisfying(
                 CreateKeyspaceOperation.class,
                 op -> {
-                  assertThat(op.name()).isEqualTo(name);
-                  assertThat(op.replicationMap())
-                      .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
+                  assertThat(op.name().asInternal()).isEqualTo(name);
+                  assertThat(op.strategy()).isNull();
                 });
       }
     }
@@ -347,6 +346,142 @@ class CreateKeyspaceCommandResolverTest {
           "The command attempted to create a Keyspace with a name that is not supported.",
           "The supported Keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
           "The command used the unsupported Keyspace name: '!@-'.");
+    }
+
+    @Test
+    public void rejectsInjectionInDataCenterName() throws Exception {
+      // The driver does not escape NetworkTopologyStrategy map keys, so reject names that could
+      // break out of the generated CQL string literal.
+      String json =
+          """
+            {
+              "createNamespace": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "dc1', 'class': 'SimpleStrategy" : 1
+                    }
+                }
+              }
+            }
+            """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Throwable throwable = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
+
+      verifySchemaException(
+          throwable,
+          SchemaException.Code.INVALID_REPLICATION_DATA_CENTER_NAME,
+          "data center name in the NetworkTopologyStrategy replication options that is not valid",
+          "must not be empty or contain ASCII single quote characters",
+          "The command used the invalid data center name: 'dc1', 'class': 'SimpleStrategy'.");
+    }
+
+    @Test
+    public void allowsDataCenterNameWithSpace() throws Exception {
+      String json =
+          """
+            {
+              "createNamespace": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "dc one" : 1
+                    }
+                }
+              }
+            }
+            """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateKeyspaceOperation.class,
+              op -> assertThat(op.strategyOptions()).containsEntry("dc one", 1));
+    }
+
+    @Test
+    public void allowsDataCenterNameWithoutLengthLimit() throws Exception {
+      String dcName = RandomStringUtils.insecure().nextAlphabetic(49);
+      String json =
+              """
+            {
+              "createNamespace": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "%s" : 1
+                    }
+                }
+              }
+            }
+            """
+              .formatted(dcName);
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateKeyspaceOperation.class,
+              op -> assertThat(op.strategyOptions()).containsEntry(dcName, 1));
+    }
+  }
+
+  @Nested
+  class CreateKeyspaceDataCenterNameSuccess {
+
+    @Test
+    public void hyphenatedDataCenterNameIsAllowed() throws Exception {
+      // Cloud-style DC names (Astra, AWS regions) contain hyphens and must keep working.
+      String json =
+          """
+            {
+              "createNamespace": {
+                "name" : "red_star_belgrade",
+                "options": {
+                    "replication": {
+                        "class": "NetworkTopologyStrategy",
+                        "us-east-1" : 3
+                    }
+                }
+              }
+            }
+            """;
+
+      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateKeyspaceOperation.class,
+              op -> {
+                assertThat(op.strategy()).isEqualTo("NetworkTopologyStrategy");
+                assertThat(op.strategyOptions()).containsEntry("us-east-1", 3);
+              });
+    }
+
+    @Test
+    public void onlyAsciiSingleQuoteIsRejectedAsCqlStringDelimiter() {
+      String dcName = "dc`\"\u2018\u2019\u201C\u201D";
+      CreateNamespaceCommand command =
+          new CreateNamespaceCommand(
+              "red_star_belgrade",
+              new CreateNamespaceCommand.Options(
+                  new CreateNamespaceCommand.Replication(
+                      "NetworkTopologyStrategy", Map.of(dcName, 1))));
+
+      Operation result = resolver.resolveCommand(commandContext, command);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateKeyspaceOperation.class,
+              op -> assertThat(op.strategyOptions()).containsEntry(dcName, 1));
     }
   }
 

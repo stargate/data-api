@@ -9,7 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 /** Command resolver for {@link DropKeyspaceCommand}. */
 @ApplicationScoped
-public class DropKeyspaceCommandResolver implements CommandResolver<DropKeyspaceCommand> {
+public class DropKeyspaceCommandResolver extends KeyspaceDDLCommandResolver<DropKeyspaceCommand> {
 
   /** {@inheritDoc} */
   @Override
@@ -21,6 +21,6 @@ public class DropKeyspaceCommandResolver implements CommandResolver<DropKeyspace
   @Override
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, DropKeyspaceCommand command) {
-    return new DropKeyspaceOperation(command.name());
+    return new DropKeyspaceOperation(keyspaceIdentifierForDrop(command.name()));
   }
 }

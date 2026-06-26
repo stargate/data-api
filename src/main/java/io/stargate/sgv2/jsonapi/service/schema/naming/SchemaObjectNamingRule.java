@@ -45,10 +45,7 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
    * @return true if the name is valid, false otherwise
    */
   public boolean apply(String name) {
-    return name != null
-        && !name.isEmpty()
-        && name.length() <= getMaxLength()
-        && PATTERN_WORD_CHARS.matcher(name).matches();
+    return hasAllowedCharacters(name) && name.length() <= getMaxLength();
   }
 
   /**
@@ -56,6 +53,25 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
    */
   public int getMaxLength() {
     return MAX_NAME_LENGTH;
+  }
+
+  /**
+   * Validates user input without applying the Data API length limit.
+   *
+   * <p>This is useful for schema objects that may have been created outside the Data API, where the
+   * backing database allows longer names but the input still needs to be safe to pass through the
+   * API.
+   *
+   * @param name The name to validate.
+   * @return The validated name.
+   * @throws SchemaException with {@link SchemaException.Code#UNSUPPORTED_SCHEMA_NAME} if the name
+   *     is null, empty, or contains unsupported characters.
+   */
+  public String sanitizeInput(String name) {
+    if (!hasAllowedCharacters(name)) {
+      throw unsupportedName(name);
+    }
+    return name;
   }
 
   /**
@@ -70,15 +86,23 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
   public String checkRule(String name) {
 
     if (!apply(name)) {
-      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
-          Map.of(
-              "schemaType",
-              schemaType().apiName(),
-              "maxNameLength",
-              String.valueOf(getMaxLength()),
-              "unsupportedSchemaName",
-              ErrorTemplate.replaceIfNull(name)));
+      throw unsupportedName(name);
     }
     return name;
+  }
+
+  private boolean hasAllowedCharacters(String name) {
+    return name != null && PATTERN_WORD_CHARS.matcher(name).matches();
+  }
+
+  private SchemaException unsupportedName(String name) {
+    return SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
+        Map.of(
+            "schemaType",
+            schemaType().apiName(),
+            "maxNameLength",
+            String.valueOf(getMaxLength()),
+            "unsupportedSchemaName",
+            ErrorTemplate.replaceIfNull(name)));
   }
 }

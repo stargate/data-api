@@ -1,21 +1,19 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.CreateKeyspaceOperation;
 import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
-/**
- * Command resolver for {@link CreateKeyspaceCommand}. Responsible for creating the replication map.
- * Resolve a {@link CreateKeyspaceCommand} to a {@link CreateKeyspaceOperation}
- */
+/** Command resolver for {@link CreateKeyspaceCommand}. */
 @ApplicationScoped
 public class CreateKeyspaceCommandResolver
-    extends CreateNamespaceKeyspaceCommandResolver<CreateKeyspaceCommand> {
+    extends KeyspaceDDLCommandResolver<CreateKeyspaceCommand> {
 
   @Override
   public Class<CreateKeyspaceCommand> getCommandClass() {
@@ -27,18 +25,16 @@ public class CreateKeyspaceCommandResolver
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, CreateKeyspaceCommand command) {
 
-    var keyspaceName = NamingRules.KEYSPACE.checkRule(command.name());
+    var keyspaceName = keyspaceIdentifierForCreate(command.name());
+    var replication =
+        getOrDefault(command.options(), CreateKeyspaceCommand.Options::replication, null);
 
-    String strategy =
-        (command.options() != null && command.options().replication() != null)
-            ? command.options().replication().strategy()
-            : null;
+    String strategy = getOrDefault(replication, CreateKeyspaceCommand.Replication::strategy, null);
 
     Map<String, Integer> strategyOptions =
-        (command.options() != null && command.options().replication() != null)
-            ? command.options().replication().strategyOptions()
-            : null;
-    String replicationMap = getReplicationMap(strategy, strategyOptions);
-    return new CreateKeyspaceOperation(keyspaceName, replicationMap);
+        getOrDefault(replication, CreateKeyspaceCommand.Replication::strategyOptions, null);
+
+    validateStrategyOptions(strategy, strategyOptions);
+    return new CreateKeyspaceOperation(keyspaceName, strategy, strategyOptions);
   }
 }
