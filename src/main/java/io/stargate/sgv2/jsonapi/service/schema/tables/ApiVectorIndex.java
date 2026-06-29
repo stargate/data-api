@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.SchemaDescSource;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
@@ -17,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromCql;
 import io.stargate.sgv2.jsonapi.service.schema.tables.factories.IndexFactoryFromIndexDesc;
+import java.math.BigDecimal;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +56,9 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
     var definitionOptions =
         new VectorIndexDefinitionDesc.VectorIndexDescOptions(
-            similarityFunction.apiName(), sourceModel.apiName());
+            similarityFunction.apiName(),
+            sourceModel.apiName(),
+            describeIndexingOptions(indexOptions));
     var definition =
         new VectorIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
 
@@ -74,6 +78,156 @@ public class ApiVectorIndex extends ApiSupportedIndex {
         return definition;
       }
     };
+  }
+
+  /**
+   * Builds the {@code vectorIndexing} description from the CQL index options map, keeping only the
+   * supported tuning options (see {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}). When those
+   * options exactly match a known profile the profile name is echoed; otherwise the raw options
+   * are. Structural, dedicated-field, and CQL-only keys are dropped to stay symmetric with what the
+   * API accepts. The profile is not stored, so it is detected from the options (see {@link
+   * VectorIndexProfiles#detect(Map)}).
+   *
+   * @return the {@code vectorIndexing} description, or null when there are no supported tuning
+   *     options
+   */
+  @VisibleForTesting
+  static VectorIndexDefinitionDesc.VectorIndexingDesc describeIndexingOptions(
+      Map<String, String> indexOptions) {
+    var tuning = tuningOptions(indexOptions);
+    if (tuning.isEmpty()) {
+      return null;
+    }
+    return VectorIndexProfiles.detect(tuning)
+        .map(VectorIndexDefinitionDesc.VectorIndexingDesc::ofProfile)
+        .orElseGet(
+            () ->
+                VectorIndexDefinitionDesc.VectorIndexingDesc.ofOptions(
+                    new LinkedHashMap<>(tuning)));
+  }
+
+  /** Keeps only the {@link VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS} from a CQL options map. */
+  @VisibleForTesting
+  static Map<String, String> tuningOptions(Map<String, String> indexOptions) {
+    Map<String, String> tuning = new LinkedHashMap<>();
+    for (var entry : indexOptions.entrySet()) {
+      if (VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS.contains(entry.getKey())) {
+        tuning.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return tuning;
+  }
+
+  /**
+   * Applies the request's {@code vectorIndexing} into the CQL index options map. {@code
+   * vectorIndexing} is either a {@code profile} name expanded via {@link VectorIndexProfiles}, or
+   * an {@code options} object of Cassandra SAI tuning options validated against {@link
+   * VectorConstants.CQLAnnIndex#ALLOWED_OPTIONS}. The two are mutually exclusive (see {@link
+   * io.stargate.sgv2.jsonapi.api.model.command.deserializers.VectorIndexingDescDeserializer}).
+   * {@code source_model} / {@code similarity_function} have dedicated fields and are rejected here.
+   *
+   * @param indexOptions the CQL options map being built, mutated in place
+   * @param vectorIndexing the structured request value, may be null
+   */
+  @VisibleForTesting
+  static void applyIndexingOptions(
+      Map<String, String> indexOptions,
+      VectorIndexDefinitionDesc.VectorIndexingDesc vectorIndexing) {
+
+    if (vectorIndexing == null) {
+      return;
+    }
+
+    // A profile expands to a set of options.
+    var profileName = vectorIndexing.profile();
+    if (profileName != null) {
+      var profileOptions =
+          VectorIndexProfiles.forName(profileName)
+              .orElseThrow(
+                  () ->
+                      SchemaException.Code.UNKNOWN_VECTOR_INDEXING_PROFILE.get(
+                          Map.of(
+                              "knownProfiles",
+                              errFmtJoin(VectorIndexProfiles.knownNames()),
+                              "unknownProfile",
+                              profileName)));
+      indexOptions.putAll(profileOptions);
+    }
+
+    // Raw options (mutually exclusive with a profile) are validated against the allow-list.
+    var options = vectorIndexing.options();
+    if (options != null) {
+      for (var entry : options.entrySet()) {
+        var optionName = entry.getKey();
+        if (VectorConstants.CQLAnnIndex.RESERVED_OPTIONS.contains(optionName)) {
+          var dedicatedField =
+              VectorConstants.CQLAnnIndex.SOURCE_MODEL.equals(optionName)
+                  ? VectorConstants.VectorColumn.SOURCE_MODEL
+                  : VectorConstants.VectorColumn.METRIC;
+          throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+              Map.of(
+                  "reason",
+                  "The option '%s' must be set using its dedicated field '%s', not as a vectorIndexing option."
+                      .formatted(optionName, dedicatedField)));
+        }
+        if (!VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS.contains(optionName)) {
+          throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+              Map.of(
+                  "reason",
+                  "Unsupported vector indexing option '%s'. Supported options: %s."
+                      .formatted(
+                          optionName, errFmtJoin(VectorConstants.CQLAnnIndex.ALLOWED_OPTIONS))));
+        }
+        indexOptions.put(optionName, optionValueToString(optionName, entry.getValue()));
+      }
+    }
+  }
+
+  /**
+   * Validates and renders an option value to the CQL string form. CQL index options are a {@code
+   * Map<String, String>} that the driver emits unescaped into {@code WITH OPTIONS = {...}}, so a
+   * raw string would let a quote break out of the literal; every allowed option is numeric or
+   * boolean, so the value is coerced to that type and anything else is rejected.
+   */
+  private static String optionValueToString(String optionName, Object value) {
+    if (VectorConstants.CQLAnnIndex.BOOLEAN_OPTIONS.contains(optionName)) {
+      return booleanOptionValue(optionName, value);
+    }
+    return numericOptionValue(optionName, value);
+  }
+
+  private static String booleanOptionValue(String optionName, Object value) {
+    if (value instanceof Boolean bool) {
+      return bool.toString();
+    }
+    if (value instanceof String text
+        && ("true".equalsIgnoreCase(text) || "false".equalsIgnoreCase(text))) {
+      return text.toLowerCase();
+    }
+    throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+        Map.of("reason", "The option '%s' must be true or false.".formatted(optionName)));
+  }
+
+  private static String numericOptionValue(String optionName, Object value) {
+    // JSON numbers deserialize to BigDecimal; use plain (non-scientific) notation for the CQL
+    // value.
+    if (value instanceof BigDecimal number) {
+      return number.toPlainString();
+    }
+    if (value instanceof Number number) {
+      return number.toString();
+    }
+    // A numeric value sent as a JSON string is accepted only if it parses as a number, which also
+    // rejects any quote/garbage that could break out of the CQL options literal.
+    if (value instanceof String text) {
+      try {
+        return new BigDecimal(text.trim()).toPlainString();
+      } catch (NumberFormatException e) {
+        // fall through to the rejection below
+      }
+    }
+    throw SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS.get(
+        Map.of("reason", "The option '%s' must be a number.".formatted(optionName)));
   }
 
   /**
@@ -244,6 +398,12 @@ public class ApiVectorIndex extends ApiSupportedIndex {
             userMetric,
             metricToUse);
       }
+
+      // vectorIndexing is a profile name or raw options (mutually exclusive); metric / sourceModel
+      // above use dedicated fields.
+      var userVectorIndexing =
+          (indexDesc.options() == null) ? null : indexDesc.options().vectorIndexing();
+      applyIndexingOptions(indexOptions, userVectorIndexing);
 
       return new ApiVectorIndex(
           indexIdentifier, targetIdentifier, indexOptions, metricToUse, sourceModelToUse);
