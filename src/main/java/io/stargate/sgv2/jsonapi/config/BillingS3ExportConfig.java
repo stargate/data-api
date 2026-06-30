@@ -70,4 +70,12 @@ public interface BillingS3ExportConfig {
   /** Base delay for exponential backoff between PUT attempts ({@code base * 2^(attempt-1)}). */
   @WithDefault("PT0.2S")
   Duration retryBaseBackoff();
+
+  /** Jitter factor [0,1] on retry back-off (0 = none). Only applies when retryBaseBackoff > 0. */
+  @WithDefault("0.5")
+  double retryJitter();
+
+  /** Number of batch uploads (S3 PUTs) allowed in flight concurrently. */
+  @WithDefault("4")
+  int uploadConcurrency();
 }
