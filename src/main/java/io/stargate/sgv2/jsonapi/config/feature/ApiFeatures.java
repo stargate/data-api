@@ -18,9 +18,8 @@ public class ApiFeatures {
   private final Map<ApiFeature, String> fromConfig;
   private final RequestContext.HttpHeaderAccess httpHeaders;
 
-  private ApiFeatures(
-      Map<ApiFeature, String> fromConfig, RequestContext.HttpHeaderAccess httpHeaders) {
-    this.fromConfig = fromConfig;
+  private ApiFeatures(Map<String, String> fromConfig, RequestContext.HttpHeaderAccess httpHeaders) {
+    this.fromConfig = marshallFromConfig(fromConfig);
     this.httpHeaders = httpHeaders;
   }
 
@@ -28,9 +27,44 @@ public class ApiFeatures {
     return new ApiFeatures(Collections.emptyMap(), null);
   }
 
+  protected Map<ApiFeature, String> marshallFromConfig(Map<String, String> fromConfig) {
+    if (fromConfig == null || fromConfig.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    Map<ApiFeature, String> result = new java.util.HashMap<>();
+    for (Map.Entry<String, String> entry : fromConfig.entrySet()) {
+      String key = entry.getKey();
+      ApiFeature feature = findFeatureByName(key);
+      if (feature == null) {
+        throw new IllegalArgumentException(
+            "Invalid feature flag key: '"
+                + key
+                + "'. Expected one of: "
+                + java.util.Arrays.stream(ApiFeature.values())
+                    .map(
+                        f ->
+                            "STARGATE_FEATURE_FLAGS_"
+                                + f.featureName().toUpperCase().replace('-', '_'))
+                    .collect(java.util.stream.Collectors.joining(", ")));
+      }
+      result.put(feature, entry.getValue());
+    }
+    return result;
+  }
+
+  private ApiFeature findFeatureByName(String name) {
+    for (ApiFeature feature : ApiFeature.values()) {
+      if (feature.featureName().equals(name)) {
+        return feature;
+      }
+    }
+    return null;
+  }
+
   public static ApiFeatures fromConfigAndRequest(
       FeaturesConfig config, RequestContext.HttpHeaderAccess httpHeaders) {
-    Map<ApiFeature, String> fromConfig = config.flags();
+    Map<String, String> fromConfig = config.flags();
     if (fromConfig == null) {
       fromConfig = Collections.emptyMap();
     }
