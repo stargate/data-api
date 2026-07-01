@@ -79,7 +79,7 @@ public final class BillingS3LogHandler extends Handler {
 
   // ---- Reactive pipeline ----
   private volatile MultiEmitter<? super String> emitter;
-  private final Cancellable subscription;
+  private final Cancellable pipeline;
   private final CountDownLatch terminated = new CountDownLatch(1);
 
   // ---- Mutable in-flight state ----
@@ -136,20 +136,38 @@ public final class BillingS3LogHandler extends Handler {
     this.uploadConcurrency = Math.max(1, uploadConcurrency);
     this.metrics = new BillingMetrics(meterRegistry, backlogEvents, this.queueCapacity);
 
-    this.subscription =
+    // Build + subscribe the export pipeline; runs for the life of the handler.
+    this.pipeline =
         Multi.createFrom()
+            // Source: publish() (from any thread) emits raw JSON lines here — Mutiny's
+            // SerializedMultiEmitter funnels the concurrent emits into one serial stream, so
+            // everything downstream runs single-threaded. BUFFER holds the backlog, bounded by the
+            // publish() capacity gate, so nothing is dropped at this stage.
             .<String>emitter(em -> this.emitter = em, BackPressureStrategy.BUFFER)
             .onItem()
+            // Pull the timestamp for the key's date path; keep the line byte-for-byte, never drop.
             .transform(this::parse)
             .onItem()
+            // Fold each line into the open batch, emitting 0–2 sealed batches (on
+            // maxEvents/maxBytes, or the prior batch on maxAge). Concatenate -> ordered,
+            // one-at-a-time
             .transformToMultiAndConcatenate(this::accumulate)
             .onCompletion()
+            // On shutdown (emitter completed), flush the final under-filled batch so nothing is
+            // stranded.
             .switchTo(this::flushOpenBatch)
             .onItem()
+            // PUT each sealed batch to S3 with bounded retry/backoff…
             .transformToUni(this::uploadWithRetry)
+            // …up to uploadConcurrency uploads in flight at once.
             .merge(this.uploadConcurrency)
             .onTermination()
+            // On any terminal (complete/fail/cancel), release the latch close() blocks on for
+            // graceful drain.
             .invoke(() -> terminated.countDown())
+            // Subscribe -> activates the whole chain. Per-batch result is ignored; only a
+            // pipeline-fatal failure is logged (uploadWithRetry already recovers per-batch
+            // failures).
             .subscribe()
             .with(
                 ignored -> {},
@@ -167,7 +185,7 @@ public final class BillingS3LogHandler extends Handler {
       return;
     }
     String line = record.getMessage();
-    if (e == null || line == null || line.isEmpty()) {
+    if (e == null || line == null || line.isBlank()) {
       return;
     }
     metrics.recordOffered();
@@ -205,8 +223,8 @@ public final class BillingS3LogHandler extends Handler {
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
     }
-    if (subscription != null) {
-      subscription.cancel();
+    if (pipeline != null) {
+      pipeline.cancel();
     }
     try {
       uploader.close();
@@ -260,6 +278,7 @@ public final class BillingS3LogHandler extends Handler {
     byte[] body = batch.body();
 
     Uni<Void> put = Uni.createFrom().completionStage(() -> uploader.upload(key, body));
+    // just retry no if statement
     if (maxUploadAttempts > 1) {
       var retry = put.onFailure().retry();
       put =
