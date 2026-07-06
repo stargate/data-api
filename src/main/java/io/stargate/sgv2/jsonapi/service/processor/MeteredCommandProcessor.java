@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.ClassUtils;
@@ -291,8 +292,14 @@ public class MeteredCommandProcessor {
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     tags.add(Tag.of(jsonApiMetricsConfig.sortType(), sortType.name()));
 
-    // --- Command Feature Usage Tags ---
-    tags.addAll(commandContext.commandFeatures().getTags().stream().toList());
+    // 2026-07-07, clun: Always add all feature tags with true/false values to ensure consistent tag
+    // keys
+    // across all metric registrations. This prevents Prometheus IllegalArgumentException
+    // when different tests register the same metric with different tag sets.
+    for (CommandFeature feature : CommandFeature.values()) {
+      boolean isUsed = commandContext.commandFeatures().contains(feature);
+      tags.add(Tag.of(feature.getTagName(), String.valueOf(isUsed)));
+    }
 
     return Tags.of(tags);
   }

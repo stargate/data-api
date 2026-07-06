@@ -13,6 +13,8 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
@@ -59,6 +61,16 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   @BeforeAll
   public static void enableLog() {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+
+    // Configure HTTP client timeouts to prevent intermittent test failures
+    // Connection timeout: time to establish connection
+    // Socket timeout: time to wait for data after connection established
+    RestAssured.config =
+        RestAssuredConfig.config()
+            .httpClient(
+                HttpClientConfig.httpClientConfig()
+                    .setParam("http.connection.timeout", 60000) // 60 seconds
+                    .setParam("http.socket.timeout", 60000)); // 60 seconds
   }
 
   @BeforeAll

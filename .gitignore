@@ -28,6 +28,9 @@ nb-configuration.xml
 # OSX
 .DS_Store
 
+# bob advices
+.bob
+
 # Vim
 *.swp
 *.swo
