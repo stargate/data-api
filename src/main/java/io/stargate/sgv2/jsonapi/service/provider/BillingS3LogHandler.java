@@ -72,7 +72,8 @@ public final class BillingS3LogHandler extends Handler {
   private final long maxBytes;
   private final long maxAgeNanos;
   private final int maxUploadAttempts;
-  private final long retryBaseBackoffMillis;
+  private final Duration initialBackOffMillis;
+  private final Duration maxBackOffMillis;
   private final double retryJitter;
   private final long queueCapacity;
   private final int uploadConcurrency;
@@ -106,8 +107,9 @@ public final class BillingS3LogHandler extends Handler {
         config.maxEvents(),
         config.maxBytes(),
         config.maxAge(),
-        config.maxUploadAttempts(),
-        config.retryBaseBackoff(),
+        config.atMostRetries(),
+        Duration.ofMillis(config.initialBackOffMillis()),
+        Duration.ofMillis(config.maxBackOffMillis()),
         config.retryJitter(),
         config.queueCapacity(),
         config.uploadConcurrency());
@@ -121,19 +123,21 @@ public final class BillingS3LogHandler extends Handler {
       long maxBytes,
       Duration maxAge,
       int maxUploadAttempts,
-      Duration retryBaseBackoff,
+      Duration initialBackOffMillis,
+      Duration maxBackOffMillis,
       double retryJitter,
       int queueCapacity,
       int uploadConcurrency) {
     this.uploader = uploader;
-    this.maxEvents = Math.max(1, maxEvents);
-    this.maxBytes = Math.max(1L, maxBytes);
-    this.maxAgeNanos = Math.max(1L, maxAge.toNanos());
-    this.maxUploadAttempts = Math.max(1, maxUploadAttempts);
-    this.retryBaseBackoffMillis = Math.max(0L, retryBaseBackoff.toMillis());
-    this.retryJitter = Math.clamp(retryJitter, 0.0, 1.0);
-    this.queueCapacity = Math.max(1L, queueCapacity);
-    this.uploadConcurrency = Math.max(1, uploadConcurrency);
+    this.maxEvents = maxEvents;
+    this.maxBytes = maxBytes;
+    this.maxAgeNanos = maxAge.toNanos();
+    this.maxUploadAttempts = maxUploadAttempts;
+    this.initialBackOffMillis = initialBackOffMillis;
+    this.maxBackOffMillis = maxBackOffMillis;
+    this.retryJitter = retryJitter;
+    this.queueCapacity = queueCapacity;
+    this.uploadConcurrency = uploadConcurrency;
     this.metrics = new BillingMetrics(meterRegistry, backlogEvents, this.queueCapacity);
 
     // Build + subscribe the export pipeline; runs for the life of the handler.
@@ -277,20 +281,14 @@ public final class BillingS3LogHandler extends Handler {
     String key = objectKey(batch.firstTimestamp, UUID.randomUUID());
     byte[] body = batch.body();
 
-    Uni<Void> put = Uni.createFrom().completionStage(() -> uploader.upload(key, body));
-    // just retry no if statement
-    if (maxUploadAttempts > 1) {
-      var retry = put.onFailure().retry();
-      put =
-          retryBaseBackoffMillis > 0
-              ? retry
-                  .withBackOff(Duration.ofMillis(retryBaseBackoffMillis))
-                  .withJitter(retryJitter)
-                  .atMost(maxUploadAttempts - 1)
-              : retry.atMost(maxUploadAttempts - 1);
-    }
-
-    return put.onItem()
+    return Uni.createFrom()
+        .completionStage(() -> uploader.upload(key, body))
+        .onFailure()
+        .retry()
+        .withBackOff(initialBackOffMillis, maxBackOffMillis)
+        .withJitter(retryJitter)
+        .atMost(maxUploadAttempts - 1)
+        .onItem()
         .invoke(
             () -> {
               metrics.recordBatchDelivered(batch.events);
@@ -298,7 +296,9 @@ public final class BillingS3LogHandler extends Handler {
             })
         .onFailure()
         .invoke(
-            t -> LOG.error("Giving up on billing S3 batch '{}' ({} events)", key, batch.events, t))
+            t ->
+                LOG.error(
+                    "Failed to upload billing S3 batch '{}' ({} events)", key, batch.events, t))
         .onFailure()
         .recoverWithItem(
             () -> {
