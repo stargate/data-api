@@ -39,8 +39,7 @@ public interface BillingS3ExportConfig {
 
   /**
    * Endpoint override for the S3 client. Set this to point at a non-AWS S3 (e.g. S3Mock in tests);
-   * when present, path-style addressing is forced. SDK resolves the regional AWS endpoint when left
-   * empty.
+   * SDK resolves the regional AWS endpoint when left empty.
    */
   Optional<String> endpointOverride();
 
