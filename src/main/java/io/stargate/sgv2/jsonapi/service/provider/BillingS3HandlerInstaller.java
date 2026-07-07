@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,37 +49,30 @@ public class BillingS3HandlerInstaller {
       return;
     }
 
-    var bucket = config.bucket().filter(s -> !s.isBlank()).orElse(null);
-    var region = config.bucketRegion().filter(s -> !s.isBlank()).orElse(null);
-    if (bucket == null || region == null) {
-      LOG.error(
-          "Billing S3 export is enabled but bucket/region are not fully configured (bucket={},"
-              + " region={}); handler NOT installed. Billing events continue to the console only.",
-          bucket,
-          region);
-      return;
-    }
+    var uploader =
+        S3BatchUploader.create(
+            config.bucketRegion().orElse(null),
+            config.bucket().orElse(null),
+            config.endpointOverride(),
+            new S3BatchUploader.RetryPolicy(
+                config.atMostRetries(),
+                Duration.ofMillis(config.initialBackOffMillis()),
+                Duration.ofMillis(config.maxBackOffMillis()),
+                config.retryJitter()));
 
-    try {
-      var uploader = S3BatchUploader.create(region, bucket, config.endpointOverride());
-      this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
-      Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
+    this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
+    Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
 
-      LOG.info(
-          "Installed billing S3 export handler on '{}' → bucket '{}' (region '{}', endpointOverride={})",
-          BILLING_LOGGER_NAME,
-          bucket,
-          region,
-          config.endpointOverride().orElse(null));
-    } catch (Exception e) {
-      LOG.error(
-          "Failed to install billing S3 export handler; billing events continue to the console only",
-          e);
-    }
+    LOG.info(
+        "Installed billing S3 export handler on '{}' → bucket '{}' (region '{}', endpointOverride={})",
+        BILLING_LOGGER_NAME,
+        config.bucket(),
+        config.bucketRegion(),
+        config.endpointOverride().orElse(null));
   }
 
   void onStop(@Observes ShutdownEvent event) {
-    if (this.handler == null){
+    if (this.handler == null) {
       return;
     }
     Logger.getLogger(BILLING_LOGGER_NAME).removeHandler(this.handler);
