@@ -71,9 +71,9 @@ public final class BillingS3LogHandler extends Handler {
   private final int maxEvents;
   private final long maxBytes;
   private final long maxAgeNanos;
-  private final int maxUploadAttempts;
-  private final Duration initialBackOffMillis;
-  private final Duration maxBackOffMillis;
+  private final int atMostRetries;
+  private final Duration initialBackOffDuration;
+  private final Duration maxBackOffDuration;
   private final double retryJitter;
   private final long queueCapacity;
   private final int uploadConcurrency;
@@ -122,9 +122,9 @@ public final class BillingS3LogHandler extends Handler {
       int maxEvents,
       long maxBytes,
       Duration maxAge,
-      int maxUploadAttempts,
-      Duration initialBackOffMillis,
-      Duration maxBackOffMillis,
+      int atMostRetries,
+      Duration initialBackOffDuration,
+      Duration maxBackOffDuration,
       double retryJitter,
       int queueCapacity,
       int uploadConcurrency) {
@@ -132,9 +132,9 @@ public final class BillingS3LogHandler extends Handler {
     this.maxEvents = maxEvents;
     this.maxBytes = maxBytes;
     this.maxAgeNanos = maxAge.toNanos();
-    this.maxUploadAttempts = maxUploadAttempts;
-    this.initialBackOffMillis = initialBackOffMillis;
-    this.maxBackOffMillis = maxBackOffMillis;
+    this.atMostRetries = atMostRetries;
+    this.initialBackOffDuration = initialBackOffDuration;
+    this.maxBackOffDuration = maxBackOffDuration;
     this.retryJitter = retryJitter;
     this.queueCapacity = queueCapacity;
     this.uploadConcurrency = uploadConcurrency;
@@ -285,9 +285,9 @@ public final class BillingS3LogHandler extends Handler {
         .completionStage(() -> uploader.upload(key, body))
         .onFailure()
         .retry()
-        .withBackOff(initialBackOffMillis, maxBackOffMillis)
+        .withBackOff(initialBackOffDuration, maxBackOffDuration)
         .withJitter(retryJitter)
-        .atMost(maxUploadAttempts - 1)
+        .atMost(atMostRetries)
         .onItem()
         .invoke(
             () -> {

@@ -63,15 +63,11 @@ public interface BillingS3ExportConfig {
   int queueCapacity();
 
   /**
-   * Maximum number of PUT attempts per sealed batch before it is counted as failed. Default is 3 (1
-   * request + 2 retries).
+   * Maximum number of retries after a failed PUT, per sealed batch, before the batch is counted as
+   * failed. Default is 2 retries (up to 3 attempts including the initial PUT).
    */
-  @WithDefault("3")
+  @WithDefault("2")
   int atMostRetries();
-
-  //  /** Base delay for exponential backoff between PUT attempts ({@code base * 2^(attempt-1)}). */
-  //  @WithDefault("PT0.2S")
-  //  Duration retryBaseBackoff();
 
   /**
    * The initial delay between retries in milliseconds. The first retry occurs after the specified
@@ -84,7 +80,7 @@ public interface BillingS3ExportConfig {
   @WithDefault("500")
   int maxBackOffMillis();
 
-  /** Jitter factor [0,1] on retry back-off (0 = none). Only applies when retryBaseBackoff > 0. */
+  /** A random variation added to the delay between retries in an exponential backoff strategy. */
   @WithDefault("0.5")
   double retryJitter();
 
