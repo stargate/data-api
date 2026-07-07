@@ -11,21 +11,17 @@ import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Wires a {@link BillingS3LogHandler} onto the {@code billing.events} logger at startup when {@link
- * BillingS3ExportConfig#enabled()} is {@code true}, and removes/closes it on shutdown for a
- * graceful drain.
+ * Attaches a {@link BillingS3LogHandler} to the {@code billing.events} JUL logger at startup (when
+ * {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on shutdown for
+ * a graceful drain.
  *
- * <p>We attach the handler directly to the {@code billing.events} JUL logger rather than relying on
- * Quarkus's discovered-{@code Handler}-bean mechanism: discovered handler beans are attached to the
- * <i>root</i> logger, but {@code billing.events} is configured {@code use-parent-handlers: false}
- * (so it would never feed a root handler) and we want this handler scoped to exactly that category.
- * Adding the handler here in a {@link StartupEvent} observer runs after Quarkus has applied its
- * logging configuration, so the registration sticks; we keep a strong reference to the logger so it
- * (and our handler) cannot be GC'd.
- *
- * <p>Injecting {@link BillingS3ExportConfig} also pins it as a SmallRye {@code @ConfigMapping} bean
- * so Quarkus ARC does not drop it at build time (see {@link
- * io.stargate.sgv2.jsonapi.JsonApiStartUp} for the same pattern with {@code BillingConfig}).
+ * <p>Done programmatically because Quarkus config can't express it: a category's {@code handlers}
+ * list can only reference Quarkus's built-in handler types (console/file/syslog/socket), not a
+ * custom {@link java.util.logging.Handler} class. The one config-driven alternative — a discovered
+ * {@code @Produces Handler} bean — attaches to the <i>root</i> logger, but {@code billing.events}
+ * is {@code use-parent-handlers: false} and we want delivery scoped to exactly that category. The
+ * {@link StartupEvent} observer runs after Quarkus has applied its logging config, so the
+ * registration sticks.
  */
 @ApplicationScoped
 public class BillingS3HandlerInstaller {
@@ -38,8 +34,7 @@ public class BillingS3HandlerInstaller {
   private final BillingS3ExportConfig config;
   private final MeterRegistry meterRegistry;
 
-  // Strong references so the configured logger (and the handler we add to it) are not collected,
-  // and so we can detach cleanly on shutdown.
+  // Held only to detach + close the handler on shutdown
   private volatile Logger billingLogger;
   private volatile BillingS3LogHandler handler;
 
