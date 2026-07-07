@@ -49,10 +49,14 @@ public class BillingS3HandlerInstaller {
       return;
     }
 
+    var region = config.bucketRegion().orElse(null);
+    var bucket = config.bucket().orElse(null);
+
+    // Fail-loud: invalid billing S3 config throws here, aborting application startup.
     var uploader =
         S3BatchUploader.create(
-            config.bucketRegion().orElse(null),
-            config.bucket().orElse(null),
+            region,
+            bucket,
             config.endpointOverride(),
             new S3BatchUploader.RetryPolicy(
                 config.atMostRetries(),
@@ -66,8 +70,8 @@ public class BillingS3HandlerInstaller {
     LOG.info(
         "Installed billing S3 export handler on '{}' → bucket '{}' (region '{}', endpointOverride={})",
         BILLING_LOGGER_NAME,
-        config.bucket(),
-        config.bucketRegion(),
+        bucket,
+        region,
         config.endpointOverride().orElse(null));
   }
 
