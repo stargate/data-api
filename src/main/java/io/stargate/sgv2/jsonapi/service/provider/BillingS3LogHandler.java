@@ -17,7 +17,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -71,10 +70,6 @@ public final class BillingS3LogHandler extends Handler {
   private final int maxEvents;
   private final long maxBytes;
   private final long maxAgeNanos;
-  private final int atMostRetries;
-  private final Duration initialBackOffDuration;
-  private final Duration maxBackOffDuration;
-  private final double retryJitter;
   private final long queueCapacity;
   private final int uploadConcurrency;
 
@@ -107,10 +102,6 @@ public final class BillingS3LogHandler extends Handler {
         config.maxEvents(),
         config.maxBytes(),
         config.maxAge(),
-        config.atMostRetries(),
-        Duration.ofMillis(config.initialBackOffMillis()),
-        Duration.ofMillis(config.maxBackOffMillis()),
-        config.retryJitter(),
         config.queueCapacity(),
         config.uploadConcurrency());
   }
@@ -122,20 +113,12 @@ public final class BillingS3LogHandler extends Handler {
       int maxEvents,
       long maxBytes,
       Duration maxAge,
-      int atMostRetries,
-      Duration initialBackOffDuration,
-      Duration maxBackOffDuration,
-      double retryJitter,
       int queueCapacity,
       int uploadConcurrency) {
     this.uploader = uploader;
     this.maxEvents = maxEvents;
     this.maxBytes = maxBytes;
     this.maxAgeNanos = maxAge.toNanos();
-    this.atMostRetries = atMostRetries;
-    this.initialBackOffDuration = initialBackOffDuration;
-    this.maxBackOffDuration = maxBackOffDuration;
-    this.retryJitter = retryJitter;
     this.queueCapacity = queueCapacity;
     this.uploadConcurrency = uploadConcurrency;
     this.metrics = new BillingMetrics(meterRegistry, backlogEvents, this.queueCapacity);
@@ -161,8 +144,8 @@ public final class BillingS3LogHandler extends Handler {
             // stranded.
             .switchTo(this::flushOpenBatch)
             .onItem()
-            // PUT each sealed batch to S3 with bounded retry/backoff…
-            .transformToUni(this::uploadWithRetry)
+            // PUT each sealed batch to S3 (the uploader applies bounded retry/backoff)…
+            .transformToUni(this::uploadBatch)
             // …up to uploadConcurrency uploads in flight at once.
             .merge(this.uploadConcurrency)
             .onTermination()
@@ -170,8 +153,7 @@ public final class BillingS3LogHandler extends Handler {
             // graceful drain.
             .invoke(() -> terminated.countDown())
             // Subscribe -> activates the whole chain. Per-batch result is ignored; only a
-            // pipeline-fatal failure is logged (uploadWithRetry already recovers per-batch
-            // failures).
+            // pipeline-fatal failure is logged (uploadBatch already recovers per-batch failures).
             .subscribe()
             .with(
                 ignored -> {},
@@ -274,20 +256,16 @@ public final class BillingS3LogHandler extends Handler {
   }
 
   /**
-   * Uploads one sealed batch with bounded retry/backoff/jitter. Never propagates failure: a
-   * giving-up batch is counted and recovered to a no-op so the pipeline stays alive.
+   * Ships one sealed batch: the uploader PUTs it, applying its own bounded retry/backoff. Never
+   * propagates failure — a giving-up batch is counted and recovered to a no-op so the pipeline
+   * stays alive.
    */
-  private Uni<Void> uploadWithRetry(Batch batch) {
+  private Uni<Void> uploadBatch(Batch batch) {
     String key = objectKey(batch.firstTimestamp, UUID.randomUUID());
     byte[] body = batch.body();
 
-    return Uni.createFrom()
-        .completionStage(() -> uploader.upload(key, body))
-        .onFailure()
-        .retry()
-        .withBackOff(initialBackOffDuration, maxBackOffDuration)
-        .withJitter(retryJitter)
-        .atMost(atMostRetries)
+    return uploader
+        .upload(key, body)
         .onItem()
         .invoke(
             () -> {
@@ -358,12 +336,12 @@ public final class BillingS3LogHandler extends Handler {
   }
 
   /**
-   * Single-attempt async uploader of one sealed batch (test seam); the production implementation is
-   * {@link S3BatchUploader}. A failed {@link CompletionStage} triggers the handler's retry/backoff.
+   * Uploads one sealed batch to S3 with its own bounded retry/backoff, failing only once retries
+   * are exhausted (see implementation {@link S3BatchUploader}).
    */
   @FunctionalInterface
   public interface AsyncBatchUploader extends AutoCloseable {
-    CompletionStage<Void> upload(String key, byte[] body);
+    Uni<Void> upload(String key, byte[] body);
 
     @Override
     default void close() {}
