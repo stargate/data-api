@@ -226,23 +226,25 @@ public final class BillingS3LogHandler extends Handler {
   /**
    * Sequential fold of one parsed row into {@link #openBatch}, emitting 0–2 sealed {@link Batch}es
    * (sealed on {@code maxEvents}/{@code maxBytes}, or the prior batch on {@code maxAge} at the next
-   * arrival). Kept ordered and one-at-a-time via {@code …AndConcatenate}, not merge.
+   * arrival).
    */
   private Multi<Batch> accumulate(Parsed parsed) {
     List<Batch> sealed = new ArrayList<>(2);
-    Batch batch = openBatch;
-    if (batch != null && System.nanoTime() - batch.firstNanos >= maxAgeNanos) {
-      sealed.add(batch);
-      batch = null;
+
+    // Seal the open batch first if it has aged out, so this line starts a fresh one.
+    if (openBatch != null && System.nanoTime() - openBatch.firstNanos >= maxAgeNanos) {
+      sealed.add(openBatch);
       openBatch = null;
     }
-    if (batch == null) {
-      batch = new Batch(parsed.timestamp());
-      openBatch = batch;
+    if (openBatch == null) {
+      openBatch = new Batch(parsed.timestamp());
     }
-    batch.add(parsed.line());
-    if (batch.events >= maxEvents || batch.bytes >= maxBytes) {
-      sealed.add(batch);
+
+    openBatch.add(parsed.line());
+
+    // Seal once the batch is full by count or size.
+    if (openBatch.events >= maxEvents || openBatch.bytes >= maxBytes) {
+      sealed.add(openBatch);
       openBatch = null;
     }
     return Multi.createFrom().iterable(sealed);
