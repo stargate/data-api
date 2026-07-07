@@ -34,8 +34,6 @@ public class BillingS3HandlerInstaller {
   private final BillingS3ExportConfig config;
   private final MeterRegistry meterRegistry;
 
-  // Held only to detach + close the handler on shutdown
-  private volatile Logger billingLogger;
   private volatile BillingS3LogHandler handler;
 
   @Inject
@@ -50,32 +48,28 @@ public class BillingS3HandlerInstaller {
       return;
     }
 
-    String bucket = config.bucket().filter(s -> !s.isBlank()).orElse(null);
-    String region = config.bucketRegion().filter(s -> !s.isBlank()).orElse(null);
+    var bucket = config.bucket().filter(s -> !s.isBlank()).orElse(null);
+    var region = config.bucketRegion().filter(s -> !s.isBlank()).orElse(null);
     if (bucket == null || region == null) {
       LOG.error(
           "Billing S3 export is enabled but bucket/region are not fully configured (bucket={},"
               + " region={}); handler NOT installed. Billing events continue to the console only.",
-          config.bucket().orElse("<unset>"),
-          config.bucketRegion().orElse("<unset>"));
+          bucket,
+          region);
       return;
     }
 
     try {
-      S3BatchUploader uploader = S3BatchUploader.create(region, bucket, config.endpointOverride());
-      BillingS3LogHandler newHandler = new BillingS3LogHandler(config, uploader, meterRegistry);
+      var uploader = S3BatchUploader.create(region, bucket, config.endpointOverride());
+      this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
+      Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
 
-      Logger logger = Logger.getLogger(BILLING_LOGGER_NAME);
-      logger.addHandler(newHandler);
-
-      this.handler = newHandler;
-      this.billingLogger = logger;
       LOG.info(
           "Installed billing S3 export handler on '{}' → bucket '{}' (region '{}', endpointOverride={})",
           BILLING_LOGGER_NAME,
           bucket,
           region,
-          config.endpointOverride().orElse("<none>"));
+          config.endpointOverride().orElse(null));
     } catch (Exception e) {
       LOG.error(
           "Failed to install billing S3 export handler; billing events continue to the console only",
@@ -84,15 +78,12 @@ public class BillingS3HandlerInstaller {
   }
 
   void onStop(@Observes ShutdownEvent event) {
-    BillingS3LogHandler current = this.handler;
-    if (current == null) {
+    if (this.handler == null){
       return;
     }
-    if (billingLogger != null) {
-      billingLogger.removeHandler(current);
-    }
+    Logger.getLogger(BILLING_LOGGER_NAME).removeHandler(this.handler);
     try {
-      current.close(); // drains remaining batches
+      this.handler.close();
     } catch (Exception e) {
       LOG.warn("Error during billing S3 export handler shutdown", e);
     }
