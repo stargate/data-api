@@ -2,12 +2,10 @@ package io.stargate.sgv2.jsonapi.service.provider;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.BackPressureStrategy;
-import io.smallrye.mutiny.subscription.Cancellable;
-import io.smallrye.mutiny.subscription.MultiEmitter;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -17,9 +15,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import org.slf4j.Logger;
@@ -31,23 +31,22 @@ import org.slf4j.LoggerFactory;
  * BillingS3HandlerInstaller} when {@link BillingS3ExportConfig#enabled()} is {@code true}; the
  * existing console handler stays attached as a backstop (dual-write).
  *
- * <p><b>Off the request path.</b> {@link #publish(LogRecord)} only hands the line to an internal
- * pipeline — it never blocks and never throws. The pipeline holds a bounded in-memory backlog
- * ({@link BillingS3ExportConfig#queueCapacity()}) so transient bursts are absorbed and drained as
- * S3 catches up; only when that backlog is full is a line dropped and counted (never silent). The
- * pipeline batches lines and seals a batch on {@link BillingS3ExportConfig#maxEvents()} / {@link
- * BillingS3ExportConfig#maxBytes()} / {@link BillingS3ExportConfig#maxAge()}, then PUTs it with
- * bounded retry/backoff, up to {@link BillingS3ExportConfig#uploadConcurrency()} uploads in flight.
+ * <p><b>Off the request path.</b> {@link #publish(LogRecord)} only offers the line to a bounded
+ * in-memory queue — it never blocks and never throws. When the queue holds a full batch ({@link
+ * BillingS3ExportConfig#maxEvents()} lines) a flush is dispatched to a worker-pool thread: it
+ * drains up to that many lines and PUTs them as one object. Up to {@link
+ * BillingS3ExportConfig#uploadConcurrency()} flushes run at once — a non-blocking in-flight counter
+ * is the gate, and the S3 PUT is async so worker threads are not held during upload. When the queue
+ * is full, further lines are dropped and counted (never silent).
  *
- * <p><b>Verbatim bodies.</b> Each log line is kept byte-for-byte as one NDJSON row — only {@code
- * timestamp} is parsed out (for the key's date path); there is no re-serialization. Each sealed
- * batch is one object at {@code <prefix>/<yyyy>/<MM>/<dd>/<HH>/<mm>/<uuid>.jsonl}; the key is built
- * once and reused across retries so a retried PUT overwrites rather than duplicates (downstream
- * also dedups on each event id).
+ * <p><b>Verbatim bodies.</b> Each log line is kept byte-for-byte as one NDJSON row; only the
+ * batch's first line is parsed (for the key's date path). Each flushed batch is one object at
+ * {@code <prefix>/<yyyy>/<MM>/<dd>/<HH>/<mm>/<uuid>.jsonl}; the key is built once and reused across
+ * the uploader's retries so a retried PUT overwrites rather than duplicates.
  *
- * <p>{@link #close()} drains in-flight batches (bounded) and closes the uploader. The handler is
- * intentionally <b>not</b> a CDI bean — the installer wires this instance to the {@code
- * billing.events} category explicitly.
+ * <p>{@link #close()} drains whatever remains (including a final under-batch tail), waits for
+ * in-flight flushes to settle, then closes the uploader. The handler is intentionally <b>not</b> a
+ * CDI bean — the installer wires this instance to the {@code billing.events} category explicitly.
  */
 public final class BillingS3LogHandler extends Handler {
 
@@ -59,7 +58,7 @@ public final class BillingS3LogHandler extends Handler {
   // UTC, minute-resolution date path for the object key
   private static final DateTimeFormatter KEY_TIME_FORMAT =
       DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm").withZone(ZoneOffset.UTC);
-  // How long {@link #close()} waits for in-flight batches to drain before cancelling.
+  // How long {@link #close()} waits for the remaining lines and in-flight flushes to drain.
   private static final long SHUTDOWN_DRAIN_TIMEOUT_MILLIS = 15_000L;
 
   // ---- Collaborators ----
@@ -67,31 +66,17 @@ public final class BillingS3LogHandler extends Handler {
   private final BillingMetrics metrics;
 
   // ---- Tuning (resolved from BillingS3ExportConfig) ----
-  private final int maxEvents;
-  private final long maxBytes;
-  private final long maxAgeNanos;
-  private final long queueCapacity;
-  private final int uploadConcurrency;
+  private final int batchSize; // flush trigger + max lines per object (config.maxEvents)
+  private final int uploadConcurrency; // max flushes (S3 PUTs) in flight at once
 
-  // ---- Reactive pipeline ----
-  private volatile MultiEmitter<? super String> emitter;
-  private final Cancellable pipeline;
-  private final CountDownLatch terminated = new CountDownLatch(1);
-
-  // ---- Mutable in-flight state ----
-  /**
-   * Events accepted by {@link #publish} but not yet delivered or failed — the in-memory backlog
-   * depth and the bounded-buffer gate. {@code publish} CAS-checks it against {@link
-   * #queueCapacity}; {@link BillingMetrics} exposes it as the {@code billing.s3.queue.depth} gauge.
-   */
-  private final AtomicLong backlogEvents = new AtomicLong(0);
+  // ---- Queue + concurrency gate ----
+  private final BlockingQueue<String> queue;
 
   /**
-   * Current open (unsealed) batch — accumulation state carried across calls. No lock needed: the
-   * upstream {@code SerializedMultiEmitter} serializes onItem, so {@link #accumulate} and {@link
-   * #flushOpenBatch} never run concurrently.
+   * Flushes (S3 PUTs) currently in flight — the non-blocking concurrency gate, capped at {@link
+   * #uploadConcurrency}. A slot is held from {@link #drain} through the PUT's completion.
    */
-  private Batch openBatch;
+  private final AtomicInteger inFlight = new AtomicInteger(0);
 
   /** Config-driven constructor used by the installer. */
   public BillingS3LogHandler(
@@ -106,7 +91,12 @@ public final class BillingS3LogHandler extends Handler {
         config.uploadConcurrency());
   }
 
-  /** Explicit-threshold constructor; convenient for unit tests. */
+  /**
+   * Explicit-threshold constructor; convenient for unit tests. {@code maxBytes} and {@code maxAge}
+   * are accepted for config compatibility but not yet wired (object byte-cap and time-based flush
+   * are a follow-up); flushing is currently count-based on {@code maxEvents}.
+   */
+  @VisibleForTesting
   BillingS3LogHandler(
       AsyncBatchUploader uploader,
       MeterRegistry meterRegistry,
@@ -116,48 +106,10 @@ public final class BillingS3LogHandler extends Handler {
       int queueCapacity,
       int uploadConcurrency) {
     this.uploader = uploader;
-    this.maxEvents = maxEvents;
-    this.maxBytes = maxBytes;
-    this.maxAgeNanos = maxAge.toNanos();
-    this.queueCapacity = queueCapacity;
+    this.batchSize = maxEvents;
     this.uploadConcurrency = uploadConcurrency;
-    this.metrics = new BillingMetrics(meterRegistry, backlogEvents, this.queueCapacity);
-
-    // Build + subscribe the export pipeline; runs for the life of the handler.
-    this.pipeline =
-        Multi.createFrom()
-            // Source: publish() (from any thread) emits raw JSON lines here — Mutiny's
-            // SerializedMultiEmitter funnels the concurrent emits into one serial stream, so
-            // everything downstream runs single-threaded. BUFFER holds the backlog, bounded by the
-            // publish() capacity gate, so nothing is dropped at this stage.
-            .<String>emitter(em -> this.emitter = em, BackPressureStrategy.BUFFER)
-            .onItem()
-            // Pull the timestamp for the key's date path; keep the line byte-for-byte, never drop.
-            .transform(this::parse)
-            .onItem()
-            // Fold each line into the open batch, emitting 0–2 sealed batches (on
-            // maxEvents/maxBytes, or the prior batch on maxAge). Concatenate -> ordered,
-            // one-at-a-time
-            .transformToMultiAndConcatenate(this::accumulate)
-            .onCompletion()
-            // On shutdown (emitter completed), flush the final under-filled batch so nothing is
-            // stranded.
-            .switchTo(this::flushOpenBatch)
-            .onItem()
-            // PUT each sealed batch to S3 (the uploader applies bounded retry/backoff)…
-            .transformToUni(this::uploadBatch)
-            // …up to uploadConcurrency uploads in flight at once.
-            .merge(this.uploadConcurrency)
-            .onTermination()
-            // On any terminal (complete/fail/cancel), release the latch close() blocks on for
-            // graceful drain.
-            .invoke(() -> terminated.countDown())
-            // Subscribe -> activates the whole chain. Per-batch result is ignored; only a
-            // pipeline-fatal failure is logged (uploadBatch already recovers per-batch failures).
-            .subscribe()
-            .with(
-                ignored -> {},
-                failure -> LOG.error("Billing S3 export pipeline terminated", failure));
+    this.queue = new ArrayBlockingQueue<>(queueCapacity);
+    this.metrics = new BillingMetrics(meterRegistry, queue::size, queueCapacity);
   }
 
   // ============================================================
@@ -166,124 +118,111 @@ public final class BillingS3LogHandler extends Handler {
 
   @Override
   public void publish(LogRecord record) {
-    MultiEmitter<? super String> e = this.emitter;
     if (record == null) {
       return;
     }
     String line = record.getMessage();
-    if (e == null || line == null || line.isBlank()) {
+    if (line == null || line.isBlank()) {
       return;
     }
     metrics.recordOffered();
-    // Bounded backlog: accept while under capacity (absorbing bursts); once full, shed and count —
-    // never a silent drop. The CAS keeps the bound exact under concurrent publish().
-    long current;
-    do {
-      current = backlogEvents.get();
-      if (current >= queueCapacity) {
-        metrics.recordDropped();
-        return;
-      }
-    } while (!backlogEvents.compareAndSet(current, current + 1));
-    e.emit(line);
+    if (!queue.offer(line)) {
+      // Bounded queue full: shed and count — never block, never throw, never silent.
+      metrics.recordDropped();
+      return;
+    }
+    maybeFlush();
   }
 
   @Override
   public void flush() {
-    // No-op: the pipeline ships continuously; close() handles the final seal-everything on
-    // shutdown.
+    // No-op: flushes are size-triggered and continuous; close() seals whatever remains on shutdown.
   }
 
+  /**
+   * Shutdown drain: serially flushes the buffered backlog (incl. the sub-batch tail the size-gate
+   * skips), then waits for in-flight PUTs to finish before closing the client. No internal timeout
+   * — bounded by the platform's shutdown grace (SIGKILL).
+   */
   @Override
   public void close() {
-    MultiEmitter<? super String> e = this.emitter;
-    if (e != null) {
-      e.complete();
+    List<String> batch;
+    while (!(batch = drain()).isEmpty()) {
+      uploadBatch(batch).await().indefinitely();
     }
-    try {
-      if (!terminated.await(SHUTDOWN_DRAIN_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
-        LOG.warn(
-            "Billing S3 export did not drain within {} ms on shutdown; cancelling",
-            SHUTDOWN_DRAIN_TIMEOUT_MILLIS);
-      }
-    } catch (InterruptedException ex) {
-      Thread.currentThread().interrupt();
+    while (inFlight.get() > 0) {
+      LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
     }
-    if (pipeline != null) {
-      pipeline.cancel();
-    }
-    try {
-      uploader.close();
-    } catch (Exception ex) {
-      LOG.warn("Error closing billing S3 uploader", ex);
-    }
+    uploader.close();
   }
 
   // ============================================================
-  // Batching
+  // Flush pipeline
   // ============================================================
 
   /**
-   * Sequential fold of one parsed row into {@link #openBatch}, emitting 0–2 sealed {@link Batch}es
-   * (sealed on {@code maxEvents}/{@code maxBytes}, or the prior batch on {@code maxAge} at the next
-   * arrival).
+   * Dispatches one flush if the queue holds a full batch and a concurrency slot is free. Called
+   * after every {@link #publish} and again when a flush completes, so the pipeline self-clocks up
+   * to {@link #uploadConcurrency} concurrent uploads with no standing reader thread.
    */
-  private Multi<Batch> accumulate(Parsed parsed) {
-    List<Batch> sealed = new ArrayList<>(2);
-
-    // Seal the open batch first if it has aged out, so this line starts a fresh one.
-    if (openBatch != null && System.nanoTime() - openBatch.firstNanos >= maxAgeNanos) {
-      sealed.add(openBatch);
-      openBatch = null;
+  private void maybeFlush() {
+    if (queue.size() >= batchSize && tryFlush()) {
+      Uni.createFrom()
+          .item(this::drain)
+          .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+          .flatMap(this::uploadBatch)
+          .eventually(
+              () -> {
+                inFlight.getAndDecrement();
+                maybeFlush(); // a full batch may have accumulated while this one uploaded
+              })
+          .subscribe()
+          .with(ignored -> {}, failure -> LOG.error("Billing S3 export flush failed", failure));
     }
-    if (openBatch == null) {
-      openBatch = new Batch(parsed.timestamp());
-    }
-
-    openBatch.add(parsed.line());
-
-    // Seal once the batch is full by count or size.
-    if (openBatch.events >= maxEvents || openBatch.bytes >= maxBytes) {
-      sealed.add(openBatch);
-      openBatch = null;
-    }
-    return Multi.createFrom().iterable(sealed);
-  }
-
-  /** Emits the final open batch (if any) when the stream completes. */
-  private Multi<Batch> flushOpenBatch() {
-    Batch remaining = openBatch;
-    openBatch = null;
-    return remaining == null ? Multi.createFrom().empty() : Multi.createFrom().item(remaining);
   }
 
   /**
-   * Ships one sealed batch: the uploader PUTs it, applying its own bounded retry/backoff. Never
-   * propagates failure — a giving-up batch is counted and recovered to a no-op so the pipeline
-   * stays alive.
+   * Non-blocking CAS gate: claims an in-flight slot iff fewer than {@link #uploadConcurrency} are
+   * held.
    */
-  private Uni<Void> uploadBatch(Batch batch) {
-    String key = objectKey(batch.firstTimestamp, UUID.randomUUID());
-    byte[] body = batch.body();
+  private boolean tryFlush() {
+    int prev = inFlight.getAndUpdate(n -> n < uploadConcurrency ? n + 1 : n);
+    return prev < uploadConcurrency;
+  }
 
+  /**
+   * Removes up to {@link #batchSize} lines from the queue (may come back empty if another flush
+   * raced ahead and took them first).
+   */
+  private List<String> drain() {
+    List<String> batch = new ArrayList<>(batchSize);
+    queue.drainTo(batch, batchSize);
+    return batch;
+  }
+
+  /**
+   * Ships one drained batch: the uploader PUTs it as a single NDJSON object, applying its own
+   * bounded retry/backoff. Never propagates failure — a giving-up batch is counted and recovered to
+   * a no-op so the flush loop stays alive.
+   */
+  private Uni<Void> uploadBatch(List<String> batch) {
+    if (batch.isEmpty()) {
+      return Uni.createFrom().voidItem();
+    }
+    int events = batch.size();
+    String key = objectKey(firstTimestamp(batch), UUID.randomUUID());
+    byte[] body = toNdjson(batch);
     return uploader
         .upload(key, body)
         .onItem()
-        .invoke(
-            () -> {
-              metrics.recordBatchDelivered(batch.events);
-              backlogEvents.addAndGet(-batch.events);
-            })
+        .invoke(() -> metrics.recordBatchDelivered(events))
         .onFailure()
         .invoke(
-            t ->
-                LOG.error(
-                    "Failed to upload billing S3 batch '{}' ({} events)", key, batch.events, t))
+            t -> LOG.error("Failed to upload billing S3 batch '{}' ({} events)", key, events, t))
         .onFailure()
         .recoverWithItem(
             () -> {
-              metrics.recordBatchFailed(batch.events);
-              backlogEvents.addAndGet(-batch.events);
+              metrics.recordBatchFailed(events);
               return null;
             });
   }
@@ -293,52 +232,36 @@ public final class BillingS3LogHandler extends Handler {
     return PATH_PREFIX + "/" + KEY_TIME_FORMAT.format(timestamp) + "/" + id + ".jsonl";
   }
 
-  /** Parses the {@code timestamp} for the key's date path; keeps the verbatim line. */
-  private Parsed parse(String line) {
+  /** NDJSON body: each line verbatim, newline-terminated. */
+  private static byte[] toNdjson(List<String> batch) {
+    StringBuilder sb = new StringBuilder();
+    for (String line : batch) {
+      sb.append(line).append('\n');
+    }
+    return sb.toString().getBytes(StandardCharsets.UTF_8);
+  }
+
+  /**
+   * Timestamp for the object key's date path — parsed from the batch's first line's {@code
+   * timestamp}, falling back to wall clock (and counting the parse failure) when it is
+   * absent/unparseable.
+   */
+  private Instant firstTimestamp(List<String> batch) {
     try {
-      JsonNode node = MAPPER.readTree(line);
+      JsonNode node = MAPPER.readTree(batch.get(0));
       JsonNode tsNode = node.get("timestamp");
       if (tsNode != null && tsNode.isTextual()) {
-        return new Parsed(line, Instant.parse(tsNode.asText()));
+        return Instant.parse(tsNode.asText());
       }
     } catch (Exception e) {
       // fall through to the wall-clock fallback below
     }
     metrics.recordParseFailure();
-    return new Parsed(line, Instant.now());
-  }
-
-  private record Parsed(String line, Instant timestamp) {}
-
-  /** A growing set of verbatim NDJSON rows. */
-  private static final class Batch {
-    private final Instant firstTimestamp;
-    private final long firstNanos = System.nanoTime();
-    private final List<String> lines = new ArrayList<>();
-    private int events = 0;
-    private long bytes = 0;
-
-    Batch(Instant firstTimestamp) {
-      this.firstTimestamp = firstTimestamp;
-    }
-
-    void add(String line) {
-      lines.add(line);
-      events++;
-      bytes += line.getBytes(StandardCharsets.UTF_8).length + 1L; // +1 for the newline
-    }
-
-    byte[] body() {
-      StringBuilder sb = new StringBuilder((int) Math.min(Integer.MAX_VALUE, bytes + events));
-      for (String line : lines) {
-        sb.append(line).append('\n');
-      }
-      return sb.toString().getBytes(StandardCharsets.UTF_8);
-    }
+    return Instant.now();
   }
 
   /**
-   * Uploads one sealed batch to S3 with its own bounded retry/backoff, failing only once retries
+   * Uploads one drained batch to S3 with its own bounded retry/backoff, failing only once retries
    * are exhausted (see implementation {@link S3BatchUploader}).
    */
   @FunctionalInterface
