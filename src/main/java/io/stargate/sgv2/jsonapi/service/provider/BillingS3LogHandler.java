@@ -19,6 +19,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -58,8 +59,6 @@ public final class BillingS3LogHandler extends Handler {
   // UTC, minute-resolution date path for the object key
   private static final DateTimeFormatter KEY_TIME_FORMAT =
       DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm").withZone(ZoneOffset.UTC);
-  // How long {@link #close()} waits for the remaining lines and in-flight flushes to drain.
-  private static final long SHUTDOWN_DRAIN_TIMEOUT_MILLIS = 15_000L;
 
   // ---- Collaborators ----
   private final AsyncBatchUploader uploader;
@@ -67,10 +66,17 @@ public final class BillingS3LogHandler extends Handler {
 
   // ---- Tuning (resolved from BillingS3ExportConfig) ----
   private final int batchSize; // flush trigger + max lines per object (config.maxEvents)
+  private final long maxBytes; // max NDJSON body bytes per object (config.maxBytes)
   private final int uploadConcurrency; // max flushes (S3 PUTs) in flight at once
 
-  // ---- Queue + concurrency gate ----
+  // ---- Queue + byte/concurrency gates ----
   private final BlockingQueue<String> queue;
+
+  /**
+   * Running total of NDJSON body bytes buffered in {@link #queue} (each line's length plus its
+   * newline) — drives the byte-based flush trigger.
+   */
+  private final AtomicLong queuedBytes = new AtomicLong(0);
 
   /**
    * Flushes (S3 PUTs) currently in flight — the non-blocking concurrency gate, capped at {@link
@@ -92,9 +98,10 @@ public final class BillingS3LogHandler extends Handler {
   }
 
   /**
-   * Explicit-threshold constructor; convenient for unit tests. {@code maxBytes} and {@code maxAge}
-   * are accepted for config compatibility but not yet wired (object byte-cap and time-based flush
-   * are a follow-up); flushing is currently count-based on {@code maxEvents}.
+   * Explicit-threshold constructor; convenient for unit tests. {@code maxAge} is accepted for
+   * config compatibility but not yet wired (time-based flush is a follow-up); a batch is sealed on
+   * whichever of {@code maxEvents} (line count) or {@code maxBytes} (NDJSON body size) it hits
+   * first.
    */
   @VisibleForTesting
   BillingS3LogHandler(
@@ -107,6 +114,7 @@ public final class BillingS3LogHandler extends Handler {
       int uploadConcurrency) {
     this.uploader = uploader;
     this.batchSize = maxEvents;
+    this.maxBytes = maxBytes;
     this.uploadConcurrency = uploadConcurrency;
     this.queue = new ArrayBlockingQueue<>(queueCapacity);
     this.metrics = new BillingMetrics(meterRegistry, queue::size, queueCapacity);
@@ -131,6 +139,7 @@ public final class BillingS3LogHandler extends Handler {
       metrics.recordDropped();
       return;
     }
+    queuedBytes.addAndGet(lineBytes(line));
     maybeFlush();
   }
 
@@ -161,12 +170,13 @@ public final class BillingS3LogHandler extends Handler {
   // ============================================================
 
   /**
-   * Dispatches one flush if the queue holds a full batch and a concurrency slot is free. Called
-   * after every {@link #publish} and again when a flush completes, so the pipeline self-clocks up
-   * to {@link #uploadConcurrency} concurrent uploads with no standing reader thread.
+   * Dispatches one flush if a full object's worth is buffered ({@link #shouldFlush}) and a
+   * concurrency slot is free. Called after every {@link #publish} and again when a flush completes,
+   * so the pipeline self-clocks up to {@link #uploadConcurrency} concurrent uploads with no
+   * standing reader thread.
    */
   private void maybeFlush() {
-    if (queue.size() >= batchSize && tryFlush()) {
+    if (shouldFlush() && tryFlush()) {
       Uni.createFrom()
           .item(this::drain)
           .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
@@ -181,6 +191,11 @@ public final class BillingS3LogHandler extends Handler {
     }
   }
 
+  /** True when the queue holds a full object's worth — by line count or by buffered bytes. */
+  private boolean shouldFlush() {
+    return queue.size() >= batchSize || queuedBytes.get() >= maxBytes;
+  }
+
   /**
    * Non-blocking CAS gate: claims an in-flight slot iff fewer than {@link #uploadConcurrency} are
    * held.
@@ -191,13 +206,27 @@ public final class BillingS3LogHandler extends Handler {
   }
 
   /**
-   * Removes up to {@link #batchSize} lines from the queue (may come back empty if another flush
-   * raced ahead and took them first).
+   * Removes lines from the queue for one object — up to {@link #batchSize} lines or {@link
+   * #maxBytes} of NDJSON body, whichever comes first (a single over-cap line still goes out alone).
+   * May come back empty if another flush raced ahead and took them first.
    */
   private List<String> drain() {
     List<String> batch = new ArrayList<>(batchSize);
-    queue.drainTo(batch, batchSize);
+    long bytes = 0;
+    String line;
+    while (batch.size() < batchSize && bytes < maxBytes && (line = queue.poll()) != null) {
+      batch.add(line);
+      bytes += lineBytes(line);
+    }
+    queuedBytes.addAndGet(-bytes);
     return batch;
+  }
+
+  /**
+   * NDJSON body bytes one line contributes: its length (== UTF-8 bytes for ASCII) plus a newline.
+   */
+  private static int lineBytes(String line) {
+    return line.length() + 1;
   }
 
   /**
