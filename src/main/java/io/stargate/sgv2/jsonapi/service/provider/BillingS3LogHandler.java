@@ -22,9 +22,8 @@ import org.slf4j.LoggerFactory;
  * decides what an S3 object looks like, and this class decides when uploads run — the flush
  * triggers (seal on publish, age tick, drain on close), the upload-concurrency gate, and metrics.
  *
- * <p>Delivery is at-most-once by design: publish never blocks and never throws — when the buffer is
- * full, lines are dropped and counted — and close() gives up loudly once {@code shutdownTimeout} is
- * exhausted.
+ * <p>Delivery is at-most-once by design: publish never waits for queue capacity, full buffers drop
+ * new lines, and close drains best-effort within {@code shutdownTimeout}.
  */
 public final class BillingS3LogHandler extends Handler {
 
@@ -179,7 +178,7 @@ public final class BillingS3LogHandler extends Handler {
    * <p>Catches everything: an escaped throwable would silently cancel all future runs of a
    * fixed-rate task.
    */
-  private void onAgeTick() {
+  void onAgeTick() {
     try {
       if (!buffer.isEmpty()) {
         tryFlush();
@@ -218,12 +217,14 @@ public final class BillingS3LogHandler extends Handler {
       return Uni.createFrom().voidItem();
     }
     int size = batch.size();
-    return uploader
-        .upload(batch)
+    // Runs immediately on subscription; deferred only turns a throw before upload() returns a Uni
+    // into a Uni failure handled below.
+    return Uni.createFrom()
+        .deferred(() -> uploader.upload(batch))
         .onItem()
         .invoke(() -> metrics.recordBatchDelivered(size))
         .onFailure()
-        .invoke(t -> LOG.error("Failed to upload billing S3 batch ({} size)", size, t))
+        .invoke(t -> LOG.error("Failed to upload billing S3 batch ({} events)", size, t))
         .onFailure()
         .recoverWithItem(
             () -> {
