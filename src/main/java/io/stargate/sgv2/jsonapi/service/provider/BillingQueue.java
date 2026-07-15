@@ -9,8 +9,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Bounded in-memory buffer that owns the batching policy of the billing S3 export: it decides when
- * a batch is sealed ({@code maxEvents} line-count seal, {@code maxBytes} body-size seal) and hands
- * out drained {@link Batch}es.
+ * a batch is sealed ({@code maxEvents} lines or {@code maxBytes} UTF-8 NDJSON bytes) and hands out
+ * drained {@link Batch}es. A batch may exceed {@code maxBytes} by one whole line; lines are never
+ * split.
  */
 public final class BillingQueue {
 
