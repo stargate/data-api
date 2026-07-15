@@ -11,10 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Meters for the billing S3 export. Every offered event ends in exactly one terminal counter —
- * {@code flushed}, {@code failed}, or {@code dropped(reason=capacity|shutdown)} — or is still
- * visible in {@code queue.depth} / an in-flight batch, so loss is always accounted for. {@code
- * last_delivery.epoch_seconds} is the freshness heartbeat to alert on.
+ * During normal operation, {@code offered = flushed + failed + dropped(capacity) + queue.depth +
+ * events in in-flight batches}.
+ *
+ * <p>At shutdown, buffered events left after the drain budget are added to {@code
+ * dropped(shutdown)}. Final counters can be lower than {@code offered} if a concurrent publish
+ * misses the final queue snapshot or an in-flight upload does not settle before process exit.
+ *
+ * <p>{@code last_delivery.epoch_seconds} is the delivery heartbeat.
  */
 public final class BillingMetrics {
 
@@ -85,14 +89,14 @@ public final class BillingMetrics {
     droppedShutdown.increment(size);
   }
 
-  /** A batch of events lines landed in S3; bumps the delivery heartbeat. */
+  /** A batch of event lines landed in S3; bumps the delivery heartbeat. */
   public void recordBatchDelivered(int size) {
     flushed.increment(size);
     batchesUploaded.increment();
     lastDeliveryEpochSeconds.set(Instant.now().getEpochSecond());
   }
 
-  /** A batch of events lines was given up after the uploader exhausted its retries. */
+  /** A batch of event lines was given up after the uploader exhausted its retries. */
   public void recordBatchFailed(int size) {
     failed.increment(size);
     batchesFailed.increment();
