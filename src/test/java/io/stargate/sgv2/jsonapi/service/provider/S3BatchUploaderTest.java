@@ -112,7 +112,8 @@ class S3BatchUploaderTest {
     assertThatThrownBy(() -> uploader.upload(BATCH).await().atMost(AWAIT))
         .hasMessageContaining("simulated S3 failure");
 
-    // retries and per-call timeouts live in the client configuration, so exactly one putObject per upload is expected here
+    // retries and per-call timeouts live in the client configuration, so exactly one putObject per
+    // upload is expected here
     verify(client, times(1)).putObject(any(PutObjectRequest.class), any(AsyncRequestBody.class));
   }
 
