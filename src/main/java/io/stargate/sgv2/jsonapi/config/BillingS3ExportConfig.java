@@ -26,7 +26,7 @@ public interface BillingS3ExportConfig {
   @WithDefault("50")
   int maxEvents();
 
-  /** Byte-size seal on the buffered NDJSON body. */
+  /** UTF-8 NDJSON byte seal; a batch may exceed it by one whole event. */
   @WithDefault("2097152")
   long maxBytes();
 
