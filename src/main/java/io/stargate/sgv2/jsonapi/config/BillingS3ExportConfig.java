@@ -5,86 +5,44 @@ import io.smallrye.config.WithDefault;
 import java.time.Duration;
 import java.util.Optional;
 
-/**
- * Configuration for exporting {@code billing.events} log lines to S3 as NDJSON {@code .jsonl}
- * objects. Consumed by {@link io.stargate.sgv2.jsonapi.service.provider.BillingS3HandlerInstaller}
- * which, when {@link #enabled()} is {@code true}, attaches a {@link
- * io.stargate.sgv2.jsonapi.service.provider.BillingS3LogHandler} to the {@code billing.events}
- * logger.
- *
- * <p>This is a startup-time switch, <b>not</b> a per-request feature flag — it is independent of
- * {@link io.stargate.sgv2.jsonapi.config.feature.ApiFeature#BILLING_EVENTS_LOGGING}. Events only
- * reach the handler when the {@code billing.events} logger is also emitting (i.e. the billing
- * feature is on); this flag then decides whether those lines are additionally shipped to S3. The
- * existing console handler stays attached as a backstop regardless.
- *
- * <p><b>Off by default.</b> When enabled, {@link #bucket()} and {@link #bucketRegion()} are
- * required; if either is missing the handler is not installed (logged as an error) and billing
- * events continue to flow to the console only.
- */
+/** Configuration for the billing S3 export (see BillingS3HandlerInstaller). */
 @ConfigMapping(prefix = "stargate.jsonapi.billing.s3")
 public interface BillingS3ExportConfig {
 
-  /**
-   * Master switch; when {@code false} (default) no handler is installed and no S3 client is built.
-   */
+  /** Master switch: when false the export handler is never installed. */
   @WithDefault("false")
   boolean enabled();
 
-  /** Target bucket, e.g. {@code serverless-usage-dev}. Required when {@link #enabled()}. */
+  /** S3 bucket name */
   Optional<String> bucket();
 
-  /** AWS region of the bucket, e.g. {@code us-east-1}. Required when {@link #enabled()}. */
+  /** S3 bucket region */
   Optional<String> bucketRegion();
 
-  /**
-   * Endpoint override for the S3 client. Set this to point at a non-AWS S3 (e.g. S3Mock in tests);
-   * SDK resolves the regional AWS endpoint when left empty.
-   */
+  /** Only for non-AWS S3 endpoints (e.g. S3Mock in tests). */
   Optional<String> endpointOverride();
 
-  /** Seal a batch once it holds this many events. */
+  /** Line-count seal: a buffered batch is shipped once it holds this many events. */
   @WithDefault("50")
   int maxEvents();
 
-  /** Seal a batch once its NDJSON body reaches this many bytes (~2 MiB default). */
+  /** Byte-size seal on the buffered NDJSON body. */
   @WithDefault("2097152")
   long maxBytes();
 
-  /** Seal an open (under-filled) batch once its oldest event is this old (flush interval). */
+  /** Age flush period: buffered events are shipped at least this often, sealed or not. */
   @WithDefault("PT30S")
   Duration maxAge();
 
-  /**
-   * Capacity of the handler's in-memory hand-off queue. {@link BillingS3LogHandler#publish()}
-   * offers lines non-blocking; once the queue is full, further lines are dropped and counted.
-   */
+  /** Bound on buffered events; beyond it new lines are dropped. */
   @WithDefault("10000")
   int queueCapacity();
 
-  /**
-   * Maximum number of retries after a failed PUT, per sealed batch, before the batch is counted as
-   * failed. Default is 2 retries (up to 3 attempts including the initial PUT).
-   */
-  @WithDefault("2")
-  int atMostRetries();
-
-  /**
-   * The initial delay between retries in milliseconds. The first retry occurs after the specified
-   * delay (default 100 ms), doubling each time until reaching maxBackOffMillis.
-   */
-  @WithDefault("100")
-  int initialBackOffMillis();
-
-  /** The maximum delay between retries in milliseconds. */
-  @WithDefault("500")
-  int maxBackOffMillis();
-
-  /** A random variation added to the delay between retries in an exponential backoff strategy. */
-  @WithDefault("0.5")
-  double retryJitter();
-
-  /** Number of batch uploads (S3 PUTs) allowed in flight concurrently. */
+  /** Max concurrent S3 PUTs. */
   @WithDefault("4")
   int uploadConcurrency();
+
+  /** Budget for draining the buffer at shutdown; keep below the pod termination grace period. */
+  @WithDefault("PT20S")
+  Duration shutdownTimeout();
 }
