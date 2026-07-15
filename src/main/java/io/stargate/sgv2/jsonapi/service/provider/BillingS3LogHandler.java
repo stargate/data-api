@@ -16,12 +16,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Buffers {@code billing.events} log lines and ships them to S3 in sealed batches.
+ * JUL handler that turns {@code billing.events} log lines into batched S3 objects.
  *
- * <p>Pure orchestration: {@link BillingQueue} owns the batching policy (when a batch seals), the
- * {@link AsyncBatchUploader} owns what lands in the bucket (key layout, body encoding), and this
- * handler wires them together — a non-blocking publish path, seal- and age-triggered flushes under
- * bounded upload concurrency, metrics, and a deadline-bounded drain on close.
+ * <p>Division of labor: {@link BillingQueue} decides when a batch seals, {@link AsyncBatchUploader}
+ * decides what an S3 object looks like, and this class decides when uploads run — the flush
+ * triggers (seal on publish, age tick, drain on close), the upload-concurrency gate, and metrics.
+ *
+ * <p>Delivery is at-most-once by design: publish never blocks and never throws — when the buffer is
+ * full, lines are dropped and counted — and close() gives up loudly once {@code shutdownTimeout} is
+ * exhausted.
  */
 public final class BillingS3LogHandler extends Handler {
 
@@ -64,7 +67,9 @@ public final class BillingS3LogHandler extends Handler {
       Duration shutdownTimeout) {
     if (uploadConcurrency < 1) {
       throw new IllegalArgumentException(
-          "s3.upload-concurrency must be >= 1 (was " + uploadConcurrency + ")");
+          "stargate.jsonapi.billing.s3.upload-concurrency must be >= 1 (was "
+              + uploadConcurrency
+              + ")");
     }
     requirePositive(maxAge, "max-age");
     requirePositive(shutdownTimeout, "shutdown-timeout");
@@ -142,6 +147,8 @@ public final class BillingS3LogHandler extends Handler {
     int queuedAbandoned = buffer.size();
     int inFlightAbandoned = inFlight.get();
     if (queuedAbandoned > 0 || inFlightAbandoned > 0) {
+      // Only queued events are counted: in-flight ones settle as failed when the abort lands.
+      metrics.recordAbandonedAtShutdown(queuedAbandoned);
       LOG.warn(
           "Billing S3 export shutdown budget ({}) exhausted: dropping {} buffered events,"
               + " abandoning {} in-flight uploads",
@@ -164,8 +171,13 @@ public final class BillingS3LogHandler extends Handler {
   }
 
   /**
-   * Age-triggered flush: every {@code maxAge} tick ships whatever is buffered, sealed or not, so no
-   * event waits longer than ~{@code maxAge} even under trickle traffic.
+   * Age trigger: every {@code maxAge} tick ships whatever is buffered, sealed or not. Deliberately
+   * no head-age check: flushing only entries older than {@code maxAge} would let an event that just
+   * missed a tick wait ~2x{@code maxAge}, while shipping unconditionally bounds every wait by one
+   * period — at the cost of an occasional small object when a tick lands just after a seal flush.
+   *
+   * <p>Catches everything: an escaped throwable would silently cancel all future runs of a
+   * fixed-rate task.
    */
   private void onAgeTick() {
     try {
