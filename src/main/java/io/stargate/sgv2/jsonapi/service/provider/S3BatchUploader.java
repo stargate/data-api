@@ -74,7 +74,7 @@ public class S3BatchUploader implements BillingS3LogHandler.AsyncBatchUploader {
 
   @Override
   public Uni<Void> upload(BillingQueue.Batch batch) {
-    String key = objectKey(batch.firstEventAt(), UUID.randomUUID());
+    String key = objectKey(batch.oldestEventAt(), UUID.randomUUID());
     byte[] body = toNdjson(batch.lines());
     return Uni.createFrom()
         .completionStage(
