@@ -36,7 +36,8 @@ public final class BillingMetrics {
    * @param depthSource live queue depth, exposed read-only as {@code billing.s3.queue.depth}
    * @param queueCapacity quoted in the buffer-full warning
    */
-  public BillingMetrics(MeterRegistry meterRegistry, Supplier<Number> depthSource, long queueCapacity) {
+  public BillingMetrics(
+      MeterRegistry meterRegistry, Supplier<Number> depthSource, long queueCapacity) {
     this.queueCapacity = queueCapacity;
     this.lastDropWarnNanos = new AtomicLong(System.nanoTime() - DROP_WARN_INTERVAL_NANOS);
     this.offered = meterRegistry.counter("billing.s3.events.offered");
@@ -46,7 +47,8 @@ public final class BillingMetrics {
     this.failed = meterRegistry.counter("billing.s3.events.failed");
     this.batchesUploaded = meterRegistry.counter("billing.s3.batches.uploaded");
     this.batchesFailed = meterRegistry.counter("billing.s3.batches.failed");
-    // Backs the {@code last_delivery} gauge; alert on staleness — a dead export and no traffic look identical in counter rates.
+    // Catches stalls with no failures to count (e.g. the flush trigger died): alert on staleness
+    // gated by offered/depth, so idle time isn't mistaken for a dead export.
     Gauge.builder(
             "billing.s3.last_delivery.epoch_seconds",
             lastDeliveryEpochSeconds,
