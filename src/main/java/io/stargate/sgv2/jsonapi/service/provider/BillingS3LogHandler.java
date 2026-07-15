@@ -1,25 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -27,64 +16,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link Handler} that ships {@code billing.events} JSON log lines to S3 as NDJSON ({@code
- * .jsonl}) objects. Installed on the {@code billing.events} logger by {@link
- * BillingS3HandlerInstaller} when {@link BillingS3ExportConfig#enabled()} is {@code true}; the
- * existing console handler stays attached as a backstop (dual-write).
+ * Buffers {@code billing.events} log lines and ships them to S3 in sealed batches.
  *
- * <p><b>Off the request path.</b> {@link #publish(LogRecord)} only offers the line to a bounded
- * in-memory queue — it never blocks and never throws. When the queue holds a full batch ({@link
- * BillingS3ExportConfig#maxEvents()} lines) a flush is dispatched to a worker-pool thread: it
- * drains up to that many lines and PUTs them as one object. Up to {@link
- * BillingS3ExportConfig#uploadConcurrency()} flushes run at once — a non-blocking in-flight counter
- * is the gate, and the S3 PUT is async so worker threads are not held during upload. When the queue
- * is full, further lines are dropped and counted (never silent).
- *
- * <p><b>Verbatim bodies.</b> Each log line is kept byte-for-byte as one NDJSON row; only the
- * batch's first line is parsed (for the key's date path). Each flushed batch is one object at
- * {@code <prefix>/<yyyy>/<MM>/<dd>/<HH>/<mm>/<uuid>.jsonl}; the key is built once and reused across
- * the uploader's retries so a retried PUT overwrites rather than duplicates.
- *
- * <p>{@link #close()} drains whatever remains (including a final under-batch tail), waits for
- * in-flight flushes to settle, then closes the uploader. The handler is intentionally <b>not</b> a
- * CDI bean — the installer wires this instance to the {@code billing.events} category explicitly.
+ * <p>Pure orchestration: {@link BillingQueue} owns the batching policy (when a batch seals), the
+ * {@link AsyncBatchUploader} owns what lands in the bucket (key layout, body encoding), and this
+ * handler wires them together — a non-blocking publish path, seal- and age-triggered flushes under
+ * bounded upload concurrency, metrics, and a deadline-bounded drain on close.
  */
 public final class BillingS3LogHandler extends Handler {
 
-  // ---- Constants ----
-  // S3 object-key consistent identifier; TBD
-  static final String PATH_PREFIX = "billing-events";
   private static final Logger LOG = LoggerFactory.getLogger(BillingS3LogHandler.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-  // UTC, minute-resolution date path for the object key
-  private static final DateTimeFormatter KEY_TIME_FORMAT =
-      DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm").withZone(ZoneOffset.UTC);
 
   // ---- Collaborators ----
   private final AsyncBatchUploader uploader;
   private final BillingMetrics metrics;
+  private final BillingQueue buffer;
 
-  // ---- Tuning (resolved from BillingS3ExportConfig) ----
-  private final int batchSize; // flush trigger + max lines per object (config.maxEvents)
-  private final long maxBytes; // max NDJSON body bytes per object (config.maxBytes)
+  // ---- Flush pipeline ----
   private final int uploadConcurrency; // max flushes (S3 PUTs) in flight at once
-
-  // ---- Queue + byte/concurrency gates ----
-  private final BlockingQueue<String> queue;
-
-  /**
-   * Running total of NDJSON body bytes buffered in {@link #queue} (each line's length plus its
-   * newline) — drives the byte-based flush trigger.
-   */
-  private final AtomicLong queuedBytes = new AtomicLong(0);
-
-  /**
-   * Flushes (S3 PUTs) currently in flight — the non-blocking concurrency gate, capped at {@link
-   * #uploadConcurrency}. A slot is held from {@link #drain} through the PUT's completion.
-   */
   private final AtomicInteger inFlight = new AtomicInteger(0);
+  private final ScheduledFuture<?> ageFlushTask;
 
-  /** Config-driven constructor used by the installer. */
+  private final Duration shutdownTimeout;
+
   public BillingS3LogHandler(
       BillingS3ExportConfig config, AsyncBatchUploader uploader, MeterRegistry meterRegistry) {
     this(
@@ -94,15 +48,10 @@ public final class BillingS3LogHandler extends Handler {
         config.maxBytes(),
         config.maxAge(),
         config.queueCapacity(),
-        config.uploadConcurrency());
+        config.uploadConcurrency(),
+        config.shutdownTimeout());
   }
 
-  /**
-   * Explicit-threshold constructor; convenient for unit tests. {@code maxAge} is accepted for
-   * config compatibility but not yet wired (time-based flush is a follow-up); a batch is sealed on
-   * whichever of {@code maxEvents} (line count) or {@code maxBytes} (NDJSON body size) it hits
-   * first.
-   */
   @VisibleForTesting
   BillingS3LogHandler(
       AsyncBatchUploader uploader,
@@ -111,13 +60,30 @@ public final class BillingS3LogHandler extends Handler {
       long maxBytes,
       Duration maxAge,
       int queueCapacity,
-      int uploadConcurrency) {
+      int uploadConcurrency,
+      Duration shutdownTimeout) {
+    if (uploadConcurrency < 1) {
+      throw new IllegalArgumentException(
+          "s3.upload-concurrency must be >= 1 (was " + uploadConcurrency + ")");
+    }
+    requirePositive(maxAge, "max-age");
+    requirePositive(shutdownTimeout, "shutdown-timeout");
     this.uploader = uploader;
-    this.batchSize = maxEvents;
-    this.maxBytes = maxBytes;
     this.uploadConcurrency = uploadConcurrency;
-    this.queue = new ArrayBlockingQueue<>(queueCapacity);
-    this.metrics = new BillingMetrics(meterRegistry, queue::size, queueCapacity);
+    this.shutdownTimeout = shutdownTimeout;
+    this.buffer = new BillingQueue(maxEvents, maxBytes, queueCapacity);
+    this.metrics = new BillingMetrics(meterRegistry, buffer::size, queueCapacity);
+    this.ageFlushTask =
+        Infrastructure.getDefaultWorkerPool()
+            .scheduleAtFixedRate(
+                this::onAgeTick, maxAge.toMillis(), maxAge.toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private static void requirePositive(Duration value, String property) {
+    if (value == null || value.isNegative() || value.isZero()) {
+      throw new IllegalArgumentException(
+          "stargate.jsonapi.billing.s3." + property + " must be > 0 (was " + value + ")");
+    }
   }
 
   // ============================================================
@@ -129,173 +95,138 @@ public final class BillingS3LogHandler extends Handler {
     if (record == null) {
       return;
     }
+    // Producer contract (DefaultBilling):  the message is the final JSON line, logged without {}
+    // placeholders. This handler never runs a Formatter, so a parameterized call would ship its
+    // raw template. getInstant() is when the producer logged it — within microseconds of the
+    // "timestamp" it embedded in the JSON, and the object key only needs minute resolution.
     String line = record.getMessage();
     if (line == null || line.isBlank()) {
       return;
     }
     metrics.recordOffered();
-    if (!queue.offer(line)) {
-      // Bounded queue full: shed and count — never block, never throw, never silent.
+    if (!buffer.offer(record.getInstant(), line)) {
+      // Bounded buffer full: drop and count
       metrics.recordDropped();
       return;
     }
-    queuedBytes.addAndGet(lineBytes(line));
     maybeFlush();
   }
 
   @Override
   public void flush() {
-    // No-op: flushes are size-triggered and continuous; close() seals whatever remains on shutdown.
+    // No-op: shipping is seal-triggered (publish) and age-triggered (tick); close() drains.
   }
 
   /**
-   * Shutdown drain: serially flushes the buffered backlog (incl. the sub-batch tail the size-gate
-   * skips), then waits for in-flight PUTs to finish before closing the client. No internal timeout
-   * — bounded by the platform's shutdown grace (SIGKILL).
+   * Drains what remains through the normal flush pipeline, bounded by {@code shutdownTimeout}. The
+   * budget only bites when S3 is already failing: it converts a silent SIGKILL into a logged count
+   * of abandoned events and lets the rest of shutdown proceed.
    */
   @Override
   public void close() {
-    List<String> batch;
-    while (!(batch = drain()).isEmpty()) {
-      uploadBatch(batch).await().indefinitely();
+    // Don't interrupt a tick already running; the in-flight wait below covers it.
+    ageFlushTask.cancel(false);
+    long deadlineNanos = System.nanoTime() + shutdownTimeout.toNanos();
+
+    // Pump the pipeline until the buffer is drained: tryFlush() is a no-op while all slots are
+    // busy, and every settled upload frees a slot for the next batch.
+    while (!buffer.isEmpty() && System.nanoTime() < deadlineNanos) {
+      tryFlush();
+      LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
     }
-    while (inFlight.get() > 0) {
+    // Let in-flight uploads (ours and any started before close) settle within the budget.
+    while (inFlight.get() > 0 && System.nanoTime() < deadlineNanos) {
       LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
     }
-    uploader.close();
+
+    int queuedAbandoned = buffer.size();
+    int inFlightAbandoned = inFlight.get();
+    if (queuedAbandoned > 0 || inFlightAbandoned > 0) {
+      LOG.warn(
+          "Billing S3 export shutdown budget ({}) exhausted: dropping {} buffered events,"
+              + " abandoning {} in-flight uploads",
+          shutdownTimeout,
+          queuedAbandoned,
+          inFlightAbandoned);
+    }
+    uploader.close(); // aborts anything still in flight
   }
 
   // ============================================================
   // Flush pipeline
   // ============================================================
 
-  /**
-   * Dispatches one flush if a full object's worth is buffered ({@link #shouldFlush}) and a
-   * concurrency slot is free. Called after every {@link #publish} and again when a flush completes,
-   * so the pipeline self-clocks up to {@link #uploadConcurrency} concurrent uploads with no
-   * standing reader thread.
-   */
+  /** Seal-triggered flush: ship when the buffer has a full batch by count or bytes. */
   private void maybeFlush() {
-    if (shouldFlush() && tryFlush()) {
-      Uni.createFrom()
-          .item(this::drain)
-          .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
-          .flatMap(this::uploadBatch)
-          .eventually(
-              () -> {
-                inFlight.getAndDecrement();
-                maybeFlush(); // a full batch may have accumulated while this one uploaded
-              })
-          .subscribe()
-          .with(ignored -> {}, failure -> LOG.error("Billing S3 export flush failed", failure));
+    if (buffer.shouldFlush()) {
+      tryFlush();
     }
   }
 
-  /** True when the queue holds a full object's worth — by line count or by buffered bytes. */
-  private boolean shouldFlush() {
-    return queue.size() >= batchSize || queuedBytes.get() >= maxBytes;
+  /**
+   * Age-triggered flush: every {@code maxAge} tick ships whatever is buffered, sealed or not, so no
+   * event waits longer than ~{@code maxAge} even under trickle traffic.
+   */
+  private void onAgeTick() {
+    try {
+      if (!buffer.isEmpty()) {
+        tryFlush();
+      }
+    } catch (Throwable t) {
+      LOG.error("Billing S3 export age-flush tick failed", t);
+    }
   }
 
   /**
-   * Non-blocking CAS gate: claims an in-flight slot iff fewer than {@link #uploadConcurrency} are
-   * held.
+   * Claims an in-flight slot (non-blocking CAS, at most {@link #uploadConcurrency} held) and, on
+   * success, drains + uploads one batch asynchronously. When the upload settles the slot is
+   * released and the seal condition re-checked: a full batch may have accumulated meanwhile.
    */
-  private boolean tryFlush() {
+  private void tryFlush() {
     int prev = inFlight.getAndUpdate(n -> n < uploadConcurrency ? n + 1 : n);
-    return prev < uploadConcurrency;
-  }
-
-  /**
-   * Removes lines from the queue for one object — up to {@link #batchSize} lines or {@link
-   * #maxBytes} of NDJSON body, whichever comes first (a single over-cap line still goes out alone).
-   * May come back empty if another flush raced ahead and took them first.
-   */
-  private List<String> drain() {
-    List<String> batch = new ArrayList<>(batchSize);
-    long bytes = 0;
-    String line;
-    while (batch.size() < batchSize && bytes < maxBytes && (line = queue.poll()) != null) {
-      batch.add(line);
-      bytes += lineBytes(line);
+    if (prev >= uploadConcurrency) {
+      return;
     }
-    queuedBytes.addAndGet(-bytes);
-    return batch;
+    Uni.createFrom()
+        .item(buffer::drain)
+        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+        .flatMap(this::uploadBatch)
+        .eventually(
+            () -> {
+              inFlight.getAndDecrement();
+              maybeFlush();
+            })
+        .subscribe()
+        .with(ignored -> {}, failure -> LOG.error("Billing S3 export flush failed", failure));
   }
 
-  /**
-   * NDJSON body bytes one line contributes: its length (== UTF-8 bytes for ASCII) plus a newline.
-   */
-  private static int lineBytes(String line) {
-    return line.length() + 1;
-  }
-
-  /**
-   * Ships one drained batch: the uploader PUTs it as a single NDJSON object, applying its own
-   * bounded retry/backoff. Never propagates failure — a giving-up batch is counted and recovered to
-   * a no-op so the flush loop stays alive.
-   */
-  private Uni<Void> uploadBatch(List<String> batch) {
+  /** Uploads one batch; never fails the pipeline — a batch that exhausts retries is counted. */
+  private Uni<Void> uploadBatch(BillingQueue.Batch batch) {
     if (batch.isEmpty()) {
       return Uni.createFrom().voidItem();
     }
-    int events = batch.size();
-    String key = objectKey(firstTimestamp(batch), UUID.randomUUID());
-    byte[] body = toNdjson(batch);
+    int size = batch.size();
     return uploader
-        .upload(key, body)
+        .upload(batch)
         .onItem()
-        .invoke(() -> metrics.recordBatchDelivered(events))
+        .invoke(() -> metrics.recordBatchDelivered(size))
         .onFailure()
-        .invoke(
-            t -> LOG.error("Failed to upload billing S3 batch '{}' ({} events)", key, events, t))
+        .invoke(t -> LOG.error("Failed to upload billing S3 batch ({} size)", size, t))
         .onFailure()
         .recoverWithItem(
             () -> {
-              metrics.recordBatchFailed(events);
+              metrics.recordBatchFailed(size);
               return null;
             });
   }
 
-  /** Object key: {@code <prefix>/<yyyy>/<MM>/<dd>/<HH>/<mm>/<uuid>.jsonl} (UTC). */
-  static String objectKey(Instant timestamp, UUID id) {
-    return PATH_PREFIX + "/" + KEY_TIME_FORMAT.format(timestamp) + "/" + id + ".jsonl";
-  }
-
-  /** NDJSON body: each line verbatim, newline-terminated. */
-  private static byte[] toNdjson(List<String> batch) {
-    StringBuilder sb = new StringBuilder();
-    for (String line : batch) {
-      sb.append(line).append('\n');
-    }
-    return sb.toString().getBytes(StandardCharsets.UTF_8);
-  }
-
   /**
-   * Timestamp for the object key's date path — parsed from the batch's first line's {@code
-   * timestamp}, falling back to wall clock (and counting the parse failure) when it is
-   * absent/unparseable.
-   */
-  private Instant firstTimestamp(List<String> batch) {
-    try {
-      JsonNode node = MAPPER.readTree(batch.get(0));
-      JsonNode tsNode = node.get("timestamp");
-      if (tsNode != null && tsNode.isTextual()) {
-        return Instant.parse(tsNode.asText());
-      }
-    } catch (Exception e) {
-      // fall through to the wall-clock fallback below
-    }
-    metrics.recordParseFailure();
-    return Instant.now();
-  }
-
-  /**
-   * Uploads one drained batch to S3 with its own bounded retry/backoff, failing only once retries
-   * are exhausted (see implementation {@link S3BatchUploader}).
+   * Uploads one sealed batch to the export destination; owns the object key and body encoding.
+   * Implementations must tolerate concurrent calls.
    */
   @FunctionalInterface
   public interface AsyncBatchUploader extends AutoCloseable {
-    Uni<Void> upload(String key, byte[] body);
+    Uni<Void> upload(BillingQueue.Batch batch);
 
     @Override
     default void close() {}
