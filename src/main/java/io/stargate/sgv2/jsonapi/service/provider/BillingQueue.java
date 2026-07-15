@@ -98,7 +98,7 @@ public final class BillingQueue {
       return lines.isEmpty();
     }
 
-    int events() {
+    int size() {
       return lines.size();
     }
   }
