@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import java.time.Duration;
 import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,16 +52,7 @@ public class BillingS3HandlerInstaller {
     var bucket = config.bucket().orElse(null);
 
     // Fail-loud: invalid billing S3 config throws here, aborting application startup.
-    var uploader =
-        S3BatchUploader.create(
-            region,
-            bucket,
-            config.endpointOverride(),
-            new S3BatchUploader.RetryPolicy(
-                config.atMostRetries(),
-                Duration.ofMillis(config.initialBackOffMillis()),
-                Duration.ofMillis(config.maxBackOffMillis()),
-                config.retryJitter()));
+    var uploader = S3BatchUploader.create(region, bucket, config.endpointOverride());
 
     this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
     Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
