@@ -20,7 +20,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -34,10 +37,14 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  *
  * <p>{@link S3MockTestResource} enables the export with small thresholds (count seal 5, age sweep
  * 2s) and turns on the {@code billing-events-logging} feature flag.
+ *
+ * <p>Methods are ordered: the last test stops the S3Mock container to prove a failing export never
+ * affects the data API, which kills S3 for the rest of the class — nothing may run after it.
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 @WithTestResource(value = S3MockTestResource.class)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BillingS3ExportIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   private static final String COLLECTION = "billing_export_collection";
@@ -113,18 +120,49 @@ public class BillingS3ExportIntegrationTest extends AbstractKeyspaceIntegrationT
     await()
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
-            () -> {
-              String metrics =
-                  given().when().get("/metrics").then().statusCode(200).extract().asString();
-              double flushedTotal =
-                  metrics
-                      .lines()
-                      .filter(line -> line.startsWith("billing_s3_events_flushed_total"))
-                      .mapToDouble(
-                          line -> Double.parseDouble(line.substring(line.lastIndexOf(' ') + 1)))
-                      .sum();
-              assertThat(flushedTotal).isGreaterThanOrEqualTo(DOCUMENTS);
-            });
+            () ->
+                assertThat(metricTotal("billing_s3_events_flushed_total"))
+                    .isGreaterThanOrEqualTo(DOCUMENTS));
+  }
+
+  /**
+   * Billing is a side-channel: a failing S3 export must never affect the data API. Stopping the
+   * S3Mock container leaves the endpoint dead — every upload from here on fails with
+   * connection-refused, like an S3 outage — yet inserts must keep returning normal write successes,
+   * and the failures must be counted rather than silently swallowed. The handler's failure
+   * accounting in isolation is covered by {@code BillingS3LogHandlerTest}; this proves the property
+   * end-to-end in the packaged app.
+   *
+   * <p>Must run last ({@link S3MockTestResource#stopContainer()} is one-way): any test needing a
+   * live S3 goes before this one. Reuses the collection created by the happy-path test.
+   *
+   * <p>{@code Integer.MAX_VALUE}, not a small sentinel, and deliberately the only ordered method:
+   * {@code OrderAnnotation} gives an unannotated method the default order {@code Integer.MAX_VALUE
+   * / 2}, so any newly added test with no {@code @Order} still sorts before this one. Do NOT lower
+   * this value — anything below the default would let such a test run after S3 is dead.
+   */
+  @Test
+  @Order(Integer.MAX_VALUE)
+  public void exportFailureDoesNotAffectTheApi() {
+    S3MockTestResource.stopContainer();
+
+    // Each insert emits billing events whose upload will fail — yet every insert must still
+    // return a normal write success, because publish() is fire-and-forget and never waits on S3.
+    for (int i = 0; i < DOCUMENTS; i++) {
+      insertDocumentWithVectorize(DOCUMENTS + i);
+    }
+
+    // Failures are counted, not silently swallowed. Uploads settle as failed only after the SDK
+    // exhausts its retries, so poll for the counter to move.
+    await()
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofSeconds(2))
+        .untilAsserted(
+            () -> assertThat(metricTotal("billing_s3_batches_failed_total")).isGreaterThan(0.0));
+
+    // The API is still healthy after the export has been failing for a while: one more insert
+    // succeeds exactly like the first.
+    insertDocumentWithVectorize(2 * DOCUMENTS);
   }
 
   // ============================================================
@@ -213,5 +251,15 @@ public class BillingS3ExportIntegrationTest extends AbstractKeyspaceIntegrationT
       body.lines().filter(line -> !line.isBlank()).forEach(lines::add);
     }
     return lines;
+  }
+
+  /** Sum of one counter across all tag combinations on {@code /metrics} (0 when absent). */
+  private static double metricTotal(String metricName) {
+    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    return metrics
+        .lines()
+        .filter(line -> line.startsWith(metricName))
+        .mapToDouble(line -> Double.parseDouble(line.substring(line.lastIndexOf(' ') + 1)))
+        .sum();
   }
 }
