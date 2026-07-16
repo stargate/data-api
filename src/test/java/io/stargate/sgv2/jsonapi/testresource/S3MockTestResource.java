@@ -30,7 +30,7 @@ public class S3MockTestResource implements QuarkusTestResourceLifecycleManager {
 
   private static volatile String httpEndpoint;
 
-  private S3MockContainer container;
+  private static volatile S3MockContainer container;
 
   /** HTTP endpoint of the running S3Mock, for the test-side verification client. */
   public static String endpoint() {
@@ -38,6 +38,19 @@ public class S3MockTestResource implements QuarkusTestResourceLifecycleManager {
       throw new IllegalStateException("S3MockTestResource has not been started");
     }
     return httpEndpoint;
+  }
+
+  /**
+   * Stops the S3Mock container, leaving nothing listening on the exported endpoint: every upload
+   * from then on fails with connection-refused, like an S3 outage. One-way for the whole test class
+   * (a restart would map a new port, unreachable through the app's fixed endpoint-override), so
+   * only the last test may call this.
+   */
+  public static void stopContainer() {
+    if (container == null) {
+      throw new IllegalStateException("S3MockTestResource has not been started");
+    }
+    container.stop();
   }
 
   @Override
