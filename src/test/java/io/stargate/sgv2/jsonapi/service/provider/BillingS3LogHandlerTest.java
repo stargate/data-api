@@ -493,15 +493,13 @@ class BillingS3LogHandlerTest {
       await().atMost(AWAIT).untilAsserted(() -> assertThat(uploader.inFlight.get()).isEqualTo(2));
 
       // Each release lets exactly the next batch through, one at a time.
-      while (uploader.batches.size() < 10) {
+      for (int expected = 3; expected <= 10; expected++) {
         uploader.releaseOne();
-        int expected = Math.min(uploader.batches.size() + 1, 10);
-        await()
-            .atMost(AWAIT)
-            .untilAsserted(
-                () -> assertThat(uploader.batches.size()).isGreaterThanOrEqualTo(expected));
+        int size = expected; // fresh effectively-final binding for the lambda
+        await().atMost(AWAIT).untilAsserted(() -> assertThat(uploader.batches).hasSize(size));
       }
 
+      // maxInFlight = RecordingUploader's high-water mark: uploads peaked at the gate cap of 2.
       assertThat(uploader.maxInFlight.get()).isEqualTo(2);
       assertThat(uploader.allLines()).hasSize(10).doesNotHaveDuplicates();
     } finally {
