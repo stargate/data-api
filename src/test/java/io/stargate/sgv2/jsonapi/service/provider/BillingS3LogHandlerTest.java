@@ -34,9 +34,6 @@ import org.junit.jupiter.api.Test;
  * on close), the upload-concurrency gate, failure containment, and the at-most-once accounting
  * invariants under concurrent publish. The uploader is a programmable in-memory fake; real S3 I/O
  * is covered by {@code BillingS3ExportIntegrationTest}.
- *
- * <p>Ordering is only asserted in single-producer tests (the buffer is FIFO for a single thread);
- * concurrency tests assert set-equality and counter reconciliation, never interleaving order.
  */
 class BillingS3LogHandlerTest {
 
@@ -228,6 +225,7 @@ class BillingS3LogHandlerTest {
       // record is older on purpose, so oldestEventAt must be the min, not the head).
       handler.publish(record(T0.plusSeconds(5), "{\"e\":1}"));
       handler.publish(record(T0, "{\"e\":2}"));
+      // Asserts the condition holds for the whole window — i.e. that an async flush did NOT happen
       await()
           .during(Duration.ofMillis(200))
           .atMost(Duration.ofSeconds(2))
@@ -297,6 +295,7 @@ class BillingS3LogHandlerTest {
   void ageTickIsScheduledForReal() {
     var uploader = new RecordingUploader();
     var registry = new SimpleMeterRegistry();
+    // Raw constructor: newHandler() pins maxAge to NEVER; this is the one test that wants a live tick.
     var handler =
         new BillingS3LogHandler(
             uploader,
@@ -311,8 +310,8 @@ class BillingS3LogHandlerTest {
       handler.publish(record("{\"e\":1}"));
 
       // No seal is reached; only the scheduled fixed-rate tick can ship this line.
-      await().atMost(AWAIT).untilAsserted(() -> assertThat(uploader.batches).isNotEmpty());
-      assertThat(uploader.allLines()).containsExactly("{\"e\":1}");
+      await().atMost(AWAIT).untilAsserted(() -> assertThat(uploader.batches).hasSize(1));
+      assertThat(uploader.batches.get(0).lines()).containsExactly("{\"e\":1}");
     } finally {
       handler.close();
     }
