@@ -28,6 +28,8 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Unit tests for {@link BillingS3LogHandler}: the flush triggers (seal on publish, age tick, drain
@@ -36,6 +38,8 @@ import org.junit.jupiter.api.Test;
  * is covered by {@code BillingS3ExportIntegrationTest}.
  */
 class BillingS3LogHandlerTest {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BillingS3LogHandlerTest.class);
 
   private static final Duration AWAIT = Duration.ofSeconds(10);
   private static final Duration NEVER = Duration.ofHours(1);
@@ -618,6 +622,19 @@ class BillingS3LogHandlerTest {
     assertThat(published).containsAll(delivered);
   }
 
+  /**
+   * {@code close()} runs concurrently with in-flight {@code publish()} calls in production — a pod
+   * shutdown doesn't wait for request threads to go quiet first. This drives both at once: 4
+   * threads publish flat out while the main thread calls {@code close()} mid-stream, then keeps the
+   * producers running a bit longer so some publishes land after close() too.
+   *
+   * <p>Expected: no publish ever throws (the handler must stay safe under this race), close()
+   * returns instead of hanging, delivered lines are a duplicate-free subset of what was published,
+   * and the metrics reconcile as {@code flushed + dropped <= offered} rather than {@code ==}. The
+   * gap is expected, not a bug: a publish can land after close() takes its final buffer snapshot,
+   * so that line is neither delivered nor counted as dropped — see {@link BillingMetrics}'s class
+   * doc for this same at-most-once slippage. The log line below reports the exact gap each run.
+   */
   @Test
   void closeRacingProducersNeverHangsAndReconciles() throws Exception {
     var uploader = new RecordingUploader();
@@ -625,8 +642,9 @@ class BillingS3LogHandlerTest {
     var handler = newHandler(uploader, registry, 5, 1_000_000_000L, 1000, 4, Duration.ofSeconds(1));
 
     int threads = 4;
-    // Producers run flat out until stopped; the cap only bounds memory and assertion cost, sized
-    // so publishing is still in full flight when close() lands ~50ms in.
+    // Producers normally exit on the stop flag below. The cap bounds the sad path (a hung close
+    // never reaches stop.set) so no producer spins forever — executor.shutdown() does not interrupt
+    // running tasks. Overlap with close() is guaranteed by the published.size() gate below.
     int perThreadCap = 200_000;
     Set<String> published = ConcurrentHashMap.newKeySet();
     List<Throwable> producerErrors = new CopyOnWriteArrayList<>();
@@ -651,7 +669,10 @@ class BillingS3LogHandlerTest {
               }));
     }
 
-    Thread.sleep(50); // let producers overlap the close below
+    // Land close() deterministically amid in-flight publishes: wait until producers have flooded
+    // the pipeline (2x the 1000-slot buffer → buffer full, overflow dropping, uploads gated), not a
+    // wall-clock guess. AWAIT only bounds a stuck ramp-up.
+    await().atMost(AWAIT).until(() -> published.size() >= 2_000);
     handler.close();
     stop.set(true);
     for (Future<?> future : futures) {
@@ -659,9 +680,10 @@ class BillingS3LogHandlerTest {
     }
     executor.shutdown();
 
-    // publish must never throw, close must return, and the books must stay consistent — lines
-    // published after close may be dropped without being counted, so the reconciliation is <=.
-    // Plain java.util.Set operations keep these checks O(n); AssertJ's containsAll would scan.
+    // publish must never throw, close must return. Post-close publishes can settle after close()'s
+    // final buffer snapshot, uncounted, so accounting reconciles with <=, not == (the log shows
+    // that gap).
+    // Plain Set ops keep these checks O(n); AssertJ's containsAll would scan, which is O(n^2).
     assertThat(producerErrors).isEmpty();
     List<String> delivered = uploader.allLines();
     Set<String> deliveredSet = new HashSet<>(delivered);
@@ -669,11 +691,21 @@ class BillingS3LogHandlerTest {
     assertThat(published.containsAll(deliveredSet))
         .as("every delivered line must have been published")
         .isTrue();
+    double offered = counter(registry, OFFERED);
     double flushed = counter(registry, FLUSHED);
     double droppedCapacity = counter(registry, DROPPED, "reason", "capacity");
     double droppedShutdown = counter(registry, DROPPED, "reason", "shutdown");
-    assertThat(flushed + droppedCapacity + droppedShutdown)
-        .isLessThanOrEqualTo(counter(registry, OFFERED));
+    double accounted = flushed + droppedCapacity + droppedShutdown;
+    LOG.info(
+        "closeRacing reconcile: offered={} flushed={} droppedCapacity={} droppedShutdown={}"
+            + " accounted={} unaccounted={}",
+        (long) offered,
+        (long) flushed,
+        (long) droppedCapacity,
+        (long) droppedShutdown,
+        (long) accounted,
+        (long) (offered - accounted));
+    assertThat(accounted).isLessThanOrEqualTo(offered);
   }
 
   // ============================================================
