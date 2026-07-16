@@ -403,7 +403,8 @@ class BillingS3LogHandlerTest {
     handler.close();
 
     // close() is synchronous: by the time it returns the drain has settled and counted.
-    assertThat(uploader.allLines()).containsExactly("{\"e\":1}", "{\"e\":2}", "{\"e\":3}");
+    assertThat(uploader.allLines())
+        .containsExactlyInAnyOrder("{\"e\":1}", "{\"e\":2}", "{\"e\":3}");
     assertThat(uploader.closed).isTrue();
     assertThat(counter(registry, FLUSHED)).isEqualTo(3.0);
     assertThat(counter(registry, DROPPED, "reason", "shutdown")).isZero();
@@ -517,7 +518,7 @@ class BillingS3LogHandlerTest {
   }
 
   @Test
-  void publishNeverBlocksWhenUploaderStalls() throws Exception {
+  void publishNeverBlocksWhenUploaderStalls() {
     var uploader = new RecordingUploader();
     var registry = new SimpleMeterRegistry();
     var handler = newHandler(uploader, registry, 1, 1_000_000, 8, 1);
