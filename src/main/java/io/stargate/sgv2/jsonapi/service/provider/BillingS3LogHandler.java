@@ -178,6 +178,7 @@ public final class BillingS3LogHandler extends Handler {
    * <p>Catches everything: an escaped throwable would silently cancel all future runs of a
    * fixed-rate task.
    */
+  @VisibleForTesting
   void onAgeTick() {
     try {
       if (!buffer.isEmpty()) {

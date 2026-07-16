@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +64,12 @@ public final class BillingQueue {
 
   public int size() {
     return queue.size();
+  }
+
+  /** Buffered-bytes counter, exposed for accounting assertions only (no production caller). */
+  @VisibleForTesting
+  long queuedBytes() {
+    return queuedBytes.get();
   }
 
   /** Removes and returns up to one sealed batch (possibly partial, possibly {@code EMPTY}). */
