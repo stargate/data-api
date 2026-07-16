@@ -447,75 +447,8 @@ class BillingS3LogHandlerTest {
   }
 
   // ============================================================
-  // Concurrency — invariant style, no interleaving assertions
+  // Async pipeline — gate, chain liveness, back-pressure (deterministic, single driver thread)
   // ============================================================
-
-  @Test
-  void multiProducerNoLossNoDuplication() throws Exception {
-    var uploader = new RecordingUploader();
-    var registry = new SimpleMeterRegistry();
-    var handler = newHandler(uploader, registry, 50, 1_000_000_000L, 10_000, 4);
-
-    int threads = 8;
-    int perThread = 500;
-    Set<String> published = ConcurrentHashMap.newKeySet();
-    runProducers(
-        threads,
-        (threadId) -> {
-          for (int i = 0; i < perThread; i++) {
-            String line = "{\"t\":" + threadId + ",\"i\":" + i + "}";
-            published.add(line);
-            handler.publish(record(line));
-          }
-        });
-    handler.close();
-
-    List<String> delivered = uploader.allLines();
-    assertThat(delivered).hasSize(threads * perThread);
-    assertThat(new HashSet<>(delivered)).isEqualTo(published);
-    assertThat(counter(registry, OFFERED)).isEqualTo(threads * perThread);
-    assertThat(counter(registry, FLUSHED)).isEqualTo(threads * perThread);
-    assertThat(counter(registry, DROPPED, "reason", "capacity")).isZero();
-    assertThat(counter(registry, DROPPED, "reason", "shutdown")).isZero();
-  }
-
-  @Test
-  void overflowAccountingReconciles() throws Exception {
-    var uploader = new RecordingUploader();
-    var registry = new SimpleMeterRegistry();
-    // No seal is ever reached (count seal above capacity, byte seal huge): nothing drains while
-    // producers run, so every line beyond the 64-slot buffer is a deterministic capacity drop.
-    var handler = newHandler(uploader, registry, 1000, 1_000_000_000L, 64, 4);
-
-    int threads = 4;
-    int perThread = 500;
-    Set<String> published = ConcurrentHashMap.newKeySet();
-    runProducers(
-        threads,
-        (threadId) -> {
-          for (int i = 0; i < perThread; i++) {
-            String line = "{\"t\":" + threadId + ",\"i\":" + i + "}";
-            published.add(line);
-            handler.publish(record(line));
-          }
-        });
-
-    uploader.releaseAllAndComplete();
-    handler.close();
-
-    double offered = counter(registry, OFFERED);
-    double flushed = counter(registry, FLUSHED);
-    double droppedCapacity = counter(registry, DROPPED, "reason", "capacity");
-    double droppedShutdown = counter(registry, DROPPED, "reason", "shutdown");
-    assertThat(offered).isEqualTo(threads * perThread);
-    assertThat(flushed).isEqualTo(64.0);
-    assertThat(droppedCapacity).isEqualTo(threads * perThread - 64.0);
-    assertThat(flushed + droppedCapacity + droppedShutdown).isEqualTo(offered);
-
-    List<String> delivered = uploader.allLines();
-    assertThat(delivered).doesNotHaveDuplicates();
-    assertThat(published).containsAll(delivered);
-  }
 
   @Test
   void publishNeverBlocksWhenUploaderStalls() {
@@ -610,6 +543,77 @@ class BillingS3LogHandlerTest {
       uploader.releaseAllAndComplete();
       handler.close();
     }
+  }
+
+  // ============================================================
+  // Concurrent producers — accounting invariants under racing publish (interleaving-agnostic)
+  // ============================================================
+
+  @Test
+  void multiProducerNoLossNoDuplication() throws Exception {
+    var uploader = new RecordingUploader();
+    var registry = new SimpleMeterRegistry();
+    var handler = newHandler(uploader, registry, 50, 1_000_000_000L, 10_000, 4);
+
+    int threads = 8;
+    int perThread = 500;
+    Set<String> published = ConcurrentHashMap.newKeySet();
+    runProducers(
+        threads,
+        (threadId) -> {
+          for (int i = 0; i < perThread; i++) {
+            String line = "{\"t\":" + threadId + ",\"i\":" + i + "}";
+            published.add(line);
+            handler.publish(record(line));
+          }
+        });
+    handler.close();
+
+    List<String> delivered = uploader.allLines();
+    assertThat(delivered).hasSize(threads * perThread);
+    assertThat(new HashSet<>(delivered)).isEqualTo(published);
+    assertThat(counter(registry, OFFERED)).isEqualTo(threads * perThread);
+    assertThat(counter(registry, FLUSHED)).isEqualTo(threads * perThread);
+    assertThat(counter(registry, DROPPED, "reason", "capacity")).isZero();
+    assertThat(counter(registry, DROPPED, "reason", "shutdown")).isZero();
+  }
+
+  @Test
+  void overflowAccountingReconciles() throws Exception {
+    var uploader = new RecordingUploader();
+    var registry = new SimpleMeterRegistry();
+    // No seal is ever reached (count seal above capacity, byte seal huge): nothing drains while
+    // producers run, so every line beyond the 64-slot buffer is a deterministic capacity drop.
+    var handler = newHandler(uploader, registry, 1000, 1_000_000_000L, 64, 4);
+
+    int threads = 4;
+    int perThread = 500;
+    Set<String> published = ConcurrentHashMap.newKeySet();
+    runProducers(
+        threads,
+        (threadId) -> {
+          for (int i = 0; i < perThread; i++) {
+            String line = "{\"t\":" + threadId + ",\"i\":" + i + "}";
+            published.add(line);
+            handler.publish(record(line));
+          }
+        });
+
+    uploader.releaseAllAndComplete();
+    handler.close();
+
+    double offered = counter(registry, OFFERED);
+    double flushed = counter(registry, FLUSHED);
+    double droppedCapacity = counter(registry, DROPPED, "reason", "capacity");
+    double droppedShutdown = counter(registry, DROPPED, "reason", "shutdown");
+    assertThat(offered).isEqualTo(threads * perThread);
+    assertThat(flushed).isEqualTo(64.0);
+    assertThat(droppedCapacity).isEqualTo(threads * perThread - 64.0);
+    assertThat(flushed + droppedCapacity + droppedShutdown).isEqualTo(offered);
+
+    List<String> delivered = uploader.allLines();
+    assertThat(delivered).doesNotHaveDuplicates();
+    assertThat(published).containsAll(delivered);
   }
 
   @Test
