@@ -520,6 +520,8 @@ class BillingS3LogHandlerTest {
       }
 
       // Single slot: exactly one upload starts, the two other sealed batches wait behind it.
+      // First await = arrival: the one upload has started. Second = the gate holds: batches stays
+      // at exactly one for 200ms, proving concurrency=1 keeps the other two sealed batches queued.
       await().atMost(AWAIT).untilAsserted(() -> assertThat(uploader.batches).hasSize(1));
       await()
           .during(Duration.ofMillis(200))
@@ -536,7 +538,9 @@ class BillingS3LogHandlerTest {
       await().atMost(AWAIT).untilAsserted(() -> assertThat(uploader.batches).hasSize(3));
       assertThat(uploader.batches.get(2).lines()).containsExactly("{\"i\":5}", "{\"i\":6}");
 
+      // Settling the last in-flight upload with an empty buffer chains nothing further.
       uploader.releaseOne();
+      assertThat(uploader.batches).hasSize(3);
     } finally {
       uploader.releaseAllAndComplete();
       handler.close();
