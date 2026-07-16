@@ -70,6 +70,8 @@ public class BillingS3HandlerInstaller {
       return;
     }
     Logger.getLogger(BILLING_LOGGER_NAME).removeHandler(this.handler);
+    // close() isn't expected to throw, but if it does (e.g. client.close() failing), letting it
+    // propagate would disrupt other components' cleanup in Quarkus's shutdown sequence.
     try {
       this.handler.close();
     } catch (Exception e) {
