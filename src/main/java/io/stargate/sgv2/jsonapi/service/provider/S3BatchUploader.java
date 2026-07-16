@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -76,6 +77,10 @@ public class S3BatchUploader implements BillingS3LogHandler.AsyncBatchUploader {
   public Uni<Void> upload(BillingQueue.Batch batch) {
     String key = objectKey(batch.oldestEventAt(), UUID.randomUUID());
     byte[] body = toNdjson(batch.lines());
+    // No .retry() here: unconfigured, S3AsyncClient already retries (default LegacyRetryStrategy —
+    // 3 retries / 4 attempts). See
+    // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/retry-strategy.html
+    // and see https://github.com/aws/aws-sdk-java-v2/issues/6987 for future change.
     return Uni.createFrom()
         .completionStage(
             () ->
@@ -90,10 +95,12 @@ public class S3BatchUploader implements BillingS3LogHandler.AsyncBatchUploader {
                     .thenAccept(resp -> {}));
   }
 
+  @VisibleForTesting
   static String objectKey(Instant timestamp, UUID id) {
     return PATH_PREFIX + "/" + KEY_TIME_FORMAT.format(timestamp) + "/" + id + ".jsonl";
   }
 
+  @VisibleForTesting
   static byte[] toNdjson(List<String> lines) {
     StringBuilder sb = new StringBuilder();
     for (String line : lines) {
