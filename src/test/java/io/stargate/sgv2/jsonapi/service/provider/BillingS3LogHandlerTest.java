@@ -295,7 +295,8 @@ class BillingS3LogHandlerTest {
   void ageTickIsScheduledForReal() {
     var uploader = new RecordingUploader();
     var registry = new SimpleMeterRegistry();
-    // Raw constructor: newHandler() pins maxAge to NEVER; this is the one test that wants a live tick.
+    // Raw constructor: newHandler() pins maxAge to NEVER; this is the one test that wants a live
+    // tick.
     var handler =
         new BillingS3LogHandler(
             uploader,
@@ -409,28 +410,25 @@ class BillingS3LogHandlerTest {
   }
 
   @Test
-  void closeTimeoutCountsAbandoned() throws Exception {
+  void closeTimeoutCountsAbandoned() {
     var uploader = new RecordingUploader();
     var registry = new SimpleMeterRegistry();
     var handler = newHandler(uploader, registry, 1, 1_000_000, 10, 1, Duration.ofMillis(200));
-    try {
-      uploader.mode = RecordingUploader.Mode.HOLD;
-      handler.publish(record("{\"e\":1}"));
-      // Wait until the first batch is in flight (and held) so the queued remainder is exact.
-      await().atMost(AWAIT).untilAsserted(() -> assertThat(uploader.batches).hasSize(1));
-      handler.publish(record("{\"e\":2}"));
-      handler.publish(record("{\"e\":3}"));
 
-      long startNanos = System.nanoTime();
-      handler.close();
-      Duration elapsed = Duration.ofNanos(System.nanoTime() - startNanos);
+    uploader.mode = RecordingUploader.Mode.HOLD;
+    handler.publish(record("{\"e\":1}"));
+    // Wait until the first batch is in flight (and held) so the queued remainder is exact.
+    await().atMost(AWAIT).untilAsserted(() -> assertThat(uploader.batches).hasSize(1));
+    handler.publish(record("{\"e\":2}"));
+    handler.publish(record("{\"e\":3}"));
 
-      assertThat(elapsed).isLessThan(Duration.ofSeconds(3));
-      assertThat(counter(registry, DROPPED, "reason", "shutdown")).isEqualTo(2.0);
-      assertThat(uploader.closed).isTrue();
-    } finally {
-      uploader.releaseAllAndComplete();
-    }
+    long startNanos = System.nanoTime();
+    handler.close();
+    Duration elapsed = Duration.ofNanos(System.nanoTime() - startNanos);
+
+    assertThat(elapsed).isLessThan(Duration.ofSeconds(3));
+    assertThat(counter(registry, DROPPED, "reason", "shutdown")).isEqualTo(2.0);
+    assertThat(uploader.closed).isTrue();
   }
 
   @Test
