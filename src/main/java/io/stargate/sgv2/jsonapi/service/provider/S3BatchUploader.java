@@ -20,8 +20,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 /** Uploads sealed billing batches to S3 as NDJSON objects under time-partitioned keys. */
 public class S3BatchUploader implements BillingS3LogHandler.AsyncBatchUploader {
 
-  // S3 object-key consistent identifier; TBD
-  static final String PATH_PREFIX = "billing-events";
+  // S3 object-key consistent identifier
+  static final String PATH_PREFIX = "data-api";
   private static final String NDJSON_CONTENT_TYPE = "application/x-ndjson";
   // object key format
   private static final DateTimeFormatter KEY_TIME_FORMAT =
