@@ -32,7 +32,7 @@ class S3BatchUploaderTest {
 
   private static final Duration AWAIT = Duration.ofSeconds(5);
   private static final Pattern KEY_PATTERN =
-      Pattern.compile("billing-events/2026/05/20/14/23/[0-9a-f-]{36}\\.jsonl");
+      Pattern.compile("data-api/2026/05/20/14/23/[0-9a-f-]{36}\\.jsonl");
   private static final String LINE_A = "{\"a\":1}";
   private static final String LINE_B = "{\"b\":2}";
   private static final BillingQueue.Batch BATCH =
@@ -55,7 +55,7 @@ class S3BatchUploaderTest {
     var id = UUID.fromString("8c0e9b8a-1d3a-4f6b-9c0d-1234567890ab");
     var key = S3BatchUploader.objectKey(Instant.parse("2026-05-20T14:23:11.482Z"), id);
     assertThat(key)
-        .isEqualTo("billing-events/2026/05/20/14/23/8c0e9b8a-1d3a-4f6b-9c0d-1234567890ab.jsonl");
+        .isEqualTo("data-api/2026/05/20/14/23/8c0e9b8a-1d3a-4f6b-9c0d-1234567890ab.jsonl");
   }
 
   @Test
