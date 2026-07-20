@@ -53,7 +53,7 @@ public class BillingS3ExportIntegrationTest extends AbstractKeyspaceIntegrationT
   private static final int DOCUMENTS = 10;
 
   private static final Pattern KEY_PATTERN =
-      Pattern.compile("billing-events/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/[0-9a-f-]{36}\\.jsonl");
+      Pattern.compile("data-api/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/[0-9a-f-]{36}\\.jsonl");
 
   /** Wire contract of {@code BillingEventType}: billing consumers key on these exact values. */
   private static final Set<String> EVENT_TYPES =
@@ -238,7 +238,7 @@ public class BillingS3ExportIntegrationTest extends AbstractKeyspaceIntegrationT
   }
 
   private static List<S3Object> exportObjects(S3Client s3) {
-    return s3.listObjectsV2(b -> b.bucket(S3MockTestResource.BUCKET).prefix("billing-events/"))
+    return s3.listObjectsV2(b -> b.bucket(S3MockTestResource.BUCKET).prefix("data-api/"))
         .contents();
   }
 
