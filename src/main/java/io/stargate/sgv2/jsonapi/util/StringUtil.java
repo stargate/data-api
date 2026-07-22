@@ -14,12 +14,16 @@ public class StringUtil {
     return normalizeOptionalString(string.orElse(""));
   }
 
+  public static boolean isNullOrBlank(String string) {
+    return string == null || string.isBlank();
+  }
+
   /**
    * Returns {@code value} unchanged if it is non-null and not blank; otherwise throws {@link
    * IllegalArgumentException} naming the offending {@code name}.
    */
   public static String requireNonBlank(String value, String name) {
-    if (value == null || value.isBlank()) {
+    if (isNullOrBlank(value)) {
       throw new IllegalArgumentException(name + " must not be null or blank");
     }
     return value;

@@ -1,9 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import static io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata.Names;
+
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 
 /**
  * This class is used to track the usage of indexes in a query. It is used to generate metrics for
@@ -11,17 +12,17 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
  */
 public class CollectionIndexUsage implements IndexUsage {
 
-  public boolean primaryKeyTag,
-      existKeysIndexTag,
-      arraySizeIndexTag,
-      arrayContainsTag,
-      booleanIndexTag,
-      numberIndexTag,
-      textIndexTag,
-      timestampIndexTag,
-      nullIndexTag,
-      vectorIndexTag,
-      lexicalIndexTag;
+  public boolean primaryKeyTag;
+  public boolean existKeysIndexTag;
+  public boolean arraySizeIndexTag;
+  public boolean arrayContainsTag;
+  public boolean booleanIndexTag;
+  public boolean numberIndexTag;
+  public boolean textIndexTag;
+  public boolean timestampIndexTag;
+  public boolean nullIndexTag;
+  public boolean vectorIndexTag;
+  public boolean lexicalIndexTag;
 
   /**
    * This method is used to generate the tags for the index usage
@@ -31,26 +32,17 @@ public class CollectionIndexUsage implements IndexUsage {
   @Override
   public Tags getTags() {
     return Tags.of(
-        Tag.of("key", String.valueOf(primaryKeyTag)),
-        Tag.of("exist_keys", String.valueOf(existKeysIndexTag)),
-        Tag.of("array_size", String.valueOf(arraySizeIndexTag)),
-        Tag.of(
-            DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME, String.valueOf(arrayContainsTag)),
-        Tag.of(
-            DocumentConstants.Columns.QUERY_BOOLEAN_MAP_COLUMN_NAME,
-            String.valueOf(booleanIndexTag)),
-        Tag.of(
-            DocumentConstants.Columns.QUERY_DOUBLE_MAP_COLUMN_NAME, String.valueOf(numberIndexTag)),
-        Tag.of(DocumentConstants.Columns.QUERY_NULL_MAP_COLUMN_NAME, String.valueOf(nullIndexTag)),
-        Tag.of(DocumentConstants.Columns.QUERY_TEXT_MAP_COLUMN_NAME, String.valueOf(textIndexTag)),
-        Tag.of(
-            DocumentConstants.Columns.QUERY_TIMESTAMP_MAP_COLUMN_NAME,
-            String.valueOf(timestampIndexTag)),
-        Tag.of(
-            DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-            String.valueOf(vectorIndexTag)),
-        Tag.of(
-            DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME, String.valueOf(lexicalIndexTag)));
+        Tag.of(Names.KEY, String.valueOf(primaryKeyTag)),
+        Tag.of(Names.EXIST_KEYS, String.valueOf(existKeysIndexTag)),
+        Tag.of(Names.ARRAY_SIZE, String.valueOf(arraySizeIndexTag)),
+        Tag.of(Names.ARRAY_CONTAINS, String.valueOf(arrayContainsTag)),
+        Tag.of(Names.QUERY_BOOLEAN_VALUES, String.valueOf(booleanIndexTag)),
+        Tag.of(Names.QUERY_DOUBLE_VALUES, String.valueOf(numberIndexTag)),
+        Tag.of(Names.QUERY_NULL_VALUES, String.valueOf(nullIndexTag)),
+        Tag.of(Names.QUERY_TEXT_VALUES, String.valueOf(textIndexTag)),
+        Tag.of(Names.QUERY_TIMESTAMP_VALUES, String.valueOf(timestampIndexTag)),
+        Tag.of(Names.QUERY_VECTOR_VALUE, String.valueOf(vectorIndexTag)),
+        Tag.of(Names.QUERY_LEXICAL_VALUE, String.valueOf(lexicalIndexTag)));
   }
 
   /**
@@ -58,6 +50,7 @@ public class CollectionIndexUsage implements IndexUsage {
    *
    * @param indexUsage
    */
+  @Override
   public void merge(IndexUsage indexUsage) {
     Preconditions.checkArgument(
         indexUsage instanceof CollectionIndexUsage, "Cannot merge different types of index usage");
@@ -73,5 +66,6 @@ public class CollectionIndexUsage implements IndexUsage {
     this.timestampIndexTag |= other.timestampIndexTag;
     this.nullIndexTag |= other.nullIndexTag;
     this.vectorIndexTag |= other.vectorIndexTag;
+    this.lexicalIndexTag |= other.lexicalIndexTag;
   }
 }

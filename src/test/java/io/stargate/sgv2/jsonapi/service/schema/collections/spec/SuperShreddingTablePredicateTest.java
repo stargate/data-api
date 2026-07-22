@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.schema.collections;
+package io.stargate.sgv2.jsonapi.service.schema.collections.spec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,9 +17,13 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class CollectionTableMatcherTest {
+/**
+ * This is the initial test for the super shredding table predicate when that class was called
+ * <code>CollectionTableMatcher</code>, left in place to show we are passing the old tests.
+ */
+class SuperShreddingTablePredicateTest {
 
-  CollectionTableMatcher tableMatcher = new CollectionTableMatcher();
+  SuperShreddingTablePredicate tableMatcher = new SuperShreddingTablePredicate();
 
   @Nested
   class BuiltConditionPredicateTest {

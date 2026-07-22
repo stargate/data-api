@@ -2,12 +2,12 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.builder.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +57,7 @@ public class AllCollectionFilter extends CollectionFilter {
       this.collectionIndexUsage.arrayContainsTag = true;
       result.add(
           BuiltCondition.of(
-              ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
+              ConditionLHS.column(SuperShreddingMetadata.Names.ARRAY_CONTAINS),
               negation ? BuiltConditionPredicate.NOT_CONTAINS : BuiltConditionPredicate.CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
     }

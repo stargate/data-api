@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.internal.core.util.Strings;
 import java.util.Comparator;
+import java.util.Objects;
 
 public abstract class CqlIdentifierUtil {
 
@@ -41,6 +42,7 @@ public abstract class CqlIdentifierUtil {
   public static String cqlIdentifierToCQL(CqlIdentifier identifier) {
     // pretty == false it means we force the double quotes around the internal without checking if
     // they are needed
+    Objects.requireNonNull(identifier, "identifier must not be null");
     return identifier.asCql(false);
   }
 

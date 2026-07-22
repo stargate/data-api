@@ -1,9 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToCQL;
+
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapComponentDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * ApiIndexFunction is a function that is applied in indexes on CQL collection type.
@@ -31,6 +37,44 @@ public enum ApiIndexFunction {
 
   ApiIndexFunction(String cqlFunction) {
     this.cqlFunction = cqlFunction;
+  }
+
+  public String cqlFunction() {
+    return cqlFunction;
+  }
+
+  public String toTargetString(CqlIdentifier targetColumn) {
+    return toTargetString(this, targetColumn);
+  }
+
+  /**
+   * Builds the <code>target</code> of the SAI index, which may or maynot have a function in the
+   * definition. See examples in {@link CQLSAIIndex}
+   *
+   * @param indexFunction nullable index function to use in the target string
+   * @param targetColumn required column to use in the target string
+   * @return the target string that is used in an index definition.
+   */
+  public static String toTargetString(ApiIndexFunction indexFunction, CqlIdentifier targetColumn) {
+    Objects.requireNonNull(targetColumn, "targetColumn cannot be null");
+    return indexFunction == null
+        ? cqlIdentifierToCQL(targetColumn)
+        : indexFunction.cqlFunction() + "(" + cqlIdentifierToCQL(targetColumn) + ")";
+  }
+
+  public static CreateIndex addTo(
+      CreateIndexOnTable createIndexOnTable,
+      ApiIndexFunction indexFunction,
+      CqlIdentifier targetColumn) {
+    Objects.requireNonNull(createIndexOnTable, "createIndexOnTable cannot be null");
+    Objects.requireNonNull(targetColumn, "targetColumn cannot be null");
+
+    return switch (indexFunction) {
+      case KEYS -> createIndexOnTable.andColumnKeys(targetColumn);
+      case VALUES -> createIndexOnTable.andColumnValues(targetColumn);
+      case ENTRIES -> createIndexOnTable.andColumnEntries(targetColumn);
+      case null -> createIndexOnTable.andColumn(targetColumn);
+    };
   }
 
   public static ApiIndexFunction fromCql(String cqlFunction)

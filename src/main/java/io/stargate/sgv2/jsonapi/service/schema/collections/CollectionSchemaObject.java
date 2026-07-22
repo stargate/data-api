@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
@@ -26,6 +25,7 @@ import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaHolder;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +134,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
     // get vector column
     final Optional<ColumnMetadata> vectorColumn =
-        table.getColumn(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME);
+        table.getColumn(SuperShreddingMetadata.Names.QUERY_VECTOR_VALUE);
     boolean vectorEnabled = vectorColumn.isPresent();
     final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
 
@@ -145,7 +145,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       IndexMetadata vectorIndex = null;
       Map<CqlIdentifier, IndexMetadata> indexMap = table.getIndexes();
       for (CqlIdentifier key : indexMap.keySet()) {
-        if (key.asInternal().endsWith(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME)) {
+        if (key.asInternal().endsWith(SuperShreddingMetadata.Names.QUERY_VECTOR_VALUE)) {
           vectorIndex = indexMap.get(key);
           break;
         }

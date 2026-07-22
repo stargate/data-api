@@ -4,13 +4,13 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.builder.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
@@ -100,7 +100,7 @@ public class InCollectionFilter extends CollectionFilter {
             this.collectionIndexUsage.arrayContainsTag = true;
             inResult.add(
                 BuiltCondition.of(
-                    ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
+                    ConditionLHS.column(SuperShreddingMetadata.Names.ARRAY_CONTAINS),
                     BuiltConditionPredicate.CONTAINS,
                     new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
           }
@@ -131,7 +131,7 @@ public class InCollectionFilter extends CollectionFilter {
               this.collectionIndexUsage.arrayContainsTag = true;
               ninResults.add(
                   BuiltCondition.of(
-                      ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
+                      ConditionLHS.column(SuperShreddingMetadata.Names.ARRAY_CONTAINS),
                       BuiltConditionPredicate.NOT_CONTAINS,
                       new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
             }

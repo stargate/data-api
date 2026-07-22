@@ -36,44 +36,6 @@ public interface DocumentConstants {
     String SCORES_FIELD = "scores";
   }
 
-  /** Names of columns in Document-containing Tables */
-  interface Columns {
-    /**
-     * Atomic values are added to the array_contains field to support $eq on both atomic value and
-     * array element
-     */
-    String DATA_CONTAINS_COLUMN_NAME = "array_contains";
-
-    String QUERY_BOOLEAN_MAP_COLUMN_NAME = "query_bool_values";
-
-    String QUERY_DOUBLE_MAP_COLUMN_NAME = "query_dbl_values";
-
-    String QUERY_NULL_MAP_COLUMN_NAME = "query_null_values";
-
-    /** Text map support _id $ne and _id $nin on both atomic value and array element */
-    String QUERY_TEXT_MAP_COLUMN_NAME = "query_text_values";
-
-    String QUERY_TIMESTAMP_MAP_COLUMN_NAME = "query_timestamp_values";
-
-    /** Physical table column name that stores the vector field. */
-    String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";
-
-    /** Document field name to which vector data is stored. */
-    String VECTOR_EMBEDDING_FIELD = "$vector";
-
-    /** Document field name that will have text value for which vectorize method in called */
-    String VECTOR_EMBEDDING_TEXT_FIELD = "$vectorize";
-
-    /** Document field name that will have text value for which vectorize method in called */
-    String BINARY_VECTOR_TEXT_FIELD = "$binary";
-
-    /** Field name used in projection clause to get similarity score in response. */
-    String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
-
-    /** Physical table column name that stores the lexical content. */
-    String LEXICAL_INDEX_COLUMN_NAME = "query_lexical_value";
-  }
-
   interface KeyTypeId {
     /**
      * Type id are used in key stored in database representing the datatype of the id field. These

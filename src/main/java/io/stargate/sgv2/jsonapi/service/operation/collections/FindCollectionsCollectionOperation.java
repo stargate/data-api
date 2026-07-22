@@ -17,32 +17,34 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingTablePredicate;
 import java.util.List;
 import java.util.function.Supplier;
 
 /**
  * Find collection operation. Uses {@link CQLSessionCache} to fetch all valid jsonapi tables for a
- * namespace. The schema check against the table is done in the {@link CollectionTableMatcher}.
+ * namespace. The schema check against the table is done in the {@link
+ * SuperShreddingTablePredicate}.
  *
  * @param explain - returns collection options if `true`; returns only collection names if `false`
  * @param objectMapper {@link ObjectMapper}
  * @param cqlSessionCache {@link CQLSessionCache}
- * @param tableMatcher {@link CollectionTableMatcher}
+ * @param tableMatcher {@link SuperShreddingTablePredicate}
  * @param commandContext {@link CommandContext}
  */
 public record FindCollectionsCollectionOperation(
     boolean explain,
     ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
-    CollectionTableMatcher tableMatcher,
+    SuperShreddingTablePredicate tableMatcher,
     CommandContext<KeyspaceSchemaObject> commandContext)
     implements Operation {
 
   // shared table matcher instance
   // TODO: if this is static why does the record that have an instance variable passed by the ctor
   // below ?
-  private static final CollectionTableMatcher TABLE_MATCHER = new CollectionTableMatcher();
+  private static final SuperShreddingTablePredicate TABLE_MATCHER =
+      new SuperShreddingTablePredicate();
 
   public FindCollectionsCollectionOperation(
       boolean explain,

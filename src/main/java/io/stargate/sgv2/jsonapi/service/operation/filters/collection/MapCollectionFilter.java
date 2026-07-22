@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.builder.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import java.util.Map;
 import java.util.Objects;
@@ -90,12 +90,12 @@ public abstract class MapCollectionFilter<T> extends CollectionFilter {
     return switch (operator) {
       case EQ ->
           BuiltCondition.of(
-              ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
+              ConditionLHS.column(SuperShreddingMetadata.Names.ARRAY_CONTAINS),
               BuiltConditionPredicate.CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
       case NE ->
           BuiltCondition.of(
-              ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
+              ConditionLHS.column(SuperShreddingMetadata.Names.ARRAY_CONTAINS),
               BuiltConditionPredicate.NOT_CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
       case MAP_EQUALS ->

@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingTablePredicate;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaObjectFactory.class);
 
-  private static final CollectionTableMatcher IS_COLLECTION_PREDICATE =
-      new CollectionTableMatcher();
+  private static final SuperShreddingTablePredicate IS_COLLECTION_PREDICATE =
+      new SuperShreddingTablePredicate();
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
