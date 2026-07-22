@@ -40,7 +40,6 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  *
  * <p>Methods are ordered: the last test stops the S3Mock container to prove a failing export never
  * affects the data API, which kills S3 for the rest of the class — nothing may run after it.
- *
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
