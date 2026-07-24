@@ -56,7 +56,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: maven
-          cache-dependency-path: '**/pom.xml'
 
       - name: Setup Maven
         run: |
@@ -327,7 +326,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: maven
-          cache-dependency-path: '**/pom.xml'
 
       - name: Setup Maven
         run: |
