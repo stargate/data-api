@@ -61,16 +61,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   @BeforeAll
   public static void enableLog() {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-
-    // Configure HTTP client timeouts to prevent intermittent test failures
-    // Connection timeout: time to establish connection
-    // Socket timeout: time to wait for data after connection established
-    RestAssured.config =
-        RestAssuredConfig.config()
-            .httpClient(
-                HttpClientConfig.httpClientConfig()
-                    .setParam("http.connection.timeout", 60000) // 60 seconds
-                    .setParam("http.socket.timeout", 60000)); // 60 seconds
   }
 
   @BeforeAll
