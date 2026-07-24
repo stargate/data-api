@@ -291,6 +291,9 @@ public class MeteredCommandProcessor {
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     tags.add(Tag.of(jsonApiMetricsConfig.sortType(), sortType.name()));
 
+    // --- Command Feature Usage Tags ---
+    tags.addAll(commandContext.commandFeatures().getTags().stream().toList());
+
     return Tags.of(tags);
   }
 

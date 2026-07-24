@@ -94,13 +94,7 @@
       <!-- 06-July-2026, clun: Testcontainers BOM for version management,
          now required as not pulled by transitive dependency in latest quarkus
          version. -->
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers-bom</artifactId>
-        <version>1.21.4</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+
     </dependencies>
   </dependencyManagement>
   <!-- Add local repository for private java driver queryBuilder build to avoid using systemPath in dependency-->
@@ -309,6 +303,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
+      <version>1.21.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
