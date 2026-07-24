@@ -291,15 +291,6 @@ public class MeteredCommandProcessor {
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     tags.add(Tag.of(jsonApiMetricsConfig.sortType(), sortType.name()));
 
-    // 2026-07-07, clun: Always add all feature tags with true/false values to ensure consistent tag
-    // keys
-    // across all metric registrations. This prevents Prometheus IllegalArgumentException
-    // when different tests register the same metric with different tag sets.
-    // for (CommandFeature feature : CommandFeature.values()) {
-    //  boolean isUsed = commandContext.commandFeatures().contains(feature);
-    //  tags.add(Tag.of(feature.getTagName(), String.valueOf(isUsed)));
-    // }
-
     return Tags.of(tags);
   }
 

@@ -76,16 +76,6 @@ public final class CommandFeatures {
   }
 
   /**
-   * Checks if this instance contains a specific feature.
-   *
-   * @param feature The feature to check for.
-   * @return {@code true} if the feature is present, {@code false} otherwise.
-   */
-  public boolean contains(CommandFeature feature) {
-    return commandFeatures.contains(feature);
-  }
-
-  /**
    * Generates Micrometer Tags representing the features in this instance. Each feature is
    * represented as a tag with its name and a value of {@code true}.
    *

@@ -103,7 +103,15 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].errorCode", is(SchemaException.Code.UNKNOWN_COLLECTION_OR_TABLE.name()));
     }
 
-    @Disabled("Fails with NoHttpResponse in Quarkus 3.37.1 - content-type validation happens before JAX-RS")
+    /**
+     * clun 2020-07-24: After upgrading to Quarkus REST (RESTEasy Reactive) 3.37.1, requests with an
+     * unsupported Content-Type are rejected during RESTEasy Reactive request routing and media-type
+     * matching. As a result, the application's exception mapping layer is no longer invoked for
+     * this scenario. It leads to a NoHttpResponse being a consequence of framework-level request
+     * rejection rather than application code behavior.
+     */
+    @Disabled(
+        "Fails with NoHttpResponse in Quarkus 3.37.1 - content-type validation happens before JAX-RS")
     @Test
     public void invalidContentType() {
       given()
