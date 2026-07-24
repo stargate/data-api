@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.ClassUtils;
@@ -296,10 +295,10 @@ public class MeteredCommandProcessor {
     // keys
     // across all metric registrations. This prevents Prometheus IllegalArgumentException
     // when different tests register the same metric with different tag sets.
-    for (CommandFeature feature : CommandFeature.values()) {
-      boolean isUsed = commandContext.commandFeatures().contains(feature);
-      tags.add(Tag.of(feature.getTagName(), String.valueOf(isUsed)));
-    }
+    // for (CommandFeature feature : CommandFeature.values()) {
+    //  boolean isUsed = commandContext.commandFeatures().contains(feature);
+    //  tags.add(Tag.of(feature.getTagName(), String.valueOf(isUsed)));
+    // }
 
     return Tags.of(tags);
   }
