@@ -94,7 +94,6 @@
       <!-- 06-July-2026, clun: Testcontainers BOM for version management,
          now required as not pulled by transitive dependency in latest quarkus
          version. -->
-
     </dependencies>
   </dependencyManagement>
   <!-- Add local repository for private java driver queryBuilder build to avoid using systemPath in dependency-->
