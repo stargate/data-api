@@ -110,4 +110,14 @@ public final class CommandFeatures {
     // CommandFeatures[features…]
     return "CommandFeatures" + commandFeatures.toString();
   }
+
+  /**
+   * Checks if this instance contains a specific feature.
+   *
+   * @param feature The feature to check for.
+   * @return {@code true} if the feature is present, {@code false} otherwise.
+   */
+  public boolean contains(CommandFeature feature) {
+    return commandFeatures.contains(feature);
+  }
 }

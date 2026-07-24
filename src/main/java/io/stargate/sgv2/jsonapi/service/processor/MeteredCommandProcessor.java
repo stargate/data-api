@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.ClassUtils;
@@ -292,7 +293,25 @@ public class MeteredCommandProcessor {
     tags.add(Tag.of(jsonApiMetricsConfig.sortType(), sortType.name()));
 
     // --- Command Feature Usage Tags ---
-    tags.addAll(commandContext.commandFeatures().getTags().stream().toList());
+
+    // 2026-07-07, clun: Always add all feature tags with true/false values to ensure consistent tag
+    // keys across all metric registrations. This prevents Prometheus IllegalArgumentException
+    // when different tests register the same metric with different tag sets.
+    // if this control is not performed we got :
+
+    // Error Message: Prometheus requires that all meters with the same name have the same
+    // set of tag keys. There is already an existing meter named 'command_processor_process_seconds'
+    // containing tag keys [command, error, error_code, module, sort_type, tenant, vector_enabled].
+    // The meter you are attempting to register has keys [command, error, error_code,
+    // feature_vectorize,
+    // module, sort_type, tenant, vector_enabled].
+
+    // tags.addAll(commandContext.commandFeatures().getTags().stream().toList());
+
+    for (CommandFeature feature : CommandFeature.values()) {
+      boolean isUsed = commandContext.commandFeatures().contains(feature);
+      tags.add(Tag.of(feature.getTagName(), String.valueOf(isUsed)));
+    }
 
     return Tags.of(tags);
   }
