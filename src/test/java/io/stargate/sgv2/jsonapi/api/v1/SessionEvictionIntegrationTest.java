@@ -30,6 +30,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(SessionEvictionIntegrationTest.class);
+  private static final String READINESS_PATH = "/stargate/health/ready";
+  private static final String LIVENESS_PATH = "/stargate/health/live";
 
   /**
    * Overridden to ensure we connect to the isolated container created for this test.
@@ -69,6 +71,8 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         .body("$", responseIsFindSuccess())
         .body("data.document._id", is("before_crash"));
 
+    waitForReadinessStatus("UP", 30_000);
+
     // 2. Stop the container to simulate DB failure
     // Use low-level dockerClient to stop the container without triggering Testcontainers'
     // cleanup/termination logic (which dbContainer.stop() would do).
@@ -86,11 +90,15 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         .body(
             "errors[0].errorCode", is(DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE.name()));
 
+    waitForReadinessStatus("DOWN", 60_000);
+    given().when().get(LIVENESS_PATH).then().statusCode(200).body("status", is("UP"));
+
     // 4. Restart the container to simulate recovery
     getDockerClient().startContainerCmd(getContainerId()).exec();
 
     // 5. Wait for the database to become responsive again
     waitForDbRecovery();
+    waitForReadinessStatus("UP", 120_000);
 
     // 6. Verify Session Recovery: check the data before crashing
     // Not to check that cassandra works, but to check that we are running the same container as
@@ -223,6 +231,53 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
       LOGGER.warn("Error checking API status: {}", e.getMessage(), e);
       return false;
     }
+  }
+
+  /**
+   * Polls the readiness endpoint until both the overall health and Cassandra connectivity check
+   * have the expected status.
+   */
+  private void waitForReadinessStatus(String expectedStatus, long timeoutMillis) {
+    var start = System.currentTimeMillis();
+    var expectedStatusCode = "UP".equals(expectedStatus) ? 200 : 503;
+    Response lastResponse = null;
+
+    while (System.currentTimeMillis() - start < timeoutMillis) {
+      try {
+        lastResponse = given().when().get(READINESS_PATH);
+        var jsonPath = lastResponse.jsonPath();
+        var overallStatus = jsonPath.getString("status");
+        var cassandraStatus =
+            jsonPath.getString("checks.find { it.name == 'cassandra-connection' }.status");
+
+        if (lastResponse.statusCode() == expectedStatusCode
+            && expectedStatus.equals(overallStatus)
+            && expectedStatus.equals(cassandraStatus)) {
+          return;
+        }
+      } catch (Exception e) {
+        LOGGER.debug("Readiness endpoint not in expected state yet", e);
+      }
+
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException ignored) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+
+    var lastResponseDescription =
+        lastResponse == null
+            ? "no response"
+            : "HTTP " + lastResponse.statusCode() + ": " + lastResponse.asString();
+    throw new RuntimeException(
+        "Readiness did not become "
+            + expectedStatus
+            + " within "
+            + timeoutMillis
+            + " ms. Last response: "
+            + lastResponseDescription);
   }
 
   /** Checks if Cassandra is up and normal by running "nodetool status" inside the container. */
