@@ -271,7 +271,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
         lastResponse == null
             ? "no response"
             : "HTTP " + lastResponse.statusCode() + ": " + lastResponse.asString();
-    throw new RuntimeException(
+    throw new AssertionError(
         "Readiness did not become "
             + expectedStatus
             + " within "

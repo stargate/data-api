@@ -220,16 +220,16 @@ public interface OperationsConfig {
     DatabaseType type();
 
     /**
-     * Username when connecting to cassandra database (when type is {@link DatabaseType#CASSANDRA})
-     * and fixedToken is used
+     * Username used for Cassandra connections when fixedToken is configured, and by the Cassandra
+     * readiness check when fixedToken is not configured.
      */
     @Nullable
     @WithDefault("cassandra")
     String userName();
 
     /**
-     * Password when connecting to cassandra database (when type is {@link DatabaseType#CASSANDRA})
-     * and fixedToken is used
+     * Password used for Cassandra connections when fixedToken is configured, and by the Cassandra
+     * readiness check when fixedToken is not configured.
      */
     @Nullable
     @WithDefault("cassandra")

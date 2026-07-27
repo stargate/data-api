@@ -27,9 +27,18 @@ import org.slf4j.LoggerFactory;
 /**
  * Health check that verifies Cassandra connectivity for the Data API readiness probe.
  *
- * <p>The check obtains the Cassandra session used by normal requests from the session cache,
- * verifies that it is open, and executes a lightweight query against {@code system.local}. It is
- * only active when the Data API is configured with a {@link DatabaseType#CASSANDRA} backend.
+ * <p>The check obtains a session through the same session cache used by normal requests, verifies
+ * that it is open, and executes a lightweight query against {@code system.local}. It uses the fixed
+ * token when configured; otherwise it uses the configured Cassandra username and password. These
+ * default credentials verify base Cassandra connectivity, not the validity of every credential
+ * supplied on a request.
+ *
+ * <p>Readiness polling deliberately keeps the cached session active while polling continues. If
+ * requests use the same credentials, they share that session; otherwise the check maintains a
+ * dedicated session for the configured default credentials.
+ *
+ * <p>The database type is runtime configuration, so the bean remains registered for other database
+ * types. In those deployments it reports UP without accessing the Cassandra session cache.
  */
 @Readiness
 @ApplicationScoped
@@ -149,6 +158,7 @@ public class CassandraConnectionHealthCheck implements HealthCheck {
   }
 
   private static boolean isUnreliableSessionFailure(Throwable throwable) {
+    // Session acquisition through Mutiny may wrap driver failures, so inspect the cause chain.
     var current = throwable;
     while (current != null) {
       if (current instanceof AllNodesFailedException

@@ -54,6 +54,28 @@ Other Quarkus properties that are specifically relevant for the service:
 | `stargate.jsonapi.operations.database-config.ddl-delay-millis`          | `int`     | `2000`   | Delay between create table and create index to get the schema sync.                                                                                                                                |
 | `stargate.jsonapi.operations.vectorize-enabled`                         | `boolean` | `false`  | Flag to enable server side vectorization.                                                                                                                                              |
 
+### Cassandra readiness
+
+When `stargate.jsonapi.operations.database-config.type` is `CASSANDRA`, the
+`/stargate/health/ready` response includes a `cassandra-connection` check. The check obtains a
+session through the application session cache and executes
+`SELECT release_version FROM system.local`.
+
+If `stargate.jsonapi.operations.database-config.fixed-token` is configured, the readiness check
+uses that token. Otherwise it connects with
+`stargate.jsonapi.operations.database-config.user-name` and
+`stargate.jsonapi.operations.database-config.password`, which both default to `cassandra`. These
+credentials must be valid even when API clients supply different per-request credentials. The check
+verifies connectivity with the configured default credentials; it does not validate every
+request-specific credential.
+
+Readiness polling counts as session access and intentionally keeps the cached session active while
+polling continues. Session acquisition and the validation query each have a five-second
+timeout, so deployment probe timeouts should allow for both stages. The Helm chart defaults the
+readiness probe timeout to ten seconds.
+
+For other database types, the check reports UP without accessing the Cassandra session cache.
+
 
 ## Jsonapi metering configuration
 *Configuration for jsonapi metering, defined by [JsonApiMetricsConfig.java](io/stargate/sgv2/jsonapi/api/v1/metrics/JsonApiMetricsConfig.java).*

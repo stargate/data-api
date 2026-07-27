@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
@@ -44,6 +45,7 @@ public class CassandraConnectionHealthCheckTest {
 
   @BeforeEach
   public void setup() {
+    TenantFactory.reset();
     TenantFactory.initialize(DatabaseType.CASSANDRA);
 
     sessionCache = mock(CQLSessionCache.class);
@@ -119,6 +121,8 @@ public class CassandraConnectionHealthCheckTest {
                 assertThat(data)
                     .containsEntry("error", "IllegalStateException")
                     .containsEntry("message", "Cannot connect"));
+    verify(sessionCache, never())
+        .evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
   }
 
   @Test
@@ -157,6 +161,43 @@ public class CassandraConnectionHealthCheckTest {
   }
 
   @Test
+  public void wrappedAllNodesFailedReportsDownAndUnreliableSessionIsEvicted() {
+    var allNodesFailed = mock(AllNodesFailedException.class);
+
+    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
+        .thenReturn(Uni.createFrom().item(session));
+    when(session.isClosed()).thenReturn(false);
+    when(session.execute(any(SimpleStatement.class)))
+        .thenThrow(new RuntimeException("Session failed", allNodesFailed));
+
+    var response = healthCheck.call();
+
+    assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
+    assertThat(response.getData())
+        .hasValueSatisfying(
+            data ->
+                assertThat(data)
+                    .containsEntry("error", "RuntimeException")
+                    .containsEntry("message", "Session failed"));
+    verify(sessionCache).evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
+  }
+
+  @Test
+  public void queryFailureDoesNotEvictReliableSession() {
+    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
+        .thenReturn(Uni.createFrom().item(session));
+    when(session.isClosed()).thenReturn(false);
+    when(session.execute(any(SimpleStatement.class)))
+        .thenThrow(new IllegalStateException("Invalid query"));
+
+    var response = healthCheck.call();
+
+    assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
+    verify(sessionCache, never())
+        .evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
+  }
+
+  @Test
   public void sessionAcquisitionTimeoutReportsDown() {
     when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
         .thenReturn(Uni.createFrom().nothing());
@@ -164,6 +205,8 @@ public class CassandraConnectionHealthCheckTest {
     var response = healthCheck.call();
 
     assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
+    verify(sessionCache, never())
+        .evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
     verifyNoInteractions(session);
   }
 
