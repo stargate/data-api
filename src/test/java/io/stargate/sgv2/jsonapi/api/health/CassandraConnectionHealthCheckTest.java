@@ -13,8 +13,8 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
-import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -33,9 +33,11 @@ import org.mockito.ArgumentCaptor;
 /** Tests for {@link CassandraConnectionHealthCheck}. */
 public class CassandraConnectionHealthCheckTest {
 
-  private static final String FIXED_TOKEN = "fixed-token";
+  private static final UserAgent HEALTH_CHECK_USER_AGENT = new UserAgent("DataAPI-HealthCheck/1.0");
   private static final String USER_NAME = "test-user";
   private static final String PASSWORD = "test-password";
+
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   private CQLSessionCache sessionCache;
   private OperationsConfig operationsConfig;
@@ -53,7 +55,7 @@ public class CassandraConnectionHealthCheckTest {
 
     databaseConfig = mock(OperationsConfig.DatabaseConfig.class);
     when(databaseConfig.type()).thenReturn(DatabaseType.CASSANDRA);
-    when(databaseConfig.fixedToken()).thenReturn(Optional.of(FIXED_TOKEN));
+    when(databaseConfig.fixedToken()).thenReturn(Optional.of(TEST_CONSTANTS.AUTH_TOKEN));
     when(databaseConfig.userName()).thenReturn(USER_NAME);
     when(databaseConfig.password()).thenReturn(PASSWORD);
 
@@ -81,8 +83,7 @@ public class CassandraConnectionHealthCheckTest {
     var resultSet = mock(ResultSet.class);
     var row = mock(Row.class);
 
-    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
-        .thenReturn(Uni.createFrom().item(session));
+    sessionRequestReturns(Uni.createFrom().item(session));
     when(session.isClosed()).thenReturn(false);
     when(session.execute(any(SimpleStatement.class))).thenReturn(resultSet);
     when(resultSet.one()).thenReturn(row);
@@ -109,8 +110,7 @@ public class CassandraConnectionHealthCheckTest {
 
   @Test
   public void sessionAcquisitionFailureReportsDown() {
-    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
-        .thenReturn(Uni.createFrom().failure(new IllegalStateException("Cannot connect")));
+    sessionRequestReturns(Uni.createFrom().failure(new IllegalStateException("Cannot connect")));
 
     var response = healthCheck.call();
 
@@ -121,14 +121,12 @@ public class CassandraConnectionHealthCheckTest {
                 assertThat(data)
                     .containsEntry("error", "IllegalStateException")
                     .containsEntry("message", "Cannot connect"));
-    verify(sessionCache, never())
-        .evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
+    verifySessionNotEvicted();
   }
 
   @Test
   public void closedSessionReportsDownAndIsEvicted() {
-    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
-        .thenReturn(Uni.createFrom().item(session));
+    sessionRequestReturns(Uni.createFrom().item(session));
     when(session.isClosed()).thenReturn(true);
 
     var response = healthCheck.call();
@@ -136,14 +134,13 @@ public class CassandraConnectionHealthCheckTest {
     assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
     assertThat(response.getData())
         .hasValueSatisfying(data -> assertThat(data).containsEntry("reason", "Session is closed"));
-    verify(sessionCache).evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
+    verifySessionEvicted();
     verify(session, never()).execute(any(SimpleStatement.class));
   }
 
   @Test
   public void queryFailureReportsDownAndUnreliableSessionIsEvicted() {
-    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
-        .thenReturn(Uni.createFrom().item(session));
+    sessionRequestReturns(Uni.createFrom().item(session));
     when(session.isClosed()).thenReturn(false);
     when(session.execute(any(SimpleStatement.class)))
         .thenThrow(new ClosedConnectionException("Connection is closed"));
@@ -157,15 +154,14 @@ public class CassandraConnectionHealthCheckTest {
                 assertThat(data)
                     .containsEntry("error", "ClosedConnectionException")
                     .containsEntry("message", "Connection is closed"));
-    verify(sessionCache).evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
+    verifySessionEvicted();
   }
 
   @Test
   public void wrappedAllNodesFailedReportsDownAndUnreliableSessionIsEvicted() {
     var allNodesFailed = mock(AllNodesFailedException.class);
 
-    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
-        .thenReturn(Uni.createFrom().item(session));
+    sessionRequestReturns(Uni.createFrom().item(session));
     when(session.isClosed()).thenReturn(false);
     when(session.execute(any(SimpleStatement.class)))
         .thenThrow(new RuntimeException("Session failed", allNodesFailed));
@@ -179,13 +175,12 @@ public class CassandraConnectionHealthCheckTest {
                 assertThat(data)
                     .containsEntry("error", "RuntimeException")
                     .containsEntry("message", "Session failed"));
-    verify(sessionCache).evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
+    verifySessionEvicted();
   }
 
   @Test
   public void queryFailureDoesNotEvictReliableSession() {
-    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
-        .thenReturn(Uni.createFrom().item(session));
+    sessionRequestReturns(Uni.createFrom().item(session));
     when(session.isClosed()).thenReturn(false);
     when(session.execute(any(SimpleStatement.class)))
         .thenThrow(new IllegalStateException("Invalid query"));
@@ -193,20 +188,17 @@ public class CassandraConnectionHealthCheckTest {
     var response = healthCheck.call();
 
     assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
-    verify(sessionCache, never())
-        .evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
+    verifySessionNotEvicted();
   }
 
   @Test
   public void sessionAcquisitionTimeoutReportsDown() {
-    when(sessionCache.getSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class)))
-        .thenReturn(Uni.createFrom().nothing());
+    sessionRequestReturns(Uni.createFrom().nothing());
 
     var response = healthCheck.call();
 
     assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
-    verify(sessionCache, never())
-        .evictSession(any(Tenant.class), eq(FIXED_TOKEN), any(UserAgent.class));
+    verifySessionNotEvicted();
     verifyNoInteractions(session);
   }
 
@@ -216,7 +208,8 @@ public class CassandraConnectionHealthCheckTest {
     healthCheck =
         new CassandraConnectionHealthCheck(sessionCache, operationsConfig, Duration.ofMillis(100));
 
-    when(sessionCache.getSession(any(Tenant.class), any(String.class), any(UserAgent.class)))
+    when(sessionCache.getSession(
+            eq(TEST_CONSTANTS.CASSANDRA_TENANT), any(String.class), eq(HEALTH_CHECK_USER_AGENT)))
         .thenReturn(Uni.createFrom().item(session));
     when(session.isClosed()).thenReturn(true);
 
@@ -227,7 +220,8 @@ public class CassandraConnectionHealthCheckTest {
             + Base64.getEncoder().encodeToString(USER_NAME.getBytes(StandardCharsets.UTF_8))
             + ":"
             + Base64.getEncoder().encodeToString(PASSWORD.getBytes(StandardCharsets.UTF_8));
-    verify(sessionCache).getSession(any(Tenant.class), eq(expectedToken), any(UserAgent.class));
+    verify(sessionCache)
+        .getSession(TEST_CONSTANTS.CASSANDRA_TENANT, expectedToken, HEALTH_CHECK_USER_AGENT);
   }
 
   @Test
@@ -247,5 +241,23 @@ public class CassandraConnectionHealthCheckTest {
                         "reason",
                         "Cassandra connectivity check is not applicable for database type ASTRA"));
     verifyNoInteractions(sessionCache);
+  }
+
+  private void sessionRequestReturns(Uni<CqlSession> sessionResult) {
+    when(sessionCache.getSession(
+            TEST_CONSTANTS.CASSANDRA_TENANT, TEST_CONSTANTS.AUTH_TOKEN, HEALTH_CHECK_USER_AGENT))
+        .thenReturn(sessionResult);
+  }
+
+  private void verifySessionEvicted() {
+    verify(sessionCache)
+        .evictSession(
+            TEST_CONSTANTS.CASSANDRA_TENANT, TEST_CONSTANTS.AUTH_TOKEN, HEALTH_CHECK_USER_AGENT);
+  }
+
+  private void verifySessionNotEvicted() {
+    verify(sessionCache, never())
+        .evictSession(
+            TEST_CONSTANTS.CASSANDRA_TENANT, TEST_CONSTANTS.AUTH_TOKEN, HEALTH_CHECK_USER_AGENT);
   }
 }
