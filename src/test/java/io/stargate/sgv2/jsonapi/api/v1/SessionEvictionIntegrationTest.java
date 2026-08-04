@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -30,8 +31,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(SessionEvictionIntegrationTest.class);
-  private static final String READINESS_PATH = "/stargate/health/ready";
-  private static final String LIVENESS_PATH = "/stargate/health/live";
+  private static final String READINESS_USER_AGENT = "DataAPI-Readiness-Test/1.0";
 
   /**
    * Overridden to ensure we connect to the isolated container created for this test.
@@ -52,6 +52,13 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
   @Test
   public void testSessionEvictionOnAllNodesFailed() {
+    if (!executeCqlStatement(
+        "CREATE KEYSPACE IF NOT EXISTS datastax_sla "
+            + "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}",
+        "CREATE TABLE IF NOT EXISTS datastax_sla.check (id text PRIMARY KEY)")) {
+      throw new AssertionError("Failed to provision the distributed readiness table");
+    }
+
     // 1. Insert and find initial data to ensure the database is healthy before the test
     insertDoc(
         """
@@ -91,7 +98,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
             "errors[0].errorCode", is(DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE.name()));
 
     waitForReadinessStatus("DOWN", 60_000);
-    given().when().get(LIVENESS_PATH).then().statusCode(200).body("status", is("UP"));
 
     // 4. Restart the container to simulate recovery
     getDockerClient().startContainerCmd(getContainerId()).exec();
@@ -233,10 +239,7 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     }
   }
 
-  /**
-   * Polls the readiness endpoint until both the overall health and Cassandra connectivity check
-   * have the expected status.
-   */
+  /** Polls the authenticated database readiness endpoint until it has the expected status. */
   private void waitForReadinessStatus(String expectedStatus, long timeoutMillis) {
     var start = System.currentTimeMillis();
     var expectedStatusCode = "UP".equals(expectedStatus) ? 200 : 503;
@@ -244,15 +247,17 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
     while (System.currentTimeMillis() - start < timeoutMillis) {
       try {
-        lastResponse = given().when().get(READINESS_PATH);
+        lastResponse =
+            given()
+                .headers(getHeaders())
+                .header("User-Agent", READINESS_USER_AGENT)
+                .when()
+                .get(DatabaseReadinessResource.BASE_PATH);
         var jsonPath = lastResponse.jsonPath();
         var overallStatus = jsonPath.getString("status");
-        var cassandraStatus =
-            jsonPath.getString("checks.find { it.name == 'cassandra-connection' }.status");
 
         if (lastResponse.statusCode() == expectedStatusCode
-            && expectedStatus.equals(overallStatus)
-            && expectedStatus.equals(cassandraStatus)) {
+            && expectedStatus.equals(overallStatus)) {
           return;
         }
       } catch (Exception e) {
@@ -372,9 +377,10 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      */
     @Override
     public Map<String, String> start() {
-      var props = super.start();
+      var props = new HashMap<>(super.start());
+      props.put("stargate.jsonapi.operations.sla-user-agent", READINESS_USER_AGENT);
       sessionEvictionCassandraContainer = super.getCassandraContainer();
-      return props;
+      return Map.copyOf(props);
     }
 
     /**

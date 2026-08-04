@@ -54,27 +54,39 @@ Other Quarkus properties that are specifically relevant for the service:
 | `stargate.jsonapi.operations.database-config.ddl-delay-millis`          | `int`     | `2000`   | Delay between create table and create index to get the schema sync.                                                                                                                                |
 | `stargate.jsonapi.operations.vectorize-enabled`                         | `boolean` | `false`  | Flag to enable server side vectorization.                                                                                                                                              |
 
-### Cassandra readiness
+### Database readiness
 
-When `stargate.jsonapi.operations.database-config.type` is `CASSANDRA`, the
-`/stargate/health/ready` response includes a `cassandra-connection` check. The check obtains a
-session through the application session cache and executes
-`SELECT release_version FROM system.local`.
+`GET /v1/health/ready` is an authenticated database readiness endpoint used for both Astra and
+Cassandra deployments. It uses the request's tenant, `Token` header, and `User-Agent` to obtain a
+session through the normal session cache. The Data API does not store separate readiness
+credentials.
 
-If `stargate.jsonapi.operations.database-config.fixed-token` is configured, the readiness check
-uses that token. Otherwise it connects with
-`stargate.jsonapi.operations.database-config.user-name` and
-`stargate.jsonapi.operations.database-config.password`, which both default to `cassandra`. These
-credentials must be valid even when API clients supply different per-request credentials. The check
-verifies connectivity with the configured default credentials; it does not validate every
-request-specific credential.
+The endpoint executes `SELECT * FROM datastax_sla.check LIMIT 1` at `LOCAL_QUORUM`, using the
+`table-read` driver profile for the remaining read settings. An `UP` response therefore confirms
+that the coordinator can complete a read from a replicated table at local quorum. It does not
+validate every tenant's credentials, write availability, or cross-region availability.
 
-Readiness polling counts as session access and intentionally keeps the cached session active while
-polling continues. Session acquisition and the validation query each have a five-second
-timeout, so deployment probe timeouts should allow for both stages. The Helm chart defaults the
-readiness probe timeout to ten seconds.
+The deployment must provide a dedicated canary tenant and credentials for this request and must
+provision a `datastax_sla.check` table that the canary principal can read. Its replication factor
+must be appropriate for the deployment (greater than one in a multi-node local data center) so
+`LOCAL_QUORUM` requires responses from multiple replicas. Astra callers must use the canary database
+hostname so the tenant and region are resolved from `Host`; Cassandra ignores the tenant portion of
+`Host`. The caller must also send the exact User-Agent configured by
+`stargate.jsonapi.operations.sla-user-agent`, allowing a dedicated canary session to use the shorter
+SLA session TTL instead of being treated like normal client traffic.
 
-For other database types, the check reports UP without accessing the Cassandra session cache.
+The check is fully asynchronous and has a five-second timeout. It returns HTTP 200 with
+`{"status":"UP"}` after a successful read, HTTP 503 with `{"status":"DOWN"}` after a database
+failure or timeout, and HTTP 401 when the `Token` header is missing or authentication fails.
+
+Kubernetes or an SLA checker must call each pod directly for this endpoint to control per-pod
+readiness. An external request sent through a load balancer does not establish which pod is ready.
+Restrict the endpoint to trusted probe traffic with deployment controls such as a NetworkPolicy,
+mTLS, or an ingress ACL and rate limit. Kubernetes `httpGet` headers cannot reference a Secret, so
+delivery of the canary token is intentionally outside the Data API configuration. Prefer an
+external checker or a Secret-mounted file read by an `exec` probe; do not put the token literally in
+the probe command or shell trace. The unauthenticated Quarkus health endpoints under the
+non-application path do not include this database check.
 
 
 ## Jsonapi metering configuration

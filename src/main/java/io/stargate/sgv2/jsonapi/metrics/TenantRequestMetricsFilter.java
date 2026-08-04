@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.v1.DatabaseReadinessResource;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -71,31 +72,36 @@ public class TenantRequestMetricsFilter {
   @ServerResponseFilter
   public void record(
       ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-    // only if enabled
-    if (config.enabled()) {
-
-      // resolve tenant
-      Tag tenantTag = Tag.of(config.tenantTag(), this.requestContext.tenant().toString());
-
-      // resolve error
-      boolean error = responseContext.getStatus() >= 500;
-      Tag errorTag = error ? ExceptionMetrics.TAG_ERROR_TRUE : ExceptionMetrics.TAG_ERROR_FALSE;
-
-      // check if we need user agent as well
-      Tags tags = Tags.of(tenantTag, errorTag);
-      if (config.userAgentTagEnabled()) {
-        String userAgentValue = getUserAgentValue(requestContext);
-        tags = tags.and(Tag.of(config.userAgentTag(), userAgentValue));
-      }
-
-      // add http status code
-      if (config.statusTagEnabled()) {
-        tags = tags.and(Tag.of(config.statusTag(), String.valueOf(responseContext.getStatus())));
-      }
-
-      // record
-      meterRegistry.counter(config.metricName(), tags).increment();
+    if (!config.enabled() || isDatabaseReadinessRequest(requestContext)) {
+      return;
     }
+
+    // resolve tenant
+    Tag tenantTag = Tag.of(config.tenantTag(), this.requestContext.tenant().toString());
+
+    // resolve error
+    boolean error = responseContext.getStatus() >= 500;
+    Tag errorTag = error ? ExceptionMetrics.TAG_ERROR_TRUE : ExceptionMetrics.TAG_ERROR_FALSE;
+
+    // check if we need user agent as well
+    Tags tags = Tags.of(tenantTag, errorTag);
+    if (config.userAgentTagEnabled()) {
+      String userAgentValue = getUserAgentValue(requestContext);
+      tags = tags.and(Tag.of(config.userAgentTag(), userAgentValue));
+    }
+
+    // add http status code
+    if (config.statusTagEnabled()) {
+      tags = tags.and(Tag.of(config.statusTag(), String.valueOf(responseContext.getStatus())));
+    }
+
+    // record
+    meterRegistry.counter(config.metricName(), tags).increment();
+  }
+
+  private static boolean isDatabaseReadinessRequest(ContainerRequestContext requestContext) {
+    return DatabaseReadinessResource.BASE_PATH.equals(
+        requestContext.getUriInfo().getRequestUri().getPath());
   }
 
   private String getUserAgentValue(ContainerRequestContext requestContext) {
