@@ -65,6 +65,7 @@ public final class DatabaseReadinessCheck {
                   .executeRead(statement)
                   .replaceWithVoid();
             })
+        // The statement timeout bounds driver I/O; this also bounds asynchronous session lookup.
         .ifNoItem()
         .after(timeout)
         .fail();

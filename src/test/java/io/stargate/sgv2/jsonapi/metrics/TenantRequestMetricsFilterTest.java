@@ -12,12 +12,14 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class TenantRequestMetricsFilterTest {
 
-  @Test
-  public void databaseReadinessIsNotCountedAsTenantTraffic() {
+  @ParameterizedTest
+  @ValueSource(strings = {"", "/"})
+  public void databaseReadinessIsNotCountedAsTenantTraffic(String pathSuffix) {
     var meterRegistry = mock(MeterRegistry.class);
     var dataApiRequestContext = mock(RequestContext.class);
     var metricsConfig = mock(MetricsConfig.class);
@@ -29,7 +31,8 @@ public class TenantRequestMetricsFilterTest {
     var uriInfo = mock(UriInfo.class);
     when(requestContext.getUriInfo()).thenReturn(uriInfo);
     when(uriInfo.getRequestUri())
-        .thenReturn(URI.create("http://localhost" + DatabaseReadinessResource.BASE_PATH));
+        .thenReturn(
+            URI.create("http://localhost" + DatabaseReadinessResource.BASE_PATH + pathSuffix));
 
     var filter =
         new TenantRequestMetricsFilter(meterRegistry, dataApiRequestContext, metricsConfig);

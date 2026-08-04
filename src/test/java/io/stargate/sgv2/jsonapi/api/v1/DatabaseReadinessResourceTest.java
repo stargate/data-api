@@ -17,16 +17,20 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @QuarkusTest
 @TestProfile(DatabaseReadinessResourceTest.AstraProfile.class)
@@ -48,6 +52,8 @@ public class DatabaseReadinessResourceTest {
     sessionCache = mock(CQLSessionCache.class);
     session = mock(CqlSession.class);
     when(sessionCacheSupplier.get()).thenReturn(sessionCache);
+    when(sessionCacheSupplier.slaUserAgent())
+        .thenReturn(Optional.of(new UserAgent(SLA_USER_AGENT)));
   }
 
   @Test
@@ -58,13 +64,15 @@ public class DatabaseReadinessResourceTest {
         .when()
         .get(DatabaseReadinessResource.BASE_PATH)
         .then()
-        .statusCode(401);
+        .statusCode(401)
+        .body("errors[0].errorCode", equalTo("MISSING_AUTHENTICATION_TOKEN"));
 
     verifyNoInteractions(sessionCache);
   }
 
-  @Test
-  public void astraRequestUsesResolvedTenantTokenAndSlaUserAgent() {
+  @ParameterizedTest
+  @ValueSource(strings = {"", "/"})
+  public void astraRequestUsesResolvedTenantTokenAndSlaUserAgent(String pathSuffix) {
     var resultSet = mock(AsyncResultSet.class);
     var capturedContext = new AtomicReference<RequestContextSnapshot>();
     when(sessionCache.getSession(any(RequestContext.class)))
@@ -84,13 +92,41 @@ public class DatabaseReadinessResourceTest {
 
     authenticatedRequest()
         .when()
-        .get(DatabaseReadinessResource.BASE_PATH)
+        .get(DatabaseReadinessResource.BASE_PATH + pathSuffix)
         .then()
         .statusCode(200)
         .body("status", equalTo("UP"));
 
     assertThat(capturedContext.get())
         .isEqualTo(new RequestContextSnapshot(TENANT_ID, REGION, TOKEN, SLA_USER_AGENT));
+  }
+
+  @Test
+  public void wrongSlaUserAgentIsRejectedBeforeDatabaseAccess() {
+    given()
+        .header("Host", ASTRA_HOST)
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, TOKEN)
+        .header("User-Agent", "ordinary-client")
+        .when()
+        .get(DatabaseReadinessResource.BASE_PATH)
+        .then()
+        .statusCode(403);
+
+    verifyNoInteractions(sessionCache);
+  }
+
+  @Test
+  public void missingSlaUserAgentConfigurationReturnsServiceUnavailable() {
+    when(sessionCacheSupplier.slaUserAgent()).thenReturn(Optional.empty());
+
+    authenticatedRequest()
+        .when()
+        .get(DatabaseReadinessResource.BASE_PATH)
+        .then()
+        .statusCode(503)
+        .body("status", equalTo("DOWN"));
+
+    verifyNoInteractions(sessionCache);
   }
 
   @Test
@@ -122,7 +158,7 @@ public class DatabaseReadinessResourceTest {
             .get(DatabaseReadinessResource.BASE_PATH)
             .then()
             .statusCode(401)
-            .body("status", equalTo("DOWN"))
+            .body("errors[0].errorCode", equalTo("UNAUTHENTICATED_REQUEST"))
             .extract()
             .asString();
 
@@ -143,12 +179,34 @@ public class DatabaseReadinessResourceTest {
             .get(DatabaseReadinessResource.BASE_PATH)
             .then()
             .statusCode(401)
-            .body("status", equalTo("DOWN"))
+            .body("errors[0].errorCode", equalTo("UNAUTHENTICATED_REQUEST"))
             .extract()
             .asString();
 
     assertThat(response)
         .doesNotContain("sensitive database authentication failure", TOKEN, TENANT_ID);
+  }
+
+  @Test
+  public void cyclicFailureCauseReturnsServiceUnavailable() {
+    var firstFailure = new IllegalStateException("first sensitive failure");
+    var secondFailure = new IllegalArgumentException("second sensitive failure");
+    firstFailure.initCause(secondFailure);
+    secondFailure.initCause(firstFailure);
+    when(sessionCache.getSession(any(RequestContext.class)))
+        .thenReturn(Uni.createFrom().failure(firstFailure));
+
+    var response =
+        authenticatedRequest()
+            .when()
+            .get(DatabaseReadinessResource.BASE_PATH)
+            .then()
+            .statusCode(503)
+            .body("status", equalTo("DOWN"))
+            .extract()
+            .asString();
+
+    assertThat(response).doesNotContain("first sensitive failure", "second sensitive failure");
   }
 
   private io.restassured.specification.RequestSpecification authenticatedRequest() {

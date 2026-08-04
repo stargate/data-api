@@ -71,18 +71,26 @@ provision a `datastax_sla.check` table that the canary principal can read. Its r
 must be appropriate for the deployment (greater than one in a multi-node local data center) so
 `LOCAL_QUORUM` requires responses from multiple replicas. Astra callers must use the canary database
 hostname so the tenant and region are resolved from `Host`; Cassandra ignores the tenant portion of
-`Host`. The caller must also send the exact User-Agent configured by
-`stargate.jsonapi.operations.sla-user-agent`, allowing a dedicated canary session to use the shorter
-SLA session TTL instead of being treated like normal client traffic.
+`Host`. The caller must also send the full User-Agent configured by
+`stargate.jsonapi.operations.sla-user-agent`. The comparison is case-insensitive. Requests with a
+missing or different User-Agent are rejected before accessing the session cache, and the endpoint
+fails closed when the SLA User-Agent is not configured. This ensures the canary session uses the
+shorter SLA session TTL instead of being treated like normal client traffic. Do not reuse the canary
+credentials for normal traffic, because using the same cached session with a non-SLA User-Agent can
+extend its lifetime.
 
 The check is fully asynchronous and has a five-second timeout. It returns HTTP 200 with
-`{"status":"UP"}` after a successful read, HTTP 503 with `{"status":"DOWN"}` after a database
-failure or timeout, and HTTP 401 when the `Token` header is missing or authentication fails.
+`{"status":"UP"}` after a successful read and HTTP 503 with `{"status":"DOWN"}` after a database
+failure, timeout, or missing SLA User-Agent configuration. It returns the standard Data API error
+response with HTTP 401 when the `Token` header is missing or authentication fails, and HTTP 403 when
+the request User-Agent does not match the configured SLA User-Agent. Probe integrations must use the
+HTTP status as the readiness contract rather than parsing the response body's `status` field alone.
 
 Kubernetes or an SLA checker must call each pod directly for this endpoint to control per-pod
 readiness. An external request sent through a load balancer does not establish which pod is ready.
 Restrict the endpoint to trusted probe traffic with deployment controls such as a NetworkPolicy,
-mTLS, or an ingress ACL and rate limit. Kubernetes `httpGet` headers cannot reference a Secret, so
+mTLS, or an ingress ACL and rate limit. The User-Agent check is an operational guard, not an
+authentication boundary. Kubernetes `httpGet` headers cannot reference a Secret, so
 delivery of the canary token is intentionally outside the Data API configuration. Prefer an
 external checker or a Secret-mounted file read by an `exec` probe; do not put the token literally in
 the probe command or shell trace. The unauthenticated Quarkus health endpoints under the

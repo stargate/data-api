@@ -100,8 +100,9 @@ public class TenantRequestMetricsFilter {
   }
 
   private static boolean isDatabaseReadinessRequest(ContainerRequestContext requestContext) {
-    return DatabaseReadinessResource.BASE_PATH.equals(
-        requestContext.getUriInfo().getRequestUri().getPath());
+    var requestPath = requestContext.getUriInfo().getRequestUri().getPath();
+    return DatabaseReadinessResource.BASE_PATH.equals(requestPath)
+        || (DatabaseReadinessResource.BASE_PATH + "/").equals(requestPath);
   }
 
   private String getUserAgentValue(ContainerRequestContext requestContext) {
