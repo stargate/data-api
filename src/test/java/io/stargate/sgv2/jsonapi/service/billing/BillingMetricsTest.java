@@ -1,10 +1,12 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.stargate.sgv2.jsonapi.metrics.BillingMetrics;
 import org.junit.jupiter.api.Test;
 
 /** Guards the meter names and tags — dashboards and alerts key on these exact series. */

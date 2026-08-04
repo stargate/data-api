@@ -9,7 +9,7 @@ import java.util.Optional;
 @ConfigMapping(prefix = "stargate.jsonapi.billing.s3")
 public interface BillingS3ExportConfig {
 
-  /** Master switch: when false the export handler is never installed. */
+  /** when false the export handler is never installed. */
   @WithDefault("false")
   boolean enabled();
 
@@ -19,18 +19,23 @@ public interface BillingS3ExportConfig {
   /** S3 bucket region */
   Optional<String> bucketRegion();
 
-  /** Only for non-AWS S3 endpoints (e.g. S3Mock in tests). */
+  /** Only for non-AWS S3 endpoints (e.g. S3Mock in tests).
+   * TODO: XXX EXPLAIN WHAT THIS SHOULD SET SET TO
+   * */
   Optional<String> endpointOverride();
 
-  /** Line-count seal: a buffered batch is shipped once it holds this many events. */
+  /** */
   @WithDefault("50")
-  int maxEvents();
+  int maxEventsPerBatch();
 
-  /** UTF-8 NDJSON byte seal; a batch may exceed it by one whole event. */
+  /**
+   * Max bytes to include in a batch, NOTE: if a single event is bigger than this it will be sent in a batch still.
+   * 2097152 == 2 MB
+   * */
   @WithDefault("2097152")
-  long maxBytes();
+  long maxBytesPerBatch();
 
-  /** Age flush period: buffered events are shipped at least this often, sealed or not. */
+  /** Age flush period: buffered events are shipped at least this often */
   @WithDefault("PT30S")
   Duration maxAge();
 
@@ -42,7 +47,9 @@ public interface BillingS3ExportConfig {
   @WithDefault("4")
   int uploadConcurrency();
 
-  /** Budget for draining the buffer at shutdown; keep below the pod termination grace period. */
+  /** Budget for draining the buffer at shutdown; keep below the pod termination grace period.
+   * TODO: XXX WHAT IS THE CURRENT TERMINATION PERIOD ?
+   * */
   @WithDefault("PT20S")
   Duration shutdownTimeout();
 }

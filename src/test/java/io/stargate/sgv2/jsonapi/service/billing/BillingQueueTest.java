@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link BillingQueue}: seal thresholds, drain limits, and batch metadata. */
@@ -49,9 +50,9 @@ class BillingQueueTest {
     queue.offer(T0, "b");
     queue.offer(T0, "c");
 
-    assertThat(queue.drain().lines()).containsExactly("a", "b");
-    assertThat(queue.drain().lines()).containsExactly("c");
-    assertThat(queue.drain().isEmpty()).isTrue();
+    assertThat(queue.maybeDrain().lines()).containsExactly("a", "b");
+    assertThat(queue.maybeDrain().lines()).containsExactly("c");
+    assertThat(queue.maybeDrain().isEmpty()).isTrue();
   }
 
   @Test
@@ -61,9 +62,9 @@ class BillingQueueTest {
     queue.offer(T0, "bbbb");
     queue.offer(T0, "cccc");
 
-    assertThat(queue.drain().lines()).containsExactly("aaaa", "bbbb");
-    assertThat(queue.drain().lines()).containsExactly("cccc");
-    assertThat(queue.drain().isEmpty()).isTrue();
+    assertThat(queue.maybeDrain().lines()).containsExactly("aaaa", "bbbb");
+    assertThat(queue.maybeDrain().lines()).containsExactly("cccc");
+    assertThat(queue.maybeDrain().isEmpty()).isTrue();
   }
 
   @Test
@@ -73,7 +74,7 @@ class BillingQueueTest {
     queue.offer(T0.plusSeconds(5), "enqueued-first-but-newer");
     queue.offer(T0, "enqueued-second-but-older");
 
-    assertThat(queue.drain().oldestEventAt()).isEqualTo(T0);
+    assertThat(queue.maybeDrain().oldestEventAt()).isEqualTo(T0);
   }
 
   @Test
@@ -99,7 +100,7 @@ class BillingQueueTest {
         new Thread(
             () -> {
               while (!producersDone.get() || !queue.isEmpty()) {
-                var batch = queue.drain();
+                var batch = queue.maybeDrain();
                 if (batch.isEmpty()) {
                   Thread.onSpinWait();
                 } else {
@@ -154,7 +155,7 @@ class BillingQueueTest {
     queue.offer(T0, "bbbb");
     assertThat(queue.shouldFlush()).isTrue();
 
-    queue.drain();
+    queue.maybeDrain();
 
     assertThat(queue.isEmpty()).isTrue();
     assertThat(queue.shouldFlush()).isFalse(); // queuedBytes went back down with the drain

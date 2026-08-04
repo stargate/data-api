@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -42,11 +43,15 @@ public class S3BatchUploader implements BillingS3LogHandler.AsyncBatchUploader {
   }
 
   public static S3BatchUploader create(
+
       String region, String bucket, Optional<String> endpointOverride) {
-    if (region == null || region.isBlank())
+    if (region == null || region.isBlank()) {
       throw new IllegalArgumentException("stargate.jsonapi.billing.s3.bucket-region must be set");
-    if (bucket == null || bucket.isBlank())
+    }
+
+    if (bucket == null || bucket.isBlank()) {
       throw new IllegalArgumentException("stargate.jsonapi.billing.s3.bucket must be set");
+    }
     Objects.requireNonNull(endpointOverride, "endpointOverride must not be null");
 
     // Credentials resolve from the SDK's default provider chain (env vars, web-identity/OIDC

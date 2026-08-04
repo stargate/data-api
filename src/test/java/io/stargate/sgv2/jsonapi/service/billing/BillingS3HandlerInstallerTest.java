@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.logging.Logger;
+
 import org.junit.jupiter.api.Test;
 
 /**
@@ -28,8 +29,8 @@ class BillingS3HandlerInstallerTest {
     when(config.bucket()).thenReturn(Optional.ofNullable(bucket));
     when(config.bucketRegion()).thenReturn(Optional.ofNullable(region));
     when(config.endpointOverride()).thenReturn(Optional.empty());
-    when(config.maxEvents()).thenReturn(50);
-    when(config.maxBytes()).thenReturn(2_097_152L);
+    when(config.maxEventsPerBatch()).thenReturn(50);
+    when(config.maxBytesPerBatch()).thenReturn(2_097_152L);
     when(config.maxAge()).thenReturn(Duration.ofSeconds(30));
     when(config.queueCapacity()).thenReturn(100);
     when(config.uploadConcurrency()).thenReturn(2);

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import static io.stargate.sgv2.jsonapi.util.StringUtil.requireNonBlank;
 
@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

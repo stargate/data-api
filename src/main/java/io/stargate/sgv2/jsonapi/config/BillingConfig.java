@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import io.stargate.sgv2.jsonapi.service.provider.BillingEventType;
+import io.stargate.sgv2.jsonapi.service.billing.BillingEventType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

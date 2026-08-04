@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.ShutdownEvent;
@@ -11,6 +11,9 @@ import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ *
+ * TODO: XXX MAKE THIS COMMENTS READABLE BY A HUMAN
+ *
  * Attaches a {@link BillingS3LogHandler} to the {@code billing.events} JUL logger at startup (when
  * {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on shutdown for
  * a graceful drain.
@@ -26,8 +29,7 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class BillingS3HandlerInstaller {
 
-  private static final org.slf4j.Logger LOG =
-      LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
 
   static final String BILLING_LOGGER_NAME = "billing.events";
 
@@ -43,8 +45,9 @@ public class BillingS3HandlerInstaller {
   }
 
   void onStart(@Observes StartupEvent event) {
+
     if (!config.enabled()) {
-      LOG.debug("Billing S3 export disabled (stargate.jsonapi.billing.s3.enabled=false)");
+      LOGGER.debug("Billing S3 export disabled (stargate.jsonapi.billing.s3.enabled=false)");
       return;
     }
 
@@ -55,10 +58,11 @@ public class BillingS3HandlerInstaller {
     var uploader = S3BatchUploader.create(region, bucket, config.endpointOverride());
 
     this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
+    // TODO: LOGGER NAME SHOULD BE IN CONFIG
     Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
 
-    LOG.info(
-        "Installed billing S3 export handler on '{}' → bucket '{}' (region '{}', endpointOverride={})",
+    LOGGER.info(
+        "Attached billing S3 export handler to logger named {}, bucket={}, region={}, endpointOverride={}",
         BILLING_LOGGER_NAME,
         bucket,
         region,
@@ -66,16 +70,20 @@ public class BillingS3HandlerInstaller {
   }
 
   void onStop(@Observes ShutdownEvent event) {
+
     if (this.handler == null) {
       return;
     }
+
+    // TODO: XXX WHY DO THIS ?
     Logger.getLogger(BILLING_LOGGER_NAME).removeHandler(this.handler);
+
     // close() isn't expected to throw, but if it does (e.g. client.close() failing), letting it
     // propagate would disrupt other components' cleanup in Quarkus's shutdown sequence.
     try {
       this.handler.close();
     } catch (Exception e) {
-      LOG.warn("Error during billing S3 export handler shutdown", e);
+      LOGGER.warn("Error during billing S3 export handler shutdown", e);
     }
   }
 }
