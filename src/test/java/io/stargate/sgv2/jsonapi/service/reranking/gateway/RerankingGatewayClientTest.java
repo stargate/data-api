@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
@@ -13,7 +15,9 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelType;
@@ -21,6 +25,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvide
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +65,16 @@ public class RerankingGatewayClientTest {
   private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl PROVIDER_CONFIG =
       new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
           false, "test", true, Map.of(), List.of());
+
+  @Inject RerankingProvidersConfig rerankingProvidersConfig;
+
+  @Test
+  void productionNvidiaConfigUsesOneRetry() {
+    assertThat(rerankingProvidersConfig.providers()).containsKey("nvidia");
+    assertThat(rerankingProvidersConfig.providers().get("nvidia").models())
+        .singleElement()
+        .satisfies(model -> assertThat(model.properties().atMostRetries()).isEqualTo(1));
+  }
 
   @Test
   void handleValidResponse() {
@@ -133,7 +148,7 @@ public class RerankingGatewayClientTest {
   }
 
   @Test
-  void handleError() {
+  void mapsSchemaErrorFromGateway() {
 
     RerankingService rerankService = mock(RerankingService.class);
     final EmbeddingGateway.RerankingResponse.Builder builder =
@@ -174,5 +189,160 @@ public class RerankingGatewayClientTest {
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
               assertThat(exception.code).isEqualTo(apiException.code);
             });
+  }
+
+  @Test
+  void mapsServerErrorFromGateway() {
+    RerankingService rerankService = mock(RerankingService.class);
+    when(rerankService.rerank(any()))
+        .thenReturn(
+            Uni.createFrom()
+                .item(
+                    gatewayErrorResponse(
+                        ServerException.Code.UNEXPECTED_SERVER_ERROR.name(),
+                        "Gateway server error",
+                        "Gateway server error body")));
+
+    Throwable result = rerankAndAwaitFailure(rerankService);
+
+    assertThat(result)
+        .isInstanceOf(ServerException.class)
+        .satisfies(
+            failure -> {
+              ServerException exception = (ServerException) failure;
+              assertThat(exception.code)
+                  .isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+              assertThat(exception.body).isEqualTo("Gateway server error body");
+            });
+  }
+
+  @Test
+  void mapsRerankingProviderErrorFromGateway() {
+    RerankingService rerankService = mock(RerankingService.class);
+    when(rerankService.rerank(any()))
+        .thenReturn(
+            Uni.createFrom()
+                .item(
+                    gatewayErrorResponse(
+                        RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name(),
+                        "Gateway timeout",
+                        "Gateway timeout body")));
+
+    Throwable result = rerankAndAwaitFailure(rerankService);
+
+    assertThat(result)
+        .isInstanceOf(RerankingProviderException.class)
+        .satisfies(
+            failure -> {
+              RerankingProviderException exception = (RerankingProviderException) failure;
+              assertThat(exception.code)
+                  .isEqualTo(RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name());
+              assertThat(exception.body).isEqualTo("Gateway timeout body");
+            });
+  }
+
+  @Test
+  void preservesUnknownGatewayError() {
+    RerankingService rerankService = mock(RerankingService.class);
+    when(rerankService.rerank(any()))
+        .thenReturn(
+            Uni.createFrom()
+                .item(
+                    gatewayErrorResponse(
+                        "FUTURE_GATEWAY_ERROR",
+                        "Future gateway error",
+                        "Future gateway error body")));
+
+    Throwable result = rerankAndAwaitFailure(rerankService);
+
+    assertThat(result)
+        .isInstanceOf(RerankingProviderException.class)
+        .satisfies(
+            failure -> {
+              RerankingProviderException exception = (RerankingProviderException) failure;
+              assertThat(exception.code).isEqualTo("FUTURE_GATEWAY_ERROR");
+              assertThat(exception.title).isEqualTo("Future gateway error");
+              assertThat(exception.body).isEqualTo("Future gateway error body");
+            });
+  }
+
+  @Test
+  void mapsAsyncDeadlineExceeded() {
+    RerankingService rerankService = mock(RerankingService.class);
+    when(rerankService.rerank(any()))
+        .thenReturn(Uni.createFrom().failure(Status.DEADLINE_EXCEEDED.asRuntimeException()));
+
+    Throwable result = rerankAndAwaitFailure(rerankService);
+
+    assertThat(result)
+        .isInstanceOf(RerankingProviderException.class)
+        .satisfies(
+            failure -> {
+              RerankingProviderException exception = (RerankingProviderException) failure;
+              assertThat(exception.code)
+                  .isEqualTo(RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name());
+              assertThat(exception.body).contains(ModelProvider.NVIDIA.apiName());
+              assertThat(exception.body).contains(Status.Code.DEADLINE_EXCEEDED.name());
+            });
+  }
+
+  @Test
+  void mapsSynchronousDeadlineExceeded() {
+    RerankingService rerankService = mock(RerankingService.class);
+    when(rerankService.rerank(any())).thenThrow(Status.DEADLINE_EXCEEDED.asRuntimeException());
+
+    Throwable result = rerankAndAwaitFailure(rerankService);
+
+    assertThat(result)
+        .isInstanceOf(RerankingProviderException.class)
+        .satisfies(
+            failure -> {
+              RerankingProviderException exception = (RerankingProviderException) failure;
+              assertThat(exception.code)
+                  .isEqualTo(RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name());
+              assertThat(exception.body).contains(Status.Code.DEADLINE_EXCEEDED.name());
+            });
+  }
+
+  @Test
+  void preservesAsyncNonDeadlineStatusFailure() {
+    RerankingService rerankService = mock(RerankingService.class);
+    StatusRuntimeException unavailable = Status.UNAVAILABLE.asRuntimeException();
+    when(rerankService.rerank(any())).thenReturn(Uni.createFrom().failure(unavailable));
+
+    Throwable result = rerankAndAwaitFailure(rerankService);
+
+    assertThat(result).isSameAs(unavailable);
+  }
+
+  private static Throwable rerankAndAwaitFailure(RerankingService rerankService) {
+    return createClient(rerankService)
+        .rerank(1, "apple", List.of("orange", "apple"), RERANK_CREDENTIALS)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitFailure()
+        .getFailure();
+  }
+
+  private static RerankingEGWClient createClient(RerankingService rerankService) {
+    return new RerankingEGWClient(
+        ModelProvider.NVIDIA,
+        MODEL_CONFIG,
+        testConstants.TENANT,
+        "default",
+        rerankService,
+        Map.of(),
+        TESTING_COMMAND_NAME);
+  }
+
+  private static EmbeddingGateway.RerankingResponse gatewayErrorResponse(
+      String code, String title, String body) {
+    return EmbeddingGateway.RerankingResponse.newBuilder()
+        .setError(
+            EmbeddingGateway.RerankingResponse.ErrorResponse.newBuilder()
+                .setErrorCode(code)
+                .setErrorTitle(title)
+                .setErrorBody(body))
+        .build();
   }
 }

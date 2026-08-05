@@ -14,4 +14,5 @@ stargate:
               is-default: true
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
+                at-most-retries: 1
                 max-batch-size: 10
