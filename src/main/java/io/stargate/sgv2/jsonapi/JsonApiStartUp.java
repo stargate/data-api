@@ -4,13 +4,19 @@ import io.quarkus.runtime.StartupEvent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.DeploymentMarkerConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JsonApiStartUp {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiStartUp.class);
+
   private final OperationsConfig operationsConfig;
+  private final DeploymentMarkerConfig deploymentMarkerConfig;
 
   /**
    * {@link DebugModeConfig} and {@link BillingConfig} are injected here purely to anchor them as
@@ -26,11 +32,22 @@ public class JsonApiStartUp {
    */
   @Inject
   public JsonApiStartUp(
-      DebugModeConfig config, OperationsConfig operationsConfig, BillingConfig billingConfig) {
+      DebugModeConfig config,
+      OperationsConfig operationsConfig,
+      BillingConfig billingConfig,
+      DeploymentMarkerConfig deploymentMarkerConfig) {
     this.operationsConfig = operationsConfig;
+    this.deploymentMarkerConfig = deploymentMarkerConfig;
   }
 
   void onStart(@Observes StartupEvent ev) {
     TenantFactory.initialize(operationsConfig.databaseConfig().type());
+
+    // Observation point for deployment drills, see DeploymentMarkerConfig.
+    // Disabled by default, in which case nothing is logged here.
+    if (deploymentMarkerConfig.enabled()) {
+      LOGGER.info(
+          "Deployment marker enabled - marker={}", deploymentMarkerConfig.value().orElse(""));
+    }
   }
 }
