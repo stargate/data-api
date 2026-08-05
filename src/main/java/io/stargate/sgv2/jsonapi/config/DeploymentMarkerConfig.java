@@ -14,5 +14,6 @@ public interface DeploymentMarkerConfig {
 
   Optional<String> deploy_region();
 
+  @WithDefault("0")
   int value();
 }
