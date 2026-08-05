@@ -16,6 +16,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +50,7 @@ class RerankingProviderRetryTest {
 
   @Test
   void stopsAfterOneServerErrorRetry() {
-    RetryingTestProvider provider = new RetryingTestProvider();
+    RetryingTestProvider provider = new RetryingTestProvider(3);
     AtomicInteger calls = new AtomicInteger();
 
     Throwable failure =
@@ -77,8 +78,84 @@ class RerankingProviderRetryTest {
   }
 
   @Test
+  void usesConfiguredRetryBudgetForTimeouts() {
+    RetryingTestProvider provider = new RetryingTestProvider(3);
+    AtomicInteger calls = new AtomicInteger();
+
+    provider
+        .execute(
+            Uni.createFrom()
+                .deferred(
+                    () -> {
+                      calls.incrementAndGet();
+                      return Uni.createFrom()
+                          .<Response>failure(new TimeoutException("provider timed out"));
+                    }))
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitFailure();
+
+    assertThat(calls).hasValue(4);
+  }
+
+  @Test
+  void mixedRetryableFailuresShareConfiguredRetryBudget() {
+    RetryingTestProvider provider = new RetryingTestProvider(3);
+    AtomicInteger calls = new AtomicInteger();
+
+    provider
+        .execute(
+            Uni.createFrom()
+                .deferred(
+                    () -> {
+                      int attempt = calls.incrementAndGet();
+                      if (attempt == 2) {
+                        return Uni.createFrom()
+                            .item(response(Response.Status.INTERNAL_SERVER_ERROR));
+                      }
+                      return Uni.createFrom()
+                          .<Response>failure(new TimeoutException("provider timed out"));
+                    }))
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitFailure();
+
+    assertThat(calls).hasValue(4);
+  }
+
+  @Test
+  void serverErrorRetryBudgetIsFreshForEachSubscription() {
+    RetryingTestProvider provider = new RetryingTestProvider(3);
+    AtomicInteger calls = new AtomicInteger();
+    Response successfulResponse = response(Response.Status.OK);
+    Uni<Response> operation =
+        provider.execute(
+            Uni.createFrom()
+                .deferred(
+                    () ->
+                        Uni.createFrom()
+                            .item(
+                                calls.incrementAndGet() % 2 == 1
+                                    ? response(Response.Status.INTERNAL_SERVER_ERROR)
+                                    : successfulResponse)));
+
+    operation
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem()
+        .assertItem(successfulResponse);
+    operation
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem()
+        .assertItem(successfulResponse);
+
+    assertThat(calls).hasValue(4);
+  }
+
+  @Test
   void doesNotRetryClientError() {
-    RetryingTestProvider provider = new RetryingTestProvider();
+    RetryingTestProvider provider = new RetryingTestProvider(3);
     AtomicInteger calls = new AtomicInteger();
 
     Throwable failure =
@@ -116,7 +193,11 @@ class RerankingProviderRetryTest {
   private static final class RetryingTestProvider extends RerankingProvider {
 
     private RetryingTestProvider() {
-      super(ModelProvider.NVIDIA, modelConfig());
+      this(3);
+    }
+
+    private RetryingTestProvider(int atMostRetries) {
+      super(ModelProvider.NVIDIA, modelConfig(atMostRetries));
     }
 
     private Uni<Response> execute(Uni<Response> request) {
@@ -137,7 +218,8 @@ class RerankingProviderRetryTest {
       throw new UnsupportedOperationException("Not used by retry tests");
     }
 
-    private static RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig() {
+    private static RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig(
+        int atMostRetries) {
       return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
           "test-model",
           new ApiModelSupport.ApiModelSupportImpl(
@@ -145,7 +227,13 @@ class RerankingProviderRetryTest {
           false,
           "http://testing.com",
           new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(1, 1, 100, 1, 0.0, 10));
+              .RequestPropertiesImpl(
+              /* atMostRetries= */ atMostRetries,
+              /* initialBackOffMillis= */ 1,
+              /* readTimeoutMillis= */ 100,
+              /* maxBackOffMillis= */ 1,
+              /* jitter= */ 0.0,
+              /* maxBatchSize= */ 10));
     }
   }
 }

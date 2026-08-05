@@ -164,26 +164,12 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setProviderContext(contextBuilder.build())
             .build();
 
-    // aaron 17 June 2025 - unsure why this error handled was not in the uni pipeline below
-    // kept it as is when refactoring
-    Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
-    try {
-      embeddingResponse = grpcGatewayClient.embed(gatewayRequest);
-    } catch (StatusRuntimeException e) {
-      if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
-            Map.of(
-                "modelProvider",
-                modelProvider().apiName(),
-                "httpStatus",
-                String.valueOf(e.getStatus().getCode()),
-                "errorMessage",
-                e.getMessage()));
-      }
-      throw e;
-    }
-
-    return embeddingResponse
+    // Defer the gRPC invocation so synchronous stub failures and asynchronous Uni failures use the
+    // same status-mapping path.
+    return Uni.createFrom()
+        .deferred(() -> grpcGatewayClient.embed(gatewayRequest))
+        .onFailure(StatusRuntimeException.class)
+        .transform(this::mapStatusFailure)
         .onItem()
         .transform(
             gatewayResponse -> {
@@ -210,6 +196,23 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
               return new BatchedEmbeddingResponse(
                   batchId, vectors, createModelUsage(gatewayResponse.getModelUsage()));
             });
+  }
+
+  private Throwable mapStatusFailure(Throwable failure) {
+    var statusException = (StatusRuntimeException) failure;
+    if (statusException.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
+      return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
+          Map.of(
+              "modelProvider",
+              modelProvider().apiName(),
+              "providerStatus",
+              String.valueOf(statusException.getStatus().getCode()),
+              "errorMessage",
+              statusException.getMessage()));
+    }
+
+    // Preserve non-deadline gRPC failures so downstream handling retains their status and cause.
+    return failure;
   }
 
   /** Return MAX_VALUE because the batching is done inside EGW */

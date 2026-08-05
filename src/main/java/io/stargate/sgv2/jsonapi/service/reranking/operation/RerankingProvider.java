@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,16 +124,27 @@ public abstract class RerankingProvider extends ProviderBase {
 
   @Override
   protected boolean decideRetry(Throwable throwable) {
-    boolean retry =
-        throwable instanceof RerankingProviderException rpe
-            && RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name().equals(rpe.code);
-    retry =
-        retry
-            || throwable instanceof SchemaException schemaException
-                && SchemaException.Code.RERANKING_PROVIDER_SERVER_ERROR
-                    .name()
-                    .equals(schemaException.code);
-    return retry || super.decideRetry(throwable);
+    if (throwable instanceof RerankingProviderException rpe
+        && RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name().equals(rpe.code)) {
+      return true;
+    }
+    return super.decideRetry(throwable);
+  }
+
+  @Override
+  protected Predicate<Throwable> newRetryPredicate() {
+    AtomicBoolean serverErrorRetryAvailable = new AtomicBoolean(true);
+    return throwable -> {
+      // Treat every mapped HTTP 5xx as transient once. The configured retry count remains the
+      // global cap across server errors and timeouts, so mixed failures cannot amplify attempts.
+      if (throwable instanceof SchemaException schemaException
+          && SchemaException.Code.RERANKING_PROVIDER_SERVER_ERROR
+              .name()
+              .equals(schemaException.code)) {
+        return serverErrorRetryAvailable.getAndSet(false);
+      }
+      return decideRetry(throwable);
+    };
   }
 
   @Override
@@ -142,7 +155,7 @@ public abstract class RerankingProvider extends ProviderBase {
       return RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
           Map.of(
               "modelProvider", modelProvider().apiName(),
-              "httpStatus", String.valueOf(jakartaResponse.getStatus()),
+              "providerStatus", String.valueOf(jakartaResponse.getStatus()),
               "errorMessage", errorMessage));
     }
 

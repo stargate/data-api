@@ -2770,7 +2770,7 @@ server-errors:
       The command called an embedding provider to vectorize text, but the provider did not respond within the allowed time.
       
       The embedding provider was: ${modelProvider}.
-      The HTTP status code was: ${httpStatus}.
+      The provider status was: ${providerStatus}.
       The error message was: ${errorMessage}.
       
       ${SNIPPET.RETRY}
@@ -2801,7 +2801,7 @@ server-errors:
       The command called an reranking provider to rerank results, but the provider did not respond within the allowed time.
       
       The reranking provider was: ${modelProvider}.
-      The HTTP status code was: ${httpStatus}.
+      The provider status was: ${providerStatus}.
       The error message was: ${errorMessage}.
       
       ${SNIPPET.RETRY}

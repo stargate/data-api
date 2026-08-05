@@ -16,7 +16,7 @@ public class RerankingProviderExceptionHandler extends DefaultProviderExceptionH
     return RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
         Map.of(
             "modelProvider", modelProvider.apiName(),
-            "httpStatus", "<CLIENT SOCKET TIMEOUT>",
+            "providerStatus", "<CLIENT SOCKET TIMEOUT>",
             "errorMessage", "<CLIENT SOCKET TIMEOUT>"));
   }
 }
