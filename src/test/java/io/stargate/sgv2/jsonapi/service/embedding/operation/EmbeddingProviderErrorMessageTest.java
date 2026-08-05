@@ -151,7 +151,7 @@ public class EmbeddingProviderErrorMessageTest {
     assertApiException(
         exception,
         EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT,
-        "The provider status was: 408.");
+        "The HTTP status code was: 408.");
   }
 
   @Test

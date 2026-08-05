@@ -74,10 +74,10 @@ public interface RerankingProvidersConfig {
 
       interface RequestProperties {
         /**
-         * Specifies the maximum number of retries after the initial request. Default is 3 (up to 4
-         * total attempts).
+         * Specifies the maximum number of attempts before failing. Default is 3 (1 request + 2
+         * retries).
          *
-         * @return The maximum number of retries after the initial request.
+         * @return The maximum number of attempts before failing.
          */
         @WithDefault("3")
         int atMostRetries();

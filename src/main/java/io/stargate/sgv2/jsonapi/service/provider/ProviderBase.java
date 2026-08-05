@@ -99,38 +99,24 @@ public abstract class ProviderBase {
    */
   protected Uni<Response> retryHTTPCall(Uni<Response> uni) {
 
-    return Uni.createFrom()
-        .deferred(
-            () ->
-                uni
-                    // Catch *any* web exception from jakarta rest client
-                    .onFailure(WebApplicationException.class)
-                    // and recover with the jakarta response, so we can translate to API exception
-                    .recoverWithItem(ex -> ex.getResponse())
-                    .onItem()
-                    // handle the response, throws if there is an error
-                    .transform(this::handleHTTPResponse)
-                    // decide if we want to retry
-                    .onFailure(newRetryPredicate())
-                    .retry()
-                    .withBackOff(initialBackOffDuration(), maxBackOffDuration())
-                    .withJitter(jitter())
-                    .atMost(atMostRetries())
-                    // after all retry logic, if we have an error we will need to handle it into an
-                    // API exception
-                    .onFailure()
-                    .transform(exceptionHandler::maybeHandle));
-  }
-
-  /**
-   * Creates the retry predicate for one subscription.
-   *
-   * <p>Subclasses may override this method when retry decisions need per-request state. The
-   * predicate must not retain state on the provider instance because providers are shared across
-   * requests.
-   */
-  protected Predicate<Throwable> newRetryPredicate() {
-    return this::decideRetry;
+    return uni
+        // Catch *any* web exception from jakarta rest client
+        .onFailure(WebApplicationException.class)
+        // and recover with the jakarta response, so we can translate to API exception
+        .recoverWithItem(ex -> ex.getResponse())
+        .onItem()
+        // handle the response, throws if there is an error
+        .transform(this::handleHTTPResponse)
+        // decide if we want to retry
+        .onFailure(this::decideRetry)
+        .retry()
+        .withBackOff(initialBackOffDuration(), maxBackOffDuration())
+        .withJitter(jitter())
+        .atMost(atMostRetries())
+        // after all retry logic, if we have an error we will need to handle it into an API
+        // exception
+        .onFailure()
+        .transform(exceptionHandler::maybeHandle);
   }
 
   /**

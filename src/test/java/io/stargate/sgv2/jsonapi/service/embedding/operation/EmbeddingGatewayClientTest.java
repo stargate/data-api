@@ -5,8 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
@@ -240,82 +238,5 @@ public class EmbeddingGatewayClientTest {
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
               assertThat(exception.code).isEqualTo(apiException.code);
             });
-  }
-
-  @Test
-  void mapsAsyncDeadlineExceeded() {
-    EmbeddingService embeddingService = mock(EmbeddingService.class);
-    when(embeddingService.embed(any()))
-        .thenReturn(Uni.createFrom().failure(Status.DEADLINE_EXCEEDED.asRuntimeException()));
-
-    Throwable result = vectorizeAndAwaitFailure(embeddingService);
-
-    assertThat(result)
-        .isInstanceOf(EmbeddingProviderException.class)
-        .satisfies(
-            failure -> {
-              EmbeddingProviderException exception = (EmbeddingProviderException) failure;
-              assertThat(exception.code)
-                  .isEqualTo(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name());
-              assertThat(exception.body).contains(ModelProvider.OPENAI.apiName());
-              assertThat(exception.body).contains(Status.Code.DEADLINE_EXCEEDED.name());
-            });
-  }
-
-  @Test
-  void mapsSynchronousDeadlineExceeded() {
-    EmbeddingService embeddingService = mock(EmbeddingService.class);
-    when(embeddingService.embed(any())).thenThrow(Status.DEADLINE_EXCEEDED.asRuntimeException());
-
-    Throwable result = vectorizeAndAwaitFailure(embeddingService);
-
-    assertThat(result)
-        .isInstanceOf(EmbeddingProviderException.class)
-        .satisfies(
-            failure -> {
-              EmbeddingProviderException exception = (EmbeddingProviderException) failure;
-              assertThat(exception.code)
-                  .isEqualTo(EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.name());
-              assertThat(exception.body).contains(Status.Code.DEADLINE_EXCEEDED.name());
-            });
-  }
-
-  @Test
-  void preservesAsyncUnavailableStatusFailure() {
-    EmbeddingService embeddingService = mock(EmbeddingService.class);
-    StatusRuntimeException unavailable = Status.UNAVAILABLE.asRuntimeException();
-    when(embeddingService.embed(any())).thenReturn(Uni.createFrom().failure(unavailable));
-
-    Throwable result = vectorizeAndAwaitFailure(embeddingService);
-
-    assertThat(result).isSameAs(unavailable);
-  }
-
-  private Throwable vectorizeAndAwaitFailure(EmbeddingService embeddingService) {
-    return createClient(embeddingService)
-        .vectorize(
-            1,
-            List.of("data 1", "data 2"),
-            testConstants.EMBEDDING_CREDENTIALS,
-            EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
-        .subscribe()
-        .withSubscriber(UniAssertSubscriber.create())
-        .awaitFailure()
-        .getFailure();
-  }
-
-  private EmbeddingGatewayClient createClient(EmbeddingService embeddingService) {
-    return new EmbeddingGatewayClient(
-        ModelProvider.OPENAI,
-        PROVIDER_CONFIG,
-        MODEL_CONFIG,
-        SERVICE_CONFIG,
-        1536,
-        Map.of(),
-        testConstants.TENANT,
-        "default",
-        embeddingService,
-        Map.of(),
-        TESTING_COMMAND_NAME);
   }
 }

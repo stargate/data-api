@@ -42,12 +42,6 @@ public class RerankingProviderResponseValidation implements ClientResponseFilter
     if (responseContext.getStatus() == 0) {
       return;
     }
-
-    // HTTP errors may be empty or non-JSON; ProviderBase maps statuses 400 and above.
-    if (responseContext.getStatus() >= 400) {
-      return;
-    }
-
     // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
       throw SchemaException.Code.RERANKING_PROVIDER_UNEXPECTED_RESPONSE.get(

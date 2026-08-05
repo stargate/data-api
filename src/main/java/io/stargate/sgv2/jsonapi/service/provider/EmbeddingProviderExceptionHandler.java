@@ -17,7 +17,7 @@ public class EmbeddingProviderExceptionHandler extends DefaultProviderExceptionH
     return EmbeddingProviderException.Code.EMBEDDING_PROVIDER_TIMEOUT.get(
         Map.of(
             "modelProvider", modelProvider.apiName(),
-            "providerStatus", "<CLIENT SOCKET TIMEOUT>",
+            "httpStatus", "<CLIENT SOCKET TIMEOUT>",
             "errorMessage", "<CLIENT SOCKET TIMEOUT>"));
   }
 

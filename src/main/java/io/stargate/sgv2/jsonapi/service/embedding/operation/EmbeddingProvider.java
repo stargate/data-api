@@ -223,7 +223,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
           Map.of(
               "modelProvider",
               modelProvider().apiName(),
-              "providerStatus",
+              "httpStatus",
               String.valueOf(jakartaResponse.getStatus()),
               "errorMessage",
               errorMessage));

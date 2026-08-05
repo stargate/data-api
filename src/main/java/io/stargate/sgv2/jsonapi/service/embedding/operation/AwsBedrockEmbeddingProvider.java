@@ -197,7 +197,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
           Map.of(
               "modelProvider",
               modelProvider().apiName(),
-              "providerStatus",
+              "httpStatus",
               String.valueOf(bedrockException.statusCode()),
               "errorMessage",
               bedrockException.getMessage()));

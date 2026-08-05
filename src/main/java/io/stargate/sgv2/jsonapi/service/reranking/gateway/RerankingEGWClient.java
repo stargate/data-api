@@ -7,8 +7,6 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
@@ -82,15 +80,39 @@ public class RerankingEGWClient extends RerankingProvider {
             .setProviderContext(contextBuilder.build())
             .build();
 
-    return Uni.createFrom()
-        .deferred(() -> grpcGatewayService.rerank(gatewayRequest))
-        .onFailure(StatusRuntimeException.class)
-        .transform(this::mapStatusFailure)
+    // TODO: Why is this error handling here not part of the uni pipeline?
+    Uni<EmbeddingGateway.RerankingResponse> gatewayRerankingUni;
+    try {
+      gatewayRerankingUni = grpcGatewayService.rerank(gatewayRequest);
+    } catch (StatusRuntimeException e) {
+      if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
+        throw RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
+            Map.of(
+                "modelProvider",
+                modelProvider().apiName(),
+                "httpStatus",
+                String.valueOf(e.getStatus().getCode()),
+                "errorMessage",
+                e.getMessage()));
+      }
+      throw e;
+    }
+
+    return gatewayRerankingUni
         .onItem()
         .transform(
             gatewayResponse -> {
               if (gatewayResponse.hasError()) {
-                throw mapGatewayError(gatewayResponse.getError());
+                var error = gatewayResponse.getError();
+                var unexpectedServerError = ServerException.Code.UNEXPECTED_SERVER_ERROR;
+                if (unexpectedServerError.name().equals(error.getErrorCode())) {
+                  throw unexpectedServerError.withPreformattedMessage(error.getErrorBody());
+                }
+
+                // 22-Jan-2026, tatu: This is ugly. But has to be done to work around fragility
+                //   of exception mapping
+                throw SchemaException.Code.valueOf(error.getErrorCode())
+                    .withPreformattedMessage(error.getErrorBody());
               }
 
               return new BatchedRerankingResponse(
@@ -100,52 +122,5 @@ public class RerankingEGWClient extends RerankingProvider {
                       .toList(),
                   createModelUsage(gatewayResponse.getModelUsage()));
             });
-  }
-
-  private Throwable mapStatusFailure(Throwable failure) {
-    var statusException = (StatusRuntimeException) failure;
-    if (statusException.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-      return RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
-          Map.of(
-              "modelProvider",
-              modelProvider().apiName(),
-              "providerStatus",
-              String.valueOf(statusException.getStatus().getCode()),
-              "errorMessage",
-              statusException.getMessage()));
-    }
-
-    // Only DEADLINE_EXCEEDED has a defined Data API mapping. Preserve other gRPC statuses so
-    // upstream handlers retain the original status instead of misclassifying it as a timeout.
-    return failure;
-  }
-
-  private RuntimeException mapGatewayError(EmbeddingGateway.RerankingResponse.ErrorResponse error) {
-    String errorCode = error.getErrorCode();
-
-    // Preserve API compatibility for known gateway codes. This precedence is intentional:
-    // Schema (REQUEST/SCHEMA), then unscoped Server, then RerankingProvider. Unknown gateway
-    // codes pass through with their gateway-supplied title and body rather than failing lookup.
-    var schemaCode = findErrorCode(errorCode, SchemaException.Code.values());
-    if (schemaCode.isPresent()) {
-      return schemaCode.get().withPreformattedMessage(error.getErrorBody());
-    }
-
-    var serverCode = findErrorCode(errorCode, ServerException.Code.values());
-    if (serverCode.isPresent()) {
-      return serverCode.get().withPreformattedMessage(error.getErrorBody());
-    }
-
-    var rerankingProviderCode = findErrorCode(errorCode, RerankingProviderException.Code.values());
-    if (rerankingProviderCode.isPresent()) {
-      return rerankingProviderCode.get().withPreformattedMessage(error.getErrorBody());
-    }
-
-    return new RerankingProviderException(errorCode, error.getErrorTitle(), error.getErrorBody());
-  }
-
-  private static <T extends APIException, C extends Enum<C> & ErrorCode<T>>
-      Optional<C> findErrorCode(String errorCode, C[] codes) {
-    return Arrays.stream(codes).filter(code -> code.name().equals(errorCode)).findFirst();
   }
 }
