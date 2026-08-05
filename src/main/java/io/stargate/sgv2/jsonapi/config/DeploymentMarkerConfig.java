@@ -4,11 +4,15 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import java.util.Optional;
 
-@ConfigMapping(prefix = "stargate.jsonapi.deployment-marker")
+@ConfigMapping(prefix = "stargate.jsonapi.deployment")
 public interface DeploymentMarkerConfig {
 
   @WithDefault("false")
   boolean enabled();
 
-  Optional<String> value();
+  Optional<String> deployCloud();
+
+  Optional<String> deploy_region();
+
+  int value();
 }
