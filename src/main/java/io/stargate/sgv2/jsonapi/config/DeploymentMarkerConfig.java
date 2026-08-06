@@ -4,7 +4,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import java.util.Optional;
 
-@ConfigMapping(prefix = "stargate.jsonapi.deployment")
+@ConfigMapping(prefix = "stargate.jsonapi.deployment.env")
 public interface DeploymentMarkerConfig {
 
   @WithDefault("false")
