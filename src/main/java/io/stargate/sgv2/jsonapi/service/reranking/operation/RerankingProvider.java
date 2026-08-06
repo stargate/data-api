@@ -79,16 +79,40 @@ public abstract class RerankingProvider extends ProviderBase {
   public Uni<RerankingResponse> rerank(
       String query, List<String> passages, RerankingCredentials rerankingCredentials) {
 
-    // TODO: what to do if passages is empty?
     List<List<String>> passageBatches = createPassageBatches(passages);
-    List<Uni<BatchedRerankingResponse>> batchRerankings = new ArrayList<>();
-
-    for (int batchId = 0; batchId < passageBatches.size(); batchId++) {
-      batchRerankings.add(
-          rerank(batchId, query, passageBatches.get(batchId), rerankingCredentials));
+    if (passageBatches.isEmpty()) {
+      return Uni.createFrom().item(aggregateRanks(List.of()));
     }
 
-    return Uni.join().all(batchRerankings).andFailFast().map(this::aggregateRanks);
+    // Complete the first batch before starting the remaining batches. This primes upstream
+    // authorization caches without sacrificing concurrency for the rest of the request.
+    return rerank(0, query, passageBatches.getFirst(), rerankingCredentials)
+        .onItem()
+        .transformToUni(
+            firstBatchResponse -> {
+              if (passageBatches.size() == 1) {
+                return Uni.createFrom().item(List.of(firstBatchResponse));
+              }
+
+              List<Uni<BatchedRerankingResponse>> remainingBatchRerankings = new ArrayList<>();
+              for (int batchId = 1; batchId < passageBatches.size(); batchId++) {
+                remainingBatchRerankings.add(
+                    rerank(batchId, query, passageBatches.get(batchId), rerankingCredentials));
+              }
+
+              return Uni.join()
+                  .all(remainingBatchRerankings)
+                  .andFailFast()
+                  .map(
+                      remainingBatchResponses -> {
+                        List<BatchedRerankingResponse> batchResponses =
+                            new ArrayList<>(passageBatches.size());
+                        batchResponses.add(firstBatchResponse);
+                        batchResponses.addAll(remainingBatchResponses);
+                        return batchResponses;
+                      });
+            })
+        .map(this::aggregateRanks);
   }
 
   /**
