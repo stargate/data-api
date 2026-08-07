@@ -220,4 +220,45 @@ public class RerankingGatewayClientTest {
                   .isEqualTo("SERVER_UNEXPECTED_SERVER_ERROR");
             });
   }
+
+  @Test
+  void handleUnmappedErrorCode() {
+    RerankingService rerankService = mock(RerankingService.class);
+    final EmbeddingGateway.RerankingResponse gatewayResponse =
+        EmbeddingGateway.RerankingResponse.newBuilder()
+            .setError(
+                EmbeddingGateway.RerankingResponse.ErrorResponse.newBuilder()
+                    .setErrorCode("RERANKING_PROVIDER_TIMEOUT")
+                    .setErrorBody("Reranking provider timed out upstream"))
+            .build();
+    when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(gatewayResponse));
+
+    RerankingEGWClient rerankEGWClient =
+        new RerankingEGWClient(
+            ModelProvider.NVIDIA,
+            MODEL_CONFIG,
+            testConstants.TENANT,
+            "default",
+            rerankService,
+            Map.of(),
+            TESTING_COMMAND_NAME);
+
+    Throwable result =
+        rerankEGWClient
+            .rerank(1, "apple", List.of("orange", "apple"), RERANK_CREDENTIALS)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitFailure()
+            .getFailure();
+
+    assertThat(result)
+        .isInstanceOf(ServerException.class)
+        .satisfies(
+            failure -> {
+              ServerException exception = (ServerException) failure;
+              assertThat(exception.code)
+                  .isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+              assertThat(exception.getMessage()).isEqualTo("Reranking provider timed out upstream");
+            });
+  }
 }

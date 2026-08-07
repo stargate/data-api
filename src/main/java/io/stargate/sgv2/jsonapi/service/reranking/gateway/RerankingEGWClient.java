@@ -111,8 +111,15 @@ public class RerankingEGWClient extends RerankingProvider {
 
                 // 22-Jan-2026, tatu: This is ugly. But has to be done to work around fragility
                 //   of exception mapping
-                throw SchemaException.Code.valueOf(error.getErrorCode())
-                    .withPreformattedMessage(error.getErrorBody());
+                SchemaException.Code schemaCode;
+                try {
+                  schemaCode = SchemaException.Code.valueOf(error.getErrorCode());
+                } catch (IllegalArgumentException e) {
+                  // Gateway codes outside SchemaException.Code (e.g. RERANKING_PROVIDER_TIMEOUT)
+                  // must not shadow the original error body with an enum-lookup failure.
+                  throw unexpectedServerError.withPreformattedMessage(error.getErrorBody());
+                }
+                throw schemaCode.withPreformattedMessage(error.getErrorBody());
               }
 
               return new BatchedRerankingResponse(
