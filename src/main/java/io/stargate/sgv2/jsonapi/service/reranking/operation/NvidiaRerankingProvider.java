@@ -64,13 +64,16 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   /**
    * Nvidia Reranking Service supports truncation or error behavior when the passage is too long.
    *
-   * <p>The Data API uses {@code NONE} as the default, which means the reranking request will error
-   * out if there is a query and passage pair that exceeds the allowed token size of 8192.
+   * <p>The Data API uses {@code END}, which truncates the end of any query and passage pair that
+   * exceeds the model's allowed token size (8192). With {@code NONE} a single oversized pair fails
+   * the whole reranking request (HTTP 400), and because batches are dispatched fail-fast, the
+   * entire findAndRerank command fails deterministically for any query whose candidate set contains
+   * one oversized document.
    *
    * <p>See:
    * https://docs.nvidia.com/nim/nemo-retriever/text-reranking/latest/using-reranking.html#token-limits-truncation
    */
-  private static final String TRUNCATE_PASSAGE = "NONE";
+  private static final String TRUNCATE_PASSAGE = "END";
 
   public NvidiaRerankingProvider(
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
