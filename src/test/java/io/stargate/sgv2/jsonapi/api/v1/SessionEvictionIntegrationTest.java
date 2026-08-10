@@ -372,8 +372,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
     public Map<String, String> start() {
       var props = new HashMap<>(super.start());
       props.put("stargate.jsonapi.operations.sla-user-agent", READINESS_USER_AGENT);
-      props.put(
-          "stargate.jsonapi.operations.database-config.require-session-node-metadata", "true");
       sessionEvictionCassandraContainer = super.getCassandraContainer();
       return Map.copyOf(props);
     }

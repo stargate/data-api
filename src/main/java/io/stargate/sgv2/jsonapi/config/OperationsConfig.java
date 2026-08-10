@@ -270,16 +270,6 @@ public interface OperationsConfig {
     @WithDefault("50")
     int sessionCacheMaxSize();
 
-    /**
-     * When enabled, a newly built CQL session is rejected (closed and the creation failed) if the
-     * driver metadata does not contain any nodes. The driver populates node metadata from {@code
-     * system.local} and {@code system.peers} when the session connects, so a session without node
-     * metadata cannot serve requests. Disabled by default; enable with {@code
-     * -Dstargate.jsonapi.operations.database-config.require-session-node-metadata=true}.
-     */
-    @WithDefault("false")
-    boolean requireSessionNodeMetadata();
-
     /** DDL query retry wait in millis. */
     @WithDefault("1000")
     int ddlRetryDelayMillis();
