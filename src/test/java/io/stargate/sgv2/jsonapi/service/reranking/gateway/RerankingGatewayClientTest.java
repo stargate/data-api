@@ -14,6 +14,7 @@ import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelType;
@@ -173,6 +174,91 @@ public class RerankingGatewayClientTest {
               SchemaException exception = (SchemaException) e;
               assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
               assertThat(exception.code).isEqualTo(apiException.code);
+            });
+  }
+
+  @Test
+  void handleUnexpectedServerError() {
+    RerankingService rerankService = mock(RerankingService.class);
+    final ServerException apiException =
+        ServerException.Code.UNEXPECTED_SERVER_ERROR.withPreformattedMessage("Test fail");
+    final EmbeddingGateway.RerankingResponse gatewayResponse =
+        EmbeddingGateway.RerankingResponse.newBuilder()
+            .setError(
+                EmbeddingGateway.RerankingResponse.ErrorResponse.newBuilder()
+                    .setErrorCode(apiException.code)
+                    .setErrorBody(apiException.getMessage()))
+            .build();
+    when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(gatewayResponse));
+
+    RerankingEGWClient rerankEGWClient =
+        new RerankingEGWClient(
+            ModelProvider.NVIDIA,
+            MODEL_CONFIG,
+            testConstants.TENANT,
+            "default",
+            rerankService,
+            Map.of(),
+            TESTING_COMMAND_NAME);
+
+    Throwable result =
+        rerankEGWClient
+            .rerank(1, "apple", List.of("orange", "apple"), RERANK_CREDENTIALS)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitFailure()
+            .getFailure();
+
+    assertThat(result)
+        .isInstanceOf(ServerException.class)
+        .satisfies(
+            failure -> {
+              ServerException exception = (ServerException) failure;
+              assertThat(exception.code).isEqualTo(apiException.code);
+              assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
+              assertThat(exception.fullyQualifiedCode())
+                  .isEqualTo("SERVER_UNEXPECTED_SERVER_ERROR");
+            });
+  }
+
+  @Test
+  void handleUnmappedErrorCode() {
+    RerankingService rerankService = mock(RerankingService.class);
+    final EmbeddingGateway.RerankingResponse gatewayResponse =
+        EmbeddingGateway.RerankingResponse.newBuilder()
+            .setError(
+                EmbeddingGateway.RerankingResponse.ErrorResponse.newBuilder()
+                    .setErrorCode("RERANKING_PROVIDER_TIMEOUT")
+                    .setErrorBody("Reranking provider timed out upstream"))
+            .build();
+    when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(gatewayResponse));
+
+    RerankingEGWClient rerankEGWClient =
+        new RerankingEGWClient(
+            ModelProvider.NVIDIA,
+            MODEL_CONFIG,
+            testConstants.TENANT,
+            "default",
+            rerankService,
+            Map.of(),
+            TESTING_COMMAND_NAME);
+
+    Throwable result =
+        rerankEGWClient
+            .rerank(1, "apple", List.of("orange", "apple"), RERANK_CREDENTIALS)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitFailure()
+            .getFailure();
+
+    assertThat(result)
+        .isInstanceOf(ServerException.class)
+        .satisfies(
+            failure -> {
+              ServerException exception = (ServerException) failure;
+              assertThat(exception.code)
+                  .isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+              assertThat(exception.getMessage()).isEqualTo("Reranking provider timed out upstream");
             });
   }
 }

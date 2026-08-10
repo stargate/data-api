@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
@@ -102,10 +103,23 @@ public class RerankingEGWClient extends RerankingProvider {
         .transform(
             gatewayResponse -> {
               if (gatewayResponse.hasError()) {
+                var error = gatewayResponse.getError();
+                var unexpectedServerError = ServerException.Code.UNEXPECTED_SERVER_ERROR;
+                if (unexpectedServerError.name().equals(error.getErrorCode())) {
+                  throw unexpectedServerError.withPreformattedMessage(error.getErrorBody());
+                }
+
                 // 22-Jan-2026, tatu: This is ugly. But has to be done to work around fragility
                 //   of exception mapping
-                throw SchemaException.Code.valueOf(gatewayResponse.getError().getErrorCode())
-                    .withPreformattedMessage(gatewayResponse.getError().getErrorBody());
+                SchemaException.Code schemaCode;
+                try {
+                  schemaCode = SchemaException.Code.valueOf(error.getErrorCode());
+                } catch (IllegalArgumentException e) {
+                  // Gateway codes outside SchemaException.Code (e.g. RERANKING_PROVIDER_TIMEOUT)
+                  // must not shadow the original error body with an enum-lookup failure.
+                  throw unexpectedServerError.withPreformattedMessage(error.getErrorBody());
+                }
+                throw schemaCode.withPreformattedMessage(error.getErrorBody());
               }
 
               return new BatchedRerankingResponse(
