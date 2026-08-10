@@ -122,10 +122,9 @@ public abstract class RerankingProvider extends ProviderBase {
 
   @Override
   protected boolean decideRetry(Throwable throwable) {
-    boolean retry =
-        throwable instanceof RerankingProviderException rpe
-            && RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name().equals(rpe.code);
-    return retry || super.decideRetry(throwable);
+    // Never retry. A timeout usually means the reranker is saturated and the original request
+    // is still queued there - retrying just adds more load.
+    return false;
   }
 
   @Override
