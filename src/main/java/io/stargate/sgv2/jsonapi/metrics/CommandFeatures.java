@@ -76,15 +76,17 @@ public final class CommandFeatures {
   }
 
   /**
-   * Generates Micrometer Tags representing the features in this instance. Each feature is
-   * represented as a tag with its name and a value of {@code true}.
+   * Generates Micrometer Tags representing the features in this instance. Every {@link
+   * CommandFeature} is emitted as a tag, with value {@code true} if used and {@code false}
+   * otherwise: Prometheus requires all meters with the same name to have the same tag keys, so the
+   * key set must not vary with which features a command used.
    *
-   * @return A {@link Tags} object containing the tags for each feature.
+   * @return A {@link Tags} object containing a tag for each feature.
    */
   public Tags getTags() {
     return Tags.of(
-        commandFeatures.stream()
-            .map(f -> Tag.of(f.getTagName(), String.valueOf(true)))
+        EnumSet.allOf(CommandFeature.class).stream()
+            .map(f -> Tag.of(f.getTagName(), String.valueOf(commandFeatures.contains(f))))
             .toArray(Tag[]::new));
   }
 

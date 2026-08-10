@@ -36,8 +36,17 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
 
   @Override
   public Tags contribute(Context context) {
-    // resolve tenant
-    Tag tenantTag = Tag.of(config.tenantTag(), requestContext.tenant().toString());
+    // Prometheus requires all meters with the same name to have the same tag keys. If this
+    // contributor throws (e.g. no active request scope for early-rejected requests), Quarkus
+    // records the HTTP metric without our tags, poisoning the meter's key set — so always
+    // resolve to a fallback value instead of failing.
+    String tenantValue;
+    try {
+      tenantValue = requestContext.tenant().toString();
+    } catch (RuntimeException e) {
+      tenantValue = UNKNOWN_VALUE;
+    }
+    Tag tenantTag = Tag.of(config.tenantTag(), tenantValue);
 
     // check if we need user agent as well
     Tags tags = Tags.of(tenantTag);
