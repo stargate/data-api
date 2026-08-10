@@ -32,6 +32,7 @@ public class RerankingProviderFactoryTest {
   private static final TestConstants testConstants = new TestConstants();
 
   private static final String CUSTOM_MODEL_NAME = "my-org/my-nim-reranker";
+  private static final String OTHER_CUSTOM_MODEL_NAME = "my-org/my-other-nim-reranker";
   private static final String NVIDIA_MODEL_NAME = "nvidia/llama-3.2-nv-rerankqa-1b-v2";
 
   private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig
@@ -52,7 +53,7 @@ public class RerankingProviderFactoryTest {
   }
 
   private static RerankingProvidersConfig.RerankingProviderConfig providerConfig(
-      String displayName, RerankingProvidersConfig.RerankingProviderConfig.ModelConfig model) {
+      String displayName, RerankingProvidersConfig.RerankingProviderConfig.ModelConfig... models) {
     return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
         false,
         displayName,
@@ -61,7 +62,7 @@ public class RerankingProviderFactoryTest {
             RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.NONE,
             new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.AuthenticationConfigImpl(
                 true, List.of())),
-        List.of(model));
+        List.of(models));
   }
 
   private static final RerankingProvidersConfig CONFIG =
@@ -75,7 +76,9 @@ public class RerankingProviderFactoryTest {
                       "https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking")),
               ModelProvider.CUSTOM.apiName(),
               providerConfig(
-                  "Custom", modelConfig(CUSTOM_MODEL_NAME, "http://localhost:8000/v1/ranking"))));
+                  "Custom",
+                  modelConfig(CUSTOM_MODEL_NAME, "http://localhost:8000/v1/ranking"),
+                  modelConfig(OTHER_CUSTOM_MODEL_NAME, "http://localhost:8001/v1/ranking"))));
 
   private static RerankingProviderFactory factoryWith(RerankingProvidersConfig config) {
     var factory = new RerankingProviderFactory();
@@ -140,6 +143,79 @@ public class RerankingProviderFactoryTest {
             e ->
                 assertThat(((SchemaException) e).code)
                     .isEqualTo(SchemaException.Code.RERANKING_SERVICE_TYPE_UNAVAILABLE.name()));
+  }
+
+  @Test
+  public void repeatedCreateReturnsSameCachedInstance() {
+    var factory = factoryWith(CONFIG);
+
+    var first =
+        factory.create(
+            testConstants.TENANT,
+            "test-token",
+            ModelProvider.CUSTOM.apiName(),
+            CUSTOM_MODEL_NAME,
+            null,
+            "testCommand");
+    var second =
+        factory.create(
+            testConstants.TENANT,
+            "test-token",
+            ModelProvider.CUSTOM.apiName(),
+            CUSTOM_MODEL_NAME,
+            null,
+            "testCommand");
+    var otherTenant =
+        factory.create(
+            testConstants.CASSANDRA_TENANT,
+            "other-token",
+            ModelProvider.CUSTOM.apiName(),
+            CUSTOM_MODEL_NAME,
+            null,
+            "otherCommand");
+
+    assertThat(second)
+        .as("same (provider, model) must reuse the provider and its HTTP connection pool")
+        .isSameAs(first);
+    assertThat(otherTenant)
+        .as("tenant and auth are per-rerank() state, so the cached instance is tenant-agnostic")
+        .isSameAs(first);
+  }
+
+  @Test
+  public void differentModelsGetDistinctInstances() {
+    var factory = factoryWith(CONFIG);
+
+    var custom =
+        factory.create(
+            testConstants.TENANT,
+            "test-token",
+            ModelProvider.CUSTOM.apiName(),
+            CUSTOM_MODEL_NAME,
+            null,
+            "testCommand");
+    var otherCustom =
+        factory.create(
+            testConstants.TENANT,
+            "test-token",
+            ModelProvider.CUSTOM.apiName(),
+            OTHER_CUSTOM_MODEL_NAME,
+            null,
+            "testCommand");
+    var nvidia =
+        factory.create(
+            testConstants.TENANT,
+            "test-token",
+            ModelProvider.NVIDIA.apiName(),
+            NVIDIA_MODEL_NAME,
+            null,
+            "testCommand");
+
+    assertThat(otherCustom)
+        .as("different models under the same provider must not share an instance")
+        .isNotSameAs(custom);
+    assertThat(nvidia).isNotSameAs(custom).isNotSameAs(otherCustom);
+    assertThat(otherCustom.modelName()).isEqualTo(OTHER_CUSTOM_MODEL_NAME);
   }
 
   @Test

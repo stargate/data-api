@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,19 @@ public class RerankingProviderFactory {
       Map.ofEntries(
           Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new),
           Map.entry(ModelProvider.CUSTOM, NvidiaRerankingProvider::new));
+
+  /**
+   * Direct-mode (non-gateway) providers, keyed by (provider, model). A direct provider builds its
+   * own REST client — and with it a connection pool — in its constructor, while everything
+   * per-request (credentials, tenant) arrives via {@link RerankingProvider#rerank}, so one instance
+   * is safely shared across commands and tenants. Constructing a provider per command instead gives
+   * every findAndRerank a fresh pool whose connections are discarded after use, which under burst
+   * load exhausts ephemeral ports with TIME_WAIT sockets.
+   */
+  private final Map<DirectProviderKey, RerankingProvider> directProviders =
+      new ConcurrentHashMap<>();
+
+  private record DirectProviderKey(ModelProvider modelProvider, String modelName) {}
 
   public RerankingProvider create(
       Tenant tenant,
@@ -117,7 +131,9 @@ public class RerankingProviderFactory {
           Map.of(
               "errorMessage", "unknown service provider '%s'".formatted(modelProvider.apiName())));
     }
-    return ctor.create(modelProvider, modelConfig);
+    return directProviders.computeIfAbsent(
+        new DirectProviderKey(modelProvider, modelName),
+        key -> ctor.create(modelProvider, modelConfig));
   }
 
   public RerankingProvidersConfig getRerankingConfig() {
