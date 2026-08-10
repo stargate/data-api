@@ -53,6 +53,7 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             dbConfig.localDatacenter(),
             dbConfig.cassandraEndPoints(),
             dbConfig.cassandraPort(),
+            dbConfig.requireSessionNodeMetadata(),
             () -> schemaObjectCacheSupplier.get().getSchemaChangeListener());
 
     slaUserAgent =
