@@ -92,12 +92,15 @@ public interface RerankingProvidersConfig {
         int initialBackOffMillis();
 
         /**
-         * The maximum duration for a request to complete in milliseconds. Default is 5000 ms (5
-         * seconds), ensuring retries are likely within general gateway timeouts.
+         * The maximum duration for a request to complete in milliseconds. Default is 20000 ms (20
+         * seconds): rerank calls are not retried, so this single attempt must cover queueing at the
+         * reranking service under concurrent load. It roughly matches the wait budget of the
+         * previous behavior (4 attempts x 5000 ms plus backoff) without re-sending batches to an
+         * already-saturated service.
          *
          * @return The request timeout in milliseconds.
          */
-        @WithDefault("5000")
+        @WithDefault("20000")
         int readTimeoutMillis();
 
         /**
