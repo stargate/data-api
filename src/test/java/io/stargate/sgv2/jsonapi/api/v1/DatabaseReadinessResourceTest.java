@@ -9,8 +9,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.NodeState;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -23,9 +24,10 @@ import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +75,6 @@ public class DatabaseReadinessResourceTest {
   @ParameterizedTest
   @ValueSource(strings = {"", "/"})
   public void astraRequestUsesResolvedTenantTokenAndSlaUserAgent(String pathSuffix) {
-    var resultSet = mock(AsyncResultSet.class);
     var capturedContext = new AtomicReference<RequestContextSnapshot>();
     when(sessionCache.getSession(any(RequestContext.class)))
         .thenAnswer(
@@ -87,8 +88,7 @@ public class DatabaseReadinessResourceTest {
                       context.userAgent().toString()));
               return Uni.createFrom().item(session);
             });
-    when(session.executeAsync(any(SimpleStatement.class)))
-        .thenReturn(CompletableFuture.completedFuture(resultSet));
+    stubSessionMetadata(NodeState.UP);
 
     authenticatedRequest()
         .when()
@@ -99,6 +99,20 @@ public class DatabaseReadinessResourceTest {
 
     assertThat(capturedContext.get())
         .isEqualTo(new RequestContextSnapshot(TENANT_ID, REGION, TOKEN, SLA_USER_AGENT));
+  }
+
+  @Test
+  public void noUpNodeInSessionMetadataReturnsServiceUnavailable() {
+    when(sessionCache.getSession(any(RequestContext.class)))
+        .thenReturn(Uni.createFrom().item(session));
+    stubSessionMetadata(NodeState.DOWN);
+
+    authenticatedRequest()
+        .when()
+        .get(DatabaseReadinessResource.BASE_PATH)
+        .then()
+        .statusCode(503)
+        .body("status", equalTo("DOWN"));
   }
 
   @Test
@@ -207,6 +221,18 @@ public class DatabaseReadinessResourceTest {
             .asString();
 
     assertThat(response).doesNotContain("first sensitive failure", "second sensitive failure");
+  }
+
+  private void stubSessionMetadata(NodeState... nodeStates) {
+    var metadata = mock(Metadata.class);
+    var nodes = new HashMap<UUID, Node>();
+    for (NodeState nodeState : nodeStates) {
+      var node = mock(Node.class);
+      when(node.getState()).thenReturn(nodeState);
+      nodes.put(UUID.randomUUID(), node);
+    }
+    when(metadata.getNodes()).thenReturn(Map.copyOf(nodes));
+    when(session.getMetadata()).thenReturn(metadata);
   }
 
   private io.restassured.specification.RequestSpecification authenticatedRequest() {

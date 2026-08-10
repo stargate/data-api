@@ -52,13 +52,6 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
 
   @Test
   public void testSessionEvictionOnAllNodesFailed() {
-    if (!executeCqlStatement(
-        "CREATE KEYSPACE IF NOT EXISTS datastax_sla "
-            + "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}",
-        "CREATE TABLE IF NOT EXISTS datastax_sla.check (id text PRIMARY KEY)")) {
-      throw new AssertionError("Failed to provision the distributed readiness table");
-    }
-
     // 1. Insert and find initial data to ensure the database is healthy before the test
     insertDoc(
         """

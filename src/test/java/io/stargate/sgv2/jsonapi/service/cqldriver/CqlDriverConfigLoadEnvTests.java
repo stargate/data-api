@@ -37,7 +37,7 @@ public class CqlDriverConfigLoadEnvTests {
     // Env var overrides; must be called before tests. So just constructs
     // a factory instance to force classloading; not used for anything
     CqlSessionFactory factory =
-        new CqlSessionFactory("test", "DC0", List.of("127.0.0.1"), 1111, () -> null);
+        new CqlSessionFactory("test", "DC0", List.of("127.0.0.1"), 1111, false, () -> null);
   }
 
   @BeforeEach

@@ -28,11 +28,13 @@ import org.jboss.resteasy.reactive.RestResponse;
 /**
  * Authenticated database readiness endpoint registered through Quarkus JAX-RS resource discovery.
  *
- * <p>{@code GET /v1/health/ready} runs the same request-scoped probe for Astra and Cassandra. A
- * request must use the configured SLA User-Agent. A successful probe returns HTTP 200; invalid
- * credentials return HTTP 401; a missing or different SLA User-Agent returns HTTP 403; and a
- * database failure, timeout, or missing SLA configuration returns HTTP 503. The existing {@code
- * /v1/*} security policy rejects requests without a token before this resource is called.
+ * <p>{@code GET /v1/health/ready} runs the same request-scoped probe for Astra and Cassandra: it
+ * obtains a session through the normal session cache and checks the driver session metadata for an
+ * UP node, see {@link DatabaseReadinessCheck}. A request must use the configured SLA User-Agent. A
+ * successful probe returns HTTP 200; invalid credentials return HTTP 401; a missing or different
+ * SLA User-Agent returns HTTP 403; and a session failure, timeout, or missing SLA configuration
+ * returns HTTP 503. The existing {@code /v1/*} security policy rejects requests without a token
+ * before this resource is called.
  */
 @Path(DatabaseReadinessResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
@@ -60,11 +62,12 @@ public class DatabaseReadinessResource {
   @Operation(
       summary = "Check database readiness",
       description =
-          "Uses the authenticated request tenant and token to perform a LOCAL_QUORUM read.")
+          "Uses the authenticated request tenant and token to obtain a session and checks the"
+              + " driver session metadata for an UP node.")
   @APIResponses({
     @APIResponse(
         responseCode = "200",
-        description = "The database completed the readiness read.",
+        description = "The session metadata reports at least one UP node.",
         content =
             @Content(
                 mediaType = MediaType.APPLICATION_JSON,

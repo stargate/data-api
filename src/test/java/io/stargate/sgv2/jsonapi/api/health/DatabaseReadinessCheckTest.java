@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.health;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -9,9 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.NodeState;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
@@ -21,10 +21,11 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 public class DatabaseReadinessCheckTest {
 
@@ -48,34 +49,64 @@ public class DatabaseReadinessCheckTest {
     readinessCheck = new DatabaseReadinessCheck(sessionCache, TIMEOUT);
   }
 
+  private void stubSessionMetadata(NodeState... nodeStates) {
+    var metadata = mock(Metadata.class);
+    var nodes = new HashMap<UUID, Node>();
+    for (NodeState nodeState : nodeStates) {
+      var node = mock(Node.class);
+      when(node.getState()).thenReturn(nodeState);
+      nodes.put(UUID.randomUUID(), node);
+    }
+    when(metadata.getNodes()).thenReturn(Map.copyOf(nodes));
+    when(session.getMetadata()).thenReturn(metadata);
+  }
+
   @Test
-  public void successfulCheckUsesRequestContextAndAsyncDistributedQuery() {
-    var resultSet = mock(AsyncResultSet.class);
-    var resultFuture = new CompletableFuture<AsyncResultSet>();
+  public void upNodeInSessionMetadataCompletesWithoutQuerying() {
+    stubSessionMetadata(NodeState.DOWN, NodeState.UP);
     when(sessionCache.getSession(requestContext)).thenReturn(Uni.createFrom().item(session));
-    when(session.executeAsync(any(SimpleStatement.class))).thenReturn(resultFuture);
 
-    var subscriber =
-        readinessCheck
-            .check(requestContext)
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create());
-
-    subscriber.assertSubscribed().assertNotTerminated();
-    resultFuture.complete(resultSet);
-    subscriber.awaitItem().assertItem(null).assertCompleted();
+    readinessCheck
+        .check(requestContext)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitItem()
+        .assertItem(null)
+        .assertCompleted();
 
     verify(sessionCache).getSession(same(requestContext));
-    var statementCaptor = ArgumentCaptor.forClass(SimpleStatement.class);
-    verify(session).executeAsync(statementCaptor.capture());
-    assertThat(statementCaptor.getValue().getQuery())
-        .isEqualTo("SELECT * FROM datastax_sla.check LIMIT 1");
-    assertThat(statementCaptor.getValue().getTimeout()).isEqualTo(TIMEOUT);
-    assertThat(statementCaptor.getValue().getConsistencyLevel())
-        .isEqualTo(DefaultConsistencyLevel.LOCAL_QUORUM);
-    assertThat(statementCaptor.getValue().getExecutionProfileName()).isEqualTo("table-read");
+    verify(session, never()).executeAsync(any(SimpleStatement.class));
     verify(session, never()).execute(any(SimpleStatement.class));
-    verify(session, never()).isClosed();
+    verify(sessionCache, never()).evictSession(any(RequestContext.class));
+  }
+
+  @Test
+  public void noUpNodeInSessionMetadataFails() {
+    stubSessionMetadata(NodeState.DOWN, NodeState.UNKNOWN);
+    when(sessionCache.getSession(requestContext)).thenReturn(Uni.createFrom().item(session));
+
+    readinessCheck
+        .check(requestContext)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitFailure()
+        .assertFailedWith(IllegalStateException.class, "no node in the UP state");
+
+    verify(sessionCache, never()).evictSession(any(RequestContext.class));
+  }
+
+  @Test
+  public void emptySessionMetadataFails() {
+    stubSessionMetadata();
+    when(sessionCache.getSession(requestContext)).thenReturn(Uni.createFrom().item(session));
+
+    readinessCheck
+        .check(requestContext)
+        .subscribe()
+        .withSubscriber(UniAssertSubscriber.create())
+        .awaitFailure()
+        .assertFailedWith(IllegalStateException.class, "no node in the UP state");
+
     verify(sessionCache, never()).evictSession(any(RequestContext.class));
   }
 
@@ -91,24 +122,7 @@ public class DatabaseReadinessCheckTest {
         .awaitFailure()
         .assertFailedWith(IllegalStateException.class, "Cannot connect");
 
-    verify(session, never()).executeAsync(any(SimpleStatement.class));
-    verify(sessionCache, never()).evictSession(any(RequestContext.class));
-  }
-
-  @Test
-  public void asynchronousQueryFailureIsPropagated() {
-    var resultFuture = new CompletableFuture<AsyncResultSet>();
-    when(sessionCache.getSession(requestContext)).thenReturn(Uni.createFrom().item(session));
-    when(session.executeAsync(any(SimpleStatement.class))).thenReturn(resultFuture);
-
-    var subscriber =
-        readinessCheck
-            .check(requestContext)
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create());
-    resultFuture.completeExceptionally(new IllegalStateException("Query failed"));
-
-    subscriber.awaitFailure().assertFailedWith(IllegalStateException.class, "Query failed");
+    verify(session, never()).getMetadata();
     verify(sessionCache, never()).evictSession(any(RequestContext.class));
   }
 
@@ -124,24 +138,7 @@ public class DatabaseReadinessCheckTest {
         .awaitFailure()
         .assertFailedWith(TimeoutException.class);
 
-    verify(session, never()).executeAsync(any(SimpleStatement.class));
-    verify(sessionCache, never()).evictSession(any(RequestContext.class));
-  }
-
-  @Test
-  public void reactiveTimeoutBoundsAsynchronousQuery() {
-    readinessCheck = new DatabaseReadinessCheck(sessionCache, Duration.ofMillis(20));
-    when(sessionCache.getSession(requestContext)).thenReturn(Uni.createFrom().item(session));
-    when(session.executeAsync(any(SimpleStatement.class))).thenReturn(new CompletableFuture<>());
-
-    readinessCheck
-        .check(requestContext)
-        .subscribe()
-        .withSubscriber(UniAssertSubscriber.create())
-        .awaitFailure()
-        .assertFailedWith(TimeoutException.class);
-
-    verify(session).executeAsync(any(SimpleStatement.class));
+    verify(session, never()).getMetadata();
     verify(sessionCache, never()).evictSession(any(RequestContext.class));
   }
 }
