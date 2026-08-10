@@ -7,8 +7,11 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
@@ -98,5 +101,29 @@ public class RerankingProviderTest {
     // passage order
     IntStream.range(0, 15)
         .forEach(i -> assertThat(finalResult.ranks().get(i).index()).isEqualTo(i));
+  }
+
+  /**
+   * A rerank timeout usually means the reranking service is saturated; retrying re-sends the batch
+   * into the same queue and multiplies offered load by up to (1 + atMostRetries). Timeouts — both
+   * provider-reported (HTTP 408/504) and client-side read timeouts — must fail fast, not retry.
+   */
+  @Test
+  void timeoutsAreNotRetried() {
+    TestRerankingProvider mockRerankingProvider = new TestRerankingProvider(10);
+
+    var providerTimeout =
+        RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
+            Map.of(
+                "modelProvider", "nvidia",
+                "httpStatus", "504",
+                "errorMessage", "gateway timeout"));
+
+    assertThat(mockRerankingProvider.decideRetry(providerTimeout))
+        .as("provider-reported rerank timeout (HTTP 408/504) must not be retried")
+        .isFalse();
+    assertThat(mockRerankingProvider.decideRetry(new TimeoutException("read timed out")))
+        .as("client-side read timeout must not be retried")
+        .isFalse();
   }
 }

@@ -122,10 +122,12 @@ public abstract class RerankingProvider extends ProviderBase {
 
   @Override
   protected boolean decideRetry(Throwable throwable) {
-    boolean retry =
-        throwable instanceof RerankingProviderException rpe
-            && RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name().equals(rpe.code);
-    return retry || super.decideRetry(throwable);
+    // Never retry rerank calls. A timed-out call almost always means the reranking service is
+    // saturated: the original batch may still be queued there, so re-sending it multiplies the
+    // offered load by up to (1 + atMostRetries) and deepens the very queue that caused the
+    // timeout, while findAndRerank fails fast on any batch anyway. Non-timeout failures were
+    // never retried.
+    return false;
   }
 
   @Override
