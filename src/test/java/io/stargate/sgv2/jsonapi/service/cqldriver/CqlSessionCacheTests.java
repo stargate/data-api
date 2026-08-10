@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.CqlSession;

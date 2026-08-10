@@ -7,7 +7,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.internal.core.type.DefaultVectorType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Basic sanity checks to make sure {@link SubtypeOnlyFloatVectorToArrayCodec} is a wall-behaved

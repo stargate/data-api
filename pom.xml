@@ -296,8 +296,10 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- 10-Aug-2026, hazel: Testcontainers 2.0 (via Quarkus 3.38) renamed all
+           artifacts with a "testcontainers-" prefix; old id is no longer in the BOM -->
       <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
