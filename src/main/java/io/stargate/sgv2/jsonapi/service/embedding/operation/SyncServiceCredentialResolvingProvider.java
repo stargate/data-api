@@ -53,6 +53,11 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
     this.authToken = authToken;
   }
 
+  /** The direct provider this wrapper decorates; package-visible so tests can assert caching. */
+  EmbeddingProvider delegate() {
+    return delegate;
+  }
+
   @Override
   protected String errorMessageJsonPtr() {
     // Not used directly — this wrapper never makes HTTP calls itself

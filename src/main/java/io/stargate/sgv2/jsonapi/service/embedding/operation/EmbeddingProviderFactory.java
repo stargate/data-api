@@ -13,8 +13,11 @@ import io.stargate.sgv2.jsonapi.syncservice.SyncServiceClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +61,37 @@ public class EmbeddingProviderFactory {
           Map.entry(ModelProvider.UPSTAGE_AI, UpstageAIEmbeddingProvider::new),
           Map.entry(ModelProvider.VERTEXAI, VertexAIEmbeddingProvider::new),
           Map.entry(ModelProvider.VOYAGE_AI, VoyageAIEmbeddingProvider::new));
+
+  /**
+   * Direct-mode (non-gateway) providers, keyed by (provider, model, dimension, vectorize service
+   * parameters). A direct provider builds its own REST client — and with it a connection pool — in
+   * its constructor, while everything per-request (credentials, tenant) arrives via {@link
+   * EmbeddingProvider#vectorize}, so one instance is safely shared across commands and tenants.
+   * Constructing a provider per command instead gives every vectorize a fresh pool whose
+   * connections are discarded after use, which under burst load exhausts ephemeral ports with
+   * TIME_WAIT sockets.
+   *
+   * <p>Unlike the reranking equivalent, dimension and vectorizeServiceParameters must be part of
+   * the key: provider constructors consume both (dimension for the request shape, parameters for
+   * URL placeholders like Azure's resource/deployment or Vertex's project). The CUSTOM (test-only
+   * reflection) and embedding-gateway paths return earlier and are not cached, and the per-request
+   * {@link SyncServiceCredentialResolvingProvider} wrapper is applied outside the cache.
+   */
+  private final Map<DirectProviderKey, EmbeddingProvider> directProviders =
+      new ConcurrentHashMap<>();
+
+  private record DirectProviderKey(
+      ModelProvider modelProvider,
+      String modelName,
+      int dimension,
+      Map<String, Object> vectorizeServiceParameters) {
+    private DirectProviderKey {
+      // defensive copy: a key's hash must not change while it lives in the cache
+      // (not Map.copyOf: vectorize parameter values may legitimately be null)
+      vectorizeServiceParameters =
+          Collections.unmodifiableMap(new HashMap<>(vectorizeServiceParameters));
+    }
+  }
 
   public EmbeddingProvider create(
       Tenant tenant,
@@ -194,10 +228,18 @@ public class EmbeddingProviderFactory {
     }
 
     var provider =
-        ctor.create(
-            providerConfig, modelConfig, serviceConfig, dimension, vectorizeServiceParameters);
+        directProviders.computeIfAbsent(
+            new DirectProviderKey(modelProvider, modelName, dimension, vectorizeServiceParameters),
+            key ->
+                ctor.create(
+                    providerConfig,
+                    modelConfig,
+                    serviceConfig,
+                    key.dimension(),
+                    key.vectorizeServiceParameters()));
 
     // Wrap with credential resolver if shared-secret authentication is configured
+    // (never cached: the wrapper carries per-request tenant and auth token)
     if (authentication != null && !authentication.isEmpty()) {
       provider =
           new SyncServiceCredentialResolvingProvider(
