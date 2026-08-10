@@ -26,6 +26,11 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 /**
  * The Reranking Nvidia Client that sends the request to the Nvidia Reranking Service.
  *
+ * <p>Also used for {@link ModelProvider#CUSTOM}: any externally hosted reranking endpoint that
+ * speaks the NVIDIA NIM ranking wire format (e.g. a self-hosted NIM container) registered under the
+ * 'custom' provider in the reranking providers config. The wire format is identical; only the
+ * {@link ModelProvider} used for metrics/usage attribution differs.
+ *
  * <p>Sample http request to self hosted nvidia model - nvidia/llama-3.2-nv-rerankqa-1b-v2:
  *
  * <pre>{@code
@@ -76,8 +81,9 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   private static final String TRUNCATE_PASSAGE = "END";
 
   public NvidiaRerankingProvider(
+      ModelProvider modelProvider,
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
-    super(ModelProvider.NVIDIA, modelConfig);
+    super(modelProvider, modelConfig);
 
     nvidiaClient =
         QuarkusRestClientBuilder.newBuilder()

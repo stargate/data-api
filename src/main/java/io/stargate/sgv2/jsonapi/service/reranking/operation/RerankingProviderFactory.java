@@ -27,11 +27,17 @@ public class RerankingProviderFactory {
   @FunctionalInterface
   interface ProviderConstructor {
     RerankingProvider create(
+        ModelProvider modelProvider,
         RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig);
   }
 
+  // CUSTOM reuses the Nvidia provider: it lets a deployment register externally hosted,
+  // NIM-compatible reranking endpoints (same wire format) via the reranking providers config
+  // without treating them as DataStax-hosted 'nvidia' models.
   private static final Map<ModelProvider, ProviderConstructor> RERANKING_PROVIDER_CTORS =
-      Map.ofEntries(Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new));
+      Map.ofEntries(
+          Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new),
+          Map.entry(ModelProvider.CUSTOM, NvidiaRerankingProvider::new));
 
   public RerankingProvider create(
       Tenant tenant,
@@ -111,7 +117,7 @@ public class RerankingProviderFactory {
           Map.of(
               "errorMessage", "unknown service provider '%s'".formatted(modelProvider.apiName())));
     }
-    return ctor.create(modelConfig);
+    return ctor.create(modelProvider, modelConfig);
   }
 
   public RerankingProvidersConfig getRerankingConfig() {

@@ -29,3 +29,21 @@ stargate:
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
                 max-batch-size: 10
+        # Externally hosted, NIM-compatible reranking endpoint registered by a deployment.
+        # Not shipped in the production config; deployments opt in via RERANKING_CONFIG_RESOURCE.
+        custom:
+          display-name: Custom
+          enabled: true
+          supported-authentications:
+            NONE:
+              enabled: true
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: reranking-api-key
+                  forwarded: Authorization
+          models:
+            - name: my-org/my-nim-reranker
+              url: http://my-reranker.internal:8000/v1/ranking
+              properties:
+                max-batch-size: 10
