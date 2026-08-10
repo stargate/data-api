@@ -10,18 +10,12 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * Runs the database probe exposed at {@code GET /v1/health/ready}.
+ * Database probe behind {@code GET /v1/health/ready}, constructed by the JAX-RS resource - not a
+ * CDI bean or a MicroProfile health check.
  *
- * <p>The probe obtains a session through the normal session cache and inspects the driver session
- * metadata, which the driver populates from {@code system.local} and {@code system.peers} and keeps
- * current through node state events. The pod is ready when at least one node is {@link
- * NodeState#UP}. Acquiring the session is itself part of the check: a pod that cannot connect to
- * the database fails session creation and reports {@code DOWN}, and no query is issued against the
- * database.
- *
- * <p>This class is constructed by the JAX-RS resource and is not a CDI bean or a MicroProfile
- * health check. The caller's request context supplies the tenant, token, and User-Agent for both
- * Astra and Cassandra connections.
+ * <p>Gets a session from the {@link CQLSessionCache} and succeeds when the session metadata has at
+ * least one {@link NodeState#UP} node. No query is issued: session creation fails if the database
+ * is unreachable, and the driver keeps node states current for cached sessions.
  */
 public final class DatabaseReadinessCheck {
 
@@ -45,10 +39,7 @@ public final class DatabaseReadinessCheck {
     this.timeout = Objects.requireNonNull(timeout, "timeout must not be null");
   }
 
-  /**
-   * Obtains a session from the cache and fails unless the session metadata has at least one node in
-   * the {@link NodeState#UP} state.
-   */
+  /** Fails unless the session metadata has at least one {@link NodeState#UP} node. */
   public Uni<Void> check(RequestContext requestContext) {
     Objects.requireNonNull(requestContext, "requestContext must not be null");
 
@@ -72,7 +63,7 @@ public final class DatabaseReadinessCheck {
                       })
                   .replaceWithVoid();
             })
-        // Bounds asynchronous session acquisition, the metadata inspection is in-memory only.
+        // bounds session acquisition, the metadata inspection is in-memory
         .ifNoItem()
         .after(timeout)
         .fail();
