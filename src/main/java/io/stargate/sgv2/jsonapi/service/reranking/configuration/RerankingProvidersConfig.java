@@ -93,8 +93,7 @@ public interface RerankingProvidersConfig {
 
         /**
          * The maximum duration for a request to complete in milliseconds. Default is 20000 ms (20
-         * seconds). Rerank calls are not retried, so the single attempt needs to cover time spent
-         * queued at a busy reranker.
+         * seconds).
          *
          * @return The request timeout in milliseconds.
          */
