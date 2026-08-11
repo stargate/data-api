@@ -8,14 +8,13 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-
-import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

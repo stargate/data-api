@@ -17,14 +17,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link BillingQueue}: seal thresholds, drain limits, and batch metadata. */
+/** Unit tests for {@link BatchedLogBuffer}: seal thresholds, drain limits, and batch metadata. */
 class BillingQueueTest {
 
   private static final Instant T0 = Instant.parse("2026-05-20T14:23:11Z");
 
   @Test
   void sealsByEventCount() {
-    var queue = new BillingQueue(2, 1_000_000, 10);
+    var queue = new BatchedLogBuffer(2, 1_000_000, 10);
 
     queue.offer(T0, "a");
     assertThat(queue.shouldFlush()).isFalse();
@@ -35,7 +35,7 @@ class BillingQueueTest {
   @Test
   void sealsByBufferedBytes() {
     // Each line counts as length + 1 (newline): "aaaa" = 5 bytes.
-    var queue = new BillingQueue(100, 10, 10);
+    var queue = new BatchedLogBuffer(100, 10, 10);
 
     queue.offer(T0, "aaaa");
     assertThat(queue.shouldFlush()).isFalse();
@@ -45,41 +45,41 @@ class BillingQueueTest {
 
   @Test
   void drainStopsAtMaxEventsAndLeavesTheRemainder() {
-    var queue = new BillingQueue(2, 1_000_000, 10);
+    var queue = new BatchedLogBuffer(2, 1_000_000, 10);
     queue.offer(T0, "a");
     queue.offer(T0, "b");
     queue.offer(T0, "c");
 
-    assertThat(queue.maybeDrain().lines()).containsExactly("a", "b");
-    assertThat(queue.maybeDrain().lines()).containsExactly("c");
-    assertThat(queue.maybeDrain().isEmpty()).isTrue();
+    assertThat(queue.nextBatch().lines()).containsExactly("a", "b");
+    assertThat(queue.nextBatch().lines()).containsExactly("c");
+    assertThat(queue.nextBatch().isEmpty()).isTrue();
   }
 
   @Test
   void drainStopsAtMaxBytesAndLeavesTheRemainder() {
-    var queue = new BillingQueue(100, 10, 10);
+    var queue = new BatchedLogBuffer(100, 10, 10);
     queue.offer(T0, "aaaa");
     queue.offer(T0, "bbbb");
     queue.offer(T0, "cccc");
 
-    assertThat(queue.maybeDrain().lines()).containsExactly("aaaa", "bbbb");
-    assertThat(queue.maybeDrain().lines()).containsExactly("cccc");
-    assertThat(queue.maybeDrain().isEmpty()).isTrue();
+    assertThat(queue.nextBatch().lines()).containsExactly("aaaa", "bbbb");
+    assertThat(queue.nextBatch().lines()).containsExactly("cccc");
+    assertThat(queue.nextBatch().isEmpty()).isTrue();
   }
 
   @Test
   void oldestEventAtIsTheMinimumAcrossTheBatchNotTheHead() {
-    var queue = new BillingQueue(10, 1_000_000, 10);
+    var queue = new BatchedLogBuffer(10, 1_000_000, 10);
     // Concurrent publishes can enqueue out of event-time order; the head is not the oldest.
     queue.offer(T0.plusSeconds(5), "enqueued-first-but-newer");
     queue.offer(T0, "enqueued-second-but-older");
 
-    assertThat(queue.maybeDrain().oldestEventAt()).isEqualTo(T0);
+    assertThat(queue.nextBatch().oldestEventAt()).isEqualTo(T0);
   }
 
   @Test
   void offerRejectsWhenFull() {
-    var queue = new BillingQueue(10, 1_000_000, 2);
+    var queue = new BatchedLogBuffer(10, 1_000_000, 2);
 
     assertThat(queue.offer(T0, "a")).isTrue();
     assertThat(queue.offer(T0, "b")).isTrue();
@@ -89,7 +89,7 @@ class BillingQueueTest {
 
   @Test
   void concurrentOfferAndDrainKeepsAccountingConsistent() throws Exception {
-    var queue = new BillingQueue(10, 1_000_000, 5_000);
+    var queue = new BatchedLogBuffer(10, 1_000_000, 5_000);
     int threads = 4;
     int perThread = 500;
     Set<String> published = ConcurrentHashMap.newKeySet();
@@ -100,7 +100,7 @@ class BillingQueueTest {
         new Thread(
             () -> {
               while (!producersDone.get() || !queue.isEmpty()) {
-                var batch = queue.maybeDrain();
+                var batch = queue.nextBatch();
                 if (batch.isEmpty()) {
                   Thread.onSpinWait();
                 } else {
@@ -150,12 +150,12 @@ class BillingQueueTest {
 
   @Test
   void byteSealResetsOnceDrained() {
-    var queue = new BillingQueue(100, 10, 10);
+    var queue = new BatchedLogBuffer(100, 10, 10);
     queue.offer(T0, "aaaa");
     queue.offer(T0, "bbbb");
     assertThat(queue.shouldFlush()).isTrue();
 
-    queue.maybeDrain();
+    queue.nextBatch();
 
     assertThat(queue.isEmpty()).isTrue();
     assertThat(queue.shouldFlush()).isFalse(); // queuedBytes went back down with the drain

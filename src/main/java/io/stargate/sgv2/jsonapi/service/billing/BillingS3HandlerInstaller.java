@@ -11,12 +11,11 @@ import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * TODO: XXX MAKE THIS COMMENTS READABLE BY A HUMAN
  *
- * Attaches a {@link BillingS3LogHandler} to the {@code billing.events} JUL logger at startup (when
- * {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on shutdown for
- * a graceful drain.
+ * <p>Attaches a {@link BillingS3LogHandler} to the {@code billing.events} JUL logger at startup
+ * (when {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on
+ * shutdown for a graceful drain.
  *
  * <p>Done programmatically because Quarkus config can't express it: a category's {@code handlers}
  * list can only reference Quarkus's built-in handler types (console/file/syslog/socket), not a
@@ -29,7 +28,8 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class BillingS3HandlerInstaller {
 
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
+  private static final org.slf4j.Logger LOGGER =
+      LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
 
   static final String BILLING_LOGGER_NAME = "billing.events";
 
@@ -55,7 +55,7 @@ public class BillingS3HandlerInstaller {
     var bucket = config.bucket().orElse(null);
 
     // Fail-loud: invalid billing S3 config throws here, aborting application startup.
-    var uploader = S3BatchUploader.create(region, bucket, config.endpointOverride());
+    var uploader = S3BatchedLogUploader.create(region, bucket, config.endpointOverride());
 
     this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
     // TODO: LOGGER NAME SHOULD BE IN CONFIG

@@ -36,11 +36,11 @@ class S3BatchUploaderTest {
       Pattern.compile("data-api/2026/05/20/14/23/[0-9a-f-]{36}\\.jsonl");
   private static final String LINE_A = "{\"a\":1}";
   private static final String LINE_B = "{\"b\":2}";
-  private static final BillingQueue.Batch BATCH =
-      new BillingQueue.Batch(List.of(LINE_A, LINE_B), Instant.parse("2026-05-20T14:23:11.482Z"));
+  private static final BatchedLogBuffer.Batch BATCH =
+      new BatchedLogBuffer.Batch(List.of(LINE_A, LINE_B), Instant.parse("2026-05-20T14:23:11.482Z"));
 
-  private static S3BatchUploader uploader(S3AsyncClient client) {
-    return new S3BatchUploader(client, "my-bucket");
+  private static S3BatchedLogUploader uploader(S3AsyncClient client) {
+    return new S3BatchedLogUploader(client, "my-bucket");
   }
 
   private static CompletableFuture<PutObjectResponse> ok() {
@@ -54,14 +54,14 @@ class S3BatchUploaderTest {
   @Test
   void objectKeyUsesPathPrefixAndUtcMinutePathFromTimestamp() {
     var id = UUID.fromString("8c0e9b8a-1d3a-4f6b-9c0d-1234567890ab");
-    var key = S3BatchUploader.objectKey(Instant.parse("2026-05-20T14:23:11.482Z"), id);
+    var key = S3BatchedLogUploader.objectKey(Instant.parse("2026-05-20T14:23:11.482Z"), id);
     assertThat(key)
         .isEqualTo("data-api/2026/05/20/14/23/8c0e9b8a-1d3a-4f6b-9c0d-1234567890ab.jsonl");
   }
 
   @Test
   void toNdjsonJoinsLinesVerbatimWithTrailingNewlines() {
-    assertThat(S3BatchUploader.toNdjson(List.of(LINE_A, LINE_B)))
+    assertThat(S3BatchedLogUploader.toNdjson(List.of(LINE_A, LINE_B)))
         .isEqualTo((LINE_A + "\n" + LINE_B + "\n").getBytes(StandardCharsets.UTF_8));
   }
 
@@ -131,10 +131,10 @@ class S3BatchUploaderTest {
 
   @Test
   void createRejectsMissingRegionOrBucket() {
-    assertThatThrownBy(() -> S3BatchUploader.create(" ", "bucket", Optional.empty()))
+    assertThatThrownBy(() -> S3BatchedLogUploader.create(" ", "bucket", Optional.empty()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("bucket-region");
-    assertThatThrownBy(() -> S3BatchUploader.create("us-east-1", null, Optional.empty()))
+    assertThatThrownBy(() -> S3BatchedLogUploader.create("us-east-1", null, Optional.empty()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("billing.s3.bucket");
   }

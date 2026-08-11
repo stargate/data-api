@@ -36,13 +36,10 @@ public final class BillingMetrics {
   private final Counter batchesFailed;
   private final AtomicLong lastDeliveryEpochSeconds = new AtomicLong(0);
 
-
   /**
    * @param depthSource live queue depth, exposed read-only as {@code billing.s3.queue.depth}
    */
-  public BillingMetrics(
-      MeterRegistry meterRegistry, Supplier<Number> depthSource) {
-
+  public BillingMetrics(MeterRegistry meterRegistry, Supplier<Number> depthSource) {
 
     this.offered = meterRegistry.counter("billing.s3.events.offered");
     this.droppedCapacity = meterRegistry.counter("billing.s3.events.dropped", "reason", "capacity");

@@ -82,11 +82,11 @@ class BillingS3LogHandlerTest {
   // ============================================================
 
   /**
-   * Programmable {@link BillingS3LogHandler.AsyncBatchUploader}: records every batch and settles
+   * Programmable {@link AsyncBatchedLogUploader}: records every batch and settles
    * the returned Uni per {@link Mode}. Never blocks a caller thread — HOLD parks the completion in
    * {@code held} for the test to release explicitly.
    */
-  static final class RecordingUploader implements BillingS3LogHandler.AsyncBatchUploader {
+  static final class RecordingUploader implements AsyncBatchedLogUploader {
     enum Mode {
       COMPLETE,
       HOLD,
@@ -95,14 +95,14 @@ class BillingS3LogHandlerTest {
     }
 
     volatile Mode mode = Mode.COMPLETE;
-    final List<BillingQueue.Batch> batches = new CopyOnWriteArrayList<>();
+    final List<BatchedLogBuffer.Batch> batches = new CopyOnWriteArrayList<>();
     final BlockingQueue<CompletableFuture<Void>> held = new LinkedBlockingQueue<>();
     final AtomicInteger inFlight = new AtomicInteger();
     final AtomicInteger maxInFlight = new AtomicInteger();
     volatile boolean closed;
 
     @Override
-    public Uni<Void> upload(BillingQueue.Batch batch) {
+    public Uni<Void> upload(BatchedLogBuffer.Batch batch) {
       batches.add(batch);
       if (mode == Mode.THROW_SYNC) {
         throw new RuntimeException("simulated synchronous uploader failure");

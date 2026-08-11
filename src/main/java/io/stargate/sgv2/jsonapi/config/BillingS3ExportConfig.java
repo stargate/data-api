@@ -19,9 +19,10 @@ public interface BillingS3ExportConfig {
   /** S3 bucket region */
   Optional<String> bucketRegion();
 
-  /** Only for non-AWS S3 endpoints (e.g. S3Mock in tests).
-   * TODO: XXX EXPLAIN WHAT THIS SHOULD SET SET TO
-   * */
+  /**
+   * Only for non-AWS S3 endpoints (e.g. S3Mock in tests). TODO: XXX EXPLAIN WHAT THIS SHOULD SET
+   * SET TO
+   */
   Optional<String> endpointOverride();
 
   /** */
@@ -29,9 +30,9 @@ public interface BillingS3ExportConfig {
   int maxEventsPerBatch();
 
   /**
-   * Max bytes to include in a batch, NOTE: if a single event is bigger than this it will be sent in a batch still.
-   * 2097152 == 2 MB
-   * */
+   * Max bytes to include in a batch, NOTE: if a single event is bigger than this it will be sent in
+   * a batch still. 2097152 == 2 MB
+   */
   @WithDefault("2097152")
   long maxBytesPerBatch();
 
@@ -47,9 +48,10 @@ public interface BillingS3ExportConfig {
   @WithDefault("4")
   int uploadConcurrency();
 
-  /** Budget for draining the buffer at shutdown; keep below the pod termination grace period.
-   * TODO: XXX WHAT IS THE CURRENT TERMINATION PERIOD ?
-   * */
+  /**
+   * Budget for draining the buffer at shutdown; keep below the pod termination grace period. TODO:
+   * XXX WHAT IS THE CURRENT TERMINATION PERIOD ?
+   */
   @WithDefault("PT20S")
   Duration shutdownTimeout();
 }

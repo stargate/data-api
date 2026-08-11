@@ -4,7 +4,6 @@ import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
-
 import java.util.Objects;
 
 /**
