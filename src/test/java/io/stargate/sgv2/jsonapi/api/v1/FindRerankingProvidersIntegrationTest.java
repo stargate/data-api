@@ -125,6 +125,30 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
     }
 
     @Test
+    public final void customNimCompatibleProviderIsListed() {
+      // the 'custom' provider from test-reranking-providers-config.yaml is listed like any other
+      givenHeadersAndJson(
+              """
+                    {
+                      "findRerankingProviders": {
+                      }
+                    }
+                    """)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsStatusOnly())
+          .body("status.rerankingProviders.custom.displayName", equalTo("Custom"))
+          .body("status.rerankingProviders.custom.models", hasSize(1))
+          .body(
+              "status.rerankingProviders.custom.models[0].name", equalTo("my-org/my-nim-reranker"))
+          .body(
+              "status.rerankingProviders.custom.models[0].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()));
+    }
+
+    @Test
     public final void failedWithRandomStatus() {
       givenHeadersAndJson(
               """

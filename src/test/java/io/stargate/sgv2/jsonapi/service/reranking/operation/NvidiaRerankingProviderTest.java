@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -41,7 +42,8 @@ public class NvidiaRerankingProviderTest {
 
   @Test
   void testEmptyApiKeyThrowsException() {
-    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(MODEL_CONFIG);
+    NvidiaRerankingProvider provider =
+        new NvidiaRerankingProvider(ModelProvider.NVIDIA, MODEL_CONFIG);
 
     RerankingCredentials emptyApiKeyCredentials =
         new RerankingCredentials(testConstants.TENANT, "");
@@ -69,7 +71,8 @@ public class NvidiaRerankingProviderTest {
   void testTenantIdIsExtractedFromCredentials() {
     // Verify that the tenant from RerankingCredentials is correctly accessible
     // This ensures the tenant ID will be correctly passed as "tenant-id" header
-    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(MODEL_CONFIG);
+    NvidiaRerankingProvider provider =
+        new NvidiaRerankingProvider(ModelProvider.NVIDIA, MODEL_CONFIG);
 
     String expectedTenantId = testConstants.TENANT.toString();
     RerankingCredentials credentials =

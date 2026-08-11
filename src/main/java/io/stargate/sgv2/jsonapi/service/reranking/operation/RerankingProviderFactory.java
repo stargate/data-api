@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,11 +28,26 @@ public class RerankingProviderFactory {
   @FunctionalInterface
   interface ProviderConstructor {
     RerankingProvider create(
+        ModelProvider modelProvider,
         RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig);
   }
 
+  // CUSTOM is an externally hosted endpoint that speaks the same NIM wire format, so it reuses
+  // the Nvidia client.
   private static final Map<ModelProvider, ProviderConstructor> RERANKING_PROVIDER_CTORS =
-      Map.ofEntries(Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new));
+      Map.ofEntries(
+          Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new),
+          Map.entry(ModelProvider.CUSTOM, NvidiaRerankingProvider::new));
+
+  /**
+   * Cache of direct (non-gateway) providers, keyed by provider + model, so their HTTP clients and
+   * connection pools are reused across requests. Sharing is safe because all per-request state
+   * (tenant, credentials) is passed to {@link RerankingProvider#rerank}.
+   */
+  private final Map<DirectProviderKey, RerankingProvider> directProviders =
+      new ConcurrentHashMap<>();
+
+  private record DirectProviderKey(ModelProvider modelProvider, String modelName) {}
 
   public RerankingProvider create(
       Tenant tenant,
@@ -111,7 +127,9 @@ public class RerankingProviderFactory {
           Map.of(
               "errorMessage", "unknown service provider '%s'".formatted(modelProvider.apiName())));
     }
-    return ctor.create(modelConfig);
+    return directProviders.computeIfAbsent(
+        new DirectProviderKey(modelProvider, modelName),
+        key -> ctor.create(modelProvider, modelConfig));
   }
 
   public RerankingProvidersConfig getRerankingConfig() {
