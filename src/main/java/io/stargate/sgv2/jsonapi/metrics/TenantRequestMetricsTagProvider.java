@@ -69,8 +69,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   }
 
   /**
-   * The {@link UserAgent#product()} from the request context, so the processing of the header is
-   * done in the one place.
+   * The {@link UserAgent#product()} from the request context
    */
   private String getUserAgentValue(HttpServerRequest request) {
 
