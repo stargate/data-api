@@ -12,11 +12,14 @@ import java.util.Objects;
  * It uses an {@link EnumSet} internally for efficient storage and operations on commandFeatures.
  */
 public final class CommandFeatures {
-  private final EnumSet<CommandFeature> commandFeatures;
 
-  /** A instance representing no commandFeatures in use. */
+  /** An instance representing no commandFeatures in use. */
   public static final CommandFeatures EMPTY =
       new CommandFeatures(EnumSet.noneOf(CommandFeature.class));
+
+  private static final EnumSet<CommandFeature> ALL_FEATURES = EnumSet.allOf(CommandFeature.class);
+
+  private final EnumSet<CommandFeature> commandFeatures;
 
   /** Private constructor, use factory methods 'of' or 'create' */
   private CommandFeatures(EnumSet<CommandFeature> commandFeatures) {
@@ -76,16 +79,22 @@ public final class CommandFeatures {
   }
 
   /**
-   * Generates Micrometer Tags representing the features in this instance. Every {@link
-   * CommandFeature} is emitted as a tag, with value {@code true} if used and {@code false}
-   * otherwise: Prometheus requires all meters with the same name to have the same tag keys, so the
-   * key set must not vary with which features a command used.
+   * Generates Micrometer Tags representing the features in this instance.
+   *
+   * <p>Every {@linkCommandFeature} is emitted as a tag, with value {@code true} if used and {@code
+   * false} otherwise. Prometheus / micrometer requires all meters with the same name to have the
+   * same tag keys, so all tags are used even for features not used by the request.
+   *
+   * <p>Not a Micrometer change — the check is identical in 1.14.7 and 1.17.0. Quarkus added the
+   * throw: 3.38.1 vs 3.30.8 Before that it was a silent no-op
+   * (L1240)[https://github.com/micrometer-metrics/micrometer/blob/v1.14.7/micrometer-core/src/main/java/io/micrometer/core/instrument/MeterRegistry.java#L1240-L1244]
+   * , so these metrics were being dropped since #2058, not just now.
    *
    * @return A {@link Tags} object containing a tag for each feature.
    */
   public Tags getTags() {
     return Tags.of(
-        EnumSet.allOf(CommandFeature.class).stream()
+        ALL_FEATURES.stream()
             .map(f -> Tag.of(f.getTagName(), String.valueOf(commandFeatures.contains(f))))
             .toArray(Tag[]::new));
   }
