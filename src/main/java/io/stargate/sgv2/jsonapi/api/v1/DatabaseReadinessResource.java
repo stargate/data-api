@@ -27,10 +27,10 @@ import org.jboss.resteasy.reactive.RestResponse;
 
 /**
  * Authenticated readiness endpoint at {@code GET /v1/health/ready}, registered through Quarkus
- * JAX-RS discovery; the existing {@code /v1/*} security policy rejects requests without a token.
+ * JAX-RS discovery. The existing {@code /v1/*} security policy rejects requests without a token.
  * Same probe for Astra and Cassandra, see {@link DatabaseReadinessCheck}.
  *
- * <p>Requests must send the configured SLA User-Agent so probe sessions get the shorter SLA cache
+ * <p>Callers must send the configured SLA User-Agent so probe sessions get the shorter SLA cache
  * TTL. Responses: 200 UP, 401 invalid auth, 403 wrong User-Agent, 503 DOWN (session failure,
  * timeout, or SLA User-Agent not configured).
  */

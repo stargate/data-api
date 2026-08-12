@@ -10,12 +10,12 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * Database probe behind {@code GET /v1/health/ready}, constructed by the JAX-RS resource - not a
- * CDI bean or a MicroProfile health check.
+ * Database probe behind {@code GET /v1/health/ready}. Constructed by the JAX-RS resource, not a CDI
+ * bean or MicroProfile health check.
  *
- * <p>Gets a session from the {@link CQLSessionCache} and succeeds when the session metadata has at
- * least one {@link NodeState#UP} node. No query is issued: session creation fails if the database
- * is unreachable, and the driver keeps node states current for cached sessions.
+ * <p>Succeeds when the session from {@link CQLSessionCache} has a {@link NodeState#UP} node. No
+ * query is issued: an unreachable database fails session creation, and the driver keeps node states
+ * current on cached sessions.
  */
 public final class DatabaseReadinessCheck {
 
@@ -63,7 +63,7 @@ public final class DatabaseReadinessCheck {
                       })
                   .replaceWithVoid();
             })
-        // bounds session acquisition, the metadata inspection is in-memory
+        // bounds session acquisition; the metadata check itself is in-memory
         .ifNoItem()
         .after(timeout)
         .fail();
