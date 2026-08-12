@@ -50,8 +50,13 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
     String tenantValue;
     try {
       tenantValue = requestContext.tenant().toString();
-    } catch (ContextNotActiveException e) {
+    } catch (ContextNotActiveException | IllegalStateException e) {
       // no request context, this is only going to happen in rare situations
+      // ContextNotActiveException: request never entered the request scope, e.g. rejected before
+      // reaching JAX-RS on an unmatched route like GET /unknown. See PR#2538
+      // IllegalStateException ("No REST request in progress"): MCP requests — routed through
+      // Vert.x, not JAX-RS, so creating the RequestContext bean here fails when its constructor
+      // asks RESTEasy for the SecurityContext.
       tenantValue = UNKNOWN_VALUE;
     }
     Tag tenantTag = Tag.of(config.tenantTag(), tenantValue);
