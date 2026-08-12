@@ -68,9 +68,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
     return tags;
   }
 
-  /**
-   * The {@link UserAgent#product()} from the request context
-   */
+  /** The {@link UserAgent#product()} from the request context */
   private String getUserAgentValue(HttpServerRequest request) {
 
     String userAgent;
