@@ -470,7 +470,7 @@ public class DefaultDriverExceptionHandlerTest {
    *
    * <p>The errors only use toString (that we have seen so far)
    */
-  private static Node mockNode(String message) {
+  public static Node mockNode(String message) {
     return new Node() {
       @Override
       public String toString() {

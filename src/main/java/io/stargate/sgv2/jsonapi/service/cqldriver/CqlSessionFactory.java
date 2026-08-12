@@ -12,13 +12,17 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import io.stargate.sgv2.jsonapi.service.operation.databases.DatabaseDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -213,11 +217,38 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
 
     return builder
         .buildAsync()
-        .exceptionallyCompose(
-            throwable -> {
-              // this will be CompletionException, not the actual cause
-              throw new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant))
-                  .maybeHandle(throwable.getCause());
+        .handle(
+            (cqlSession, throwable) -> {
+              if (throwable != null) {
+                // there was an error starting the session, often a token is invalid
+                // When the driver throws it's error passes through CompletionStage's and so is
+                // wrapped
+                // in CompletionException.
+                // Sanity check - only get cause in special case above
+                var toHandle =
+                    (throwable instanceof CompletionException) ? throwable.getCause() : throwable;
+                throw new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant))
+                    .maybeHandle(toHandle);
+              }
+
+              // Driver auto reads the metadata, unless disabled, and the API must have metadata
+              // so we can check the keyspace + collection/table exist.
+              // The metadata read can fail if the token / user+password somehow cannot read the
+              // schema tables
+              // or if some coordinators do and some do not validate the credentials.
+              // In Java Driver see CassandraSchemaQueries.executeOnAdminExecutor() and
+              // DefaultSession.initialSchemaRefresh()
+              // NOTE: while throwing the error should prevent the session from getting into the
+              // CqlSessionCache
+              // using ExceptionFlags.UNRELIABLE_DB_SESSION tells the CommandProcessor we want to
+              // evict the session
+              // when from cache when the request is over.
+              if (cqlSession.getMetadata().getKeyspace("system").isEmpty()) {
+                throw DatabaseException.Code.FAILED_TO_READ_METADATA.get(
+                    EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION));
+              }
+
+              return cqlSession;
             });
   }
 }
