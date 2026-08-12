@@ -1,25 +1,23 @@
 package io.stargate.sgv2.jsonapi.metrics;
 
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
+import static io.stargate.sgv2.jsonapi.util.StringUtil.isNullOrBlank;
 
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
-import java.util.regex.Pattern;
 
 /** Tags provider for http request metrics. It provides tenant id and user agent as tags. */
 @ApplicationScoped
 public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsContributor {
-
-  // split pattern for the user agent, extract only first part of the agent
-  private static final Pattern USER_AGENT_SPLIT = Pattern.compile("[\\s/]");
 
   /** The configuration for metrics. */
   private final MetricsConfig.TenantRequestCounterConfig config;
@@ -70,17 +68,20 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
     return tags;
   }
 
+  /**
+   * The {@link UserAgent#product()} from the request context, so the processing of the header is
+   * done in the one place.
+   */
   private String getUserAgentValue(HttpServerRequest request) {
-    String headerString = request.getHeader(HttpHeaders.USER_AGENT);
-    if (null != headerString && !headerString.isBlank()) {
-      String[] split = USER_AGENT_SPLIT.split(headerString);
-      if (split.length > 0) {
-        return split[0];
-      } else {
-        return headerString;
-      }
-    } else {
-      return UNKNOWN_VALUE;
+
+    String userAgent;
+    try {
+      userAgent = requestContext.userAgent().product();
+    } catch (ContextNotActiveException | IllegalStateException e) {
+      // no request context, see contribute() above. The full header is all we have, better than
+      // reporting the agent as unknown.
+      userAgent = request.getHeader(HttpHeaders.USER_AGENT);
     }
+    return isNullOrBlank(userAgent) ? UNKNOWN_VALUE : userAgent;
   }
 }
