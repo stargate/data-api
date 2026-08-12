@@ -64,7 +64,8 @@ public class CqlSessionFactoryTests {
     var allNodesErr =
         AllNodesFailedException.fromErrors(List.of(new AbstractMap.SimpleEntry<>(node, authErr)));
 
-    var fixture = newFixture(TEST_CONSTANTS.TENANT, endpoints, schemaListener, allNodesErr, true);
+    var fixture =
+        newFixture(TEST_CONSTANTS.TENANT, endpoints, schemaListener, allNodesErr, true, null);
 
     // because the CqlSessionFactory is working through java CompletionStage the exception
     // the cause is smuggled out in CompletionException
@@ -88,7 +89,7 @@ public class CqlSessionFactoryTests {
     var schemaListener = mock(SchemaChangeListener.class);
     var endpoints = List.<String>of();
 
-    var fixture = newFixture(TEST_CONSTANTS.TENANT, endpoints, schemaListener, null, false);
+    var fixture = newFixture(TEST_CONSTANTS.TENANT, endpoints, schemaListener, null, false, null);
 
     // because the CqlSessionFactory is working through java CompletionStage the exception
     // the cause is smuggled out in CompletionException
@@ -105,6 +106,40 @@ public class CqlSessionFactoryTests {
                   .as("Exception flagged as UNRELIABLE_DB_SESSION")
                   .contains(ExceptionFlags.UNRELIABLE_DB_SESSION);
             });
+
+    // confirming we are correctly closing the session if metadata is missing
+    verify(fixture.session()).closeAsync();
+  }
+
+  @Test
+  public void createAstraDbSessionMissingMetadataErrorClosing() {
+
+    var schemaListener = mock(SchemaChangeListener.class);
+    var endpoints = List.<String>of();
+
+    var closingError = new RuntimeException("FAKE closeAsync() exception");
+    var fixture =
+        newFixture(TEST_CONSTANTS.TENANT, endpoints, schemaListener, null, false, closingError);
+
+    // same asserts as createAstraDbSessionMissingMetadata - but this is checking that even if
+    // closeAsync() throws
+    // the returned error to the user is FAILED_TO_READ_METADATA
+    assertThatThrownBy(() -> assertions(fixture, endpoints, schemaListener))
+        .as("Authentication error from driver mapped")
+        .isInstanceOfSatisfying(
+            CompletionException.class,
+            completionException -> {
+              assertThat(completionException.getCause()).isInstanceOf(DatabaseException.class);
+              DatabaseException err = (DatabaseException) completionException.getCause();
+              assertThat(err.code).isEqualTo(DatabaseException.Code.FAILED_TO_READ_METADATA.name());
+              // this is one of the few situations where we return non HTTP 200
+              assertThat(err.exceptionFlags)
+                  .as("Exception flagged as UNRELIABLE_DB_SESSION")
+                  .contains(ExceptionFlags.UNRELIABLE_DB_SESSION);
+            });
+
+    // confirming we are correctly closing the session if metadata is missing
+    verify(fixture.session()).closeAsync();
   }
 
   @Test
@@ -176,7 +211,7 @@ public class CqlSessionFactoryTests {
 
   private Fixture newFixture(
       Tenant tenant, List<String> endpoints, SchemaChangeListener schemaChangeListener) {
-    return newFixture(tenant, endpoints, schemaChangeListener, null, true);
+    return newFixture(tenant, endpoints, schemaChangeListener, null, true, null);
   }
 
   private Fixture newFixture(
@@ -184,7 +219,8 @@ public class CqlSessionFactoryTests {
       List<String> endpoints,
       SchemaChangeListener schemaChangeListener,
       RuntimeException error,
-      boolean withMetadata) {
+      boolean withMetadata,
+      RuntimeException closingError) {
 
     // we are testing that the CqlSessionFactory calls the session builder correctly,
     // so we mock the session builder and verify that it is called correctly.
@@ -193,7 +229,11 @@ public class CqlSessionFactoryTests {
     // CqlSession guarantees a Metdata obj, and we now check it
     var metadata = mock(Metadata.class);
     when(session.getMetadata()).thenReturn(metadata);
-
+    if (closingError == null) {
+      when(session.closeAsync()).thenReturn(CompletableFuture.completedFuture(null));
+    } else {
+      when(session.closeAsync()).thenReturn(CompletableFuture.failedFuture(closingError));
+    }
     Optional<KeyspaceMetadata> keyspaceMetadata =
         withMetadata ? Optional.of(mock(KeyspaceMetadata.class)) : Optional.empty();
     when(metadata.getKeyspace(any(CqlIdentifier.class))).thenReturn(keyspaceMetadata);
