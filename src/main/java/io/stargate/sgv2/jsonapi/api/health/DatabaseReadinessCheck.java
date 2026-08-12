@@ -10,12 +10,10 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * Database probe behind {@code GET /v1/health/ready}. Constructed by the JAX-RS resource, not a CDI
- * bean or MicroProfile health check.
- *
- * <p>Succeeds when the session from {@link CQLSessionCache} has a {@link NodeState#UP} node. No
- * query is issued: an unreachable database fails session creation, and the driver keeps node states
- * current on cached sessions.
+ * Database probe behind {@code GET /v1/health/ready}, constructed by the JAX-RS resource rather
+ * than as a CDI bean or MicroProfile health check. Succeeds when the session from {@link
+ * CQLSessionCache} has a {@link NodeState#UP} node; no query is issued because an unreachable
+ * database already fails session creation.
  */
 public final class DatabaseReadinessCheck {
 

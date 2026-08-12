@@ -58,12 +58,9 @@ Other Quarkus properties that are specifically relevant for the service:
 
 `GET /v1/health/ready` is an authenticated readiness endpoint, the same probe for Astra and
 Cassandra. It uses the request's tenant, `Token`, and `User-Agent` to get a session from the normal
-session cache; there are no separate readiness credentials.
-
-The pod is ready when that session's driver metadata reports a node in the `UP` state. No query is
-issued - getting the session is itself the check, since an unreachable database fails session
-creation. `UP` means this pod holds a working session. It does not check quorum, write
-availability, cross-region availability, or other tenants' credentials.
+session cache, and reports ready when that session's driver metadata has a node in the `UP` state.
+No query is issued - getting the session is itself the check. `UP` means this pod holds a working
+session, nothing more; it says nothing about quorum, write availability, or other tenants.
 
 | Status | Body | When |
 |--------|------|------|
@@ -74,27 +71,18 @@ availability, cross-region availability, or other tenants' credentials.
 
 Probes must treat the HTTP status as the contract, not the body's `status` field.
 
-**User-Agent.** Callers must send the full `stargate.jsonapi.operations.sla-user-agent` value
-(compared case-insensitively) so the probe session gets the shorter SLA cache TTL. Other
-User-Agents are rejected before the session cache is touched, and the endpoint fails closed if the
-SLA User-Agent is unset. Do not reuse probe credentials for normal traffic - the same cached
-session used with a non-SLA User-Agent keeps the longer TTL. Astra callers must use the probe
-database hostname so tenant and region resolve from `Host`; Cassandra ignores the tenant part.
-
-**Probe token needs schema read.** `CqlSessionFactory` independently rejects any new session whose
-metadata is missing the `system` keyspace. A token that authenticates but cannot read the schema
-therefore fails session creation, and this endpoint reports `DOWN` rather than an auth error. Since
-readiness drives pod rotation, revoking the probe token's schema read access takes every pod out of
-service. Alert on a fleet-wide `DOWN` transition - that pattern means a credential problem, not an
-outage.
-
-**Deployment.** Probes must call each pod directly; a request through a load balancer says nothing
-about which pod is ready. Restrict the endpoint to trusted probe traffic (NetworkPolicy, mTLS, or
-an ingress ACL and rate limit) - the User-Agent check is an operational guard, not an
-authentication boundary. Kubernetes `httpGet` headers cannot reference a Secret, so probe token
-delivery is deliberately outside Data API config: prefer an external checker or a Secret-mounted
-file read by an `exec` probe, and keep the token out of the probe command and shell trace. The
-unauthenticated Quarkus health endpoints under the non-application path do not include this check.
+- **User-Agent** - callers must send the full `stargate.jsonapi.operations.sla-user-agent` value so
+  the probe session gets the shorter SLA cache TTL; anything else is rejected before the session
+  cache is touched, and the endpoint fails closed when that setting is unset. Astra callers must
+  use the probe database hostname so tenant and region resolve from `Host`.
+- **Probe token needs schema read** - `CqlSessionFactory` rejects any new session missing the
+  `system` keyspace, so a token that authenticates but cannot read the schema reports `DOWN` rather
+  than an auth error. Readiness drives pod rotation, so a fleet-wide `DOWN` means a credential
+  problem, not an outage.
+- **Deployment** - probe each pod directly and restrict the endpoint to trusted traffic; the
+  User-Agent check is an operational guard, not an authentication boundary. Kubernetes `httpGet`
+  headers cannot reference a Secret, so deliver the probe token outside Data API config - an
+  external checker, or a Secret-mounted file read by an `exec` probe.
 
 
 ## Jsonapi metering configuration
