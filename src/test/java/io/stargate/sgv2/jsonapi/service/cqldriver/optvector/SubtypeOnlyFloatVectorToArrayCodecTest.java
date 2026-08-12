@@ -7,7 +7,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.internal.core.type.DefaultVectorType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Basic sanity checks to make sure {@link SubtypeOnlyFloatVectorToArrayCodec} is a wall-behaved
@@ -34,8 +34,10 @@ public class SubtypeOnlyFloatVectorToArrayCodecTest extends CodecTestBase<float[
   @Test
   public void shouldDecode() {
     assertThat(decode(VECTOR_HEX_STRING)).isEqualTo(VECTOR);
-    assertThatThrownBy(() -> decode("0x")).isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> decode(null)).isInstanceOf(IllegalArgumentException.class);
+    // Unlike the driver's FloatVectorToArrayCodec, this codec decodes null/empty
+    // input as null: missing/null-valued vectors reach decode() this way
+    assertThat(decode("0x")).isNull();
+    assertThat(decode(null)).isNull();
   }
 
   @Test
