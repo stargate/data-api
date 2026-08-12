@@ -68,15 +68,14 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
     return tags;
   }
 
-  /** The {@link UserAgent#product()} from the request context */
+  /** The {@link UserAgent#product()} from the request context will be used if possible */
   private String getUserAgentValue(HttpServerRequest request) {
 
     String userAgent;
     try {
       userAgent = requestContext.userAgent().product();
     } catch (ContextNotActiveException | IllegalStateException e) {
-      // no request context, see contribute() above. The full header is all we have, better than
-      // reporting the agent as unknown.
+      // no request context, so use the full USER_AGENT header
       userAgent = request.getHeader(HttpHeaders.USER_AGENT);
     }
     return isNullOrBlank(userAgent) ? UNKNOWN_VALUE : userAgent;
