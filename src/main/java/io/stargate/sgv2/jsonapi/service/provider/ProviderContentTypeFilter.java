@@ -1,7 +1,7 @@
-package io.stargate.sgv2.jsonapi.service.embedding.configuration;
+package io.stargate.sgv2.jsonapi.service.provider;
 
 import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,11 +23,18 @@ import org.slf4j.LoggerFactory;
  * <p>If the response fails the validation, a {@link APIException} is thrown with an appropriate
  * error message.
  */
-public class EmbeddingProviderResponseValidation implements ClientResponseFilter {
+public abstract class ProviderContentTypeFilter implements ClientResponseFilter {
 
-  static final MediaType MEDIATYPE_TEXT_JSON = new MediaType("text", "json");
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProviderContentTypeFilter.class);
 
-  Logger logger = LoggerFactory.getLogger(EmbeddingProviderResponseValidation.class);
+  private static final MediaType MEDIATYPE_TEXT_JSON = new MediaType("text", "json");
+
+  private final ErrorCode<?> unexpectedResponseCode;
+
+  protected ProviderContentTypeFilter(ErrorCode<?> unexpectedResponseCode) {
+    this.unexpectedResponseCode =
+        Objects.requireNonNull(unexpectedResponseCode, "unexpectedResponseCode cannot be null");
+  }
 
   /**
    * Filters the client response by validating the Content-Type and JSON body.
@@ -51,7 +59,7 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
 
     // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
-      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+      throw unexpectedResponseCode.get(
           Map.of("errorMessage", "No response body from the embedding provider"));
     }
 
@@ -67,11 +75,11 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
         responseBody =
             new String(responseContext.getEntityStream().readAllBytes(), StandardCharsets.UTF_8);
       } catch (IOException e) {
-        logger.error(
-            "Cannot convert the provider's error response to string: " + e.getMessage(), e);
+        LOGGER.error(
+            "Cannot convert the provider's error response to string: {}", e.getMessage(), e);
       }
 
-      throw EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.get(
+      throw unexpectedResponseCode.get(
           Map.of(
               "errorMessage",
               "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'; HTTP Status: %s; The response body is: '%s'."
