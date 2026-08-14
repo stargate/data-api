@@ -10,7 +10,7 @@ import com.datastax.oss.driver.internal.core.type.codec.registry.DefaultCodecReg
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test of the full suite of "subtype only" functionality. Goal here is to confirm two distinct
