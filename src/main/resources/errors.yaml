@@ -344,7 +344,7 @@ request-errors:
  # DOCUMENT request errors
   - scope: DOCUMENT
     code: DOCUMENT_ALREADY_EXISTS
-    title: Document the given _id already exists
+    title: Document with the given _id already exists
     body: |-
       Cannot insert the document: a document already exists with given '_id' (${id}). 
 
@@ -352,7 +352,7 @@ request-errors:
 
   - scope: DOCUMENT
     code: DOCUMENT_REPLACE_DIFFERENT_DOCID
-    title: Document the given _id already exists
+    title: Document with the given _id already exists
     body: |-
       The replace document and document resolved using filter have different '_id's: ${replaceId} (replace document) vs. ${matchedId} (document that filter matches). 
 
