@@ -62,7 +62,7 @@ public abstract class ProviderContentTypeFilter implements ClientResponseFilter 
     // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
       throw unexpectedResponseCode.get(
-          Map.of("errorMessage", "No response body from the embedding provider"));
+          Map.of("errorMessage", "No response body from the model provider"));
     }
 
     // response should always be JSON; if not, error out, include raw response message for
@@ -89,7 +89,7 @@ public abstract class ProviderContentTypeFilter implements ClientResponseFilter 
       throw unexpectedResponseCode.get(
           Map.of(
               "errorMessage",
-              "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'; HTTP Status: %s; The response body is: '%s'."
+              "Expected response Content-Type ('application/json' or 'text/json') from the model provider but found '%s'; HTTP Status: %s; The response body is: '%s'."
                   .formatted(contentType, responseContext.getStatus(), responseBody)));
     }
   }
