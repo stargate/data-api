@@ -4,6 +4,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import java.util.Optional;
 
+/** Deployment marker configuration, read from the per-deployment environment. */
 @ConfigMapping(prefix = "stargate.jsonapi.deployment.env")
 public interface DeploymentMarkerConfig {
 
