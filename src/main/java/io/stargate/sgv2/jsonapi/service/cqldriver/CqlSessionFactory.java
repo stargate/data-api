@@ -264,8 +264,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * CassandraSchemaQueries.executeOnAdminExecutor() and DefaultSession.initialSchemaRefresh()
    *
    * <p>When the initial read fails the driver keeps its empty starting metadata, so "no keyspaces
-   * at all" is the signal. We do not look for a specific keyspace, which system keyspaces a tenant
-   * can see depends on the deployment.
+   * at all" signals the failure.
    */
   private static CompletionStage<CqlSession> validateSession(Tenant tenant, CqlSession cqlSession) {
 
