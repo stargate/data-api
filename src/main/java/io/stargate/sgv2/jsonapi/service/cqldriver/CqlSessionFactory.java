@@ -262,10 +262,14 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * / user+password somehow cannot read the schema tables or if some coordinators do and some do
    * not validate the credentials. In Java Driver see
    * CassandraSchemaQueries.executeOnAdminExecutor() and DefaultSession.initialSchemaRefresh()
+   *
+   * <p>When the initial read fails the driver keeps its empty starting metadata, so "no keyspaces
+   * at all" is the signal. We do not look for a specific keyspace, which system keyspaces a tenant
+   * can see depends on the deployment.
    */
   private static CompletionStage<CqlSession> validateSession(Tenant tenant, CqlSession cqlSession) {
 
-    if (cqlSession.getMetadata().getKeyspace("system").isPresent()) {
+    if (!cqlSession.getMetadata().getKeyspaces().isEmpty()) {
       return CompletableFuture.completedStage(cqlSession);
     }
 
