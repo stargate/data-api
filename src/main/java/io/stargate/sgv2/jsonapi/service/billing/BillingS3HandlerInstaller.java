@@ -11,25 +11,16 @@ import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO: XXX MAKE THIS COMMENTS READABLE BY A HUMAN
  *
- * <p>Attaches a {@link BillingS3LogHandler} to the {@code billing.events} JUL logger at startup
+ * <p>Attaches a {@link BillingS3LogHandler} to the {@code billing.events} logger at startup
  * (when {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on
  * shutdown for a graceful drain.
  *
- * <p>Done programmatically because Quarkus config can't express it: a category's {@code handlers}
- * list can only reference Quarkus's built-in handler types (console/file/syslog/socket), not a
- * custom {@link java.util.logging.Handler} class. The one config-driven alternative — a discovered
- * {@code @Produces Handler} bean — attaches to the <i>root</i> logger, but {@code billing.events}
- * is {@code use-parent-handlers: false} and we want delivery scoped to exactly that category. The
- * {@link StartupEvent} observer runs after Quarkus has applied its logging config, so the
- * registration sticks.
  */
 @ApplicationScoped
 public class BillingS3HandlerInstaller {
 
-  private static final org.slf4j.Logger LOGGER =
-      LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
+  private static final org.slf4j.Logger LOGGER =  LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
 
   static final String BILLING_LOGGER_NAME = "billing.events";
 
@@ -47,7 +38,7 @@ public class BillingS3HandlerInstaller {
   void onStart(@Observes StartupEvent event) {
 
     if (!config.enabled()) {
-      LOGGER.debug("Billing S3 export disabled (stargate.jsonapi.billing.s3.enabled=false)");
+      LOGGER.info("Billing S3 export disabled (stargate.jsonapi.billing.s3.enabled=false)");
       return;
     }
 
@@ -55,9 +46,11 @@ public class BillingS3HandlerInstaller {
     var bucket = config.bucket().orElse(null);
 
     // Fail-loud: invalid billing S3 config throws here, aborting application startup.
-    var uploader = S3BatchedLogUploader.create(region, bucket, config.endpointOverride());
+    var
+    var uploader = S3BatchedLogUploader.create(region, bucket, config.endpointOverride().orElse(null));
 
     this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
+
     // TODO: LOGGER NAME SHOULD BE IN CONFIG
     Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
 

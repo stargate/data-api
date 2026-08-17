@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
 
-import io.stargate.sgv2.jsonapi.metrics.BillingMetrics;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -38,10 +38,10 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
 
   private final S3AsyncClient client;
   private final String bucket;
-  private final BillingMetrics billingMetrics;
+  private final BatchedLogUploaderMetrics billingMetrics;
 
   @VisibleForTesting
-  S3BatchedLogUploader(S3AsyncClient client, String bucket, BillingMetrics billingMetrics) {
+  S3BatchedLogUploader(S3AsyncClient client, String bucket, BatchedLogUploaderMetrics billingMetrics) {
     this.client = client;
     this.bucket = bucket;
     this.billingMetrics = billingMetrics;
@@ -55,7 +55,7 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
    * @param endpointOverride
    * @return
    */
-  public static S3BatchedLogUploader create(String region, String bucket, String endpointOverride, BillingMetrics billingMetrics) {
+  public static S3BatchedLogUploader create(String region, String bucket, String endpointOverride, BatchedLogUploaderMetrics billingMetrics) {
 
     if (region == null || region.isBlank()) {
       throw new IllegalArgumentException("region must be set");

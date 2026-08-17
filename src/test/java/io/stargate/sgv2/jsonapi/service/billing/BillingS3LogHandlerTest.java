@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import io.stargate.sgv2.jsonapi.metrics.BillingMetrics;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -634,7 +634,7 @@ class BillingS3LogHandlerTest {
    * returns instead of hanging, delivered lines are a duplicate-free subset of what was published,
    * and the metrics reconcile as {@code flushed + dropped <= offered} rather than {@code ==}. The
    * gap is expected, not a bug: a publish can land after close() takes its final buffer snapshot,
-   * so that line is neither delivered nor counted as dropped — see {@link BillingMetrics}'s class
+   * so that line is neither delivered nor counted as dropped — see {@link BatchedLogUploaderMetrics}'s class
    * doc for this same at-most-once slippage. The log line below reports the exact gap each run.
    */
   @Test

@@ -6,16 +6,16 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.stargate.sgv2.jsonapi.metrics.BillingMetrics;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
 import org.junit.jupiter.api.Test;
 
 /** Guards the meter names and tags — dashboards and alerts key on these exact series. */
-class BillingMetricsTest {
+class BatchedLogUploaderMetricsTest {
 
   @Test
   void countersFlowToTheExpectedSeries() {
     var registry = new SimpleMeterRegistry();
-    var metrics = new BillingMetrics(registry, () -> 0, 100);
+    var metrics = new BatchedLogUploaderMetrics(registry, () -> 0, 100);
 
     metrics.recordOffered();
     metrics.recordDropped();
@@ -38,7 +38,7 @@ class BillingMetricsTest {
   void depthGaugeReadsTheLiveSupplier() {
     var registry = new SimpleMeterRegistry();
     var depth = new AtomicInteger(7);
-    new BillingMetrics(registry, depth::get, 100);
+    new BatchedLogUploaderMetrics(registry, depth::get, 100);
 
     assertThat(registry.get("billing.s3.queue.depth").gauge().value()).isEqualTo(7.0);
     depth.set(11);
@@ -48,7 +48,7 @@ class BillingMetricsTest {
   @Test
   void deliveryHeartbeatAdvancesOnDeliveredBatches() {
     var registry = new SimpleMeterRegistry();
-    var metrics = new BillingMetrics(registry, () -> 0, 100);
+    var metrics = new BatchedLogUploaderMetrics(registry, () -> 0, 100);
     var heartbeat = registry.get("billing.s3.last_delivery.epoch_seconds").gauge();
 
     assertThat(heartbeat.value()).isZero(); // never delivered

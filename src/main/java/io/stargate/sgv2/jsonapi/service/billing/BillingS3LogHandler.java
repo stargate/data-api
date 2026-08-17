@@ -2,9 +2,8 @@ package io.stargate.sgv2.jsonapi.service.billing;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.metrics.BillingMetrics;
+
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,16 +57,14 @@ public final class BillingS3LogHandler extends Handler {
   private final CountDownLatch uploadingFinished = new CountDownLatch(0);
 
   private final AsyncBatchedLogUploader uploader;
-  private final BillingMetrics billingMetrics;
   private final BatchedLogBuffer batchedLogBuffer;
 
   @VisibleForTesting
   BillingS3LogHandler(
-          AsyncBatchedLogUploader uploader, BatchedLogBuffer batchedLogBuffer, BillingMetrics billingMetrics) {
+          AsyncBatchedLogUploader uploader, BatchedLogBuffer batchedLogBuffer) {
 
     this.batchedLogBuffer = batchedLogBuffer;
     this.uploader = uploader;
-    this.billingMetrics = Objects.requireNonNull(billingMetrics);
   }
 
   private static Duration requirePositive(Duration value, String property) {
@@ -178,8 +175,7 @@ public final class BillingS3LogHandler extends Handler {
         }
       }
     } finally {
-      // record if there are any abandonded events
-      billingMetrics.recordAbandonedAtShutdown(batchedLogBuffer.size());
+      // record if there are any abandoned events
       if (!batchedLogBuffer.isEmpty()) {
         LOGGER.warn(
             "start() - finished with abandoned billing events, billingQueue.size():{} ",
@@ -223,84 +219,4 @@ public final class BillingS3LogHandler extends Handler {
         .after(Duration.ofSeconds(10))
         .fail();
   }
-
-  //  /** Seal-triggered flush: ship when the buffer has a full batch by count or bytes. */
-  //  private void maybeFlush() {
-  //    if (eventQueue.shouldFlush()) {
-  //      tryFlush();
-  //    }
-  //  }
-
-  //  /**
-  //   * Age trigger: every {@code maxAge} tick ships whatever is buffered, sealed or not.
-  // Deliberately
-  //   * no head-age check: flushing only entries older than {@code maxAge} would let an event that
-  // just
-  //   * missed a tick wait ~2x{@code maxAge}, while shipping unconditionally bounds every wait by
-  // one
-  //   * period — at the cost of an occasional small object when a tick lands just after a seal
-  // flush.
-  //   *
-  //   * <p>Catches everything: an escaped throwable would silently cancel all future runs of a
-  //   * fixed-rate task.
-  //   */
-  //  @VisibleForTesting
-  //  void onAgeTick() {
-  //    try {
-  //      if (!eventQueue.isEmpty()) {
-  //        tryFlush();
-  //      }
-  //    } catch (Throwable t) {
-  //      LOG.error("Billing S3 export age-flush tick failed", t);
-  //    }
-  //  }
-  //
-  //  /**
-  //   * Claims an in-flight slot (non-blocking CAS, at most {@link #uploadConcurrency} held) and,
-  // on
-  //   * success, drains + uploads one batch asynchronously. When the upload settles the slot is
-  //   * released and the seal condition re-checked: a full batch may have accumulated meanwhile.
-  //   */
-  //  private void tryFlush() {
-  //
-  //    int prev = inFlight.getAndUpdate(n -> n < uploadConcurrency ? n + 1 : n);
-  //    if (prev >= uploadConcurrency) {
-  //      return;
-  //    }
-  //    Uni.createFrom()
-  //        .item(eventQueue::maybeDrain)
-  //        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
-  //        .flatMap(this::uploadBatch)
-  //        .eventually(
-  //            () -> {
-  //              inFlight.getAndDecrement();
-  //              maybeFlush();
-  //            })
-  //        .subscribe()
-  //        .with(ignored -> {}, failure -> LOG.error("Billing S3 export flush failed", failure));
-  //  }
-
-  /** Uploads one batch; never fails the pipeline — a batch that exhausts retries is counted. */
-  //  private Uni<Void> uploadBatch(BillingQueue.Batch batch) {
-  //    if (batch.isEmpty()) {
-  //      return Uni.createFrom().voidItem();
-  //    }
-  //    int size = batch.size();
-  //    // Runs immediately on subscription; deferred only turns a throw before upload() returns a
-  // Uni
-  //    // into a Uni failure handled below.
-  //    return Uni.createFrom()
-  //        .deferred(() -> uploader.upload(batch))
-  //        .onItem()
-  //        .invoke(() -> billingMetrics.recordBatchDelivered(size))
-  //        .onFailure()
-  //        .invoke(t -> LOG.error("Failed to upload billing S3 batch ({} events)", size, t))
-  //        .onFailure()
-  //        .recoverWithItem(
-  //            () -> {
-  //              billingMetrics.recordBatchFailed(size);
-  //              return null;
-  //            });
-  //  }
-
 }

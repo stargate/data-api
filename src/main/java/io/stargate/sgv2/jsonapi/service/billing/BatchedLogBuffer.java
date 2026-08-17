@@ -2,8 +2,8 @@ package io.stargate.sgv2.jsonapi.service.billing;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
-import com.google.common.annotations.VisibleForTesting;
-import io.stargate.sgv2.jsonapi.metrics.BillingMetrics;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 /**
  * Buffer for {@link LogRecord} that batches them according to the configuration.
  * <p>
- * See {@link #BatchedLogBuffer(int, long, Duration, int, BillingMetrics)} for the config.
+ * See {@link #BatchedLogBuffer(int, long, Duration, int, BatchedLogUploaderMetrics)} for the config.
  * </p>
  * <p>
  * There are two uses of this class, producers and consumers.
@@ -31,7 +31,7 @@ import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
  * </ul>
  *
  * The buffer is designed to handle these as concurrent calls from different threads, and tracks
- * metrics for it's use.
+ * metrics for its use.
  * </p>
  */
 public class BatchedLogBuffer {
@@ -43,7 +43,7 @@ public class BatchedLogBuffer {
   private final Duration maxAge;
 
   private final BlockingQueue<Entry> queue;
-  private final BillingMetrics billingMetrics;
+  private final BatchedLogBufferMetrics metrics;
 
   private final AtomicLong queuedBytes = new AtomicLong(0);
 
@@ -57,9 +57,9 @@ public class BatchedLogBuffer {
    *                      have many maxBatchBytes if there is a single log record that is bigger.
    * @param maxAge Maximum age any log record should have in the buffer before a new batch is available.
    * @param queueCapacity Total number of log records to buffer.
-   * @param billingMetrics Metrics recording object.
+   * @param metrics Metrics recording object.
    */
-  public BatchedLogBuffer(int maxBatchSize, long maxBatchBytes, Duration maxAge, int queueCapacity, BillingMetrics billingMetrics) {
+  public BatchedLogBuffer(int maxBatchSize, long maxBatchBytes, Duration maxAge, int queueCapacity, BatchedLogBufferMetrics metrics) {
 
     if (maxBatchSize < 1) {
       throw new IllegalArgumentException("maxBatchSize must be >= 1, got: " + maxBatchSize );
@@ -77,7 +77,8 @@ public class BatchedLogBuffer {
     this.maxBytes = maxBatchBytes;
     this.maxAge = maxAge;
 
-    this.billingMetrics = Objects.requireNonNull(billingMetrics,  "billingMetrics must not be null");
+    this.metrics = Objects.requireNonNull(metrics,  "billingMetrics must not be null");
+    this.metrics.registerBuffer(this);
     // must be concurrent to handle multiple threads
     this.queue = new ArrayBlockingQueue<>(queueCapacity);
   }
@@ -105,10 +106,11 @@ public class BatchedLogBuffer {
     }
     var newEntry = new Entry(record.getInstant(), logLine);
 
-    billingMetrics.recordOffered();
+    metrics.recordOffered();
     if (!queue.offer(newEntry)) {
       // Bounded buffer full: drop and count
-      billingMetrics.recordDropped();
+      LOGGER.debug("offer() - buffer full, dropping new entry: {}", newEntry);
+      metrics.recordDropped();
       return false;
     }
 
@@ -160,7 +162,9 @@ public class BatchedLogBuffer {
       return null;
     }
 
-    return new Batch(batchReason, lines, oldestEventAt);
+    LOGGER.info("nextBatch() - next batch of log buffer, reason:{}, lines.size:{}, batchBytes:{}, oldestEventAt: {}",
+            batchReason, lines.size(), batchBytes, oldestEventAt);
+    return new Batch(batchReason, lines, batchBytes, oldestEventAt);
   }
 
   public boolean isEmpty() {
@@ -171,7 +175,6 @@ public class BatchedLogBuffer {
     return queue.size();
   }
 
-  @VisibleForTesting
   public long queuedBytes() {
     return queuedBytes.get();
   }
@@ -180,16 +183,10 @@ public class BatchedLogBuffer {
     return queue.remainingCapacity();
   }
 
-
-
-  private Duration oldestEntry() {
+  public Duration headEntryAge() {
     var head = queue.peek();
-
     return head == null ? Duration.ZERO : Duration.between(head.eventAt(), Instant.now());
   }
-
-
-
 
   private BillingBatchReason decideNextBatch(boolean drainFully) {
 
@@ -197,12 +194,12 @@ public class BatchedLogBuffer {
       return BillingBatchReason.DRAINING;
     }
     if (queue.size() >= maxBatchSize) {
-      return BillingBatchReason.MAX_BATCH_SIZE_EXCEEDED
+      return BillingBatchReason.MAX_BATCH_SIZE_EXCEEDED;
     }
     if (queuedBytes.get() > maxBytes) {
       return BillingBatchReason.MAX_BYTES_EXCEEDED;
     }
-    if (oldestEntry().compareTo(maxAge) >= 0){
+    if (headEntryAge().compareTo(maxAge) >= 0){
       return BillingBatchReason.MAX_AGE_EXCEEDED;
     }
     return null;
@@ -216,24 +213,22 @@ public class BatchedLogBuffer {
   }
 
   /**
-   * OLD BELOW
    *
-   * One drained, sealed batch. {@code oldestEventAt} is the minimum event time across {@code lines}
-   * — queue order is enqueue order, not event-time order, under concurrent publish.
    */
   public static final class Batch {
 
     private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
 
-
     private final UUID batchId = UUID_V7_GENERATOR.generate();
     private final BillingBatchReason batchReason;
     private final List<String> lines;
+    private final long batchBytes;
     private final Instant oldestEventAt;
 
-    public Batch(BillingBatchReason batchReason, List<String> lines, Instant oldestEventAt) {
+    public Batch(BillingBatchReason batchReason, List<String> lines, long batchBytes, Instant oldestEventAt) {
       this.batchReason = batchReason;
       this.lines = Collections.unmodifiableList(lines);
+      this.batchBytes = batchBytes;
       this.oldestEventAt = oldestEventAt;
     }
 
@@ -257,9 +252,13 @@ public class BatchedLogBuffer {
       return lines.size();
     }
 
+    public long batchBytes() {
+      return batchBytes;
+    }
+
     public String description() {
-      return "id:%s, reason:%s, oldestEventAt:%s, size:%s".formatted(
-              batchId, batchReason, oldestEventAt, size()
+      return "id:%s, reason:%s, oldestEventAt:%s, size:%s, batchBytes:%s".formatted(
+              batchId, batchReason, oldestEventAt, size(),  batchBytes
       );
     }
   }
