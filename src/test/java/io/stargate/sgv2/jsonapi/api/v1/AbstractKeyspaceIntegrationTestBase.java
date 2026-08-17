@@ -196,14 +196,9 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   protected Map<String, ?> getHeaders() {
-    String credential =
-        "Cassandra:"
-            + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
-            + ":"
-            + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
     return Map.of(
         HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-        credential,
+        getAuthToken(),
         HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
         CustomITEmbeddingProvider.TEST_API_KEY);
   }

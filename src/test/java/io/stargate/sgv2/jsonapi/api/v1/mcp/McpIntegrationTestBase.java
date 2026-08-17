@@ -15,7 +15,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -90,13 +89,8 @@ public abstract class McpIntegrationTestBase {
 
   /** Build authentication headers matching the Token header format used by the REST API. */
   protected MultiMap authHeaders() {
-    String credential =
-        "Cassandra:"
-            + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
-            + ":"
-            + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
     return MultiMap.caseInsensitiveMultiMap()
-        .add(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, credential);
+        .add(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken());
   }
 
   /** Create a keyspace via the MCP createKeyspace tool. */
