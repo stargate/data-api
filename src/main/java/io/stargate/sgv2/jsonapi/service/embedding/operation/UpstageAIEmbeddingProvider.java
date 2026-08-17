@@ -7,12 +7,11 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderBillingFilter;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -176,8 +175,8 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
    * <p>..
    */
   @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  @RegisterProvider(ProviderHttpInterceptor.class)
+  @RegisterProvider(EmbeddingProviderContentTypeFilter.class)
+  @RegisterProvider(ProviderBillingFilter.class)
   public interface UpstageAIEmbeddingProviderClient {
     @POST
     // no path specified, as it is already included in the baseUri

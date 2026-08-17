@@ -181,7 +181,7 @@ public class EmbeddingProviderErrorMessageTest {
     assertApiException(
         exception,
         EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE,
-        "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'; HTTP Status: 200; The response body is: '<object>list</object>'.");
+        "Expected response Content-Type ('application/json' or 'text/json') from the model provider but found 'application/xml'; HTTP Status: 200; The response body is: '<object>list</object>'.");
   }
 
   @Test
@@ -191,7 +191,7 @@ public class EmbeddingProviderErrorMessageTest {
     assertApiException(
         exception,
         EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE,
-        "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'text/plain;charset=UTF-8'; HTTP Status: 200; The response body is: 'vectors as plain text'.");
+        "Expected response Content-Type ('application/json' or 'text/json') from the model provider but found 'text/plain;charset=UTF-8'; HTTP Status: 200; The response body is: 'vectors as plain text'.");
   }
 
   @Test
@@ -201,7 +201,7 @@ public class EmbeddingProviderErrorMessageTest {
     assertApiException(
         exception,
         EmbeddingProviderException.Code.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE,
-        "No response body from the embedding provider");
+        "No response body from the model provider");
   }
 
   @Test
