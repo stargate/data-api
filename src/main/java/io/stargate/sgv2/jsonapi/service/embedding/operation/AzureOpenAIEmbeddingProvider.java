@@ -5,12 +5,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderBillingFilter;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -127,8 +126,8 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
 
   /** REST client interface for the Azure Open AI Embedding Service. */
   @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  @RegisterProvider(ProviderHttpInterceptor.class)
+  @RegisterProvider(EmbeddingProviderContentTypeFilter.class)
+  @RegisterProvider(ProviderBillingFilter.class)
   public interface AzureOpenAIEmbeddingProviderClient {
     // no path specified, as it is already included in the baseUri
     @POST
