@@ -226,7 +226,7 @@ public class CqlSessionFactoryTests {
     // so we mock the session builder and verify that it is called correctly.
     var session = mock(CqlSession.class);
 
-    // CqlSession guarantees a Metdata obj, and we now check it has keyspaces
+    // CqlSession guarantees a Metadata obj, and we now check it has keyspaces
     var metadata = mock(Metadata.class);
     when(session.getMetadata()).thenReturn(metadata);
     when(metadata.getKeyspaces())
