@@ -348,8 +348,8 @@ public abstract class ProviderBase {
         modelInputType,
         promptTokens,
         totalTokens,
-        ProviderHttpInterceptor.getSentBytes(jakartaResponse),
-        ProviderHttpInterceptor.getReceivedBytes(jakartaResponse),
+        ProviderBillingFilter.getSentBytes(jakartaResponse),
+        ProviderBillingFilter.getReceivedBytes(jakartaResponse),
         durationNanos);
   }
 
