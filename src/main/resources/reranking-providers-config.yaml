@@ -16,14 +16,7 @@ stargate:
               properties:
                 max-batch-size: 10
             # NIM 2.x (Rust runtime) reranking model, deployed alongside the model above.
-            # Not the default: collections pin provider + model in their schema, so the default
-            # only affects newly created collections.
-            # TODO confirm the gateway path once the GPU plane deployment is routed: the proxy
-            # may dispatch on the `model` field in the body (same path) or expose a new path.
             - name: nvidia/llama-nemotron-rerank-vl-1b-v2
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
-                # Kept at 10 to match the existing model so load comparisons are like-for-like.
-                # NIM 2.x accepts up to 512 passages per call; raising this collapses the
-                # per-findAndRerank fan-out and should be measured as a separate change.
                 max-batch-size: 10
