@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.0.50](https://github.com/stargate/data-api/tree/v1.0.50) (2026-08-18)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.49...v1.0.50)
+
+**Merged pull requests:**
+
+- FIX \#2548 better error handling reranking via EGW [\#2549](https://github.com/stargate/data-api/pull/2549) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2546](https://github.com/stargate/data-api/pull/2546) ([github-actions[bot]](https://github.com/apps/github-actions))
+- check http status when checking content type [\#2545](https://github.com/stargate/data-api/pull/2545) ([amorton](https://github.com/amorton))
+
 ## [v1.0.49](https://github.com/stargate/data-api/tree/v1.0.49) (2026-08-13)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.48...v1.0.49)
