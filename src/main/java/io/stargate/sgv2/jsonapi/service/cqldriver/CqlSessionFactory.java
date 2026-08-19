@@ -169,8 +169,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   public CompletionStage<CqlSession> apply(Tenant tenant, CqlCredentials credentials) {
     Objects.requireNonNull(credentials, "credentials must not be null");
 
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Creating CQL Session tenant={}, credentials={}", tenant, credentials);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Creating CQL Session tenant={}, credentials={}", tenant, credentials);
     }
 
     // the driver TypedDriverOption is only used with DriverConfigLoader.fromMap()
@@ -238,6 +238,9 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
       Tenant tenant, CqlSession cqlSession, Throwable throwable) {
 
     if (throwable == null) {
+      LOGGER.debug(
+          "unwrapBuildException() - throwable null. tenant={}, cqlSession={}", tenant, cqlSession);
+
       return cqlSession;
     }
 
@@ -249,8 +252,19 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
         (throwable instanceof CompletionException && throwable.getCause() != null)
             ? throwable.getCause()
             : throwable;
-    throw new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant))
-        .maybeHandle(toHandle);
+    LOGGER.debug(
+        "unwrapBuildException() - throwable not null. tenant={}, throwable={}, toHandle={}",
+        tenant,
+        throwable.toString(),
+        toHandle.toString());
+
+    var err =
+        new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant)).maybeHandle(toHandle);
+    LOGGER.debug(
+        "unwrapBuildException() - throwable not null. tenant={}, APIException={}",
+        tenant,
+        err.toString());
+    throw err;
   }
 
   /**
@@ -265,10 +279,20 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    */
   private static CompletionStage<CqlSession> validateSession(Tenant tenant, CqlSession cqlSession) {
 
+    var keyspaces =
+        String.join(
+            ", ",
+            cqlSession.getMetadata().getKeyspaces().keySet().stream()
+                .map(Object::toString)
+                .toList());
+    LOGGER.debug("validateSession() - keyspaces. tenant={}, keyspaces=[{}]", tenant, keyspaces);
+
     if (cqlSession.getMetadata().getKeyspace("system").isPresent()) {
       return CompletableFuture.completedStage(cqlSession);
     }
 
+    LOGGER.error(
+        "validateSession() - system ks not found. tenant={}, keyspaces=[{}]", tenant, keyspaces);
     // NOTE: while throwing the error will prevent the session from getting into the
     // CqlSessionCache we use ExceptionFlags.UNRELIABLE_DB_SESSION tells the CommandProcessor we
     // want to evict the session when from cache when the request is over as belt and braces
@@ -282,7 +306,10 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
                     tenant,
                     closeError);
               }
-
+              LOGGER.error(
+                  "validateSession() - throwing FAILED_TO_READ_METADATA. tenant={}, keyspaces=[{}]",
+                  tenant,
+                  keyspaces);
               // this is the real error we want to get back to the user
               throw DatabaseException.Code.FAILED_TO_READ_METADATA.get(
                   EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION));
