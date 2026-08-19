@@ -1,5 +1,28 @@
 # Changelog
 
+## [v1.0.50](https://github.com/stargate/data-api/tree/v1.0.50) (2026-08-18)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.49...v1.0.50)
+
+**Merged pull requests:**
+
+- FIX \#2548 better error handling reranking via EGW [\#2549](https://github.com/stargate/data-api/pull/2549) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2546](https://github.com/stargate/data-api/pull/2546) ([github-actions[bot]](https://github.com/apps/github-actions))
+- check http status when checking content type [\#2545](https://github.com/stargate/data-api/pull/2545) ([amorton](https://github.com/amorton))
+
+## [v1.0.49](https://github.com/stargate/data-api/tree/v1.0.49) (2026-08-13)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.48...v1.0.49)
+
+**Merged pull requests:**
+
+- FIX: \#2539 check CqlSession has metadata [\#2542](https://github.com/stargate/data-api/pull/2542) ([amorton](https://github.com/amorton))
+- Update openjdk and quarkus version [\#2538](https://github.com/stargate/data-api/pull/2538) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Bump actions/checkout from 6 to 7 in the github-actions group [\#2521](https://github.com/stargate/data-api/pull/2521) ([dependabot[bot]](https://github.com/apps/dependabot))
+- fix: accept Docker Compose newer than 2.x in docker-compose start scripts [\#2504](https://github.com/stargate/data-api/pull/2504) ([erichare](https://github.com/erichare))
+- Bumping version for next data-api release [\#2502](https://github.com/stargate/data-api/pull/2502) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Refactor Collection Table Matcher [\#2499](https://github.com/stargate/data-api/pull/2499) ([amorton](https://github.com/amorton))
+
 ## [v1.0.48](https://github.com/stargate/data-api/tree/v1.0.48) (2026-06-11)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.47...v1.0.48)
