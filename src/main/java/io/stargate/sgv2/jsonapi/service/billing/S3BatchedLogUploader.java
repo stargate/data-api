@@ -19,7 +19,11 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-/** Uploads sealed billing batches to S3 as NDJSON objects under time-partitioned keys. */
+/** Uploads sealed billing batches to S3 as NDJSON objects under time-partitioned keys.
+ * TODO:
+ *    .requestChecksumCalculation(RequestChecksumCalculation.WHEN_SUPPORTED)
+ *     .responseChecksumValidation(ResponseChecksumValidation.WHEN_SUPPORTED)
+ * */
 public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(S3BatchedLogUploader.class);
@@ -27,24 +31,27 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
   // S3 destination formatting
   private static final String PATH_PREFIX = "data-api";
   private static final String CONTENT_TYPE_NDJSON = "application/x-ndjson";
-  private static final DateTimeFormatter OBJECT_KEY_FORMAT =
+  private static final DateTimeFormatter OBJECT_KEY_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm").withZone(ZoneOffset.UTC);
 
-  // Bound every PUT so a hung connection can neither pin an upload slot indefinitely nor stall
-  // the shutdown drain. Retries stay inside the SDK's built-in default policy (bounded attempts,
-  // jittered throttle-aware backoff).
+
   private static final Duration API_CALL_ATTEMPT_TIMEOUT = Duration.ofSeconds(10);
   private static final Duration API_CALL_TIMEOUT = Duration.ofSeconds(30);
 
   private final S3AsyncClient client;
+  private final String region;
   private final String bucket;
-  private final BatchedLogUploaderMetrics billingMetrics;
+  private final BatchedLogUploaderMetrics metrics;
 
-  @VisibleForTesting
-  S3BatchedLogUploader(S3AsyncClient client, String bucket, BatchedLogUploaderMetrics billingMetrics) {
+
+  private S3BatchedLogUploader(S3AsyncClient client,
+                               String region,
+                               String bucket,
+                               BatchedLogUploaderMetrics metrics) {
     this.client = client;
+    this.region = region;
     this.bucket = bucket;
-    this.billingMetrics = billingMetrics;
+    this.metrics = metrics;
   }
 
   /**
@@ -55,22 +62,25 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
    * @param endpointOverride
    * @return
    */
-  public static S3BatchedLogUploader create(String region, String bucket, String endpointOverride, BatchedLogUploaderMetrics billingMetrics) {
+  public static S3BatchedLogUploader create(String region,
+                                            String bucket,
+                                            String endpointOverride,
+                                            BatchedLogUploaderMetrics metrics) {
 
     if (region == null || region.isBlank()) {
-      throw new IllegalArgumentException("region must be set");
+      throw new IllegalArgumentException("region must not be null or blank");
     }
     if (bucket == null || bucket.isBlank()) {
-      throw new IllegalArgumentException("bucket must be set");
+      throw new IllegalArgumentException("bucket must not be  null or blank");
     }
+    Objects.requireNonNull(metrics,  "metrics must not be null");
 
     // Credentials resolve from the SDK's default provider chain (env vars, web-identity/OIDC
     // token, instance/container roles), left implicit so the client owns — and closes — the
     // provider. This transparently supports federated (AssumeRoleWithWebIdentity) and
     // cross-account access: the bucket may live in a different account (per IAM + bucket
     // policy); its region is set via .region().
-    var builder =
-        S3AsyncClient.builder()
+    var builder = S3AsyncClient.builder()
             .region(Region.of(region))
             .overrideConfiguration(
                 config ->
@@ -86,7 +96,7 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
       builder.endpointOverride(URI.create(endpointOverride)).forcePathStyle(true);
     }
 
-    return new S3BatchedLogUploader(builder.build(), bucket);
+    return new S3BatchedLogUploader(builder.build(), region,  bucket, metrics);
   }
 
   @Override
@@ -94,32 +104,29 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
 
     Objects.requireNonNull(batch, "batch must not be null");
 
-    var key = objectKey(batch);
+    var location = objectLocation(batch);
     var body = objectContent(batch);
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "upload() - starting to upload batch, batch:({}), S3.bucket:{}, S3.key:{}",
-          batch.description(),
-          bucket,
-          key);
-    }
+
+    LOGGER.info(
+        "upload() - starting to upload batch, batch:({}), location:{}, body.size:{}",
+        batch.description(),
+        location,
+        body.length);
 
     // No .retry() here: unconfigured, S3AsyncClient already retries (default LegacyRetryStrategy —
     // 3 retries / 4 attempts). See
     // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/retry-strategy.html
     // and see https://github.com/aws/aws-sdk-java-v2/issues/6987 for future change.
 
+    var putRequest = PutObjectRequest.builder()
+            .bucket(location.bucket())
+            .key(location.key())
+            .contentType(CONTENT_TYPE_NDJSON)
+            .build();
+
     return Uni.createFrom()
-        .completionStage(
-            () ->
-                client.putObject(
-                    PutObjectRequest.builder()
-                        .bucket(bucket)
-                        .key(key)
-                        .contentType(CONTENT_TYPE_NDJSON)
-                        .build(),
-                    AsyncRequestBody.fromBytes(body)))
+        .completionStage(client.putObject(putRequest, AsyncRequestBody.fromBytes(body)))
         .onItemOrFailure()
         .transform(
             (resp, failure) -> {
@@ -128,26 +135,22 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
               var requestId = (cause instanceof AwsServiceException ase) ? ase.requestId() : null;
 
               if (!success) {
-                billingMetrics.recordBatchFailed(batch.size());
+                metrics.recordBatchFailed(batch);
                 LOGGER.error(
-                    "upload() - error uploading billing to S3, batch:({}), bytes.length:{}, requestId:{}, S3.bucket:{}, S3.key:{}",
+                    "upload() - error uploading billing to S3, batch:({}), location:{},  requestId:{}",
                     batch.description(),
-                    body.length,
+                    location,
                     requestId,
-                    bucket,
-                    key,
                     cause);
               } else {
-                billingMetrics.recordBatchDelivered(batch.size());
-                LOGGER.debug(
-                    "upload() - success uploading billing to S3, batch:({}), bytes.length:{}, eTag:{}, status:{}, requestId={}, S3.bucket:{}, S3.key:{}",
+                metrics.recordBatchDelivered(batch);
+                LOGGER.info(
+                    "upload() - success uploading billing to S3, batch:({}), location:{}, requestId:{}, eTag:{}, status:{}",
                     batch.description(),
-                    body.length,
+                    location,
+                    requestId,
                     resp.eTag(),
-                    resp.sdkHttpResponse().statusCode(),
-                    resp.responseMetadata().requestId(),
-                        bucket,
-                        key);
+                    resp.sdkHttpResponse().statusCode());
               }
               return new  UploadResult(success, failure, batch);
             });
@@ -158,20 +161,17 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
     client.close();
   }
 
-  private static String objectKey(BatchedLogBuffer.Batch batch) {
+  private  S3Location objectLocation(BatchedLogBuffer.Batch batch) {
 
     var objectKey =
         PATH_PREFIX
             + "/"
-            + OBJECT_KEY_FORMAT.format(batch.oldestEventAt())
+            + OBJECT_KEY_FORMATTER.format(batch.oldestEventAt())
             + "/"
             + batch.id()
             + ".jsonl";
 
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("objectKey() - batch.id:{} , objectKey:{}", batch.id(), objectKey);
-    }
-    return objectKey;
+    return new S3Location(region, bucket, objectKey);
   }
 
   private static byte[] objectContent(BatchedLogBuffer.Batch batch) {
@@ -180,11 +180,11 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
     for (String line : batch.lines()) {
       sb.append(line).append('\n');
     }
-    var bytes = sb.toString().getBytes(StandardCharsets.UTF_8);
-
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("objectContent() - batch.id:{} , bytes.length:{}", batch.id(), bytes.length);
-    }
-    return bytes;
+    return sb.toString().getBytes(StandardCharsets.UTF_8);
   }
+
+  private record S3Location(
+          String region,
+          String bucket,
+          String key) {}
 }

@@ -4,6 +4,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -22,7 +24,8 @@ public class BillingS3HandlerInstaller {
 
   private static final org.slf4j.Logger LOGGER =  LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
 
-  static final String BILLING_LOGGER_NAME = "billing.events";
+  private static final String METRICS_PREFIX ="billing";
+  private static final String BILLING_LOGGER_NAME = "billing.events";
 
   private final BillingS3ExportConfig config;
   private final MeterRegistry meterRegistry;
@@ -38,16 +41,23 @@ public class BillingS3HandlerInstaller {
   void onStart(@Observes StartupEvent event) {
 
     if (!config.enabled()) {
-      LOGGER.info("Billing S3 export disabled (stargate.jsonapi.billing.s3.enabled=false)");
+      LOGGER.info("Billing S3 export disabled");
       return;
     }
 
-    var region = config.bucketRegion().orElse(null);
-    var bucket = config.bucket().orElse(null);
-
     // Fail-loud: invalid billing S3 config throws here, aborting application startup.
-    var
-    var uploader = S3BatchedLogUploader.create(region, bucket, config.endpointOverride().orElse(null));
+    var uploader = S3BatchedLogUploader.create(
+            config.region(),
+            config.bucket(),
+            config.endpointOverride().orElse(null),
+            new BatchedLogUploaderMetrics(meterRegistry, METRICS_PREFIX));
+
+    var buffer= new BatchedLogBuffer(
+            config.maxEventsPerBatch(),
+            config.maxBytesPerBatch(),
+            config.maxAge(),
+            config.queueCapacity(),
+            new BatchedLogBufferMetrics(meterRegistry, METRICS_PREFIX));
 
     this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
 

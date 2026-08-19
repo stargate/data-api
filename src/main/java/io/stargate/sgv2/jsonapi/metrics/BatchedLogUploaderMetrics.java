@@ -1,58 +1,54 @@
 package io.stargate.sgv2.jsonapi.metrics;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.time.Instant;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
 
+import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.service.billing.BatchedLogBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.Objects;
 
 /**
  * Metrics for billing events, mostly around what is sent to S3
  */
-public final class BatchedLogUploaderMetrics {
+public final class BatchedLogUploaderMetrics extends MetricsBase{
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchedLogUploaderMetrics.class);
 
-  private final MeterRegistry meterRegistry;
-  private final String prefix;
+  public final Counter uploadedBatches;
+  public final Counter uploadedBytes;
+  public final Timer uploadedHeadAgeMs;
+  public final Counter uploadedEvents;
 
-  private final Counter batchesUploaded;
-  private final Counter eventsUploaded;
-
-  private final Counter batchesFailed;
-  private final Counter eventsFailed;
+  public final Counter failedBatches;
+  public final Counter failedEvents;
 
   /**
    */
   public BatchedLogUploaderMetrics(MeterRegistry meterRegistry, String prefix) {
+    super(meterRegistry, prefix);
 
-    this.meterRegistry = Objects.requireNonNull(meterRegistry,  "meterRegistry must not be null");
-    this.prefix = Objects.requireNonNull(prefix, "prefix must not be null");
-    if (prefix.isBlank()) {
-      throw new IllegalArgumentException("prefix must not be blank");
-    }
+    this.uploadedBatches = newCounter("s3.uploaded.batches");
+    this.uploadedBytes = newCounter("s3.uploaded.bytes");
+    this.uploadedEvents = newCounter("s3.uploaded.events");
+    this.uploadedHeadAgeMs = newTimer("s3.uploaded.oldest_event");
 
-    this.batchesUploaded = meterRegistry.counter(prefix + ".s3.batches.uploaded.size");
-    this.batchesUploaded = meterRegistry.counter(prefix + ".s3.batches.uploaded.bytes");
-    this.eventsUploaded = meterRegistry.counter(prefix + ".s3.events.uploaded.size");
-
-    this.batchesFailed = meterRegistry.counter(prefix + ".s3.batches.failed");
-    this.eventsFailed = meterRegistry.counter(prefix + ".s3.events.failed");
+    this.failedBatches = newCounter( "s3.failed.batches");
+    this.failedEvents = newCounter( "s3.failed.events");
   }
 
   public void recordBatchDelivered(BatchedLogBuffer.Batch batch) {
-    eventsUploaded.increment(size);
-    batchesUploaded.increment();
+
+    Objects.requireNonNull(batch, "batch must not be null");
+    uploadedBatches.increment();
+    uploadedBytes.increment(batch.batchBytes());
+    uploadedHeadAgeMs.record(batch.oldestEventAtDuration());
+    uploadedEvents.increment(batch.size());
   }
 
-  public void recordBatchFailed(BatchedLogBuffer.Batch) {
-    eventsFailed.increment(size);
-    batchesFailed.increment();
+  public void recordBatchFailed(BatchedLogBuffer.Batch batch) {
+
+    Objects.requireNonNull(batch, "batch must not be null");
+    failedBatches.increment();
+    failedEvents.increment(batch.size());
   }
 }

@@ -106,11 +106,11 @@ public class BatchedLogBuffer {
     }
     var newEntry = new Entry(record.getInstant(), logLine);
 
-    metrics.recordOffered();
+    metrics.offered.increment();
     if (!queue.offer(newEntry)) {
       // Bounded buffer full: drop and count
       LOGGER.debug("offer() - buffer full, dropping new entry: {}", newEntry);
-      metrics.recordDropped();
+      metrics.dropped.increment();
       return false;
     }
 
@@ -246,6 +246,10 @@ public class BatchedLogBuffer {
 
     public Instant oldestEventAt() {
       return oldestEventAt;
+    }
+
+    public Duration oldestEventAtDuration() {
+      return Duration.between(oldestEventAt(), Instant.now());
     }
 
     public int size() {

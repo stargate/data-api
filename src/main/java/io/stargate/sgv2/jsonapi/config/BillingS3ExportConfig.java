@@ -13,11 +13,11 @@ public interface BillingS3ExportConfig {
   @WithDefault("false")
   boolean enabled();
 
-  /** S3 bucket name */
-  Optional<String> bucket();
-
   /** S3 bucket region */
-  Optional<String> bucketRegion();
+  String region();
+
+  /** S3 bucket name */
+  String bucket();
 
   /**
    * Only for non-AWS S3 endpoints (e.g. S3Mock in tests). TODO: XXX EXPLAIN WHAT THIS SHOULD SET
@@ -26,7 +26,7 @@ public interface BillingS3ExportConfig {
   Optional<String> endpointOverride();
 
   /** */
-  @WithDefault("50")
+  @WithDefault("2048")
   int maxEventsPerBatch();
 
   /**
@@ -43,15 +43,4 @@ public interface BillingS3ExportConfig {
   /** Bound on buffered events; beyond it new lines are dropped. */
   @WithDefault("10000")
   int queueCapacity();
-
-  /** Max concurrent S3 PUTs. */
-  @WithDefault("4")
-  int uploadConcurrency();
-
-  /**
-   * Budget for draining the buffer at shutdown; keep below the pod termination grace period. TODO:
-   * XXX WHAT IS THE CURRENT TERMINATION PERIOD ?
-   */
-  @WithDefault("PT20S")
-  Duration shutdownTimeout();
 }

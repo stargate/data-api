@@ -27,7 +27,7 @@ class BillingS3HandlerInstallerTest {
     BillingS3ExportConfig config = mock(BillingS3ExportConfig.class);
     when(config.enabled()).thenReturn(enabled);
     when(config.bucket()).thenReturn(Optional.ofNullable(bucket));
-    when(config.bucketRegion()).thenReturn(Optional.ofNullable(region));
+    when(config.region()).thenReturn(Optional.ofNullable(region));
     when(config.endpointOverride()).thenReturn(Optional.empty());
     when(config.maxEventsPerBatch()).thenReturn(50);
     when(config.maxBytesPerBatch()).thenReturn(2_097_152L);
