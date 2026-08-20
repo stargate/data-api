@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.vertx.core.MultiMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,6 +62,30 @@ class BillingTest {
   void createReturnsNoOpWhenFeatureDisabled() {
     // BillingConfig isn't consulted when the feature is off — pass null to assert that explicitly.
     var billing = Billing.create(null, featuresWithBilling(false));
+
+    assertThat(billing).isSameAs(Billing.NO_OP);
+  }
+
+  @Test
+  void createReturnsDefaultBillingWhenOnlyResponseEnabled() {
+    // RESPONSE on / LOGGING off must still produce a real Billing — events are needed for the
+    // response header even when nothing is logged.
+    var billing = Billing.create(validConfig(), features(false, true));
+
+    assertThat(billing).isInstanceOf(DefaultBilling.class);
+  }
+
+  @Test
+  void createReturnsDefaultBillingWhenBothEnabled() {
+    var billing = Billing.create(validConfig(), features(true, true));
+
+    assertThat(billing).isInstanceOf(DefaultBilling.class);
+  }
+
+  @Test
+  void createReturnsNoOpWhenBothDisabled() {
+    // Config isn't consulted when both flags are off — pass null to assert that explicitly.
+    var billing = Billing.create(null, features(false, false));
 
     assertThat(billing).isSameAs(Billing.NO_OP);
   }
@@ -128,6 +153,16 @@ class BillingTest {
     var config = mock(FeaturesConfig.class);
     when(config.flags())
         .thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, String.valueOf(enabled)));
+    return ApiFeatures.fromConfigAndRequest(config, null);
+  }
+
+  /** Resolves an {@link ApiFeatures} with both billing flags set explicitly. */
+  private static ApiFeatures features(boolean logging, boolean response) {
+    var config = mock(FeaturesConfig.class);
+    Map<ApiFeature, String> flags = new HashMap<>();
+    flags.put(ApiFeature.BILLING_EVENTS_LOGGING, String.valueOf(logging));
+    flags.put(ApiFeature.BILLING_EVENTS_RESPONSE, String.valueOf(response));
+    when(config.flags()).thenReturn(flags);
     return ApiFeatures.fromConfigAndRequest(config, null);
   }
 

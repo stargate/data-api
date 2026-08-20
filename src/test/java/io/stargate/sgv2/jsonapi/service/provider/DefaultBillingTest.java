@@ -222,6 +222,68 @@ class DefaultBillingTest {
   }
 
   // ============================================================
+  // collectedEvents (BILLING_EVENTS_RESPONSE buffer)
+  // ============================================================
+
+  @Test
+  void buffersEventsWhenResponseEnabled() {
+    // LOGGING off, RESPONSE on — events still build and land in the buffer.
+    var billing = newBilling(false, true);
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING));
+
+    assertThat(billing.collectedEvents())
+        .extracting(BillingEvent::eventType)
+        .containsExactly(
+            BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
+            BillingEventType.INTERNAL_MODEL_EGRESS_BYTES,
+            BillingEventType.INTERNAL_MODEL_INGRESS_BYTES);
+  }
+
+  @Test
+  void doesNotBufferWhenOnlyLoggingEnabled() {
+    // LOGGING on, RESPONSE off — buffer stays empty so no memory is held when the response
+    // feature is off.
+    var billing = newBilling(true, false);
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING));
+
+    assertThat(billing.collectedEvents()).isEmpty();
+  }
+
+  @Test
+  void buffersAcrossMultipleCalls() {
+    var billing = newBilling(false, true);
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING));
+    billing.emitEvent(usage(ModelProvider.OPENAI, ModelType.EMBEDDING));
+
+    // 3 events per emitEvent call × 2 calls = 6 events total.
+    assertThat(billing.collectedEvents()).hasSize(6);
+  }
+
+  @Test
+  void collectedEventsReturnsImmutableSnapshot() {
+    var billing = newBilling(false, true);
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING));
+
+    var snapshot = billing.collectedEvents();
+    // Snapshot must not reflect later writes — it's a defensive copy.
+    int before = snapshot.size();
+    billing.emitEvent(usage(ModelProvider.OPENAI, ModelType.EMBEDDING));
+    assertThat(snapshot).hasSize(before);
+    // And the snapshot itself must not be modifiable.
+    assertThatThrownBy(snapshot::clear).isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void collectedEventsEmptyWhenNeitherSinkActive() {
+    // create() never builds DefaultBilling with both flags off, but emitEvent must still be a
+    // no-op (and the buffer empty) if it ever happens.
+    var billing = newBilling(false, false);
+    billing.emitEvent(usage(ModelProvider.NVIDIA, ModelType.EMBEDDING));
+
+    assertThat(billing.collectedEvents()).isEmpty();
+  }
+
+  // ============================================================
   // Helpers
   // ============================================================
 
@@ -230,14 +292,28 @@ class DefaultBillingTest {
     return newBilling(INTERNAL_PROVIDERS, Optional.empty());
   }
 
+  /** Logging on, response off — the default for buildEvents / logging tests. */
   private static DefaultBilling newBilling(
       List<String> internalProviders, Optional<Set<BillingEventType>> enabledEventTypes) {
+    return newBilling(internalProviders, enabledEventTypes, true, false);
+  }
+
+  /** Selects which sinks are active, with the default INTERNAL_PROVIDERS / all-events config. */
+  private static DefaultBilling newBilling(boolean loggingEnabled, boolean responseEnabled) {
+    return newBilling(INTERNAL_PROVIDERS, Optional.empty(), loggingEnabled, responseEnabled);
+  }
+
+  private static DefaultBilling newBilling(
+      List<String> internalProviders,
+      Optional<Set<BillingEventType>> enabledEventTypes,
+      boolean loggingEnabled,
+      boolean responseEnabled) {
     var config = mock(BillingConfig.class);
     when(config.product()).thenReturn(PRODUCT);
     when(config.resourceType()).thenReturn(RESOURCE_TYPE);
     when(config.internalModelProviders()).thenReturn(internalProviders);
     when(config.enabledEventTypes()).thenReturn(enabledEventTypes);
-    return new DefaultBilling(config);
+    return new DefaultBilling(config, loggingEnabled, responseEnabled);
   }
 
   private ModelUsage usage(ModelProvider provider, ModelType modelType) {
