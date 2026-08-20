@@ -16,7 +16,7 @@ stargate:
 
   database:
     limits:
-      max-collections: 5
+      max-collections: 15
 
   debug:
     enabled: false
@@ -122,6 +122,13 @@ quarkus:
         # pipelines can parse each line as JSON.
         BILLING_CONSOLE:
           format: "%m%n"
+      file:
+        BILLING_FILE:
+          enabled: true
+          path: billing.jsonl
+          format: "%m%n"
+          json:
+            enabled: false
 
     level: WARN
 
@@ -142,6 +149,7 @@ quarkus:
         level: INFO
         handlers:
           - BILLING_CONSOLE
+          - BILLING_FILE
         use-parent-handlers: false
       # noisy for ITs (which run with prod, not test, settings)
       'io.stargate.sgv2.jsonapi.service.operation':
@@ -229,4 +237,6 @@ quarkus:
    quarkus:
      log:
        console:
+         json: false
+       file:
          json: false
