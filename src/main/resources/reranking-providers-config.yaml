@@ -11,6 +11,11 @@ stargate:
               enabled: true
           models:
             - name: nvidia/llama-3.2-nv-rerankqa-1b-v2
+              url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
+              properties:
+                max-batch-size: 10
+            # NIM 2.x (Rust runtime) reranking model, deployed alongside the model above.
+            - name: nvidia/llama-nemotron-rerank-vl-1b-v2
               is-default: true
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
