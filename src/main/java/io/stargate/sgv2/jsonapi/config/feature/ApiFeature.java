@@ -82,7 +82,9 @@ public enum ApiFeature {
    *
    * <p>Disabled by default.
    */
-  BILLING_EVENTS_LOGGING("billing-events-logging", false);
+  BILLING_EVENTS_LOGGING("billing-events-logging", false),
+
+  DEPLOYMENT_MARKER("deployment-marker", false);
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before
