@@ -318,7 +318,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
       }
 
       LOGGER.error(
-          "validateSession() - session invalid, metadata was empty, closing session and returning error: {}, tenant={}, refreshedKeyspaces:{}, metadataEnabled:{}",
+          "validateSession() - session invalid, metadata was empty, closing session and returning error: {}, tenant:{}, refreshedKeyspaces:{}, metadataEnabled:{}",
           DatabaseException.Code.FAILED_TO_READ_METADATA.name(),
           tenant,
           refreshedKeyspaces,
