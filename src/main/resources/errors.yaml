@@ -1820,6 +1820,31 @@ request-errors:
       Resend the command using a known metric.
 
   - scope: SCHEMA
+    code: UNKNOWN_VECTOR_INDEXING_PROFILE
+    title: Vector indexing profile is unknown
+    body: |-
+      The command attempted to create a vector index using an indexing profile that is not known by the API.
+
+      A profile is selected by setting `vectorIndexing` to a profile name (string); the API expands it into a set of indexing options. To set options directly instead, set `vectorIndexing` to an object of indexing options.
+
+      The known profiles are: ${knownProfiles}.
+      The command attempted to use the profile: ${unknownProfile}.
+
+      Resend the command using a known profile, or set `vectorIndexing` to an object of indexing options.
+
+  - scope: SCHEMA
+    code: INVALID_VECTOR_INDEXING_OPTIONS
+    title: Vector indexing options are invalid
+    body: |-
+      The command attempted to create a vector index with invalid `vectorIndexing`.
+
+      `vectorIndexing` is either a profile name (string) or an object of Cassandra SAI tuning options. Only the supported tuning options may be set, and the dedicated `metric` / `sourceModel` fields must be used instead of setting them as options.
+
+      ${reason}
+
+      Resend the command with corrected `vectorIndexing`.
+
+  - scope: SCHEMA
     code: VECTOR_SEARCH_NOT_SUPPORTED
     title: Vector search not enabled for collection
     body: |-

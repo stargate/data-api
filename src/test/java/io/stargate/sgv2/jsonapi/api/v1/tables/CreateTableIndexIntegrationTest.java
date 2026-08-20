@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -10,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
@@ -47,6 +49,61 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         .listIndexes(false)
         .wasSuccessful()
         .hasIndex(indexName);
+  }
+
+  /**
+   * Database error a cluster returns for custom SAI HNSW params when the feature is not enabled.
+   */
+  private static final String SAI_CUSTOM_PARAMS_DISABLED = "SAI_HNSW_ALLOW_CUSTOM_PARAMETERS";
+
+  /**
+   * Creates a vector index whose {@code vectorIndexing} sets SAI tuning options. Those options need
+   * a cluster with {@code SAI_HNSW_ALLOW_CUSTOM_PARAMETERS}; only that specific backend rejection
+   * is tolerated (skipped via assumption), because there is nothing to round-trip there. Any other
+   * error — request shape, profile expansion, option rendering, or an unrelated server failure — is
+   * a real regression and fails the test rather than hiding it as a skip.
+   */
+  @SuppressWarnings("unchecked")
+  private void createTunedVectorIndexOrSkip(
+      String indexName, String column, String vectorIndexingJson) {
+    var validator =
+        assertTableCommand(keyspaceName, vectorTableName)
+            .postCreateVectorIndex(
+                    """
+                {
+                  "name": "%s",
+                  "definition": {
+                    "column": "%s",
+                    "options": { "vectorIndexing": %s }
+                  }
+                }
+                """
+                    .formatted(indexName, column, vectorIndexingJson));
+
+    List<Map<String, Object>> errors = validator.response().extract().path("errors");
+    boolean customParamsDisabled =
+        errors != null
+            && errors.size() == 1
+            && String.valueOf(errors.get(0).get("message")).contains(SAI_CUSTOM_PARAMS_DISABLED);
+    Assumptions.assumeFalse(
+        customParamsDisabled,
+        () -> "skipping round-trip: cluster has not enabled " + SAI_CUSTOM_PARAMS_DISABLED);
+
+    // Not the tolerated rejection: any other (or no) error must be asserted, not skipped.
+    validator.wasSuccessful();
+  }
+
+  /** The {@code vectorIndexing} echoed back by listIndexes for the given index (string or map). */
+  private Object readBackVectorIndexing(String indexName) {
+    return assertTableCommand(keyspaceName, vectorTableName)
+        .templated()
+        .listIndexes(true)
+        .wasSuccessful()
+        .response()
+        .extract()
+        .path(
+            "status.indexes.find { it.name == '%s' }.definition.options.vectorIndexing"
+                .formatted(indexName));
   }
 
   @BeforeAll
@@ -96,7 +153,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_5", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_6", Map.of("type", "vector", "dimension", 1024)),
-                Map.entry("vector_type_7", Map.of("type", "vector", "dimension", 1024))),
+                Map.entry("vector_type_7", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_8", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_9", Map.of("type", "vector", "dimension", 1024))),
             "id")
         .wasSuccessful();
 
@@ -595,6 +654,34 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .wasSuccessful();
 
       verifyCreatedVectorIndex("vector_type_6_idx");
+    }
+
+    @Test
+    public void createVectorIndexWithProfileRoundTrip() {
+      createTunedVectorIndexOrSkip("vector_type_8_idx", "vector_type_8", "\"small-high-recall\"");
+
+      verifyCreatedVectorIndex("vector_type_8_idx");
+      // The profile name is not persisted; read-back detects it from the applied options and
+      // echoes the name back.
+      assertThat(readBackVectorIndexing("vector_type_8_idx")).isEqualTo("small-high-recall");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void createVectorIndexWithRawOptionsRoundTrip() {
+      // Both keys are HNSW params the backend recognizes (gated by
+      // SAI_HNSW_ALLOW_CUSTOM_PARAMETERS),
+      // and the pair matches no profile, so read-back echoes the raw options rather than a name.
+      createTunedVectorIndexOrSkip(
+          "vector_type_9_idx",
+          "vector_type_9",
+          "{ \"maximum_node_connections\": 24, \"construction_beam_width\": 150 }");
+
+      verifyCreatedVectorIndex("vector_type_9_idx");
+      // Options that match no profile are echoed back verbatim, as the strings CQL stores.
+      assertThat((Map<String, Object>) readBackVectorIndexing("vector_type_9_idx"))
+          .containsEntry("maximum_node_connections", "24")
+          .containsEntry("construction_beam_width", "150");
     }
   }
 
@@ -1134,6 +1221,90 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.Code.UNKNOWN_VECTOR_SOURCE_MODEL,
               SchemaException.class,
               "The command attempted to use the source model: invalid_source_model.");
+    }
+
+    @Test
+    public void unknownIndexingProfile() {
+      assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                {
+                  "name": "vector_type_7_idx",
+                  "definition": {
+                    "column": "vector_type_7",
+                    "options": {
+                      "vectorIndexing": "no-such-profile"
+                    }
+                  }
+                }
+                """)
+          .hasSingleApiError(
+              SchemaException.Code.UNKNOWN_VECTOR_INDEXING_PROFILE,
+              SchemaException.class,
+              "The command attempted to use the profile: no-such-profile.");
+    }
+
+    @Test
+    public void reservedOptionRejected() {
+      assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                {
+                  "name": "vector_type_7_idx",
+                  "definition": {
+                    "column": "vector_type_7",
+                    "options": {
+                      "vectorIndexing": { "similarity_function": "COSINE" }
+                    }
+                  }
+                }
+                """)
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
+              SchemaException.class,
+              "The option 'similarity_function' must be set using its dedicated field");
+    }
+
+    @Test
+    public void unsupportedOptionRejected() {
+      assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                {
+                  "name": "vector_type_7_idx",
+                  "definition": {
+                    "column": "vector_type_7",
+                    "options": {
+                      "vectorIndexing": { "class_name": "StorageAttachedIndex" }
+                    }
+                  }
+                }
+                """)
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
+              SchemaException.class,
+              "Unsupported vector indexing option 'class_name'");
+    }
+
+    @Test
+    public void nonScalarOptionValueRejected() {
+      assertTableCommand(keyspaceName, vectorTableName)
+          .postCreateVectorIndex(
+              """
+                {
+                  "name": "vector_type_7_idx",
+                  "definition": {
+                    "column": "vector_type_7",
+                    "options": {
+                      "vectorIndexing": { "alpha": [1, 2, 3] }
+                    }
+                  }
+                }
+                """)
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_VECTOR_INDEXING_OPTIONS,
+              SchemaException.class,
+              "The option 'alpha' must be a number.");
     }
 
     @Test
