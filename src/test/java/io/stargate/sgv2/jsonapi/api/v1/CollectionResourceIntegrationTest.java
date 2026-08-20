@@ -77,7 +77,8 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
                   "Command 'unknownCommand' is not a Collection Command recognized by Data API."))
           .body(
               "errors[0].message",
-              containsString("Data API supports following Collection Commands: [alterTable,"));
+              containsString(
+                  "Data API supports following Collection Commands: [alterCollection, alterTable,"));
     }
 
     @Test
