@@ -5,24 +5,18 @@ import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.BindMarker;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
+import com.datastax.oss.driver.api.querybuilder.select.OrderingClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import com.datastax.oss.driver.internal.core.util.Strings;
 import com.datastax.oss.driver.internal.querybuilder.select.DefaultSelect;
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableList;
-import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
 import java.util.Map;
+import java.util.Optional;
 
 /** Subclass for forcing use of "ORDER BY BM25 OF" (lexical sort) in the select clause. */
 public class LexicalSortSelect extends DefaultSelect {
-  private static final ImmutableMap<CqlIdentifier, ClusteringOrder> ORDER_BY_PLACEHOLDER =
-      ImmutableMap.of(CqlIdentifier.fromInternal("abc"), ClusteringOrder.DESC);
-  private static final String ORDER_BY_PLACEHOLDER_TEXT = "ORDER BY abc DESC";
-
-  private final CqlIdentifier sortColumn;
-  private final String sortText;
-
   public LexicalSortSelect(DefaultSelect base, CqlIdentifier sortColumn, String sortText) {
     super(
         base.getKeyspace(),
@@ -32,14 +26,10 @@ public class LexicalSortSelect extends DefaultSelect {
         base.getSelectors(),
         base.getRelations(),
         base.getGroupByClauses(),
-        // important: use placeholder for ORDER BY
-        ORDER_BY_PLACEHOLDER,
-        base.getAnn(),
+        Optional.of(new Bm25OrderingClause(sortColumn, sortText)),
         base.getLimit(),
         base.getPerPartitionLimit(),
         base.allowsFiltering());
-    this.sortColumn = sortColumn;
-    this.sortText = sortText;
   }
 
   private LexicalSortSelect(LexicalSortSelect base, Object limit, boolean allowsFiltering) {
@@ -51,14 +41,10 @@ public class LexicalSortSelect extends DefaultSelect {
         base.getSelectors(),
         base.getRelations(),
         base.getGroupByClauses(),
-        base.getOrderings(),
-        base.getAnn(),
+        base.getOrderingClause(),
         limit,
         base.getPerPartitionLimit(),
         allowsFiltering);
-
-    this.sortColumn = base.sortColumn;
-    this.sortText = base.sortText;
   }
 
   // First needed and supported overrides:
@@ -163,32 +149,33 @@ public class LexicalSortSelect extends DefaultSelect {
   }
 
   @Override
-  public Select withOrderings(ImmutableMap<CqlIdentifier, ClusteringOrder> newOrderings) {
-    throw new UnsupportedOperationException("LexicalSortSelect does not support withOrderings()");
+  public Select withOrderingClause(OrderingClause newOrderingClause) {
+    throw new UnsupportedOperationException(
+        "LexicalSortSelect does not support withOrderingClause()");
   }
 
-  // And finally the override for asCql() to force the ORDER BY clause:
+  /**
+   * Custom {@link OrderingClause} that renders the lexical sort clause {@code ORDER BY <column>
+   * BM25 OF '<text>'}, which the driver's query builder does not support natively.
+   */
+  private static final class Bm25OrderingClause extends OrderingClause {
+    private final CqlIdentifier sortColumn;
+    private final String sortText;
 
-  @Override
-  public String asCql() {
-    String cql = super.asCql();
-    int ix = cql.indexOf(ORDER_BY_PLACEHOLDER_TEXT);
-    // Sanity check, should always be there
-    if (ix < 0) {
-      throw new IllegalStateException(
-          "Expected ORDER BY placeholder text ('"
-              + ORDER_BY_PLACEHOLDER_TEXT
-              + "') not found in CQL: "
-              + cql);
+    Bm25OrderingClause(CqlIdentifier sortColumn, String sortText) {
+      this.sortColumn = sortColumn;
+      this.sortText = sortText;
     }
-    // Force the use of "ORDER BY BM25 OF" for lexical sort
-    return cql.substring(0, ix)
-        + " ORDER BY "
-        + sortColumn.asCql(false)
-        + " BM25 OF "
-        // 11-Jul-2025, tatu: ideally would use a BindMarker here, but binding
-        //    values is difficult to do from this context. So escape explicitly.
-        + Strings.quote(sortText)
-        + cql.substring(ix + ORDER_BY_PLACEHOLDER_TEXT.length());
+
+    @Override
+    public void appendTo(StringBuilder builder) {
+      builder
+          .append(" ORDER BY ")
+          .append(sortColumn.asCql(false))
+          .append(" BM25 OF ")
+          // 11-Jul-2025, tatu: ideally would use a BindMarker here, but binding
+          //    values is difficult to do from this context. So escape explicitly.
+          .append(Strings.quote(sortText));
+    }
   }
 }
