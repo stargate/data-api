@@ -238,9 +238,6 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
       Tenant tenant, CqlSession cqlSession, Throwable throwable) {
 
     if (throwable == null) {
-      LOGGER.debug(
-          "unwrapBuildException() - throwable null. tenant={}, cqlSession={}", tenant, cqlSession);
-
       return cqlSession;
     }
 
@@ -261,9 +258,9 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     var err =
         new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant)).maybeHandle(toHandle);
     LOGGER.debug(
-        "unwrapBuildException() - throwable not null. tenant={}, APIException={}",
+        "unwrapBuildException() - session build error mapped to APIException. tenant={}",
         tenant,
-        err.toString());
+        err);
     throw err;
   }
 
@@ -279,20 +276,55 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    */
   private static CompletionStage<CqlSession> validateSession(Tenant tenant, CqlSession cqlSession) {
 
-    var keyspaces =
-        String.join(
-            ", ",
-            cqlSession.getMetadata().getKeyspaces().keySet().stream()
-                .map(Object::toString)
-                .toList());
-    LOGGER.debug("validateSession() - keyspaces. tenant={}, keyspaces=[{}]", tenant, keyspaces);
-
-    if (cqlSession.getMetadata().getKeyspace("system").isPresent()) {
+    if (!cqlSession.getMetadata().getKeyspaces().isEmpty()) {
+      if (LOGGER.isDebugEnabled()) {
+        var keyspaces =
+            String.join(
+                ", ",
+                cqlSession.getMetadata().getKeyspaces().keySet().stream()
+                    .map(Object::toString)
+                    .toList());
+        LOGGER.debug(
+            "validateSession() - session is valid, metadata is not empty. tenant={}, keyspaces=[{}]",
+            tenant,
+            keyspaces);
+      }
       return CompletableFuture.completedStage(cqlSession);
     }
 
-    LOGGER.error(
-        "validateSession() - system ks not found. tenant={}, keyspaces=[{}]", tenant, keyspaces);
+    // there could be zero keyspaces if metadata fresh is not enabled, or the keyspace filters
+    // prohibit it.
+    if (LOGGER.isErrorEnabled()) {
+
+      List<String> refreshedKeyspaces = null;
+      Boolean metadataEnabled = null;
+      try {
+        refreshedKeyspaces =
+            cqlSession
+                .getContext()
+                .getConfig()
+                .getDefaultProfile()
+                .getStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES);
+        metadataEnabled =
+            cqlSession
+                .getContext()
+                .getConfig()
+                .getDefaultProfile()
+                .getBoolean(DefaultDriverOption.METADATA_SCHEMA_ENABLED);
+      } catch (Exception e) {
+        LOGGER.error(
+            "validateSession() - error trying to read from default driver profile, will not know metadata config, continuing.",
+            e);
+      }
+
+      LOGGER.error(
+          "validateSession() - session invalid, metadata was empty, closing session and returning error: {}, tenant={}, refreshedKeyspaces:{}, metadataEnabled:{}",
+          DatabaseException.Code.FAILED_TO_READ_METADATA.name(),
+          tenant,
+          refreshedKeyspaces,
+          metadataEnabled);
+    }
+
     // NOTE: while throwing the error will prevent the session from getting into the
     // CqlSessionCache we use ExceptionFlags.UNRELIABLE_DB_SESSION tells the CommandProcessor we
     // want to evict the session when from cache when the request is over as belt and braces
@@ -302,14 +334,10 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
             (ignored, closeError) -> {
               if (closeError != null) {
                 LOGGER.error(
-                    "validateSession() - error closing session when metadata not read, tenant={}",
+                    "validateSession() - error closing session when metadata is empty, continuing. tenant={}",
                     tenant,
                     closeError);
               }
-              LOGGER.error(
-                  "validateSession() - throwing FAILED_TO_READ_METADATA. tenant={}, keyspaces=[{}]",
-                  tenant,
-                  keyspaces);
               // this is the real error we want to get back to the user
               throw DatabaseException.Code.FAILED_TO_READ_METADATA.get(
                   EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION));

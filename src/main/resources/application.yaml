@@ -131,12 +131,6 @@ quarkus:
         level: ERROR
       'com.datastax.oss.driver':
         level: WARN
-      'com.datastax.oss.driver.internal.core.adminrequest':
-        level: DEBUG
-      'com.datastax.oss.driver.internal.core.metadata':
-        level: DEBUG
-      'com.datastax.oss.driver.internal.core.session':
-        level:DEBUG
       'io.quarkus.http.access-log':
         level: INFO
       'io.stargate':
