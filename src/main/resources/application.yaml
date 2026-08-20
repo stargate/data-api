@@ -113,7 +113,7 @@ quarkus:
 
   log:
     console:
-      format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
+      format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %c:%L - %m%n"
 
     handler:
       console:
