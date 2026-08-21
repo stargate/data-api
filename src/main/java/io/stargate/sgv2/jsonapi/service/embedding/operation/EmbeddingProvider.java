@@ -146,7 +146,10 @@ public abstract class EmbeddingProvider extends ProviderBase {
     return modelName.endsWith("titan-embed-text-v2:0");
   }
 
-  /** {@code NV-Embed-QA} and {@code nvidia/nv-embedqa-e5-v5} do not accept {@code dimensions}. */
+  /**
+   * Returns whether an Nvidia model accepts {@code dimensions}; {@code NV-Embed-QA} and {@code
+   * nvidia/nv-embedqa-e5-v5} do not.
+   */
   protected static boolean acceptsNvidiaDimensions(
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig) {
     return modelConfig.parameters().stream()
