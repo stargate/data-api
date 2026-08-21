@@ -147,6 +147,16 @@ public abstract class EmbeddingProvider extends ProviderBase {
   }
 
   /**
+   * Helper method that has logic wrt whether an Nvidia model accepts {@code "dimensions"} parameter
+   * or not: only models without a fixed {@code vector-dimension} (i.e. with a {@code
+   * vectorDimension} parameter, like {@code nvidia/llama-3.2-nv-embedqa-1b-v2}) do.
+   */
+  protected static boolean acceptsNvidiaDimensions(
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig) {
+    return modelConfig.vectorDimension().filter(dimension -> dimension > 0).isEmpty();
+  }
+
+  /**
    * Replace parameters in a messageTemplate string with values from a map: placeholders are of form
    * {@code {parameterName}} and matching value to look for in the map is String {@code
    * "parameterName"}.
