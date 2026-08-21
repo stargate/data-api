@@ -46,7 +46,18 @@ public class NvidiaEmbeddingClientTest {
               new ApiModelSupport.ApiModelSupportImpl(
                   ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
               Optional.empty(),
-              List.of(),
+              List.of(
+                  new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ParameterConfigImpl(
+                      "vectorDimension",
+                      EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterType.NUMBER,
+                      false,
+                      Optional.of("2048"),
+                      Map.of(
+                          EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType.OPTIONS,
+                          List.of(384, 512, 768, 1024, 2048)),
+                      Optional.empty(),
+                      Optional.empty(),
+                      Optional.empty())),
               Map.of(),
               Optional.empty());
 

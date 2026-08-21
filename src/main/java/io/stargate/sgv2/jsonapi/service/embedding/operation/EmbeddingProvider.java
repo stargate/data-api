@@ -152,7 +152,8 @@ public abstract class EmbeddingProvider extends ProviderBase {
    */
   protected static boolean acceptsNvidiaDimensions(
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig) {
-    return modelConfig.vectorDimension().filter(dimension -> dimension > 0).isEmpty();
+    return modelConfig.parameters().stream()
+        .anyMatch(parameter -> parameter.name().equals("vectorDimension"));
   }
 
   /**
