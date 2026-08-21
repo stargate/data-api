@@ -148,8 +148,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
   /**
    * Helper method that has logic wrt whether an Nvidia model accepts {@code "dimensions"} parameter
-   * or not: only models without a fixed {@code vector-dimension} (i.e. with a {@code
-   * vectorDimension} parameter, like {@code nvidia/llama-3.2-nv-embedqa-1b-v2}) do.
+   * or not.
    */
   protected static boolean acceptsNvidiaDimensions(
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig) {
