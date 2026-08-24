@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.0.51](https://github.com/stargate/data-api/tree/v1.0.51) (2026-08-20)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.50...v1.0.51)
+
+**Merged pull requests:**
+
+- Improved test for FAILED\_TO\_READ\_METADATA error [\#2555](https://github.com/stargate/data-api/pull/2555) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- fix: disable provenance attestations to remove unknown/unknown manife… [\#2554](https://github.com/stargate/data-api/pull/2554) ([clun](https://github.com/clun))
+- Bumping version for next data-api release [\#2552](https://github.com/stargate/data-api/pull/2552) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.50](https://github.com/stargate/data-api/tree/v1.0.50) (2026-08-18)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.49...v1.0.50)
