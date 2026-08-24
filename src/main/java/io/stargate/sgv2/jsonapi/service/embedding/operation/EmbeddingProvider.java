@@ -147,6 +147,16 @@ public abstract class EmbeddingProvider extends ProviderBase {
   }
 
   /**
+   * Returns whether an Nvidia model accepts {@code dimensions}; {@code NV-Embed-QA} and {@code
+   * nvidia/nv-embedqa-e5-v5} do not.
+   */
+  protected static boolean acceptsNvidiaDimensions(
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig) {
+    return modelConfig.parameters().stream()
+        .anyMatch(parameter -> parameter.name().equals("vectorDimension"));
+  }
+
+  /**
    * Replace parameters in a messageTemplate string with values from a map: placeholders are of form
    * {@code {parameterName}} and matching value to look for in the map is String {@code
    * "parameterName"}.

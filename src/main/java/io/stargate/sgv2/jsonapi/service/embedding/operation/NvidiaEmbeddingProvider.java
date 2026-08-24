@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
@@ -38,12 +39,13 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
       ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
+    // "dimensions" is only sent for variable-dimension models, 0 omits it from the request
     super(
         ModelProvider.NVIDIA,
         providerConfig,
         modelConfig,
         serviceConfig,
-        dimension,
+        acceptsNvidiaDimensions(modelConfig) ? dimension : 0,
         vectorizeServiceParameters);
 
     nvidiaClient =
@@ -81,7 +83,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
     var input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? "passage" : "query";
     var nvidiaRequest =
         new NvidiaEmbeddingRequest(
-            texts.toArray(new String[texts.size()]), modelName(), input_type);
+            texts.toArray(new String[texts.size()]), modelName(), input_type, dimension);
 
     // user specified the embedding key in the request header, use that.
     // fall back to whatever they provided as the auth token for the API
@@ -141,11 +143,15 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
   }
 
   /**
-   * Request structure of the Nidia REST service.
+   * Request structure of the Nvidia REST service.
    *
-   * <p>..
+   * <p>{@code dimensions} is omitted when 0 (fixed-dimension models); the NIM rejects {@code 0}.
    */
-  public record NvidiaEmbeddingRequest(String[] input, String model, String input_type) {}
+  public record NvidiaEmbeddingRequest(
+      String[] input,
+      String model,
+      String input_type,
+      @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
 
   /**
    * Response structure of the Nvidia REST service.
