@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderBillingFilter;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -86,7 +87,12 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     }
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey();
 
-    var nvidiaRequest = createRequest(query, passages);
+    var nvidiaRequest =
+        new NvidiaRerankingRequest(
+            modelName(),
+            new NvidiaRerankingRequest.TextWrapper(query),
+            passages.stream().map(NvidiaRerankingRequest.TextWrapper::new).toList(),
+            modelConfig.properties().truncate());
 
     final long callStartNano = System.nanoTime();
     return retryHTTPCall(
@@ -116,14 +122,6 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             });
   }
 
-  private NvidiaRerankingRequest createRequest(String query, List<String> passages) {
-    return new NvidiaRerankingRequest(
-        modelName(),
-        new NvidiaRerankingRequest.TextWrapper(query),
-        passages.stream().map(NvidiaRerankingRequest.TextWrapper::new).toList(),
-        modelConfig.properties().truncate().name());
-  }
-
   /**
    * REST client interface for the Nvidia Reranking Service.
    *
@@ -148,7 +146,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
    * <p>..
    */
   public record NvidiaRerankingRequest(
-      String model, TextWrapper query, List<TextWrapper> passages, String truncate) {
+      String model, TextWrapper query, List<TextWrapper> passages, TruncateOption truncate) {
 
     /**
      * query and passage string needs to be wrapped in with text key for request to the Nvidia

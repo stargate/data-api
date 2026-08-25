@@ -6,8 +6,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption.END;
 import static io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption.NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -59,17 +57,6 @@ public class NvidiaRerankingProviderTest {
 
   private static final RerankingCredentials RERANKING_CREDENTIALS =
       new RerankingCredentials(testConstants.TENANT, "mocked reranking api key");
-
-  private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig
-      END_MODEL_CONFIG =
-          new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
-              "nvidia/llama-3.2-nv-rerankqa-1b-v2",
-              new ApiModelSupport.ApiModelSupportImpl(
-                  ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
-              false,
-              NVIDIA_URL,
-              new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-                  .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10, END));
 
   @Inject RerankingProvidersConfig rerankingProvidersConfig;
 
@@ -146,20 +133,16 @@ public class NvidiaRerankingProviderTest {
   }
 
   @Test
-  void mapsConfiguredTruncationFromYaml() {
-    var modelConfig = rerankingProvidersConfig.providers().get("nvidia").models().getFirst();
-
-    assertThat(modelConfig.properties().truncate()).isEqualTo(END);
-  }
-
-  @Test
-  void programmaticConfigUsesExplicitNone() {
-    assertThat(REQUEST_PROPERTIES.truncate()).isEqualTo(NONE);
-  }
-
-  @Test
-  void sendsConfiguredTruncation() {
-    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(END_MODEL_CONFIG);
+  void sendsTruncationConfiguredInYaml() {
+    var configuredModel = rerankingProvidersConfig.providers().get("nvidia").models().getFirst();
+    var localModel =
+        new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
+            configuredModel.name(),
+            configuredModel.apiModelSupport(),
+            configuredModel.isDefault(),
+            NVIDIA_URL,
+            configuredModel.properties());
+    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(localModel);
 
     provider
         .rerank(1, "test query", List.of("test passage"), RERANKING_CREDENTIALS)
@@ -168,7 +151,7 @@ public class NvidiaRerankingProviderTest {
         .awaitItem()
         .getItem();
 
-    verify(
+    wireMockServer.verify(
         postRequestedFor(urlEqualTo(NVIDIA_PATH))
             .withRequestBody(matchingJsonPath("$.truncate", equalTo("END"))));
   }
