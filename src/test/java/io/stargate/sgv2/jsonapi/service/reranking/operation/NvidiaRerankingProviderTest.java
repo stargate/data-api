@@ -28,7 +28,15 @@ public class NvidiaRerankingProviderTest {
           .RequestPropertiesImpl
       REQUEST_PROPERTIES =
           new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
+              .RequestPropertiesImpl(
+              3,
+              10,
+              100,
+              100,
+              0.5,
+              10,
+              RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
+                  .TruncateOption.END);
 
   private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig MODEL_CONFIG =
       new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
@@ -86,5 +94,14 @@ public class NvidiaRerankingProviderTest {
         .as("Tenant ID should be correctly extractable from credentials for header usage")
         .isNotNull()
         .isEqualTo(expectedTenantId);
+  }
+
+  @Test
+  void configuredTruncationIsSentInRequest() {
+    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(MODEL_CONFIG);
+
+    var request = provider.createRequest("test query", List.of("passage1", "passage2"));
+
+    assertThat(request.truncate()).isEqualTo("END");
   }
 }
