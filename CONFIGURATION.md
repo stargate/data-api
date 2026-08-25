@@ -81,3 +81,25 @@ Other Quarkus properties that are specifically relevant for the service:
 | Property                        | Type      | Default | Description                                                                                                         |
 |---------------------------------|-----------|---------|---------------------------------------------------------------------------------------------------------------------|
 | `stargate.feature.flags.tables` | `boolean` | `true` (enabled by default)   | Setting it to `true` enables Tables functionality; `false` disables; leaving as `null` uses the default (enabled).|
+
+## Reranking configuration
+*Configuration for reranking providers and the reranking concurrency gate, defined by [RerankingProvidersConfig.java](src/main/java/io/stargate/sgv2/jsonapi/service/reranking/configuration/RerankingProvidersConfig.java). Providers and models are loaded from `reranking-providers-config.yaml` (overridable with the `RERANKING_CONFIG_PATH` env var or the `RERANKING_CONFIG_RESOURCE` system property); when the embedding gateway is enabled the provider/model list is served by the gateway instead.*
+
+Each model under `stargate.jsonapi.reranking.providers.<provider>.models[]` supports the following `properties`:
+
+| Property                 | Type     | Default | Description                                                                                                                                                                                                            |
+|--------------------------|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `at-most-retries`        | `int`    | `3`     | Maximum attempts per batch call before failing (1 request + 2 retries).                                                                                                                                                |
+| `initial-back-off-millis`| `int`    | `100`   | Initial retry delay, doubling up to `max-back-off-millis`.                                                                                                                                                             |
+| `read-timeout-millis`    | `int`    | `5000`  | HTTP read timeout for a single batch call.                                                                                                                                                                             |
+| `max-back-off-millis`    | `int`    | `500`   | Maximum retry delay.                                                                                                                                                                                                   |
+| `jitter`                 | `double` | `0.5`   | Random variation applied to retry delays.                                                                                                                                                                              |
+| `max-batch-size`         | `int`    | (none)  | Maximum passages per reranking call; a rerank request fans out into `ceil(passages / max-batch-size)` calls.                                                                                                            |
+| `max-concurrent-batches` | `int`    | `8`     | Per-request fan-out cap: how many batch calls a single rerank request runs concurrently.                                                                                                                                |
+| `max-concurrent-calls`   | `int`    | `32`    | Per-process bulkhead: reranking calls in flight at once across all requests for this model. Excess calls wait in a FIFO queue.                                                                                          |
+| `max-queued-calls`       | `int`    | `1000`  | Bounded FIFO queue depth for calls waiting on `max-concurrent-calls`. When full, further calls fail immediately with `RERANKING_PROVIDER_OVERLOADED` without calling the provider. `0` disables queueing (fail fast).   |
+| `total-timeout-millis`   | `int`    | `30000` | Overall deadline for one rerank request, covering queue wait, all batch calls, and retries. Must be at least `read-timeout-millis`. On expiry the request fails with `RERANKING_PROVIDER_TIMEOUT` and parked work is abandoned without ever calling the provider. |
+
+Sizing rule of thumb: a queue entry only makes sense if it can be served within the deadline, so keep `max-queued-calls` at or below `max-concurrent-calls x (total-timeout-millis / typical-call-latency-millis)`; entries beyond that will burn their whole deadline waiting and still fail.
+
+The gate exposes Micrometer metrics per provider+model: `rerank.all.queue.depth` and `rerank.all.inflight.calls` (gauges), `rerank.all.queue.wait.duration` (timer, recorded for calls that actually waited), and `rerank.all.queue.rejected.count` (counter).
