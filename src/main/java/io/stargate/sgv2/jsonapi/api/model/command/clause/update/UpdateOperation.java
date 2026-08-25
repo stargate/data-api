@@ -20,7 +20,7 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
     this.actions = actions;
   }
 
-  public List<A> actions() {
+  public List<? extends ActionWithLocator> actions() {
     return actions;
   }
 

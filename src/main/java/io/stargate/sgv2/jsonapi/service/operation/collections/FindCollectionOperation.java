@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -27,6 +28,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /** Operation that returns the documents or its key based on the filter condition. */
@@ -454,8 +456,11 @@ public record FindCollectionOperation(
     }
   }
 
-  /** An operation method which can return ReadDocument reconstructed from the search filter. */
-  public ReadDocument getNewDocument() {
+  public ReadDocument newEmptyDocument() {
+    return ReadDocument.from(null, null, objectMapper().createObjectNode());
+  }
+
+  public ObjectNode buildBaseDocument(Predicate<String> pathFilter) {
     final var rootNode = objectMapper().createObjectNode();
     final List<PathMatchLocator> paths = new ArrayList<>();
     final var stack = new Stack<DBLogicalExpression>();
@@ -470,9 +475,14 @@ public record FindCollectionOperation(
               cf.updateForNewDocument(objectMapper().getNodeFactory())
                   .ifPresent(
                       op -> {
-                        op.updateDocument(rootNode);
-                        for (ActionWithLocator action : op.actions()) {
-                          paths.add(action.locator());
+                        var filtered =
+                            op.actions().stream()
+                                .map(ActionWithLocator::locator)
+                                .filter(l -> pathFilter.test(l.path()))
+                                .toList();
+
+                        if (paths.addAll(filtered)) {
+                          op.updateDocument(rootNode);
                         }
                       });
           default ->
@@ -488,7 +498,7 @@ public record FindCollectionOperation(
     }
 
     validateUpsertPaths(paths);
-    return ReadDocument.from(null, null, rootNode);
+    return rootNode;
   }
 
   private void validateUpsertPaths(List<PathMatchLocator> paths) {
