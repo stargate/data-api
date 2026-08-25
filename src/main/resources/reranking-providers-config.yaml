@@ -15,3 +15,10 @@ stargate:
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
                 max-batch-size: 10
+            # NIM 2.x model; accepts up to 512 passages per call, so a typical findAndRerank
+            # is a single reranking call instead of a fan-out of max-batch-size-10 batches.
+            - name: nvidia/llama-3.2-nemoretriever-500m-rerank-v2
+              is-default: false
+              url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking/nvidia-llama-3-2-nemoretriever-500m-rerank-v2
+              properties:
+                max-batch-size: 512

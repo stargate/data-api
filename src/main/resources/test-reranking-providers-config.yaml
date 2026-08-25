@@ -15,6 +15,11 @@ stargate:
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
                 max-batch-size: 10
+            - name: nvidia/llama-3.2-nemoretriever-500m-rerank-v2
+              is-default: false
+              url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking/nvidia-llama-3-2-nemoretriever-500m-rerank-v2
+              properties:
+                max-batch-size: 512
             - name: nvidia/a-random-deprecated-model
               api-model-support:
                 status: DEPRECATED
