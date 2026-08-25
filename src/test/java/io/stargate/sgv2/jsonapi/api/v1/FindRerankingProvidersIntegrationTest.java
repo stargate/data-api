@@ -39,12 +39,18 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .statusCode(200)
           .body("$", responseIsStatusOnly())
           .body("status.rerankingProviders", notNullValue())
-          .body("status.rerankingProviders.nvidia.models", hasSize(1))
+          .body("status.rerankingProviders.nvidia.models", hasSize(2))
           .body(
               "status.rerankingProviders.nvidia.models[0].name",
-              equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v2"))
+              equalTo("nvidia/llama-3.2-nemoretriever-500m-rerank-v2"))
           .body(
               "status.rerankingProviders.nvidia.models[0].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()))
+          .body(
+              "status.rerankingProviders.nvidia.models[1].name",
+              equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v2"))
+          .body(
+              "status.rerankingProviders.nvidia.models[1].apiModelSupport.status",
               equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()));
     }
 
@@ -76,7 +82,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .statusCode(200)
           .body("$", responseIsStatusOnly())
           .body("status.rerankingProviders", notNullValue())
-          .body("status.rerankingProviders.nvidia.models", hasSize(3))
+          .body("status.rerankingProviders.nvidia.models", hasSize(4))
           .body(
               "status.rerankingProviders.nvidia.models[0].name",
               equalTo("nvidia/a-random-EOL-model"))
@@ -91,9 +97,15 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
               equalTo(ApiModelSupport.SupportStatus.DEPRECATED.name()))
           .body(
               "status.rerankingProviders.nvidia.models[2].name",
-              equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v2"))
+              equalTo("nvidia/llama-3.2-nemoretriever-500m-rerank-v2"))
           .body(
               "status.rerankingProviders.nvidia.models[2].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()))
+          .body(
+              "status.rerankingProviders.nvidia.models[3].name",
+              equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v2"))
+          .body(
+              "status.rerankingProviders.nvidia.models[3].apiModelSupport.status",
               equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()));
     }
 
