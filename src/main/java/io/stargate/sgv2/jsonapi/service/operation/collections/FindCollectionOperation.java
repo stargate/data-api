@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.ActionWithLocator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
@@ -462,12 +463,18 @@ public record FindCollectionOperation(
 
   public ObjectNode buildBaseDocument(Predicate<String> pathFilter) {
     final var rootNode = objectMapper().createObjectNode();
-    final List<PathMatchLocator> paths = new ArrayList<>();
+    final var paths = new ArrayList<PathMatchLocator>();
+    final var ops = new ArrayList<SetOperation>();
+
     final var stack = new Stack<DBLogicalExpression>();
     stack.push(dbLogicalExpression);
 
     while (!stack.empty()) {
       var currentDbLogicalExpression = stack.pop();
+
+      if (currentDbLogicalExpression.operator() != DBLogicalExpression.DBLogicalOperator.AND) {
+        continue;
+      }
 
       for (var filter : currentDbLogicalExpression.filters()) {
         switch (filter) {
@@ -482,7 +489,7 @@ public record FindCollectionOperation(
                                 .toList();
 
                         if (paths.addAll(filtered)) {
-                          op.updateDocument(rootNode);
+                          ops.add(op);
                         }
                       });
           default ->
@@ -492,12 +499,12 @@ public record FindCollectionOperation(
         }
       }
 
-      if (currentDbLogicalExpression.operator() == DBLogicalExpression.DBLogicalOperator.AND) {
-        currentDbLogicalExpression.subExpressions().forEach(stack::push);
-      }
+      currentDbLogicalExpression.subExpressions().forEach(stack::push);
     }
 
     validateUpsertPaths(paths);
+    ops.forEach(op -> op.updateDocument(rootNode));
+
     return rootNode;
   }
 
