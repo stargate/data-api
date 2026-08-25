@@ -26,9 +26,6 @@ public record DocumentUpdater(
     ObjectNode replaceDocument,
     JsonNode replaceDocumentId,
     UpdateType updateType) {
-
-  public interface DocumentReconstructor extends Function<Predicate<String>, ObjectNode> {}
-
   /**
    * Construct to create updater using update clause
    *
@@ -51,12 +48,22 @@ public record DocumentUpdater(
   }
 
   /**
+   * Some function which creates a document given a predicate to filter the fields to include.
+   *
+   * <p>Intended to be satisfied by {@link
+   * io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation#reconstructDocumentFromFilter}
+   */
+  @FunctionalInterface
+  public interface DocumentReconstructor extends Function<Predicate<String>, ObjectNode> {}
+
+  /**
    * This method is the entrance for first level update or replace. First level means it won't
    * vectorize if needed, but will warp an EmbeddingUpdateOperation in the DocumentUpdaterResponse
    * to do the following embedding update.
    *
    * @param readDocument Document to update
    * @param isNew True if document was just created (inserted); false if updating existing document
+   * @param reconstructor A function which creates a reconstructed document from the search filter
    */
   public DocumentUpdaterResponse apply(
       JsonNode readDocument, boolean isNew, DocumentReconstructor reconstructor) {

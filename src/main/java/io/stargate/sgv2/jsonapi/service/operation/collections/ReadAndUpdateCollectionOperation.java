@@ -179,7 +179,7 @@ public record ReadAndUpdateCollectionOperation(
                       .apply(
                           readDocument.get().deepCopy(),
                           upsert,
-                          findCollectionOperation()::buildBaseDocument);
+                          findCollectionOperation()::reconstructDocumentFromFilter);
 
               return documentUpdaterResponse
                   .updateEmbeddingVector(

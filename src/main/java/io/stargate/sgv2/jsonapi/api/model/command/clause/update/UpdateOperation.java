@@ -20,6 +20,12 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
     this.actions = actions;
   }
 
+  /**
+   * @apiNote Doesn't return {@code List<A>}, otherwise an operation like {@code
+   *     actions().map(ActionWithLocator::locator)} may error trying to call a package-private
+   *     implementation (e.g. {@code SetOperation.Action::locator})
+   * @return List of actions that this update operation will apply to document
+   */
   public List<? extends ActionWithLocator> actions() {
     return actions;
   }

@@ -3012,7 +3012,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
           new BoolCollectionFilter("is_alive", MapCollectionFilter.Operator.EQ, true));
 
       var operation = mkUnsortedOperation(andExpr);
-      var result = operation.buildBaseDocument(path -> true);
+      var result = operation.reconstructDocumentFromFilter(path -> true);
 
       var expected =
           """
@@ -3043,7 +3043,8 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       var operation = mkUnsortedOperation(andExpr);
       var result =
-          operation.buildBaseDocument(path -> path.equals("_id") || path.startsWith("preferences"));
+          operation.reconstructDocumentFromFilter(
+              path -> path.equals("_id") || path.startsWith("preferences"));
 
       var expected =
           """
@@ -3070,7 +3071,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       var operation = mkUnsortedOperation(andExpr);
 
-      assertThatThrownBy(() -> operation.buildBaseDocument(path -> true))
+      assertThatThrownBy(() -> operation.reconstructDocumentFromFilter(path -> true))
           .isInstanceOf(UpdateException.class)
           .hasMessageContaining("Both paths 'conf.net' and 'conf.net.ip' are matched");
     }
@@ -3087,7 +3088,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
           new TextCollectionFilter("conf.net.ip", MapCollectionFilter.Operator.EQ, "10.0.0.1"));
 
       var operation = mkUnsortedOperation(andExpr);
-      var result = operation.buildBaseDocument(path -> path.equals("_id"));
+      var result = operation.reconstructDocumentFromFilter(path -> path.equals("_id"));
 
       var expected =
           """
@@ -3115,7 +3116,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       }
 
       var operation = mkUnsortedOperation(top);
-      var result = operation.buildBaseDocument(path -> true);
+      var result = operation.reconstructDocumentFromFilter(path -> true);
 
       var expected = objectMapper.createObjectNode();
       expected.put("_id", "user-1");
@@ -3139,7 +3140,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       top.addSubExpressionReturnSub(orExpr);
 
       var operation = mkUnsortedOperation(top);
-      var result = operation.buildBaseDocument(path -> true);
+      var result = operation.reconstructDocumentFromFilter(path -> true);
 
       var expected =
           """

@@ -457,11 +457,27 @@ public record FindCollectionOperation(
     }
   }
 
+  /**
+   * Creates a new empty document with no fields. Intended as a placeholder for when the find
+   * operation does not return any documents, but the caller still needs a document to work with
+   * (e.g. an upsert).
+   *
+   * @return A new empty document with no fields.
+   */
   public ReadDocument newEmptyDocument() {
     return ReadDocument.from(null, null, objectMapper().createObjectNode());
   }
 
-  public ObjectNode buildBaseDocument(Predicate<String> pathFilter) {
+  /**
+   * Reconstructs a document from the filter used in the find operation, intended for upserts.
+   *
+   * <p>Contradictory filters (e.g. {@code {"a": 1, "a": 2}}) will cause an error to be thrown.
+   *
+   * @param pathFilter A predicate to filter which paths should be included in the reconstructed
+   *     document. Contradictory paths not matched in the document won't cause an error.
+   * @return The reconstructed document as an {@code ObjectNode}.
+   */
+  public ObjectNode reconstructDocumentFromFilter(Predicate<String> pathFilter) {
     final var rootNode = objectMapper().createObjectNode();
     final var paths = new ArrayList<PathMatchLocator>();
     final var ops = new ArrayList<SetOperation>();
@@ -509,6 +525,13 @@ public record FindCollectionOperation(
     return rootNode;
   }
 
+  /**
+   * Validates that the given paths do not overlap or contradict each other.
+   *
+   * <p>Throws an {@code UNSUPPORTED_OVERLAPPING_UPSERT_PATHS} on error.
+   *
+   * @param paths The list of paths to validate.
+   */
   private void validateUpsertPaths(List<PathMatchLocator> paths) {
     Collections.sort(paths);
 
