@@ -20,6 +20,7 @@ public class RerankingProviderFactory {
 
   @Inject RerankingProvidersConfig rerankingConfig;
   @Inject OperationsConfig operationsConfig;
+  @Inject RerankingConcurrencyGateRegistry concurrencyGateRegistry;
 
   @GrpcClient("embedding")
   RerankingService grpcGatewayService;
@@ -27,7 +28,8 @@ public class RerankingProviderFactory {
   @FunctionalInterface
   interface ProviderConstructor {
     RerankingProvider create(
-        RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig);
+        RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig,
+        RerankingConcurrencyGate concurrencyGate);
   }
 
   private static final Map<ModelProvider, ProviderConstructor> RERANKING_PROVIDER_CTORS =
@@ -93,11 +95,16 @@ public class RerankingProviderFactory {
                     SchemaException.Code.RERANKING_SERVICE_TYPE_UNAVAILABLE.get(
                         Map.of("errorMessage", "unknown model name '%s'".formatted(modelName))));
 
+    // the gate is shared by every provider instance for this provider+model on this pod,
+    // on both the direct and the embedding gateway path
+    var concurrencyGate = concurrencyGateRegistry.gateFor(modelProvider, modelConfig);
+
     if (operationsConfig.enableEmbeddingGateway()) {
       // return the reranking Grpc client to embedding gateway service
       return new RerankingEGWClient(
           modelProvider,
           modelConfig,
+          concurrencyGate,
           tenant,
           authToken,
           grpcGatewayService,
@@ -111,7 +118,7 @@ public class RerankingProviderFactory {
           Map.of(
               "errorMessage", "unknown service provider '%s'".formatted(modelProvider.apiName())));
     }
-    return ctor.create(modelConfig);
+    return ctor.create(modelConfig, concurrencyGate);
   }
 
   public RerankingProvidersConfig getRerankingConfig() {

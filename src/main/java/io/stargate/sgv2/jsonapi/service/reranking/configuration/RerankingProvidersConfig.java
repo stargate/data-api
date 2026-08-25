@@ -74,6 +74,18 @@ public interface RerankingProvidersConfig {
 
       interface RequestProperties {
         /**
+         * Defaults shared between the SmallRye {@code @WithDefault} bindings below and the
+         * embedding gateway fallback in {@code RerankingProviderConfigProducer}: when an older
+         * gateway does not serve these fields, the same defaults apply instead of zero (zero
+         * concurrent calls would deadlock every rerank request).
+         */
+        String DEFAULT_MAX_CONCURRENT_BATCHES = "8";
+
+        String DEFAULT_MAX_CONCURRENT_CALLS = "32";
+        String DEFAULT_MAX_QUEUED_CALLS = "1000";
+        String DEFAULT_TOTAL_TIMEOUT_MILLIS = "30000";
+
+        /**
          * Specifies the maximum number of attempts before failing. Default is 3 (1 request + 2
          * retries).
          *
@@ -120,6 +132,39 @@ public interface RerankingProvidersConfig {
 
         /** Maximum batch size supported by the provider. */
         int maxBatchSize();
+
+        /**
+         * The maximum number of batch calls a single rerank request runs concurrently. Batches
+         * beyond this limit start as earlier batches finish. Bounds the per-request burst a large
+         * passage list can put on the reranking service.
+         */
+        @WithDefault(DEFAULT_MAX_CONCURRENT_BATCHES)
+        int maxConcurrentBatches();
+
+        /**
+         * The maximum number of reranking calls in flight at once across all requests on this
+         * process for this model. Calls beyond this limit wait in a FIFO queue (see {@link
+         * #maxQueuedCalls()}).
+         */
+        @WithDefault(DEFAULT_MAX_CONCURRENT_CALLS)
+        int maxConcurrentCalls();
+
+        /**
+         * The maximum number of reranking calls that may wait for a permit (see {@link
+         * #maxConcurrentCalls()}). When the queue is full, further calls fail immediately with
+         * {@code RERANKING_PROVIDER_OVERLOADED} without calling the provider.
+         */
+        @WithDefault(DEFAULT_MAX_QUEUED_CALLS)
+        int maxQueuedCalls();
+
+        /**
+         * Overall deadline for one rerank request in milliseconds, covering queue wait, every batch
+         * call, and retries. Must be at least {@link #readTimeoutMillis()}. On expiry the request
+         * fails with {@code RERANKING_PROVIDER_TIMEOUT}; parked work is abandoned without ever
+         * calling the provider.
+         */
+        @WithDefault(DEFAULT_TOTAL_TIMEOUT_MILLIS)
+        int totalTimeoutMillis();
       }
     }
   }

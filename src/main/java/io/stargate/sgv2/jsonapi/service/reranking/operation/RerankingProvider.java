@@ -24,19 +24,27 @@ public abstract class RerankingProvider extends ProviderBase {
 
   protected final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig;
 
+  /**
+   * Per-pod bulkhead shared with every other provider instance for the same provider+model — the
+   * factory creates a fresh provider per API request, so the gate is the only shared state.
+   */
+  protected final RerankingConcurrencyGate concurrencyGate;
+
   protected final Duration initialBackOffDuration;
 
   protected final Duration maxBackOffDuration;
 
   protected RerankingProvider(
       ModelProvider modelProvider,
-      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig,
+      RerankingConcurrencyGate concurrencyGate) {
     super(
         modelProvider,
         ModelType.RERANKING,
         new RerankingProviderExceptionHandler(modelProvider, ModelType.RERANKING));
 
     this.modelConfig = modelConfig;
+    this.concurrencyGate = concurrencyGate;
 
     this.initialBackOffDuration =
         Duration.ofMillis(modelConfig.properties().initialBackOffMillis());
@@ -84,11 +92,38 @@ public abstract class RerankingProvider extends ProviderBase {
     List<Uni<BatchedRerankingResponse>> batchRerankings = new ArrayList<>();
 
     for (int batchId = 0; batchId < passageBatches.size(); batchId++) {
+      final int finalBatchId = batchId;
+      final List<String> passageBatch = passageBatches.get(batchId);
+      // the gate parks the call FIFO behind every other request on this pod when the per-pod
+      // in-flight limit is reached; retries (retryHTTPCall in subclasses) run while holding the
+      // permit so a retrying call cannot re-enter the queue and amplify overload
       batchRerankings.add(
-          rerank(batchId, query, passageBatches.get(batchId), rerankingCredentials));
+          concurrencyGate.withPermit(
+              () -> rerank(finalBatchId, query, passageBatch, rerankingCredentials)));
     }
 
-    return Uni.join().all(batchRerankings).andFailFast().map(this::aggregateRanks);
+    return Uni.join()
+        .all(batchRerankings)
+        .usingConcurrencyOf(modelConfig.properties().maxConcurrentBatches())
+        .andFailFast()
+        .map(this::aggregateRanks)
+        // total deadline covers queue wait, every batch, and retries; expiry cancels upstream,
+        // which abandons parked waiters (they never reach the provider) and frees held permits
+        .ifNoItem()
+        .after(Duration.ofMillis(modelConfig.properties().totalTimeoutMillis()))
+        .failWith(this::totalDeadlineExceeded);
+  }
+
+  private RerankingProviderException totalDeadlineExceeded() {
+    return RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.get(
+        Map.of(
+            "modelProvider",
+            modelProvider().apiName(),
+            "httpStatus",
+            "N/A",
+            "errorMessage",
+            "total reranking deadline of %d ms exceeded (includes queue wait, all batch calls and retries)"
+                .formatted(modelConfig.properties().totalTimeoutMillis())));
   }
 
   /**
@@ -122,6 +157,8 @@ public abstract class RerankingProvider extends ProviderBase {
 
   @Override
   protected boolean decideRetry(Throwable throwable) {
+    // note: RERANKING_PROVIDER_OVERLOADED is deliberately not retryable — it is raised by the
+    // local concurrency gate when this pod is already saturated, so retrying deepens the overload
     boolean retry =
         throwable instanceof RerankingProviderException rpe
             && RerankingProviderException.Code.RERANKING_PROVIDER_TIMEOUT.name().equals(rpe.code);

@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelType;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.TestRerankingProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +100,7 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
+            TestRerankingProvider.permissiveGate(),
             testConstants.TENANT,
             "default",
             rerankService,
@@ -152,6 +154,7 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
+            TestRerankingProvider.permissiveGate(),
             testConstants.TENANT,
             "default",
             rerankService,

@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingConcurrencyGate;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
 
@@ -33,12 +34,13 @@ public class RerankingEGWClient extends RerankingProvider {
   public RerankingEGWClient(
       ModelProvider modelProvider,
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig,
+      RerankingConcurrencyGate concurrencyGate,
       Tenant tenant,
       String authToken,
       RerankingService grpcGatewayService,
       Map<String, String> authentication,
       String commandName) {
-    super(modelProvider, modelConfig);
+    super(modelProvider, modelConfig, concurrencyGate);
 
     this.tenant = tenant;
     this.authToken = authToken;

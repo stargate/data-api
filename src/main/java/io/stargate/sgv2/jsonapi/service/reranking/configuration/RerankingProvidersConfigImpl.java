@@ -35,8 +35,41 @@ public record RerankingProvidersConfigImpl(Map<String, RerankingProviderConfig> 
           int readTimeoutMillis,
           int maxBackOffMillis,
           double jitter,
-          int maxBatchSize)
-          implements RerankingProviderConfig.ModelConfig.RequestProperties {}
+          int maxBatchSize,
+          int maxConcurrentBatches,
+          int maxConcurrentCalls,
+          int maxQueuedCalls,
+          int totalTimeoutMillis)
+          implements RerankingProviderConfig.ModelConfig.RequestProperties {
+
+        /** Convenience constructor applying the concurrency-gate defaults. */
+        public RequestPropertiesImpl(
+            int atMostRetries,
+            int initialBackOffMillis,
+            int readTimeoutMillis,
+            int maxBackOffMillis,
+            double jitter,
+            int maxBatchSize) {
+          this(
+              atMostRetries,
+              initialBackOffMillis,
+              readTimeoutMillis,
+              maxBackOffMillis,
+              jitter,
+              maxBatchSize,
+              Integer.parseInt(
+                  RerankingProviderConfig.ModelConfig.RequestProperties
+                      .DEFAULT_MAX_CONCURRENT_BATCHES),
+              Integer.parseInt(
+                  RerankingProviderConfig.ModelConfig.RequestProperties
+                      .DEFAULT_MAX_CONCURRENT_CALLS),
+              Integer.parseInt(
+                  RerankingProviderConfig.ModelConfig.RequestProperties.DEFAULT_MAX_QUEUED_CALLS),
+              Integer.parseInt(
+                  RerankingProviderConfig.ModelConfig.RequestProperties
+                      .DEFAULT_TOTAL_TIMEOUT_MILLIS));
+        }
+      }
     }
   }
 }

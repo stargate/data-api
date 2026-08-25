@@ -2807,13 +2807,26 @@ server-errors:
 # ================================================================================================================
 
   - scope: RERANKING_PROVIDER
+    code: RERANKING_PROVIDER_OVERLOADED
+    title: Reranking Provider is overloaded
+    body: |-
+      The command called a reranking provider to rerank results, but the reranking service is at capacity: the maximum number of concurrent reranking calls and the maximum number of queued reranking calls were both reached, so the request was rejected without calling the provider.
+
+      The reranking provider was: ${modelProvider}.
+      The reranking model was: ${modelName}.
+      The maximum concurrent reranking calls was: ${maxConcurrentCalls}.
+      The maximum queued reranking calls was: ${maxQueuedCalls}.
+
+      ${SNIPPET.RETRY}
+
+  - scope: RERANKING_PROVIDER
     code: RERANKING_PROVIDER_TIMEOUT
     title: Reranking Provider timed out
     body: |-
       The command called a reranking provider to rerank results, but the provider did not respond within the allowed time.
-      
+
       The reranking provider was: ${modelProvider}.
       The HTTP status code was: ${httpStatus}.
       The error message was: ${errorMessage}.
-      
+
       ${SNIPPET.RETRY}

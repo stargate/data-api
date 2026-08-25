@@ -72,8 +72,9 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   private static final String TRUNCATE_PASSAGE = "NONE";
 
   public NvidiaRerankingProvider(
-      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
-    super(ModelProvider.NVIDIA, modelConfig);
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig,
+      RerankingConcurrencyGate concurrencyGate) {
+    super(ModelProvider.NVIDIA, modelConfig, concurrencyGate);
 
     nvidiaClient =
         QuarkusRestClientBuilder.newBuilder()

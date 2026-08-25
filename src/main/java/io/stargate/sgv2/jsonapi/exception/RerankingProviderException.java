@@ -9,6 +9,7 @@ public class RerankingProviderException extends ServerException {
   }
 
   public enum Code implements ErrorCode<RerankingProviderException> {
+    RERANKING_PROVIDER_OVERLOADED,
     RERANKING_PROVIDER_TIMEOUT;
 
     private final ErrorTemplate<RerankingProviderException> template;

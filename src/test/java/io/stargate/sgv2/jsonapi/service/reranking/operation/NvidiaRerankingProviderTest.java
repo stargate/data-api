@@ -41,7 +41,8 @@ public class NvidiaRerankingProviderTest {
 
   @Test
   void testEmptyApiKeyThrowsException() {
-    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(MODEL_CONFIG);
+    NvidiaRerankingProvider provider =
+        new NvidiaRerankingProvider(MODEL_CONFIG, TestRerankingProvider.permissiveGate());
 
     RerankingCredentials emptyApiKeyCredentials =
         new RerankingCredentials(testConstants.TENANT, "");
@@ -69,7 +70,8 @@ public class NvidiaRerankingProviderTest {
   void testTenantIdIsExtractedFromCredentials() {
     // Verify that the tenant from RerankingCredentials is correctly accessible
     // This ensures the tenant ID will be correctly passed as "tenant-id" header
-    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(MODEL_CONFIG);
+    NvidiaRerankingProvider provider =
+        new NvidiaRerankingProvider(MODEL_CONFIG, TestRerankingProvider.permissiveGate());
 
     String expectedTenantId = testConstants.TENANT.toString();
     RerankingCredentials credentials =

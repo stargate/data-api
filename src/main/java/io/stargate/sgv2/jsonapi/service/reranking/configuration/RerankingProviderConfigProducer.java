@@ -145,7 +145,8 @@ public class RerankingProviderConfigProducer {
     }
   }
 
-  private RerankingProvidersConfig grpcResponseToConfig(
+  // package-private for testing the gateway property mapping and its fallbacks
+  RerankingProvidersConfig grpcResponseToConfig(
       EmbeddingGateway.GetSupportedRerankingProvidersResponse grpcResponse) {
     Map<String, RerankingProvidersConfig.RerankingProviderConfig> providerMap = new HashMap<>();
 
@@ -214,7 +215,32 @@ public class RerankingProviderConfigProducer {
                             model.getProperties().getReadTimeoutMillis(),
                             model.getProperties().getMaxBackOffMillis(),
                             model.getProperties().getJitter(),
-                            model.getProperties().getMaxBatchSize())))
+                            model.getProperties().getMaxBatchSize(),
+                            concurrencyPropertyOrDefault(
+                                model.getProperties().hasMaxConcurrentBatches(),
+                                model.getProperties().getMaxConcurrentBatches(),
+                                1,
+                                RerankingProvidersConfig.RerankingProviderConfig.ModelConfig
+                                    .RequestProperties.DEFAULT_MAX_CONCURRENT_BATCHES),
+                            concurrencyPropertyOrDefault(
+                                model.getProperties().hasMaxConcurrentCalls(),
+                                model.getProperties().getMaxConcurrentCalls(),
+                                1,
+                                RerankingProvidersConfig.RerankingProviderConfig.ModelConfig
+                                    .RequestProperties.DEFAULT_MAX_CONCURRENT_CALLS),
+                            concurrencyPropertyOrDefault(
+                                model.getProperties().hasMaxQueuedCalls(),
+                                model.getProperties().getMaxQueuedCalls(),
+                                // 0 is valid here: an explicit "no queueing, fail fast"
+                                0,
+                                RerankingProvidersConfig.RerankingProviderConfig.ModelConfig
+                                    .RequestProperties.DEFAULT_MAX_QUEUED_CALLS),
+                            concurrencyPropertyOrDefault(
+                                model.getProperties().hasTotalTimeoutMillis(),
+                                model.getProperties().getTotalTimeoutMillis(),
+                                1,
+                                RerankingProvidersConfig.RerankingProviderConfig.ModelConfig
+                                    .RequestProperties.DEFAULT_TOTAL_TIMEOUT_MILLIS))))
             .collect(Collectors.toList());
 
     return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
@@ -223,5 +249,15 @@ public class RerankingProviderConfigProducer {
         grpcProviderConfig.getEnabled(),
         supportedAuthenticationsMap,
         models);
+  }
+
+  /**
+   * Concurrency-gate properties served by the embedding gateway, falling back to the Data API
+   * defaults when the gateway predates the fields or serves an out-of-range value: zero concurrent
+   * calls would deadlock every rerank request, so unset must never map to zero.
+   */
+  private static int concurrencyPropertyOrDefault(
+      boolean served, int value, int minValue, String defaultValue) {
+    return served && value >= minValue ? value : Integer.parseInt(defaultValue);
   }
 }
