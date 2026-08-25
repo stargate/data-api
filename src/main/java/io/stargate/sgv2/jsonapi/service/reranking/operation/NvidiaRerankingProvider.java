@@ -60,17 +60,6 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
   private final NvidiaRerankingClient nvidiaClient;
 
-  /**
-   * Nvidia Reranking Service supports truncation or error behavior when the passage is too long.
-   *
-   * <p>The Data API uses {@code NONE} as the default, which means the reranking request will error
-   * out if there is a query and passage pair that exceeds the allowed token size of 8192.
-   *
-   * <p>See:
-   * https://docs.nvidia.com/nim/nemo-retriever/text-reranking/latest/using-reranking.html#token-limits-truncation
-   */
-  private static final String TRUNCATE_PASSAGE = "NONE";
-
   public NvidiaRerankingProvider(
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
     super(ModelProvider.NVIDIA, modelConfig);
@@ -97,12 +86,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     }
     var accessToken = HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey();
 
-    var nvidiaRequest =
-        new NvidiaRerankingRequest(
-            modelName(),
-            new NvidiaRerankingRequest.TextWrapper(query),
-            passages.stream().map(NvidiaRerankingRequest.TextWrapper::new).toList(),
-            TRUNCATE_PASSAGE);
+    var nvidiaRequest = createRequest(query, passages);
 
     final long callStartNano = System.nanoTime();
     return retryHTTPCall(
@@ -130,6 +114,14 @@ public class NvidiaRerankingProvider extends RerankingProvider {
                       callDurationNano);
               return new BatchedRerankingResponse(batchId, ranks, modelUsage);
             });
+  }
+
+  NvidiaRerankingRequest createRequest(String query, List<String> passages) {
+    return new NvidiaRerankingRequest(
+        modelName(),
+        new NvidiaRerankingRequest.TextWrapper(query),
+        passages.stream().map(NvidiaRerankingRequest.TextWrapper::new).toList(),
+        modelConfig.properties().truncate().name());
   }
 
   /**

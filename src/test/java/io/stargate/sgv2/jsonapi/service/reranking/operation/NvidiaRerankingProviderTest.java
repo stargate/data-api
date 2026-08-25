@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -28,15 +29,7 @@ public class NvidiaRerankingProviderTest {
           .RequestPropertiesImpl
       REQUEST_PROPERTIES =
           new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(
-              3,
-              10,
-              100,
-              100,
-              0.5,
-              10,
-              RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
-                  .TruncateOption.END);
+              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
 
   private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig MODEL_CONFIG =
       new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
@@ -46,6 +39,8 @@ public class NvidiaRerankingProviderTest {
           false,
           "https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking",
           REQUEST_PROPERTIES);
+
+  @Inject RerankingProvidersConfig rerankingProvidersConfig;
 
   @Test
   void testEmptyApiKeyThrowsException() {
@@ -98,10 +93,19 @@ public class NvidiaRerankingProviderTest {
 
   @Test
   void configuredTruncationIsSentInRequest() {
-    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(MODEL_CONFIG);
+    var modelConfig = rerankingProvidersConfig.providers().get("nvidia").models().getFirst();
+    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(modelConfig);
 
     var request = provider.createRequest("test query", List.of("passage1", "passage2"));
 
     assertThat(request.truncate()).isEqualTo("END");
+  }
+
+  @Test
+  void programmaticConfigDefaultsTruncationToNone() {
+    assertThat(REQUEST_PROPERTIES.truncate())
+        .isEqualTo(
+            RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
+                .TruncateOption.NONE);
   }
 }
