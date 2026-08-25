@@ -7,6 +7,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption.END;
+import static io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption.NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -44,7 +46,7 @@ public class NvidiaRerankingProviderTest {
           .RequestPropertiesImpl
       REQUEST_PROPERTIES =
           new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
+              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10, NONE);
 
   private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig MODEL_CONFIG =
       new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
@@ -67,15 +69,7 @@ public class NvidiaRerankingProviderTest {
               false,
               NVIDIA_URL,
               new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-                  .RequestPropertiesImpl(
-                  3,
-                  10,
-                  100,
-                  100,
-                  0.5,
-                  10,
-                  RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
-                      .TruncateOption.END));
+                  .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10, END));
 
   @Inject RerankingProvidersConfig rerankingProvidersConfig;
 
@@ -152,21 +146,15 @@ public class NvidiaRerankingProviderTest {
   }
 
   @Test
-  void configuredTruncationIsSentInRequest() {
+  void mapsConfiguredTruncationFromYaml() {
     var modelConfig = rerankingProvidersConfig.providers().get("nvidia").models().getFirst();
-    NvidiaRerankingProvider provider = new NvidiaRerankingProvider(modelConfig);
 
-    var request = provider.createRequest("test query", List.of("passage1", "passage2"));
-
-    assertThat(request.truncate()).isEqualTo("END");
+    assertThat(modelConfig.properties().truncate()).isEqualTo(END);
   }
 
   @Test
-  void programmaticConfigDefaultsTruncationToNone() {
-    assertThat(REQUEST_PROPERTIES.truncate())
-        .isEqualTo(
-            RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
-                .TruncateOption.NONE);
+  void programmaticConfigUsesExplicitNone() {
+    assertThat(REQUEST_PROPERTIES.truncate()).isEqualTo(NONE);
   }
 
   @Test

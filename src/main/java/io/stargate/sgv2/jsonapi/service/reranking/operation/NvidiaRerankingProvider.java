@@ -116,7 +116,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             });
   }
 
-  NvidiaRerankingRequest createRequest(String query, List<String> passages) {
+  private NvidiaRerankingRequest createRequest(String query, List<String> passages) {
     return new NvidiaRerankingRequest(
         modelName(),
         new NvidiaRerankingRequest.TextWrapper(query),
