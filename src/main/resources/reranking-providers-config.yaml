@@ -14,7 +14,4 @@ stargate:
               is-default: true
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
-                # The reranking NIM accepts up to 512 passages per request (verified: it
-                # rejects 513+ with a 400). One call per findAndRerank instead of a fan-out
-                # of ten concurrent batch-10 calls.
                 max-batch-size: 512
