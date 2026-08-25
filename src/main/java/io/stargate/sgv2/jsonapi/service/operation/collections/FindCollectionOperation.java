@@ -10,8 +10,10 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.ActionWithLocator;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -19,12 +21,11 @@ import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.CollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -453,42 +454,65 @@ public record FindCollectionOperation(
     }
   }
 
-  /**
-   * An operation method which can return ReadDocument with an empty document, if the filter
-   * condition has _id filter it will return document with this field added.
-   */
+  /** An operation method which can return ReadDocument reconstructed from the search filter. */
   public ReadDocument getNewDocument() {
-
     final var rootNode = objectMapper().createObjectNode();
-    DocumentId documentId = null;
+    final List<PathMatchLocator> paths = new ArrayList<>();
     final var stack = new Stack<DBLogicalExpression>();
     stack.push(dbLogicalExpression);
 
     while (!stack.empty()) {
       var currentDbLogicalExpression = stack.pop();
 
-      for (DBFilterBase filter : dbLogicalExpression.filters()) {
-        // every filter must be a collection filter, because we are making a new document,
-        // and we only do this for docs
-        if (filter instanceof IDCollectionFilter idFilter) {
-          documentId = idFilter.getSingularDocumentId();
-          idFilter
-              .updateForNewDocument(objectMapper().getNodeFactory())
-              .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-        } else if (filter instanceof CollectionFilter collectionFilter) {
-          collectionFilter
-              .updateForNewDocument(objectMapper().getNodeFactory())
-              .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-        } else {
-          throw new IllegalArgumentException(
-              "Unsupported filter type in getNewDocument: %s"
-                  .formatted(filter.getClass().getName()));
+      for (var filter : currentDbLogicalExpression.filters()) {
+        switch (filter) {
+          case CollectionFilter cf ->
+              cf.updateForNewDocument(objectMapper().getNodeFactory())
+                  .ifPresent(
+                      op -> {
+                        op.updateDocument(rootNode);
+                        for (ActionWithLocator action : op.actions()) {
+                          paths.add(action.locator());
+                        }
+                      });
+          default ->
+              throw new IllegalArgumentException(
+                  "Unsupported filter type in getNewDocument: %s"
+                      .formatted(filter.getClass().getName()));
         }
       }
 
-      currentDbLogicalExpression.subExpressions().forEach(stack::push);
+      if (currentDbLogicalExpression.operator() == DBLogicalExpression.DBLogicalOperator.AND) {
+        currentDbLogicalExpression.subExpressions().forEach(stack::push);
+      }
     }
-    return ReadDocument.from(documentId, null, rootNode);
+
+    validateUpsertPaths(paths);
+    return ReadDocument.from(null, null, rootNode);
+  }
+
+  private void validateUpsertPaths(List<PathMatchLocator> paths) {
+    Collections.sort(paths);
+
+    for (var i = 0; i < paths.size() - 1; i++) {
+      final var current = paths.get(i);
+      final var next = paths.get(i + 1);
+
+      if (current.compareTo(next) == 0) {
+        throwUnsupportedOverlappingUpsertPaths(
+            "Path '%s' is matched more than once".formatted(current));
+      }
+
+      if (next.isSubPathOf(current)) {
+        throwUnsupportedOverlappingUpsertPaths(
+            "Both paths '%s' and '%s' are matched".formatted(current, next));
+      }
+    }
+  }
+
+  private void throwUnsupportedOverlappingUpsertPaths(String message) {
+    throw UpdateException.Code.UNSUPPORTED_OVERLAPPING_UPSERT_PATHS.get(
+        errVars(commandContext.schemaObject(), map -> map.put("errorMessage", message)));
   }
 
   /**

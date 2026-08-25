@@ -925,6 +925,16 @@ request-errors:
       
       Resend the command using a single update operation for each column.
 
+  - scope: UPDATE
+    code: UNSUPPORTED_OVERLAPPING_UPSERT_PATHS
+    title: Paths cannot be inferred for upsert due to overlap
+    body: |-
+      The command included overlapping paths, making it impossible to infer the document structure for the upsert.
+    
+      ${errorMessage}
+      
+      Resend the command ensuring paths are not contradictory or overlapping.
+
 # Note UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
   - scope: UPDATE
     code: UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION
