@@ -482,13 +482,14 @@ public record FindCollectionOperation(
               cf.updateForNewDocument(objectMapper().getNodeFactory())
                   .ifPresent(
                       op -> {
-                        var filtered =
-                            op.actions().stream()
-                                .map(ActionWithLocator::locator)
-                                .filter(l -> pathFilter.test(l.path()))
-                                .toList();
+                        var beforeSize = paths.size();
 
-                        if (paths.addAll(filtered)) {
+                        op.actions().stream()
+                            .map(ActionWithLocator::locator)
+                            .filter(l -> pathFilter.test(l.path()))
+                            .forEach(paths::add);
+
+                        if (paths.size() > beforeSize) {
                           ops.add(op);
                         }
                       });

@@ -3009,7 +3009,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       andExpr.addFilter(
           new TextCollectionFilter("address.post.code", MapCollectionFilter.Operator.EQ, "BTSME"));
       andExpr.addFilter(
-          new BoolCollectionFilter("ok", MapCollectionFilter.Operator.EQ, true));
+          new BoolCollectionFilter("is_alive", MapCollectionFilter.Operator.EQ, true));
 
       var operation = mkUnsortedOperation(andExpr);
       var result = operation.buildBaseDocument(path -> true);
@@ -3024,7 +3024,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
                   "code": "BTSME"
                 }
               },
-              "ok": true
+              "is_alive": true
             }
           """;
       assertThat(result).isEqualTo(objectMapper.readTree(expected));
