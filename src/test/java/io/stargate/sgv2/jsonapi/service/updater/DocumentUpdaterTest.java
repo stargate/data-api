@@ -67,7 +67,7 @@ public class DocumentUpdaterTest {
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("location", "New York")));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -96,7 +96,7 @@ public class DocumentUpdaterTest {
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("new_data", "data")));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -125,7 +125,7 @@ public class DocumentUpdaterTest {
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("new_data", "data")));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -157,7 +157,7 @@ public class DocumentUpdaterTest {
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, (ObjectNode) objectMapper.readTree(vectorData)));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -177,7 +177,7 @@ public class DocumentUpdaterTest {
                   UpdateOperator.UNSET,
                   objectMapper.getNodeFactory().objectNode().put("$vector", "")));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -206,7 +206,7 @@ public class DocumentUpdaterTest {
                   UpdateOperator.SET,
                   objectMapper.getNodeFactory().objectNode().put("new_data", 40)));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -234,7 +234,7 @@ public class DocumentUpdaterTest {
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.UNSET, objectMapper.getNodeFactory().objectNode().put("col", 1)));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -430,7 +430,7 @@ public class DocumentUpdaterTest {
                                                       }
                                                   """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -465,7 +465,7 @@ public class DocumentUpdaterTest {
                                                                           }
                                                                       """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -493,7 +493,7 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-                    documentUpdater.apply(baseData, false);
+                    documentUpdater.apply(baseData, false, null);
               });
       assertThat(t)
           .isNotNull()
@@ -518,7 +518,7 @@ public class DocumentUpdaterTest {
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct((ObjectNode) objectMapper.readTree("{ }"));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -555,7 +555,7 @@ public class DocumentUpdaterTest {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
       JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
@@ -626,7 +626,7 @@ public class DocumentUpdaterTest {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
       JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
@@ -660,7 +660,7 @@ public class DocumentUpdaterTest {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
       JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
@@ -696,7 +696,7 @@ public class DocumentUpdaterTest {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
       JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
@@ -732,7 +732,7 @@ public class DocumentUpdaterTest {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
       JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
@@ -769,7 +769,7 @@ public class DocumentUpdaterTest {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
       JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
@@ -839,7 +839,7 @@ public class DocumentUpdaterTest {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
       JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
@@ -876,7 +876,7 @@ public class DocumentUpdaterTest {
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
       JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
@@ -905,7 +905,7 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.DocumentUpdaterResponse firstResponse =
-                    documentUpdater.apply(baseData, false);
+                    documentUpdater.apply(baseData, false, null);
               });
       assertThat(failure)
           .isInstanceOf(DocumentException.class)
@@ -940,7 +940,7 @@ public class DocumentUpdaterTest {
                                                       }
                           """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -1008,7 +1008,7 @@ public class DocumentUpdaterTest {
                                                                           }
                                                                                             """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -1042,7 +1042,7 @@ public class DocumentUpdaterTest {
                                               }
                                             """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -1079,7 +1079,7 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.DocumentUpdaterResponse firstResponse =
-                    documentUpdater.apply(baseData, false);
+                    documentUpdater.apply(baseData, false, null);
               });
       assertThat(failure)
           .isInstanceOf(DocumentException.class)
@@ -1111,7 +1111,7 @@ public class DocumentUpdaterTest {
                                               }
                                                    """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -1154,7 +1154,7 @@ public class DocumentUpdaterTest {
                                               }
                                                    """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
@@ -1189,7 +1189,7 @@ public class DocumentUpdaterTest {
                                                                   }
                                                                        """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
-          documentUpdater.apply(baseData, false);
+          documentUpdater.apply(baseData, false, null);
       assertThat(updatedDocument)
           .isNotNull()
           .satisfies(
