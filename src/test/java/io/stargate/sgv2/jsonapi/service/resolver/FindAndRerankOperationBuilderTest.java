@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption.NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -50,7 +51,7 @@ class FindAndRerankOperationBuilderTest {
           .RequestPropertiesImpl
       REQUEST_PROPERTIES =
           new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
+              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10, NONE);
 
   private static RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig(
       String name, ApiModelSupport.SupportStatus status) {

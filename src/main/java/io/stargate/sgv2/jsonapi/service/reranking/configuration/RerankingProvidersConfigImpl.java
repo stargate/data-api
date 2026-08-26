@@ -35,7 +35,8 @@ public record RerankingProvidersConfigImpl(Map<String, RerankingProviderConfig> 
           int readTimeoutMillis,
           int maxBackOffMillis,
           double jitter,
-          int maxBatchSize)
+          int maxBatchSize,
+          TruncateOption truncate)
           implements RerankingProviderConfig.ModelConfig.RequestProperties {}
     }
   }
