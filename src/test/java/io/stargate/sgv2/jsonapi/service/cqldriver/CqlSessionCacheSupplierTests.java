@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCache;
@@ -24,6 +25,24 @@ public class CqlSessionCacheSupplierTests {
   public void testSingleton() {
     // Not a lot to test, just checking it always returns the same instance.
 
+    var factory = newFactory(Optional.of(TEST_CONSTANTS.SLA_USER_AGENT_NAME));
+
+    var sessionCache1 = factory.get();
+    var sessionCache2 = factory.get();
+
+    assertThat(sessionCache1)
+        .as("Session cache should be the same instance")
+        .isSameAs(sessionCache2);
+    assertThat(factory.slaUserAgent()).contains(new UserAgent(TEST_CONSTANTS.SLA_USER_AGENT_NAME));
+  }
+
+  @Test
+  public void blankSlaUserAgentIsTreatedAsUnconfigured() {
+    assertThat(newFactory(Optional.of(" ")).slaUserAgent()).isEmpty();
+  }
+
+  private CqlSessionCacheSupplier newFactory(Optional<String> slaUserAgent) {
+
     var dbConfig = mock(OperationsConfig.DatabaseConfig.class);
     when(dbConfig.type()).thenReturn(DatabaseType.ASTRA);
     when(dbConfig.localDatacenter()).thenReturn("datacenter1");
@@ -35,8 +54,7 @@ public class CqlSessionCacheSupplierTests {
 
     var operationsConfig = mock(OperationsConfig.class);
     when(operationsConfig.databaseConfig()).thenReturn(dbConfig);
-    when(operationsConfig.slaUserAgent())
-        .thenReturn(Optional.of(TEST_CONSTANTS.SLA_USER_AGENT_NAME));
+    when(operationsConfig.slaUserAgent()).thenReturn(slaUserAgent);
 
     var mockSchemaObjectCacheSupplier = mock(SchemaObjectCacheSupplier.class);
     var mockSchemaObjectCache = mock(SchemaObjectCache.class);
@@ -44,15 +62,7 @@ public class CqlSessionCacheSupplierTests {
     when(mockSchemaObjectCache.getSchemaChangeListener())
         .thenReturn(mock(SchemaChangeListener.class));
 
-    var factory =
-        new CqlSessionCacheSupplier(
-            "testApp", operationsConfig, new SimpleMeterRegistry(), mockSchemaObjectCacheSupplier);
-
-    var sessionCache1 = factory.get();
-    var sessionCache2 = factory.get();
-
-    assertThat(sessionCache1)
-        .as("Session cache should be the same instance")
-        .isSameAs(sessionCache2);
+    return new CqlSessionCacheSupplier(
+        "testApp", operationsConfig, new SimpleMeterRegistry(), mockSchemaObjectCacheSupplier);
   }
 }
