@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -127,10 +128,8 @@ class RerankingProviderFactoryTest {
     var second = create(factory, TENANT, "second-token");
 
     assertThat(first).isNotSameAs(second);
-    assertThat(first)
-        .isInstanceOf(io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient.class);
-    assertThat(second)
-        .isInstanceOf(io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient.class);
+    assertThat(first).isInstanceOf(RerankingEGWClient.class);
+    assertThat(second).isInstanceOf(RerankingEGWClient.class);
   }
 
   @Test
