@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToCQL
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -56,6 +57,7 @@ public class TestConstants {
   public final String APP_NAME;
   public final DatabaseType DATABASE_TYPE;
   public final TenantFactory SINGLETON_TENANT_FACTORY;
+  public final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   // ============================================================
   // Names
