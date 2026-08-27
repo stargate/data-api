@@ -56,7 +56,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * }
  * }</pre>
  */
-public class NvidiaRerankingProvider extends RerankingProvider {
+public class NvidiaRerankingProvider extends RerankingProvider implements AutoCloseable {
 
   private final NvidiaRerankingClient nvidiaClient;
 
@@ -132,6 +132,11 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             });
   }
 
+  @Override
+  public void close() throws Exception {
+    nvidiaClient.close();
+  }
+
   /**
    * REST client interface for the Nvidia Reranking Service.
    *
@@ -140,7 +145,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   @RegisterRestClient
   @RegisterProvider(RerankingProviderContentTypeFilter.class)
   @RegisterProvider(ProviderBillingFilter.class)
-  public interface NvidiaRerankingClient {
+  public interface NvidiaRerankingClient extends AutoCloseable {
 
     @POST
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
