@@ -82,7 +82,20 @@ public enum ApiFeature {
    *
    * <p>Disabled by default.
    */
-  BILLING_EVENTS_LOGGING("billing-events-logging", false);
+  BILLING_EVENTS_LOGGING("billing-events-logging", false),
+
+  /**
+   * Billing events response feature flag: if enabled, the API will include the per-request billing
+   * events as a JSON array on the {@code Billing-Events} HTTP response header. Independent from
+   * {@link #BILLING_EVENTS_LOGGING} — both can be enabled simultaneously.
+   *
+   * <p>Set via {@code stargate.feature.flags.billing-events-response=true} at startup
+   * (authoritative; request headers cannot disable a startup-enabled flag) or per-request via
+   * {@code Feature-Flag-billing-events-response} header when not configured at startup.
+   *
+   * <p>Disabled by default.
+   */
+  BILLING_EVENTS_RESPONSE("billing-events-response", false);
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before
