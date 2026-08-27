@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithDefault;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,6 +74,8 @@ public interface RerankingProvidersConfig {
       RequestProperties properties();
 
       interface RequestProperties {
+        int DEFAULT_CONNECTION_POOL_SIZE = 50;
+
         /**
          * Specifies the maximum number of attempts before failing. Default is 3 (1 request + 2
          * retries).
@@ -99,6 +102,11 @@ public interface RerankingProvidersConfig {
          */
         @WithDefault("5000")
         int readTimeoutMillis();
+
+        /** Maximum number of HTTP/1.x connections in this model's shared REST client pool. */
+        @Positive
+        @WithDefault("50")
+        int connectionPoolSize();
 
         /**
          * The maximum delay between retries in milliseconds.

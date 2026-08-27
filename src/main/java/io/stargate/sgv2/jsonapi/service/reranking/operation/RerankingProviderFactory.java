@@ -133,7 +133,6 @@ public class RerankingProviderFactory {
   @PreDestroy
   void close() {
     directProviders.values().stream()
-        .distinct()
         .filter(AutoCloseable.class::isInstance)
         .map(AutoCloseable.class::cast)
         .forEach(
