@@ -77,7 +77,7 @@ class BillingTest {
   @Test
   void createConfigEnabledIsNotOverriddenByHeader() {
     var config = mock(FeaturesConfig.class);
-    when(config.flags()).thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, "true"));
+    when(config.flags()).thenReturn(Map.of("billing-events-logging", "true"));
 
     var headers = MultiMap.caseInsensitiveMultiMap();
     headers.add(ApiFeature.BILLING_EVENTS_LOGGING.httpHeaderName(), "false");
@@ -126,8 +126,7 @@ class BillingTest {
 
   private static ApiFeatures featuresWithBilling(boolean enabled) {
     var config = mock(FeaturesConfig.class);
-    when(config.flags())
-        .thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, String.valueOf(enabled)));
+    when(config.flags()).thenReturn(Map.of("billing-events-logging", String.valueOf(enabled)));
     return ApiFeatures.fromConfigAndRequest(config, null);
   }
 

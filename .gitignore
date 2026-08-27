@@ -40,5 +40,9 @@ nb-configuration.xml
 .env
 !/docker-compose/.env
 
+# AI Tools
+.claude
+.bob
+
 # NoSQLBench
 logs/
