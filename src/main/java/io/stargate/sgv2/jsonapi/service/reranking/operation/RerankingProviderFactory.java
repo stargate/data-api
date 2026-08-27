@@ -8,9 +8,12 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +35,18 @@ public class RerankingProviderFactory {
 
   private static final Map<ModelProvider, ProviderConstructor> RERANKING_PROVIDER_CTORS =
       Map.ofEntries(Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new));
+
+  private final Map<ModelProvider, ProviderConstructor> providerConstructors;
+  private final ConcurrentMap<ProviderKey, RerankingProvider> directProviders =
+      new ConcurrentHashMap<>();
+
+  public RerankingProviderFactory() {
+    this(RERANKING_PROVIDER_CTORS);
+  }
+
+  RerankingProviderFactory(Map<ModelProvider, ProviderConstructor> providerConstructors) {
+    this.providerConstructors = Map.copyOf(providerConstructors);
+  }
 
   public RerankingProvider create(
       Tenant tenant,
@@ -59,7 +74,7 @@ public class RerankingProviderFactory {
     return create(tenant, authToken, modelProvider, modelName, authentication, commandName);
   }
 
-  private synchronized RerankingProvider create(
+  private RerankingProvider create(
       Tenant tenant,
       String authToken,
       ModelProvider modelProvider,
@@ -105,16 +120,35 @@ public class RerankingProviderFactory {
           commandName);
     }
 
-    RerankingProviderFactory.ProviderConstructor ctor = RERANKING_PROVIDER_CTORS.get(modelProvider);
+    RerankingProviderFactory.ProviderConstructor ctor = providerConstructors.get(modelProvider);
     if (ctor == null) {
       throw SchemaException.Code.RERANKING_SERVICE_TYPE_UNAVAILABLE.get(
           Map.of(
               "errorMessage", "unknown service provider '%s'".formatted(modelProvider.apiName())));
     }
-    return ctor.create(modelConfig);
+    return directProviders.computeIfAbsent(
+        new ProviderKey(modelProvider, modelConfig.name()), ignored -> ctor.create(modelConfig));
+  }
+
+  @PreDestroy
+  void close() {
+    directProviders.values().stream()
+        .filter(AutoCloseable.class::isInstance)
+        .map(AutoCloseable.class::cast)
+        .forEach(
+            provider -> {
+              try {
+                provider.close();
+              } catch (Exception exception) {
+                LOGGER.warn("Failed to close a cached reranking provider", exception);
+              }
+            });
+    directProviders.clear();
   }
 
   public RerankingProvidersConfig getRerankingConfig() {
     return rerankingConfig;
   }
+
+  private record ProviderKey(ModelProvider modelProvider, String modelName) {}
 }

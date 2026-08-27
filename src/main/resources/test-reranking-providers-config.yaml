@@ -14,6 +14,7 @@ stargate:
               is-default: true
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
+                connection-pool-size: 50
                 max-batch-size: 10
             - name: nvidia/a-random-deprecated-model
               api-model-support:
@@ -21,6 +22,7 @@ stargate:
                 message: This model has been deprecated, it will be removed in a future release. It is not supported for new Collections or Tables.
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
+                connection-pool-size: 50
                 max-batch-size: 10
             - name: nvidia/a-random-EOL-model
               api-model-support:
@@ -28,4 +30,5 @@ stargate:
                 message: This model is at END_OF_LIFE status, it is not supported.
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
+                connection-pool-size: 50
                 max-batch-size: 10

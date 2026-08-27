@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderBillingFilter;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.vertx.core.http.HttpClientOptions;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -18,6 +19,7 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -56,7 +58,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * }
  * }</pre>
  */
-public class NvidiaRerankingProvider extends RerankingProvider {
+public class NvidiaRerankingProvider extends RerankingProvider implements AutoCloseable {
 
   private final NvidiaRerankingClient nvidiaClient;
 
@@ -73,13 +75,28 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
   public NvidiaRerankingProvider(
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
-    super(ModelProvider.NVIDIA, modelConfig);
+    this(modelConfig, createClient(modelConfig));
+  }
 
-    nvidiaClient =
-        QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(modelConfig.url()))
-            .readTimeout(modelConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(NvidiaRerankingClient.class);
+  NvidiaRerankingProvider(
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig,
+      NvidiaRerankingClient nvidiaClient) {
+    super(ModelProvider.NVIDIA, modelConfig);
+    this.nvidiaClient = nvidiaClient;
+  }
+
+  private static NvidiaRerankingClient createClient(
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
+    return QuarkusRestClientBuilder.newBuilder()
+        .baseUri(URI.create(modelConfig.url()))
+        .readTimeout(modelConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+        .httpClientOptionsCustomizer(clientOptionsCustomizer(modelConfig))
+        .build(NvidiaRerankingClient.class);
+  }
+
+  static Consumer<HttpClientOptions> clientOptionsCustomizer(
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
+    return options -> options.setMaxPoolSize(modelConfig.properties().connectionPoolSize());
   }
 
   @Override
@@ -132,6 +149,11 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             });
   }
 
+  @Override
+  public void close() throws Exception {
+    nvidiaClient.close();
+  }
+
   /**
    * REST client interface for the Nvidia Reranking Service.
    *
@@ -140,7 +162,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   @RegisterRestClient
   @RegisterProvider(RerankingProviderContentTypeFilter.class)
   @RegisterProvider(ProviderBillingFilter.class)
-  public interface NvidiaRerankingClient {
+  public interface NvidiaRerankingClient extends AutoCloseable {
 
     @POST
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
