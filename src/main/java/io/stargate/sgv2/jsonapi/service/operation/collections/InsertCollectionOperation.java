@@ -8,6 +8,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -215,7 +216,7 @@ public record InsertCollectionOperation(
       insertQuery.append(", query_vector_value");
     }
     if (lexicalEnabled) {
-      insertQuery.append(", query_lexical_value");
+      insertQuery.append(", ").append(DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME);
     }
 
     insertQuery.append(") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
