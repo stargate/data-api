@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "name": "findEmbeddingProviders",
+    "kind" : "test_suite"
+  },
+  "setup": [
+  ],
+  "tests": [
+    {
+      "name": "findEmbeddingProviders",
+      "command": {
+        "findEmbeddingProviders": {}
+      },
+      "asserts": {
+        "Templated.isSuccess": null
+      }
+    }
+  ]
+}
