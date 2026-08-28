@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.0.52](https://github.com/stargate/data-api/tree/v1.0.52) (2026-08-24)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.51...v1.0.52)
+
+**Merged pull requests:**
+
+- FIX \#2562: send "dimensions" to Nvidia embedding NIM for variable-dimension models [\#2561](https://github.com/stargate/data-api/pull/2561) ([erichare](https://github.com/erichare))
+- Bumping version for next data-api release [\#2560](https://github.com/stargate/data-api/pull/2560) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix typo in RERANKING\_PROVIDER\_TIMEOUT‎ error message [\#2558](https://github.com/stargate/data-api/pull/2558) ([sl-at-ibm](https://github.com/sl-at-ibm))
+
 ## [v1.0.51](https://github.com/stargate/data-api/tree/v1.0.51) (2026-08-20)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.50...v1.0.51)
