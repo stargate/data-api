@@ -6,6 +6,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -21,13 +22,12 @@ import org.junit.jupiter.api.Test;
 class BillingS3LogHandlerTest {
 
   @Test
-  void startRunsUploaderLoop() throws InterruptedException {
+  void uploaderLoopProcessesPublishedRecord() throws Exception {
     var uploaded = new CountDownLatch(1);
     AsyncBatchedLogUploader uploader =
         batch -> {
           uploaded.countDown();
-          return Uni.createFrom()
-              .item(new AsyncBatchedLogUploader.UploadResult(true, null, batch));
+          return Uni.createFrom().item(new AsyncBatchedLogUploader.UploadResult(true, null, batch));
         };
     var buffer =
         new BatchedLogBuffer(
@@ -38,13 +38,14 @@ class BillingS3LogHandlerTest {
             new BatchedLogBufferMetrics(new SimpleMeterRegistry(), "billing-test"));
     var handler = new BillingS3LogHandler(buffer, uploader);
 
-    handler.start();
+    var uploading = CompletableFuture.runAsync(handler::startUploading);
     try {
       handler.publish(new LogRecord(Level.INFO, "{\"event\":\"dataapi\"}"));
 
       assertThat(uploaded.await(3, TimeUnit.SECONDS)).isTrue();
     } finally {
       handler.close();
+      uploading.get(3, TimeUnit.SECONDS);
     }
   }
 

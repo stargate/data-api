@@ -6,6 +6,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
+import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -28,13 +29,16 @@ public class BillingS3HandlerInstaller {
 
   private final BillingS3ExportConfig config;
   private final MeterRegistry meterRegistry;
+  private final Vertx vertx;
 
   private volatile BillingS3LogHandler handler;
 
   @Inject
-  public BillingS3HandlerInstaller(BillingS3ExportConfig config, MeterRegistry meterRegistry) {
+  public BillingS3HandlerInstaller(
+      BillingS3ExportConfig config, MeterRegistry meterRegistry, Vertx vertx) {
     this.config = config;
     this.meterRegistry = meterRegistry;
+    this.vertx = vertx;
   }
 
   void onStart(@Observes StartupEvent event) {
@@ -69,7 +73,16 @@ public class BillingS3HandlerInstaller {
     LOGGER.info(
         "Billing has attached BillingS3LogHandler to the logger named: {}", BILLING_LOGGER_NAME);
 
-    this.handler.start();
+    startUploading(this.handler);
+  }
+
+  void startUploading(BillingS3LogHandler handler) {
+    vertx.executeBlocking(
+        () -> {
+          handler.startUploading();
+          return null;
+        },
+        false);
   }
 
   void onStop(@Observes ShutdownEvent event) {

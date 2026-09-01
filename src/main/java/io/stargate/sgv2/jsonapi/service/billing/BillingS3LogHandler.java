@@ -138,13 +138,6 @@ public final class BillingS3LogHandler extends Handler {
   // Flush pipeline
   // ============================================================
 
-  void start() {
-    Thread.ofPlatform()
-        .name("billing-s3-uploader")
-        .daemon(true)
-        .start(this::startUploading);
-  }
-
   /** Called on a worker thread to start uploading log records. */
   void startUploading() {
 
