@@ -1,5 +1,17 @@
 package io.stargate.sgv2.jsonapi.service.billing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import org.junit.jupiter.api.Test;
+
 /**
  * Unit tests for {@link BillingS3LogHandler}: the flush triggers (seal on publish, age tick, drain
  * on close), the upload-concurrency gate, failure containment, and the at-most-once accounting
@@ -7,6 +19,35 @@ package io.stargate.sgv2.jsonapi.service.billing;
  * is covered by {@code BillingS3ExportIntegrationTest}.
  */
 class BillingS3LogHandlerTest {
+
+  @Test
+  void startRunsUploaderLoop() throws InterruptedException {
+    var uploaded = new CountDownLatch(1);
+    AsyncBatchedLogUploader uploader =
+        batch -> {
+          uploaded.countDown();
+          return Uni.createFrom()
+              .item(new AsyncBatchedLogUploader.UploadResult(true, null, batch));
+        };
+    var buffer =
+        new BatchedLogBuffer(
+            1,
+            1_000_000,
+            Duration.ofMinutes(1),
+            10,
+            new BatchedLogBufferMetrics(new SimpleMeterRegistry(), "billing-test"));
+    var handler = new BillingS3LogHandler(buffer, uploader);
+
+    handler.start();
+    try {
+      handler.publish(new LogRecord(Level.INFO, "{\"event\":\"dataapi\"}"));
+
+      assertThat(uploaded.await(3, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      handler.close();
+    }
+  }
+
   //
   //  private static final Logger LOG = LoggerFactory.getLogger(BillingS3LogHandlerTest.class);
   //
