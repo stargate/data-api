@@ -56,7 +56,7 @@ public final class BillingS3LogHandler extends Handler {
    * Started at 1 and then decremented in {@link #startUploading()} when it exists so we know we
    * have finished uploading.
    */
-  private final CountDownLatch uploadingFinished = new CountDownLatch(0);
+  private final CountDownLatch uploadingFinished = new CountDownLatch(1);
 
   private final AsyncBatchedLogUploader uploader;
   private final BatchedLogBuffer batchedLogBuffer;
@@ -137,6 +137,13 @@ public final class BillingS3LogHandler extends Handler {
   // ============================================================
   // Flush pipeline
   // ============================================================
+
+  void start() {
+    Thread.ofPlatform()
+        .name("billing-s3-uploader")
+        .daemon(true)
+        .start(this::startUploading);
+  }
 
   /** Called on a worker thread to start uploading log records. */
   void startUploading() {

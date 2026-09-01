@@ -69,7 +69,7 @@ public class BillingS3HandlerInstaller {
     LOGGER.info(
         "Billing has attached BillingS3LogHandler to the logger named: {}", BILLING_LOGGER_NAME);
 
-    // TODO: XXXX call start on the thread.
+    this.handler.start();
   }
 
   void onStop(@Observes ShutdownEvent event) {
