@@ -75,8 +75,8 @@ public class BatchedLogBuffer {
    * @param maxBatchBytes Maximum numbers of bytes in a batch, when the buffer has more than this
    *     many entries a new batch is made available which may contain more than this many bytes. The
    *     batch will have many maxBatchBytes if there is a single log record that is bigger.
-   * @param maxBatchAge Maximum age any log record should have in the buffer before a new batch is
-   *     available. When a batch is triggered from max age the batch is filled, even if the other
+   * @param maxBatchAge Maximum age the head log record should have in the buffer before a new batch
+   *     is available. When a batch is triggered from max age the batch is filled, even if the other
    *     messages have not reached their max age.
    * @param capacity Total number of log records to buffer. Beyond this called to {@link
    *     #offer(LogRecord)} will fail to add the message.
@@ -108,9 +108,7 @@ public class BatchedLogBuffer {
     this.maxBatchBytes = maxBatchBytes;
     this.maxBatchAge = maxBatchAge;
     this.capacity = capacity;
-
     this.metrics = Objects.requireNonNull(metrics, "billingMetrics must not be null");
-    this.metrics.registerBuffer(this);
 
     this.clock = clock == null ? DEFAULT_CLOCK : clock;
     if (this.clock != DEFAULT_CLOCK) {
@@ -119,6 +117,9 @@ public class BatchedLogBuffer {
     }
     // must be concurrent to handle multiple threads
     this.queue = new ArrayBlockingQueue<>(capacity);
+
+    // just to be safe, register after queue created incase metrics are scrapped
+    this.metrics.registerBuffer(this);
   }
 
   /**
@@ -216,12 +217,14 @@ public class BatchedLogBuffer {
       return null;
     }
 
-    LOGGER.info(
-        "nextBatch() - next batch created, reason:{}, batchLines.size:{}, batchBytes:{}, oldestEventAt: {}",
-        batchReason,
-        batchLines.size(),
-        batchBytes,
-        oldestEventAt);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "nextBatch() - next batch created, reason:{}, batchLines.size:{}, batchBytes:{}, oldestEventAt: {}",
+          batchReason,
+          batchLines.size(),
+          batchBytes,
+          oldestEventAt);
+    }
     return new Batch(batchReason, batchLines, batchBytes, oldestEventAt, clock);
   }
 

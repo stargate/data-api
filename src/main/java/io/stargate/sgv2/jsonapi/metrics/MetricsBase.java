@@ -41,7 +41,9 @@ public abstract class MetricsBase {
     // no null checks in the builder below
     Objects.requireNonNull(func, "func must not be null");
 
-    return Gauge.builder(fullName(name), func).register(meterRegistry);
+    return Gauge.builder(fullName(name), func)
+        .strongReference(true) // is set in builder() above just being explicit
+        .register(meterRegistry);
   }
 
   protected Timer newTimer(String name) {

@@ -19,7 +19,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link BatchedLogBuffer}\
@@ -415,7 +415,7 @@ public class BatchedLogBufferTest {
 
     // 2nd - drainFully - should get a partial batch
     var batch2 = fixture.assertNextBatch("nextBatchTriggerDrain() - 2nd - partial batch", true);
-    assertThat(batch1.reason())
+    assertThat(batch2.reason())
         .as(
             "nextBatchTriggerDrain() - 2nd - reason is "
                 + BatchedLogBuffer.BillingBatchReason.DRAINING)

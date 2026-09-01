@@ -12,11 +12,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Logging handler designed to be used wioth the Billing system. It accpets billing event log
- * messges, batches them, and then sends to S3.
+ * A Logging handler designed to be used with the Billing system. It accepts billing event log
+ * messages, batches them, and then sends to S3.
  *
- * <p>See {@link BillingS3HandlerInstaller} for setup. // AI SLOP BELOW JUL handler that turns
- * {@code billing.events} log lines into batched S3 objects.
+ * <p>See {@link BillingS3HandlerInstaller} for setup.
+ *
+ * <p>// AI SLOP BELOW JUL handler that turns {@code billing.events} log lines into batched S3
+ * objects.
  *
  * <p>Division of labor: {@link BatchedLogBuffer} decides when a batch seals, {@link
  * AsyncBatchedLogUploader} decides what an S3 object looks like, and this class decides when
