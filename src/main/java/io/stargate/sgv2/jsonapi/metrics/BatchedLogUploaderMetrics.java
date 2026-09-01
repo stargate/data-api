@@ -2,17 +2,12 @@ package io.stargate.sgv2.jsonapi.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-
 import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.service.billing.BatchedLogBuffer;
-
 import java.util.Objects;
 
-/**
- * Metrics for billing events, mostly around what is sent to S3
- */
-public final class BatchedLogUploaderMetrics extends MetricsBase{
-
+/** Metrics for billing events, mostly around what is sent to S3 */
+public final class BatchedLogUploaderMetrics extends MetricsBase {
 
   public final Counter uploadedBatches;
   public final Counter uploadedBytes;
@@ -22,8 +17,7 @@ public final class BatchedLogUploaderMetrics extends MetricsBase{
   public final Counter failedBatches;
   public final Counter failedEvents;
 
-  /**
-   */
+  /** */
   public BatchedLogUploaderMetrics(MeterRegistry meterRegistry, String prefix) {
     super(meterRegistry, prefix);
 
@@ -32,15 +26,15 @@ public final class BatchedLogUploaderMetrics extends MetricsBase{
     this.uploadedEvents = newCounter("s3.uploaded.events");
     this.uploadedHeadAgeMs = newTimer("s3.uploaded.oldest_event");
 
-    this.failedBatches = newCounter( "s3.failed.batches");
-    this.failedEvents = newCounter( "s3.failed.events");
+    this.failedBatches = newCounter("s3.failed.batches");
+    this.failedEvents = newCounter("s3.failed.events");
   }
 
   public void recordBatchDelivered(BatchedLogBuffer.Batch batch) {
 
     Objects.requireNonNull(batch, "batch must not be null");
     uploadedBatches.increment();
-    uploadedBytes.increment(batch.batchBytes());
+    uploadedBytes.increment(batch.bytes());
     uploadedHeadAgeMs.record(batch.oldestEventAtDuration());
     uploadedEvents.increment(batch.size());
   }

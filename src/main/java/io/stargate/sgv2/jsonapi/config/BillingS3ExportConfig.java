@@ -14,9 +14,11 @@ public interface BillingS3ExportConfig {
   boolean enabled();
 
   /** S3 bucket region */
+  @WithDefault("us-east-2")
   String region();
 
   /** S3 bucket name */
+  @WithDefault("serverless-usage-dev")
   String bucket();
 
   /**

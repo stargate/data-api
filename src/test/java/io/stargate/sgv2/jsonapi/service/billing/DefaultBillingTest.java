@@ -9,6 +9,10 @@ import static org.mockito.Mockito.when;
 
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ModelType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,11 +24,6 @@ import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.stream.Stream;
-
-import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
-import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ModelType;
-import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.billing;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
-
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -19,9 +18,10 @@ import org.slf4j.LoggerFactory;
  * <p>See {@link BillingS3HandlerInstaller} for setup. // AI SLOP BELOW JUL handler that turns
  * {@code billing.events} log lines into batched S3 objects.
  *
- * <p>Division of labor: {@link BatchedLogBuffer} decides when a batch seals, {@link AsyncBatchedLogUploader}
- * decides what an S3 object looks like, and this class decides when uploads run — the flush
- * triggers (seal on publish, age tick, drain on close), the upload-concurrency gate, and metrics.
+ * <p>Division of labor: {@link BatchedLogBuffer} decides when a batch seals, {@link
+ * AsyncBatchedLogUploader} decides what an S3 object looks like, and this class decides when
+ * uploads run — the flush triggers (seal on publish, age tick, drain on close), the
+ * upload-concurrency gate, and metrics.
  *
  * <p>Delivery is at-most-once by design: publish never waits for queue capacity, full buffers drop
  * new lines, and close drains best-effort within {@code shutdownTimeout}.
@@ -60,8 +60,7 @@ public final class BillingS3LogHandler extends Handler {
   private final BatchedLogBuffer batchedLogBuffer;
 
   @VisibleForTesting
-  BillingS3LogHandler(
-          AsyncBatchedLogUploader uploader, BatchedLogBuffer batchedLogBuffer) {
+  BillingS3LogHandler(BatchedLogBuffer batchedLogBuffer, AsyncBatchedLogUploader uploader) {
 
     this.batchedLogBuffer = batchedLogBuffer;
     this.uploader = uploader;

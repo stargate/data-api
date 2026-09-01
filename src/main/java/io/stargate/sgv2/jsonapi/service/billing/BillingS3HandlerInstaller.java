@@ -13,18 +13,17 @@ import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
- * <p>Attaches a {@link BillingS3LogHandler} to the {@code billing.events} logger at startup
- * (when {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on
- * shutdown for a graceful drain.
- *
+ * Attaches a {@link BillingS3LogHandler} to the {@code billing.events} logger at startup (when
+ * {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on shutdown for
+ * a graceful drain.
  */
 @ApplicationScoped
 public class BillingS3HandlerInstaller {
 
-  private static final org.slf4j.Logger LOGGER =  LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
+  private static final org.slf4j.Logger LOGGER =
+      LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
 
-  private static final String METRICS_PREFIX ="billing";
+  private static final String METRICS_PREFIX = "billing";
   private static final String BILLING_LOGGER_NAME = "billing.events";
 
   private final BillingS3ExportConfig config;
@@ -44,32 +43,33 @@ public class BillingS3HandlerInstaller {
       LOGGER.info("Billing S3 export disabled");
       return;
     }
+    LOGGER.info("Billing S3 export enabled");
 
     // Fail-loud: invalid billing S3 config throws here, aborting application startup.
-    var uploader = S3BatchedLogUploader.create(
+    var uploader =
+        S3BatchedLogUploader.create(
             config.region(),
             config.bucket(),
             config.endpointOverride().orElse(null),
             new BatchedLogUploaderMetrics(meterRegistry, METRICS_PREFIX));
+    LOGGER.info("Billing is using uploader: {}", uploader);
 
-    var buffer= new BatchedLogBuffer(
+    var buffer =
+        new BatchedLogBuffer(
             config.maxEventsPerBatch(),
             config.maxBytesPerBatch(),
             config.maxAge(),
             config.queueCapacity(),
             new BatchedLogBufferMetrics(meterRegistry, METRICS_PREFIX));
-
-    this.handler = new BillingS3LogHandler(config, uploader, meterRegistry);
+    LOGGER.info("Billing is using log buffer: {}", buffer);
+    this.handler = new BillingS3LogHandler(buffer, uploader);
 
     // TODO: LOGGER NAME SHOULD BE IN CONFIG
     Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
-
     LOGGER.info(
-        "Attached billing S3 export handler to logger named {}, bucket={}, region={}, endpointOverride={}",
-        BILLING_LOGGER_NAME,
-        bucket,
-        region,
-        config.endpointOverride().orElse(null));
+        "Billing has attached BillingS3LogHandler to the logger named: {}", BILLING_LOGGER_NAME);
+
+    // TODO: XXXX call start on the thread.
   }
 
   void onStop(@Observes ShutdownEvent event) {
