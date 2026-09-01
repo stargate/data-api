@@ -1,11 +1,32 @@
 package io.stargate.sgv2.jsonapi.service.billing;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+import io.vertx.core.Vertx;
+import java.util.concurrent.Callable;
+import org.junit.jupiter.api.Test;
+
 /**
  * Unit tests for {@link BillingS3HandlerInstaller}: install/uninstall symmetry on the {@code
  * billing.events} JUL logger, the disabled path, and fail-loud startup on bad config. Delivery
  * through an installed handler is covered by {@code BillingS3ExportIntegrationTest}.
  */
 class BillingS3HandlerInstallerTest {
+
+  @Test
+  void submitsUploaderToVertxWorkerPool() {
+    var vertx = mock(Vertx.class);
+    var handler = new BillingS3LogHandler(null, null);
+    var installer = new BillingS3HandlerInstaller(null, null, vertx);
+
+    installer.startUploading(handler);
+
+    verify(vertx).executeBlocking(any(Callable.class), eq(false));
+  }
+
   //
   //  private static BillingS3ExportConfig config(boolean enabled, String bucket, String region) {
   //    BillingS3ExportConfig config = mock(BillingS3ExportConfig.class);
