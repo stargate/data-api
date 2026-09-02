@@ -70,11 +70,7 @@ public class BillingS3HandlerInstaller {
     LOGGER.info(
         "Billing has attached BillingS3LogHandler to the logger named: {}", BILLING_LOGGER_NAME);
 
-    startUploading(this.handler);
-  }
-
-  void startUploading(BillingS3LogHandler handler) {
-    Infrastructure.getDefaultWorkerPool().execute(handler::startUploading);
+    Infrastructure.getDefaultWorkerPool().execute(this.handler::startUploading);
   }
 
   void onStop(@Observes ShutdownEvent event) {
