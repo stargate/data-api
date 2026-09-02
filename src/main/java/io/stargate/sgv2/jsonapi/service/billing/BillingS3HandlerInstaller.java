@@ -3,10 +3,10 @@ package io.stargate.sgv2.jsonapi.service.billing;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
-import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -29,16 +29,13 @@ public class BillingS3HandlerInstaller {
 
   private final BillingS3ExportConfig config;
   private final MeterRegistry meterRegistry;
-  private final Vertx vertx;
 
   private volatile BillingS3LogHandler handler;
 
   @Inject
-  public BillingS3HandlerInstaller(
-      BillingS3ExportConfig config, MeterRegistry meterRegistry, Vertx vertx) {
+  public BillingS3HandlerInstaller(BillingS3ExportConfig config, MeterRegistry meterRegistry) {
     this.config = config;
     this.meterRegistry = meterRegistry;
-    this.vertx = vertx;
   }
 
   void onStart(@Observes StartupEvent event) {
@@ -77,12 +74,7 @@ public class BillingS3HandlerInstaller {
   }
 
   void startUploading(BillingS3LogHandler handler) {
-    vertx.executeBlocking(
-        () -> {
-          handler.startUploading();
-          return null;
-        },
-        false);
+    Infrastructure.getDefaultWorkerPool().execute(handler::startUploading);
   }
 
   void onStop(@Observes ShutdownEvent event) {
