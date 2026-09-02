@@ -1,12 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.billing;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import io.vertx.core.Vertx;
-import java.util.concurrent.Callable;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -17,14 +20,31 @@ import org.junit.jupiter.api.Test;
 class BillingS3HandlerInstallerTest {
 
   @Test
-  void submitsUploaderToVertxWorkerPool() {
-    var vertx = mock(Vertx.class);
-    var handler = new BillingS3LogHandler(null, null);
-    var installer = new BillingS3HandlerInstaller(null, null, vertx);
+  void submitsUploaderToQuarkusWorkerPool() throws Exception {
+    var uploaded = new CountDownLatch(1);
+    AsyncBatchedLogUploader uploader =
+        batch -> {
+          uploaded.countDown();
+          return Uni.createFrom().item(new AsyncBatchedLogUploader.UploadResult(true, null, batch));
+        };
+    var buffer =
+        new BatchedLogBuffer(
+            1,
+            1_000_000,
+            Duration.ofMinutes(1),
+            10,
+            new BatchedLogBufferMetrics(new SimpleMeterRegistry(), "billing-test"));
+    var handler = new BillingS3LogHandler(buffer, uploader);
+    var installer = new BillingS3HandlerInstaller(null, null);
 
     installer.startUploading(handler);
+    try {
+      handler.publish(new LogRecord(Level.INFO, "{\"event\":\"dataapi\"}"));
 
-    verify(vertx).executeBlocking(any(Callable.class), eq(false));
+      assertThat(uploaded.await(3, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      handler.close();
+    }
   }
 
   //
