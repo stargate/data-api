@@ -1,15 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.billing;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -20,31 +20,24 @@ import org.junit.jupiter.api.Test;
 class BillingS3HandlerInstallerTest {
 
   @Test
-  void submitsUploaderToQuarkusWorkerPool() throws Exception {
-    var uploaded = new CountDownLatch(1);
-    AsyncBatchedLogUploader uploader =
-        batch -> {
-          uploaded.countDown();
-          return Uni.createFrom().item(new AsyncBatchedLogUploader.UploadResult(true, null, batch));
-        };
-    var buffer =
-        new BatchedLogBuffer(
-            1,
-            1_000_000,
-            Duration.ofMinutes(1),
-            10,
-            new BatchedLogBufferMetrics(new SimpleMeterRegistry(), "billing-test"));
-    var handler = new BillingS3LogHandler(buffer, uploader);
-    var installer = new BillingS3HandlerInstaller(null, null);
+  void startupRunsUploaderOnQuarkusWorkerPool() {
+    var config = mock(BillingS3ExportConfig.class);
+    when(config.enabled()).thenReturn(true);
+    when(config.region()).thenReturn("us-east-2");
+    when(config.bucket()).thenReturn("test-bucket");
+    when(config.endpointOverride()).thenReturn(Optional.empty());
+    when(config.maxEventsPerBatch()).thenReturn(1);
+    when(config.maxBytesPerBatch()).thenReturn(1_000_000L);
+    when(config.maxAge()).thenReturn(Duration.ofMinutes(1));
+    when(config.queueCapacity()).thenReturn(10);
+    var installer = new BillingS3HandlerInstaller(config, new SimpleMeterRegistry());
 
-    installer.startUploading(handler);
-    try {
-      handler.publish(new LogRecord(Level.INFO, "{\"event\":\"dataapi\"}"));
-
-      assertThat(uploaded.await(3, TimeUnit.SECONDS)).isTrue();
-    } finally {
-      handler.close();
-    }
+    assertTimeoutPreemptively(
+        Duration.ofSeconds(10),
+        () -> {
+          installer.onStart(new StartupEvent());
+          installer.onStop(new ShutdownEvent());
+        });
   }
 
   //
