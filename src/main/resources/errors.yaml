@@ -283,6 +283,24 @@ request-errors:
 
   # unscoped because this touches both the sort and the options
   - scope:
+    code: MISSING_RERANK_ON_TEXT
+    title: Rerank field is missing
+    body: |-
+      The findAndRerank command is missing the field to read from each document for the reranking step.
+
+      Reranking involves using a model to compare passages of text to a user query.
+
+      For each document to rerank, a certain field is read to extract the associated passage.
+
+      If using `$vectorize`, the name of the rerankOn field defaults to "$vectorize";
+      otherwise, there is no default and the field name must be supplied.
+
+      The field to read must be specified as `rerankOn` in the options clause, e.g. `{"rerankOn": "title"}`.
+
+      Resend the command including the name of the field on which reranking should be done.
+
+  # unscoped because this touches both the sort and the options
+  - scope:
     code: MISSING_RERANK_QUERY_TEXT
     title: Rerank query text is missing
     body: |-
