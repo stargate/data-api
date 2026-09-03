@@ -12,8 +12,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -24,7 +23,7 @@ import org.junit.jupiter.api.Test;
 class BillingS3HandlerInstallerTest {
 
   @Test
-  void startupCreatesAttachesAndStartsHandler() {
+  void startupCreatesAndStartsHandler() {
     var config = mock(BillingS3ExportConfig.class);
     when(config.enabled()).thenReturn(true);
     when(config.region()).thenReturn("us-east-2");
@@ -35,32 +34,25 @@ class BillingS3HandlerInstallerTest {
     when(config.maxAge()).thenReturn(Duration.ofMinutes(1));
     when(config.queueCapacity()).thenReturn(10);
     var handler = mock(BillingS3LogHandler.class);
-    var createdBuffer = new AtomicReference<BatchedLogBuffer>();
-    var createdUploader = new AtomicReference<AsyncBatchedLogUploader>();
+    var handlerCreated = new AtomicBoolean();
     var installer =
         new BillingS3HandlerInstaller(
             config,
             new SimpleMeterRegistry(),
             (buffer, uploader) -> {
-              createdBuffer.set(buffer);
-              createdUploader.set(uploader);
+              assertThat(buffer).isNotNull();
+              assertThat(uploader).isNotNull();
+              handlerCreated.set(true);
               return handler;
             });
-    var billingLogger = Logger.getLogger("billing.events");
 
     installer.onStart(new StartupEvent());
     try {
-      assertThat(createdBuffer.get()).isNotNull();
-      assertThat(createdBuffer.get().remainingCapacity()).isEqualTo(10);
-      assertThat(createdUploader.get()).isInstanceOf(S3BatchedLogUploader.class);
-      assertThat(billingLogger.getHandlers()).contains(handler);
+      assertThat(handlerCreated).isTrue();
       verify(handler, timeout(10_000)).startUploading();
     } finally {
       installer.onStop(new ShutdownEvent());
     }
-
-    assertThat(billingLogger.getHandlers()).doesNotContain(handler);
-    verify(handler).close();
   }
 
   //

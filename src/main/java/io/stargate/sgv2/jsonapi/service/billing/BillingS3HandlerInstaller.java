@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.billing;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -10,6 +11,7 @@ import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,13 +31,24 @@ public class BillingS3HandlerInstaller {
 
   private final BillingS3ExportConfig config;
   private final MeterRegistry meterRegistry;
+  private final BiFunction<BatchedLogBuffer, AsyncBatchedLogUploader, BillingS3LogHandler>
+      handlerFactory;
 
   private volatile BillingS3LogHandler handler;
 
   @Inject
   public BillingS3HandlerInstaller(BillingS3ExportConfig config, MeterRegistry meterRegistry) {
+    this(config, meterRegistry, BillingS3LogHandler::new);
+  }
+
+  @VisibleForTesting
+  BillingS3HandlerInstaller(
+      BillingS3ExportConfig config,
+      MeterRegistry meterRegistry,
+      BiFunction<BatchedLogBuffer, AsyncBatchedLogUploader, BillingS3LogHandler> handlerFactory) {
     this.config = config;
     this.meterRegistry = meterRegistry;
+    this.handlerFactory = handlerFactory;
   }
 
   void onStart(@Observes StartupEvent event) {
@@ -63,7 +76,7 @@ public class BillingS3HandlerInstaller {
             config.queueCapacity(),
             new BatchedLogBufferMetrics(meterRegistry, METRICS_PREFIX));
     LOGGER.info("Billing is using log buffer: {}", buffer);
-    this.handler = new BillingS3LogHandler(buffer, uploader);
+    this.handler = handlerFactory.apply(buffer, uploader);
 
     // TODO: LOGGER NAME SHOULD BE IN CONFIG
     Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
