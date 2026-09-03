@@ -23,8 +23,16 @@ import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -242,15 +250,122 @@ class FindAndRerankOperationBuilderTest {
         .build();
   }
 
+  @Test
+  void failsWhenMissingRerankOnAndNotVectorizeSort() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertMissingRerankOnText(
+        "error when no rerankOn and not vectorize sort", commandContext, command);
+  }
+
+  @Test
+  void failsWhenBlankRerankOnAndNotVectorizeSort() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "   ",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertMissingRerankOnText(
+        "error when blank rerankOn and not vectorize sort", commandContext, command);
+  }
+
+  @Test
+  void failsWhenMissingRerankOnWithLexicalSortOnVectorizeCollection() throws Exception {
+    var commandContext = commandContextWithVectorize();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$lexical": "text" } },
+                "options": {
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertMissingRerankOnText(
+        "error when no rerankOn on vectorize collection with lexical sort", commandContext, command);
+  }
+
+  private void assertMissingRerankOnText(
+      String context,
+      CommandContext<CollectionSchemaObject> commandContext,
+      FindAndRerankCommand command) {
+    var ex =
+        org.junit.jupiter.api.Assertions.assertThrowsExactly(
+            RequestException.class,
+            () ->
+                new FindAndRerankOperationBuilder(commandContext)
+                    .withCommand(command)
+                    .withFindCommandResolver(findCommandResolver)
+                    .build(),
+            context);
+
+    assertThat(ex.code)
+        .as("error code is " + RequestException.Code.MISSING_RERANK_ON_TEXT.name())
+        .isEqualTo(RequestException.Code.MISSING_RERANK_ON_TEXT.name());
+  }
+
   private FindAndRerankCommand command(String json) throws Exception {
     return objectMapper.readValue(json, FindAndRerankCommand.class);
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
+    return commandContext(testConstants.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
+  }
+
+  private CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
+    var collectionSchema =
+        new CollectionSchemaObject(
+            testConstants.COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
+                            .VECTOR_EMBEDDING_TEXT_FIELD,
+                        -1,
+                        SimilarityFunction.COSINE,
+                        EmbeddingSourceModel.OTHER,
+                        new VectorizeDefinition("custom", "custom", null, null)))),
+            null,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef(
+                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
+    return commandContext(collectionSchema);
+  }
+
+  private CommandContext<CollectionSchemaObject> commandContext(
+      CollectionSchemaObject schemaObject) {
     var commandContext =
-        testConstants.collectionContext(
-            CommandName.FIND_AND_RERANK,
-            testConstants.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
+        testConstants.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
 
     var rerankingProvidersConfig = mock(RerankingProvidersConfig.class);
     var modelConfig = mock(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.class);
