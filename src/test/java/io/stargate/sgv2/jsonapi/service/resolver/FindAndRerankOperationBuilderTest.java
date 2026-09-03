@@ -19,13 +19,13 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
@@ -308,7 +308,9 @@ class FindAndRerankOperationBuilderTest {
             """);
 
     assertMissingRerankOnText(
-        "error when no rerankOn on vectorize collection with lexical sort", commandContext, command);
+        "error when no rerankOn on vectorize collection with lexical sort",
+        commandContext,
+        command);
   }
 
   private void assertMissingRerankOnText(
@@ -364,8 +366,7 @@ class FindAndRerankOperationBuilderTest {
 
   private CommandContext<CollectionSchemaObject> commandContext(
       CollectionSchemaObject schemaObject) {
-    var commandContext =
-        testConstants.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
+    var commandContext = testConstants.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
 
     var rerankingProvidersConfig = mock(RerankingProvidersConfig.class);
     var modelConfig = mock(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.class);
