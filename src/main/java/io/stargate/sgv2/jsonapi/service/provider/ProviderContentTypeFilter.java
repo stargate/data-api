@@ -1,0 +1,96 @@
+package io.stargate.sgv2.jsonapi.service.provider;
+
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * A client response filter/interceptor that validates the response from a model provider, either
+ * embedding or reranking.
+ *
+ * <p>This filter checks the Content-Type of the response to ensure it is compatible with
+ * 'application/json' or 'text/json'.
+ *
+ * <p>If the response fails the validation, a {@link APIException} is thrown with an appropriate
+ * error message.
+ */
+public abstract class ProviderContentTypeFilter implements ClientResponseFilter {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProviderContentTypeFilter.class);
+
+  private static final MediaType MEDIA_TYPE_TEXT_JSON = new MediaType("text", "json");
+
+  private final ErrorCode<?> unexpectedResponseCode;
+
+  /**
+   * Initializes a new instance.
+   *
+   * @param unexpectedResponseCode The {@link ErrorCode} to use when the content is not what is
+   *     expected. The error template should have on variable called `errorMessage`.
+   */
+  protected ProviderContentTypeFilter(ErrorCode<?> unexpectedResponseCode) {
+    this.unexpectedResponseCode =
+        Objects.requireNonNull(unexpectedResponseCode, "unexpectedResponseCode cannot be null");
+  }
+
+  /** Filters the client response by validating the Content-Type */
+  @Override
+  public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
+
+    // If the status is 0, it means something went wrong (maybe a timeout). Directly return and pass
+    // the error to the client
+    if (responseContext.getStatus() == 0) {
+      return;
+    }
+
+    // only validate for successful responses, errors may return non-JSON content,
+    // e.g. a HTTP 401 may just have "Unauthorized" in the response body
+    if (responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+      return;
+    }
+
+    // Throw error if there is no response body
+    if (!responseContext.hasEntity()) {
+      throw unexpectedResponseCode.get(
+          Map.of("errorMessage", "No response body from the model provider"));
+    }
+
+    // response should always be JSON; if not, error out, include raw response message for
+    // troubleshooting purposes
+    var contentType = responseContext.getMediaType();
+
+    if (contentType == null
+        || !(MediaType.APPLICATION_JSON_TYPE.isCompatible(contentType)
+            || MEDIA_TYPE_TEXT_JSON.isCompatible(contentType))) {
+
+      String responseBody = null;
+      try {
+        // Read the entity stream and convert to string
+        responseBody =
+            new String(responseContext.getEntityStream().readAllBytes(), StandardCharsets.UTF_8);
+      } catch (IOException | RuntimeException e) {
+        // RuntimeException is wide to cover a null pointer for the getEntityStream() or anything
+        // else
+        // we are only trying to read for a nicer error message below
+        LOGGER.error(
+            "Error converting the provider's error response to string: {}", e.getMessage(), e);
+      }
+
+      throw unexpectedResponseCode.get(
+          Map.of(
+              "errorMessage",
+              "Expected response Content-Type ('application/json' or 'text/json') from the model provider but found '%s'; HTTP Status: %s; The response body is: '%s'."
+                  .formatted(contentType, responseContext.getStatus(), responseBody)));
+    }
+  }
+}

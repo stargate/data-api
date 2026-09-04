@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
  * <p>Note, if provider already returned content-length in the response header, then the interceptor
  * will reuse it and won't calculate the response size.
  */
-public class ProviderHttpInterceptor implements ClientResponseFilter {
+public class ProviderBillingFilter implements ClientResponseFilter {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ProviderHttpInterceptor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProviderBillingFilter.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /** Header name to track the sent_bytes to the provider (extra detailed to avoid collisions) */

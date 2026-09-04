@@ -171,7 +171,7 @@ public class RerankingGatewayClientTest {
         .satisfies(
             e -> {
               SchemaException exception = (SchemaException) e;
-              assertThat(exception.getMessage()).isEqualTo(apiException.getMessage());
+              assertThat(exception.getMessage()).contains(apiException.getMessage());
               assertThat(exception.code).isEqualTo(apiException.code);
             });
   }

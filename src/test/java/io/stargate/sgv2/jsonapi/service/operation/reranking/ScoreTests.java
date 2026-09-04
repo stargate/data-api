@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Tests for the {@link Score} class and {@link Score.RRFScore} class. */
 public class ScoreTests {

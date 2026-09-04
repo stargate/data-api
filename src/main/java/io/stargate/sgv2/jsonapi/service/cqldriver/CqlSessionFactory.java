@@ -12,14 +12,21 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import io.stargate.sgv2.jsonapi.service.operation.databases.DatabaseDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,8 +169,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   public CompletionStage<CqlSession> apply(Tenant tenant, CqlCredentials credentials) {
     Objects.requireNonNull(credentials, "credentials must not be null");
 
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Creating CQL Session tenant={}, credentials={}", tenant, credentials);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Creating CQL Session tenant={}, credentials={}", tenant, credentials);
     }
 
     // the driver TypedDriverOption is only used with DriverConfigLoader.fromMap()
@@ -211,13 +218,129 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     // Add optimized CqlVector codec (see [data-api#1775])
     builder = builder.addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
+    // when we are handling the result of the buildAsync() we need the tenant passed along.
+    // simple recompose the functions so they match signature from the framework
+    BiFunction<CqlSession, Throwable, CqlSession> partialUnwrapBuildException =
+        (session, throwable) -> unwrapBuildException(tenant, session, throwable);
+    Function<CqlSession, CompletionStage<CqlSession>> partialValidateSession =
+        (session) -> validateSession(tenant, session);
+
     return builder
         .buildAsync()
-        .exceptionallyCompose(
-            throwable -> {
-              // this will be CompletionException, not the actual cause
-              throw new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant))
-                  .maybeHandle(throwable.getCause());
+        .handle(partialUnwrapBuildException)
+        .thenCompose(partialValidateSession);
+  }
+
+  /**
+   * Process any throwable that was thrown from buildAsync(), pass through the session if no error.
+   */
+  private static CqlSession unwrapBuildException(
+      Tenant tenant, CqlSession cqlSession, Throwable throwable) {
+
+    if (throwable == null) {
+      return cqlSession;
+    }
+
+    // there was an error starting the session, often a token is invalid
+    // When the driver throws it's error passes through CompletionStage's and so is
+    // wrapped in CompletionException.
+    // Sanity check - only get cause in special case above
+    var toHandle =
+        (throwable instanceof CompletionException && throwable.getCause() != null)
+            ? throwable.getCause()
+            : throwable;
+    LOGGER.debug(
+        "unwrapBuildException() - throwable not null. tenant={}, throwable={}, toHandle={}",
+        tenant,
+        throwable.toString(),
+        toHandle.toString());
+
+    var err =
+        new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant)).maybeHandle(toHandle);
+    LOGGER.debug(
+        "unwrapBuildException() - session build error mapped to APIException. tenant={}",
+        tenant,
+        err);
+    throw err;
+  }
+
+  /**
+   * Validate that the session returned from the driver has metadata, close the session and error if
+   * it is missing. Otherwise, session is good to go.
+   *
+   * <p>Background: Driver auto reads the metadata, unless disabled, and the API must have metadata
+   * so we can check the keyspace + collection/table exist. The metadata read can fail if the token
+   * / user+password somehow cannot read the schema tables or if some coordinators do and some do
+   * not validate the credentials. In Java Driver see
+   * CassandraSchemaQueries.executeOnAdminExecutor() and DefaultSession.initialSchemaRefresh()
+   */
+  private static CompletionStage<CqlSession> validateSession(Tenant tenant, CqlSession cqlSession) {
+
+    if (!cqlSession.getMetadata().getKeyspaces().isEmpty()) {
+      if (LOGGER.isDebugEnabled()) {
+        var keyspaces =
+            String.join(
+                ", ",
+                cqlSession.getMetadata().getKeyspaces().keySet().stream()
+                    .map(Object::toString)
+                    .toList());
+        LOGGER.debug(
+            "validateSession() - session is valid, metadata is not empty. tenant={}, keyspaces=[{}]",
+            tenant,
+            keyspaces);
+      }
+      return CompletableFuture.completedStage(cqlSession);
+    }
+
+    // there could be zero keyspaces if metadata fresh is not enabled, or the keyspace filters
+    // prohibit it.
+    if (LOGGER.isErrorEnabled()) {
+
+      List<String> refreshedKeyspaces = null;
+      Boolean metadataEnabled = null;
+      try {
+        refreshedKeyspaces =
+            cqlSession
+                .getContext()
+                .getConfig()
+                .getDefaultProfile()
+                .getStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES);
+        metadataEnabled =
+            cqlSession
+                .getContext()
+                .getConfig()
+                .getDefaultProfile()
+                .getBoolean(DefaultDriverOption.METADATA_SCHEMA_ENABLED);
+      } catch (Exception e) {
+        LOGGER.error(
+            "validateSession() - error trying to read from default driver profile, will not know metadata config, continuing.",
+            e);
+      }
+
+      LOGGER.error(
+          "validateSession() - session invalid, metadata was empty, closing session and returning error: {}, tenant:{}, refreshedKeyspaces:{}, metadataEnabled:{}",
+          DatabaseException.Code.FAILED_TO_READ_METADATA.name(),
+          tenant,
+          refreshedKeyspaces,
+          metadataEnabled);
+    }
+
+    // NOTE: while throwing the error will prevent the session from getting into the
+    // CqlSessionCache we use ExceptionFlags.UNRELIABLE_DB_SESSION tells the CommandProcessor we
+    // want to evict the session when from cache when the request is over as belt and braces
+    return cqlSession
+        .closeAsync()
+        .handle(
+            (ignored, closeError) -> {
+              if (closeError != null) {
+                LOGGER.error(
+                    "validateSession() - error closing session when metadata is empty, continuing. tenant={}",
+                    tenant,
+                    closeError);
+              }
+              // this is the real error we want to get back to the user
+              throw DatabaseException.Code.FAILED_TO_READ_METADATA.get(
+                  EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION));
             });
   }
 }

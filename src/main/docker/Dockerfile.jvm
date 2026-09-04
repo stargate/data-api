@@ -81,9 +81,9 @@
 # see https://catalog.redhat.com/en/software/containers/ubi9/openjdk-21/6501cdb5c34ae048c44f7814
 # see https://catalog.redhat.com/en/software/containers/ubi9/openjdk-21-runtime/6501ce769a0d86945c422d5f
 #
-# Last updated: 2026-02-25 / tatu
+# Last updated: 2026-08-10 / hazel
 #
-FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24-2.1771324986
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24-3.1785873419
 
 ENV LANGUAGE='en_US:en'
 
