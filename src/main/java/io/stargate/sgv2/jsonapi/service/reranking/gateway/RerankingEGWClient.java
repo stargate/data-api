@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.RerankingProviderException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
@@ -104,8 +105,27 @@ public class RerankingEGWClient extends RerankingProvider {
               if (gatewayResponse.hasError()) {
                 // 22-Jan-2026, tatu: This is ugly. But has to be done to work around fragility
                 //   of exception mapping
-                throw SchemaException.Code.valueOf(gatewayResponse.getError().getErrorCode())
-                    .withPreformattedMessage(gatewayResponse.getError().getErrorBody());
+                // #2548 amorton - the remove side of hte call also has API Exceptions , if the code
+                // is UNEXPECTED_SERVER_ERROR that only exists as a ServerException so we can map
+                // that directly.
+                // otherwise make it a generic reranking issue
+                var gatewayErr = gatewayResponse.getError();
+                if (gatewayErr
+                    .getErrorCode()
+                    .equals(ServerException.Code.UNEXPECTED_SERVER_ERROR.name())) {
+                  throw ServerException.Code.UNEXPECTED_SERVER_ERROR.withPreformattedMessage(
+                      gatewayErr.getErrorBody());
+                } else {
+                  // jamming the original code as a prefix because we may lose it
+                  var msg =
+                      "Gateway Error Code: %s \nGateway Error Title: %s \nGateway Error Body: %s"
+                          .formatted(
+                              gatewayErr.getErrorCode(),
+                              gatewayErr.getErrorTitle(),
+                              gatewayErr.getErrorBody());
+                  throw SchemaException.Code.RERANKING_PROVIDER_SERVER_ERROR.get(
+                      "errorMessage", msg);
+                }
               }
 
               return new BatchedRerankingResponse(

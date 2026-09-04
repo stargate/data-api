@@ -2810,7 +2810,7 @@ server-errors:
     code: RERANKING_PROVIDER_TIMEOUT
     title: Reranking Provider timed out
     body: |-
-      The command called an reranking provider to rerank results, but the provider did not respond within the allowed time.
+      The command called a reranking provider to rerank results, but the provider did not respond within the allowed time.
       
       The reranking provider was: ${modelProvider}.
       The HTTP status code was: ${httpStatus}.
