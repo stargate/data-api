@@ -28,21 +28,33 @@ public interface BillingS3ExportConfig {
   Optional<String> endpointOverride();
 
   /** */
-  @WithDefault("2048")
-  int maxEventsPerBatch();
+  @WithDefault("5000")
+  int maxBatchSize();
 
   /**
    * Max bytes to include in a batch, NOTE: if a single event is bigger than this it will be sent in
    * a batch still. 2097152 == 2 MB
    */
   @WithDefault("2097152")
-  long maxBytesPerBatch();
+  long maxBatchBytes();
 
   /** Age flush period: buffered events are shipped at least this often */
-  @WithDefault("PT30S")
-  Duration maxAge();
+  @WithDefault("PT60S")
+  Duration maxBatchAge();
 
-  /** Bound on buffered events; beyond it new lines are dropped. */
-  @WithDefault("10000")
+  /**
+   * Bound on buffered events; beyond it new lines are dropped. 5,000 events per batch, so set to
+   * 5,000 * 10 = 50,000 up to 20 MB
+   */
+  @WithDefault("50000")
   int queueCapacity();
+
+  @WithDefault("PT60S")
+  Duration uploadSleepDuration();
+
+  @WithDefault("PT30S")
+  Duration uploaderSafetyDeadline();
+
+  @WithDefault("PT30S")
+  Duration uploadShutdownDeadline();
 }

@@ -20,9 +20,8 @@ public interface AsyncBatchedLogUploader extends AutoCloseable {
   /**
    * Result of the upload call.
    *
-   * @param success <code>true</code> if the operation succeeded, false otherwise.
-   * @param throwable The throwable associated with an error state.
    * @param batch The batch that was uploaded, or attempted to be uploaded.
+   * @param throwable The throwable associated with an error state.
    */
-  record UploadResult(boolean success, Throwable throwable, BatchedLogBuffer.Batch batch) {}
+  record UploadResult(BatchedLogBuffer.Batch batch, Throwable throwable) {}
 }

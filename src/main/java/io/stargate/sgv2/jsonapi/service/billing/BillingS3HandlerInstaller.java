@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.billing;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
@@ -13,9 +14,9 @@ import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Attaches a {@link BillingS3LogHandler} to the {@code billing.events} logger at startup (when
- * {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on shutdown for
- * a graceful drain.
+ * Attaches a {@link BillingUploadingLogHandler} to the {@code billing.events} logger at startup
+ * (when {@link BillingS3ExportConfig#enabled()} is {@code true}) and removes + closes it on
+ * shutdown for a graceful drain.
  */
 @ApplicationScoped
 public class BillingS3HandlerInstaller {
@@ -29,7 +30,7 @@ public class BillingS3HandlerInstaller {
   private final BillingS3ExportConfig config;
   private final MeterRegistry meterRegistry;
 
-  private volatile BillingS3LogHandler handler;
+  private volatile BillingUploadingLogHandler handler;
 
   @Inject
   public BillingS3HandlerInstaller(BillingS3ExportConfig config, MeterRegistry meterRegistry) {
@@ -40,10 +41,10 @@ public class BillingS3HandlerInstaller {
   void onStart(@Observes StartupEvent event) {
 
     if (!config.enabled()) {
-      LOGGER.info("Billing S3 export disabled");
+      LOGGER.info("onStart() - S3 export disabled");
       return;
     }
-    LOGGER.info("Billing S3 export enabled");
+    LOGGER.info("onStart() - S3 export enabled");
 
     // Fail-loud: invalid billing S3 config throws here, aborting application startup.
     var uploader =
@@ -52,24 +53,31 @@ public class BillingS3HandlerInstaller {
             config.bucket(),
             config.endpointOverride().orElse(null),
             new BatchedLogUploaderMetrics(meterRegistry, METRICS_PREFIX));
-    LOGGER.info("Billing is using uploader: {}", uploader);
+    LOGGER.info("onStart() - using uploader: {}", uploader);
 
     var buffer =
         new BatchedLogBuffer(
-            config.maxEventsPerBatch(),
-            config.maxBytesPerBatch(),
-            config.maxAge(),
+            config.maxBatchSize(),
+            config.maxBatchBytes(),
+            config.maxBatchAge(),
             config.queueCapacity(),
             new BatchedLogBufferMetrics(meterRegistry, METRICS_PREFIX));
-    LOGGER.info("Billing is using log buffer: {}", buffer);
-    this.handler = new BillingS3LogHandler(buffer, uploader);
+    LOGGER.info("onStart() - using log buffer: {}", buffer);
 
-    // TODO: LOGGER NAME SHOULD BE IN CONFIG
+    this.handler =
+        new BillingUploadingLogHandler(
+            buffer,
+            uploader,
+            config.uploadSleepDuration(),
+            config.uploaderSafetyDeadline(),
+            config.uploadShutdownDeadline());
+    LOGGER.info("onStart() - using uploader: {}", uploader);
+
     Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);
     LOGGER.info(
-        "Billing has attached BillingS3LogHandler to the logger named: {}", BILLING_LOGGER_NAME);
+        "onStart() - attached log handler to logger. BILLING_LOGGER_NAME: {}", BILLING_LOGGER_NAME);
 
-    // TODO: XXXX call start on the thread.
+    Infrastructure.getDefaultWorkerPool().execute(this.handler::startUploading);
   }
 
   void onStop(@Observes ShutdownEvent event) {

@@ -147,7 +147,7 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
                     resp.eTag(),
                     String.valueOf(resp.sdkHttpResponse().statusCode()));
               }
-              return new UploadResult(success, failure, batch);
+              return new UploadResult(batch, failure);
             });
   }
 
