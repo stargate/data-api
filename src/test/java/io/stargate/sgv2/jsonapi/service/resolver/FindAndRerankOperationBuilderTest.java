@@ -242,6 +242,59 @@ class FindAndRerankOperationBuilderTest {
         .build();
   }
 
+  @Test
+  void bm25OnlyBuildSucceeds() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    var operation =
+        new FindAndRerankOperationBuilder(commandContext)
+            .withCommand(command)
+            .withFindCommandResolver(findCommandResolver)
+            .build();
+
+    assertThat(operation).isNotNull();
+  }
+
+  @Test
+  void failsWhenNoSortProvided() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": {} },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertThatThrownBy(
+            () ->
+                new FindAndRerankOperationBuilder(commandContext)
+                    .withCommand(command)
+                    .withFindCommandResolver(findCommandResolver)
+                    .build())
+        .isInstanceOf(RequestException.class)
+        .hasFieldOrPropertyWithValue("code", RequestException.Code.MISSING_HYBRID_SORT.name());
+  }
+
   private FindAndRerankCommand command(String json) throws Exception {
     return objectMapper.readValue(json, FindAndRerankCommand.class);
   }
