@@ -52,14 +52,18 @@ public class BillingS3HandlerInstaller {
             config.region(),
             config.bucket(),
             config.endpointOverride().orElse(null),
+            config.s3PathPrefix(),
+            config.s3CallAttemptTimeout(),
+            config.s3TotalCallTimeout(),
+            config.s3RetryMode(),
             new BatchedLogUploaderMetrics(meterRegistry, METRICS_PREFIX));
     LOGGER.info("onStart() - using uploader: {}", uploader);
 
     var buffer =
         new BatchedLogBuffer(
-            config.maxBatchSize(),
-            config.maxBatchBytes(),
-            config.maxBatchAge(),
+            config.bufferMaxBatchSize(),
+            config.bufferMaxBatchBytes(),
+            config.bufferMaxBatchAge(),
             config.queueCapacity(),
             new BatchedLogBufferMetrics(meterRegistry, METRICS_PREFIX));
     LOGGER.info("onStart() - using log buffer: {}", buffer);
@@ -68,9 +72,9 @@ public class BillingS3HandlerInstaller {
         new BillingUploadingLogHandler(
             buffer,
             uploader,
-            config.uploadSleepDuration(),
-            config.uploaderSafetyDeadline(),
-            config.uploadShutdownDeadline());
+            config.handlerSleepDuration(),
+            config.handlerUploadSafetyDeadline(),
+            config.handlerUploadShutdownDeadline());
     LOGGER.info("onStart() - using uploader: {}", uploader);
 
     Logger.getLogger(BILLING_LOGGER_NAME).addHandler(this.handler);

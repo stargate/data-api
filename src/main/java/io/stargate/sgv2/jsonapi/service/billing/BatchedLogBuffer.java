@@ -331,7 +331,11 @@ public class BatchedLogBuffer {
     private final Instant oldestEventAt;
     private final Clock clock;
 
-    Batch(
+    Batch(BillingBatchReason reason, List<String> lines, long bytes, Instant oldestEventAt) {
+      this(reason, lines, bytes, oldestEventAt, DEFAULT_CLOCK);
+    }
+
+    private Batch(
         BillingBatchReason reason,
         List<String> lines,
         long bytes,
