@@ -1,69 +1,165 @@
 package io.stargate.sgv2.jsonapi.service.billing;
 
-/**
- * Unit tests for {@link BillingS3HandlerInstaller}: install/uninstall symmetry on the {@code
- * billing.events} JUL logger, the disabled path, and fail-loud startup on bad config. Delivery
- * through an installed handler is covered by {@code BillingS3ExportIntegrationTest}.
- */
-class BillingS3HandlerInstallerTest {
-  //
-  //  private static BillingS3ExportConfig config(boolean enabled, String bucket, String region) {
-  //    BillingS3ExportConfig config = mock(BillingS3ExportConfig.class);
-  //    when(config.enabled()).thenReturn(enabled);
-  //    when(config.bucket()).thenReturn(Optional.ofNullable(bucket));
-  //    when(config.region()).thenReturn(Optional.ofNullable(region));
-  //    when(config.endpointOverride()).thenReturn(Optional.empty());
-  //    when(config.maxEventsPerBatch()).thenReturn(50);
-  //    when(config.maxBytesPerBatch()).thenReturn(2_097_152L);
-  //    when(config.maxAge()).thenReturn(Duration.ofSeconds(30));
-  //    when(config.queueCapacity()).thenReturn(100);
-  //    when(config.uploadConcurrency()).thenReturn(2);
-  //    when(config.shutdownTimeout()).thenReturn(Duration.ofSeconds(1));
-  //    return config;
-  //  }
-  //
-  //  private static long installedHandlers() {
-  //    return Arrays.stream(
-  //            Logger.getLogger(BillingS3HandlerInstaller.BILLING_LOGGER_NAME).getHandlers())
-  //        .filter(BillingS3LogHandler.class::isInstance)
-  //        .count();
-  //  }
-  //
-  //  @Test
-  //  void disabledConfigInstallsNothing() {
-  //    var installer =
-  //        new BillingS3HandlerInstaller(config(false, null, null), new SimpleMeterRegistry());
-  //
-  //    installer.onStart(new StartupEvent());
-  //
-  //    assertThat(installedHandlers()).isZero();
-  //    installer.onStop(new ShutdownEvent()); // must be a safe no-op without an installed handler
-  //  }
-  //
-  //  @Test
-  //  void missingBucketFailsStartupLoudly() {
-  //    var installer =
-  //        new BillingS3HandlerInstaller(config(true, null, "us-east-1"), new
-  // SimpleMeterRegistry());
-  //
-  //    assertThatThrownBy(() -> installer.onStart(new StartupEvent()))
-  //        .isInstanceOf(IllegalArgumentException.class)
-  //        .hasMessageContaining("bucket");
-  //    assertThat(installedHandlers()).isZero();
-  //  }
-  //
-  //  @Test
-  //  void installsOnStartupAndRemovesAndClosesOnShutdown() {
-  //    var installer =
-  //        new BillingS3HandlerInstaller(
-  //            config(true, "my-bucket", "us-east-1"), new SimpleMeterRegistry());
-  //
-  //    installer.onStart(new StartupEvent());
-  //    try {
-  //      assertThat(installedHandlers()).isEqualTo(1);
-  //    } finally {
-  //      installer.onStop(new ShutdownEvent());
-  //    }
-  //    assertThat(installedHandlers()).isZero();
-  //  }
+import static io.stargate.sgv2.jsonapi.service.billing.BillingS3HandlerInstaller.BILLING_LOGGER_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class BillingS3HandlerInstallerTest {
+
+  private Logger logger;
+  private Handler[] saved;
+
+  @BeforeEach
+  void saveHandlers() {
+    logger = Logger.getLogger(BILLING_LOGGER_NAME);
+    saved = logger.getHandlers();
+  }
+
+  @AfterEach
+  void restoreHandlers() {
+    for (var h : logger.getHandlers()) {
+      logger.removeHandler(h);
+    }
+    for (var h : saved) {
+      logger.addHandler(h);
+    }
+  }
+
+  @Test
+  void onStartBillingEnabledOthersDisabled() {
+
+    var installer =
+        installer(
+            Map.of(
+                "stargate.jsonapi.billing.s3.enabled",
+                "true",
+                "stargate.jsonapi.billing.s3.disable-other-handlers",
+                "true"),
+            null);
+
+    assertHandlers(installer, true, false);
+  }
+
+  @Test
+  void onStartBillingEnabledOthersEnabled() {
+
+    var installer =
+        installer(
+            Map.of(
+                "stargate.jsonapi.billing.s3.enabled",
+                "true",
+                "stargate.jsonapi.billing.s3.disable-other-handlers",
+                "false"),
+            null);
+
+    assertHandlers(installer, true, true);
+  }
+
+  @Test
+  void onStartBillingDisabledOthersDisabled() {
+
+    var installer =
+        installer(
+            Map.of(
+                "stargate.jsonapi.billing.s3.enabled",
+                "false",
+                "stargate.jsonapi.billing.s3.disable-other-handlers",
+                "true"),
+            null);
+
+    // even though disabling others is enabled, billing s3 is disabled so that should not impact
+    assertHandlers(installer, false, true);
+  }
+
+  @Test
+  void onStartBillingDisabledOthersEnabled() {
+
+    var installer =
+        installer(
+            Map.of(
+                "stargate.jsonapi.billing.s3.enabled",
+                "false",
+                "stargate.jsonapi.billing.s3.disable-other-handlers",
+                "false"),
+            null);
+
+    // even though disabling others is enabled, billing s3 is disabled so that should not impact
+    assertHandlers(installer, false, true);
+  }
+
+  // ====================================
+  // Scaffold
+  // ====================================
+
+  private void assertHandlers(
+      BillingS3HandlerInstaller installer, boolean expectS3Handler, boolean expectOtherHandlers) {
+
+    var billingLogger = Logger.getLogger(BILLING_LOGGER_NAME);
+
+    try {
+      installer.onStart(new StartupEvent());
+      var onStartHandlers = installedHandlers();
+      if (expectS3Handler) {
+        assertThat(onStartHandlers).as("onStart attached S3 handler").contains(installer.handler());
+      }
+      if (expectOtherHandlers) {
+        assertThat(onStartHandlers.size())
+            .as("onStart left other handler in place")
+            .isGreaterThanOrEqualTo(expectS3Handler ? 2 : 1);
+      } else {
+        assertThat(onStartHandlers.size())
+            .as("onStart removed other handlers.")
+            .isGreaterThanOrEqualTo(expectS3Handler ? 1 : 1);
+      }
+
+    } finally {
+      installer.onStop(new ShutdownEvent());
+    }
+    var onStopHandlers = installedHandlers();
+
+    // always expect that the S3 handler is removed.
+    assertThat(installedHandlers())
+        .as("onStop removes S3 handler")
+        .doesNotContain(installer.handler());
+
+    if (expectOtherHandlers) {
+      assertThat(onStopHandlers.size())
+          .as("onStart left other handler in place")
+          .isGreaterThanOrEqualTo(1);
+    } else {
+      assertThat(onStopHandlers.size()).as("onStart removed all handlers.").isEqualTo(0);
+    }
+  }
+
+  private static List<Handler> installedHandlers() {
+    return Arrays.stream(Logger.getLogger(BILLING_LOGGER_NAME).getHandlers()).toList();
+  }
+
+  private static BillingS3HandlerInstaller installer(
+      Map<String, String> configOverride, MeterRegistry meterRegistry) {
+
+    var builder = new SmallRyeConfigBuilder().withMapping(BillingS3ExportConfig.class);
+    if (configOverride != null) {
+      configOverride.forEach(builder::withDefaultValue);
+    }
+    var config = builder.build().getConfigMapping(BillingS3ExportConfig.class);
+
+    meterRegistry = meterRegistry == null ? new SimpleMeterRegistry() : meterRegistry;
+
+    return new BillingS3HandlerInstaller(config, meterRegistry);
+  }
 }

@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.billing;
 
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
+
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
@@ -193,7 +195,7 @@ public final class BillingUploadingLogHandler extends Handler {
    */
   void startUploading() {
 
-    LOGGER.info("startUploading() - using buffer:{}, uploader:{}", buffer, uploader);
+    LOGGER.info("startUploading() - handler:{}, buffer:{}, uploader:{}", this, buffer, uploader);
 
     boolean hasPermit = false;
     BatchedLogBuffer.Batch batch;
@@ -261,7 +263,10 @@ public final class BillingUploadingLogHandler extends Handler {
     }
 
     LOGGER.info(
-        "startUploading() - stopped uploading using buffer:{}, uploader:{}", buffer, uploader);
+        "startUploading() - stopped uploading. handler:{}, buffer:{}, uploader:{}",
+        this,
+        buffer,
+        uploader);
   }
 
   /** Adds a permit to the wakeupPermit so the uploading thread will wakeup and do some work. */
@@ -342,4 +347,23 @@ public final class BillingUploadingLogHandler extends Handler {
   private void dumpBuffer() {}
 
   private void dumpBatch() {}
+
+  @Override
+  public String toString() {
+    return new StringBuilder(classSimpleName(this) + "{")
+        .append("uploadSleepDuration=")
+        .append(uploadSleepDuration)
+        .append(", uploadShutdownDeadline=")
+        .append(uploadShutdownDeadline)
+        .append(", uploaderSafetyDeadline=")
+        .append(uploaderSafetyDeadline)
+        .append(", isClosed=")
+        .append(isClosed)
+        .append(", wakeupPermit.availablePermits=")
+        .append(wakeupPermit.availablePermits())
+        .append(", uploadPermit.availablePermits=")
+        .append(uploadPermit.availablePermits())
+        .append("}")
+        .toString();
+  }
 }

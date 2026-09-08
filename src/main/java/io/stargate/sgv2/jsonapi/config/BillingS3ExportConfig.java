@@ -14,6 +14,15 @@ public interface BillingS3ExportConfig {
   @WithDefault("false")
   boolean enabled();
 
+  /**
+   * When <code>true</code> adding the S3 handler for logging at run time removes any other handler
+   * the logger has installed. <bold>NOTE:</bold> is only applied IF S3 is enabled
+   *
+   * @return
+   */
+  @WithDefault("true")
+  boolean disableOtherHandlers();
+
   /** S3 bucket region */
   @WithDefault("us-east-2")
   String region();

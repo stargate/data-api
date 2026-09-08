@@ -211,6 +211,7 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
         .append(bucket)
         .append(", pathPrefix=")
         .append(pathPrefix)
+        .append("}")
         .toString();
   }
 
