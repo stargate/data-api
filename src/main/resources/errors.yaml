@@ -198,7 +198,7 @@ request-errors:
     code: MISSING_HYBRID_SORT
     title: Hybrid sort is missing
     body: |-
-      The hybrid sort clause must specify at least one sort field: '$vector', '$vectorize', or '$lexical'.
+      The findAndRerank hybrid sort clause must specify at least one sort field: '$vector', '$vectorize', or '$lexical'.
 
       Resend the command with at least one sort field in '$hybrid'.
 
