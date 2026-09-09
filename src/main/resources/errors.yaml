@@ -195,6 +195,14 @@ request-errors:
       Unsupported JSON value type for '$hybrid' sub-field: ${errorMessage}.
 
   - scope:
+    code: MISSING_HYBRID_SORT
+    title: Hybrid sort is missing
+    body: |-
+      The findAndRerank hybrid sort clause must specify at least one sort field: '$vector', '$vectorize', or '$lexical'.
+
+      Resend the command with at least one sort field in '$hybrid'.
+
+  - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
     title: Invalid field(s) for createCollection
     body: |-
