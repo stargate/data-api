@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertGeneralCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertDatabaseCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
@@ -46,7 +46,7 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
   @Order(1)
   @Test
   public void failFindRerankingProviders() {
-    assertGeneralCommand()
+    assertDatabaseCommand()
         .postFindRerankingProviders()
         .hasSingleApiError(
             SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED, SchemaException.class);
@@ -56,7 +56,7 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
   @Order(2)
   @Test
   public void okFindRerankingProviders() {
-    assertGeneralCommand()
+    assertDatabaseCommand()
         .header(ApiFeature.RERANKING.httpHeaderName(), "true")
         .postFindRerankingProviders()
         .wasSuccessful();

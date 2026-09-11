@@ -142,11 +142,11 @@ public class BatchedLogBuffer {
     }
     var newEntry = new Entry(record.getInstant(), logLine);
 
-    metrics.offered();
+    metrics.incrementOffered();
     if (!queue.offer(newEntry)) {
       // Bounded buffer full, drop and count
       LOGGER.debug("offer() - buffer full, dropping new entry: {}", newEntry);
-      metrics.dropped();
+      metrics.incrementDropped();
       return false;
     }
 
@@ -263,7 +263,7 @@ public class BatchedLogBuffer {
 
   @VisibleForTesting
   Duration entryAge(Entry entry) {
-    return entry == null ? Duration.ZERO : Duration.between(entry.eventAt(), clock.instant());
+    return entry == null ? Duration.ZERO : Duration.between(entry.eventAt(), clock.instant()).abs();
   }
 
   private BillingBatchReason decideNextBatch(boolean drainFully) {

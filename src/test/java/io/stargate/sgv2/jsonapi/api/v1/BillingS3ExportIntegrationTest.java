@@ -1,16 +1,17 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.*;
+import static io.stargate.sgv2.jsonapi.util.MetricsITAssertions.assertMetricTotal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.is;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.service.billing.BillingEventType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.testresource.S3MockTestResource;
 import java.net.URI;
@@ -20,214 +21,250 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
- * End-to-end test of the billing S3 export: real vectorize commands (via {@code
- * CustomITEmbeddingProvider}) emit {@code billing.events} lines, and the installed {@code
- * BillingS3LogHandler} must land them in the S3Mock bucket as time-partitioned NDJSON objects.
+ * Integration tests for billing that use a mock S3 backend to confirm events are sent to S3 that
+ * look OK. And that S3 being down does not fail Data API Commands.
  *
- * <p>{@link S3MockTestResource} enables the export with small thresholds (count seal 5, age sweep
- * 2s) and turns on the {@code billing-events-logging} feature flag.
+ * <p><b>NOTE:</b> we first made billing for findAndRerank / rerank models, these tests ony use
+ * $vectorize with insert, not findAndRerank, because we have test infra for a custom vectorizer
  *
- * <p>Methods are ordered: the last test stops the S3Mock container to prove a failing export never
- * affects the data API, which kills S3 for the rest of the class — nothing may run after it.
+ * <p>TestMethodOrder is used because the second test turns off the S3 container so we need that to
+ * be last
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 @WithTestResource(value = S3MockTestResource.class)
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class BillingS3ExportIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class) // needed because we turn off mock S3
+public class BillingS3ExportIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
-  private static final String COLLECTION = "billing_export_collection";
-
-  /** Every vectorize call emits at least one billing event, so lines >= documents. */
-  private static final int DOCUMENTS = 10;
-
-  private static final Pattern KEY_PATTERN =
-      Pattern.compile("data-api/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/[0-9a-f-]{36}\\.jsonl");
-
-  /** Wire contract of {@code BillingEventType}: billing consumers key on these exact values. */
-  private static final Set<String> EVENT_TYPES =
-      Set.of(
-          "internal_model_total_tokens",
-          "external_model_total_tokens",
-          "internal_model_egress_bytes",
-          "external_model_egress_bytes",
-          "internal_model_ingress_bytes",
-          "external_model_ingress_bytes");
-
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BillingS3ExportIntegrationTest.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  @Test
-  public void billingEventsLandInS3AsNdjson() throws Exception {
-    createVectorizeCollection();
-    for (int i = 0; i < DOCUMENTS; i++) {
-      insertDocumentWithVectorize(i);
-    }
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
-    try (S3Client s3 = verificationClient()) {
-      // The count seal ships full batches immediately; the 2s age tick sweeps the remainder.
+  private static final int DOCUMENT_COUNT = 10;
+  private static final Pattern KEY_PATTERN =
+      Pattern.compile("data-api/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/[0-9a-f-]{36}\\.jsonl");
+  private static final Set<String> EVENT_TYPES =
+      new HashSet<>(BillingEventType.ALL.stream().map(BillingEventType::eventName).toList());
+
+  @BeforeAll
+  public void setup() {
+    assertDatabaseCommand()
+        .templated()
+        .createKeyspace(TEST_CONSTANTS.KEYSPACE_NAME)
+        .wasSuccessful();
+
+    createCollection();
+  }
+
+  @AfterAll
+  public void tearDown() {
+    assertDatabaseCommand().templated().dropKeyspace(TEST_CONSTANTS.KEYSPACE_NAME).wasSuccessful();
+  }
+
+  /**
+   * Send
+   *
+   * @throws Exception
+   */
+  @Test
+  public void billingEventsSentToS3() throws Exception {
+
+    try (var s3Client = s3ClientForVerification()) {
+
+      insertDocs("billingEventsSentToS3()");
+
+      // need to wait for billing to send events to S3.
+      // there should be at least 1 billing event per document we sent
       await()
           .atMost(Duration.ofSeconds(60))
           .pollInterval(Duration.ofSeconds(2))
           .untilAsserted(
-              () -> assertThat(exportedLines(s3)).hasSizeGreaterThanOrEqualTo(DOCUMENTS));
+              () ->
+                  assertThat(allLinesInAllObjectsInBucket(s3Client))
+                      .hasSizeGreaterThanOrEqualTo(DOCUMENT_COUNT));
 
-      // Object layout: time-partitioned keys and NDJSON content type.
-      List<S3Object> objects = exportObjects(s3);
-      assertThat(objects).isNotEmpty();
-      for (S3Object object : objects) {
-        assertThat(object.key()).matches(KEY_PATTERN);
+      var allS3Objects = allObjectsInBucket(s3Client);
+
+      // Do all the keys match the expected pattern ?
+      assertThat(allS3Objects).isNotEmpty();
+      for (var s3Object : allS3Objects) {
+        assertThat(s3Object.key())
+            .as("billingEventsSentToS3() - object key matches expected pattern")
+            .matches(KEY_PATTERN);
       }
-      var head = s3.headObject(b -> b.bucket(S3MockTestResource.BUCKET).key(objects.get(0).key()));
-      assertThat(head.contentType()).isEqualTo("application/x-ndjson");
 
-      // Every line is a self-contained billing event with the expected shape; ids never repeat
-      // across objects. (region/resource_id may be absent locally and are not asserted.)
-      List<String> lines = exportedLines(s3);
+      // get the metadata for the first Object we got back
+      // here "HEAD" means get the headers, leave the body.
+      // Kind of like "Leave the gun take the cannoli" but less shooty
+      var head =
+          s3Client.headObject(
+              b -> b.bucket(S3MockTestResource.BUCKET).key(allS3Objects.getFirst().key()));
+      assertThat(head.contentType())
+          .as("billingEventsSentToS3() - ContentType of first object matches expected")
+          .isEqualTo("application/x-ndjson");
+
+      // Validate the billing events we have are valid JSON and do some simple property checks
+      // not checking the values make sense, just the ones we expect to be set and a few things.
+      // this is not checking that the event is "well-formed"
+      var allBillingLines = allLinesInAllObjectsInBucket(s3Client);
       Set<String> seenIds = new HashSet<>();
-      for (String line : lines) {
-        JsonNode event = MAPPER.readTree(line);
-        String id = event.path("id").asText();
-        assertThat(id).isNotBlank();
-        assertThat(seenIds.add(id))
-            .as("billing event id duplicated across export: %s", id)
+
+      // JSON Pointers
+      var requiredTextMembers =
+          List.of(
+              "/id",
+              "/timestamp",
+              "/product",
+              "/event_type",
+              "/properties/resource_type",
+              "/properties/provider",
+              "/properties/model");
+      var requiredNumericMembers = List.of("/properties/usage");
+
+      for (String line : allBillingLines) {
+        var event = MAPPER.readTree(line);
+
+        assertIsSet(JsonNodeType.STRING, event, requiredTextMembers);
+        assertIsSet(JsonNodeType.NUMBER, event, requiredNumericMembers);
+
+        assertThat(seenIds.add(event.path("id").asText()))
+            .as("billing event id duplicated across export: " + event.path("id").asText())
             .isTrue();
-        assertThat(event.path("timestamp").asText()).isNotBlank();
-        assertThat(event.path("product").asText()).isEqualTo("serverless");
-        assertThat(event.path("event_type").asText()).isIn(EVENT_TYPES);
-        JsonNode properties = event.path("properties");
-        assertThat(properties.path("usage").isIntegralNumber()).isTrue();
-        assertThat(properties.path("usage").asLong()).isGreaterThanOrEqualTo(0L);
-        assertThat(properties.path("resource_type").asText()).isEqualTo("serverless_database");
-        assertThat(properties.path("provider").asText()).isEqualTo("custom");
+        assertThat(event.path("product").asText())
+            .as("event product is expected")
+            .isEqualTo("serverless");
+        assertThat(event.path("event_type").asText())
+            .as("event type is from expected set: " + EVENT_TYPES)
+            .isIn(EVENT_TYPES);
+
+        assertThat(event.at("/properties/usage").asLong())
+            .as("event properties.usage is > 0")
+            .isGreaterThanOrEqualTo(0L);
+        assertThat(event.at("/properties/resource_type").asText())
+            .as("event properties.resource_type is expected")
+            .isEqualTo("serverless_database");
+        assertThat(event.at("/properties/provider").asText())
+            .as("event properties.provider is expected from collection creation")
+            .isEqualTo("custom");
+
         // The billed model is what the provider reports in ModelUsage — for the IT provider that
         // is its internal model config ("test-model"), not the createCollection modelName.
-        assertThat(properties.path("model").asText()).isEqualTo("test-model");
+        assertThat(event.at("/properties/model").asText()).isEqualTo("test-model");
       }
-    }
+    } // end of S3 resource
 
-    // The delivery counters on /metrics must agree that the export is alive.
-    await()
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(
-            () ->
-                assertThat(metricTotal("billing_s3_events_flushed_total"))
-                    .isGreaterThanOrEqualTo(DOCUMENTS));
+    // Check the metrics reflect that we sent the expected number of events
+    assertMetricTotal(
+        "billing.s3.uploaded.events", (a) -> a.isGreaterThanOrEqualTo(DOCUMENT_COUNT));
+    assertMetricTotal("billing.buffer.offered", (a) -> a.isGreaterThanOrEqualTo(DOCUMENT_COUNT));
+    assertMetricTotal("billing.buffer.dropped", (a) -> a.isZero());
   }
 
   /**
-   * Billing is a side-channel: a failing S3 export must never affect the data API. Stopping the
-   * S3Mock container leaves the endpoint dead — every upload from here on fails with
-   * connection-refused, like an S3 outage — yet inserts must keep returning normal write successes,
-   * and the failures must be counted rather than silently swallowed. The handler's failure
-   * accounting in isolation is covered by {@code BillingS3LogHandlerTest}; this proves the property
-   * end-to-end in the packaged app.
+   * Confirm the API still works when the S3 backend is offline.
    *
-   * <p>Must run last ({@link S3MockTestResource#stopContainer()} is one-way): any test needing a
-   * live S3 goes before this one. Reuses the collection created by the happy-path test.
-   *
-   * <p>{@code Integer.MAX_VALUE}, not a small sentinel, and deliberately the only ordered method:
-   * {@code OrderAnnotation} gives an unannotated method the default order {@code Integer.MAX_VALUE
-   * / 2}, so any newly added test with no {@code @Order} still sorts before this one. Do NOT lower
-   * this value — anything below the default would let such a test run after S3 is dead.
+   * <p><b>NOTE:</b> must run last so because the S3 resource is shared
    */
   @Test
   @Order(Integer.MAX_VALUE)
   public void exportFailureDoesNotAffectTheApi() {
     S3MockTestResource.stopContainer();
 
-    // Each insert emits billing events whose upload will fail — yet every insert must still
-    // return a normal write success, because publish() is fire-and-forget and never waits on S3.
-    for (int i = 0; i < DOCUMENTS; i++) {
-      insertDocumentWithVectorize(DOCUMENTS + i);
-    }
+    // assert happens in the function, this is the test, could we insert docs ?
+    insertDocs("exportFailureDoesNotAffectTheApi() - 1st");
 
-    // Failures are counted, not silently swallowed. Uploads settle as failed only after the SDK
-    // exhausts its retries, so poll for the counter to move.
-    await()
-        .atMost(Duration.ofSeconds(60))
-        .pollInterval(Duration.ofSeconds(2))
-        .untilAsserted(
-            () -> assertThat(metricTotal("billing_s3_batches_failed_total")).isGreaterThan(0.0));
+    // wait until we register a failed upload
+    assertMetricTotal("billing.s3.failed.batches", (a) -> a.isGreaterThan(0));
+    assertMetricTotal("billing.s3.failed.events", (a) -> a.isGreaterThan(0));
 
-    // The API is still healthy after the export has been failing for a while: one more insert
-    // succeeds exactly like the first.
-    insertDocumentWithVectorize(2 * DOCUMENTS);
+    // double check API still works
+    insertDocs("exportFailureDoesNotAffectTheApi() - 2nd");
   }
 
   // ============================================================
-  // Command helpers
+  // Scaffold
   // ============================================================
 
-  private void createVectorizeCollection() {
-    givenHeadersPostJsonThenOk(
-                """
-            {
-                "createCollection": {
-                    "name": "%s",
-                    "options": {
-                        "vector": {
-                            "metric": "cosine",
-                            "dimension": 5,
-                            "service": {
-                                "provider": "custom",
-                                "modelName": "text-embedding-ada-002",
-                                "authentication": {
-                                    "providerKey" : "shared_creds.providerKey"
-                                },
-                                "parameters": {
-                                    "projectId": "test project"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            """
-                .formatted(COLLECTION))
-        .body("$", responseIsDDLSuccess())
-        .body("status.ok", is(1));
-  }
-
-  private void insertDocumentWithVectorize(int i) {
-    String json =
-            """
-        {
-           "insertOne": {
-              "document": {
-                  "_id": "doc-%d",
-                  "description": "billing export test document %d",
-                  "$vectorize": "billing export test document %d"
-              }
-           }
-        }
+  private void createCollection() {
+    var collectionOptions =
         """
-            .formatted(i, i, i);
-    givenHeadersAndJson(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsWriteSuccess());
+            {
+                  "vector": {
+                      "metric": "cosine",
+                      "dimension": 5,
+                      "service": {
+                          "provider": "custom",
+                          "modelName": "text-embedding-ada-002",
+                          "authentication": {
+                              "providerKey" : "shared_creds.providerKey"
+                          },
+                          "parameters": {
+                              "projectId": "test project"
+                          }
+                      }
+                  }
+              }
+          """;
+
+    assertNamespaceCommand(TEST_CONSTANTS.KEYSPACE_NAME)
+        .templated()
+        .createCollection(TEST_CONSTANTS.COLLECTION_NAME, collectionOptions)
+        .wasSuccessful();
   }
 
-  // ============================================================
-  // S3 verification helpers
-  // ============================================================
+  private void insertDocs(String idPrefix) {
+    for (int i = 0; i < DOCUMENT_COUNT; i++) {
+      var id = "doc-%s-%d".formatted(idPrefix, i);
+      var doc =
+              """
+              {
+                  "_id": "doc-%s",
+                  "description": "billing export test document %s",
+                  "$vectorize": "billing export test document %s"
+              }"""
+              .formatted(id, id, id);
+      assertTableCommand(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME)
+          .templated()
+          .insertOne(doc)
+          .wasSuccessful();
+    }
+  }
 
-  private static S3Client verificationClient() {
+  private void assertIsSet(JsonNodeType nodeType, JsonNode parent, List<String> memberPointers) {
+
+    for (var pointer : memberPointers) {
+      var child = parent.at(pointer);
+      assertThat(child.isMissingNode()).as("child member expected pointer:" + pointer).isFalse();
+      assertThat(child.getNodeType()).as("node type is expected:" + nodeType).isEqualTo(nodeType);
+
+      switch (nodeType) {
+        case STRING -> assertThat(child.asText()).isNotBlank();
+        case NUMBER -> assertThat(child.isNumber()).isTrue();
+        default -> {
+          throw new IllegalStateException("assertIsSet() - Unexpected node type: " + nodeType);
+        }
+      }
+      ;
+    }
+  }
+
+  private static S3Client s3ClientForVerification() {
+
     return S3Client.builder()
-        .region(Region.of(S3MockTestResource.BUCKET_REGION))
+        .region(Region.of(S3MockTestResource.REGION))
         .credentialsProvider(
             StaticCredentialsProvider.create(
                 AwsBasicCredentials.create(
@@ -237,29 +274,28 @@ public class BillingS3ExportIntegrationTest extends AbstractKeyspaceIntegrationT
         .build();
   }
 
-  private static List<S3Object> exportObjects(S3Client s3) {
-    return s3.listObjectsV2(b -> b.bucket(S3MockTestResource.BUCKET).prefix("data-api/"))
-        .contents();
+  private static List<S3Object> allObjectsInBucket(S3Client s3Client) {
+    var objects =
+        s3Client
+            .listObjectsV2(b -> b.bucket(S3MockTestResource.BUCKET).prefix("data-api/"))
+            .contents();
+    LOGGER.info("allObjectInBucket() - objects: {}", objects);
+    return objects;
   }
 
-  private static List<String> exportedLines(S3Client s3) {
+  private static List<String> allLinesInAllObjectsInBucket(S3Client s3Client) {
+
     List<String> lines = new ArrayList<>();
-    for (S3Object object : exportObjects(s3)) {
-      String body =
-          s3.getObjectAsBytes(b -> b.bucket(S3MockTestResource.BUCKET).key(object.key()))
-              .asUtf8String();
-      body.lines().filter(line -> !line.isBlank()).forEach(lines::add);
-    }
-    return lines;
-  }
+    for (var s3Object : allObjectsInBucket(s3Client)) {
 
-  /** Sum of one counter across all tag combinations on {@code /metrics} (0 when absent). */
-  private static double metricTotal(String metricName) {
-    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-    return metrics
-        .lines()
-        .filter(line -> line.startsWith(metricName))
-        .mapToDouble(line -> Double.parseDouble(line.substring(line.lastIndexOf(' ') + 1)))
-        .sum();
+      var request =
+          GetObjectRequest.builder().bucket(S3MockTestResource.BUCKET).key(s3Object.key()).build();
+      LOGGER.info("allLinesInAllObjectsInBucket() - getting file. request: {}", request);
+
+      var objectBody = s3Client.getObjectAsBytes(request).asUtf8String();
+      objectBody.lines().filter(line -> !line.isBlank()).forEach(lines::add);
+    }
+    LOGGER.info("allLinesInAllObjectsInBucket() - got all lines from S3. lines:{}", lines);
+    return lines;
   }
 }

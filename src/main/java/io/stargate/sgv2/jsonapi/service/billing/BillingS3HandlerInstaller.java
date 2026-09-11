@@ -32,7 +32,7 @@ public class BillingS3HandlerInstaller {
   private static final org.slf4j.Logger LOGGER =
       LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
 
-  private static final String METRICS_PREFIX = "billing";
+  public static final String METRICS_PREFIX = "billing";
   // TODO: MOVE , this is duplicated
   public static final String BILLING_LOGGER_NAME = "billing.events";
 
@@ -70,7 +70,7 @@ public class BillingS3HandlerInstaller {
             config.s3CallAttemptTimeout(),
             config.s3TotalCallTimeout(),
             config.s3RetryMode(),
-            new BatchedLogUploaderMetrics(meterRegistry, METRICS_PREFIX));
+            new BatchedLogUploaderMetrics(meterRegistry, METRICS_PREFIX + ".s3"));
     LOGGER.info("onStart() - using uploader: {}", uploader);
 
     var buffer =

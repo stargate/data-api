@@ -160,7 +160,7 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
             .contentType(CONTENT_TYPE_NDJSON)
             .build();
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("upload() - batch:{},  putRequest: {}", batch, putRequest);
+      LOGGER.debug("upload() - got putRequest. batch:{},  putRequest: {}", batch, putRequest);
     }
 
     // Call to S3 client comes back on its own worker thread

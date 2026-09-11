@@ -27,9 +27,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
  */
 class S3BatchedLogUploaderTest {
 
-  //
-  //    private static final Pattern KEY_PATTERN =
-  //        Pattern.compile("data-api/2026/05/20/14/23/[0-9a-f-]{36}\\.jsonl");
   private static final Instant OLDEST_EVENT_AT = Instant.parse("2026-05-20T16:23:00Z");
   private static final String LINE_A = "{\"a\":1}"; // him
   private static final String LINE_B = "{\"b\":2}";
@@ -42,14 +39,6 @@ class S3BatchedLogUploaderTest {
           OLDEST_EVENT_AT);
   private static final String EXPECTED_KEY =
       "data-api/2026/05/20/16/23/%s.jsonl".formatted(BATCH.id());
-
-  //    private static S3BatchedLogUploader uploader(S3AsyncClient client) {
-  //      return new S3BatchedLogUploader(client, "my-bucket");
-  //    }
-  //
-  //    private static CompletableFuture<PutObjectResponse> ok() {
-  //      return CompletableFuture.completedFuture(PutObjectResponse.builder().build());
-  //    }
 
   @Test
   void createReadsConfig() {
@@ -202,27 +191,6 @@ class S3BatchedLogUploaderTest {
     assertThat(uploadResult.throwable()).as("uploadResult throwable is null when success").isNull();
     assertThat(uploadResult.batch()).as("uploadResult has expected batch instance").isSameAs(BATCH);
   }
-
-  // ============================================================
-  // lifecycle + config validation
-  // ============================================================
-
-  //    @Test
-  //    void closeClosesTheClient() {
-  //      S3AsyncClient client = mock(S3AsyncClient.class);
-  //      uploader(client).close();
-  //      verify(client).close();
-  //    }
-  //
-  //    @Test
-  //    void createRejectsMissingRegionOrBucket() {
-  //      assertThatThrownBy(() -> S3BatchedLogUploader.create(" ", "bucket", Optional.empty()))
-  //          .isInstanceOf(IllegalArgumentException.class)
-  //          .hasMessageContaining("bucket-region");
-  //      assertThatThrownBy(() -> S3BatchedLogUploader.create("us-east-1", null, Optional.empty()))
-  //          .isInstanceOf(IllegalArgumentException.class)
-  //          .hasMessageContaining("billing.s3.bucket");
-  //    }
 
   // ============================================================
   // Scaffold

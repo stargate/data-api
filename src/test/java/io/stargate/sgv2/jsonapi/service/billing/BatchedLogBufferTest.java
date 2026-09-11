@@ -35,14 +35,11 @@ public class BatchedLogBufferTest extends BillingTestBase {
   public void offerFailsAtCapacitySingleThread() {
 
     var fixture = defaultBufferFixture(false);
-    var snapshot = BufferSnapshot.create(fixture);
     var slice = Slice.to(BUFFER_CAPACITY);
 
     // send full capacity to the buffer, should all work
     fixture.assertOffer("offerFailsAtCapacitySingleThread() - prefill to capacity", slice);
 
-    // check the change in the buffer is expected given the slice of source data
-    snapshot.assertAll("offerFailsAtCapacitySingleThread()", slice, true);
     // Buffer should now be full, try to add one more
     fixture.assertBufferFull("offerFailsAtCapacitySingleThread()", BUFFER_CAPACITY + 1);
   }

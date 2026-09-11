@@ -21,13 +21,13 @@ public final class BatchedLogUploaderMetrics extends MetricsBase {
   public BatchedLogUploaderMetrics(MeterRegistry meterRegistry, String prefix) {
     super(meterRegistry, prefix);
 
-    this.uploadedBatches = newCounter("s3.uploaded.batches");
-    this.uploadedBytes = newCounter("s3.uploaded.bytes");
-    this.uploadedEvents = newCounter("s3.uploaded.events");
-    this.uploadedHeadAgeMs = newTimer("s3.uploaded.oldest_event");
+    this.uploadedBatches = newCounter("uploaded.batches");
+    this.uploadedBytes = newCounter("uploaded.bytes");
+    this.uploadedEvents = newCounter("uploaded.events");
+    this.uploadedHeadAgeMs = newTimer("uploaded.oldest_event");
 
-    this.failedBatches = newCounter("s3.failed.batches");
-    this.failedEvents = newCounter("s3.failed.events");
+    this.failedBatches = newCounter("failed.batches");
+    this.failedEvents = newCounter("failed.events");
   }
 
   public void recordBatchDelivered(BatchedLogBuffer.Batch batch) {

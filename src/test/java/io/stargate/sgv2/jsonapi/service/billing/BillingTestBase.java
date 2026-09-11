@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
+import io.stargate.sgv2.jsonapi.util.MetricsUnitAssertions;
 import io.stargate.sgv2.jsonapi.util.MockClock;
 import java.time.Duration;
 import java.util.List;
@@ -135,8 +136,9 @@ public abstract class BillingTestBase {
       Duration maxAge,
       int queueCapacity,
       List<LogRecord> logRecords,
+      MetricsUnitAssertions metricsUtil,
       BatchedLogBuffer buffer,
-      BatchedLogBufferMetrics metrics,
+      BatchedLogBufferMetrics bufferMetrics,
       BillingUploadingLogHandler logHandler,
       AsyncBatchedLogUploader uploader,
       MockClock clock) {
@@ -162,9 +164,11 @@ public abstract class BillingTestBase {
       // so they are always after the start of the clock.
       var mockClock = mockBufferClock ? new MockClock() : null;
 
+      //
       // fork the clock, we are going to use clockForRecords when creating the records
       // and will advance it 1 second for each record, the original mockClock is for
       // the buffer to use, so we let the test advance that
+      // NOTE: THIS MAY RESULT IN SOME NEGATIVE AGE, BATCH uses Duration.abs() to make sure it's ok
       var clockForRecords = mockClock == null ? null : new MockClock(mockClock);
 
       var logRecords =
@@ -181,7 +185,10 @@ public abstract class BillingTestBase {
                   })
               .toList();
 
-      var metrics = mock(BatchedLogBufferMetrics.class);
+      var metricsUtil = new MetricsUnitAssertions();
+      var bufferMetrics =
+          new BatchedLogBufferMetrics(
+              metricsUtil.registry(), BillingS3HandlerInstaller.METRICS_PREFIX);
 
       BatchedLogBuffer buffer;
       if (mockBuffer) {
@@ -198,7 +205,7 @@ public abstract class BillingTestBase {
                 maxBytes,
                 maxAge,
                 queueCapacity,
-                metrics,
+                bufferMetrics,
                 mockBufferClock ? mockClock : BatchedLogBuffer.DEFAULT_CLOCK);
       }
       var uploader = mock(AsyncBatchedLogUploader.class);
@@ -218,8 +225,9 @@ public abstract class BillingTestBase {
           maxAge,
           queueCapacity,
           logRecords,
+          metricsUtil,
           buffer,
-          metrics,
+          bufferMetrics,
           logHandler,
           uploader,
           mockClock);
@@ -241,7 +249,7 @@ public abstract class BillingTestBase {
      * Offer the log records selected by slice to the buffer, all should work, assert the buffer has
      * the items the slice selected
      */
-    void assertOffer(String desc, BatchedLogBufferTest.Slice slice) {
+    BufferSnapshot assertOffer(String desc, BatchedLogBufferTest.Slice slice) {
 
       var snapshot = BufferSnapshot.create(this);
 
@@ -250,6 +258,7 @@ public abstract class BillingTestBase {
       }
 
       snapshot.assertAll(desc, slice, true);
+      return snapshot;
     }
 
     /**
@@ -367,17 +376,22 @@ public abstract class BillingTestBase {
    * <p>...
    */
   record BufferSnapshot(
-      boolean isEmpty, int size, long queuedBytes, int remainingCapacity, Fixture fixture) {
+      boolean isEmpty,
+      int size,
+      long queuedBytes,
+      int remainingCapacity,
+      Fixture fixture,
+      MetricsUnitAssertions.MetricSnapshot metricSnapshot) {
 
     static BufferSnapshot create(Fixture fixture) {
-      // reset the counters for calls to metrics
-      clearInvocations(fixture.metrics);
+
       return new BufferSnapshot(
           fixture.buffer().isEmpty(),
           fixture.buffer().size(),
           fixture.buffer().queuedBytes(),
           fixture.buffer().remainingCapacity(),
-          fixture);
+          fixture,
+          fixture.metricsUtil.createSnapshot());
     }
 
     /**
@@ -414,11 +428,32 @@ public abstract class BillingTestBase {
       assertThat(fixture.buffer().size())
           .as(desc + " - post buffer size increased by slice")
           .isEqualTo(size() + slice.size());
+      // metric shoudl be the size of the buffer, does not matter what metric snapshot was
+      fixture.metricsUtil.assertMetric(fixture.bufferMetrics.size, size() + slice.size());
 
-      verify(
-              fixture.metrics,
-              times(slice.size()).description(desc + "metrics called for every offer"))
-          .offered();
+      // Buffer offered increases, dropped does not change
+      fixture.metricsUtil.assertMetric(metricSnapshot, fixture.bufferMetrics.offered, slice.size());
+      fixture.metricsUtil.assertMetric(metricSnapshot, fixture.bufferMetrics.dropped, 0);
+
+      // remaining is just a calculation, capacity - size
+      fixture.metricsUtil.assertMetric(
+          fixture.bufferMetrics.remainingCapacity, fixture.queueCapacity - fixture.buffer().size());
+
+      // head age is the age of the first item in the buffer, NOTE clock overrides can change time
+      var firstRecord = fixture.buffer().peekBuffer().getFirst();
+      if (firstRecord != null) {
+        var clockForMetric =
+            fixture.clock() == null ? BatchedLogBuffer.DEFAULT_CLOCK : fixture.clock();
+        // metric is calc's when read, so it may be younger (less ms) but never older (more ms)
+        fixture.metricsUtil.assertMetric(
+            fixture.bufferMetrics.headAgeMs,
+            (a) -> {
+              a.isLessThanOrEqualTo(
+                  Duration.between(firstRecord.eventAt(), clockForMetric.instant())
+                      .abs()
+                      .toMillis());
+            });
+      }
 
       long addedBytes = 0;
       for (var record : slice.stream(fixture.logRecords).toList()) {
@@ -428,6 +463,7 @@ public abstract class BillingTestBase {
       assertThat(fixture.buffer().queuedBytes())
           .as(desc + " - post buffer bytes increased by slice")
           .isEqualTo(queuedBytes + addedBytes);
+      fixture.metricsUtil.assertMetric(fixture.bufferMetrics.bytes, queuedBytes + addedBytes);
     }
 
     /** current buffer metadata = snapshot - batch */
