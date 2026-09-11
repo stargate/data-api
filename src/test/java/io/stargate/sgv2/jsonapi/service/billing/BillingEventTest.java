@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 

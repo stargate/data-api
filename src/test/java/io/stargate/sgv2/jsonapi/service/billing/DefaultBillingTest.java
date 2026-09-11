@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import static java.util.logging.Logger.getLogger;
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
@@ -9,6 +9,10 @@ import static org.mockito.Mockito.when;
 
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ModelType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;

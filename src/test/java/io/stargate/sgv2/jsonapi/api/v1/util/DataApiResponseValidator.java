@@ -69,6 +69,8 @@ public class DataApiResponseValidator {
           case COUNT_DOCUMENTS -> responseIsCountSuccess();
           case FIND_EMBEDDING_PROVIDERS, FIND_RERANKING_PROVIDERS ->
               responseIsFindProvidersSuccess();
+          case CREATE_KEYSPACE, CREATE_NAMESPACE, DROP_KEYSPACE, DROP_NAMESPACE ->
+              responseIsDDLSuccess();
           default ->
               throw new IllegalArgumentException(
                   "DataApiResponseValidator: Unexpected command name: " + commandName);
@@ -145,6 +147,9 @@ public class DataApiResponseValidator {
       }
       case FIND_EMBEDDING_PROVIDERS, FIND_RERANKING_PROVIDERS -> {
         return hasNoErrors();
+      }
+      case CREATE_KEYSPACE, CREATE_NAMESPACE, DROP_KEYSPACE, DROP_NAMESPACE -> {
+        return hasNoErrors().hasStatusOK();
       }
       default ->
           throw new IllegalArgumentException(

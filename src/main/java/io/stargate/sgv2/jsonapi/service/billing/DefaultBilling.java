@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import static io.stargate.sgv2.jsonapi.util.StringUtil.requireNonBlank;
 
@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
