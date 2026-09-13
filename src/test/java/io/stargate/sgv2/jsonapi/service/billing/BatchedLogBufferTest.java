@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link BatchedLogBuffer}\
  *
  * <p>TODO: out of order log records gets correct oldest metric TODO: TEST a big line bigger than
- * the max bytes gets through TODO: test metrics using SimpleMeterRegistry
+ * the max bytes gets through
  */
 public class BatchedLogBufferTest extends BillingTestBase {
 

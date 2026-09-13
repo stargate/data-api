@@ -33,8 +33,6 @@ public class BillingS3HandlerInstaller {
       LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
 
   public static final String METRICS_PREFIX = "billing";
-  // TODO: MOVE , this is duplicated
-  public static final String BILLING_LOGGER_NAME = "billing.events";
 
   private final BillingS3ExportConfig config;
   private final MeterRegistry meterRegistry;
@@ -91,7 +89,7 @@ public class BillingS3HandlerInstaller {
             config.handlerUploadShutdownDeadline());
     LOGGER.info("onStart() - using handler: {}", handler);
 
-    var billingLogger = Logger.getLogger(BILLING_LOGGER_NAME);
+    var billingLogger = Logger.getLogger(DefaultBilling.BILLING_LOGGER_NAME);
     if (config.disableOtherHandlers()) {
       LOGGER.info("onStart() - removing existing log handlers");
       for (var existing : billingLogger.getHandlers()) {
@@ -104,7 +102,8 @@ public class BillingS3HandlerInstaller {
 
     billingLogger.addHandler(this.handler);
     LOGGER.info(
-        "onStart() - attached log handler to logger. BILLING_LOGGER_NAME: {}", BILLING_LOGGER_NAME);
+        "onStart() - attached log handler to logger. BILLING_LOGGER_NAME: {}",
+        DefaultBilling.BILLING_LOGGER_NAME);
 
     Infrastructure.getDefaultWorkerPool()
         .execute(
@@ -122,9 +121,10 @@ public class BillingS3HandlerInstaller {
       return;
     }
 
-    Logger.getLogger(BILLING_LOGGER_NAME).removeHandler(this.handler);
+    Logger.getLogger(DefaultBilling.BILLING_LOGGER_NAME).removeHandler(this.handler);
     LOGGER.info(
-        "onStop() - handler removed from logger. BILLING_LOGGER_NAME:{}", BILLING_LOGGER_NAME);
+        "onStop() - handler removed from logger. BILLING_LOGGER_NAME:{}",
+        DefaultBilling.BILLING_LOGGER_NAME);
 
     // close() isn't expected to throw, but if it does (e.g. client.close() failing), letting it
     // propagate would disrupt other components' cleanup in Quarkus's shutdown sequence.

@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.billing;
 
-import static io.stargate.sgv2.jsonapi.service.billing.BillingS3HandlerInstaller.BILLING_LOGGER_NAME;
+import static io.stargate.sgv2.jsonapi.util.SmallRyeConfigTestUtil.addPropertyTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -10,6 +10,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Handler;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Test the {@link BillingS3HandlerInstaller} gets correct config when creating the objects */
 public class BillingS3HandlerInstallerTest {
 
   private Logger logger;
@@ -25,7 +27,7 @@ public class BillingS3HandlerInstallerTest {
 
   @BeforeEach
   void saveHandlers() {
-    logger = Logger.getLogger(BILLING_LOGGER_NAME);
+    logger = Logger.getLogger(DefaultBilling.BILLING_LOGGER_NAME);
     saved = logger.getHandlers();
   }
 
@@ -42,14 +44,10 @@ public class BillingS3HandlerInstallerTest {
   @Test
   void onStartBillingEnabledOthersDisabled() {
 
-    var installer =
-        installer(
-            Map.of(
-                "stargate.jsonapi.billing.s3.enabled",
-                "true",
-                "stargate.jsonapi.billing.s3.disable-other-handlers",
-                "true"),
-            null);
+    var config = new HashMap<String, String>();
+    addPropertyTo(config, BillingS3ExportConfig::enabled, true);
+    addPropertyTo(config, BillingS3ExportConfig::disableOtherHandlers, true);
+    var installer = createInstaller(config, null);
 
     assertHandlers(installer, true, false);
   }
@@ -57,14 +55,10 @@ public class BillingS3HandlerInstallerTest {
   @Test
   void onStartBillingEnabledOthersEnabled() {
 
-    var installer =
-        installer(
-            Map.of(
-                "stargate.jsonapi.billing.s3.enabled",
-                "true",
-                "stargate.jsonapi.billing.s3.disable-other-handlers",
-                "false"),
-            null);
+    var config = new HashMap<String, String>();
+    addPropertyTo(config, BillingS3ExportConfig::enabled, true);
+    addPropertyTo(config, BillingS3ExportConfig::disableOtherHandlers, false);
+    var installer = createInstaller(config, null);
 
     assertHandlers(installer, true, true);
   }
@@ -72,14 +66,10 @@ public class BillingS3HandlerInstallerTest {
   @Test
   void onStartBillingDisabledOthersDisabled() {
 
-    var installer =
-        installer(
-            Map.of(
-                "stargate.jsonapi.billing.s3.enabled",
-                "false",
-                "stargate.jsonapi.billing.s3.disable-other-handlers",
-                "true"),
-            null);
+    var config = new HashMap<String, String>();
+    addPropertyTo(config, BillingS3ExportConfig::enabled, false);
+    addPropertyTo(config, BillingS3ExportConfig::disableOtherHandlers, true);
+    var installer = createInstaller(config, null);
 
     // even though disabling others is enabled, billing s3 is disabled so that should not impact
     assertHandlers(installer, false, true);
@@ -88,14 +78,10 @@ public class BillingS3HandlerInstallerTest {
   @Test
   void onStartBillingDisabledOthersEnabled() {
 
-    var installer =
-        installer(
-            Map.of(
-                "stargate.jsonapi.billing.s3.enabled",
-                "false",
-                "stargate.jsonapi.billing.s3.disable-other-handlers",
-                "false"),
-            null);
+    var config = new HashMap<String, String>();
+    addPropertyTo(config, BillingS3ExportConfig::enabled, false);
+    addPropertyTo(config, BillingS3ExportConfig::disableOtherHandlers, false);
+    var installer = createInstaller(config, null);
 
     // even though disabling others is enabled, billing s3 is disabled so that should not impact
     assertHandlers(installer, false, true);
@@ -108,7 +94,7 @@ public class BillingS3HandlerInstallerTest {
   private void assertHandlers(
       BillingS3HandlerInstaller installer, boolean expectS3Handler, boolean expectOtherHandlers) {
 
-    var billingLogger = Logger.getLogger(BILLING_LOGGER_NAME);
+    var billingLogger = Logger.getLogger(DefaultBilling.BILLING_LOGGER_NAME);
 
     try {
       installer.onStart(new StartupEvent());
@@ -146,10 +132,11 @@ public class BillingS3HandlerInstallerTest {
   }
 
   private static List<Handler> installedHandlers() {
-    return Arrays.stream(Logger.getLogger(BILLING_LOGGER_NAME).getHandlers()).toList();
+    return Arrays.stream(Logger.getLogger(DefaultBilling.BILLING_LOGGER_NAME).getHandlers())
+        .toList();
   }
 
-  private static BillingS3HandlerInstaller installer(
+  private static BillingS3HandlerInstaller createInstaller(
       Map<String, String> configOverride, MeterRegistry meterRegistry) {
 
     var builder = new SmallRyeConfigBuilder().withMapping(BillingS3ExportConfig.class);

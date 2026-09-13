@@ -72,9 +72,10 @@ public class S3MockTestResource implements QuarkusTestResourceLifecycleManager {
     Map<String, String> props = new HashMap<>();
 
     // Enable Billing events at the feature flag level
+    // there is no direct property for this.
     props.put("stargate.feature.flags.billing-events-logging", "true");
 
-    addPropertyTo(props, BillingS3ExportConfig::enabled, "true");
+    addPropertyTo(props, BillingS3ExportConfig::enabled, true);
     addPropertyTo(props, BillingS3ExportConfig::region, REGION);
     addPropertyTo(props, BillingS3ExportConfig::bucket, BUCKET);
     addPropertyTo(props, BillingS3ExportConfig::endpointOverride, httpEndpoint);

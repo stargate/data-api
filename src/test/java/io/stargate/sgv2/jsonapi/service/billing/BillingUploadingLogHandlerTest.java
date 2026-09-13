@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.verification.VerificationMode;
 
-/** */
+/** Tests for the {@link BillingUploadingLogHandler} */
 public class BillingUploadingLogHandlerTest extends BillingTestBase {
 
   // *********************************************************

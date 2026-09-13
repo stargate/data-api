@@ -26,7 +26,7 @@ public class MetricsITAssertions {
 
   public static void assertMetricTotal(
       String metricName, Consumer<AbstractDoubleAssert<?>> assertConsumer) {
-    assertMetricTotal(metricName, Double.NaN, DEFAULT_AWAIT_DURATION, DEFAULT_POLL_DURATION);
+    assertMetricTotal(metricName, assertConsumer, DEFAULT_AWAIT_DURATION, DEFAULT_POLL_DURATION);
   }
 
   public static void assertMetricTotal(

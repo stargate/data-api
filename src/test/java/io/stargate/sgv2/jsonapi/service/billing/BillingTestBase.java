@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Common code for tests around billing events being uploaded */
+/** Common code for tests around billing events being buffered and uploaded */
 public abstract class BillingTestBase {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BillingTestBase.class);

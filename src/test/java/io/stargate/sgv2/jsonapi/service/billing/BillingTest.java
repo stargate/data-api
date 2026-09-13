@@ -7,30 +7,27 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.stargate.sgv2.jsonapi.TestConstants;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
-import io.vertx.core.MultiMap;
+import io.stargate.sgv2.jsonapi.util.ApiFeaturesTestUtil;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
  * Tests for the {@link Billing} interface itself: the {@link Billing#NO_OP} singleton and the
- * {@link Billing#create(BillingConfig, ApiFeatures)} dispatch. Implementation-specific behavior of
- * {@link DefaultBilling} (event building, properties etc.) is covered in {@link
- * DefaultBillingTest}.
+ * {@link Billing#create(BillingConfig, ApiFeatures)} dispatch.
+ *
+ * <p>See also {@link DefaultBillingTest}
  */
 class BillingTest {
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // ============================================================
   // NO_OP behavior
@@ -41,10 +38,12 @@ class BillingTest {
     assertThatCode(() -> Billing.NO_OP.emitEvent(stubUsage())).doesNotThrowAnyException();
   }
 
+  /**
+   * Even the NO-OP enforces the non-null contract so callers can't accidentally pass null and have
+   * it silently swallowed in a test that uses the no-op.
+   */
   @Test
   void noOpThrowsOnNullUsage() {
-    // Even the NO-OP enforces the non-null contract so callers can't accidentally pass null and
-    // have it silently swallowed in a test that uses the no-op.
     assertThatThrownBy(() -> Billing.NO_OP.emitEvent(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("modelUsage");
@@ -75,39 +74,32 @@ class BillingTest {
 
   /**
    * If BILLING_EVENTS_LOGGING is enabled in startup config, a request header MUST NOT be able to
-   * turn it off — the config is authoritative. Verified at the dispatch layer because that's where
-   * the user-visible effect lands (you get DefaultBilling, not NO_OP).
+   * turn it off.
    */
   @Test
   void createConfigEnabledIsNotOverriddenByHeader() {
-    var config = mock(FeaturesConfig.class);
-    when(config.flags()).thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, "true"));
 
-    var headers = MultiMap.caseInsensitiveMultiMap();
-    headers.add(ApiFeature.BILLING_EVENTS_LOGGING.httpHeaderName(), "false");
-    var apiFeatures =
-        ApiFeatures.fromConfigAndRequest(config, new RequestContext.HttpHeaderAccess(headers));
+    // enabled in the config
+    // disabled by the header
+    var apiFeatures = featuresWithBilling(true, false);
 
     var billing = Billing.create(validConfig(), apiFeatures);
 
     assertThat(billing)
-        .as("config=true must win over header=false at dispatch")
+        .as("config=true must win over header=false")
         .isInstanceOf(DefaultBilling.class);
   }
 
   /**
    * Conversely, if startup config leaves the flag unset, a request header CAN enable it. Proves the
-   * header path is alive — without this, the test above would pass trivially.
+   * header path is alive
    */
   @Test
   void createHeaderEnablesWhenConfigUnset() {
-    var config = mock(FeaturesConfig.class);
-    when(config.flags()).thenReturn(Map.of());
 
-    var headers = MultiMap.caseInsensitiveMultiMap();
-    headers.add(ApiFeature.BILLING_EVENTS_LOGGING.httpHeaderName(), "true");
-    var apiFeatures =
-        ApiFeatures.fromConfigAndRequest(config, new RequestContext.HttpHeaderAccess(headers));
+    // no value  in the config
+    // enabled by the header
+    var apiFeatures = featuresWithBilling(null, true);
 
     var billing = Billing.create(validConfig(), apiFeatures);
 
@@ -120,19 +112,23 @@ class BillingTest {
 
   /** Minimal valid {@link BillingConfig} — enough for {@link DefaultBilling} to construct. */
   private static BillingConfig validConfig() {
+
     var config = mock(BillingConfig.class);
     when(config.product()).thenReturn("serverless");
     when(config.resourceType()).thenReturn("serverless_database");
     when(config.internalModelProviders()).thenReturn(List.of("nvidia"));
     when(config.enabledEventTypes()).thenReturn(Optional.empty());
+
     return config;
   }
 
   private static ApiFeatures featuresWithBilling(boolean enabled) {
-    var config = mock(FeaturesConfig.class);
-    when(config.flags())
-        .thenReturn(Map.of(ApiFeature.BILLING_EVENTS_LOGGING, String.valueOf(enabled)));
-    return ApiFeatures.fromConfigAndRequest(config, null);
+    return featuresWithBilling(enabled, null);
+  }
+
+  private static ApiFeatures featuresWithBilling(Boolean configEnabled, Boolean headerEnabled) {
+    return ApiFeaturesTestUtil.withFeature(
+        ApiFeature.BILLING_EVENTS_LOGGING, configEnabled, headerEnabled);
   }
 
   private ModelUsage stubUsage() {
@@ -140,7 +136,7 @@ class BillingTest {
         ModelProvider.NVIDIA,
         ModelType.EMBEDDING,
         "model-x",
-        testConstants.TENANT,
+        TEST_CONSTANTS.TENANT,
         ModelInputType.INDEX,
         100,
         500,

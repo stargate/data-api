@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+/** Tests for the {@link DefaultBilling} which is */
 class DefaultBillingTest {
 
   private static final String PRODUCT = "serverless";
@@ -199,7 +200,7 @@ class DefaultBillingTest {
           public void close() {}
         };
 
-    var julLogger = getLogger("billing.events");
+    var julLogger = getLogger(DefaultBilling.BILLING_LOGGER_NAME);
     julLogger.addHandler(handler);
 
     try {

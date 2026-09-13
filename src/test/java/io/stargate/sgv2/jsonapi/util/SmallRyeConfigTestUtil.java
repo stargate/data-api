@@ -49,28 +49,28 @@ public final class SmallRyeConfigTestUtil {
    *
    * <p>Example, given this config:
    *
-   * <pre>
-   *  @ConfigMapping(prefix = "stargate.jsonapi.billing")
-   *  public interface BillingConfig {
-   *      @WithDefault("serverless")
-   *      String product();
-   *   }
-   *  </pre>
+   * <pre>{@code
+   * @ConfigMapping(prefix = "stargate.jsonapi.billing")
+   * public interface BillingConfig {
+   *     @WithDefault("serverless")
+   *     String product();
+   *  }
+   *
+   * }</pre>
    *
    * Invoked using:
    *
-   * <pre>
-   *      SmallRyeConfigUtil.propertyName(BillingConfig::product);
-   *  </pre>
+   * <pre>{@code
+   * SmallRyeConfigUtil.propertyName(BillingConfig::product);
+   *
+   * }</pre>
    *
    * Will return the string:
    *
-   * <pre>
-   *      stargate.jsonapi.billing.product
-   *  </pre>
+   * <pre>{@code
+   * stargate.jsonapi.billing.product
    *
-   * @param methodRef
-   * @return
+   * }</pre>
    */
   public static <T, R> String propertyName(ConfigMethodRef<T, R> methodRef) {
 
@@ -106,6 +106,11 @@ public final class SmallRyeConfigTestUtil {
   public static <T, R> void addPropertyTo(
       Map<String, String> props, ConfigMethodRef<T, R> methodRef, int value) {
     addPropertyTo(props, methodRef, Integer.toString(value));
+  }
+
+  public static <T, R> void addPropertyTo(
+      Map<String, String> props, ConfigMethodRef<T, R> methodRef, boolean value) {
+    addPropertyTo(props, methodRef, Boolean.toString(value));
   }
 
   private static String propertyNameSegment(
