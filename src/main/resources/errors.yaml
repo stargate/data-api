@@ -2462,6 +2462,18 @@ server-errors:
       ${SNIPPET.RETRY}
 
   - scope: DATABASE
+    code: FAILED_TO_READ_METADATA
+    title: Data API Failed to read database metadata
+    body: |-
+      The Data API was unable to read database metadata.
+      
+      Database metadata describes the schema including keyspaces, collections, and tables. A connection was established to the database however the driver was unable to read the expected metadata. The API cannot correctly operate without the metadata.
+      
+      This may be due to a temporary capacity issue with the database, an issue with token permissions, or a wider outage.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
     code: INVALID_COLLECTION_QUERY
     title: Invalid query
     body: |-
@@ -2798,7 +2810,7 @@ server-errors:
     code: RERANKING_PROVIDER_TIMEOUT
     title: Reranking Provider timed out
     body: |-
-      The command called an reranking provider to rerank results, but the provider did not respond within the allowed time.
+      The command called a reranking provider to rerank results, but the provider did not respond within the allowed time.
       
       The reranking provider was: ${modelProvider}.
       The HTTP status code was: ${httpStatus}.

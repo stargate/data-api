@@ -173,6 +173,9 @@ jobs:
 
       - name: Build data-api image and push (Docker Hub)
         if: ${{ !inputs.skipPublish }}
+        env:
+          # avoid unknown/unknown attestation manifests
+          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
         run: |
           ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} -Dquarkus.container-image.name=data-api ${{ matrix.profile }}
 
@@ -225,6 +228,7 @@ jobs:
       - name: Build and push (Amazon ECR)
         if: ${{ !inputs.skipPublish }}
         env:
+          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
           QUARKUS_APPLICATION_NAME: 'Astra DB Serverless Data API'
           QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB Serverless Data API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra/astra-db-vector/api-reference/data-api.html) for additional information.'
           QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.ibm.com/legal'

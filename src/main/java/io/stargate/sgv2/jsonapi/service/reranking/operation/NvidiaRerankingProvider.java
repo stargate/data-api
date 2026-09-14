@@ -8,8 +8,7 @@ import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderBillingFilter;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
@@ -139,8 +138,8 @@ public class NvidiaRerankingProvider extends RerankingProvider {
    * <p>..
    */
   @RegisterRestClient
-  @RegisterProvider(RerankingProviderResponseValidation.class)
-  @RegisterProvider(ProviderHttpInterceptor.class)
+  @RegisterProvider(RerankingProviderContentTypeFilter.class)
+  @RegisterProvider(ProviderBillingFilter.class)
   public interface NvidiaRerankingClient {
 
     @POST

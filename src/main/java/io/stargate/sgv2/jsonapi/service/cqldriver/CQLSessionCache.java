@@ -380,6 +380,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
   @FunctionalInterface
   public interface SessionFactory
       extends BiFunction<Tenant, CqlCredentials, CompletionStage<CqlSession>> {
+
     CompletionStage<CqlSession> apply(Tenant tenant, CqlCredentials credentials);
   }
 }

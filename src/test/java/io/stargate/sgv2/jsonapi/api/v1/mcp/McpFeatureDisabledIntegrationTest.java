@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertGeneralCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertDatabaseCommand;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,7 +41,7 @@ public class McpFeatureDisabledIntegrationTest extends McpIntegrationTestBase {
   @Test
   public void restCommandsStillWorkWhenMcpDisabled() {
     // REST API commands should still function even when MCP feature flag is disabled
-    assertGeneralCommand().postFindEmbeddingProviders().wasSuccessful();
+    assertDatabaseCommand().postFindEmbeddingProviders().wasSuccessful();
   }
 
   @Test

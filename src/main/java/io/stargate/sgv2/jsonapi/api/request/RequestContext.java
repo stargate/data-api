@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
-import io.stargate.sgv2.jsonapi.service.provider.Billing;
+import io.stargate.sgv2.jsonapi.service.billing.Billing;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaRegistry;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;

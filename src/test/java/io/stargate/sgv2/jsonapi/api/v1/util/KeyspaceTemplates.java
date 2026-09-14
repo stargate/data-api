@@ -242,13 +242,18 @@ public class KeyspaceTemplates extends TemplateRunner {
   // ===================================================================================================================
 
   public DataApiResponseValidator createCollection(String collectionName) {
+    return createCollection(collectionName, "{}");
+  }
+
+  public DataApiResponseValidator createCollection(String collectionName, String options) {
     var json =
             """
         {
-          "name": "%s"
+          "name": "%s",
+          "options": %s
         }
         """
-            .formatted(collectionName);
+            .formatted(collectionName, options);
     return sender.postCreateCollection(json);
   }
 }
