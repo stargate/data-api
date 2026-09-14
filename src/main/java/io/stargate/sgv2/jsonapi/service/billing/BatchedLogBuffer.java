@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li>Producers - call {@link #offer(LogRecord)} to add the log record to the buffer. There can
- *       be many producers form different threads.
+ *       be many producers from different threads.
  *   <li>Consumer - call {@link #nextBatch(boolean)} to get the next batch if available. There
  *       should be only 1 consumer calling at a time, caller is responsible for this.
  * </ul>

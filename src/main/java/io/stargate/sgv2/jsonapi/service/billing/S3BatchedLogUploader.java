@@ -182,7 +182,14 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
             (resp, failure) -> {
               var success = failure == null;
               var cause = (failure instanceof CompletionException) ? failure.getCause() : failure;
-              var requestId = (cause instanceof AwsServiceException ase) ? ase.requestId() : null;
+              // get from error if there is an error, so we dont rely on the response in an error
+              // state
+              String requestId = null;
+              if (cause instanceof AwsServiceException ase) {
+                requestId = ase.getMessage();
+              } else if (resp != null && resp.responseMetadata() != null) {
+                requestId = resp.responseMetadata().requestId();
+              }
 
               if (!success) {
                 metrics.recordBatchFailed(batch);

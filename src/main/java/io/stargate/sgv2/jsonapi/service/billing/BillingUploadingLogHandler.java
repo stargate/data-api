@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  *       DefaultBilling#BILLING_LOGGER_NAME} so the {@link #publish(LogRecord)} is called by the
  *       logging system from multiple threads.
  *   <li>Called on a deamon worker thread the {@link #startUploading()} function will run until
- *       {@link #close()} is called, when running it periodiclky checks the buffer of log messages
+ *       {@link #close()} is called, when running it periodically checks the buffer of log messages
  *       and uploads using a {@link AsyncBatchedLogUploader} to S3 (normally)
  * </ul>
  */

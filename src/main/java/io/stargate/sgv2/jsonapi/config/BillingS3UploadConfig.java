@@ -32,7 +32,7 @@ public interface BillingS3UploadConfig {
   String region();
 
   /** Required, S3 bucket name to send billing events to. */
-  @WithDefault("serverless-usage-dev")
+  @WithDefault("serverless-usage")
   String bucket();
 
   /**
@@ -73,8 +73,9 @@ public interface BillingS3UploadConfig {
 
   /**
    * Max bytes to include in a batch, NOTE: if a single event is bigger than this it will be sent in
-   * a batch still. 2097152 == 2 MB When the buffer has this many bytes a new batch is created. See
-   * {@link io.stargate.sgv2.jsonapi.service.billing.BatchedLogBuffer}
+   * a batch still. 2097152 == 2 MB which is approx 5,000 events at 400 Bytes each. When the buffer
+   * has this many bytes a new batch is created. See {@link
+   * io.stargate.sgv2.jsonapi.service.billing.BatchedLogBuffer}
    */
   @WithDefault("2097152")
   long bufferMaxBatchBytes();
@@ -85,11 +86,6 @@ public interface BillingS3UploadConfig {
    */
   @WithDefault("PT60S")
   Duration bufferMaxBatchAge();
-
-  /**
-   * Bound on buffered events; beyond it new lines are dropped. 5,000 events per batch, so set to
-   * 5,000 * 10 = 50,000 up to 20 MB
-   */
 
   /**
    * Maximum number of events that can be held in the buffer before events are dropped. See {@link

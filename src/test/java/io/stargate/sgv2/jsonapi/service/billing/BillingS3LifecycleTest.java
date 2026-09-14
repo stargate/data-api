@@ -111,8 +111,6 @@ public class BillingS3LifecycleTest {
   private void assertHandlers(
       BillingS3Lifecycle installer, boolean expectS3Handler, boolean expectOtherHandlers) {
 
-    var billingLogger = Logger.getLogger(DefaultBilling.BILLING_LOGGER_NAME);
-
     try {
       installer.onStart(new StartupEvent());
       var onStartHandlers = installedHandlers();

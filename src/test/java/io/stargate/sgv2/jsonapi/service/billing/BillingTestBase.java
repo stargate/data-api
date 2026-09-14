@@ -428,7 +428,7 @@ public abstract class BillingTestBase {
       assertThat(fixture.buffer().size())
           .as(desc + " - post buffer size increased by slice")
           .isEqualTo(size() + slice.size());
-      // metric shoudl be the size of the buffer, does not matter what metric snapshot was
+      // metric should be the size of the buffer, does not matter what metric snapshot was
       fixture.metricsUtil.assertMetric(fixture.bufferMetrics.size, size() + slice.size());
 
       // Buffer offered increases, dropped does not change

@@ -20,7 +20,6 @@ public final class BatchedLogUploaderMetrics extends MetricsBase {
   public final Counter failedBatches;
   public final Counter failedEvents;
 
-  /** */
   public BatchedLogUploaderMetrics(MeterRegistry meterRegistry, String prefix) {
     super(meterRegistry, prefix);
 
