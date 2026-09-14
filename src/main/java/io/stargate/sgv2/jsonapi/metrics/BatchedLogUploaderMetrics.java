@@ -6,7 +6,10 @@ import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.service.billing.BatchedLogBuffer;
 import java.util.Objects;
 
-/** Metrics for billing events, mostly around what is sent to S3 */
+/**
+ * Metrics for uploading billing events, mostly around what is sent to S3 See {@link
+ * io.stargate.sgv2.jsonapi.service.billing.S3BatchedLogUploader}
+ */
 public final class BatchedLogUploaderMetrics extends MetricsBase {
 
   public final Counter uploadedBatches;

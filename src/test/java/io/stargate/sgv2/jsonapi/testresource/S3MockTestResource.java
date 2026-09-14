@@ -4,7 +4,7 @@ import static io.stargate.sgv2.jsonapi.util.SmallRyeConfigTestUtil.addPropertyTo
 
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
+import io.stargate.sgv2.jsonapi.config.BillingS3UploadConfig;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Starts an S3Mock container (https://github.com/adobe/S3Mock) and configures billing to send
- * evnets with short pauses.
+ * events with short pauses.
  */
 public class S3MockTestResource implements QuarkusTestResourceLifecycleManager {
 
@@ -75,19 +75,19 @@ public class S3MockTestResource implements QuarkusTestResourceLifecycleManager {
     // there is no direct property for this.
     props.put("stargate.feature.flags.billing-events-logging", "true");
 
-    addPropertyTo(props, BillingS3ExportConfig::enabled, true);
-    addPropertyTo(props, BillingS3ExportConfig::region, REGION);
-    addPropertyTo(props, BillingS3ExportConfig::bucket, BUCKET);
-    addPropertyTo(props, BillingS3ExportConfig::endpointOverride, httpEndpoint);
+    addPropertyTo(props, BillingS3UploadConfig::enabled, true);
+    addPropertyTo(props, BillingS3UploadConfig::region, REGION);
+    addPropertyTo(props, BillingS3UploadConfig::bucket, BUCKET);
+    addPropertyTo(props, BillingS3UploadConfig::endpointOverride, httpEndpoint);
 
     // reducing the buffer so we get events sent more frequently
-    addPropertyTo(props, BillingS3ExportConfig::bufferMaxBatchSize, 2);
-    addPropertyTo(props, BillingS3ExportConfig::bufferMaxBatchBytes, 1024);
-    addPropertyTo(props, BillingS3ExportConfig::bufferMaxBatchAge, "PT2S"); // 2 seconds
+    addPropertyTo(props, BillingS3UploadConfig::bufferMaxBatchSize, 2);
+    addPropertyTo(props, BillingS3UploadConfig::bufferMaxBatchBytes, 1024);
+    addPropertyTo(props, BillingS3UploadConfig::bufferMaxBatchAge, "PT2S"); // 2 seconds
 
     // config the handler to wake up more often and be more aggressive in shutdown
     // wake up every 2 seconds to check the buffer
-    addPropertyTo(props, BillingS3ExportConfig::handlerSleepDuration, "PT2S"); // 2 seconds
+    addPropertyTo(props, BillingS3UploadConfig::handlerSleepDuration, "PT2S"); // 2 seconds
 
     // The uploader resolves credentials from the SDK default chain, whose first stop is the
     // system-property provider. S3Mock accepts any signed request.

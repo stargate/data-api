@@ -4,7 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
+import io.stargate.sgv2.jsonapi.api.v1.BillingS3UploadIntegrationTest;
+import io.stargate.sgv2.jsonapi.config.BillingS3UploadConfig;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -21,9 +22,10 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 /**
- * The S3 client is mocked; retries and per-call timeouts live in the client configuration, so
- * exactly one {@code putObject} per upload is expected here. Real I/O is covered by {@code
- * BillingS3ExportIntegrationTest}.
+ * Tests for the {@link S3BatchedLogUploader}
+ *
+ * <p>These tests only check it calls the S3 client as expected, not that batches are sent anywhere.
+ * See {@link BillingS3UploadIntegrationTest}
  */
 class S3BatchedLogUploaderTest {
 
@@ -201,7 +203,7 @@ class S3BatchedLogUploaderTest {
       S3AsyncClient s3Client,
       PutObjectResponse putResponse,
       BatchedLogUploaderMetrics metrics,
-      BillingS3ExportConfig config) {
+      BillingS3UploadConfig config) {
 
     static Fixture create() {
       return create(false);
@@ -211,9 +213,9 @@ class S3BatchedLogUploaderTest {
 
       var config =
           new SmallRyeConfigBuilder()
-              .withMapping(BillingS3ExportConfig.class)
+              .withMapping(BillingS3UploadConfig.class)
               .build()
-              .getConfigMapping(BillingS3ExportConfig.class);
+              .getConfigMapping(BillingS3UploadConfig.class);
 
       var metrics = mock(BatchedLogUploaderMetrics.class);
 

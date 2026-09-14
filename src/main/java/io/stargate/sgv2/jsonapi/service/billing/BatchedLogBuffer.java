@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li>Producers - call {@link #offer(LogRecord)} to add the log record to the buffer. There can
- *       be many consumers form different threads.
- *   <li>Consumers - call {@link #nextBatch(boolean)} to get the next batch if available. There
+ *       be many producers form different threads.
+ *   <li>Consumer - call {@link #nextBatch(boolean)} to get the next batch if available. There
  *       should be only 1 consumer calling at a time, caller is responsible for this.
  * </ul>
  *
@@ -53,7 +53,11 @@ public class BatchedLogBuffer {
   private final AtomicLong queuedBytes = new AtomicLong(0);
   private final BatchedLogBufferMetrics metrics;
 
-  /** See {@link #BatchedLogBuffer(int, long, Duration, int, BatchedLogBufferMetrics, Clock)} */
+  /**
+   * Creates a new instance using the {@link #DEFAULT_CLOCK}.
+   *
+   * <p>See {@link #BatchedLogBuffer(int, long, Duration, int, BatchedLogBufferMetrics, Clock)}
+   */
   BatchedLogBuffer(
       int maxBatchSize,
       long maxBatchBytes,
@@ -74,7 +78,7 @@ public class BatchedLogBuffer {
    *     lines. Batch maybe smaller if maxBatchBytes is hit.
    * @param maxBatchBytes Maximum numbers of bytes in a batch, when the buffer has more than this
    *     many entries a new batch is made available which may contain more than this many bytes. The
-   *     batch will have many maxBatchBytes if there is a single log record that is bigger.
+   *     batch will have more than maxBatchBytes if there is a single log record that is bigger.
    * @param maxBatchAge Maximum age the head log record should have in the buffer before a new batch
    *     is available. When a batch is triggered from max age the batch is filled, even if the other
    *     messages have not reached their max age.
@@ -82,7 +86,7 @@ public class BatchedLogBuffer {
    *     #offer(LogRecord)} will fail to add the message.
    * @param metrics Metrics recording object.
    * @param clock The {@link Clock} implementation to use when checking the age of a message, this
-   *     should only be overridden in testing. DO NOT USE IN CODE. If null uses {@link
+   *     should only be overridden in testing. DO NOT USE IN PROD CODE. If null uses {@link
    *     #DEFAULT_CLOCK}
    */
   @VisibleForTesting
@@ -118,7 +122,7 @@ public class BatchedLogBuffer {
     // must be concurrent to handle multiple threads
     this.queue = new ArrayBlockingQueue<>(capacity);
 
-    // just to be safe, register after queue created incase metrics are scrapped
+    // just to be safe, register after queue created in case metrics are scrapped
     this.metrics.registerBuffer(this);
   }
 
@@ -145,7 +149,7 @@ public class BatchedLogBuffer {
     metrics.incrementOffered();
     if (!queue.offer(newEntry)) {
       // Bounded buffer full, drop and count
-      LOGGER.debug("offer() - buffer full, dropping new entry: {}", newEntry);
+      LOGGER.warn("offer() - buffer full, dropping new entry: {}", newEntry);
       metrics.incrementDropped();
       return false;
     }
@@ -164,7 +168,8 @@ public class BatchedLogBuffer {
    * @param drainFully when True a new batch is created without checking the configured rules, use
    *     this when draining the buffer and there may only be a partial batch.
    * @return A new {@link Batch} of log messages all of which have been removed from the buffer, or
-   *     <code>null</code> if there is no next batch.
+   *     <code>null</code> if there is no next batch. Keep calling with <code>drainFully</code> true
+   *     until a null is returned to drain the buffer.
    */
   public Batch nextBatch(boolean drainFully) {
 
@@ -178,6 +183,7 @@ public class BatchedLogBuffer {
     long batchBytes = 0;
     Entry peeked;
 
+    // Decided we want a batch, lets fill it.
     // No matter why we started we create a full batch, e.g. we could start because the oldest
     // entry is past maxAge, but we still fill the batch.
     while (batchLines.size() < maxBatchSize && ((peeked = queue.peek()) != null)) {
@@ -217,15 +223,11 @@ public class BatchedLogBuffer {
       return null;
     }
 
+    var batch = new Batch(batchReason, batchLines, batchBytes, oldestEventAt, clock);
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "nextBatch() - next batch created, reason:{}, batchLines.size:{}, batchBytes:{}, oldestEventAt: {}",
-          batchReason,
-          batchLines.size(),
-          batchBytes,
-          oldestEventAt);
+      LOGGER.debug("nextBatch() - next batch created, batch:{}", batch);
     }
-    return new Batch(batchReason, batchLines, batchBytes, oldestEventAt, clock);
+    return batch;
   }
 
   /** Gets a copy of the contents of the buffer in a new array list, for testing. */
@@ -357,9 +359,6 @@ public class BatchedLogBuffer {
       return reason;
     }
 
-    /**
-     * @return Unmodifiable list of the log lines in this buffer
-     */
     public List<String> lines() {
       return lines;
     }
@@ -371,7 +370,7 @@ public class BatchedLogBuffer {
     public Duration oldestEventAtDuration() {
       // using the outer buffers clock, so any tests that change the clock
       // get a consistent results
-      return Duration.between(oldestEventAt(), clock.instant());
+      return Duration.between(oldestEventAt(), clock.instant()).abs();
     }
 
     public int size() {

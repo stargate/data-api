@@ -10,7 +10,17 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractDoubleAssert;
 
-/** Assertions for working with metrics in **Unit Tests**. */
+/**
+ * Assertions for working with metrics in **Unit Tests**.
+ *
+ * <p>Create a single instance for each test, and then use the assertion methods to check metric
+ * values.
+ *
+ * <p><b>NOTE:</b> because metrics like a {@link Counter} can only be increased, and the only way to
+ * reset the metric values is to destroy and re-creat. Use the {@link MetricSnapshot} created with
+ * {@link #createSnapshot()} to assert that a metric has changed a certain amount *since* the
+ * snapshot was taken.
+ */
 public class MetricsUnitAssertions {
 
   private final MeterRegistry meterRegistry;
@@ -42,10 +52,15 @@ public class MetricsUnitAssertions {
     return new MetricSnapshot(values);
   }
 
+  /** Assert the value of the first metric with this name and tags is specified value */
   public void assertMetric(Meter metric, double metricValue) {
     assertMetric(null, metric, metricValue);
   }
 
+  /**
+   * Assert the value of the first metric with this name and tags is specified value plus the value
+   * the metric has in the snapshot
+   */
   public void assertMetric(MetricSnapshot snapshot, Meter metric, double metricValue) {
 
     var valueAndSnapshot = snapshot == null ? metricValue : snapshot.value(metric) + metricValue;

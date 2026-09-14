@@ -20,20 +20,38 @@ public class MetricsITAssertions {
   public static final Duration DEFAULT_AWAIT_DURATION = Duration.ofSeconds(60);
   public static final Duration DEFAULT_POLL_DURATION = Duration.ofSeconds(2);
 
+  /**
+   * Assert the metric sum is equal to metricValue
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * assertMetricTotal("billing.s3.uploaded.events", 10);
+   * }</pre>
+   */
   public static void assertMetricTotal(String metricName, double metricValue) {
     assertMetricTotal(metricName, metricValue, DEFAULT_AWAIT_DURATION, DEFAULT_POLL_DURATION);
   }
 
+  /**
+   * Example:
+   *
+   * <pre>{@code
+   * assertMetricTotal("billing.s3.uploaded.events", (a) -> a.isGreaterThanOrEqualTo(10));
+   * }</pre>
+   */
   public static void assertMetricTotal(
       String metricName, Consumer<AbstractDoubleAssert<?>> assertConsumer) {
     assertMetricTotal(metricName, assertConsumer, DEFAULT_AWAIT_DURATION, DEFAULT_POLL_DURATION);
   }
 
+  /** Assert the metric sum is equal to metricValue, using supplied timeouts */
   public static void assertMetricTotal(
       String metricName, double metricValue, Duration awaitDuration, Duration pollInterval) {
     assertMetricTotal(metricName, (a) -> a.isEqualTo(metricValue), awaitDuration, pollInterval);
   }
 
+  /** Assert the summ of the metric (across all tag values) using the <code>assertConsumer</code> */
   public static void assertMetricTotal(
       String metricName,
       Consumer<AbstractDoubleAssert<?>> assertConsumer,
@@ -49,6 +67,14 @@ public class MetricsITAssertions {
                       .as("assertMetricTotal() - for metric " + metricName);
               assertConsumer.accept(asserts);
             });
+  }
+
+  public static double metricTotal(Meter.Id meterId) {
+    return metricTotal(meterId.getName());
+  }
+
+  public static double meterTotal(Meter meter) {
+    return metricTotal(meter.getId());
   }
 
   /**
@@ -81,13 +107,5 @@ public class MetricsITAssertions {
 
     LOGGER.info("metricTotal() - normalizedMetricName: {}, total: {}", normalizedMetricName, total);
     return total;
-  }
-
-  public static double metricTotal(Meter.Id meterId) {
-    return metricTotal(meterId.getName());
-  }
-
-  public static double meterTotal(Meter meter) {
-    return metricTotal(meter.getId());
   }
 }

@@ -18,18 +18,18 @@ import org.slf4j.LoggerFactory;
  * A Logging handler designed to be used with the Billing system. It accepts billing event log
  * messages, batches them, and then sends to S3.
  *
- * <p>See {@link BillingS3HandlerInstaller} for setup.
+ * <p>See {@link BillingS3Lifecycle} for setup.
  *
- * <p>// AI SLOP BELOW JUL handler that turns {@code billing.events} log lines into batched S3
- * objects.
+ * <p>Designed to be used in two ways:
  *
- * <p>Division of labor: {@link BatchedLogBuffer} decides when a batch seals, {@link
- * AsyncBatchedLogUploader} decides what an S3 object looks like, and this class decides when
- * uploads run — the flush triggers (seal on publish, age tick, drain on close), the
- * upload-concurrency gate, and metrics.
- *
- * <p>Delivery is at-most-once by design: publish never waits for queue capacity, full buffers drop
- * new lines, and close drains best-effort within {@code shutdownTimeout}.
+ * <ul>
+ *   <li>Registered as a log {@link Handler} for the logger created with {@link
+ *       DefaultBilling#BILLING_LOGGER_NAME} so the {@link #publish(LogRecord)} is called by the
+ *       logging system from multiple threads.
+ *   <li>Called on a deamon worker thread the {@link #startUploading()} function will run until
+ *       {@link #close()} is called, when running it periodiclky checks the buffer of log messages
+ *       and uploads using a {@link AsyncBatchedLogUploader} to S3 (normally)
+ * </ul>
  */
 public final class BillingUploadingLogHandler extends Handler {
 
@@ -54,7 +54,7 @@ public final class BillingUploadingLogHandler extends Handler {
   private final Semaphore wakeupPermit = new Semaphore(0);
 
   /**
-   * There is only 1 permit for the upload process to be runnning. When {@link #startUploading()}
+   * There is only 1 permit for the upload process to be running. When {@link #startUploading()}
    * starts it takes the permit, gives it back when the function exits (after {@link #close()}.
    * close() uses this to make sure uploading has finished.
    */
@@ -66,7 +66,20 @@ public final class BillingUploadingLogHandler extends Handler {
   private final Duration uploaderSafetyDeadline;
   private final Duration uploadShutdownDeadline;
 
-  /** See {@link BillingS3HandlerInstaller} */
+  /**
+   * Creates a new instance, see {@link BillingS3Lifecycle}
+   *
+   * @param buffer A configured buffer that is used to buffer incoming log messages
+   * @param uploader {@link AsyncBatchedLogUploader} to upload messages when the buffer has a new
+   *     batch.
+   * @param uploadSleepDuration Duration the thread running {@link #startUploading()} will sleep
+   *     waiting for a new batch from the buffer.
+   * @param uploaderSafetyDeadline Duration to wait for the uploader to return from uploading. NOTE:
+   *     the uploader should have its own internal timeouts, this is to prevent the uploading thread
+   *     blocking.
+   * @param uploadShutdownDeadline Duration a call to {@link #close()} should wait for the uploading
+   *     thread to complete flushing remaining events.
+   */
   BillingUploadingLogHandler(
       BatchedLogBuffer buffer,
       AsyncBatchedLogUploader uploader,
@@ -109,10 +122,10 @@ public final class BillingUploadingLogHandler extends Handler {
   // ============================================================
 
   /**
-   * Buffers and then published the record to S3.
+   * Buffers and then publishes the record to S3.
    *
    * @param record description of the log event. A null record is silently ignored and is not
-   *     published
+   *     published.
    */
   @Override
   public void publish(LogRecord record) {
@@ -152,7 +165,7 @@ public final class BillingUploadingLogHandler extends Handler {
 
   /**
    * Closes the LogHandler so that it will drop any records sent to {@link #publish(LogRecord)} and
-   * drain the buffer fully to send all batches to S3.
+   * drain the buffer fully to send all batches to the uploader.
    */
   @Override
   public void close() {
@@ -168,7 +181,6 @@ public final class BillingUploadingLogHandler extends Handler {
 
     try {
       // Check uploading is not running by trying to get the single uploading permit
-      // TODO: move timeout to config
       if (!uploadPermit.tryAcquire(uploadShutdownDeadline.toMillis(), TimeUnit.MILLISECONDS)) {
         LOGGER.warn(
             "close() - Failed to get uploading permit, upload failed to stop. uploadShutdownDeadline:{}",
@@ -192,15 +204,18 @@ public final class BillingUploadingLogHandler extends Handler {
   /**
    * Call this on a worker thread to start uploading, will start a loop of waiting for batches from
    * the buffer and uploading them.
+   *
+   * <p>Call {@link #close()} to signal this function to stop waiting, upload all events, and
+   * return.
    */
   void startUploading() {
 
     LOGGER.info("startUploading() - handler:{}, buffer:{}, uploader:{}", this, buffer, uploader);
 
-    boolean hasPermit = false;
+    boolean hasUploadPermit = false;
     BatchedLogBuffer.Batch batch;
     try {
-      if (!(hasPermit = uploadPermit.tryAcquire())) {
+      if (!(hasUploadPermit = uploadPermit.tryAcquire())) {
         throw new IllegalStateException(
             "startUploading() - unable to acquire uploadPermit, was function already called?");
       }
@@ -211,7 +226,6 @@ public final class BillingUploadingLogHandler extends Handler {
         // down.
         if (!isClosed.get()) {
           try {
-            // waiting will release the synchronized monitor
             maybeTrace(
                 "startUploading() - waiting for wakeupPermit. isClosed:{}, uploadSleepDuration:{}",
                 isClosed.get(),
@@ -247,8 +261,8 @@ public final class BillingUploadingLogHandler extends Handler {
         }
       }
     } finally {
-      // release the uploading permit if we have it, done with the uploading lifestyle
-      if (hasPermit) {
+      // release the uploading permit if we have it, to signal close() to stop waiting
+      if (hasUploadPermit) {
         uploadPermit.release();
         maybeTrace("startUploading() - releasing upload permit");
       } else {
@@ -269,8 +283,9 @@ public final class BillingUploadingLogHandler extends Handler {
         uploader);
   }
 
-  /** Adds a permit to the wakeupPermit so the uploading thread will wakeup and do some work. */
+  /** Signals the thread running {@link #startUploading()} to wake up and check for work. */
   private void notifyUploading() {
+    // Adds a permit to the wakeupPermit so the uploading thread will wakeup and do some work.
     wakeupPermit.release();
   }
 
@@ -280,15 +295,7 @@ public final class BillingUploadingLogHandler extends Handler {
     }
   }
 
-  /**
-   * Creates a Uni that will upload the provided batch.
-   *
-   * <p>As a deferred Uni it does not do any work until something pulls the item, so the caller (see
-   * startUploading()) starts the work and can decide to wait etc.
-   *
-   * @param batch
-   * @return
-   */
+  /** Creates a Uni that will upload the provided batch. */
   private void uploadBatch(BatchedLogBuffer.Batch batch) {
 
     LOGGER.info(
@@ -297,7 +304,8 @@ public final class BillingUploadingLogHandler extends Handler {
         batch);
 
     // while the uploader should take of all the timeout and retry logic
-    // as a client of the uploader adding a safety timeout here incase it breaks
+    // as a client of the uploader adding a safety timeout here in case it breaks.
+    // we do not want the uploader hanging to block this thread.
 
     // using deferred so that an error in upload() before it returns the Uni is then
     // treated as an error through the Uni pipeline
@@ -311,7 +319,7 @@ public final class BillingUploadingLogHandler extends Handler {
             .recoverWithItem(
                 t -> onUploaderFailure(batch, t)) // TimeoutException id deadline exceeded
             .await()
-            .indefinitely(); // the deadline above covers it
+            .indefinitely(); // the deadline above covers it, this causes deferred to start exec'ing
 
     if (uploadResult.throwable() == null) {
       onBatchSuccess(uploadResult);
@@ -341,12 +349,17 @@ public final class BillingUploadingLogHandler extends Handler {
 
   private void onBatchFailure(AsyncBatchedLogUploader.UploadResult uploadResult) {
     LOGGER.error("onBatchFailure() - failed to upload batch:{}", uploadResult.batch());
+    dumpBuffer();
   }
 
   /** TODO: dump buffer or a failed batch to regular logs or whatever */
-  private void dumpBuffer() {}
+  private void dumpBuffer() {
+    LOGGER.warn("dumpBuffer() - DUMP BUFFER CALLED, NOT IMPLEMENTED YET!");
+  }
 
-  private void dumpBatch() {}
+  private void dumpBatch(BatchedLogBuffer.Batch batch) {
+    LOGGER.warn("dumpBuffer() - DUMP BATCH CALLED, NOT IMPLEMENTED YET!");
+  }
 
   @Override
   public String toString() {

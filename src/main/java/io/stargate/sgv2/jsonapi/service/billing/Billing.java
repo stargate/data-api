@@ -10,26 +10,12 @@ import java.util.Objects;
  * Per-request billing sink for model calls.
  *
  * <p>Get an instance via {@code requestContext.billing()}, which delegates to {@link
- * #create(BillingConfig, ApiFeatures)} to pick the right implementation for the request:
+ * #create(BillingConfig, ApiFeatures)} to pick the right implementation for the request
  *
- * <ul>
- *   <li>{@link DefaultBilling} — when {@link ApiFeature#BILLING_EVENTS_LOGGING} is enabled; emits
- *       structured JSON log lines on the {@code billing.events} logger.
- *   <li>{@link #NO_OP} — when the feature is disabled, or in tests / contexts where billing is not
- *       exercised.
- * </ul>
- *
- * Pass each aggregated {@link ModelUsage} to {@link #emitEvent(ModelUsage)}. {@code modelUsage}
- * must be non-null — callers are responsible for ensuring usage data exists before invoking.
+ * <p>Call {@link #emitEvent(ModelUsage)} to generate a billing event for the model usage, the
+ * implementation takes care of where the event goes.
  */
 public interface Billing {
-
-  /**
-   * Emits billing events for the given aggregated model usage.
-   *
-   * @param modelUsage usage data for the model call; must not be null.
-   */
-  void emitEvent(ModelUsage modelUsage);
 
   /**
    * Shared NO-OP {@link Billing}. Still enforces the non-null {@code modelUsage} contract so tests
@@ -39,17 +25,29 @@ public interface Billing {
   Billing NO_OP = modelUsage -> Objects.requireNonNull(modelUsage, "modelUsage must not be null");
 
   /**
-   * Factory that picks the right {@link Billing} implementation for the current request.
-   * Centralizes the {@code DefaultBilling vs NO_OP} dispatch so callers (e.g. {@link
-   * io.stargate.sgv2.jsonapi.api.request.RequestContext}) don't have to know the rule. Reads {@code
-   * config} only when the feature is enabled — when disabled it is fine to pass any value,
-   * including one that would not validate as a real config.
+   * Emits billing events for the given model usage.
+   *
+   * @param modelUsage usage data for the model call; must not be null.
+   */
+  void emitEvent(ModelUsage modelUsage);
+
+  /**
+   * Factory to create the correct instance of {@link Billing} for a given request.
+   *
+   * <ul>
+   *   <li>{@link DefaultBilling} — when {@link ApiFeature#BILLING_EVENTS_LOGGING} is enabled; emits
+   *       structured JSON log lines on the {@code billing.events} logger.
+   *   <li>{@link #NO_OP} — when the feature is disabled, or in tests / contexts where billing is
+   *       not exercised.
+   * </ul>
    *
    * @param config billing configuration; only consulted when the feature is enabled
    * @param apiFeatures the request's resolved feature set; must not be null
    */
   static Billing create(BillingConfig config, ApiFeatures apiFeatures) {
+
     Objects.requireNonNull(apiFeatures, "apiFeatures must not be null");
+
     return apiFeatures.isFeatureEnabled(ApiFeature.BILLING_EVENTS_LOGGING)
         ? new DefaultBilling(config)
         : NO_OP;

@@ -30,8 +30,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/** Tests for the {@link DefaultBilling} which is */
-class DefaultBillingTest {
+/** Tests for {@link DefaultBilling} */
+public class DefaultBillingTest {
+
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   private static final String PRODUCT = "serverless";
   private static final String RESOURCE_TYPE = "serverless_database";
@@ -47,8 +49,6 @@ class DefaultBillingTest {
   private static final UUID PLACEHOLDER_ID = new UUID(0L, 0L);
   private static final Instant PLACEHOLDER_TIMESTAMP = Instant.EPOCH;
 
-  private final TestConstants testConstants = new TestConstants();
-
   // ============================================================
   // buildEvents
   // ============================================================
@@ -59,11 +59,10 @@ class DefaultBillingTest {
       ModelProvider provider, ModelType modelType) {
     // DefaultBilling does not read ModelType — events are identical across model types. Running
     // every (provider, modelType) combination guards against future regressions if either
-    // dimension gains handling. INTERNAL_PROVIDERS decides whether the provider gets internal_*
-    // or external_* event types.
+    // dimension gains handling.
+
     var billing = newBilling(INTERNAL_PROVIDERS, Optional.empty());
     var modelUsage = usage(provider, modelType);
-
     var events = billing.buildEvents(modelUsage);
 
     var isInternal = INTERNAL_PROVIDERS.contains(provider.apiName());
@@ -250,7 +249,7 @@ class DefaultBillingTest {
         provider,
         modelType,
         MODEL_NAME,
-        testConstants.TENANT,
+        TEST_CONSTANTS.TENANT,
         ModelInputType.INDEX,
         100,
         TOTAL_TOKENS,
@@ -268,9 +267,9 @@ class DefaultBillingTest {
     var properties =
         new BillingEvent.BillingProperties(
             usage,
-            testConstants.TENANT.region(),
+            TEST_CONSTANTS.TENANT.region(),
             RESOURCE_TYPE,
-            testConstants.TENANT.toString(),
+            TEST_CONSTANTS.TENANT.toString(),
             providerName,
             MODEL_NAME);
     return new BillingEvent(PLACEHOLDER_ID, PLACEHOLDER_TIMESTAMP, PRODUCT, eventType, properties);
@@ -303,9 +302,9 @@ class DefaultBillingTest {
             PRODUCT,
             eventType.eventName(),
             usage,
-            testConstants.TENANT.region(),
+            TEST_CONSTANTS.TENANT.region(),
             RESOURCE_TYPE,
-            testConstants.TENANT.toString(),
+            TEST_CONSTANTS.TENANT.toString(),
             providerName,
             MODEL_NAME);
   }

@@ -9,8 +9,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Metrics for the billing buffer in {@link
- * io.stargate.sgv2.jsonapi.service.billing.BatchedLogBuffer}
+ * Metrics for the log buffer {@link io.stargate.sgv2.jsonapi.service.billing.BatchedLogBuffer}
+ *
+ * <p><b>NOTE:</b> A single instance of the buffer is expected to as the application runs, and it
+ * must call {@link #registerBuffer(BatchedLogBuffer)} when created.
+ *
+ * <p>Note: not recording events dropped at shutdown as a metric because when shutting down the
+ * metrics still need to be scrapped to be useful. Do it as a log message that is persistent.
  */
 public final class BatchedLogBufferMetrics extends MetricsBase {
 
@@ -25,18 +30,18 @@ public final class BatchedLogBufferMetrics extends MetricsBase {
   public Gauge remainingCapacity;
   public Gauge bytes;
 
-  /** */
+  /** Creates a new instance, remember to call {@link #registerBuffer(BatchedLogBuffer)} */
   public BatchedLogBufferMetrics(MeterRegistry meterRegistry, String prefix) {
     super(meterRegistry, prefix);
 
     this.offered = newCounter("buffer.offered");
     this.dropped = newCounter("buffer.dropped");
-
-    // Note: not recording events dropped at shutdown as a metric because when shutting down
-    // the metrics still need to be scrapped to be useful. Do it as a log message that is
-    // persistent.
   }
 
+  /**
+   * Registers the supplued buffer as the source for metrics thats are pulled from the buffer. Can
+   * only be called once.
+   */
   public void registerBuffer(BatchedLogBuffer buffer) {
 
     if (!bufferRegister.compareAndSet(false, true)) {

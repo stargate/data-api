@@ -5,12 +5,23 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/** Common base for classes that create metric measures */
+/**
+ * Common base for classes that create metric measures
+ *
+ * <p>Use this so that metrics have a common name, and use the factory functions when creating new
+ * metrics so we can push them through a single point of control
+ */
 public abstract class MetricsBase {
 
   protected final MeterRegistry meterRegistry;
   protected final String prefix;
 
+  /**
+   * Creates a new instance.
+   *
+   * @param meterRegistry Registry that metrics will be registered with.
+   * @param prefix Prefix that is given to all metrics created with the factory functions
+   */
   protected MetricsBase(MeterRegistry meterRegistry, String prefix) {
 
     this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");

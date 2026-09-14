@@ -13,7 +13,7 @@ import java.util.UUID;
  * A billing event emitted as a structured JSON log line for downstream billing pipelines.
  *
  * <p>Each event represents a single billable unit from a user request (e.g. token usage or egress
- * bytes for an embedding or reranking call). Constructed and emitted by {@link Billing}.
+ * bytes for an embedding or reranking call). Constructed and emitted by {@link DefaultBilling}.
  *
  * <p>Example serialized form:
  *

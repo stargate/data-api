@@ -5,7 +5,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
+import io.stargate.sgv2.jsonapi.config.BillingS3UploadConfig;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogBufferMetrics;
 import io.stargate.sgv2.jsonapi.metrics.BatchedLogUploaderMetrics;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,9 +15,13 @@ import java.util.logging.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Encapsulates setting up billing to send billing events to S3.
+ * Lifecycle management for sending billing events to S3.
  *
- * <p>
+ * <p>If configured to upload to S3, a long-running task is started using the {@link
+ * Infrastructure#getDefaultWorkerPool()} in the background for the {@link
+ * BillingUploadingLogHandler#startUploading()} to run on.
+ *
+ * <p>S3 uploading is controlled with the {@link BillingS3UploadConfig}
  *
  * <ul>
  *   <li>Encapsulates all the quarkus / CDI injection in here, so the billing classes are not bound
@@ -27,27 +31,26 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @ApplicationScoped
-public class BillingS3HandlerInstaller {
+public class BillingS3Lifecycle {
 
-  private static final org.slf4j.Logger LOGGER =
-      LoggerFactory.getLogger(BillingS3HandlerInstaller.class);
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(BillingS3Lifecycle.class);
 
   public static final String METRICS_PREFIX = "billing";
 
-  private final BillingS3ExportConfig config;
+  private final BillingS3UploadConfig config;
   private final MeterRegistry meterRegistry;
 
   private volatile BillingUploadingLogHandler handler;
 
-  @VisibleForTesting
-  BillingUploadingLogHandler handler() {
-    return this.handler;
-  }
-
   @Inject
-  public BillingS3HandlerInstaller(BillingS3ExportConfig config, MeterRegistry meterRegistry) {
+  public BillingS3Lifecycle(BillingS3UploadConfig config, MeterRegistry meterRegistry) {
     this.config = config;
     this.meterRegistry = meterRegistry;
+  }
+
+  @VisibleForTesting
+  protected BillingUploadingLogHandler handler() {
+    return this.handler;
   }
 
   void onStart(@Observes StartupEvent event) {
@@ -76,7 +79,7 @@ public class BillingS3HandlerInstaller {
             config.bufferMaxBatchSize(),
             config.bufferMaxBatchBytes(),
             config.bufferMaxBatchAge(),
-            config.queueCapacity(),
+            config.bufferCapacity(),
             new BatchedLogBufferMetrics(meterRegistry, METRICS_PREFIX));
     LOGGER.info("onStart() - using log buffer: {}", buffer);
 

@@ -25,6 +25,14 @@ public class ApiFeaturesTestUtil {
    * Create a {@link ApiFeatures} that has either or both of the provided APIFeature specified by
    * config or the header.
    *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * ApiFeatures features = ApiFeaturesTestUtil.withFeature(
+   *       ApiFeature.BILLING_EVENTS_LOGGING, configEnabled, headerEnabled);
+   *
+   * }</pre>
+   *
    * @param feature The {@link ApiFeature} we want to set value for
    * @param configEnabled If the feature should be set via config, if null is ignored.
    * @param headerEnabled If the feature should be set via HTTP Header, if null is ignored.

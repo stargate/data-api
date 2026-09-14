@@ -13,15 +13,12 @@ import java.util.function.Function;
 
 /**
  * Utils for working with SmallRye config classes in tests, mostly so we can use method references
- * that the compiler can detect if they are invalid.
+ * that the compiler can detect if they are invalid rather than string names for metrics.
  *
  * <p>See {@link #propertyName(ConfigMethodRef)} and {@link #addPropertyTo(Map, ConfigMethodRef,
  * String)}
  */
 public final class SmallRyeConfigTestUtil {
-
-  // Serializable is required, the java compiler only emits the synthetic
-  // writeReplace() for a lambda whose target type is serializable.
 
   /**
    * Functional interface to represent a method on a SmallRye config interface.
@@ -46,6 +43,8 @@ public final class SmallRyeConfigTestUtil {
   /**
    * Gets the string name for this config mapping method, so it can be used in tests without using
    * string consts.
+   *
+   * <p>You will probably want to use {@link #addPropertyTo(Map, ConfigMethodRef, String)}
    *
    * <p>Example, given this config:
    *
@@ -97,6 +96,16 @@ public final class SmallRyeConfigTestUtil {
   /**
    * Helper method to add the property name and value to the map, when you need to build a map of
    * config for overriding in a test.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * Map<String, String> props = new HashMap<>();
+   * addPropertyTo(props, BillingS3UploadConfig::enabled, true);
+   * addPropertyTo(props, BillingS3UploadConfig::region, REGION);
+   * addPropertyTo(props, BillingS3UploadConfig::bucket, BUCKET);
+   *
+   * }</pre>
    */
   public static <T, R> void addPropertyTo(
       Map<String, String> props, ConfigMethodRef<T, R> methodRef, String value) {

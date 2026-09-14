@@ -23,29 +23,24 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
- * Uploads sealed billing batches to S3 as NDJSON objects under time-partitioned keys. TODO:
- * .requestChecksumCalculation(RequestChecksumCalculation.WHEN_SUPPORTED)
+ * Uploads sealed billing batches to S3 as NDJSON objects under time-partitioned keys.
+ *
+ * <p>TODO: checksums ? .requestChecksumCalculation(RequestChecksumCalculation.WHEN_SUPPORTED)
  * .responseChecksumValidation(ResponseChecksumValidation.WHEN_SUPPORTED)
  */
 public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(S3BatchedLogUploader.class);
 
-  // S3 destination formatting
-  //  private static final String PATH_PREFIX = "data-api";
   // this header not defined in standard libs
   @VisibleForTesting public static final String CONTENT_TYPE_NDJSON = "application/x-ndjson";
   private static final DateTimeFormatter OBJECT_KEY_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy/MM/dd/HH/mm").withZone(ZoneOffset.UTC);
 
-  //  private static final Duration API_CALL_ATTEMPT_TIMEOUT = Duration.ofSeconds(10);
-  //  private static final Duration API_CALL_TIMEOUT = Duration.ofSeconds(30);
-
   private final S3AsyncClient client;
   private final String region;
   private final String bucket;
   private final String pathPrefix;
-
   private final BatchedLogUploaderMetrics metrics;
 
   /**
@@ -53,7 +48,7 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
    * RetryMode, BatchedLogUploaderMetrics)} to get a new instance.
    */
   @VisibleForTesting
-  S3BatchedLogUploader(
+  protected S3BatchedLogUploader(
       S3AsyncClient client,
       String region,
       String bucket,
@@ -63,16 +58,21 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
     this.region = region;
     this.bucket = bucket;
     this.pathPrefix = pathPrefix;
-
     this.metrics = metrics;
   }
 
   /**
-   * Creates a new instance
+   * Factory to create a new instance, including creating and configuring the AWS client
    *
-   * @param region
-   * @param bucket
-   * @param endpointOverride
+   * @param region S3 region to send events to
+   * @param bucket S3 bucket to send events to
+   * @param endpointOverride nullable override for the S3 end point, used for testing.
+   * @param pathPrefix Prefix to store events under, the path also has the event time and a UUId in
+   *     it.
+   * @param s3CallAttemptTimeout Timeout for a single call to S3
+   * @param s3TotalCallTimeout Timeout for the total time calling s3, including retries
+   * @param s3RetryMode retry strategy, see S3 docs.
+   * @param metrics Metrics instance to track with.
    * @return
    */
   public static S3BatchedLogUploader create(
@@ -137,6 +137,16 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
     return new S3BatchedLogUploader(builder.build(), region, bucket, pathPrefix, metrics);
   }
 
+  /**
+   * Starts uploading the supplied batch to S3.
+   *
+   * <p>
+   *
+   * @param batch The batch of log records to upload
+   * @return Uni for uploading the batch to S3. The returned Uni will be working to complete the
+   *     task (i.e. not deferred), and will be emitted on the {@link
+   *     Infrastructure#getDefaultWorkerPool()}
+   */
   @Override
   public Uni<UploadResult> upload(BatchedLogBuffer.Batch batch) {
 
@@ -152,7 +162,6 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
         body.length);
 
     // retry and timeout are set when we created the client.
-
     var putRequest =
         PutObjectRequest.builder()
             .bucket(location.bucket())
@@ -216,7 +225,7 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
   }
 
   @VisibleForTesting
-  S3Location objectLocation(BatchedLogBuffer.Batch batch) {
+  protected S3Location objectLocation(BatchedLogBuffer.Batch batch) {
 
     var objectKey =
         pathPrefix
@@ -248,5 +257,5 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
   }
 
   @VisibleForTesting
-  record S3Location(String region, String bucket, String key) {}
+  protected record S3Location(String region, String bucket, String key) {}
 }

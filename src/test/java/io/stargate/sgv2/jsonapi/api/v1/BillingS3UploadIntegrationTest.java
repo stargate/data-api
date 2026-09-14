@@ -45,10 +45,10 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 @WithTestResource(value = DseTestResource.class)
 @WithTestResource(value = S3MockTestResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class) // needed because we turn off mock S3
-public class BillingS3ExportIntegrationTest extends AbstractCollectionIntegrationTestBase {
+public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BillingS3ExportIntegrationTest.class);
+      LoggerFactory.getLogger(BillingS3UploadIntegrationTest.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final TestConstants TEST_CONSTANTS = new TestConstants();
@@ -75,7 +75,7 @@ public class BillingS3ExportIntegrationTest extends AbstractCollectionIntegratio
   }
 
   /**
-   * Send
+   * Successfully send events to the (mock) S3.
    *
    * @throws Exception
    */
@@ -176,7 +176,8 @@ public class BillingS3ExportIntegrationTest extends AbstractCollectionIntegratio
   /**
    * Confirm the API still works when the S3 backend is offline.
    *
-   * <p><b>NOTE:</b> must run last so because the S3 resource is shared
+   * <p><b>NOTE:</b> must run last so because the S3 resource is shared and this tests turns if off
+   * !
    */
   @Test
   @Order(Integer.MAX_VALUE)

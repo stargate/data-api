@@ -24,6 +24,7 @@ public abstract class BillingTestBase {
 
   // ======================================================================
   // BUFFER config and values for the tests to use
+  // NOTE: these values are all balanced, see comments before changing
   // ======================================================================
 
   // want the line bytes when lines go into the buffer to be 25
@@ -187,8 +188,7 @@ public abstract class BillingTestBase {
 
       var metricsUtil = new MetricsUnitAssertions();
       var bufferMetrics =
-          new BatchedLogBufferMetrics(
-              metricsUtil.registry(), BillingS3HandlerInstaller.METRICS_PREFIX);
+          new BatchedLogBufferMetrics(metricsUtil.registry(), BillingS3Lifecycle.METRICS_PREFIX);
 
       BatchedLogBuffer buffer;
       if (mockBuffer) {

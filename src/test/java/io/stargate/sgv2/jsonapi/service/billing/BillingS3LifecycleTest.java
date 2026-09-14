@@ -8,7 +8,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.jsonapi.config.BillingS3ExportConfig;
+import io.stargate.sgv2.jsonapi.config.BillingS3UploadConfig;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +19,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Test the {@link BillingS3HandlerInstaller} gets correct config when creating the objects */
-public class BillingS3HandlerInstallerTest {
+/** Test the {@link BillingS3Lifecycle} gets correct config when creating the objects */
+public class BillingS3LifecycleTest {
 
   private Logger logger;
   private Handler[] saved;
@@ -41,46 +41,63 @@ public class BillingS3HandlerInstallerTest {
     }
   }
 
+  /**
+   * Start billing upload, remove other handlers for the logger {@link
+   * DefaultBilling#BILLING_LOGGER_NAME}
+   */
   @Test
   void onStartBillingEnabledOthersDisabled() {
 
     var config = new HashMap<String, String>();
-    addPropertyTo(config, BillingS3ExportConfig::enabled, true);
-    addPropertyTo(config, BillingS3ExportConfig::disableOtherHandlers, true);
+    addPropertyTo(config, BillingS3UploadConfig::enabled, true);
+    addPropertyTo(config, BillingS3UploadConfig::disableOtherHandlers, true);
     var installer = createInstaller(config, null);
 
     assertHandlers(installer, true, false);
   }
 
+  /**
+   * Start billing upload, do not remove other handlers for the logger {@link
+   * DefaultBilling#BILLING_LOGGER_NAME}
+   */
   @Test
   void onStartBillingEnabledOthersEnabled() {
 
     var config = new HashMap<String, String>();
-    addPropertyTo(config, BillingS3ExportConfig::enabled, true);
-    addPropertyTo(config, BillingS3ExportConfig::disableOtherHandlers, false);
+    addPropertyTo(config, BillingS3UploadConfig::enabled, true);
+    addPropertyTo(config, BillingS3UploadConfig::disableOtherHandlers, false);
     var installer = createInstaller(config, null);
 
     assertHandlers(installer, true, true);
   }
 
+  /**
+   * Disable billing upload, keep other handlers for the logger {@link
+   * DefaultBilling#BILLING_LOGGER_NAME}
+   */
   @Test
   void onStartBillingDisabledOthersDisabled() {
 
     var config = new HashMap<String, String>();
-    addPropertyTo(config, BillingS3ExportConfig::enabled, false);
-    addPropertyTo(config, BillingS3ExportConfig::disableOtherHandlers, true);
+    addPropertyTo(config, BillingS3UploadConfig::enabled, false);
+    addPropertyTo(config, BillingS3UploadConfig::disableOtherHandlers, true);
     var installer = createInstaller(config, null);
 
     // even though disabling others is enabled, billing s3 is disabled so that should not impact
     assertHandlers(installer, false, true);
   }
 
+  /**
+   * Disable billing upload, keep other handlers for the logger {@link
+   * DefaultBilling#BILLING_LOGGER_NAME} EVEN THOUGH config says disable them, because we ignore if
+   * S3 billing disabled
+   */
   @Test
   void onStartBillingDisabledOthersEnabled() {
 
     var config = new HashMap<String, String>();
-    addPropertyTo(config, BillingS3ExportConfig::enabled, false);
-    addPropertyTo(config, BillingS3ExportConfig::disableOtherHandlers, false);
+    addPropertyTo(config, BillingS3UploadConfig::enabled, false);
+    addPropertyTo(config, BillingS3UploadConfig::disableOtherHandlers, false);
     var installer = createInstaller(config, null);
 
     // even though disabling others is enabled, billing s3 is disabled so that should not impact
@@ -92,7 +109,7 @@ public class BillingS3HandlerInstallerTest {
   // ====================================
 
   private void assertHandlers(
-      BillingS3HandlerInstaller installer, boolean expectS3Handler, boolean expectOtherHandlers) {
+      BillingS3Lifecycle installer, boolean expectS3Handler, boolean expectOtherHandlers) {
 
     var billingLogger = Logger.getLogger(DefaultBilling.BILLING_LOGGER_NAME);
 
@@ -136,17 +153,17 @@ public class BillingS3HandlerInstallerTest {
         .toList();
   }
 
-  private static BillingS3HandlerInstaller createInstaller(
+  private static BillingS3Lifecycle createInstaller(
       Map<String, String> configOverride, MeterRegistry meterRegistry) {
 
-    var builder = new SmallRyeConfigBuilder().withMapping(BillingS3ExportConfig.class);
+    var builder = new SmallRyeConfigBuilder().withMapping(BillingS3UploadConfig.class);
     if (configOverride != null) {
       configOverride.forEach(builder::withDefaultValue);
     }
-    var config = builder.build().getConfigMapping(BillingS3ExportConfig.class);
+    var config = builder.build().getConfigMapping(BillingS3UploadConfig.class);
 
     meterRegistry = meterRegistry == null ? new SimpleMeterRegistry() : meterRegistry;
 
-    return new BillingS3HandlerInstaller(config, meterRegistry);
+    return new BillingS3Lifecycle(config, meterRegistry);
   }
 }

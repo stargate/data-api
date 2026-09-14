@@ -26,9 +26,14 @@ import org.slf4j.LoggerFactory;
  * <p>For each {@link ModelUsage}, up to three events are emitted, for the egress and ingress bytes
  * of the request and the total number of tokens used. See {@link BillingEventType} for which ones
  * should be used.
+ *
+ * <p><b>NOTE:</b> this class relies on the configured format for the billing logger called {@link
+ * #BILLING_LOGGER_NAME}, it should only log the message on the line because that has the JSON of
+ * the {@link BillingEvent}
  */
 public class DefaultBilling implements Billing {
 
+  /** Name of the logger that billing events will be sent to. */
   public static final String BILLING_LOGGER_NAME = "billing.events";
 
   private static final Logger BILLING_LOGGER = LoggerFactory.getLogger(BILLING_LOGGER_NAME);

@@ -14,6 +14,7 @@ public interface AsyncBatchedLogUploader extends AutoCloseable {
    */
   Uni<UploadResult> upload(BatchedLogBuffer.Batch batch);
 
+  /** Overridden to remove the throwable declared in {@link AutoCloseable#close()} */
   @Override
   default void close() {}
 
