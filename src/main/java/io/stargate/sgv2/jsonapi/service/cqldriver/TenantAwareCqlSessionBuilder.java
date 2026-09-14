@@ -76,8 +76,8 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
      * @return startup options
      */
     @Override
-    protected Map<String, String> buildStartupOptions() {
-      Map<String, String> existing = super.buildStartupOptions();
+    public Map<String, String> getStartupOptions() {
+      Map<String, String> existing = super.getStartupOptions();
       return NullAllowingImmutableMap.<String, String>builder(existing.size() + 1)
           .putAll(existing)
           .put(TENANT_ID_PROPERTY_KEY, tenantId)
