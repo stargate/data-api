@@ -170,6 +170,10 @@ class FindAndRerankOperationBuilder {
    */
   private void checkSortSupported() {
 
+    if (!isVectorSort() && !isVectorizeSort() && !isLexicalSort()) {
+      throw RequestException.Code.MISSING_HYBRID_SORT.get();
+    }
+
     if (isVectorSort() || isVectorizeSort()) {
       if (!commandContext.schemaObject().vectorConfig().vectorEnabled()) {
         throw SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION.get(
@@ -329,12 +333,19 @@ class FindAndRerankOperationBuilder {
       taskGroup.add(bm25Read);
     }
 
-    // always a vector or vectorize read
+    // vector or vectorize read (if present)
     var vectorReadAndDeferrables = buildVectorRead(deferredVectorReadAction);
-    taskGroup.add(vectorReadAndDeferrables.task());
+    if (vectorReadAndDeferrables != null) {
+      taskGroup.add(vectorReadAndDeferrables.task());
+    }
+
+    var deferrables =
+        vectorReadAndDeferrables != null
+            ? vectorReadAndDeferrables.deferrables()
+            : List.<Deferrable>of();
 
     // No accumulator, this will be wrapped in an intermediate composite task
-    return new TaskGroupAndDeferrables<>(taskGroup, null, vectorReadAndDeferrables.deferrables());
+    return new TaskGroupAndDeferrables<>(taskGroup, null, deferrables);
   }
 
   private IntermediateCollectionReadTask buildBm25Read(DeferredCommandResultAction deferredAction) {
@@ -369,6 +380,12 @@ class FindAndRerankOperationBuilder {
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorRead(DeferredCommandResultAction deferredAction) {
 
+    if (!isVectorSort() && !isVectorizeSort()) {
+      // we can fake it now, the value will be waiting when the rerank command comes to get it
+      deferredAction.setEmptyMultiDocumentResponse();
+      return null;
+    }
+
     // we can sort with either vectorize OR a BYO vector
     var sortClause = new SortClause(new ArrayList<>());
     DeferredVectorize deferredVectorize = null;
@@ -389,12 +406,10 @@ class FindAndRerankOperationBuilder {
               vectorDef.vectorSize(),
               vectorDef.vectorizeDefinition(),
               sortClause);
-    } else if (isVectorSort()) {
+    } else {
       sortClause
           .sortExpressions()
           .add(SortExpression.collectionVectorSort(command.sortClause().vectorSort()));
-    } else {
-      throw new IllegalArgumentException("buildVectorRead() - no vector or vectorize");
     }
 
     // The intermediate task will set the sort when we give it the deferred vectorize

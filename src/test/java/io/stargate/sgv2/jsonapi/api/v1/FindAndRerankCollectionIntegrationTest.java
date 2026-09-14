@@ -185,11 +185,11 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
 
     givenHeadersPostJsonThen(keyspaceName, collectionName, "{\"findAndRerank\": { } }")
         .body("$", responseIsError())
-        .body("errors[0].errorCode", is(RequestException.Code.MISSING_RERANK_QUERY_TEXT.name()))
+        .body("errors[0].errorCode", is(RequestException.Code.MISSING_HYBRID_SORT.name()))
         .body(
             "errors[0].message",
             containsString(
-                "findAndRerank command is missing the text to use as the query with the reranking"));
+                "The findAndRerank hybrid sort clause must specify at least one sort field"));
   }
 
   private void errorOnNotEnabled(
