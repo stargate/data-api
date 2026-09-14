@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.provider;
+package io.stargate.sgv2.jsonapi.service.billing;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.EnumSet;
@@ -43,8 +43,7 @@ public enum BillingEventType {
   private final Metric metric;
 
   BillingEventType(String eventName, boolean internal, Metric metric) {
-    // Event names are emitted lower-case in the JSON billing event payload; normalize defensively
-    // so a stray uppercase character in the literal can't break downstream consumers.
+    // Event names are emitted lower-case in the JSON billing event payload
     this.eventName = eventName.toLowerCase();
     this.internal = internal;
     this.metric = metric;

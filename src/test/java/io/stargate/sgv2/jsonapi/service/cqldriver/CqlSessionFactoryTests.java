@@ -23,9 +23,7 @@ import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ExceptionFlags;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
@@ -225,19 +223,21 @@ public class CqlSessionFactoryTests {
     // we are testing that the CqlSessionFactory calls the session builder correctly,
     // so we mock the session builder and verify that it is called correctly.
     var session = mock(CqlSession.class);
-
-    // CqlSession guarantees a Metdata obj, and we now check it
-    var metadata = mock(Metadata.class);
-    when(session.getMetadata()).thenReturn(metadata);
     if (closingError == null) {
       when(session.closeAsync()).thenReturn(CompletableFuture.completedFuture(null));
     } else {
       when(session.closeAsync()).thenReturn(CompletableFuture.failedFuture(closingError));
     }
-    Optional<KeyspaceMetadata> keyspaceMetadata =
-        withMetadata ? Optional.of(mock(KeyspaceMetadata.class)) : Optional.empty();
-    when(metadata.getKeyspace(any(CqlIdentifier.class))).thenReturn(keyspaceMetadata);
-    when(metadata.getKeyspace(anyString())).thenReturn(keyspaceMetadata);
+
+    // CqlSession guarantees a Metdata obj, and we now check it
+    var metadata = mock(Metadata.class);
+    when(session.getMetadata()).thenReturn(metadata);
+
+    Map<CqlIdentifier, KeyspaceMetadata> keyspaces = new HashMap<>();
+    if (withMetadata) {
+      keyspaces.put(CqlIdentifier.fromInternal("system"), mock(KeyspaceMetadata.class));
+    }
+    when(metadata.getKeyspaces()).thenReturn(keyspaces);
 
     var sessionBuilder = mock(CqlSessionBuilder.class);
     when(sessionBuilder.withLocalDatacenter(any())).thenReturn(sessionBuilder);

@@ -2,12 +2,19 @@ package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import io.stargate.sgv2.jsonapi.service.provider.BillingEventType;
+import io.stargate.sgv2.jsonapi.service.billing.BillingEventType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/** Configuration for the billing event pipeline. */
+/**
+ * Configuration for the billing event pipeline.
+ *
+ * <p><b>NOTE:</b> This enables the collection of billing events and configures their structure, the
+ * events are then send to the logger named {@link
+ * io.stargate.sgv2.jsonapi.service.billing.DefaultBilling#BILLING_LOGGER_NAME}. Use {@link
+ * BillingS3UploadConfig} to configure sending them to S3, or configure a log handler manually.
+ */
 @ConfigMapping(prefix = "stargate.jsonapi.billing")
 public interface BillingConfig {
 
