@@ -115,14 +115,18 @@ public record CollectionLexicalDef(
   }
 
   /**
-   * Validate the configuration passed from the user and create the internal representation
+   * Validates the lexical config passed and constructs the runtime configuration object to use.
+   * Invalid-option errors are reported with {@code optionsErrorCode} so they get attributed to the
+   * invoking command (e.g. {@code INVALID_CREATE_COLLECTION_OPTIONS} from {@code createCollection},
+   * {@code INVALID_ALTER_COLLECTION_OPTIONS} from {@code alterCollection}).
    *
-   * @return Valid CollectionLexicalConfig object
+   * @return Valid CollectionLexicalDef object
    */
   public static SchemaHolder<CollectionLexicalDef> fromApiDesc(
       ObjectMapper mapper,
       CreateCollectionCommand.Options.LexicalDesc lexicalDesc,
-      SchemaFactory<CollectionLexicalDef> schemaFactory) {
+      SchemaFactory<CollectionLexicalDef> schemaFactory,
+      SchemaException.Code optionsErrorCode) {
 
     // Case 1: No lexical body provided - so no value from the user
     if (lexicalDesc == null) {
@@ -132,7 +136,7 @@ public record CollectionLexicalDef(
     // Case 2: Validate 'enabled' flag is present
     var enabled = lexicalDesc.enabled();
     if (enabled == null) {
-      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw optionsErrorCode.get(
           "message", "'enabled' is required property for 'lexical' Object value");
     }
 
@@ -149,7 +153,7 @@ public record CollectionLexicalDef(
     if (!enabled) {
       if (!analyzerNotDefined) {
         String nodeType = JsonUtil.nodeTypeAsString(lexicalDesc.analyzerDef());
-        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw optionsErrorCode.get(
             "message",
             ("'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: %s. "
                     + "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or an empty Object '{ }'.")
@@ -183,7 +187,7 @@ public record CollectionLexicalDef(
       // First: check top level members for any invalid (misspelled etc) fields
       foundNames.removeAll(VALID_ANALYZER_FIELDS);
       if (!foundNames.isEmpty()) {
-        throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+        throw optionsErrorCode.get(
             "message",
             "Invalid field%s for 'lexical.analyzer'. Valid fields are: %s, found: %s"
                 .formatted(
@@ -212,7 +216,7 @@ public record CollectionLexicalDef(
               }
             };
         if (!valueOk) {
-          throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+          throw optionsErrorCode.get(
               "message",
               "'%s' property of 'lexical.analyzer' must be JSON %s, is: %s"
                   .formatted(entry.getKey(), expectedType, JsonUtil.nodeTypeAsString(fieldValue)));
@@ -223,7 +227,7 @@ public record CollectionLexicalDef(
       cleanedAnalyzerDef = lexicalDesc.analyzerDef();
     } else {
       // Otherwise, invalid definition
-      throw SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS.get(
+      throw optionsErrorCode.get(
           "message",
           "'analyzer' property of 'lexical' must be either JSON Object or String, is: %s"
               .formatted(JsonUtil.nodeTypeAsString(lexicalDesc.analyzerDef())));
