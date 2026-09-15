@@ -87,7 +87,7 @@ public class ResponseAssertions {
             FieldMatcher.errors(hasErrors));
 
     final String msg =
-        "%s: Response fields %s:%s, %s:%s, %s:%s"
+        "%s: %s:%s, %s:%s, %s:%s"
             .formatted(
                 message,
                 Presence.REQUIRED,
