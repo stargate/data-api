@@ -29,7 +29,8 @@ import java.util.UUID;
  *     "resource_type": "serverless_database",
  *     "resource_id": "60b5dccb-e91d-4a60-987b-7588cd8aa1e3",
  *     "provider": "nvidia",
- *     "model": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+ *     "model": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+ *     "model_type": "reranking"
  *   }
  * }
  * </pre>
@@ -77,6 +78,7 @@ public record BillingEvent(
    * @param resourceId The tenant/database identifier.
    * @param provider The model provider API name, e.g. {@code "nvidia"} or {@code "openai"}.
    * @param model The model name, e.g. {@code "nvidia/llama-3.2-nv-rerankqa-1b-v2"}.
+   * @param modelType The model type API name, e.g. {@code "embedding"} or {@code "reranking"}.
    */
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record BillingProperties(
@@ -85,7 +87,8 @@ public record BillingEvent(
       @JsonProperty("resource_type") String resourceType,
       @JsonProperty("resource_id") String resourceId,
       String provider,
-      String model)
+      String model,
+      @JsonProperty("model_type") String modelType)
       implements Recordable {
 
     public BillingProperties {
@@ -94,6 +97,7 @@ public record BillingEvent(
       Objects.requireNonNull(resourceId, "resourceId must not be null");
       Objects.requireNonNull(provider, "provider must not be null");
       Objects.requireNonNull(model, "model must not be null");
+      Objects.requireNonNull(modelType, "modelType must not be null");
     }
 
     @Override
@@ -104,7 +108,8 @@ public record BillingEvent(
           .append("resource_type", resourceType)
           .append("resource_id", resourceId)
           .append("provider", provider)
-          .append("model", model);
+          .append("model", model)
+          .append("model_type", modelType);
     }
   }
 }

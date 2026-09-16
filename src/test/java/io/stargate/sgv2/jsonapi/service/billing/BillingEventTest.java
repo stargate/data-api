@@ -22,7 +22,8 @@ public class BillingEventTest {
         "serverless_database",
         "tenant-x",
         "nvidia",
-        "nvidia/llama-3.2-nv-rerankqa-1b-v2");
+        "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+        "reranking");
   }
 
   @ParameterizedTest(name = "{0}")
@@ -48,7 +49,8 @@ public class BillingEventTest {
             "resource_type": "serverless_database",
             "resource_id": "tenant-x",
             "provider": "nvidia",
-            "model": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+            "model": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+            "model_type": "reranking"
           }
         }
         """
@@ -71,7 +73,8 @@ public class BillingEventTest {
                   resource_type=serverless_database,
                   resource_id=tenant-x,
                   provider=nvidia,
-                  model=nvidia/llama-3.2-nv-rerankqa-1b-v2		}
+                  model=nvidia/llama-3.2-nv-rerankqa-1b-v2,
+                  model_type=reranking		}
             }
             """
             .formatted(type.eventName());

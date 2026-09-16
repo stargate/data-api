@@ -103,6 +103,7 @@ public class DefaultBilling implements Billing {
     var resourceId = modelUsage.tenant().toString();
     var providerName = modelUsage.modelProvider().apiName();
     var modelName = modelUsage.modelName();
+    var modelType = modelUsage.modelType().apiName();
     var timestamp = Instant.now();
     var events = new ArrayList<BillingEvent>(3);
 
@@ -123,7 +124,8 @@ public class DefaultBilling implements Billing {
               resourceType,
               resourceId,
               providerName,
-              modelName);
+              modelName,
+              modelType);
       events.add(new BillingEvent(UUID.randomUUID(), timestamp, product, eventType, properties));
     }
     return events;

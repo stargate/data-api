@@ -14,6 +14,15 @@ public enum ModelType {
   EMBEDDING,
   RERANKING;
 
+  /** Lower-case name used in billing events, e.g. {@code "reranking"} */
+  public String apiName() {
+    return switch (this) {
+      case MODEL_TYPE_UNSPECIFIED -> "unspecified";
+      case EMBEDDING -> "embedding";
+      case RERANKING -> "reranking";
+    };
+  }
+
   public static Optional<ModelType> fromEmbeddingGateway(
       EmbeddingGateway.ModelUsage.ModelType modelType) {
     return switch (modelType) {

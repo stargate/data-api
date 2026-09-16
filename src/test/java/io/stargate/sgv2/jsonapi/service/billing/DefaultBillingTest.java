@@ -57,9 +57,7 @@ public class DefaultBillingTest {
   @MethodSource("providerAndModelTypeMatrix")
   void buildEventsProducesExpectedEventsForEveryProviderAndModelType(
       ModelProvider provider, ModelType modelType) {
-    // DefaultBilling does not read ModelType — events are identical across model types. Running
-    // every (provider, modelType) combination guards against future regressions if either
-    // dimension gains handling.
+    // every (provider, modelType) combination, internal/external and model_type are independent
 
     var billing = newBilling(INTERNAL_PROVIDERS, Optional.empty());
     var modelUsage = usage(provider, modelType);
@@ -84,9 +82,9 @@ public class DefaultBillingTest {
         .ignoringFields("id", "timestamp")
         .isEqualTo(
             List.of(
-                expectedEvent(totalTokensType, TOTAL_TOKENS, provider.apiName()),
-                expectedEvent(egressType, REQUEST_BYTES, provider.apiName()),
-                expectedEvent(ingressType, RESPONSE_BYTES, provider.apiName())));
+                expectedEvent(totalTokensType, TOTAL_TOKENS, provider.apiName(), modelType),
+                expectedEvent(egressType, REQUEST_BYTES, provider.apiName(), modelType),
+                expectedEvent(ingressType, RESPONSE_BYTES, provider.apiName(), modelType)));
   }
 
   private static Stream<Arguments> providerAndModelTypeMatrix() {
@@ -95,6 +93,27 @@ public class DefaultBillingTest {
             provider ->
                 Arrays.stream(ModelType.values())
                     .map(modelType -> Arguments.of(provider, modelType)));
+  }
+
+  @ParameterizedTest(name = "{0} -> {1}")
+  @MethodSource("modelTypeWireValues")
+  void buildEventsSetsModelTypeOnEveryEvent(ModelType modelType, String expectedWireValue) {
+    // downstream pricing matches on these values, do not change them
+    var billing = newBilling();
+
+    var events = billing.buildEvents(usage(ModelProvider.NVIDIA, modelType));
+
+    assertThat(events)
+        .hasSize(3)
+        .extracting(event -> event.properties().modelType())
+        .containsOnly(expectedWireValue);
+  }
+
+  private static Stream<Arguments> modelTypeWireValues() {
+    return Stream.of(
+        Arguments.of(ModelType.EMBEDDING, "embedding"),
+        Arguments.of(ModelType.RERANKING, "reranking"),
+        Arguments.of(ModelType.MODEL_TYPE_UNSPECIFIED, "unspecified"));
   }
 
   @ParameterizedTest(name = "{0}")
@@ -122,7 +141,10 @@ public class DefaultBillingTest {
     assertThat(events)
         .usingRecursiveComparison()
         .ignoringFields("id", "timestamp")
-        .isEqualTo(List.of(expectedEvent(totalTokensType, TOTAL_TOKENS, provider.apiName())));
+        .isEqualTo(
+            List.of(
+                expectedEvent(
+                    totalTokensType, TOTAL_TOKENS, provider.apiName(), ModelType.EMBEDDING)));
   }
 
   @Test
@@ -151,15 +173,18 @@ public class DefaultBillingTest {
                 expectedEvent(
                     BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS,
                     TOTAL_TOKENS,
-                    ModelProvider.NVIDIA.apiName()),
+                    ModelProvider.NVIDIA.apiName(),
+                    ModelType.EMBEDDING),
                 expectedEvent(
                     BillingEventType.EXTERNAL_MODEL_EGRESS_BYTES,
                     REQUEST_BYTES,
-                    ModelProvider.NVIDIA.apiName()),
+                    ModelProvider.NVIDIA.apiName(),
+                    ModelType.EMBEDDING),
                 expectedEvent(
                     BillingEventType.EXTERNAL_MODEL_INGRESS_BYTES,
                     RESPONSE_BYTES,
-                    ModelProvider.NVIDIA.apiName())));
+                    ModelProvider.NVIDIA.apiName(),
+                    ModelType.EMBEDDING)));
   }
 
   // ============================================================
@@ -210,15 +235,24 @@ public class DefaultBillingTest {
       var providerName = ModelProvider.NVIDIA.apiName();
       assertJsonEquals(
           expectedEventJson(
-              BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS, TOTAL_TOKENS, providerName),
+              BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
+              TOTAL_TOKENS,
+              providerName,
+              "embedding"),
           records.get(0).getMessage());
       assertJsonEquals(
           expectedEventJson(
-              BillingEventType.INTERNAL_MODEL_EGRESS_BYTES, REQUEST_BYTES, providerName),
+              BillingEventType.INTERNAL_MODEL_EGRESS_BYTES,
+              REQUEST_BYTES,
+              providerName,
+              "embedding"),
           records.get(1).getMessage());
       assertJsonEquals(
           expectedEventJson(
-              BillingEventType.INTERNAL_MODEL_INGRESS_BYTES, RESPONSE_BYTES, providerName),
+              BillingEventType.INTERNAL_MODEL_INGRESS_BYTES,
+              RESPONSE_BYTES,
+              providerName,
+              "embedding"),
           records.get(2).getMessage());
     } finally {
       julLogger.removeHandler(handler);
@@ -263,7 +297,8 @@ public class DefaultBillingTest {
    * TestConstants#TENANT} so this stays consistent with what {@link DefaultBilling#buildEvents}
    * reads off the {@link ModelUsage}.
    */
-  private BillingEvent expectedEvent(BillingEventType eventType, long usage, String providerName) {
+  private BillingEvent expectedEvent(
+      BillingEventType eventType, long usage, String providerName, ModelType modelType) {
     var properties =
         new BillingEvent.BillingProperties(
             usage,
@@ -271,7 +306,8 @@ public class DefaultBillingTest {
             RESOURCE_TYPE,
             TEST_CONSTANTS.TENANT.toString(),
             providerName,
-            MODEL_NAME);
+            MODEL_NAME,
+            modelType.apiName());
     return new BillingEvent(PLACEHOLDER_ID, PLACEHOLDER_TIMESTAMP, PRODUCT, eventType, properties);
   }
 
@@ -280,7 +316,8 @@ public class DefaultBillingTest {
    * loosely as any string (UUID / Instant generated at emit time); every other field is pinned
    * exactly so we catch regressions in serialization or property mapping.
    */
-  private String expectedEventJson(BillingEventType eventType, long usage, String providerName) {
+  private String expectedEventJson(
+      BillingEventType eventType, long usage, String providerName, String modelType) {
     return
         """
         {
@@ -294,7 +331,8 @@ public class DefaultBillingTest {
             "resource_type": "%s",
             "resource_id": "%s",
             "provider": "%s",
-            "model": "%s"
+            "model": "%s",
+            "model_type": "%s"
           }
         }
         """
@@ -306,6 +344,7 @@ public class DefaultBillingTest {
             RESOURCE_TYPE,
             TEST_CONSTANTS.TENANT.toString(),
             providerName,
-            MODEL_NAME);
+            MODEL_NAME,
+            modelType);
   }
 }

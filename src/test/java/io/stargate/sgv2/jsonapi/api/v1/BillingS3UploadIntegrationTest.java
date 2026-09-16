@@ -131,7 +131,8 @@ public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegratio
               "/event_type",
               "/properties/resource_type",
               "/properties/provider",
-              "/properties/model");
+              "/properties/model",
+              "/properties/model_type");
       var requiredNumericMembers = List.of("/properties/usage");
 
       for (String line : allBillingLines) {
@@ -163,6 +164,8 @@ public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegratio
         // The billed model is what the provider reports in ModelUsage — for the IT provider that
         // is its internal model config ("test-model"), not the createCollection modelName.
         assertThat(event.at("/properties/model").asText()).isEqualTo("test-model");
+        // inserts are vectorized, so all events are for embedding
+        assertThat(event.at("/properties/model_type").asText()).isEqualTo("embedding");
       }
     } // end of S3 resource
 
