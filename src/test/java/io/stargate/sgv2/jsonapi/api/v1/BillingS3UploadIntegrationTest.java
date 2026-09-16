@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
@@ -38,8 +39,10 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * <p><b>NOTE:</b> we first made billing for findAndRerank / rerank models, these tests ony use
  * $vectorize with insert, not findAndRerank, because we have test infra for a custom vectorizer
  *
- * <p>TestMethodOrder is used because the second test turns off the S3 container so we need that to
- * be last
+ * <p>Collections vectorize in DataVectorizerService and tables in EmbeddingTask, so we test both.
+ *
+ * <p>TestMethodOrder is used because the last test turns off the S3 container so we need that to be
+ * last
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
@@ -54,6 +57,10 @@ public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegratio
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   private static final int DOCUMENT_COUNT = 10;
+  private static final String TABLE_NAME = "billing_vectorize_table";
+  private static final int ROW_COUNT = 5;
+  // all event types are enabled for the IT
+  private static final int EVENTS_PER_MODEL_CALL = BillingEventType.Metric.values().length;
   private static final Pattern KEY_PATTERN =
       Pattern.compile("data-api/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/[0-9a-f-]{36}\\.jsonl");
   private static final Set<String> EVENT_TYPES =
@@ -80,6 +87,7 @@ public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegratio
    * @throws Exception
    */
   @Test
+  @Order(1)
   public void billingEventsSentToS3() throws Exception {
 
     try (var s3Client = s3ClientForVerification()) {
@@ -173,6 +181,32 @@ public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegratio
     assertMetricTotal("billing.buffer.dropped", (a) -> a.isZero());
   }
 
+  /** Each table insert is billed exactly once, tables vectorize in the EmbeddingTask */
+  @Test
+  @Order(2)
+  public void tableVectorizeEventsSentToS3() {
+
+    try (var s3Client = s3ClientForVerification()) {
+      createTable();
+      // earlier tests uploaded events, only count new ones
+      var linesBefore = settledLineCount(s3Client);
+      insertTableRows();
+
+      // one vectorize column per row, so one provider call per insert
+      var expectedLines = linesBefore + ROW_COUNT * EVENTS_PER_MODEL_CALL;
+      await()
+          .atMost(Duration.ofSeconds(60))
+          .pollInterval(Duration.ofSeconds(2))
+          .untilAsserted(
+              () ->
+                  assertThat(allLinesInAllObjectsInBucket(s3Client))
+                      .hasSizeGreaterThanOrEqualTo(expectedLines));
+      assertThat(settledLineCount(s3Client))
+          .as("tableVectorizeEventsSentToS3() - exactly one event set per insert")
+          .isEqualTo(expectedLines);
+    }
+  }
+
   /**
    * Confirm the API still works when the S3 backend is offline.
    *
@@ -226,6 +260,48 @@ public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegratio
         .wasSuccessful();
   }
 
+  private void createTable() {
+    var tableDef =
+            """
+            {
+                "name": "%s",
+                "definition": {
+                    "columns": {
+                        "id": { "type": "text" },
+                        "content": {
+                            "type": "vector",
+                            "dimension": 5,
+                            "service": {
+                                "provider": "custom",
+                                "modelName": "text-embedding-ada-002"
+                            }
+                        }
+                    },
+                    "primaryKey": "id"
+                }
+            }
+            """
+            .formatted(TABLE_NAME);
+
+    assertNamespaceCommand(TEST_CONSTANTS.KEYSPACE_NAME).postCreateTable(tableDef).wasSuccessful();
+  }
+
+  private void insertTableRows() {
+    for (int i = 0; i < ROW_COUNT; i++) {
+      var row =
+              """
+              {
+                  "id": "row-%d",
+                  "content": "billing export test row %d"
+              }"""
+              .formatted(i, i);
+      assertTableCommand(TEST_CONSTANTS.KEYSPACE_NAME, TABLE_NAME)
+          .templated()
+          .insertOne(row)
+          .wasSuccessful();
+    }
+  }
+
   private void insertDocs(String idPrefix) {
     for (int i = 0; i < DOCUMENT_COUNT; i++) {
       var id = "doc-%s-%d".formatted(idPrefix, i);
@@ -273,6 +349,20 @@ public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegratio
         .endpointOverride(URI.create(S3MockTestResource.endpoint()))
         .forcePathStyle(true)
         .build();
+  }
+
+  /** Line count once it has not changed for longer than the buffer age and upload sleep */
+  private static int settledLineCount(S3Client s3Client) {
+    var lastCount = new AtomicInteger(-1);
+    await()
+        .during(Duration.ofSeconds(6))
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () ->
+                lastCount.getAndSet(allLinesInAllObjectsInBucket(s3Client).size())
+                    == lastCount.get());
+    return lastCount.get();
   }
 
   private static List<S3Object> allObjectsInBucket(S3Client s3Client) {

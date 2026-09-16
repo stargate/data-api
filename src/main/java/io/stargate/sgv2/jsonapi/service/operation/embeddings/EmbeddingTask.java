@@ -149,8 +149,13 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
           .get()
           .onItem()
           .transform(
-              rawResult ->
-                  EmbeddingTaskResult.create(embeddingTask, commandContext, rawResult, actions));
+              rawResult -> {
+                // bill before checking the response, the tokens are used even if we reject it
+                // NOTE: collection $vectorize is billed by MeteredEmbeddingProviderWrapper
+                commandContext.requestContext().billing().emitEvent(rawResult.modelUsage());
+                return EmbeddingTaskResult.create(
+                    embeddingTask, commandContext, rawResult, actions);
+              });
     }
   }
 
