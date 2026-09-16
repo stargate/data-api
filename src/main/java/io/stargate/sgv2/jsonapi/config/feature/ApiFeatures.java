@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.config.feature;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Accessor for combined state of feature flags; typically based on static configuration (with its
@@ -30,11 +31,13 @@ public class ApiFeatures {
 
   public static ApiFeatures fromConfigAndRequest(
       FeaturesConfig config, RequestContext.HttpHeaderAccess httpHeaders) {
-    Map<ApiFeature, String> fromConfig = config.flags();
-    if (fromConfig == null) {
-      fromConfig = Collections.emptyMap();
-    }
-    return new ApiFeatures(fromConfig, httpHeaders);
+    Objects.requireNonNull(config, "config cannot be null");
+    return fromConfigAndRequest(config.flags(), httpHeaders);
+  }
+
+  public static ApiFeatures fromConfigAndRequest(
+      Map<ApiFeature, String> flags, RequestContext.HttpHeaderAccess httpHeaders) {
+    return new ApiFeatures(flags == null ? Collections.emptyMap() : flags, httpHeaders);
   }
 
   public boolean isFeatureEnabled(ApiFeature flag) {
