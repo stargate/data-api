@@ -90,7 +90,8 @@ public class DefaultBilling implements Billing {
   /**
    * Builds the list of billing events for one {@link ModelUsage}: one event per billable metric
    * (total tokens, egress bytes, ingress bytes), with the {@code internal_*} or {@code external_*}
-   * variant chosen based on {@link BillingConfig#internalModelProviders()}.
+   * variant chosen based on {@link BillingConfig#internalModelProviders()}, and the {@code
+   * embedding} or {@code reranking} variant from {@link ModelUsage#modelType()}.
    *
    * <p>All events from a single {@code ModelUsage} share one timestamp so they can be correlated in
    * the billing logs.
@@ -109,9 +110,20 @@ public class DefaultBilling implements Billing {
     for (Pair<BillingEventType.Metric, Function<ModelUsage, Integer>> pair : METRICS_PER_USAGE) {
 
       var metric = pair.getLeft();
-      var eventType = BillingEventType.of(metric, internal);
       var supplier = pair.getRight();
 
+      var maybeEventType = BillingEventType.of(modelUsage.modelType(), metric, internal);
+      if (maybeEventType.isEmpty()) {
+        LOGGER.error(
+            "No billing event type, not emitting. modelType={}, metric={}, provider={}, model={}",
+            modelUsage.modelType(),
+            metric,
+            providerName,
+            modelName);
+        continue;
+      }
+
+      var eventType = maybeEventType.get();
       if (!enabledEventTypes.contains(eventType)) {
         continue;
       }

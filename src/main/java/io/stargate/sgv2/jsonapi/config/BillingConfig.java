@@ -59,9 +59,9 @@ public interface BillingConfig {
    *   jsonapi:
    *     billing:
    *       enabled-event-types:
-   *         - INTERNAL_MODEL_TOTAL_TOKENS
-   *         - EXTERNAL_MODEL_TOTAL_TOKENS
-   *         - INTERNAL_MODEL_EGRESS_BYTES
+   *         - INTERNAL_RERANKING_TOTAL_TOKENS
+   *         - EXTERNAL_RERANKING_TOTAL_TOKENS
+   *         - INTERNAL_RERANKING_EGRESS_BYTES
    * </pre>
    */
   Optional<Set<BillingEventType>> enabledEventTypes();
