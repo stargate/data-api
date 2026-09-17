@@ -63,9 +63,12 @@ public class DefaultBillingTest {
     var events = billing.buildEvents(modelUsage);
 
     var isInternal = INTERNAL_PROVIDERS.contains(provider.apiName());
-    var totalTokensType = eventType(modelType, BillingEventType.Metric.TOTAL_TOKENS, isInternal);
-    var egressType = eventType(modelType, BillingEventType.Metric.EGRESS_BYTES, isInternal);
-    var ingressType = eventType(modelType, BillingEventType.Metric.INGRESS_BYTES, isInternal);
+    var totalTokensType =
+        BillingEventType.of(modelType, BillingEventType.Metric.TOTAL_TOKENS, isInternal);
+    var egressType =
+        BillingEventType.of(modelType, BillingEventType.Metric.EGRESS_BYTES, isInternal);
+    var ingressType =
+        BillingEventType.of(modelType, BillingEventType.Metric.INGRESS_BYTES, isInternal);
 
     assertThat(events)
         .usingRecursiveComparison()
@@ -87,11 +90,13 @@ public class DefaultBillingTest {
 
   @ParameterizedTest(name = "{0}")
   @EnumSource(ModelProvider.class)
-  void buildEventsUnspecifiedModelTypeEmitsNothing(ModelProvider provider) {
+  void buildEventsUnspecifiedModelTypeThrows(ModelProvider provider) {
     // no event types for unspecified, cannot tell how to bill it
     var billing = newBilling();
+    var modelUsage = usage(provider, ModelType.MODEL_TYPE_UNSPECIFIED);
 
-    assertThat(billing.buildEvents(usage(provider, ModelType.MODEL_TYPE_UNSPECIFIED))).isEmpty();
+    assertThatThrownBy(() -> billing.buildEvents(modelUsage))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @ParameterizedTest(name = "{0}")
@@ -239,11 +244,6 @@ public class DefaultBillingTest {
     when(config.internalModelProviders()).thenReturn(internalProviders);
     when(config.enabledEventTypes()).thenReturn(enabledEventTypes);
     return new DefaultBilling(config);
-  }
-
-  private static BillingEventType eventType(
-      ModelType modelType, BillingEventType.Metric metric, boolean internal) {
-    return BillingEventType.of(modelType, metric, internal).orElseThrow();
   }
 
   private ModelUsage usage(ModelProvider provider, ModelType modelType) {

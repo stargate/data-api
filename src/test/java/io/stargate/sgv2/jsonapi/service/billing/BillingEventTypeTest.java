@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.service.billing.BillingEventType.Metric.T
 import static io.stargate.sgv2.jsonapi.service.provider.ModelType.EMBEDDING;
 import static io.stargate.sgv2.jsonapi.service.provider.ModelType.RERANKING;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.stargate.sgv2.jsonapi.service.provider.ModelType;
 import java.util.stream.Stream;
@@ -22,9 +23,7 @@ public class BillingEventTypeTest {
   public void resolvesEventName(
       ModelType modelType, BillingEventType.Metric metric, boolean internal, String eventName) {
     // downstream pricing matches on these names, do not change them
-    assertThat(BillingEventType.of(modelType, metric, internal))
-        .map(BillingEventType::eventName)
-        .contains(eventName);
+    assertThat(BillingEventType.of(modelType, metric, internal).eventName()).isEqualTo(eventName);
   }
 
   private static Stream<Arguments> eventTypes() {
@@ -45,8 +44,10 @@ public class BillingEventTypeTest {
 
   @ParameterizedTest(name = "{0}")
   @EnumSource(BillingEventType.Metric.class)
-  public void unspecifiedModelTypeHasNoEventType(BillingEventType.Metric metric) {
-    assertThat(BillingEventType.of(ModelType.MODEL_TYPE_UNSPECIFIED, metric, true)).isEmpty();
-    assertThat(BillingEventType.of(ModelType.MODEL_TYPE_UNSPECIFIED, metric, false)).isEmpty();
+  public void unspecifiedModelTypeThrows(BillingEventType.Metric metric) {
+    assertThatThrownBy(() -> BillingEventType.of(ModelType.MODEL_TYPE_UNSPECIFIED, metric, true))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> BillingEventType.of(ModelType.MODEL_TYPE_UNSPECIFIED, metric, false))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }

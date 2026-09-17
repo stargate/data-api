@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.service.billing;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.stargate.sgv2.jsonapi.service.provider.ModelType;
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -24,53 +22,63 @@ import java.util.Set;
  * </ul>
  */
 public enum BillingEventType {
-  INTERNAL_EMBEDDING_TOTAL_TOKENS(
-      "internal_embedding_total_tokens", true, ModelType.EMBEDDING, Metric.TOTAL_TOKENS),
-  INTERNAL_RERANKING_TOTAL_TOKENS(
-      "internal_reranking_total_tokens", true, ModelType.RERANKING, Metric.TOTAL_TOKENS),
-  EXTERNAL_EMBEDDING_TOTAL_TOKENS(
-      "external_embedding_total_tokens", false, ModelType.EMBEDDING, Metric.TOTAL_TOKENS),
-  EXTERNAL_RERANKING_TOTAL_TOKENS(
-      "external_reranking_total_tokens", false, ModelType.RERANKING, Metric.TOTAL_TOKENS),
+  INTERNAL_EMBEDDING_TOTAL_TOKENS(true, ModelType.EMBEDDING, Metric.TOTAL_TOKENS),
+  INTERNAL_RERANKING_TOTAL_TOKENS(true, ModelType.RERANKING, Metric.TOTAL_TOKENS),
+  EXTERNAL_EMBEDDING_TOTAL_TOKENS(false, ModelType.EMBEDDING, Metric.TOTAL_TOKENS),
+  EXTERNAL_RERANKING_TOTAL_TOKENS(false, ModelType.RERANKING, Metric.TOTAL_TOKENS),
 
-  INTERNAL_EMBEDDING_EGRESS_BYTES(
-      "internal_embedding_egress_bytes", true, ModelType.EMBEDDING, Metric.EGRESS_BYTES),
-  INTERNAL_RERANKING_EGRESS_BYTES(
-      "internal_reranking_egress_bytes", true, ModelType.RERANKING, Metric.EGRESS_BYTES),
-  EXTERNAL_EMBEDDING_EGRESS_BYTES(
-      "external_embedding_egress_bytes", false, ModelType.EMBEDDING, Metric.EGRESS_BYTES),
-  EXTERNAL_RERANKING_EGRESS_BYTES(
-      "external_reranking_egress_bytes", false, ModelType.RERANKING, Metric.EGRESS_BYTES),
+  INTERNAL_EMBEDDING_EGRESS_BYTES(true, ModelType.EMBEDDING, Metric.EGRESS_BYTES),
+  INTERNAL_RERANKING_EGRESS_BYTES(true, ModelType.RERANKING, Metric.EGRESS_BYTES),
+  EXTERNAL_EMBEDDING_EGRESS_BYTES(false, ModelType.EMBEDDING, Metric.EGRESS_BYTES),
+  EXTERNAL_RERANKING_EGRESS_BYTES(false, ModelType.RERANKING, Metric.EGRESS_BYTES),
 
-  INTERNAL_EMBEDDING_INGRESS_BYTES(
-      "internal_embedding_ingress_bytes", true, ModelType.EMBEDDING, Metric.INGRESS_BYTES),
-  INTERNAL_RERANKING_INGRESS_BYTES(
-      "internal_reranking_ingress_bytes", true, ModelType.RERANKING, Metric.INGRESS_BYTES),
-  EXTERNAL_EMBEDDING_INGRESS_BYTES(
-      "external_embedding_ingress_bytes", false, ModelType.EMBEDDING, Metric.INGRESS_BYTES),
-  EXTERNAL_RERANKING_INGRESS_BYTES(
-      "external_reranking_ingress_bytes", false, ModelType.RERANKING, Metric.INGRESS_BYTES);
+  INTERNAL_EMBEDDING_INGRESS_BYTES(true, ModelType.EMBEDDING, Metric.INGRESS_BYTES),
+  INTERNAL_RERANKING_INGRESS_BYTES(true, ModelType.RERANKING, Metric.INGRESS_BYTES),
+  EXTERNAL_EMBEDDING_INGRESS_BYTES(false, ModelType.EMBEDDING, Metric.INGRESS_BYTES),
+  EXTERNAL_RERANKING_INGRESS_BYTES(false, ModelType.RERANKING, Metric.INGRESS_BYTES);
 
   /** The billable metric a {@link BillingEventType} measures. */
   public enum Metric {
-    TOTAL_TOKENS,
-    EGRESS_BYTES,
-    INGRESS_BYTES
+    TOTAL_TOKENS("total_tokens"),
+    EGRESS_BYTES("egress_bytes"),
+    INGRESS_BYTES("ingress_bytes");
+
+    private final String billingEventName;
+
+    Metric(String billingEventName) {
+      this.billingEventName = billingEventName;
+    }
+
+    /** Name of the metric used in the billing event name. */
+    public String billingEventName() {
+      return billingEventName;
+    }
   }
 
   public static final Set<BillingEventType> ALL = Set.copyOf(EnumSet.allOf(BillingEventType.class));
+
+  private static final String INTERNAL = "internal";
+  private static final String EXTERNAL = "external";
 
   private final String eventName;
   private final boolean internal;
   private final ModelType modelType;
   private final Metric metric;
 
-  BillingEventType(String eventName, boolean internal, ModelType modelType, Metric metric) {
-    // Event names are emitted lower-case in the JSON billing event payload
-    this.eventName = eventName.toLowerCase();
+  BillingEventType(boolean internal, ModelType modelType, Metric metric) {
+    this.eventName = eventName(internal, modelType, metric);
     this.internal = internal;
     this.modelType = modelType;
     this.metric = metric;
+  }
+
+  /** Builds the event name e.g. {@code internal_embedding_total_tokens} */
+  private static String eventName(boolean internal, ModelType modelType, Metric metric) {
+    return String.join(
+        "_",
+        internal ? INTERNAL : EXTERNAL,
+        modelType.billingEventName(),
+        metric.billingEventName());
   }
 
   /** Lower-case event_type string used in the JSON billing event. */
@@ -90,18 +98,35 @@ public enum BillingEventType {
   /**
    * Resolves the event type for a given model type, metric and provider classification.
    *
-   * <p><b>NOTE:</b> empty for {@link ModelType#MODEL_TYPE_UNSPECIFIED}, it has no event types.
-   *
    * @param modelType the type of model that was called
    * @param metric which billable metric we are emitting
    * @param internal {@code true} if the model provider is configured as internal
+   * @throws IllegalArgumentException if the modelType is {@link ModelType#MODEL_TYPE_UNSPECIFIED}
    */
-  public static Optional<BillingEventType> of(
-      ModelType modelType, Metric metric, boolean internal) {
-    return Arrays.stream(values())
-        .filter(
-            type ->
-                type.modelType == modelType && type.metric == metric && type.internal == internal)
-        .findFirst();
+  public static BillingEventType of(ModelType modelType, Metric metric, boolean internal) {
+    return switch (modelType) {
+      case MODEL_TYPE_UNSPECIFIED ->
+          throw new IllegalArgumentException(
+              "BillingEventType.of() - modelType must be specified, modelType=%s, metric=%s"
+                  .formatted(modelType, metric));
+      case EMBEDDING ->
+          switch (metric) {
+            case TOTAL_TOKENS ->
+                internal ? INTERNAL_EMBEDDING_TOTAL_TOKENS : EXTERNAL_EMBEDDING_TOTAL_TOKENS;
+            case EGRESS_BYTES ->
+                internal ? INTERNAL_EMBEDDING_EGRESS_BYTES : EXTERNAL_EMBEDDING_EGRESS_BYTES;
+            case INGRESS_BYTES ->
+                internal ? INTERNAL_EMBEDDING_INGRESS_BYTES : EXTERNAL_EMBEDDING_INGRESS_BYTES;
+          };
+      case RERANKING ->
+          switch (metric) {
+            case TOTAL_TOKENS ->
+                internal ? INTERNAL_RERANKING_TOTAL_TOKENS : EXTERNAL_RERANKING_TOTAL_TOKENS;
+            case EGRESS_BYTES ->
+                internal ? INTERNAL_RERANKING_EGRESS_BYTES : EXTERNAL_RERANKING_EGRESS_BYTES;
+            case INGRESS_BYTES ->
+                internal ? INTERNAL_RERANKING_INGRESS_BYTES : EXTERNAL_RERANKING_INGRESS_BYTES;
+          };
+    };
   }
 }
