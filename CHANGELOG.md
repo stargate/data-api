@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.0.54](https://github.com/stargate/data-api/tree/v1.0.54) (2026-09-21)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.53...v1.0.54)
+
+**Merged pull requests:**
+
+- feat: split billing event types by embedding and reranking [\#2583](https://github.com/stargate/data-api/pull/2583) ([erichare](https://github.com/erichare))
+- Bumping version for next data-api release [\#2580](https://github.com/stargate/data-api/pull/2580) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix: \#2030 - IllegalArgumentException when using findAndRerank without specifying rerankOn [\#2578](https://github.com/stargate/data-api/pull/2578) ([sl-at-ibm](https://github.com/sl-at-ibm))
+
 ## [v1.0.53](https://github.com/stargate/data-api/tree/v1.0.53) (2026-09-14)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.52...v1.0.53)
