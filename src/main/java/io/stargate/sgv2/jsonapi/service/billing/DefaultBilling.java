@@ -41,7 +41,7 @@ public class DefaultBilling implements Billing {
 
   private static final ObjectWriter OBJECT_WRITER = new ObjectMapper().writer();
 
-  // There are three metrics, but 6 Event Types, because 3 each for internal or external provider.
+  // There are three metrics, each has internal / external and embedding / reranking event types.
   // this is the mapping of the metric and where we get it from
   private static final List<Pair<BillingEventType.Metric, Function<ModelUsage, Integer>>>
       METRICS_PER_USAGE =
@@ -90,10 +90,14 @@ public class DefaultBilling implements Billing {
   /**
    * Builds the list of billing events for one {@link ModelUsage}: one event per billable metric
    * (total tokens, egress bytes, ingress bytes), with the {@code internal_*} or {@code external_*}
-   * variant chosen based on {@link BillingConfig#internalModelProviders()}.
+   * variant chosen based on {@link BillingConfig#internalModelProviders()}, and the {@code
+   * embedding} or {@code reranking} variant from {@link ModelUsage#modelType()}.
    *
    * <p>All events from a single {@code ModelUsage} share one timestamp so they can be correlated in
    * the billing logs.
+   *
+   * @throws IllegalArgumentException if the model type is {@link
+   *     io.stargate.sgv2.jsonapi.service.provider.ModelType#MODEL_TYPE_UNSPECIFIED}
    */
   @VisibleForTesting
   List<BillingEvent> buildEvents(ModelUsage modelUsage) {
@@ -109,7 +113,7 @@ public class DefaultBilling implements Billing {
     for (Pair<BillingEventType.Metric, Function<ModelUsage, Integer>> pair : METRICS_PER_USAGE) {
 
       var metric = pair.getLeft();
-      var eventType = BillingEventType.of(metric, internal);
+      var eventType = BillingEventType.of(modelUsage.modelType(), metric, internal);
       var supplier = pair.getRight();
 
       if (!enabledEventTypes.contains(eventType)) {
