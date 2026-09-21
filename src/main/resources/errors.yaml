@@ -288,7 +288,7 @@ request-errors:
     body: |-
       The findAndRerank command does not specify which document field to rerank on.
 
-      Reranking involves using a model to compare test from a user query to text from stored documents, the passage texts.
+      Reranking involves using a model to compare text from a user query to text from stored documents, the passage texts.
       
       The passage text can be specified using either:
       * `$hybrid` field in the sort clause, in which case documents are ranked using the value of `$vectorize` e.g. `{"$hybrid": "query text"}`.
