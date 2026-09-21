@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 
 /**
@@ -17,6 +18,7 @@ public class SchemaRegistry {
 
   private final CollectionLexicalDefSchemaFactory lexicalDefFactory;
   private final CollectionRerankDefSchemaFactory rerankDefFactory;
+  private final CollectionOpenSearchDefSchemaFactory openSearchDefFactory;
 
   public SchemaRegistry(ApiFeatures apiFeatures) {
 
@@ -24,6 +26,7 @@ public class SchemaRegistry {
         new CollectionLexicalDefSchemaFactory(!apiFeatures.isFeatureEnabled(ApiFeature.LEXICAL));
     this.rerankDefFactory =
         new CollectionRerankDefSchemaFactory(!apiFeatures.isFeatureEnabled(ApiFeature.RERANKING));
+    this.openSearchDefFactory = new CollectionOpenSearchDefSchemaFactory();
   }
 
   public CollectionLexicalDefSchemaFactory lexicalDef() {
@@ -32,5 +35,9 @@ public class SchemaRegistry {
 
   public CollectionRerankDefSchemaFactory rerankDef() {
     return rerankDefFactory;
+  }
+
+  public CollectionOpenSearchDefSchemaFactory openSearchDef() {
+    return openSearchDefFactory;
   }
 }

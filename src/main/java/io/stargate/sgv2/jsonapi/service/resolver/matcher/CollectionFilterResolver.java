@@ -45,6 +45,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
   private static final Object SUB_DOC_EQUALS = new Object();
   // For $match on $lexical
   private static final Object MATCH_GROUP = new Object();
+  // For $search on $search (OpenSearch)
+  private static final Object SEARCH_GROUP = new Object();
 
   public CollectionFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -162,7 +164,13 @@ public class CollectionFilterResolver<T extends Command & Filterable>
         .capture(MATCH_GROUP)
         .compareValues(
             // Should be "$lexical" but validated elsewhere
-            "*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING);
+            "*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING)
+        .capture(SEARCH_GROUP)
+        .compareValues(
+            // Should be "$search" but validated elsewhere
+            DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD,
+            EnumSet.of(ValueComparisonOperator.EQ),
+            JsonType.STRING);
 
     return matchRules;
   }
@@ -517,6 +525,19 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                         expression -> {
                           dbLogicalExpression.addFilter(
                               new MatchCollectionFilter(
+                                  expression.path(), (String) expression.value()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(SEARCH_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> searchGroup = (CaptureGroup<Object>) captureGroup;
+                    searchGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new SearchCollectionFilter(
                                   expression.path(), (String) expression.value()));
                         });
                   });

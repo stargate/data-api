@@ -44,6 +44,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
   private final SchemaHolder<CollectionLexicalDef> lexicalDef;
+  private final SchemaHolder<CollectionOpenSearchDef> openSearchDef;
   private final SchemaHolder<CollectionRerankDef> rerankDef;
 
   public CollectionSchemaObject(
@@ -54,6 +55,26 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionIndexingConfig indexingConfig,
       SchemaHolder<CollectionLexicalDef> lexicalDef,
       SchemaHolder<CollectionRerankDef> rerankDef) {
+    this(
+        tenant,
+        tableMetadata,
+        idConfig,
+        vectorConfig,
+        indexingConfig,
+        lexicalDef,
+        new CollectionOpenSearchDefSchemaFactory().currentVersion(null),
+        rerankDef);
+  }
+
+  public CollectionSchemaObject(
+      Tenant tenant,
+      TableMetadata tableMetadata,
+      IdConfig idConfig,
+      VectorConfig vectorConfig,
+      CollectionIndexingConfig indexingConfig,
+      SchemaHolder<CollectionLexicalDef> lexicalDef,
+      SchemaHolder<CollectionOpenSearchDef> openSearchDef,
+      SchemaHolder<CollectionRerankDef> rerankDef) {
 
     super(SchemaObjectType.COLLECTION, tenant, tableMetadata);
 
@@ -62,6 +83,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     this.indexingConfig = indexingConfig;
     this.tableMetadata = tableMetadata;
     this.lexicalDef = Objects.requireNonNull(lexicalDef);
+    this.openSearchDef = Objects.requireNonNull(openSearchDef);
     this.rerankDef = Objects.requireNonNull(rerankDef);
   }
 
@@ -77,6 +99,25 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionIndexingConfig indexingConfig,
       SchemaHolder<CollectionLexicalDef> lexicalDef,
       SchemaHolder<CollectionRerankDef> rerankDef) {
+    this(
+        identifier,
+        idConfig,
+        vectorConfig,
+        indexingConfig,
+        lexicalDef,
+        new CollectionOpenSearchDefSchemaFactory().currentVersion(null),
+        rerankDef);
+  }
+
+  @VisibleForTesting
+  public CollectionSchemaObject(
+      SchemaObjectIdentifier identifier,
+      IdConfig idConfig,
+      VectorConfig vectorConfig,
+      CollectionIndexingConfig indexingConfig,
+      SchemaHolder<CollectionLexicalDef> lexicalDef,
+      SchemaHolder<CollectionOpenSearchDef> openSearchDef,
+      SchemaHolder<CollectionRerankDef> rerankDef) {
 
     super(SchemaObjectType.COLLECTION, identifier);
 
@@ -85,6 +126,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     this.indexingConfig = indexingConfig;
     this.tableMetadata = null;
     this.lexicalDef = Objects.requireNonNull(lexicalDef);
+    this.openSearchDef = Objects.requireNonNull(openSearchDef);
     this.rerankDef = Objects.requireNonNull(rerankDef);
   }
 
@@ -105,6 +147,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         .append("vectorConfig", vectorConfig)
         .append("indexingConfig", indexingConfig)
         .append("lexicalDef", lexicalDef.runningValue())
+        .append("openSearchDef", openSearchDef.runningValue())
         .append("rerankDef", rerankDef.runningValue());
   }
 
@@ -220,6 +263,10 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           new CollectionSettingsV2Reader()
               .readCollectionSettings(
                   requestContext, schemaHolder.collectionNode(), tableMetadata, objectMapper);
+      case V_3 ->
+          new CollectionSettingsV3Reader()
+              .readCollectionSettings(
+                  requestContext, schemaHolder.collectionNode(), tableMetadata, objectMapper);
     };
   }
 
@@ -267,6 +314,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return switch (schemaVersion) {
       case 1 -> new CollectionSchemaHolder(CollectionSchemaVersion.V_1, collectionNode);
       case 2 -> new CollectionSchemaHolder(CollectionSchemaVersion.V_2, collectionNode);
+      case 3 -> new CollectionSchemaHolder(CollectionSchemaVersion.V_3, collectionNode);
       default ->
           throw DatabaseException.Code.COLLECTION_SCHEMA_VERSION_INVALID.get(
               Map.of(
@@ -377,12 +425,17 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     // using the runningValue because this is what is used for DML ops
     var lexicalDesc = collectionSetting.lexicalDef().toApiDesc();
 
+    var openSearchDesc =
+        collectionSetting.openSearchDef().enabled()
+            ? collectionSetting.openSearchDef().toApiDesc()
+            : null;
+
     // construct the CreateCollectionCommand.options.rerankDef
     var rerankDesc = collectionSetting.rerankDef().toApiDesc();
 
     options =
         new CreateCollectionCommand.Options(
-            idConfig, vectorSearchDesc, indexingDesc, lexicalDesc, rerankDesc);
+            idConfig, vectorSearchDesc, indexingDesc, lexicalDesc, openSearchDesc, rerankDesc);
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
@@ -404,6 +457,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   public SchemaHolder<CollectionLexicalDef> lexicalDefSchemaValue() {
     return lexicalDef;
+  }
+
+  public CollectionOpenSearchDef openSearchDef() {
+    return openSearchDef.runningValue();
+  }
+
+  public SchemaHolder<CollectionOpenSearchDef> openSearchDefSchemaValue() {
+    return openSearchDef;
   }
 
   public CollectionRerankDef rerankDef() {

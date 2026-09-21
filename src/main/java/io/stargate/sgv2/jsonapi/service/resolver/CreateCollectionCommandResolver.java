@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -84,6 +85,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       indexingDesc.validate();
     }
 
+    var openSearchDef =
+        CollectionOpenSearchDef.fromApiDesc(
+            getOrDefault(command.options(), CreateCollectionCommand.Options::openSearch, null),
+            context.schemaObject().identifier().keyspace().asInternal(),
+            collectionName.asInternal(),
+            context.versionedSchema().openSearchDef());
+    if (openSearchDef.runningValue().enabled()
+        && indexingDesc != null
+        && indexingDesc.deny() != null) {
+      throw SchemaException.Code.OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST.get();
+    }
+
     // for these config options we have a *Def internal representation that we build from the
     // public API sided *Desc classes
     var lexicalDef =
@@ -109,6 +122,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         indexingDesc,
         vectorSearchDesc,
         lexicalDef,
+        openSearchDef,
         rerankDef);
   }
 

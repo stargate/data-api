@@ -1,0 +1,104 @@
+
+================================================================================
+ERROR LOGGED: 2026-07-07T12:45:38.007Z
+User ID: cedrick.lunven@ibm.com
+================================================================================
+Error Name: Error
+Error Message: ripgrep exited with code 2: regex parse error:
+    QueryBuilder|SimpleStatement|BuiltStatement|execute\\(|build\\(|whereClause|insertInto|selectFrom|update\\(|deleteFrom
+                                                                                                              ^
+error: unclosed group
+
+
+Stack Trace:
+Error: ripgrep exited with code 2: regex parse error:
+    QueryBuilder|SimpleStatement|BuiltStatement|execute\\(|build\\(|whereClause|insertInto|selectFrom|update\\(|deleteFrom
+                                                                                                              ^
+error: unclosed group
+
+    at ChildProcess.<anonymous> (file:///opt/homebrew/lib/node_modules/bobshell/bundle/bob.js:2272:1451)
+    at ChildProcess.emit (node:events:507:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+    at Process.callbackTrampoline (node:internal/async_hooks:130:17)
+================================================================================
+
+
+================================================================================
+ERROR LOGGED: 2026-07-07T12:45:38.009Z
+User ID: cedrick.lunven@ibm.com
+================================================================================
+Error Name: Error
+Error Message: ripgrep exited with code 2: regex parse error:
+    QueryBuilder|SimpleStatement|BuiltStatement|execute\\(|build\\(|whereClause|insertInto|selectFrom|update\\(|deleteFrom
+                                                                                                              ^
+error: unclosed group
+
+
+Stack Trace:
+Error: ripgrep exited with code 2: regex parse error:
+    QueryBuilder|SimpleStatement|BuiltStatement|execute\\(|build\\(|whereClause|insertInto|selectFrom|update\\(|deleteFrom
+                                                                                                              ^
+error: unclosed group
+
+    at ChildProcess.<anonymous> (file:///opt/homebrew/lib/node_modules/bobshell/bundle/bob.js:2272:1451)
+    at ChildProcess.emit (node:events:507:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+    at Process.callbackTrampoline (node:internal/async_hooks:130:17)
+================================================================================
+
+
+================================================================================
+ERROR LOGGED: 2026-07-07T12:46:16.891Z
+User ID: cedrick.lunven@ibm.com
+================================================================================
+Error Name: Error
+Error Message: ripgrep exited with code 2: regex parse error:
+    implements Operation<|class .*Operation|record .*Operation|QueryBuilder\\(|new QueryBuilder\\(|SimpleStatement|PreparedStatement|execute\\(|executeAsync\\(
+                                                                                                                                                              ^
+error: unclosed group
+
+
+Stack Trace:
+Error: ripgrep exited with code 2: regex parse error:
+    implements Operation<|class .*Operation|record .*Operation|QueryBuilder\\(|new QueryBuilder\\(|SimpleStatement|PreparedStatement|execute\\(|executeAsync\\(
+                                                                                                                                                              ^
+error: unclosed group
+
+    at ChildProcess.<anonymous> (file:///opt/homebrew/lib/node_modules/bobshell/bundle/bob.js:2272:1451)
+    at ChildProcess.emit (node:events:507:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:457:11)
+    at Socket.emit (node:events:507:28)
+    at Pipe.<anonymous> (node:net:351:12)
+    at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+================================================================================
+
+
+================================================================================
+ERROR LOGGED: 2026-07-07T12:46:16.891Z
+User ID: cedrick.lunven@ibm.com
+================================================================================
+Error Name: Error
+Error Message: ripgrep exited with code 2: regex parse error:
+    implements Operation<|class .*Operation|record .*Operation|QueryBuilder\\(|new QueryBuilder\\(|SimpleStatement|PreparedStatement|execute\\(|executeAsync\\(
+                                                                                                                                                              ^
+error: unclosed group
+
+
+Stack Trace:
+Error: ripgrep exited with code 2: regex parse error:
+    implements Operation<|class .*Operation|record .*Operation|QueryBuilder\\(|new QueryBuilder\\(|SimpleStatement|PreparedStatement|execute\\(|executeAsync\\(
+                                                                                                                                                              ^
+error: unclosed group
+
+    at ChildProcess.<anonymous> (file:///opt/homebrew/lib/node_modules/bobshell/bundle/bob.js:2272:1451)
+    at ChildProcess.emit (node:events:507:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:457:11)
+    at Socket.emit (node:events:507:28)
+    at Pipe.<anonymous> (node:net:351:12)
+    at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+================================================================================
+

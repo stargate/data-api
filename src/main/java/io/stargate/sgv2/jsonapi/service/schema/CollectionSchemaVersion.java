@@ -22,9 +22,12 @@ public enum CollectionSchemaVersion implements SchemaVersion {
   // NOTE: when we first put lexical and reranking into the table comment, we did NOT bump the
   // version from 1 to 2 so the CollectionSettingsV1Reader does some work to guess if it is v2
   // schema
-  V_2(2);
+  V_2(2),
 
-  public static final CollectionSchemaVersion CURRENT_VERSION = V_2;
+  // version 2 + OpenSearch replication configuration
+  V_3(3);
+
+  public static final CollectionSchemaVersion CURRENT_VERSION = V_3;
 
   private final int ordinalValue;
 

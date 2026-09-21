@@ -286,6 +286,49 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "insertArticles",
+                  summary = "`insertMany` command for the OpenSearch articles collection",
+                  value =
+                      """
+                      {
+                        "insertMany": {
+                          "documents": [
+                            {
+                              "_id": "article-1",
+                              "title": "Introduction to OpenSearch",
+                              "body": "OpenSearch provides full-text search over indexed documents.",
+                              "author": "Ada Lovelace",
+                              "publishedAt": "2026-09-15T10:00:00Z"
+                            },
+                            {
+                              "_id": "article-2",
+                              "title": "Building search with HCD",
+                              "body": "HCD replicates configured collection fields to OpenSearch in real time.",
+                              "author": "Grace Hopper",
+                              "publishedAt": "2026-09-16T10:00:00Z"
+                            }
+                          }
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "findArticlesOpenSearch",
+                  summary =
+                      "`find` command using `$search` to query the OpenSearch articles collection",
+                  value =
+                      """
+                      {
+                        "find": {
+                          "filter": {
+                            "$search": "full-text search OpenSearch"
+                          },
+                          "options": {
+                            "limit": 10
+                          }
+                        }
+                      }
+                      """),
+              @ExampleObject(
                   name = "insertMany",
                   summary = "`insertMany` command",
                   value =
@@ -453,12 +496,155 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
-                  name = "findCollections",
-                  summary = "`FindCollections` command",
+                  name = "createCollectionOpenSearch",
+                  summary = "`CreateCollection` command with minimal OpenSearch full-text mappings",
                   value =
                       """
                       {
-                        "findCollections": {}
+                        "createCollection": {
+                          "name": "articles",
+                          "options": {
+                            "openSearch": {
+                              "enabled": true,
+                              "mappings": {
+                                "title": { "type": "text" },
+                                "body": { "type": "text" },
+                                "author": { "type": "keyword" },
+                                "publishedAt": { "type": "date" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "createCollectionOpenSearchCustomIndex",
+                  summary =
+                      "`CreateCollection` command with a custom OpenSearch index and analyzer",
+                  value =
+                      """
+                      {
+                        "createCollection": {
+                          "name": "knowledge_base",
+                          "options": {
+                            "openSearch": {
+                              "enabled": true,
+                              "indexName": "knowledge-base-search",
+                              "mappings": {
+                                "title": { "type": "text", "analyzer": "english" },
+                                "content": { "type": "text", "analyzer": "english" },
+                                "tags": { "type": "keyword" },
+                                "source": { "type": "keyword" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "createCollectionOpenSearchShardsAndReplicas",
+                  summary =
+                      "`CreateCollection` command with OpenSearch shard and replica configuration",
+                  value =
+                      """
+                      {
+                        "createCollection": {
+                          "name": "products",
+                          "options": {
+                            "openSearch": {
+                              "enabled": true,
+                              "indexName": "catalog-products",
+                              "numShards": 3,
+                              "numReplicas": 1,
+                              "mappings": {
+                                "name": { "type": "text", "analyzer": "english" },
+                                "sku": { "type": "keyword" },
+                                "category": { "type": "keyword" },
+                                "price": { "type": "double" },
+                                "inStock": { "type": "boolean" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "createCollectionOpenSearchWithIndexing",
+                  summary =
+                      "`CreateCollection` command with separate standard indexing and OpenSearch mappings",
+                  value =
+                      """
+                      {
+                        "createCollection": {
+                          "name": "store_items",
+                          "options": {
+                            "indexing": {
+                              "allow": ["category", "price", "available"]
+                            },
+                            "openSearch": {
+                              "enabled": true,
+                              "mappings": {
+                                "name": { "type": "text", "analyzer": "english" },
+                                "description": { "type": "text", "analyzer": "english" },
+                                "brand": { "type": "keyword" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "createCollectionOpenSearchNestedMapping",
+                  summary = "`CreateCollection` command with a nested OpenSearch object mapping",
+                  value =
+                      """
+                      {
+                        "createCollection": {
+                          "name": "orders",
+                          "options": {
+                            "openSearch": {
+                              "enabled": true,
+                              "mappings": {
+                                "status": { "type": "keyword" },
+                                "customerName": { "type": "text" },
+                                "total": { "type": "double" },
+                                "shippingAddress": {
+                                  "properties": {
+                                    "city": { "type": "keyword" },
+                                    "country": { "type": "keyword" },
+                                    "postalCode": { "type": "keyword" }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "findCollections",
+                  summary = "`FindCollections` command returning collection names",
+                  value =
+                      """
+                      {
+                        "findCollections": {
+                          "options": {
+                            "explain": false
+                          }
+                        }
+                      }
+                      """),
+              @ExampleObject(
+                  name = "findCollectionsExplain",
+                  summary = "`FindCollections` command returning collection configurations",
+                  value =
+                      """
+                      {
+                        "findCollections": {
+                          "options": {
+                            "explain": true
+                          }
+                        }
                       }
                       """),
               @ExampleObject(

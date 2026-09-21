@@ -1393,6 +1393,31 @@ request-errors:
       Resend command with only '$vector' or '$vectorize'.
 
   - scope: SCHEMA
+    code: OPEN_SEARCH_CORRUPT_SCHEMA
+    title: Invalid persisted OpenSearch collection configuration
+    body: |-
+      The collection OpenSearch configuration is incomplete or invalid in the persisted schema.
+
+  - scope: SCHEMA
+    code: OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST
+    title: OpenSearch cannot be used with an indexing deny list
+    body: |-
+      OpenSearch cannot be enabled when 'indexing.deny' is set. Use 'indexing.allow' or 'openSearch.mappings' to specify which fields to replicate.
+
+  - scope: SCHEMA
+    code: OPEN_SEARCH_MISSING_FIELD_MAPPINGS
+    title: OpenSearch mappings are required
+    body: |-
+      'openSearch.mappings' is required, must be a non-empty object, and must not contain '_id'.
+
+  - scope: SCHEMA
+    code: OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION
+    title: OpenSearch search is not enabled for the collection
+    body: |-
+      The '$search' filter can only be used on collections for which the OpenSearch feature is enabled.
+      The collection ${keyspace}.${table} does not have OpenSearch enabled.
+
+  - scope: SCHEMA
     code: LEXICAL_FEATURE_NOT_ENABLED
     title: Lexical search is not available on this database
     body: |-

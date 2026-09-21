@@ -158,6 +158,8 @@ public class CollectionResource {
                 @ExampleObject(ref = "findOneAndUpdate"),
                 @ExampleObject(ref = "estimatedDocumentCount"),
                 @ExampleObject(ref = "insertOne"),
+                @ExampleObject(ref = "insertArticles"),
+                @ExampleObject(ref = "findArticlesOpenSearch"),
                 @ExampleObject(ref = "insertMany"),
                 @ExampleObject(ref = "updateMany"),
                 @ExampleObject(ref = "updateOne"),

@@ -75,6 +75,7 @@ public class CollectionSettingsV1Reader {
     }
 
     var schemaVersion = decideSchemaVersion(persistedLexical, persistedRerank);
+    var openSearchDef = CollectionOpenSearchDef.fromTableMetadata(tableMetadata, objectMapper);
     return new CollectionSchemaObject(
         requestContext.tenant(),
         tableMetadata,
@@ -82,6 +83,7 @@ public class CollectionSettingsV1Reader {
         vectorConfig,
         indexingConfig,
         requestContext.schemaRegistry().lexicalDef().namedVersion(schemaVersion, persistedLexical),
+        requestContext.schemaRegistry().openSearchDef().currentVersion(openSearchDef),
         requestContext.schemaRegistry().rerankDef().namedVersion(schemaVersion, persistedRerank));
   }
 

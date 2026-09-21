@@ -66,6 +66,14 @@ public record CreateCollectionCommand(
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
           @Schema(
+              description = "Optional OpenSearch replication configuration for the collection",
+              type = SchemaType.OBJECT)
+          CreateCollectionCommand.Options.OpenSearchDesc openSearch,
+      // -----
+      @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(
               description =
                   "Optional configuration defining if and how to support use of 'rerank' field",
               type = SchemaType.OBJECT)
@@ -224,6 +232,32 @@ public record CreateCollectionCommand(
         }
       }
     }
+
+    /** --- */
+    public record OpenSearchDesc(
+        @Schema(
+                description = "Whether to enable OpenSearch replication for this collection",
+                type = SchemaType.BOOLEAN,
+                required = true)
+            Boolean enabled,
+        @Nullable
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Schema(description = "OpenSearch index name", type = SchemaType.STRING)
+            String indexName,
+        @Nullable
+            @Positive(message = "numShards should be greater than `0`")
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Schema(description = "Number of OpenSearch primary shards", type = SchemaType.INTEGER)
+            Integer numShards,
+        @Nullable
+            @PositiveOrZero(message = "numReplicas should be greater than or equal to `0`")
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Schema(description = "Number of OpenSearch replicas", type = SchemaType.INTEGER)
+            Integer numReplicas,
+        @Nullable
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Schema(description = "Top-level OpenSearch field mappings", type = SchemaType.OBJECT)
+            JsonNode mappings) {}
 
     /** --- */
     public record LexicalDesc(

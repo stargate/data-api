@@ -17,6 +17,9 @@ public interface DocumentConstants {
     /** Document field name that will have lexical (BM-25) content for analyzed text for search */
     String LEXICAL_CONTENT_FIELD = "$lexical";
 
+    /** Document field name used to perform an OpenSearch full-text search query. */
+    String OPEN_SEARCH_CONTENT_FIELD = "$search";
+
     /** Document field name that will have text value for which vectorize method in called */
     String BINARY_VECTOR_TEXT_FIELD = "$binary";
 

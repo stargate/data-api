@@ -23,6 +23,7 @@ public class CollectionIndexUsage implements IndexUsage {
   public boolean nullIndexTag;
   public boolean vectorIndexTag;
   public boolean lexicalIndexTag;
+  public boolean openSearchIndexTag;
 
   /**
    * This method is used to generate the tags for the index usage
@@ -42,7 +43,8 @@ public class CollectionIndexUsage implements IndexUsage {
         Tag.of(Names.QUERY_TEXT_VALUES, String.valueOf(textIndexTag)),
         Tag.of(Names.QUERY_TIMESTAMP_VALUES, String.valueOf(timestampIndexTag)),
         Tag.of(Names.QUERY_VECTOR_VALUE, String.valueOf(vectorIndexTag)),
-        Tag.of(Names.QUERY_LEXICAL_VALUE, String.valueOf(lexicalIndexTag)));
+        Tag.of(Names.QUERY_LEXICAL_VALUE, String.valueOf(lexicalIndexTag)),
+        Tag.of(Names.DOC_JSON, String.valueOf(openSearchIndexTag)));
   }
 
   /**
@@ -67,5 +69,6 @@ public class CollectionIndexUsage implements IndexUsage {
     this.nullIndexTag |= other.nullIndexTag;
     this.vectorIndexTag |= other.vectorIndexTag;
     this.lexicalIndexTag |= other.lexicalIndexTag;
+    this.openSearchIndexTag |= other.openSearchIndexTag;
   }
 }

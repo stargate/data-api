@@ -58,7 +58,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
         throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
             Map.of("message", "filter expression path cannot be empty String"));
       }
-      // 3 special fields with $ prefix, skip here
+      // special fields with $ prefix, skip regular validation
       switch (path) {
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD -> {
@@ -74,6 +74,20 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
                 Map.of(
                     "message",
                     "cannot filter on '%s' field using operator '%s': only '$match' is supported"
+                        .formatted(path, operator.getOperator())));
+          }
+          return path;
+        }
+        case DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD -> {
+          if (!schema.openSearchDef().enabled()) {
+            throw SchemaException.Code.OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
+          }
+          // Only $eq (implicit string value) valid on $search field
+          if (operator != ValueComparisonOperator.EQ) {
+            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+                Map.of(
+                    "message",
+                    "cannot filter on '%s' field using operator '%s': only a plain string value is supported"
                         .formatted(path, operator.getOperator())));
           }
           return path;
@@ -131,6 +145,13 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
   private void validateCollectionComparisonExpression(
       ComparisonExpression comparisonExpression, IndexingProjector indexingProjector) {
     String path = comparisonExpression.getPath();
+
+    // $search is a virtual OpenSearch filter field, not a regular indexed document field;
+    // skip standard indexing-projector validation
+    if (DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD.equals(path)) {
+      return;
+    }
+
     boolean isPathIndexed =
         !indexingProjector.isIndexingDenyAll() && indexingProjector.isPathIncluded(path);
 

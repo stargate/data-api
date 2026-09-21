@@ -39,6 +39,8 @@ import io.stargate.sgv2.jsonapi.service.schema.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaHolder;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDef;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingTablePredicate;
@@ -64,8 +66,36 @@ public record CreateCollectionOperation(
     // nullable
     CreateCollectionCommand.Options.VectorSearchDesc vectorDesc,
     SchemaHolder<CollectionLexicalDef> lexicalDef,
+    SchemaHolder<CollectionOpenSearchDef> openSearchDef,
     SchemaHolder<CollectionRerankDef> rerankDef)
     implements Operation<CollectionSchemaObject> {
+
+  public CreateCollectionOperation(
+      CommandContext<KeyspaceSchemaObject> commandContext,
+      DatabaseLimitsConfig dbLimitsConfig,
+      CQLSessionCache cqlSessionCache,
+      CqlIdentifier collectionName,
+      int ddlDelayMillis,
+      boolean tooManyIndexesRollbackEnabled,
+      CreateCollectionCommand.Options.DocIdDesc docIdDesc,
+      CreateCollectionCommand.Options.IndexingDesc indexingDesc,
+      CreateCollectionCommand.Options.VectorSearchDesc vectorDesc,
+      SchemaHolder<CollectionLexicalDef> lexicalDef,
+      SchemaHolder<CollectionRerankDef> rerankDef) {
+    this(
+        commandContext,
+        dbLimitsConfig,
+        cqlSessionCache,
+        collectionName,
+        ddlDelayMillis,
+        tooManyIndexesRollbackEnabled,
+        docIdDesc,
+        indexingDesc,
+        vectorDesc,
+        lexicalDef,
+        new CollectionOpenSearchDefSchemaFactory().currentVersion(null),
+        rerankDef);
+  }
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -162,13 +192,18 @@ public record CreateCollectionOperation(
                   lexicalDef()
                       .replaceIfMissing(existingCollectionSettings.lexicalDefSchemaValue())
                       .value();
+              var overrideOpenSearchDef =
+                  openSearchDef()
+                      .replaceIfMissing(existingCollectionSettings.openSearchDefSchemaValue())
+                      .value();
               var overrideRerankDef =
                   rerankDef()
                       .replaceIfMissing(existingCollectionSettings.rerankDefSchemaValue())
                       .value();
 
               var overrideTableComment =
-                  generateTableComment(overrideLexicalDef, overrideRerankDef);
+                  generateTableComment(
+                      overrideLexicalDef, overrideOpenSearchDef, overrideRerankDef);
 
               if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("execute() - overrideTableComment: {}", overrideTableComment);
@@ -213,12 +248,13 @@ public record CreateCollectionOperation(
 
   @VisibleForTesting
   String generateTableComment() {
-    return generateTableComment(lexicalDef(), rerankDef());
+    return generateTableComment(lexicalDef(), openSearchDef(), rerankDef());
   }
 
   @VisibleForTesting
   String generateTableComment(
       SchemaHolder<CollectionLexicalDef> overrideLexicalDef,
+      SchemaHolder<CollectionOpenSearchDef> overrideOpenSearchDef,
       SchemaHolder<CollectionRerankDef> overrideRerankDef) {
 
     var optionsNode = OBJECT_MAPPER.createObjectNode();
@@ -243,6 +279,11 @@ public record CreateCollectionOperation(
         TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, overrideLexicalDef.runningValue());
     optionsNode.putPOJO(
         TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, overrideRerankDef.runningValue());
+    if (overrideOpenSearchDef.runningValue().enabled()) {
+      optionsNode.putPOJO(
+          TableCommentConstants.COLLECTION_OPEN_SEARCH_CONFIG_KEY,
+          overrideOpenSearchDef.runningValue());
+    }
 
     var collectionNode = OBJECT_MAPPER.createObjectNode();
     collectionNode.put(
@@ -612,6 +653,10 @@ public record CreateCollectionOperation(
               collectionExisted, "query_vector_value", "query_vector_value", false, vectorOptions));
     }
 
+    if (openSearchDef.runningValue().enabled()) {
+      statements.add(openSearchIndex(collectionExisted, openSearchDef.runningValue()));
+    }
+
     if (overrideLexicalDef.enabled()) {
       var analyzerDef = overrideLexicalDef.analyzerDefinition();
       var analyzerString = analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
@@ -630,6 +675,41 @@ public record CreateCollectionOperation(
       LOGGER.trace("getIndexStatements() - created index statements: {}", cqlStrings);
     }
     return statements;
+  }
+
+  private SimpleStatement openSearchIndex(
+      boolean ifNotExists, CollectionOpenSearchDef openSearchDefinition) {
+    var keyspace = commandContext.schemaObject().identifier().keyspace();
+    var index = CqlIdentifier.fromInternal(openSearchDefinition.saiIndexName());
+    var start = SchemaBuilder.createIndex(index).custom("OpenSearchIndex");
+    if (ifNotExists) {
+      start = start.ifNotExists();
+    }
+
+    Map<String, Object> options = new LinkedHashMap<>();
+    options.put("indexName", openSearchDefinition.indexName());
+    options.put("createIndexIfNotExists", "true");
+    options.put("unpackJsonFields", "doc_json");
+    options.put("applyDefaultSchema", "false");
+    options.put("applyCustomSchema", "true");
+    options.put(
+        "customMappingsJson", openSearchDefinition.customMappings(OBJECT_MAPPER).toString());
+    options.put(
+        "propertiesFromJsonFields",
+        openSearchDefinition.mappings().properties().stream()
+            .map(Map.Entry::getKey)
+            .collect(Collectors.joining(",")));
+    if (openSearchDefinition.numShards() != null) {
+      options.put("numShards", openSearchDefinition.numShards());
+    }
+    if (openSearchDefinition.numReplicas() != null) {
+      options.put("numReplicas", openSearchDefinition.numReplicas());
+    }
+
+    var createIndex =
+        start.onTable(keyspace, collectionName).andColumn(CqlIdentifier.fromInternal("doc_json"));
+    return new ExtendedCreateIndex((DefaultCreateIndex) createIndex.withSASIOptions(options))
+        .build();
   }
 
   private SimpleStatement saiColumn(boolean ifNotExists, String indexSuffix, String column) {

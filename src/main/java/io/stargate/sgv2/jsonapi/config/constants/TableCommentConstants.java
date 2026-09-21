@@ -23,6 +23,9 @@ public interface TableCommentConstants {
   /** Collection rerank settings configuration key */
   String COLLECTION_RERANKING_CONFIG_KEY = "rerank";
 
+  /** Collection OpenSearch settings configuration key */
+  String COLLECTION_OPEN_SEARCH_CONFIG_KEY = "openSearch";
+
   /** Collection vector key */
   String COLLECTION_VECTOR_KEY = "vector";
 
