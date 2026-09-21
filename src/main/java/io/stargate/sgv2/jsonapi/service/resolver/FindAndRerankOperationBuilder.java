@@ -81,6 +81,7 @@ class FindAndRerankOperationBuilder {
 
     Objects.requireNonNull(command, "command cannot be null");
 
+    validateSortClauseHasVector();
     checkSortSupported();
     validateHybridLimits();
     this.effectiveRerankServiceDef = resolveRerankServiceDef();
@@ -162,6 +163,17 @@ class FindAndRerankOperationBuilder {
             String.valueOf(value),
             "message",
             "must be between %d and %d (inclusive)".formatted(bounds.min(), bounds.max())));
+  }
+
+  /**
+   * Validate that the sort clause supplies a vector(/vectorize) search. If not, fail with {@link
+   * RequestException.Code#MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT}.
+   */
+  private void validateSortClauseHasVector() {
+    if (isVectorizeSort() || isVectorSort()) {
+      return;
+    }
+    throw RequestException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.get();
   }
 
   /**
@@ -365,7 +377,11 @@ class FindAndRerankOperationBuilder {
         deferredAction);
   }
 
-  /** Builder either a vectorize or BYO vector read. */
+  /**
+   * Build either a vectorize or BYO vector read. Included is validation of the requirement that a
+   * valid vector(/vectorize) search must be supplied. In case this is missing, the method fails
+   * with {@link RequestException.Code#MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT}.
+   */
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorRead(DeferredCommandResultAction deferredAction) {
 
@@ -394,7 +410,8 @@ class FindAndRerankOperationBuilder {
           .sortExpressions()
           .add(SortExpression.collectionVectorSort(command.sortClause().vectorSort()));
     } else {
-      throw new IllegalArgumentException("buildVectorRead() - no vector or vectorize");
+      // this should never happen since `validateSortClauseHasVector()` has been called earlier:
+      throw RequestException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.get();
     }
 
     // The intermediate task will set the sort when we give it the deferred vectorize
