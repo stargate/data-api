@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.0.53](https://github.com/stargate/data-api/tree/v1.0.53) (2026-09-14)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.52...v1.0.53)
+
+**Merged pull requests:**
+
+- Revert "FIX \#2562: send "dimensions" to Nvidia embedding NIM for variable-dimension models" [\#2564](https://github.com/stargate/data-api/pull/2564) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2563](https://github.com/stargate/data-api/pull/2563) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Sends `billing.events` log lines to S3 [\#2522](https://github.com/stargate/data-api/pull/2522) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+
 ## [v1.0.52](https://github.com/stargate/data-api/tree/v1.0.52) (2026-08-24)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.51...v1.0.52)
