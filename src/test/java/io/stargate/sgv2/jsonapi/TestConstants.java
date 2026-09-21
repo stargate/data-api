@@ -123,6 +123,7 @@ public class TestConstants {
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
+  public final CollectionSchemaObject VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
   public final TableSchemaObject TABLE_SCHEMA_OBJECT;
   public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
   public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
@@ -240,6 +241,26 @@ public class TestConstants {
                         SimilarityFunction.COSINE,
                         EmbeddingSourceModel.OTHER,
                         null))),
+            null,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef(
+                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
+
+    VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        -1,
+                        SimilarityFunction.COSINE,
+                        EmbeddingSourceModel.OTHER,
+                        new VectorizeDefinition("custom", "custom", null, null)))),
             null,
             CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
