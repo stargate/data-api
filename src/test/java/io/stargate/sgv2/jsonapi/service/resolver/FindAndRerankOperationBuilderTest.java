@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -43,7 +44,7 @@ class FindAndRerankOperationBuilderTest {
   @Inject ObjectMapper objectMapper;
   @Inject FindCommandResolver findCommandResolver;
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // Reusable request properties for model configs
   private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
@@ -242,15 +243,72 @@ class FindAndRerankOperationBuilderTest {
         .build();
   }
 
+  @Test
+  void failsWhenMissingRerankOnAndNotVectorizeSort() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertMissingRerankOn("failsWhenMissingRerankOnAndNotVectorizeSort()", commandContext, command);
+  }
+
+  @Test
+  void failsWhenBlankRerankOnAndNotVectorizeSort() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "   ",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertMissingRerankOn("failsWhenBlankRerankOnAndNotVectorizeSort()", commandContext, command);
+  }
+
+  private void assertMissingRerankOn(
+      String context,
+      CommandContext<CollectionSchemaObject> commandContext,
+      FindAndRerankCommand command) {
+
+    var ex =
+        assertThrowsExactly(
+            RequestException.class,
+            () ->
+                new FindAndRerankOperationBuilder(commandContext)
+                    .withCommand(command)
+                    .withFindCommandResolver(findCommandResolver)
+                    .build(),
+            context);
+
+    assertThat(ex.code).as(context).isEqualTo(RequestException.Code.MISSING_RERANK_ON.name());
+  }
+
   private FindAndRerankCommand command(String json) throws Exception {
     return objectMapper.readValue(json, FindAndRerankCommand.class);
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
     var commandContext =
-        testConstants.collectionContext(
+        TEST_CONSTANTS.collectionContext(
             CommandName.FIND_AND_RERANK,
-            testConstants.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
+            TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
 
     var rerankingProvidersConfig = mock(RerankingProvidersConfig.class);
     var modelConfig = mock(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.class);
