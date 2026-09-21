@@ -283,20 +283,20 @@ request-errors:
 
   # unscoped because this touches both the sort and the options
   - scope:
-    code: MISSING_RERANK_ON_TEXT
+    code: MISSING_RERANK_ON
     title: Rerank field is missing
     body: |-
-      The findAndRerank command is missing the field to read from each document for the reranking step.
+      The findAndRerank command does not specify which document field to rerank on.
 
-      Reranking involves using a model to compare passages of text to a user query.
+      Reranking involves using a model to compare test from a user query to text from stored documents, the passage texts.
+      
+      The passage text can be specified using either:
+      * `$hybrid` field in the sort clause, in which case documents are ranked using the value of `$vectorize` e.g. `{"$hybrid": "query text"}`.
+      * `$vectorize` field in the sort clause, when using different sorting for vectorize and lexical, e.g. `{"$hybrid":  {"$vectorize": "query text"}}`.
+      * `rerankOn` field in the options clause, e.g. `{"rerankOn": "my_passage_field"}`.
 
-      For each document to rerank, a certain field is read to extract the associated passage.
-
-      If using `$vectorize`, the name of the rerankOn field defaults to "$vectorize";
-      otherwise, there is no default and the field name must be supplied.
-
-      The field to read must be specified as `rerankOn` in the options clause, e.g. `{"rerankOn": "title"}`.
-
+      When specified the `rerankOn` option takes priority. In all cases the passage text must be a non blank text value. 
+      
       Resend the command including the name of the field on which reranking should be done.
 
   # unscoped because this touches both the sort and the options

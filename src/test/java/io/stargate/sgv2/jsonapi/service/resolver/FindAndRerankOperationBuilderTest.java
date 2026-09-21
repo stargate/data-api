@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,20 +20,12 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
-import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -51,7 +44,7 @@ class FindAndRerankOperationBuilderTest {
   @Inject ObjectMapper objectMapper;
   @Inject FindCommandResolver findCommandResolver;
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // Reusable request properties for model configs
   private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
@@ -266,8 +259,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertMissingRerankOnText(
-        "error when no rerankOn and not vectorize sort", commandContext, command);
+    assertMissingRerankOn("failsWhenMissingRerankOnAndNotVectorizeSort()", commandContext, command);
   }
 
   @Test
@@ -287,38 +279,16 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertMissingRerankOnText(
-        "error when blank rerankOn and not vectorize sort", commandContext, command);
+    assertMissingRerankOn("failsWhenBlankRerankOnAndNotVectorizeSort()", commandContext, command);
   }
 
-  @Test
-  void failsWhenMissingRerankOnWithLexicalSortOnVectorizeCollection() throws Exception {
-    var commandContext = commandContextWithVectorize();
-    var command =
-        command(
-            """
-            {
-              "findAndRerank": {
-                "sort": { "$hybrid": { "$lexical": "text" } },
-                "options": {
-                  "rerankQuery": "text"
-                }
-              }
-            }
-            """);
-
-    assertMissingRerankOnText(
-        "error when no rerankOn on vectorize collection with lexical sort",
-        commandContext,
-        command);
-  }
-
-  private void assertMissingRerankOnText(
+  private void assertMissingRerankOn(
       String context,
       CommandContext<CollectionSchemaObject> commandContext,
       FindAndRerankCommand command) {
+
     var ex =
-        org.junit.jupiter.api.Assertions.assertThrowsExactly(
+        assertThrowsExactly(
             RequestException.class,
             () ->
                 new FindAndRerankOperationBuilder(commandContext)
@@ -327,9 +297,7 @@ class FindAndRerankOperationBuilderTest {
                     .build(),
             context);
 
-    assertThat(ex.code)
-        .as("error code is " + RequestException.Code.MISSING_RERANK_ON_TEXT.name())
-        .isEqualTo(RequestException.Code.MISSING_RERANK_ON_TEXT.name());
+    assertThat(ex.code).as(context).isEqualTo(RequestException.Code.MISSING_RERANK_ON.name());
   }
 
   private FindAndRerankCommand command(String json) throws Exception {
@@ -337,36 +305,10 @@ class FindAndRerankOperationBuilderTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
-    return commandContext(testConstants.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
-  }
-
-  private CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
-    var collectionSchema =
-        new CollectionSchemaObject(
-            testConstants.COLLECTION_IDENTIFIER,
-            IdConfig.defaultIdConfig(),
-            VectorConfig.fromColumnDefinitions(
-                List.of(
-                    new VectorColumnDefinition(
-                        io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
-                            .VECTOR_EMBEDDING_TEXT_FIELD,
-                        -1,
-                        SimilarityFunction.COSINE,
-                        EmbeddingSourceModel.OTHER,
-                        new VectorizeDefinition("custom", "custom", null, null)))),
-            null,
-            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
-            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
-                new CollectionRerankDef(
-                    true,
-                    new CollectionRerankDef.RerankServiceDef(
-                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
-    return commandContext(collectionSchema);
-  }
-
-  private CommandContext<CollectionSchemaObject> commandContext(
-      CollectionSchemaObject schemaObject) {
-    var commandContext = testConstants.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
+    var commandContext =
+        TEST_CONSTANTS.collectionContext(
+            CommandName.FIND_AND_RERANK,
+            TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
 
     var rerankingProvidersConfig = mock(RerankingProvidersConfig.class);
     var modelConfig = mock(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.class);

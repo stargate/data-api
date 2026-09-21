@@ -451,7 +451,7 @@ class FindAndRerankOperationBuilder {
       // user has to provide a field to rerank on
       finalRerankField = rerankOn;
     } else {
-      throw RequestException.Code.MISSING_RERANK_ON_TEXT.get();
+      throw RequestException.Code.MISSING_RERANK_ON.get();
     }
 
     return PathMatchLocator.forPath(finalRerankField);
