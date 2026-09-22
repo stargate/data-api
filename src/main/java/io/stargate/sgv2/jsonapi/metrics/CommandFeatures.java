@@ -56,6 +56,12 @@ public final class CommandFeatures {
     commandFeatures.add(commandFeature);
   }
 
+  /** Test if the supplied feature is included in this set */
+  public boolean contains(CommandFeature commandFeature) {
+    Objects.requireNonNull(commandFeature, "commandFeature cannot be null");
+    return commandFeatures.contains(commandFeature);
+  }
+
   /**
    * Adds all features from another {@code CommandFeatures} instance to this instance. Mutates the
    * current object.

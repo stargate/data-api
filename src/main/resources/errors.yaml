@@ -1403,7 +1403,10 @@ request-errors:
     title: Lexical search is not enabled for the collection
     body: |-
       Lexical content can only be added and filtering and sort only be used on collections for which Lexical feature is enabled.
-      The collection ${keyspace}.${table} does not have Lexical feature enabled.
+      
+      The collection without a lexical index: ${keyspace}.${table}.
+      
+      Resend the command without explicitly requesting a $lexical sort.
 
   - scope: SCHEMA
     code: MISSING_PARTITION_COLUMNS

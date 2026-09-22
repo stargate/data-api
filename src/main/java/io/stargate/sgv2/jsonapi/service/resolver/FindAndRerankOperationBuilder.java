@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -193,11 +194,10 @@ class FindAndRerankOperationBuilder {
       }
     }
 
-    if (isLexicalSort()) {
-      if (!commandContext.schemaObject().lexicalDef().enabled()) {
-        throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
-            errVars(commandContext.schemaObject()));
-      }
+    // The index is only required if the user explicitly asked for lexical,
+    // they could also have used $hybrid and it expanded into the lexical sort.
+    if (isLexicalSort() && isExplicitLexicalSort()) {
+      throwIfNoLexicalIndex();
     }
   }
 
@@ -345,6 +345,19 @@ class FindAndRerankOperationBuilder {
       return null;
     }
 
+    // if there is a lexical sort, but the user did not ask explicitly for it
+    // then it is OK to skip. If the user explicitly asked for it and the index did not
+    // exist then we should have caught in checkSortSUpport() but also safety throw here.
+    if (!commandContext.schemaObject().lexicalDef().enabled()) {
+      if (isExplicitLexicalSort()) {
+        // error should have been caught in checkSortSUpport() safety here
+        throwIfNoLexicalIndex();
+      }
+      // ok user only getting lexical because of $hybrid
+      deferredAction.setEmptyMultiDocumentResponse();
+      return null;
+    }
+
     var bm25SortTerm = command.sortClause().lexicalSort();
     var bm25SortClause =
         new SortClause(List.of(SortExpression.collectionLexicalSort(bm25SortTerm)));
@@ -457,8 +470,19 @@ class FindAndRerankOperationBuilder {
     return PathMatchLocator.forPath(finalRerankField);
   }
 
+  private void throwIfNoLexicalIndex() {
+    if (!commandContext.schemaObject().lexicalDef().enabled()) {
+      throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
+          errVars(commandContext.schemaObject()));
+    }
+  }
+
   private boolean isLexicalSort() {
     return command.sortClause().lexicalSort() != null;
+  }
+
+  private boolean isExplicitLexicalSort() {
+    return command.sortClause().commandFeatures().contains(CommandFeature.LEXICAL);
   }
 
   private boolean isVectorizeSort() {
