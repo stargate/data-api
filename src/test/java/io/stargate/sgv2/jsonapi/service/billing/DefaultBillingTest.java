@@ -57,9 +57,6 @@ public class DefaultBillingTest {
   @MethodSource("providerAndModelTypeMatrix")
   void buildEventsProducesExpectedEventsForEveryProviderAndModelType(
       ModelProvider provider, ModelType modelType) {
-    // DefaultBilling does not read ModelType — events are identical across model types. Running
-    // every (provider, modelType) combination guards against future regressions if either
-    // dimension gains handling.
 
     var billing = newBilling(INTERNAL_PROVIDERS, Optional.empty());
     var modelUsage = usage(provider, modelType);
@@ -67,17 +64,11 @@ public class DefaultBillingTest {
 
     var isInternal = INTERNAL_PROVIDERS.contains(provider.apiName());
     var totalTokensType =
-        isInternal
-            ? BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS
-            : BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS;
+        BillingEventType.of(modelType, BillingEventType.Metric.TOTAL_TOKENS, isInternal);
     var egressType =
-        isInternal
-            ? BillingEventType.INTERNAL_MODEL_EGRESS_BYTES
-            : BillingEventType.EXTERNAL_MODEL_EGRESS_BYTES;
+        BillingEventType.of(modelType, BillingEventType.Metric.EGRESS_BYTES, isInternal);
     var ingressType =
-        isInternal
-            ? BillingEventType.INTERNAL_MODEL_INGRESS_BYTES
-            : BillingEventType.EXTERNAL_MODEL_INGRESS_BYTES;
+        BillingEventType.of(modelType, BillingEventType.Metric.INGRESS_BYTES, isInternal);
 
     assertThat(events)
         .usingRecursiveComparison()
@@ -93,36 +84,47 @@ public class DefaultBillingTest {
     return Arrays.stream(ModelProvider.values())
         .flatMap(
             provider ->
-                Arrays.stream(ModelType.values())
+                Stream.of(ModelType.EMBEDDING, ModelType.RERANKING)
                     .map(modelType -> Arguments.of(provider, modelType)));
   }
 
   @ParameterizedTest(name = "{0}")
   @EnumSource(ModelProvider.class)
+  void buildEventsUnspecifiedModelTypeThrows(ModelProvider provider) {
+    // no event types for unspecified, cannot tell how to bill it
+    var billing = newBilling();
+    var modelUsage = usage(provider, ModelType.MODEL_TYPE_UNSPECIFIED);
+
+    assertThatThrownBy(() -> billing.buildEvents(modelUsage))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @EnumSource(ModelProvider.class)
   void buildEventsFiltersDisabledEventTypes(ModelProvider provider) {
-    // Only TOTAL_TOKENS variants are enabled — egress / ingress events should be dropped, even
-    // though the model usage carries values for all three metrics.
+    // only reranking total tokens enabled, other metrics and all embedding events are dropped
     var billing =
         newBilling(
             INTERNAL_PROVIDERS,
             Optional.of(
                 EnumSet.of(
-                    BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS,
-                    BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS)));
-    var modelUsage = usage(provider, ModelType.EMBEDDING);
+                    BillingEventType.INTERNAL_RERANKING_TOTAL_TOKENS,
+                    BillingEventType.EXTERNAL_RERANKING_TOTAL_TOKENS)));
 
-    var events = billing.buildEvents(modelUsage);
+    var events = billing.buildEvents(usage(provider, ModelType.RERANKING));
 
     var isInternal = INTERNAL_PROVIDERS.contains(provider.apiName());
     var totalTokensType =
         isInternal
-            ? BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS
-            : BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS;
+            ? BillingEventType.INTERNAL_RERANKING_TOTAL_TOKENS
+            : BillingEventType.EXTERNAL_RERANKING_TOTAL_TOKENS;
 
     assertThat(events)
         .usingRecursiveComparison()
         .ignoringFields("id", "timestamp")
         .isEqualTo(List.of(expectedEvent(totalTokensType, TOTAL_TOKENS, provider.apiName())));
+
+    assertThat(billing.buildEvents(usage(provider, ModelType.EMBEDDING))).isEmpty();
   }
 
   @Test
@@ -149,15 +151,15 @@ public class DefaultBillingTest {
         .isEqualTo(
             List.of(
                 expectedEvent(
-                    BillingEventType.EXTERNAL_MODEL_TOTAL_TOKENS,
+                    BillingEventType.EXTERNAL_EMBEDDING_TOTAL_TOKENS,
                     TOTAL_TOKENS,
                     ModelProvider.NVIDIA.apiName()),
                 expectedEvent(
-                    BillingEventType.EXTERNAL_MODEL_EGRESS_BYTES,
+                    BillingEventType.EXTERNAL_EMBEDDING_EGRESS_BYTES,
                     REQUEST_BYTES,
                     ModelProvider.NVIDIA.apiName()),
                 expectedEvent(
-                    BillingEventType.EXTERNAL_MODEL_INGRESS_BYTES,
+                    BillingEventType.EXTERNAL_EMBEDDING_INGRESS_BYTES,
                     RESPONSE_BYTES,
                     ModelProvider.NVIDIA.apiName())));
   }
@@ -210,15 +212,15 @@ public class DefaultBillingTest {
       var providerName = ModelProvider.NVIDIA.apiName();
       assertJsonEquals(
           expectedEventJson(
-              BillingEventType.INTERNAL_MODEL_TOTAL_TOKENS, TOTAL_TOKENS, providerName),
+              BillingEventType.INTERNAL_EMBEDDING_TOTAL_TOKENS, TOTAL_TOKENS, providerName),
           records.get(0).getMessage());
       assertJsonEquals(
           expectedEventJson(
-              BillingEventType.INTERNAL_MODEL_EGRESS_BYTES, REQUEST_BYTES, providerName),
+              BillingEventType.INTERNAL_EMBEDDING_EGRESS_BYTES, REQUEST_BYTES, providerName),
           records.get(1).getMessage());
       assertJsonEquals(
           expectedEventJson(
-              BillingEventType.INTERNAL_MODEL_INGRESS_BYTES, RESPONSE_BYTES, providerName),
+              BillingEventType.INTERNAL_EMBEDDING_INGRESS_BYTES, RESPONSE_BYTES, providerName),
           records.get(2).getMessage());
     } finally {
       julLogger.removeHandler(handler);
