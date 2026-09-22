@@ -88,6 +88,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       case TextNode textNode -> {
         // using the same text for vectorize and for lexical, no vector
         var normalizedText = normalizedText(textNode.asText().trim());
+        // NOTE: commandFeatures flags are used to determine user intent, changing
+        // impacts FindAndRerankOperationBuilder
         yield new FindAndRerankSort(
             normalizedText, normalizedText, null, CommandFeatures.of(CommandFeature.HYBRID));
       }
@@ -143,11 +145,15 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           case NullNode ignored -> {
             // explict setting to null is allowed
             // { "sort" : { "$hybrid" : { "$lexical" : null,
+            // NOTE: commandFeatures flags are used to determine user intent, changing
+            // impacts FindAndRerankOperationBuilder
             commandFeatures.addFeature(CommandFeature.LEXICAL);
             yield null;
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
+            // NOTE: commandFeatures flags are used to determine user intent, changing
+            // impacts FindAndRerankOperationBuilder
             commandFeatures.addFeature(CommandFeature.LEXICAL);
             yield normalizedText(textNode.asText().trim());
           }
